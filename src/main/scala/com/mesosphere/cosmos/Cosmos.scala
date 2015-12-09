@@ -7,8 +7,6 @@ import com.twitter.util.Await
 
 import io.finch._
 
-import shapeless.HNil
-
 object Cosmos {
 
   val ping: Endpoint[String] = get("ping") { Ok("pong") }
@@ -21,7 +19,7 @@ object Cosmos {
   val service: Service[Request, Response] = (ping :+: packageImport).toService
 
   def main(args: Array[String]): Unit = {
-    Await.ready(Http.serve(":8080", service))
+    val _ = Await.ready(Http.serve(":8080", service))
   }
 
 }

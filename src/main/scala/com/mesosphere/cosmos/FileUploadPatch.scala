@@ -7,8 +7,9 @@ import io.finch._
 
 import scala.util.Try
 
-/** Finch returns a 500 when a non-multipart request is sent to an endpoint expecting a multipart request.
-    Patch FileUpload to handle a bad request so the user correctly receives a 400.  */
+/** Finch returns a 500 when a non-multipart request is sent to an endpoint expecting a multipart
+  * request. Patch FileUpload to handle a bad request so the user correctly receives a 400.
+  */
 trait FileUploadPatch {
 
   def failIfNone[A](rr: RequestReader[Option[A]]): RequestReader[A] = rr.embedFlatMap {
