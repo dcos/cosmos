@@ -1,15 +1,20 @@
 package com.mesosphere.cosmos
 
+import com.twitter.finagle.http.exp.Multipart.FileUpload
 import com.twitter.finagle.http.{Request, Response}
-import io.finch._
 import com.twitter.finagle.{Service, Http}
 import com.twitter.util.Await
+
+import io.finch._
+
+import shapeless.HNil
 
 object Cosmos {
 
   val ping: Endpoint[String] = get("ping") { Ok("pong") }
 
-  val packageImport: Endpoint[String] = post("v1" / "package" / "import") {
+  val importPath = "v1" / "package" / "import"
+  val packageImport: Endpoint[String] = post(importPath ? safeFileUpload("file")) { _: FileUpload =>
     Ok("Import successful!\n")
   }
 
