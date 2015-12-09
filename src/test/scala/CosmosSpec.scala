@@ -18,30 +18,47 @@ class CosmosSpec extends fixture.FlatSpec with ServiceIntegrationSuite {
     Cosmos.service
   }
 
-  "cosmos" should "respond to ping" in { f =>
+  "cosmos ping endpoint" should "respond" in { cosmos =>
     val request = Request(Method.Get, "/ping")
-    val response = f(request)
-    assertResult(200)(response.statusCode)
+    val response = cosmos(request)
+    assertResult(Status.Ok)(response.status)
     assertResult("pong")(response.contentString)
   }
 
-  "cosmos" should "accept a Zip file at the import endpoint" in { cosmos =>
+  "cosmos import endpoint" should "accept a Zip file" in { cosmos =>
     val packageBytes = Buf.ByteArray.Owned(createHelloWorldZip)
     val packagePart = FileElement(name = "file", content = packageBytes)
 
     val request = RequestBuilder()
-      .url("http://localhost:8080/v1/package/import")
+      .url(s"http://localhost:8080/$importEndpoint")
       .add(packagePart)
       .buildFormPost(multipart = true)
 
     val response = cosmos(request)
-    assertResult(200)(response.getStatusCode)
+    assertResult(Status.Ok)(response.status)
     assertResult("Import successful!\n")(response.contentString)
   }
 
+  it should "not allow GET requests" in { cosmos =>
+    val request = Request(Method.Get, s"importEndpoint")
+    val response = cosmos(request)
+    assertResult(Status.NotFound)(response.status)
+  }
+
+  it should "only accept multipart requests" in { cosmos =>
+    val packageBytes = Buf.ByteArray.Owned(createHelloWorldZip)
+    val request = RequestBuilder()
+      .url(s"http://localhost:8080/$importEndpoint")
+      .buildPost(packageBytes)
+
+    val response = cosmos(request)
+    assertResult(Status.BadRequest)(response.status)
+  }
 }
 
 object CosmosSpec {
+
+  val importEndpoint = "v1/package/import"
 
   def createHelloWorldZip: Array[Byte] = {
     val baos = new ByteArrayOutputStream
