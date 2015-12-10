@@ -5,12 +5,17 @@ import java.nio.file.{Paths, Files}
 import java.util.zip.{ZipEntry, ZipOutputStream}
 
 import com.twitter.finagle.Service
+import com.twitter.finagle.http.RequestConfig.Yes
 import com.twitter.finagle.http._
 import com.twitter.io.Buf
 import io.finch.test.ServiceIntegrationSuite
 import org.scalatest.fixture
+import org.scalatest.prop.TableDrivenPropertyChecks
 
-class CosmosSpec extends fixture.FlatSpec with ServiceIntegrationSuite {
+class CosmosSpec
+  extends fixture.FlatSpec
+  with ServiceIntegrationSuite
+  with TableDrivenPropertyChecks {
 
   import CosmosSpec._
 
@@ -18,49 +23,92 @@ class CosmosSpec extends fixture.FlatSpec with ServiceIntegrationSuite {
     Cosmos.service
   }
 
-  "cosmos ping endpoint" should "respond" in { cosmos =>
+  "ping endpoint" should "respond" in { service =>
     val request = Request(Method.Get, "/ping")
-    val response = cosmos(request)
+    val response = service(request)
     assertResult(Status.Ok)(response.status)
     assertResult("pong")(response.contentString)
   }
 
-  "cosmos import endpoint" should "accept a Zip file" in { cosmos =>
-    val packageBytes = Buf.ByteArray.Owned(createHelloWorldZip)
-    val packagePart = FileElement(name = "file", content = packageBytes)
+  "import endpoint" should "accept a Zip file" in { service =>
+    forAll (ValidFilenamePrefixes) { filenamePrefix =>
+      val packagePart = FileElement(
+        name = "file",
+        content = HelloWorldZip,
+        contentType = Some("application/zip"),
+        filename = Some(s"$filenamePrefix-digest.zip")
+      )
 
-    val request = RequestBuilder()
-      .url(s"http://localhost:8080/$importEndpoint")
-      .add(packagePart)
-      .buildFormPost(multipart = true)
+      val request = requestBuilder(ImportEndpoint)
+        .add(packagePart)
+        .buildFormPost(multipart = true)
 
-    val response = cosmos(request)
-    assertResult(Status.Ok)(response.status)
-    assertResult("Import successful!\n")(response.contentString)
+      val response = service(request)
+      assertResult(Status.Ok)(response.status)
+      assertResult("Import successful!\n")(response.contentString)
+    }
   }
 
-  it should "not allow GET requests" in { cosmos =>
-    val request = Request(Method.Get, s"importEndpoint")
-    val response = cosmos(request)
+  it should "not allow GET requests" in { service =>
+    val request = Request(Method.Get, s"/$ImportEndpoint")
+    val response = service(request)
     assertResult(Status.NotFound)(response.status)
   }
 
-  it should "only accept multipart requests" in { cosmos =>
-    val packageBytes = Buf.ByteArray.Owned(createHelloWorldZip)
-    val request = RequestBuilder()
-      .url(s"http://localhost:8080/$importEndpoint")
-      .buildPost(packageBytes)
+  it should "only accept multipart requests" in { service =>
+    val request = requestBuilder(ImportEndpoint)
+      .buildPost(HelloWorldZip)
 
-    val response = cosmos(request)
+    val response = service(request)
     assertResult(Status.BadRequest)(response.status)
   }
+
+  it should "require a form-data field named 'file' be present" in { service =>
+    val request = requestBuilder(ImportEndpoint)
+      .add(FileElement(name = "import", content = HelloWorldZip))
+      .buildFormPost(multipart = true)
+
+    val response = service(request)
+    assertResult(Status.BadRequest)(response.status)
+  }
+
+  it should "require the 'file' field to have an application/zip Content-type" in { service =>
+    val request = requestBuilder(ImportEndpoint)
+      .add(FileElement(name = "file", content = HelloWorldZip))
+      .buildFormPost(multipart = true)
+
+    val response = service(request)
+    assertResult(Status.BadRequest)(response.status)
+  }
+
+  it should "require an uploaded filename matching <package>-<version>-<digest>.zip" in { service =>
+    forAll (InvalidFilenames) { filename =>
+      val packagePart = FileElement(
+        name = "file",
+        content = HelloWorldZip,
+        contentType = Some("application/zip"),
+        filename = filename
+      )
+      val request = requestBuilder(ImportEndpoint)
+        .add(packagePart)
+        .buildFormPost(multipart = true)
+
+      val response = service(request)
+      assertResult(Status.BadRequest)(response.status)
+    }
+  }
+
+  private[this] def requestBuilder(endpointPath: String): RequestBuilder[Yes, Nothing] = {
+    RequestBuilder().url(s"http://localhost:$port/$endpointPath")
+  }
+
 }
 
-object CosmosSpec {
+object CosmosSpec extends TableDrivenPropertyChecks {
 
-  val importEndpoint = "v1/package/import"
+  val ImportEndpoint = "v1/package/import"
 
-  def createHelloWorldZip: Array[Byte] = {
+  lazy val HelloWorldZip: Buf = {
     val baos = new ByteArrayOutputStream
     val zos = new ZipOutputStream(baos)
 
@@ -78,6 +126,49 @@ object CosmosSpec {
       zos.close()
     }
 
-    baos.toByteArray
+    Buf.ByteArray.Owned(baos.toByteArray)
   }
+
+  val ValidFilenamePrefixes = Table(
+    "filename",
+    "foo-bar",
+    "foo-bar-baz",
+    "fee-fie-foe-fum",
+    "arangodb-0.2.0",
+    "cassandra-0.1.0-1",
+    "chronos-2.3.4",
+    "kafka-0.9.0-beta",
+    "kafka-0.9.2.0",
+    "marathon-0.9.0-RC3",
+    "marathon-0.10.1",
+    "spark-1.4.0-SNAPSHOT",
+    "spark-1.5.0-db83ac7",
+    "spark-1.5.0-multi-roles-v2",
+    "/package-version",
+    "foo/package-version",
+    "/foo/package-version",
+    "foo/bar/package-version",
+    "/foo/bar/package-version"
+  )
+
+  val InvalidFilenames = Table(
+    "filename",
+    None,
+    Some(""),
+    Some("foo"),
+    Some(".zip"),
+    Some("foo.zip"),
+    Some("foo-bar.zip"),
+    Some("foo/bar.zip"),
+    Some("foo/bar/baz.zip"),
+    Some("foo/bar-baz.zip"),
+    Some("/.zip"),
+    Some("//foo-bar-baz.zip"),
+    Some("a//b/foo-bar-baz.zip"),
+    Some("--.zip"),
+    Some("x--.zip"),
+    Some("-x-.zip"),
+    Some("--x.zip")
+  )
+
 }

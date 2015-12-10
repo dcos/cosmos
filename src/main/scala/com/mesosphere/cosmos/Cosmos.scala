@@ -9,12 +9,20 @@ import io.finch._
 
 object Cosmos {
 
+  val FilenameRegex = """/?([^/]+/)*[^-./]+-[^/]*-[^-./]+\.zip""".r
+
+  val validFileUpload = safeFileUpload("file")
+    .should("have application/zip Content-type")(_.contentType == "application/zip")
+    .should("have a filename matching <package>-<version>-<digest>.zip") { request =>
+      FilenameRegex.unapplySeq(request.fileName).nonEmpty
+    }
+
   val ping: Endpoint[String] = get("ping") { Ok("pong") }
 
-  val importPath = "v1" / "package" / "import"
-  val packageImport: Endpoint[String] = post(importPath ? safeFileUpload("file")) { _: FileUpload =>
-    Ok("Import successful!\n")
-  }
+  val packageImport: Endpoint[String] =
+    post("v1" / "package" / "import" ? validFileUpload) { _: FileUpload =>
+      Ok("Import successful!\n")
+    }
 
   val service: Service[Request, Response] = (ping :+: packageImport).toService
 
