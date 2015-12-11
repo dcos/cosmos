@@ -1,7 +1,7 @@
 package com.mesosphere.cosmos
 
 import java.io.ByteArrayOutputStream
-import java.nio.file.{Paths, Files}
+import java.nio.file.{Files, Paths}
 import java.util.zip.{ZipEntry, ZipOutputStream}
 
 import com.twitter.finagle.Service
@@ -98,6 +98,24 @@ class CosmosSpec
     }
   }
 
+  it should "require the package to be a non-empty Zip archive" in { service =>
+    val fileContents = Table("content", Buf.Empty, HelloWorldPackageJson)
+    forAll (fileContents) { content =>
+      val packagePart = FileElement(
+        name = "file",
+        content = content,
+        contentType = Some("application/zip"),
+        filename = Some("package-1.2.3-digest.zip")
+      )
+      val request = requestBuilder(ImportEndpoint)
+        .add(packagePart)
+        .buildFormPost(multipart = true)
+
+      val response = service(request)
+      assertResult(Status.BadRequest)(response.status)
+    }
+  }
+
   private[this] def requestBuilder(endpointPath: String): RequestBuilder[Yes, Nothing] = {
     RequestBuilder().url(s"http://localhost:$port/$endpointPath")
   }
@@ -127,6 +145,11 @@ object CosmosSpec extends TableDrivenPropertyChecks {
     }
 
     Buf.ByteArray.Owned(baos.toByteArray)
+  }
+
+  lazy val HelloWorldPackageJson: Buf = {
+    val filePath = Paths.get(getClass.getResource("/helloworld/package.json").toURI)
+    Buf.ByteArray.Owned(Files.readAllBytes(filePath))
   }
 
   val ValidFilenamePrefixes = Table(
