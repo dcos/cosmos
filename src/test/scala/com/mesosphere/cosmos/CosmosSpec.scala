@@ -4,24 +4,14 @@ import java.io.ByteArrayOutputStream
 import java.nio.file.{Files, Paths}
 import java.util.zip.{ZipEntry, ZipOutputStream}
 
-import com.twitter.finagle.Service
 import com.twitter.finagle.http.RequestConfig.Yes
 import com.twitter.finagle.http._
 import com.twitter.io.Buf
-import io.finch.test.ServiceIntegrationSuite
-import org.scalatest.fixture
 import org.scalatest.prop.TableDrivenPropertyChecks
 
-class CosmosSpec
-  extends fixture.FlatSpec
-  with ServiceIntegrationSuite
-  with TableDrivenPropertyChecks {
+final class CosmosSpec extends Spec {
 
   import CosmosSpec._
-
-  def createService(): Service[Request, Response] = {
-    Cosmos.service
-  }
 
   "ping endpoint" should "respond" in { service =>
     val request = Request(Method.Get, "/ping")
