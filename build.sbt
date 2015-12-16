@@ -34,3 +34,6 @@ scalacOptions ++= Seq(
   "-Ywarn-unused-import",
   "-Ywarn-value-discard"
 )
+
+scalacOptions in (Compile, console) ~= (_ filterNot (_ == "-Ywarn-unused-import"))
+scalacOptions in (Test, console) ~= (_ filterNot (_ == "-Ywarn-unused-import"))
