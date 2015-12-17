@@ -6,10 +6,11 @@ import java.util.zip.ZipInputStream
 import com.twitter.finagle.http.exp.Multipart.{FileUpload, InMemoryFileUpload, OnDiskFileUpload}
 import com.twitter.finagle.http.{Request, Response, Status}
 import com.twitter.finagle.{Http, Service}
-import com.twitter.util.Await
+import com.twitter.util.{Await, Future, Try}
+import io.circe.generic.auto._    // Required for auto-parsing case classes from JSON
 import io.finch._
 
-object Cosmos {
+private final class Cosmos(packageCache: PackageCache, packageRunner: PackageRunner) {
 
   val FilenameRegex = """/?([^/]+/)*[^-./]+-[^/]*-[^-./]+\.zip""".r
 
@@ -32,7 +33,19 @@ object Cosmos {
       }
     }
 
-  val service: Service[Request, Response] = (ping :+: packageImport).toService
+  val packageInstall: Endpoint[String] = {
+    // Required for parsing case classes from JSON; interferes with the other endpoints
+    import io.finch.circe._
+
+    post("v1" / "package" / "install" ? body.as[InstallRequest]) { (reqBody: InstallRequest) =>
+      packageCache.get(reqBody.name) match {
+        case Some(marathonJson) => packageRunner.launch(marathonJson)
+        case _ => Future.value(NotFound(new Exception(s"Package [${reqBody.name}] not found")))
+      }
+    }
+  }
+
+  val service: Service[Request, Response] = (ping :+: packageImport :+: packageInstall).toService
 
   /** Attempts to provide access to the content of the given file upload as a byte stream.
     *
@@ -67,8 +80,14 @@ object Cosmos {
     }
   }
 
+}
+
+object Cosmos {
+
   def main(args: Array[String]): Unit = {
-    val _ = Await.ready(Http.serve(":8080", service))
+    val adminRouter = Http.newService(s"${Config.DcosHost}:80")
+    val cosmos = new Cosmos(PackageCache.empty, new MarathonPackageRunner(adminRouter))
+    val _ = Await.ready(Http.serve(":8080", cosmos.service))
   }
 
 }
