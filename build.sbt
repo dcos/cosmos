@@ -7,10 +7,14 @@ version := "0.1-SNAPSHOT"
 scalaVersion := "2.11.7"
 
 val finchVersion = "0.9.2"
+val circeVersion = "0.2.1"
 
 libraryDependencies ++= Seq(
   "com.github.finagle" %% "finch-core" % finchVersion,
   "com.github.finagle" %% "finch-circe" % finchVersion,
+  "io.circe" %% "circe-core" % circeVersion,
+  "io.circe" %% "circe-generic" % circeVersion,
+  "io.circe" %% "circe-parse" % circeVersion,
   "com.github.finagle" %% "finch-test" % finchVersion % "test",
   "org.scalatest" %% "scalatest" % "2.2.4" % "test"
 )
