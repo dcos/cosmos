@@ -41,3 +41,5 @@ scalacOptions ++= Seq(
 
 scalacOptions in (Compile, console) ~= (_ filterNot (_ == "-Ywarn-unused-import"))
 scalacOptions in (Test, console) ~= (_ filterNot (_ == "-Ywarn-unused-import"))
+
+mainClass in assembly := Some("com.mesosphere.cosmos.Cosmos")
