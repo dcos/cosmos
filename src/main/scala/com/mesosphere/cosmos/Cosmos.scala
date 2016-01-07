@@ -1,6 +1,8 @@
 package com.mesosphere.cosmos
 
 import java.io.{BufferedInputStream, ByteArrayInputStream, FileInputStream, InputStream}
+import java.net.URI
+import java.nio.file.Paths
 import java.util.zip.ZipInputStream
 
 import com.twitter.finagle.http.exp.Multipart.{FileUpload, InMemoryFileUpload, OnDiskFileUpload}
@@ -85,9 +87,15 @@ private final class Cosmos(packageCache: PackageCache, packageRunner: PackageRun
 object Cosmos {
 
   def main(args: Array[String]): Unit = {
+    val universeBundle = new URI(Config.UniverseBundleUri)
+    val universeDir = Paths.get(Config.UniverseCacheDir)
+    val packageCache = UniversePackageCache(universeBundle, universeDir)()
+
     val adminRouter = Http.newService(s"${Config.DcosHost}:80")
-    val cosmos = new Cosmos(PackageCache.empty, new MarathonPackageRunner(adminRouter))
-    val _ = Await.ready(Http.serve(":8080", cosmos.service))
+    val packageRunner = new MarathonPackageRunner(adminRouter)
+
+    val cosmos = new Cosmos(packageCache, packageRunner)
+    val _ = Await.result(Http.serve(":8080", cosmos.service))
   }
 
 }
