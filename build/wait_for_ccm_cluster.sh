@@ -23,11 +23,18 @@ while (("$seconds_until_timeout" >= "0")); do
 
     if (("$STATUS" == "0")); then
         break
+    elif (("$STATUS" == "7")); then
+       # CCM says cluster creation failed
+       exit 7
     fi
 
     sleep "$poll_period"
     let "seconds_until_timeout -= $poll_period"
 done
+
+if (("$seconds_until_timeout" <= "0")); then
+    exit 2
+fi
 
 # Get Adminrouter IP address
 CLUSTER_INFO=$(
