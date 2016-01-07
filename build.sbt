@@ -15,6 +15,7 @@ libraryDependencies ++= Seq(
   "io.circe" %% "circe-core" % circeVersion,
   "io.circe" %% "circe-generic" % circeVersion,
   "io.circe" %% "circe-parse" % circeVersion,
+  "com.github.spullara.mustache.java" % "compiler" % "0.9.1",
   "com.github.finagle" %% "finch-test" % finchVersion % "test",
   "org.scalatest" %% "scalatest" % "2.2.4" % "test"
 )

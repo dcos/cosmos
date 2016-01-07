@@ -38,7 +38,7 @@ private final class Cosmos(packageCache: PackageCache, packageRunner: PackageRun
     import io.finch.circe._
 
     post("v1" / "package" / "install" ? body.as[InstallRequest]) { (reqBody: InstallRequest) =>
-      packageCache.get(reqBody.name) match {
+      packageCache.get(reqBody.name)() match {
         case Some(marathonJson) => packageRunner.launch(marathonJson)
         case _ => Future.value(NotFound(new Exception(s"Package [${reqBody.name}] not found")))
       }

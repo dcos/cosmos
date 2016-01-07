@@ -1,5 +1,8 @@
 package com.mesosphere.cosmos
 
+import java.io.File
+import java.net.URI
+import java.nio.file.Files
 import java.util.UUID
 
 import cats.data.Xor.Right
@@ -8,7 +11,7 @@ import cats.syntax.traverse._
 import com.twitter.finagle.http._
 import com.twitter.finagle.{Http, Service}
 import com.twitter.io.Buf
-import com.twitter.util.{Await, Future, TimeoutException}
+import com.twitter.util._
 import io.circe.generic.auto._
 import io.circe.parse._
 import io.circe.syntax._
@@ -147,6 +150,24 @@ final class PackageInstallSpec extends FreeSpec with CosmosSpec {
         }
       }
 
+    }
+
+    "can successfully install the helloworld package from Universe" in {
+      val universeUri = new URI("https://github.com/mesosphere/universe/archive/cli-test-3.zip")
+      val universeDir = Files.createTempDirectory("cosmos")
+      val universeCache = UniversePackageCache(universeUri, universeDir)()
+
+      runService(packageCache = universeCache) { apiClient =>
+        apiClient.installPackageAndAssert(
+          "helloworld",
+          Status.Ok,
+          contentString = "",
+          preInstallState = NotInstalled,
+          postInstallState = Installed
+        )
+
+        // TODO Confirm that the correct config was sent to Marathon
+      }
     }
 
   }
