@@ -1,6 +1,6 @@
 package com.mesosphere.cosmos
 
-import com.twitter.util.Try
+import com.twitter.util.Future
 
 /** A package cache that stores all package information in memory. Useful for testing.
   *
@@ -8,6 +8,6 @@ import com.twitter.util.Try
   */
 final case class MemoryPackageCache(packages: Map[String, String]) extends PackageCache {
 
-  def get(packageName: String): Try[Option[String]] = Try(packages.get(packageName))
+  def get(packageName: String): Future[Option[String]] = Future.value(packages.get(packageName))
 
 }

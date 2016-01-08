@@ -1,34 +1,29 @@
 package com.mesosphere.cosmos
 
-import java.io.{StringReader, StringWriter, File}
+import java.io._
 import java.net.URI
-import java.nio.file.{Paths, Files, Path}
+import java.nio.file._
 import java.util.zip.ZipInputStream
 
 import com.github.mustachejava.DefaultMustacheFactory
-import com.twitter.finagle.Http
 import com.twitter.io.Charsets
-import com.twitter.util.Try
-import io.circe._
-import io.circe.parse.{parse => parseJson}
-import cats.data.Xor.Right
-import cats.std.list._
+import com.twitter.util.Future
+import io.circe.parse.parse
+import io.circe.{Json, JsonObject}
 
 import scala.collection.JavaConverters._
 
-/** Retrieves packages from the Universe GitHub repo and caches them in the local filesystem. */
+/** Stores packages from the Universe GitHub repository in the local filesystem.
+  *
+  * @param repoPackagesDir the local cache of the repository's `repo/packages` directory
+  */
 final class UniversePackageCache private(repoPackagesDir: Path) extends PackageCache {
 
   import UniversePackageCache._
 
-  override def get(packageName: String): Try[Option[String]] = {
-    Try {
-      val packageDir = getLatestPackageVersion(packageName, repoPackagesDir)
-      val templateFile = readPackageFile(packageDir, "marathon.json.mustache")
-      val configJson = readPackageFile(packageDir, "config.json")
-      val marathonJson = renderConfig(templateFile, configJson)
-      Some(marathonJson)
-    }
+  override def get(packageName: String): Future[Option[String]] = {
+    getLatestPackageVersion(packageName, repoPackagesDir)
+      .flatMapOption(renderTemplate)
   }
 
 }
@@ -37,105 +32,123 @@ object UniversePackageCache {
 
   val MustacheFactory = new DefaultMustacheFactory()
 
-  def apply(universeBundle: URI, universeDir: Path): Try[UniversePackageCache] = {
-    Try {
-      val bundleStream = universeBundle.toURL.openStream()
-      val zipStream = new ZipInputStream(bundleStream)
-
-      val rootDir = try {
-        extractBundle(zipStream, universeDir)
-      } finally {
-        zipStream.close()
+  /** Create a new package cache.
+    *
+    * @param universeBundle the location of the package bundle to cache; must be an HTTP URL
+    * @param universeDir the directory to cache the bundle files in; assumed to be empty
+    * @return The new cache, or an error.
+    */
+  def apply(universeBundle: URI, universeDir: Path): Future[UniversePackageCache] = {
+    Future(new ZipInputStream(universeBundle.toURL.openStream()))
+      .flatMap { bundleStream =>
+        extractBundle(bundleStream, universeDir)
+          .ensure(bundleStream.close())
       }
+      .map { _ =>
+        val rootDir = Files.list(universeDir).findFirst().get()
+        new UniversePackageCache(rootDir.resolve(Paths.get("repo", "packages")))
+      }
+  }
 
-      new UniversePackageCache(rootDir.resolve(Paths.get("repo", "packages")))
+  private[this] def extractBundle(bundle: ZipInputStream, cacheDir: Path): Future[Unit] = {
+    val entries = Iterator.continually(Option(bundle.getNextEntry()))
+      .takeWhile(_.isDefined)
+      .flatten
+
+    Future {
+      entries.foreach { entry =>
+        val cachePath = cacheDir.resolve(entry.getName)
+        if (entry.isDirectory) {
+          Files.createDirectory(cachePath)
+        } else {
+          Files.copy(bundle, cachePath)
+        }
+      }
     }
   }
 
-  private[this] def extractBundle(bundle: ZipInputStream, universeDir: Path): Path = {
-    var rootDir: Option[Path] = None
-
-    while (true) {
-      Option(bundle.getNextEntry()) match {
-        case Some(entry) =>
-          try {
-            val entryPath = universeDir.resolve(entry.getName)
-            if (entry.isDirectory) {
-              Files.createDirectory(entryPath)
-
-              if (rootDir.isEmpty) {
-                rootDir = Some(entryPath)
-              }
-            } else {
-              Files.copy(bundle, entryPath)
-            }
-          } finally {
-            bundle.closeEntry()
-          }
-        case _ =>
-          return rootDir.getOrElse(throw new IllegalStateException("No root directory in bundle"))
-      }
-    }
-
-    throw new AssertionError("Unreachable")
-  }
-
-  private def getLatestPackageVersion(packageName: String, repository: Path): Path = {
+  private def getLatestPackageVersion(
+    packageName: String,
+    repository: Path
+  ): Future[Option[Path]] = {
     val packagePath = Paths.get(packageName.charAt(0).toUpper.toString, packageName)
     val versionsDir = repository.resolve(packagePath)
-    val dirEntries = Files.newDirectoryStream(versionsDir)
 
-    try {
-      dirEntries
-        .iterator()
-        .asScala
-        .maxBy(_.getFileName.toString.toInt)
-    } finally {
-      dirEntries.close()
-    }
+    Future(Some(Files.newDirectoryStream(versionsDir)))
+      .handle {
+        case _: NoSuchFileException => None
+      }
+      .flatMapOption { (dirEntries: DirectoryStream[Path]) =>
+        Future {
+          dirEntries
+            .iterator()
+            .asScala
+            .maxBy(_.getFileName.toString.toInt)
+        }.ensure(dirEntries.close())
+      }
   }
 
-  private def readPackageFile(packageDir: Path, fileName: String): String = {
-    new String(Files.readAllBytes(packageDir.resolve(fileName)), Charsets.Utf8)
+  private def renderTemplate(packageDir: Path): Future[String] = {
+    val templateFileName = "marathon.json.mustache"
+    val templatePath = packageDir.resolve(templateFileName)
+    val mustacheFut = Future(Files.newBufferedReader(templatePath))
+      .map(MustacheFactory.compile(_, templateFileName))
+
+    val configPath = packageDir.resolve("config.json")
+    val scopeFut = Future(Files.readAllBytes(configPath))
+      .map(new String(_, Charsets.Utf8))
+      .map(extractValuesForTemplate)
+
+    Future.join(mustacheFut, scopeFut)
+      .map { case (mustache, scope) =>
+        val output = new StringWriter()
+        mustache.execute(output, scope)
+        output.toString
+      }
   }
 
-  def renderConfig(template: String, configJson: String): String = {
-    val output = new StringWriter()
-    val templateReader = new StringReader(template)
-    val mustache = MustacheFactory.compile(templateReader, "marathon.json.mustache")
+  private def extractValuesForTemplate(configJson: String): Any = {
+    val topProperties = parse(configJson)
+      .getOrElse(Json.empty)
+      .cursor
+      .downField("properties")
+      .map(_.focus)
+      .getOrElse(Json.empty)
 
-    val parsedConfig = parseJson(configJson)
-    val configMap = parsedConfig.getOrElse(Json.empty).as[Map[String, Json]].getOrElse(Map.empty)
-    val propertiesMap = configMap.getOrElse("properties", Json.empty)
-    val defaultsJson = extractDefaults(propertiesMap)
-    val defaultsMap = defaultsJson.as[Map[String, Json]].getOrElse(Map.empty).mapValues(jsonToScala)
-
-    mustache.execute(output, defaultsMap.asJava)
-    output.toString
+    filterDefaults(topProperties)
+      .as[Map[String, Json]]
+      .getOrElse(Map.empty)
+      .mapValues(jsonToJava)
+      .asJava
   }
 
-  def extractDefaults(properties: Json): Json = {
-    properties.mapObject { propertiesObject =>
-      val extractedMap = propertiesObject.toMap.flatMap { case (propertyName, propertyJson) =>
-          propertyJson.asObject.flatMap { propertyObject =>
+  private def filterDefaults(properties: Json): Json = {
+    val defaults = properties
+      .asObject
+      .getOrElse(JsonObject.empty)
+      .toMap
+      .flatMap { case (propertyName, propertyJson) =>
+        propertyJson
+          .asObject
+          .flatMap { propertyObject =>
             propertyObject("default").orElse {
-              propertyObject("properties").map(extractDefaults)
+              propertyObject("properties").map(filterDefaults)
             }
           }
           .map(propertyName -> _)
       }
-      JsonObject.from(extractedMap.toList)
-    }
+
+    Json.fromJsonObject(JsonObject.fromMap(defaults))
   }
 
-  def jsonToScala(json: Json): Any = {
+  private def jsonToJava(json: Json): Any = {
     json.fold(
       jsonNull = null,
       jsonBoolean = identity,
-      jsonNumber = _.toDouble,
+      jsonNumber = n => n.toInt.getOrElse(n.toDouble),
       jsonString = identity,
-      jsonArray = _.map(jsonToScala),
-      jsonObject = _.toMap.mapValues(jsonToScala)
+      jsonArray = _.map(jsonToJava).asJava,
+      jsonObject = _.toMap.mapValues(jsonToJava).asJava
     )
   }
 
