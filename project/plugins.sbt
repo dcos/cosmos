@@ -1,1 +1,8 @@
-addSbtPlugin("com.eed3si9n" % "sbt-assembly" % "0.14.1")
+resolvers ++= Seq(
+  "sbt-plugin-releases-repo" at "http://repo.scala-sbt.org/scalasbt/sbt-plugin-releases"
+)
+
+addSbtPlugin("net.virtual-void" % "sbt-dependency-graph" % "0.8.1")
+
+addSbtPlugin("org.scala-sbt.plugins" % "sbt-onejar" % "0.8")
+

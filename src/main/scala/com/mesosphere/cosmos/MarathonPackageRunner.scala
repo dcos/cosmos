@@ -1,20 +1,14 @@
 package com.mesosphere.cosmos
 
-import com.twitter.finagle.Service
-import com.twitter.finagle.http.{Status, Response, Request, RequestBuilder}
-import com.twitter.io.Buf
-import com.twitter.util.{TimeoutException, Future}
+import com.twitter.finagle.http.Status
+import com.twitter.util.{Future, TimeoutException}
 import io.finch._
 
 /** A [[com.mesosphere.cosmos.PackageRunner]] implementation for Marathon. */
-final class MarathonPackageRunner(adminRouter: Service[Request, Response]) extends PackageRunner {
+final class MarathonPackageRunner(adminRouter: AdminRouter) extends PackageRunner {
 
   def launch(renderedConfig: String): Future[Output[String]] = {
-    val request = RequestBuilder()
-      .url(s"http://${Config.DcosHost}/marathon/v2/apps")
-      .buildPost(Buf.Utf8(renderedConfig))
-
-    adminRouter(request)
+    adminRouter.createApp(renderedConfig)
       .map { response =>
         response.status match {
           case Status.Conflict => Conflict(new Exception(s"Package is already installed"))

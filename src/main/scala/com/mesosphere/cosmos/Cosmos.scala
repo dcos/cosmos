@@ -8,6 +8,10 @@ import java.util.zip.ZipInputStream
 import com.twitter.finagle.http.exp.Multipart.{FileUpload, InMemoryFileUpload, OnDiskFileUpload}
 import com.twitter.finagle.http.{Request, Response, Status}
 import com.twitter.finagle.{Http, Service}
+import com.twitter.util.Future
+import io.github.benwhitehead.finch.FinchServer
+
+// Required for auto-parsing case classes from JSON
 import com.twitter.util.{Await, Future, Return, Throw}
 import io.circe.generic.auto._    // Required for auto-parsing case classes from JSON
 import io.finch._
@@ -95,18 +99,20 @@ private final class Cosmos(packageCache: PackageCache, packageRunner: PackageRun
 
 }
 
-object Cosmos {
+object Cosmos extends FinchServer {
+  def service = {
+    val host = dcosHost()
+    logger.info("Connecting to DCOS Cluster at: {}", host.toStringRaw)
 
-  def main(args: Array[String]): Unit = {
-    val universeBundle = new URI(Config.UniverseBundleUri)
-    val universeDir = Paths.get(Config.UniverseCacheDir)
+    val dcosClient = Services.adminRouterClient(dcosHost())
+    val adminRouter = new AdminRouter(dcosHost(), dcosClient)
+
+    val universeBundle = universeBundleUri()
+    val universeDir = universeCacheDir()
     val packageCache = Await.result(UniversePackageCache(universeBundle, universeDir))
 
-    val adminRouter = Http.newService(s"${Config.DcosHost}:80")
-    val packageRunner = new MarathonPackageRunner(adminRouter)
-
-    val cosmos = new Cosmos(packageCache, packageRunner)
-    val _ = Await.result(Http.serve(":8080", cosmos.service))
+    val cosmos = new Cosmos(packageCache, new MarathonPackageRunner(adminRouter))
+    cosmos.service
   }
 
 }

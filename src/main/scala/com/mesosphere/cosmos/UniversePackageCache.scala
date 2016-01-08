@@ -1,11 +1,11 @@
 package com.mesosphere.cosmos
 
 import java.io._
-import java.net.URI
 import java.nio.file._
 import java.util.zip.ZipInputStream
 
 import com.github.mustachejava.DefaultMustacheFactory
+import com.netaporter.uri.Uri
 import com.twitter.io.Charsets
 import com.twitter.util.Future
 import io.circe.parse.parse
@@ -38,8 +38,8 @@ object UniversePackageCache {
     * @param universeDir the directory to cache the bundle files in; assumed to be empty
     * @return The new cache, or an error.
     */
-  def apply(universeBundle: URI, universeDir: Path): Future[UniversePackageCache] = {
-    Future(new ZipInputStream(universeBundle.toURL.openStream()))
+  def apply(universeBundle: Uri, universeDir: Path): Future[UniversePackageCache] = {
+    Future(new ZipInputStream(universeBundle.toURI.toURL.openStream()))
       .flatMap { bundleStream =>
         extractBundle(bundleStream, universeDir)
           .ensure(bundleStream.close())
