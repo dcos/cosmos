@@ -15,6 +15,9 @@ object `package` extends FileUploadPatch {
       }
     }
 
+    def mapOption[B, C](f: B => C)(implicit ev: A => Option[B]): Future[Option[C]] = {
+      fut.map(a => ev(a).map(f))
+    }
   }
 
 }

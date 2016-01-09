@@ -153,20 +153,24 @@ final class PackageInstallSpec extends FreeSpec with CosmosSpec {
 
     }
 
-    "can successfully install the helloworld package from Universe" in {
+    "can successfully install packages from Universe" in {
       val _ = withTempDirectory { universeDir =>
         val universeCache = Await.result(UniversePackageCache(UniverseUri, universeDir))
 
         runService(packageCache = universeCache) { apiClient =>
-          apiClient.installPackageAndAssert(
-            "helloworld",
-            Status.Ok,
-            contentString = "",
-            preInstallState = NotInstalled,
-            postInstallState = Installed
-          )
-
-          // TODO Confirm that the correct config was sent to Marathon - see issue #38
+          forAll (UniversePackagesTable) { (packageName, appId, uriSet) =>
+            apiClient.installPackageAndAssert(
+              packageName,
+              Status.Ok,
+              contentString = "",
+              preInstallState = NotInstalled,
+              postInstallState = Installed,
+              appIdOpt = Some(appId)
+            )
+            // TODO Confirm that the correct config was sent to Marathon - see issue #38
+            val uris = getPackageUris(appId)
+            typedAssertResult(uriSet)(uris)
+          }
         }
       }
     }
@@ -206,6 +210,27 @@ private object PackageInstallSpec extends CosmosSpec {
     PackageTableRows: _*
   )
 
+  private val UniversePackagesTable = Table(
+    ("package name", "app id", "URI list"),
+    ("helloworld", "helloworld", Set.empty[String]),
+    ("cassandra", "cassandra/dcos",
+      Set("https://downloads.mesosphere.io/cassandra-mesos/artifacts/0.2.0-1/cassandra-mesos-0.2.0-1.tar.gz",
+          "https://downloads.mesosphere.io/java/jre-7u76-linux-x64.tar.gz"))
+  )
+
+  private def getPackageUris(appId: String): Set[String] = {
+    val request = RequestBuilder()
+      .url(s"http://${Config.DcosHost}/marathon/v2/apps/$appId")
+      .buildGet()
+    val response = Await.result(MarathonClient(request))
+    val Right(parsed) = parse(response.contentString)
+    parsed.cursor
+      .downField("app")
+      .flatMap(_.downField("uris"))
+      .flatMap(_.as[Set[String]].toOption)
+      .getOrElse(Set())
+  }
+
   private lazy val PackageMap: Map[String, String] = PackageTableRows.toMap.mapValues(_.noSpaces)
 
   private def packageTableRow(
@@ -239,12 +264,13 @@ private object PackageInstallSpec extends CosmosSpec {
     typedAssertResult(expectedLabel)(actualLabel)
   }
 
+  private val MarathonClient = Http.newService(s"${Config.DcosHost}:80")
+
   private def getMarathonJsonTestLabel(packageName: String): Option[String] = {
-    val marathonClient = Http.newService(s"${Config.DcosHost}:80")
     val request = RequestBuilder()
       .url(s"http://${Config.DcosHost}/marathon/v2/apps/$packageName")
       .buildGet()
-    val response = Await.result(marathonClient(request))
+    val response = Await.result(MarathonClient(request))
     val Right(parsed) = parse(response.contentString)
     parsed.cursor.downField("app").flatMap(extractTestLabel)
   }
@@ -293,9 +319,12 @@ private final class ApiTestAssertionDecorator(apiClient: Service[Request, Respon
     status: Status,
     contentString: String,
     preInstallState: PreInstallState,
-    postInstallState: PostInstallState
+    postInstallState: PostInstallState,
+    appIdOpt: Option[String] = None
   ): Unit = {
-    val packageWasInstalled = isPackageInstalled(packageName)
+
+    val appId = appIdOpt.getOrElse(packageName)
+    val packageWasInstalled = isAppInstalled(appId)
     preInstallState match {
       case AlreadyInstalled => typedAssertResult(true)(packageWasInstalled)
       case NotInstalled => typedAssertResult(false)(packageWasInstalled)
@@ -310,12 +339,12 @@ private final class ApiTestAssertionDecorator(apiClient: Service[Request, Respon
       case Installed => true
       case Unchanged => packageWasInstalled
     }
-    val actuallyInstalled = isPackageInstalled(packageName)
+    val actuallyInstalled = isAppInstalled(appId)
     typedAssertResult(expectedInstalled)(actuallyInstalled)
   }
 
-  private[this] def isPackageInstalled(packageName: String): Boolean = {
-    listMarathonAppIds().contains(s"/$packageName")
+  private[this] def isAppInstalled(appId: String): Boolean = {
+    listMarathonAppIds().contains(s"/$appId")
   }
 
   private[this] def listMarathonAppIds(): Seq[String] = {

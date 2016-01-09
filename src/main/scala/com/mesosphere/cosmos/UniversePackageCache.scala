@@ -95,19 +95,44 @@ object UniversePackageCache {
       .map(MustacheFactory.compile(_, templateFileName))
 
     val configPath = packageDir.resolve("config.json")
-    val scopeFut = Future(Files.readAllBytes(configPath))
-      .map(new String(_, Charsets.Utf8))
-      .map(extractValuesForTemplate)
+    val scopeConfig = readFile(configPath)
+      .mapOption(extractDefaultsFromConfig)
+      .map(_.getOrElse(Map.empty))
 
-    Future.join(mustacheFut, scopeFut)
-      .map { case (mustache, scope) =>
+    val resourcePath = packageDir.resolve("resource.json")
+    val scopeUris = readFile(resourcePath)
+      .mapOption(extractResources)
+      .map(_.getOrElse(Map.empty))
+
+    Future.join(mustacheFut, scopeConfig, scopeUris)
+      .map { case (mustache, config, uris) =>
         val output = new StringWriter()
-        mustache.execute(output, scope)
+        val params = (config ++ uris).mapValues(jsonToJava).asJava
+        mustache.execute(output, params)
         output.toString
       }
   }
 
-  private def extractValuesForTemplate(configJson: String): Any = {
+  private def readFile(path: Path): Future[Option[String]] = {
+    Future(Some(Files.readAllBytes(path)))
+      .handle {
+        case t => None
+      }
+      .mapOption((bytes: Array[Byte]) => new String(bytes, Charsets.Utf8))
+  }
+
+  private def extractResources(resourceJson: String): Map[String, Json] = {
+    val assets = parse(resourceJson)
+      .getOrElse(Json.empty)
+      .cursor
+      .downField("assets")
+      .map(_.focus)
+      .getOrElse(Json.empty)
+
+    Map("resource" -> Json.obj("assets" -> assets))
+  }
+
+  private def extractDefaultsFromConfig(configJson: String): Map[String, Json] = {
     val topProperties = parse(configJson)
       .getOrElse(Json.empty)
       .cursor
@@ -118,8 +143,6 @@ object UniversePackageCache {
     filterDefaults(topProperties)
       .as[Map[String, Json]]
       .getOrElse(Map.empty)
-      .mapValues(jsonToJava)
-      .asJava
   }
 
   private def filterDefaults(properties: Json): Json = {

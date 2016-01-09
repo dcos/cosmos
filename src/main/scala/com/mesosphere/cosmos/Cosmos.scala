@@ -50,7 +50,7 @@ private final class Cosmos(packageCache: PackageCache, packageRunner: PackageRun
           case Return(None) =>
             Future.value(NotFound(new Exception(s"Package [${reqBody.name}] not found")))
           case Throw(t) =>
-            val message = "Unexpected error when loading package"
+            val message = s"Unexpected error when loading package ${t.getMessage}"
             Future.value(InternalServerError(new Exception(message, t)))
         }
     }
