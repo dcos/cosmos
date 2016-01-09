@@ -256,7 +256,7 @@ private object PackageInstallSpec extends CosmosSpec {
       .flatMap(_.as[String].toOption)
   }
 
-  private def withTempDirectory[A](f: Path => A): Try[A] = {
+  private def withTempDirectory[A](f: Path => A): A = {
     val tempDir = Files.createTempDirectory("cosmos")
     Try(f(tempDir)).ensure {
       val visitor = new SimpleFileVisitor[Path] {
@@ -278,7 +278,7 @@ private object PackageInstallSpec extends CosmosSpec {
       }
 
       val _ = Files.walkFileTree(tempDir, visitor)
-    }
+    }.get()
   }
 
 }
