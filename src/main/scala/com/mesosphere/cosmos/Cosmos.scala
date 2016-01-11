@@ -1,12 +1,14 @@
 package com.mesosphere.cosmos
 
 import java.io.{BufferedInputStream, ByteArrayInputStream, FileInputStream, InputStream}
+import java.net.URI
+import java.nio.file.Paths
 import java.util.zip.ZipInputStream
 
 import com.twitter.finagle.http.exp.Multipart.{FileUpload, InMemoryFileUpload, OnDiskFileUpload}
 import com.twitter.finagle.http.{Request, Response, Status}
 import com.twitter.finagle.{Http, Service}
-import com.twitter.util.{Await, Future, Try}
+import com.twitter.util.{Await, Future, Return, Throw}
 import io.circe.generic.auto._    // Required for auto-parsing case classes from JSON
 import io.finch._
 
@@ -22,8 +24,8 @@ private final class Cosmos(packageCache: PackageCache, packageRunner: PackageRun
 
   val ping: Endpoint[String] = get("ping") { Ok("pong") }
 
-  val packageImport: Endpoint[String] =
-    post("v1" / "package" / "import" ? validFileUpload) { file: FileUpload =>
+  val packageImport: Endpoint[String] = {
+    def respond(file: FileUpload): Output[String] = {
       fileUploadBytes(file).flatMap { fileBytes =>
         if (nonEmptyArchive(fileBytes)) {
           Ok("Import successful!\n")
@@ -33,16 +35,27 @@ private final class Cosmos(packageCache: PackageCache, packageRunner: PackageRun
       }
     }
 
+    post("v1" / "package" / "import" ? validFileUpload)(respond _)
+  }
+
   val packageInstall: Endpoint[String] = {
     // Required for parsing case classes from JSON; interferes with the other endpoints
     import io.finch.circe._
 
-    post("v1" / "package" / "install" ? body.as[InstallRequest]) { (reqBody: InstallRequest) =>
-      packageCache.get(reqBody.name) match {
-        case Some(marathonJson) => packageRunner.launch(marathonJson)
-        case _ => Future.value(NotFound(new Exception(s"Package [${reqBody.name}] not found")))
-      }
+    def respond(reqBody: InstallRequest): Future[Output[String]] = {
+      packageCache
+        .get(reqBody.name)
+        .transform {
+          case Return(Some(marathonJson)) => packageRunner.launch(marathonJson)
+          case Return(None) =>
+            Future.value(NotFound(new Exception(s"Package [${reqBody.name}] not found")))
+          case Throw(t) =>
+            val message = "Unexpected error when loading package"
+            Future.value(InternalServerError(new Exception(message, t)))
+        }
     }
+
+    post("v1" / "package" / "install" ? body.as[InstallRequest])(respond _)
   }
 
   val service: Service[Request, Response] = (ping :+: packageImport :+: packageInstall).toService
@@ -85,9 +98,15 @@ private final class Cosmos(packageCache: PackageCache, packageRunner: PackageRun
 object Cosmos {
 
   def main(args: Array[String]): Unit = {
+    val universeBundle = new URI(Config.UniverseBundleUri)
+    val universeDir = Paths.get(Config.UniverseCacheDir)
+    val packageCache = Await.result(UniversePackageCache(universeBundle, universeDir))
+
     val adminRouter = Http.newService(s"${Config.DcosHost}:80")
-    val cosmos = new Cosmos(PackageCache.empty, new MarathonPackageRunner(adminRouter))
-    val _ = Await.ready(Http.serve(":8080", cosmos.service))
+    val packageRunner = new MarathonPackageRunner(adminRouter)
+
+    val cosmos = new Cosmos(packageCache, packageRunner)
+    val _ = Await.result(Http.serve(":8080", cosmos.service))
   }
 
 }

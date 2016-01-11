@@ -1,5 +1,9 @@
 package com.mesosphere.cosmos
 
+import java.io.{IOException, File}
+import java.net.URI
+import java.nio.file.attribute.BasicFileAttributes
+import java.nio.file.{FileVisitResult, SimpleFileVisitor, Path, Files}
 import java.util.UUID
 
 import cats.data.Xor.Right
@@ -8,7 +12,7 @@ import cats.syntax.traverse._
 import com.twitter.finagle.http._
 import com.twitter.finagle.{Http, Service}
 import com.twitter.io.Buf
-import com.twitter.util.{Await, Future, TimeoutException}
+import com.twitter.util._
 import io.circe.generic.auto._
 import io.circe.parse._
 import io.circe.syntax._
@@ -149,6 +153,24 @@ final class PackageInstallSpec extends FreeSpec with CosmosSpec {
 
     }
 
+    "can successfully install the helloworld package from Universe" in {
+      val _ = withTempDirectory { universeDir =>
+        val universeCache = Await.result(UniversePackageCache(UniverseUri, universeDir))
+
+        runService(packageCache = universeCache) { apiClient =>
+          apiClient.installPackageAndAssert(
+            "helloworld",
+            Status.Ok,
+            contentString = "",
+            preInstallState = NotInstalled,
+            postInstallState = Installed
+          )
+
+          // TODO Confirm that the correct config was sent to Marathon - see issue #38
+        }
+      }
+    }
+
   }
 
   private[this] def runService[A](
@@ -171,6 +193,8 @@ final class PackageInstallSpec extends FreeSpec with CosmosSpec {
 }
 
 private object PackageInstallSpec extends CosmosSpec {
+
+  private val UniverseUri = new URI("https://github.com/mesosphere/universe/archive/cli-test-3.zip")
 
   private val PackageTableRows: Seq[(String, Json)] = Seq(
     packageTableRow("helloworld2", 1, 512, 2),
@@ -230,6 +254,31 @@ private object PackageInstallSpec extends CosmosSpec {
       .downField("labels")
       .flatMap(_.downField("test-id"))
       .flatMap(_.as[String].toOption)
+  }
+
+  private def withTempDirectory[A](f: Path => A): A = {
+    val tempDir = Files.createTempDirectory("cosmos")
+    Try(f(tempDir)).ensure {
+      val visitor = new SimpleFileVisitor[Path] {
+
+        override def visitFile(file: Path, attrs: BasicFileAttributes): FileVisitResult = {
+          Files.delete(file)
+          FileVisitResult.CONTINUE
+        }
+
+        override def postVisitDirectory(dir: Path, e: IOException): FileVisitResult = {
+          Option(e) match {
+            case Some(failure) => throw failure
+            case _ =>
+              Files.delete(dir)
+              FileVisitResult.CONTINUE
+          }
+        }
+
+      }
+
+      val _ = Files.walkFileTree(tempDir, visitor)
+    }.get()
   }
 
 }
