@@ -2,17 +2,19 @@ package com.mesosphere.cosmos
 
 import java.io.IOException
 import java.nio.file.attribute.BasicFileAttributes
-import java.nio.file.{FileVisitResult, SimpleFileVisitor, Path, Files}
-import java.util.UUID
+import java.nio.file.{FileVisitResult, Files, Path, SimpleFileVisitor}
+import java.util.{Base64, UUID}
 
+import cats.data.Xor
 import cats.data.Xor.Right
 import cats.std.list._
 import cats.syntax.traverse._
+import com.mesosphere.cosmos.model.InstallRequest
 import com.netaporter.uri.Uri
 import com.netaporter.uri.dsl._
 import com.twitter.finagle.http._
 import com.twitter.finagle.{Http, Service}
-import com.twitter.io.Buf
+import com.twitter.io.{Buf, Charsets}
 import com.twitter.util._
 import io.circe.generic.auto._
 import io.circe.parse._
@@ -32,7 +34,7 @@ final class PackageInstallSpec extends FreeSpec with CosmosSpec with BeforeAndAf
           apiClient.installPackageAndAssert(
             packageName,
             Status.Ok,
-            contentString = "",
+            content = Json.empty,
             preInstallState = NotInstalled,
             postInstallState = Installed
           )
@@ -51,8 +53,8 @@ final class PackageInstallSpec extends FreeSpec with CosmosSpec with BeforeAndAf
         runService(packageCache = packageCache) { apiClient =>
           apiClient.installPackageAndAssert(
             packageName,
-            Status.NotFound,
-            contentString = s"Package [$packageName] not found",
+            Status.BadRequest,
+            content = errorJson(s"Package [$packageName] not found"),
             preInstallState = Anything,
             postInstallState = Unchanged
           )
@@ -70,7 +72,7 @@ final class PackageInstallSpec extends FreeSpec with CosmosSpec with BeforeAndAf
             apiClient.installPackageAndAssert(
               packageName,
               Status.Conflict,
-              contentString = s"Package is already installed",
+              content = errorJson("Package is already installed"),
               preInstallState = AlreadyInstalled,
               postInstallState = Unchanged
             )
@@ -90,7 +92,7 @@ final class PackageInstallSpec extends FreeSpec with CosmosSpec with BeforeAndAf
               apiClient.installPackageAndAssert(
                 packageName,
                 Status.InternalServerError,
-                contentString = s"Received response status code ${status.code} from Marathon",
+                content = errorJson(s"Received response status code ${status.code} from Marathon"),
                 preInstallState = Anything,
                 postInstallState = Unchanged
               )
@@ -110,7 +112,7 @@ final class PackageInstallSpec extends FreeSpec with CosmosSpec with BeforeAndAf
               apiClient.installPackageAndAssert(
                 packageName,
                 Status.BadGateway,
-                contentString = s"Received response status code ${status.code} from Marathon",
+                content = errorJson(s"Received response status code ${status.code} from Marathon"),
                 preInstallState = Anything,
                 postInstallState = Unchanged
               )
@@ -118,40 +120,6 @@ final class PackageInstallSpec extends FreeSpec with CosmosSpec with BeforeAndAf
           }
         }
       }
-
-      "by timing out" in {
-        val dcosClient = Service.const(Future.exception(new TimeoutException("Request timed out")))
-
-        runService(dcosClient = dcosClient) { apiClient =>
-          forAll (PackageTable) { (packageName, packageJson) =>
-            apiClient.installPackageAndAssert(
-              packageName,
-              Status.BadGateway,
-              contentString = "Marathon request timed out",
-              preInstallState = Anything,
-              postInstallState = Unchanged
-            )
-          }
-        }
-      }
-
-      "with an unknown error" in {
-        val errorMessage = "BOOM!"
-        val dcosClient = Service.const(Future.exception(new Throwable(errorMessage)))
-
-        runService(dcosClient = dcosClient) { apiClient =>
-          forAll (PackageTable) { (packageName, packageJson) =>
-            apiClient.installPackageAndAssert(
-              packageName,
-              Status.BadGateway,
-              contentString = s"Unknown Marathon request error: $errorMessage",
-              preInstallState = Anything,
-              postInstallState = Unchanged
-            )
-          }
-        }
-      }
-
     }
 
     "can successfully install packages from Universe" in {
@@ -159,18 +127,19 @@ final class PackageInstallSpec extends FreeSpec with CosmosSpec with BeforeAndAf
         val universeCache = Await.result(UniversePackageCache(UniverseUri, universeDir))
 
         runService(packageCache = universeCache) { apiClient =>
-          forAll (UniversePackagesTable) { (packageName, appId, uriSet) =>
+          forAll (UniversePackagesTable) { (packageName, appId, uriSet, labelsOpt) =>
             apiClient.installPackageAndAssert(
               packageName,
               Status.Ok,
-              contentString = "",
+              content = Json.empty,
               preInstallState = NotInstalled,
               postInstallState = Installed,
               appIdOpt = Some(appId)
             )
             // TODO Confirm that the correct config was sent to Marathon - see issue #38
-            val uris = Await.result(getPackageUris(appId))
-            typedAssertResult(uriSet)(uris)
+            val packageInfo = Await.result(getPackageInfo(appId))
+            assertResult(uriSet)(packageInfo.uris)
+            labelsOpt.foreach(labels => assertResult(labels)(StandardLabels(packageInfo.labels)))
           }
         }
       }
@@ -225,26 +194,57 @@ private object PackageInstallSpec extends CosmosSpec {
     PackageTableRows: _*
   )
 
-  private val UniversePackagesTable = Table(
-    ("package name", "app id", "URI list"),
-    ("helloworld", "helloworld", Set.empty[String]),
-    ("cassandra", "cassandra/dcos",
-      Set("https://downloads.mesosphere.io/cassandra-mesos/artifacts/0.2.0-1/cassandra-mesos-0.2.0-1.tar.gz",
-          "https://downloads.mesosphere.io/java/jre-7u76-linux-x64.tar.gz"))
+  private val HelloWorldLabels = StandardLabels(
+    Map(
+      "DCOS_PACKAGE_METADATA" ->
+        ("eyJkZXNjcmlwdGlvbiI6ICJFeGFtcGxlIERDT1MgYXBwbGljYXRpb24gcGFja2FnZSIsICJtYWludGFpbmVyIjogIn" +
+        "N1cHBvcnRAbWVzb3NwaGVyZS5pbyIsICJuYW1lIjogImhlbGxvd29ybGQiLCAicG9zdEluc3RhbGxOb3RlcyI6IC" +
+        "JBIHNhbXBsZSBwb3N0LWluc3RhbGxhdGlvbiBtZXNzYWdlIiwgInByZUluc3RhbGxOb3RlcyI6ICJBIHNhbXBsZS" +
+        "BwcmUtaW5zdGFsbGF0aW9uIG1lc3NhZ2UiLCAidGFncyI6IFsibWVzb3NwaGVyZSIsICJleGFtcGxlIiwgInN1Ym" +
+        "NvbW1hbmQiXSwgInZlcnNpb24iOiAiMC4xLjAiLCAid2Vic2l0ZSI6ICJodHRwczovL2dpdGh1Yi5jb20vbWVzb3" +
+        "NwaGVyZS9kY29zLWhlbGxvd29ybGQifQ=="),
+      "DCOS_PACKAGE_COMMAND" ->
+        ("eyJwaXAiOiBbImRjb3M8MS4wIiwgImdpdCtodHRwczovL2dpdGh1Yi5jb20vbWVzb3NwaGVyZS9kY29zLWhlbGxvd2" +
+        "9ybGQuZ2l0I2Rjb3MtaGVsbG93b3JsZD0wLjEuMCJdfQ=="),
+      "DCOS_PACKAGE_REGISTRY_VERSION" -> "2.0.0-rc1",
+      "DCOS_PACKAGE_NAME" -> "helloworld",
+      "DCOS_PACKAGE_VERSION" -> "0.1.0",
+      "DCOS_PACKAGE_SOURCE" -> "https://github.com/mesosphere/universe/archive/cli-test-3.zip",
+      "DCOS_PACKAGE_RELEASE" -> "0"
+    )
   )
 
-  private def getPackageUris(appId: String): Future[Set[String]] = {
+  private val CassandraUris = Set(
+    "https://downloads.mesosphere.io/cassandra-mesos/artifacts/0.2.0-1/cassandra-mesos-0.2.0-1.tar.gz",
+    "https://downloads.mesosphere.io/java/jre-7u76-linux-x64.tar.gz"
+  )
+
+  private val UniversePackagesTable = Table(
+    ("package name", "app id", "URI list", "Labels"),
+    ("helloworld", "helloworld", Set.empty[String], Some(HelloWorldLabels)),
+    ("cassandra", "cassandra/dcos", CassandraUris, None)
+  )
+
+  private def getPackageInfo(appId: String): Future[PackageInfo] = {
     adminRouter.getApp(appId) map { response =>
       val Right(parsed) = parse(response.contentString)
-      parsed.cursor
-        .downField("app")
+      val baseCursor = parsed.cursor.downField("app")
+
+      val uris = baseCursor
         .flatMap(_.downField("uris"))
         .flatMap(_.as[Set[String]].toOption)
         .getOrElse(Set())
+
+      val labels = baseCursor
+        .flatMap(_.downField("labels"))
+        .flatMap(_.as[Map[String, String]].toOption)
+        .getOrElse(Map.empty)
+
+      PackageInfo(uris, labels)
     }
   }
 
-  private lazy val PackageMap: Map[String, String] = PackageTableRows.toMap.mapValues(_.noSpaces)
+  private lazy val PackageMap: Map[String, Json] = PackageTableRows.toMap
 
   private def packageTableRow(
     name: String, cpus: Double, mem: Int, pythonVersion: Int
@@ -271,10 +271,14 @@ private object PackageInstallSpec extends CosmosSpec {
     )
   }
 
+  private def errorJson(message: String): Json = {
+    Map("errors" -> Seq(Map("message" -> message))).asJson
+  }
+
   private def assertPackageInstalledFromCache(packageName: String, packageJson: Json): Unit = {
     val expectedLabel = extractTestLabel(packageJson.cursor)
     val actualLabel = Await.result(getMarathonJsonTestLabel(packageName))
-    typedAssertResult(expectedLabel)(actualLabel)
+    assertResult(expectedLabel)(actualLabel)
   }
 
   private def getMarathonJsonTestLabel(packageName: String): Future[Option[String]] = {
@@ -327,7 +331,7 @@ private final class ApiTestAssertionDecorator(apiClient: Service[Request, Respon
   private[cosmos] def installPackageAndAssert(
     packageName: String,
     status: Status,
-    contentString: String,
+    content: Json,
     preInstallState: PreInstallState,
     postInstallState: PostInstallState,
     appIdOpt: Option[String] = None
@@ -336,21 +340,21 @@ private final class ApiTestAssertionDecorator(apiClient: Service[Request, Respon
     val appId = appIdOpt.getOrElse(packageName)
     val packageWasInstalled = isAppInstalled(appId)
     preInstallState match {
-      case AlreadyInstalled => typedAssertResult(true)(packageWasInstalled)
-      case NotInstalled => typedAssertResult(false)(packageWasInstalled)
+      case AlreadyInstalled => assertResult(true)(packageWasInstalled)
+      case NotInstalled => assertResult(false)(packageWasInstalled)
       case Anything => // Don't care
     }
 
     val response = installPackage(apiClient, packageName)
-    typedAssertResult(status)(response.status)
-    typedAssertResult(contentString)(response.contentString)
+    assertResult(status)(response.status)
+    assertResult(Xor.Right(content))(parse(response.contentString))
 
     val expectedInstalled = postInstallState match {
       case Installed => true
       case Unchanged => packageWasInstalled
     }
     val actuallyInstalled = isAppInstalled(appId)
-    typedAssertResult(expectedInstalled)(actuallyInstalled)
+    assertResult(expectedInstalled)(actuallyInstalled)
   }
 
   private[this] def isAppInstalled(appId: String): Boolean = {
@@ -390,3 +394,37 @@ private case object Anything extends PreInstallState
 private sealed trait PostInstallState
 private case object Installed extends PostInstallState
 private case object Unchanged extends PostInstallState
+
+case class PackageInfo(uris: Set[String], labels: Map[String, String])
+
+case class StandardLabels(
+  packageMetadata: Json,
+  packageCommand: Json,
+  packageRegistryVersion: String,
+  packageName: String,
+  packageVersion: String,
+  packageSource: String,
+  packageRelease: String
+)
+
+object StandardLabels {
+
+  def apply(labels: Map[String, String]): StandardLabels = {
+    StandardLabels(
+      packageMetadata = decodeAndParse(labels("DCOS_PACKAGE_METADATA")),
+      packageCommand = decodeAndParse(labels("DCOS_PACKAGE_COMMAND")),
+      packageRegistryVersion = labels("DCOS_PACKAGE_REGISTRY_VERSION"),
+      packageName = labels("DCOS_PACKAGE_NAME"),
+      packageVersion = labels("DCOS_PACKAGE_VERSION"),
+      packageSource = labels("DCOS_PACKAGE_SOURCE"),
+      packageRelease = labels("DCOS_PACKAGE_RELEASE")
+    )
+  }
+
+  private[this] def decodeAndParse(encoded: String): Json = {
+    val decoded = new String(Base64.getDecoder.decode(encoded), Charsets.Utf8)
+    val Right(parsed) = parse(decoded)
+    parsed
+  }
+
+}

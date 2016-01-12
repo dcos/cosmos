@@ -4,9 +4,11 @@ import java.io.ByteArrayOutputStream
 import java.nio.file.{Files, Paths}
 import java.util.zip.{ZipEntry, ZipOutputStream}
 
+import cats.data.Xor
 import com.twitter.finagle.http.{FileElement, Method, Request, Status}
 import com.twitter.io.Buf
-import org.scalatest.prop.TableDrivenPropertyChecks
+import io.circe.parse.parse
+import io.circe.syntax._
 
 final class LocalUniverseSpec extends IntegrationSpec {
 
@@ -15,8 +17,8 @@ final class LocalUniverseSpec extends IntegrationSpec {
   "ping endpoint" should "respond" in { service =>
     val request = Request(Method.Get, "/ping")
     val response = service(request)
-    typedAssertResult(Status.Ok)(response.status)
-    typedAssertResult("pong")(response.contentString)
+    assertResult(Status.Ok)(response.status)
+    assertSuccessJson("pong")(response.contentString)
   }
 
   "import endpoint" should "accept a Zip file" in { service =>
@@ -33,15 +35,15 @@ final class LocalUniverseSpec extends IntegrationSpec {
         .buildFormPost(multipart = true)
 
       val response = service(request)
-      typedAssertResult(Status.Ok)(response.status)
-      typedAssertResult("Import successful!\n")(response.contentString)
+      assertResult(Status.Ok)(response.status)
+      assertSuccessJson("Import successful!")(response.contentString)
     }
   }
 
   it should "not allow GET requests" in { service =>
     val request = Request(Method.Get, s"/$ImportEndpoint")
     val response = service(request)
-    typedAssertResult(Status.NotFound)(response.status)
+    assertResult(Status.NotFound)(response.status)
   }
 
   it should "only accept multipart requests" in { service =>
@@ -49,7 +51,7 @@ final class LocalUniverseSpec extends IntegrationSpec {
       .buildPost(HelloWorldZip)
 
     val response = service(request)
-    typedAssertResult(Status.BadRequest)(response.status)
+    assertResult(Status.BadRequest)(response.status)
   }
 
   it should "require a form-data field named 'file' be present" in { service =>
@@ -58,7 +60,7 @@ final class LocalUniverseSpec extends IntegrationSpec {
       .buildFormPost(multipart = true)
 
     val response = service(request)
-    typedAssertResult(Status.BadRequest)(response.status)
+    assertResult(Status.BadRequest)(response.status)
   }
 
   it should "require the 'file' field to have an application/zip Content-type" in { service =>
@@ -67,7 +69,7 @@ final class LocalUniverseSpec extends IntegrationSpec {
       .buildFormPost(multipart = true)
 
     val response = service(request)
-    typedAssertResult(Status.BadRequest)(response.status)
+    assertResult(Status.BadRequest)(response.status)
   }
 
   it should "require an uploaded filename matching <package>-<version>-<digest>.zip" in { service =>
@@ -83,7 +85,7 @@ final class LocalUniverseSpec extends IntegrationSpec {
         .buildFormPost(multipart = true)
 
       val response = service(request)
-      typedAssertResult(Status.BadRequest)(response.status)
+      assertResult(Status.BadRequest)(response.status)
     }
   }
 
@@ -101,13 +103,13 @@ final class LocalUniverseSpec extends IntegrationSpec {
         .buildFormPost(multipart = true)
 
       val response = service(request)
-      typedAssertResult(Status.BadRequest)(response.status)
+      assertResult(Status.BadRequest)(response.status)
     }
   }
 
 }
 
-object LocalUniverseSpec extends TableDrivenPropertyChecks {
+object LocalUniverseSpec extends IntegrationSpec {
 
   val ImportEndpoint = "v1/package/import"
 
@@ -178,5 +180,9 @@ object LocalUniverseSpec extends TableDrivenPropertyChecks {
     Some("-x-.zip"),
     Some("--x.zip")
   )
+
+  private def assertSuccessJson(expectedMessage: String)(actualContent: String): Unit = {
+    assertResult(Xor.Right(Map("message" -> expectedMessage).asJson))(parse(actualContent))
+  }
 
 }

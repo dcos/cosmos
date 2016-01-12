@@ -6,6 +6,7 @@ import com.twitter.finagle.Service
 import com.twitter.finagle.http._
 import com.twitter.io.Buf
 import com.twitter.util.Future
+import io.circe.Json
 
 class AdminRouter(adminRouterUri: Uri, client: Service[Request, Response]) {
   private val baseUri = {
@@ -23,12 +24,12 @@ class AdminRouter(adminRouterUri: Uri, client: Service[Request, Response]) {
       .buildGet
   }
 
-  private[this] def post(uri: Uri, jsonBody: String /*TODO: circe encoder*/): Request = {
+  private[this] def post(uri: Uri, jsonBody: Json): Request = {
     RequestBuilder()
       .url(s"$baseUri${uri.toString}")
       .setHeader("Accept", "application/json;charset=utf-8")
       .setHeader("Content-Type", "application/json;charset=utf-8")
-      .buildPost(Buf.Utf8(jsonBody))
+      .buildPost(Buf.Utf8(jsonBody.noSpaces))
   }
 
   private[this] def delete(uri: Uri): Request = {
@@ -38,7 +39,7 @@ class AdminRouter(adminRouterUri: Uri, client: Service[Request, Response]) {
       .buildDelete()
   }
 
-  def createApp(appJson: String/*TODO: Actual Type*/): Future[Response] = {
+  def createApp(appJson: Json): Future[Response] = {
     client(post("marathon" / "v2" / "apps" , appJson))
   }
 
