@@ -1,14 +1,9 @@
 package com.mesosphere.cosmos
 
-import java.io.IOException
-import java.nio.file.attribute.BasicFileAttributes
-import java.nio.file.{FileVisitResult, Files, Path, SimpleFileVisitor}
 import java.util.{Base64, UUID}
 
 import cats.data.Xor
 import cats.data.Xor.Right
-import cats.std.list._
-import cats.syntax.traverse._
 import com.mesosphere.cosmos.model.{InstallRequest, PackageDefinition, PackageFiles, Resource}
 import com.netaporter.uri.Uri
 import com.netaporter.uri.dsl._
@@ -20,7 +15,7 @@ import io.circe.generic.auto._
 import io.circe.parse._
 import io.circe.syntax._
 import org.scalatest.{BeforeAndAfterAll, FreeSpec}
-import io.circe.{Cursor, Json, JsonObject}
+import io.circe.{Cursor, Json}
 
 final class PackageInstallSpec extends FreeSpec with BeforeAndAfterAll with CosmosSpec {
 
@@ -159,8 +154,8 @@ final class PackageInstallSpec extends FreeSpec with BeforeAndAfterAll with Cosm
               expectedAppIdOpt = Some(appId)
             )
             // TODO Confirm that the correct config was sent to Marathon - see issue #38
-            val packageInfo = Await.result(getPackageInfo(appId))
-            assertResult(uriSet)(packageInfo.uris)
+            val Right(packageInfo) = Await.result(getPackageInfo(appId))
+            assertResult(uriSet)(packageInfo.uris.toSet)
             labelsOpt.foreach(labels => assertResult(labels)(StandardLabels(packageInfo.labels)))
           }
         }
@@ -206,7 +201,7 @@ final class PackageInstallSpec extends FreeSpec with BeforeAndAfterAll with Cosm
     f: ApiTestAssertionDecorator => Unit
   ): Unit = {
     val adminRouter = new AdminRouter(dcosHost(), dcosClient)
-    val service = new Cosmos(packageCache, new MarathonPackageRunner(adminRouter)).service
+    val service = new Cosmos(packageCache, new MarathonPackageRunner(adminRouter), new UninstallHandler(adminRouter)).service
     val server = Http.serve(s":$servicePort", service)
     val client = Http.newService(s"127.0.0.1:$servicePort")
 
@@ -270,23 +265,13 @@ private object PackageInstallSpec extends CosmosSpec {
     ("cassandra", "foobar")
   )
 
-  private def getPackageInfo(appId: String): Future[PackageInfo] = {
-    adminRouter.getApp(appId) map { response =>
-      val Right(parsed) = parse(response.contentString)
-      val baseCursor = parsed.cursor.downField("app")
-
-      val uris = baseCursor
-        .flatMap(_.downField("uris"))
-        .flatMap(_.as[Set[String]].toOption)
-        .getOrElse(Set())
-
-      val labels = baseCursor
-        .flatMap(_.downField("labels"))
-        .flatMap(_.as[Map[String, String]].toOption)
-        .getOrElse(Map.empty)
-
-      PackageInfo(uris, labels)
-    }
+  private def getPackageInfo(appId: String): Future[CosmosResult[PackageInfo]] = {
+    adminRouter.getApp(appId)
+      .map {
+        _.map { appResp =>
+          PackageInfo(appResp.app.uris, appResp.app.labels)
+        }
+      }
   }
 
   private lazy val PackageMap: Map[String, PackageFiles] = PackageTableRows.toMap
@@ -352,15 +337,13 @@ private object PackageInstallSpec extends CosmosSpec {
   ): Unit = {
     val Right(marathonJson) = parse(packageFiles.marathonJsonMustache)
     val expectedLabel = extractTestLabel(marathonJson.cursor)
-    val actualLabel = Await.result(getMarathonJsonTestLabel(packageName))
+    val Right(actualLabel) = Await.result(getMarathonJsonTestLabel(packageName))
     assertResult(expectedLabel)(actualLabel)
   }
 
-  private def getMarathonJsonTestLabel(packageName: String): Future[Option[String]] = {
-    adminRouter.getApp(Uri.parse(packageName)) map { case response =>
-      val Right(parsed) = parse(response.contentString)
-      val option = parsed.cursor.downField("app").flatMap(extractTestLabel)
-      option
+  private def getMarathonJsonTestLabel(packageName: String): Future[CosmosResult[Option[String]]] = {
+    adminRouter.getApp(Uri.parse(packageName)) map {
+      _.map(_.app.labels.get("test-id"))
     }
   }
 
@@ -420,15 +403,15 @@ private final class ApiTestAssertionDecorator(apiClient: Service[Request, Respon
   }
 
   private[this] def isAppInstalled(appId: String): Boolean = {
-    Await.result(listMarathonAppIds()).contains(s"/$appId")
+    val Right(appIds) = Await.result(listMarathonAppIds())
+      appIds.contains(s"/$appId")
   }
 
-  private[this] def listMarathonAppIds(): Future[Seq[String]] = {
-    adminRouter.listApps() map { case response =>
-      val Right(jsonContent) = parse(response.contentString)
-      val Right(appCursors) = jsonContent.cursor.get[List[Json]]("apps")
-      val Right(appIds) = appCursors.traverseU(_.cursor.get[String]("id"))
-      appIds
+  private[this] def listMarathonAppIds(): Future[CosmosResult[Seq[String]]] = {
+    adminRouter.listApps() map {
+      _.map { marathonAppsResponse =>
+        marathonAppsResponse.apps.map(_.id)
+      }
     }
   }
 
@@ -458,7 +441,7 @@ private sealed trait PostInstallState
 private case object Installed extends PostInstallState
 private case object Unchanged extends PostInstallState
 
-case class PackageInfo(uris: Set[String], labels: Map[String, String])
+case class PackageInfo(uris: List[String], labels: Map[String, String])
 
 case class StandardLabels(
   packageMetadata: Json,

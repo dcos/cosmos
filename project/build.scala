@@ -69,7 +69,6 @@ object CosmosBuild extends Build {
       "Clojars Repository" at "http://clojars.org/repo",
       "Conjars Repository" at "http://conjars.org/repo",
       "Twitter Maven" at "http://maven.twttr.com",
-      "Finch.io" at "http://repo.konfettin.ru",
       "finch-server" at "http://storage.googleapis.com/benwhitehead_me/maven/public"
     ),
 
@@ -119,7 +118,9 @@ object CosmosBuild extends Build {
 
     parallelExecution in Test := false,
 
-    fork := false
+    fork := false,
+
+    cancelable in Global := true
   )
 
   lazy val cosmos = Project("cosmos", file("."))

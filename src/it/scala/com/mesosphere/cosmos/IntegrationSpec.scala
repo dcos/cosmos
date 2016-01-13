@@ -14,7 +14,7 @@ abstract class IntegrationSpec
     val adminRouterUri = dcosHost()
     val dcosClient = Services.adminRouterClient(adminRouterUri)
     val adminRouter = new AdminRouter(adminRouterUri, dcosClient)
-    new Cosmos(PackageCache.empty, new MarathonPackageRunner(adminRouter)).service
+    new Cosmos(PackageCache.empty, new MarathonPackageRunner(adminRouter), new UninstallHandler(adminRouter)).service
   }
 
   protected[this] final override val servicePort: Int = port

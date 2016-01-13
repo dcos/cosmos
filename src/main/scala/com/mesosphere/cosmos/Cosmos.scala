@@ -4,13 +4,13 @@ import java.io.{BufferedInputStream, ByteArrayInputStream, FileInputStream, Inpu
 import java.util.zip.ZipInputStream
 
 import cats.data.Xor.{Left, Right}
-import com.mesosphere.cosmos.model.{DescribeRequest, InstallRequest}
+import com.mesosphere.cosmos.model.{UninstallResponse, DescribeRequest, InstallRequest, UninstallRequest}
 import com.twitter.finagle.Service
 import com.twitter.finagle.http.exp.Multipart.{FileUpload, InMemoryFileUpload, OnDiskFileUpload}
 import com.twitter.finagle.http.{Request, Response, Status}
+import io.circe.syntax.EncoderOps
 import io.github.benwhitehead.finch.FinchServer
 
-// Required for auto-parsing case classes from JSON
 import com.twitter.util.{Await, Future}
 import io.circe.{Json, JsonObject}
 import io.circe.generic.auto._    // Required for auto-parsing case classes from JSON
@@ -18,7 +18,11 @@ import io.circe.generic.auto._    // Required for auto-parsing case classes from
 import io.finch._
 import io.finch.circe._
 
-private final class Cosmos(packageCache: PackageCache, packageRunner: PackageRunner) {
+private final class Cosmos(
+  packageCache: PackageCache,
+  packageRunner: PackageRunner,
+  uninstallHandler: (UninstallRequest) => Future[CosmosResult[UninstallResponse]]
+) {
 
   val FilenameRegex = """/?([^/]+/)*[^-./]+-[^/]*-[^-./]+\.zip""".r
 
@@ -59,6 +63,17 @@ private final class Cosmos(packageCache: PackageCache, packageRunner: PackageRun
     post("v1" / "package" / "install" ? body.as[InstallRequest])(respond _)
   }
 
+  val packageUninstall: Endpoint[Json] = {
+    def respond(req: UninstallRequest): Future[Output[Json]] = {
+      uninstallHandler(req).map {
+        case Right(r) => Ok(r.asJson)
+        case Left(err) => failureOutput(err)
+      }
+    }
+
+    post("v1" / "package" / "uninstall" ? body.as[UninstallRequest])(respond _)
+  }
+
   val packageDescribe: Endpoint[Json] = {
 
     def respond(describe: DescribeRequest): Future[Output[Json]] = {
@@ -82,7 +97,13 @@ private final class Cosmos(packageCache: PackageCache, packageRunner: PackageRun
     get("v1" / "package" / "describe" ? describe) (respond _)
   }
 
-  val service: Service[Request, Response] = (ping :+: packageImport :+: packageInstall :+: packageDescribe).toService
+  val service: Service[Request, Response] =
+    (ping
+      :+: packageImport
+      :+: packageInstall
+      :+: packageDescribe
+      :+: packageUninstall
+    ).toService
 
   /** Attempts to provide access to the content of the given file upload as a byte stream.
     *
@@ -131,7 +152,11 @@ object Cosmos extends FinchServer {
     val universeDir = universeCacheDir()
     val packageCache = Await.result(UniversePackageCache(universeBundle, universeDir))
 
-    val cosmos = new Cosmos(packageCache, new MarathonPackageRunner(adminRouter))
+    val cosmos = new Cosmos(
+      packageCache,
+      new MarathonPackageRunner(adminRouter),
+      new UninstallHandler(adminRouter)
+    )
     cosmos.service
   }
 

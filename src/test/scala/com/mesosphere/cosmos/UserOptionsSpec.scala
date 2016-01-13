@@ -1,6 +1,7 @@
 package com.mesosphere.cosmos
 
-import com.mesosphere.cosmos.model.{Resource, PackageDefinition, PackageFiles, InstallRequest}
+import cats.data.Xor
+import com.mesosphere.cosmos.model._
 import com.twitter.finagle.http.RequestBuilder
 import com.twitter.io.Buf
 import com.twitter.util.{Future, Await}
@@ -45,7 +46,11 @@ final class UserOptionsSpec extends UnitSpec {
         val packageCache = MemoryPackageCache(packages)
         val packageRunner = new RecordingPackageRunner
 
-        val cosmos = new Cosmos(packageCache, packageRunner)
+        val cosmos = new Cosmos(
+          packageCache,
+          packageRunner,
+          (r : UninstallRequest) => { Future.value(Xor.Right(UninstallResponse(Nil))) }
+        )
         val request = RequestBuilder()
           .url("http://dummy.cosmos.host/v1/package/install")
           .buildPost(Buf.Utf8(reqBody.asJson.noSpaces))
