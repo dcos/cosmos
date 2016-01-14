@@ -1,7 +1,6 @@
 package com.mesosphere.cosmos
 
-import java.io.{IOException, File}
-import java.net.URI
+import java.io.IOException
 import java.nio.file.attribute.BasicFileAttributes
 import java.nio.file.{FileVisitResult, SimpleFileVisitor, Path, Files}
 import java.util.UUID
@@ -9,6 +8,8 @@ import java.util.UUID
 import cats.data.Xor.Right
 import cats.std.list._
 import cats.syntax.traverse._
+import com.netaporter.uri.Uri
+import com.netaporter.uri.dsl._
 import com.twitter.finagle.http._
 import com.twitter.finagle.{Http, Service}
 import com.twitter.io.Buf
@@ -17,9 +18,9 @@ import io.circe.generic.auto._
 import io.circe.parse._
 import io.circe.syntax._
 import io.circe.{Cursor, Json}
-import org.scalatest.FreeSpec
+import org.scalatest.{BeforeAndAfterAll, FreeSpec}
 
-final class PackageInstallSpec extends FreeSpec with CosmosSpec {
+final class PackageInstallSpec extends FreeSpec with CosmosSpec with BeforeAndAfterAll {
 
   import PackageInstallSpec._
 
@@ -168,7 +169,7 @@ final class PackageInstallSpec extends FreeSpec with CosmosSpec {
               appIdOpt = Some(appId)
             )
             // TODO Confirm that the correct config was sent to Marathon - see issue #38
-            val uris = getPackageUris(appId)
+            val uris = Await.result(getPackageUris(appId))
             typedAssertResult(uriSet)(uris)
           }
         }
@@ -177,13 +178,27 @@ final class PackageInstallSpec extends FreeSpec with CosmosSpec {
 
   }
 
+  override protected def beforeAll(): Unit = { /*no-op*/ }
+
+  override protected def afterAll(): Unit = {
+    // TODO: This should actually happen between each test, but for now tests depend on eachother :(
+    val deletes: Future[Seq[Unit]] = Future.collect(Seq(
+      adminRouter.deleteApp("/helloworld", force = true) map { resp => assert(resp.getStatusCode() === 200) },
+      adminRouter.deleteApp("/helloworld2", force = true) map { resp => assert(resp.getStatusCode() === 200) },
+      adminRouter.deleteApp("/helloworld3", force = true) map { resp => assert(resp.getStatusCode() === 200) },
+      adminRouter.deleteApp("/cassandra/dcos", force = true) map { resp => assert(resp.getStatusCode() === 200) }
+    ))
+    Await.result(deletes.flatMap { x => Future.Unit })
+  }
+
   private[this] def runService[A](
-    dcosClient: Service[Request, Response] = Http.newService(s"${Config.DcosHost}:80"),
+    dcosClient: Service[Request, Response] = Services.adminRouterClient(dcosHost()),
     packageCache: PackageCache = MemoryPackageCache(PackageMap)
   )(
     f: ApiTestAssertionDecorator => Unit
   ): Unit = {
-    val service = new Cosmos(packageCache, new MarathonPackageRunner(dcosClient)).service
+    val adminRouter = new AdminRouter(dcosHost(), dcosClient)
+    val service = new Cosmos(packageCache, new MarathonPackageRunner(adminRouter)).service
     val server = Http.serve(s":$servicePort", service)
     val client = Http.newService(s"127.0.0.1:$servicePort")
 
@@ -198,7 +213,7 @@ final class PackageInstallSpec extends FreeSpec with CosmosSpec {
 
 private object PackageInstallSpec extends CosmosSpec {
 
-  private val UniverseUri = new URI("https://github.com/mesosphere/universe/archive/cli-test-3.zip")
+  private val UniverseUri = Uri.parse("https://github.com/mesosphere/universe/archive/cli-test-3.zip")
 
   private val PackageTableRows: Seq[(String, Json)] = Seq(
     packageTableRow("helloworld2", 1, 512, 2),
@@ -218,17 +233,15 @@ private object PackageInstallSpec extends CosmosSpec {
           "https://downloads.mesosphere.io/java/jre-7u76-linux-x64.tar.gz"))
   )
 
-  private def getPackageUris(appId: String): Set[String] = {
-    val request = RequestBuilder()
-      .url(s"http://${Config.DcosHost}/marathon/v2/apps/$appId")
-      .buildGet()
-    val response = Await.result(MarathonClient(request))
-    val Right(parsed) = parse(response.contentString)
-    parsed.cursor
-      .downField("app")
-      .flatMap(_.downField("uris"))
-      .flatMap(_.as[Set[String]].toOption)
-      .getOrElse(Set())
+  private def getPackageUris(appId: String): Future[Set[String]] = {
+    adminRouter.getApp(appId) map { response =>
+      val Right(parsed) = parse(response.contentString)
+      parsed.cursor
+        .downField("app")
+        .flatMap(_.downField("uris"))
+        .flatMap(_.as[Set[String]].toOption)
+        .getOrElse(Set())
+    }
   }
 
   private lazy val PackageMap: Map[String, String] = PackageTableRows.toMap.mapValues(_.noSpaces)
@@ -260,19 +273,16 @@ private object PackageInstallSpec extends CosmosSpec {
 
   private def assertPackageInstalledFromCache(packageName: String, packageJson: Json): Unit = {
     val expectedLabel = extractTestLabel(packageJson.cursor)
-    val actualLabel = getMarathonJsonTestLabel(packageName)
+    val actualLabel = Await.result(getMarathonJsonTestLabel(packageName))
     typedAssertResult(expectedLabel)(actualLabel)
   }
 
-  private val MarathonClient = Http.newService(s"${Config.DcosHost}:80")
-
-  private def getMarathonJsonTestLabel(packageName: String): Option[String] = {
-    val request = RequestBuilder()
-      .url(s"http://${Config.DcosHost}/marathon/v2/apps/$packageName")
-      .buildGet()
-    val response = Await.result(MarathonClient(request))
-    val Right(parsed) = parse(response.contentString)
-    parsed.cursor.downField("app").flatMap(extractTestLabel)
+  private def getMarathonJsonTestLabel(packageName: String): Future[Option[String]] = {
+    adminRouter.getApp(Uri.parse(packageName)) map { case response =>
+      val Right(parsed) = parse(response.contentString)
+      val option = parsed.cursor.downField("app").flatMap(extractTestLabel)
+      option
+    }
   }
 
   private def extractTestLabel(marathonJsonCursor: Cursor): Option[String] = {
@@ -344,19 +354,16 @@ private final class ApiTestAssertionDecorator(apiClient: Service[Request, Respon
   }
 
   private[this] def isAppInstalled(appId: String): Boolean = {
-    listMarathonAppIds().contains(s"/$appId")
+    Await.result(listMarathonAppIds()).contains(s"/$appId")
   }
 
-  private[this] def listMarathonAppIds(): Seq[String] = {
-    val marathonClient = Http.newService(s"${Config.DcosHost}:80")
-    val request = RequestBuilder()
-      .url(s"http://${Config.DcosHost}/marathon/v2/apps")
-      .buildGet()
-    val response = Await.result(marathonClient(request))
-    val Right(jsonContent) = parse(response.contentString)
-    val Right(appCursors) = jsonContent.cursor.get[List[Json]]("apps")
-    val Right(appIds) = appCursors.traverseU(_.cursor.get[String]("id"))
-    appIds
+  private[this] def listMarathonAppIds(): Future[Seq[String]] = {
+    adminRouter.listApps() map { case response =>
+      val Right(jsonContent) = parse(response.contentString)
+      val Right(appCursors) = jsonContent.cursor.get[List[Json]]("apps")
+      val Right(appIds) = appCursors.traverseU(_.cursor.get[String]("id"))
+      appIds
+    }
   }
 
   private[this] def installPackage(

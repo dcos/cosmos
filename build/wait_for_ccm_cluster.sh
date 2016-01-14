@@ -10,7 +10,7 @@ set -ex -o pipefail
 : "${CLUSTER_ID:?}"
 
 # Wait for cluster to come up
-declare -i poll_period=$CCM_POLL_PERIOD
+declare -i poll_period=${CCM_POLL_PERIOD}
 declare -i seconds_until_timeout=$((60 * 30))
 while (("$seconds_until_timeout" >= "0")); do
     STATUS=$(
@@ -43,12 +43,10 @@ CLUSTER_INFO=$(
         GET \
         "https://ccm.mesosphere.com/api/cluster/${CLUSTER_ID}/" \
         "Authorization:Token ${CCM_AUTH_TOKEN}" \
-  | jq ".cluster_info"
+  | jq -r ".cluster_info"
 )
-eval CLUSTER_INFO="$CLUSTER_INFO"    # Unescape JSON
 
-DCOS_IP=$(echo "$CLUSTER_INFO" | jq ".MastersIpAddresses[0]")
-DCOS_IP="${DCOS_IP:1:-1}"    # Remove JSON string quotes
-echo "$DCOS_IP"
+DCOS_IP=$(echo "$CLUSTER_INFO" | jq -r ".DnsAddress")
+echo "http://$DCOS_IP"
 
 exit
