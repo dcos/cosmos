@@ -1,6 +1,7 @@
 package com.mesosphere.cosmos
 
 import com.twitter.util.Future
+import io.circe.Json
 import io.finch.Output
 
 /** The service that packages are installed to; currently defaults to Marathon in DCOS. */
@@ -11,6 +12,6 @@ trait PackageRunner {
     * @param renderedConfig the fully-specified configuration of the package to run
     * @return An HTTP status code and message indicating success or failure.
     */
-  def launch(renderedConfig: String): Future[Output[String]]
+  def launch(renderedConfig: Json): Future[Output[Json]]
 
 }

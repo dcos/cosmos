@@ -41,8 +41,4 @@ trait CosmosSpec extends Matchers with TableDrivenPropertyChecks {
   // is defined, which should limit the contexts in which it can be (ab)used.
   protected[this] implicit def valueToJson[A](value: A)(implicit e: Encoder[A]): Json = e(value)
 
-  protected[this] def typedAssertResult[A](expected: A)(actual: A): Unit = {
-    assertResult(expected)(actual)
-  }
-
 }

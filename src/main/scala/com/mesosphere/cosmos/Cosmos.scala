@@ -1,20 +1,21 @@
 package com.mesosphere.cosmos
 
 import java.io.{BufferedInputStream, ByteArrayInputStream, FileInputStream, InputStream}
-import java.net.URI
-import java.nio.file.Paths
 import java.util.zip.ZipInputStream
 
+import cats.data.Xor.{Left, Right}
+import com.mesosphere.cosmos.model.InstallRequest
+import com.twitter.finagle.Service
 import com.twitter.finagle.http.exp.Multipart.{FileUpload, InMemoryFileUpload, OnDiskFileUpload}
 import com.twitter.finagle.http.{Request, Response, Status}
-import com.twitter.finagle.{Http, Service}
-import com.twitter.util.Future
 import io.github.benwhitehead.finch.FinchServer
 
 // Required for auto-parsing case classes from JSON
-import com.twitter.util.{Await, Future, Return, Throw}
+import com.twitter.util.{Await, Future}
+import io.circe.Json
 import io.circe.generic.auto._    // Required for auto-parsing case classes from JSON
 import io.finch._
+import io.finch.circe._
 
 private final class Cosmos(packageCache: PackageCache, packageRunner: PackageRunner) {
 
@@ -26,15 +27,15 @@ private final class Cosmos(packageCache: PackageCache, packageRunner: PackageRun
       FilenameRegex.unapplySeq(request.fileName).nonEmpty
     }
 
-  val ping: Endpoint[String] = get("ping") { Ok("pong") }
+  val ping: Endpoint[Json] = get("ping") { successOutput("pong") }
 
-  val packageImport: Endpoint[String] = {
-    def respond(file: FileUpload): Output[String] = {
+  val packageImport: Endpoint[Json] = {
+    def respond(file: FileUpload): Output[Json] = {
       fileUploadBytes(file).flatMap { fileBytes =>
         if (nonEmptyArchive(fileBytes)) {
-          Ok("Import successful!\n")
+          successOutput("Import successful!")
         } else {
-          BadRequest(new Exception("Package is empty"))
+          failureOutput(errorNel(EmptyPackageImport))
         }
       }
     }
@@ -42,20 +43,14 @@ private final class Cosmos(packageCache: PackageCache, packageRunner: PackageRun
     post("v1" / "package" / "import" ? validFileUpload)(respond _)
   }
 
-  val packageInstall: Endpoint[String] = {
-    // Required for parsing case classes from JSON; interferes with the other endpoints
-    import io.finch.circe._
+  val packageInstall: Endpoint[Json] = {
 
-    def respond(reqBody: InstallRequest): Future[Output[String]] = {
+    def respond(reqBody: InstallRequest): Future[Output[Json]] = {
       packageCache
-        .get(reqBody.name)
-        .transform {
-          case Return(Some(marathonJson)) => packageRunner.launch(marathonJson)
-          case Return(None) =>
-            Future.value(NotFound(new Exception(s"Package [${reqBody.name}] not found")))
-          case Throw(t) =>
-            val message = s"Unexpected error when loading package ${t.getMessage}"
-            Future.value(InternalServerError(new Exception(message, t)))
+        .getMarathonJson(reqBody.name)
+        .flatMap {
+          case Right(marathonJson) => packageRunner.launch(marathonJson)
+          case Left(errors) => Future.value(failureOutput(errors))
         }
     }
 

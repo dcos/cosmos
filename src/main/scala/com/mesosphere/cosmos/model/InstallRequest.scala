@@ -1,3 +1,3 @@
-package com.mesosphere.cosmos
+package com.mesosphere.cosmos.model
 
 case class InstallRequest(name: String)
