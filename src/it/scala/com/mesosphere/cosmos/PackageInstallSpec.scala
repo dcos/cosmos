@@ -1,10 +1,5 @@
 package com.mesosphere.cosmos
 
-import java.io.IOException
-import java.nio.file.attribute.BasicFileAttributes
-import java.nio.file.{FileVisitResult, Files, Path, SimpleFileVisitor}
-import java.util.{Base64, UUID}
-
 import cats.data.Xor
 import cats.data.Xor.Right
 import cats.std.list._
@@ -22,7 +17,12 @@ import io.circe.syntax._
 import io.circe.{Cursor, Json}
 import org.scalatest.{BeforeAndAfterAll, FreeSpec}
 
-final class PackageInstallSpec extends FreeSpec with CosmosSpec with BeforeAndAfterAll {
+import java.io.IOException
+import java.nio.file.attribute.BasicFileAttributes
+import java.nio.file.{FileVisitResult, Files, Path, SimpleFileVisitor}
+import java.util.{Base64, UUID}
+
+final class PackageInstallSpec extends FreeSpec with BeforeAndAfterAll with CosmosSpec {
 
   import PackageInstallSpec._
 
@@ -323,8 +323,7 @@ private object PackageInstallSpec extends CosmosSpec {
 
 }
 
-private final class ApiTestAssertionDecorator(apiClient: Service[Request, Response])
-  extends CosmosSpec {
+private final class ApiTestAssertionDecorator(apiClient: Service[Request, Response]) extends CosmosSpec {
 
   import ApiTestAssertionDecorator._
 

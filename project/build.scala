@@ -122,22 +122,23 @@ object CosmosBuild extends Build {
     fork := false
   )
 
-  lazy val cosmos = Project(
-    id = "cosmos",
-    base = file("."),
-    settings = sharedSettings ++ oneJarSettings ++ Seq(
-      mainClass in oneJar := Some("com.mesosphere.cosmos.Cosmos"),
+  lazy val cosmos = Project("cosmos", file("."))
+    .configs(IntegrationTest extend Test)
+    .settings(Defaults.itSettings)
+    .settings(sharedSettings)
+    .settings(oneJarSettings)
+    .settings(mainClass in oneJar := Some("com.mesosphere.cosmos.Cosmos"))
+    .settings(
       libraryDependencies ++=
         Deps.circe
-        ++ Deps.finch
-        ++ Deps.finchServer
-        ++ Deps.finchTest
-        ++ Deps.logback
-        ++ Deps.mustache
-        ++ Deps.scalaTest
-        ++ Deps.scalaUri
+          ++ Deps.finch
+          ++ Deps.finchServer
+          ++ Deps.finchTest
+          ++ Deps.logback
+          ++ Deps.mustache
+          ++ Deps.scalaTest
+          ++ Deps.scalaUri
     )
-  )
 
   //////////////////////////////////////////////////////////////////////////////
   // BUILD TASKS

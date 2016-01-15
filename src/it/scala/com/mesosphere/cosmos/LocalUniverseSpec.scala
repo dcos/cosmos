@@ -1,14 +1,14 @@
 package com.mesosphere.cosmos
 
-import java.io.ByteArrayOutputStream
-import java.nio.file.{Files, Paths}
-import java.util.zip.{ZipEntry, ZipOutputStream}
-
 import cats.data.Xor
 import com.twitter.finagle.http.{FileElement, Method, Request, Status}
 import com.twitter.io.Buf
 import io.circe.parse.parse
 import io.circe.syntax._
+
+import java.io.ByteArrayOutputStream
+import java.nio.file.{Files, Paths}
+import java.util.zip.{ZipEntry, ZipOutputStream}
 
 final class LocalUniverseSpec extends IntegrationSpec {
 
