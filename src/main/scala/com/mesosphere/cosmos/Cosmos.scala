@@ -21,7 +21,7 @@ private final class Cosmos(packageCache: PackageCache, packageRunner: PackageRun
 
   val FilenameRegex = """/?([^/]+/)*[^-./]+-[^/]*-[^-./]+\.zip""".r
 
-  val validFileUpload = safeFileUpload("file")
+  val validFileUpload = fileUpload("file")
     .should("have application/zip Content-type")(_.contentType == "application/zip")
     .should("have a filename matching <package>-<version>-<digest>.zip") { request =>
       FilenameRegex.unapplySeq(request.fileName).nonEmpty
@@ -47,7 +47,13 @@ private final class Cosmos(packageCache: PackageCache, packageRunner: PackageRun
 
     def respond(reqBody: InstallRequest): Future[Output[Json]] = {
       packageCache
-        .getMarathonJson(reqBody.name, reqBody.version)
+        .getPackageFiles(reqBody.name, reqBody.version)
+        .map { packageFilesXor =>
+          packageFilesXor.flatMap { packageFiles =>
+            PackageInstall.renderMustacheTemplate(packageFiles, reqBody.options)
+              .flatMap(PackageInstall.addLabels(_, packageFiles))
+          }
+        }
         .flatMap {
           case Right(marathonJson) => packageRunner.launch(marathonJson)
           case Left(errors) => Future.value(failureOutput(errors))

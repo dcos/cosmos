@@ -9,7 +9,7 @@ import io.circe.Json
 import io.circe.syntax._
 import io.finch.Output
 
-object `package` extends FileUploadPatch {
+object `package` {
 
   implicit final class FutureOps[A](val fut: Future[A]) extends AnyVal {
 

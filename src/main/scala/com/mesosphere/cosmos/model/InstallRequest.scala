@@ -1,3 +1,9 @@
 package com.mesosphere.cosmos.model
 
-case class InstallRequest(name: String, version: Option[String] = None)
+import io.circe.JsonObject
+
+case class InstallRequest(
+  name: String,
+  version: Option[String] = None,
+  options: JsonObject = JsonObject.empty
+)

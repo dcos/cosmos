@@ -11,7 +11,7 @@ object CosmosBuild extends Build {
 
   object V {
     val circe = "0.2.1"
-    val finch = "0.9.2"
+    val finch = "0.9.3"
     val finchServer = "0.9.0"
     val logback = "1.1.3"
     val mustache = "0.9.1"

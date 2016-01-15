@@ -1,9 +1,7 @@
 package com.mesosphere.cosmos
 
-import java.io._
 import java.nio.file._
 import java.util.zip.ZipInputStream
-import java.util.{Base64, Map => JavaMap}
 
 import cats.data.Validated.valid
 import cats.data.ValidatedNel
@@ -12,17 +10,13 @@ import cats.std.list._
 import cats.syntax.apply._
 import cats.syntax.option._
 import cats.syntax.traverse._
-import com.github.mustachejava.DefaultMustacheFactory
 import com.mesosphere.cosmos.model._
 import com.netaporter.uri.Uri
 import com.twitter.io.Charsets
 import com.twitter.util.Future
+import io.circe.Json
 import io.circe.generic.auto._
 import io.circe.parse._
-import io.circe.syntax._
-import io.circe.{Json, JsonObject}
-
-import scala.collection.JavaConverters._
 
 /** Stores packages from the Universe GitHub repository in the local filesystem.
   *
@@ -32,26 +26,20 @@ final class UniversePackageCache private(repoDir: Path) extends PackageCache {
 
   import UniversePackageCache._
 
-  override def getMarathonJson(packageName: String, version: Option[String]): Future[CosmosResult[Json]] = {
+  override def getPackageFiles(
+    packageName: String,
+    version: Option[String]
+  ): Future[CosmosResult[PackageFiles]] = {
     getRepoIndex(repoDir) // this will eventually be allIndexes
       .flatMapXor { (repoIndex: UniverseIndex) =>
         Future.value(getPackagePath(repoDir, repoIndex, packageName, version))
-        .flatMapXor { (path: Path) =>
-          readPackageFiles(path)
-            .map { packageFilesXor =>
-              packageFilesXor.flatMap { packageFiles =>
-                renderMustacheTemplate(packageFiles)
-                .flatMap(addLabels(_, packageFiles, repoIndex.version, path.getFileName.toString))
-              }
-            }
-        }
+          .flatMapXor((path: Path) => readPackageFiles(path, repoIndex.version))
       }
-    }
+  }
+
 }
 
 object UniversePackageCache {
-
-  val MustacheFactory = new DefaultMustacheFactory()
 
   /** Create a new package cache.
     *
@@ -128,7 +116,10 @@ object UniversePackageCache {
     }
   }
 
-  private def readPackageFiles(packageDir: Path): Future[CosmosResult[PackageFiles]] = {
+  private def readPackageFiles(
+    packageDir: Path,
+    version: String
+  ): Future[CosmosResult[PackageFiles]] = {
     val jsonFilesList = List("command", "config", "package", "resource")
     val jsonFiles = Future.collect {
       jsonFilesList.map { file =>
@@ -150,12 +141,15 @@ object UniversePackageCache {
             packageJsonOpt
               .toRightXor(errorNel(PackageFileMissing("package.json")))
               .flatMap { packageJson =>
+                val revision = packageDir.getFileName.toString
                 val commandJson = commandJsonOpt.getOrElse(Json.empty)
                 val configJson = configJsonOpt.getOrElse(Json.empty)
                 val resourceJson = resourceJsonOpt.getOrElse(Json.empty)
 
                 PackageFiles
-                  .validate(commandJson, configJson, mustache, packageJson, resourceJson)
+                  .validate(
+                    version, revision, commandJson, configJson, mustache, packageJson, resourceJson
+                  )
                   .toXor
               }
         }
@@ -175,121 +169,10 @@ object UniversePackageCache {
     }
   }
 
-  private def renderMustacheTemplate(packageFiles: PackageFiles): CosmosResult[Json] = {
-    val strReader = new StringReader(packageFiles.marathonJsonMustache)
-    val mustache = MustacheFactory.compile(strReader, "marathon.json.mustache")
-
-    // Build a java.util.HashMap manually, since we need a mutable map to insert the "resource" key
-    // This should be cleaned up by GitHub issue #62
-    val defaults = extractDefaultsFromConfig(packageFiles.configJson).mapValues(jsonToJava)
-    val params = new java.util.HashMap[String, Any]()
-    defaults.foreach { case (k, v) => params.put(k, v) }
-    params.put("resource", extractAssetsAsMap(packageFiles.resourceJson))
-
-    val output = new StringWriter()
-    mustache.execute(output, params)
-    parse(output.toString)
-      .leftMap(err => errorNel(PackageFileNotJson("marathon.json", err.message)))
-  }
-
   private def readFile(path: Path): Future[Option[String]] = {
-    // Assuming that if we can't retrieve file, it's because it doesn't exist
     Future(Some(Files.readAllBytes(path)))
       .handle { case _: NoSuchFileException => None }
       .map(_.map((bytes: Array[Byte]) => new String(bytes, Charsets.Utf8)))
   }
 
-  private def extractAssetsAsMap(resource: Resource): JavaMap[String, _] = {
-    val assets = resource.assets.getOrElse(Assets.empty)
-
-    val dockerMap = assets.container.getOrElse(Container.empty).docker.asJava
-    val containerMap = Map("docker" -> dockerMap).asJava
-    val urisMap = assets.uris.getOrElse(Map.empty).asJava
-
-    val assetsMap = Map("uris" -> urisMap, "container" -> containerMap).asJava
-    Map("assets" -> assetsMap).asJava
-  }
-
-  private def extractDefaultsFromConfig(configJson: Json): Map[String, Json] = {
-    val topProperties = configJson
-      .cursor
-      .downField("properties")
-      .map(_.focus)
-      .getOrElse(Json.empty)
-
-    filterDefaults(topProperties)
-      .as[Map[String, Json]]
-      .getOrElse(Map.empty)
-  }
-
-  private def filterDefaults(properties: Json): Json = {
-    val defaults = properties
-      .asObject
-      .getOrElse(JsonObject.empty)
-      .toMap
-      .flatMap { case (propertyName, propertyJson) =>
-        propertyJson
-          .asObject
-          .flatMap { propertyObject =>
-            propertyObject("default").orElse {
-              propertyObject("properties").map(filterDefaults)
-            }
-          }
-          .map(propertyName -> _)
-      }
-
-    Json.fromJsonObject(JsonObject.fromMap(defaults))
-  }
-
-  private def jsonToJava(json: Json): Any = {
-    json.fold(
-      jsonNull = null,
-      jsonBoolean = identity,
-      jsonNumber = n => n.toInt.getOrElse(n.toDouble),
-      jsonString = identity,
-      jsonArray = _.map(jsonToJava).asJava,
-      jsonObject = _.toMap.mapValues(jsonToJava).asJava
-    )
-  }
-
-  private def addLabels(
-    marathonJson: Json,
-    packageFiles: PackageFiles,
-    version: String,
-    revision: String): CosmosResult[Json] = {
-    // add images to package.json metadata for backwards compatability in the UI
-    val packageDef = packageFiles.packageJson.copy(images = packageFiles.resourceJson.images)
-
-    // Circe populates omitted fields with null values; remove them (see GitHub issue #56)
-    val packageJson = packageDef.asJson.mapObject { obj =>
-      JsonObject.fromMap(obj.toMap.filterNot { case (k, v) => v.isNull })
-    }
-    val packageBytes = packageJson.noSpaces.getBytes(Charsets.Utf8)
-    val packageMetadata = Base64.getEncoder.encodeToString(packageBytes)
-
-    val commandBytes = packageFiles.commandJson.noSpaces.getBytes(Charsets.Utf8)
-    val commandMetadata = Base64.getEncoder.encodeToString(commandBytes)
-
-    val frameworkName = packageFiles.configJson.cursor
-      .downField(packageDef.name)
-      .flatMap(_.get[String]("framework-name").toOption)
-
-    // insert labels
-    val packageLabels: Map[String, String] = Seq(
-      Some("DCOS_PACKAGE_METADATA" -> packageMetadata),
-      Some("DCOS_PACKAGE_REGISTRY_VERSION" -> version),
-      Some("DCOS_PACKAGE_NAME" -> packageDef.name),
-      Some("DCOS_PACKAGE_VERSION" -> packageDef.version),
-      Some("DCOS_PACKAGE_SOURCE" -> universeBundleUri().toString),
-      Some("DCOS_PACKAGE_RELEASE" -> revision),
-      Some("DCOS_PACKAGE_IS_FRAMEWORK" -> packageDef.framework.getOrElse(true).toString),
-      Some("DCOS_PACKAGE_COMMAND" -> commandMetadata),
-      frameworkName.map("PACKAGE_FRAMEWORK_NAME_KEY" -> _)
-    ).flatten.toMap
-
-    val existingLabels = marathonJson.cursor
-      .get[Map[String, String]]("labels").getOrElse(Map.empty)
-
-    Right(marathonJson.mapObject(_.+("labels", (existingLabels ++ packageLabels).asJson)))
-  }
 }
