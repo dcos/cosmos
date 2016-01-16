@@ -7,6 +7,8 @@ sealed trait CosmosError {
   private[cosmos] def message: String = {
     this match {
       case PackageNotFound(packageName) => s"Package [$packageName] not found"
+      case VersionNotFound(packageName, packageVersion) =>
+        s"Version [$packageVersion] of package [$packageName] not found"
       case EmptyPackageImport => "Package is empty"
       case PackageFileMissing(fileName) => s"Package file [$fileName] not found"
       case PackageFileNotJson(fileName, parseError) =>
@@ -32,6 +34,7 @@ object CosmosError {
 }
 
 private case class PackageNotFound(packageName: String) extends CosmosError
+private case class VersionNotFound(packageName: String, packageVersion: String) extends CosmosError
 private case object EmptyPackageImport extends CosmosError
 private case class PackageFileMissing(packageName: String) extends CosmosError
 private case class PackageFileNotJson(fileName: String, parseError: String) extends CosmosError

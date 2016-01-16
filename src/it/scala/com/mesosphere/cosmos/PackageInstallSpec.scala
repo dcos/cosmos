@@ -122,6 +122,28 @@ final class PackageInstallSpec extends FreeSpec with BeforeAndAfterAll with Cosm
       }
     }
 
+    "don't install if specified version is not found" in {
+      val _ = withTempDirectory { universeDir =>
+        val universeCache = Await.result(UniversePackageCache(UniverseUri, universeDir))
+
+        runService(packageCache = universeCache) { apiClient =>
+          forAll (PackageDummyVersionsTable) { (packageName, packageVersion) =>
+            // TODO This currently relies on test execution order to be correct
+            // Update it to explicitly install a package twice
+            apiClient.installPackageAndAssert(
+              packageName,
+              Status.BadRequest,
+              content = errorJson(
+                s"Version [$packageVersion] of package [$packageName] not found"),
+              preInstallState = NotInstalled,
+              postInstallState = Unchanged,
+              version = Some(packageVersion)
+            )
+          }
+        }
+      }
+    }
+
     "can successfully install packages from Universe" in {
       val _ = withTempDirectory { universeDir =>
         val universeCache = Await.result(UniversePackageCache(UniverseUri, universeDir))
@@ -223,6 +245,12 @@ private object PackageInstallSpec extends CosmosSpec {
     ("package name", "app id", "URI list", "Labels", "version"),
     ("helloworld", "helloworld", Set.empty[String], Some(HelloWorldLabels), None),
     ("cassandra", "cassandra/dcos", CassandraUris, None, Some("0.2.0-1"))
+  )
+
+  private val PackageDummyVersionsTable = Table(
+    ("package name", "version"),
+    ("helloworld", "a.b.c"),
+    ("cassandra", "foobar")
   )
 
   private def getPackageInfo(appId: String): Future[PackageInfo] = {

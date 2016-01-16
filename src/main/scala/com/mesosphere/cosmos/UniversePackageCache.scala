@@ -104,7 +104,7 @@ object UniversePackageCache {
       }
   }
 
-  // return path of specified version, or latest if version not specified or doesn't exist
+  // return path of specified version, or latest if version not specified
   private def getPackagePath(
     repository: Path,
     universeIndex: UniverseIndex,
@@ -115,15 +115,16 @@ object UniversePackageCache {
       case None => Left(errorNel(PackageNotFound(packageName)))
       case Some(packageInfo) =>
 
-        val revision = packageVersion
-          .flatMap(packageInfo.versions.get)
-          .getOrElse(packageInfo.currentRevision)
-
-        val packagePath = Paths.get("packages",
-                                    packageName.charAt(0).toUpper.toString,
-                                    packageName,
-                                    revision)
-        Right(repository.resolve(packagePath))
+        val version = packageVersion.getOrElse(packageInfo.currentVersion)
+        packageInfo.versions.get(version) match {
+          case None => Left(errorNel(VersionNotFound(packageName, version)))
+          case Some(revision) =>
+            val packagePath = Paths.get("packages",
+                                        packageName.charAt(0).toUpper.toString,
+                                        packageName,
+                                        revision)
+            Right(repository.resolve(packagePath))
+        }
     }
   }
 

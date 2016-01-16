@@ -68,7 +68,7 @@ case class UniverseIndex(
     packages.map { packageInfo =>
       (packageInfo.name,
         PackageInfo(
-          packageInfo.versions(packageInfo.currentVersion),
+          packageInfo.currentVersion,
           packageInfo.versions,
           packageInfo.description,
           packageInfo.framework,
@@ -80,7 +80,7 @@ case class UniverseIndex(
 }
 
 case class PackageInfo(
-  currentRevision: String,
+  currentVersion: String,
   versions: Map[String, String], // version -> revision
   description: String,
   framework: Boolean = false,
