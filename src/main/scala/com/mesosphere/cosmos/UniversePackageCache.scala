@@ -26,22 +26,27 @@ import scala.collection.JavaConverters._
 
 /** Stores packages from the Universe GitHub repository in the local filesystem.
   *
-  * @param repoPackagesDir the local cache of the repository's `repo/packages` directory
+  * @param repoDir the local cache of the repository's `repo` directory
   */
-final class UniversePackageCache private(repoPackagesDir: Path) extends PackageCache {
+final class UniversePackageCache private(repoDir: Path) extends PackageCache {
 
   import UniversePackageCache._
 
-  override def getMarathonJson(packageName: String): Future[CosmosResult[Json]] = {
-    getLatestPackageVersion(packageName, repoPackagesDir)
-      .flatMapXor(readPackageFiles)
-      .map { packageFilesXor =>
-        packageFilesXor.flatMap { packageFiles =>
-          renderMustacheTemplate(packageFiles)
-            .flatMap(addLabels(_, packageFiles))
+  override def getMarathonJson(packageName: String, version: Option[String]): Future[CosmosResult[Json]] = {
+    getRepoIndex(repoDir) // this will eventually be allIndexes
+      .flatMapXor { (repoIndex: UniverseIndex) =>
+        Future.value(getPackagePath(repoDir, repoIndex, packageName, version))
+        .flatMapXor { (path: Path) =>
+          readPackageFiles(path)
+            .map { packageFilesXor =>
+              packageFilesXor.flatMap { packageFiles =>
+                renderMustacheTemplate(packageFiles)
+                .flatMap(addLabels(_, packageFiles, repoIndex.version, path.getFileName.toString))
+              }
+            }
         }
       }
-  }
+    }
 }
 
 object UniversePackageCache {
@@ -62,7 +67,7 @@ object UniversePackageCache {
       }
       .map { _ =>
         val rootDir = Files.list(universeDir).findFirst().get()
-        new UniversePackageCache(rootDir.resolve(Paths.get("repo", "packages")))
+        new UniversePackageCache(rootDir.resolve(Paths.get("repo")))
       }
   }
 
@@ -83,27 +88,43 @@ object UniversePackageCache {
     }
   }
 
-  private def getLatestPackageVersion(
-    packageName: String,
-    repository: Path
-  ): Future[CosmosResult[Path]] = {
-    val packagePath = Paths.get(packageName.charAt(0).toUpper.toString, packageName)
-    val versionsDir = repository.resolve(packagePath)
-
-    Future(Right(Files.newDirectoryStream(versionsDir)))
-      .handle {
-        case _: NoSuchFileException => Left(errorNel(PackageNotFound(packageName)))
-      }
-      .flatMapXor { (dirEntries: DirectoryStream[Path]) =>
-        Future {
-          Right {
-            dirEntries
-              .iterator()
-              .asScala
-              .maxBy(_.getFileName.toString.toInt)
+  private def getRepoIndex(repository: Path): Future[CosmosResult[UniverseIndex]] = {
+    val indexFile = repository.resolve(Paths.get("meta", "index.json"))
+    parseJsonFile(indexFile)
+      .map { indexValidated =>
+        indexValidated
+          .toXor
+          .leftMap(_ => errorNel(IndexNotFound))
+          .flatMap { index =>
+            index
+              .getOrElse(Json.obj())    // Json.obj() is {}, Json.empty is null
+              .as[UniverseIndex]
+              .leftMap(_ => errorNel(PackageFileSchemaMismatch("index.json")))
           }
-        }.ensure(dirEntries.close())
       }
+  }
+
+  // return path of specified version, or latest if version not specified or doesn't exist
+  private def getPackagePath(
+    repository: Path,
+    universeIndex: UniverseIndex,
+    packageName: String,
+    packageVersion: Option[String]): CosmosResult[Path] = {
+
+    universeIndex.getPackages.get(packageName) match {
+      case None => Left(errorNel(PackageNotFound(packageName)))
+      case Some(packageInfo) =>
+
+        val revision = packageVersion
+          .flatMap(packageInfo.versions.get)
+          .getOrElse(packageInfo.currentRevision)
+
+        val packagePath = Paths.get("packages",
+                                    packageName.charAt(0).toUpper.toString,
+                                    packageName,
+                                    revision)
+        Right(repository.resolve(packagePath))
+    }
   }
 
   private def readPackageFiles(packageDir: Path): Future[CosmosResult[PackageFiles]] = {
@@ -171,6 +192,7 @@ object UniversePackageCache {
   }
 
   private def readFile(path: Path): Future[Option[String]] = {
+    // Assuming that if we can't retrieve file, it's because it doesn't exist
     Future(Some(Files.readAllBytes(path)))
       .handle { case _: NoSuchFileException => None }
       .map(_.map((bytes: Array[Byte]) => new String(bytes, Charsets.Utf8)))
@@ -229,7 +251,11 @@ object UniversePackageCache {
     )
   }
 
-  private def addLabels(marathonJson: Json, packageFiles: PackageFiles): CosmosResult[Json] = {
+  private def addLabels(
+    marathonJson: Json,
+    packageFiles: PackageFiles,
+    version: String,
+    revision: String): CosmosResult[Json] = {
     // add images to package.json metadata for backwards compatability in the UI
     val packageDef = packageFiles.packageJson.copy(images = packageFiles.resourceJson.images)
 
@@ -250,11 +276,11 @@ object UniversePackageCache {
     // insert labels
     val packageLabels: Map[String, String] = Seq(
       Some("DCOS_PACKAGE_METADATA" -> packageMetadata),
-      Some("DCOS_PACKAGE_REGISTRY_VERSION" -> "2.0.0-rc1"), // TODO: take this from repo
+      Some("DCOS_PACKAGE_REGISTRY_VERSION" -> version),
       Some("DCOS_PACKAGE_NAME" -> packageDef.name),
       Some("DCOS_PACKAGE_VERSION" -> packageDef.version),
       Some("DCOS_PACKAGE_SOURCE" -> universeBundleUri().toString),
-      Some("DCOS_PACKAGE_RELEASE" -> "0"), // TODO: fetch actually version
+      Some("DCOS_PACKAGE_RELEASE" -> revision),
       Some("DCOS_PACKAGE_IS_FRAMEWORK" -> packageDef.framework.getOrElse(true).toString),
       Some("DCOS_PACKAGE_COMMAND" -> commandMetadata),
       frameworkName.map("PACKAGE_FRAMEWORK_NAME_KEY" -> _)

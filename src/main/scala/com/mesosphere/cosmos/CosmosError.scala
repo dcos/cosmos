@@ -15,6 +15,7 @@ sealed trait CosmosError {
       case PackageAlreadyInstalled => "Package is already installed"
       case MarathonBadResponse(statusCode) =>
         s"Received response status code $statusCode from Marathon"
+      case IndexNotFound => s"Index file missing for repo [${universeBundleUri()}]"
     }
   }
 
@@ -37,3 +38,4 @@ private case class PackageFileNotJson(fileName: String, parseError: String) exte
 private case class PackageFileSchemaMismatch(fileName: String) extends CosmosError
 private case object PackageAlreadyInstalled extends CosmosError
 private case class MarathonBadResponse(statusCode: Int) extends CosmosError
+private case object IndexNotFound extends CosmosError

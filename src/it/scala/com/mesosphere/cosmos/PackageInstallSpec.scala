@@ -127,14 +127,15 @@ final class PackageInstallSpec extends FreeSpec with BeforeAndAfterAll with Cosm
         val universeCache = Await.result(UniversePackageCache(UniverseUri, universeDir))
 
         runService(packageCache = universeCache) { apiClient =>
-          forAll (UniversePackagesTable) { (packageName, appId, uriSet, labelsOpt) =>
+          forAll (UniversePackagesTable) { (packageName, appId, uriSet, labelsOpt, versionOpt) =>
             apiClient.installPackageAndAssert(
               packageName,
               Status.Ok,
               content = Json.empty,
               preInstallState = NotInstalled,
               postInstallState = Installed,
-              appIdOpt = Some(appId)
+              appIdOpt = Some(appId),
+              versionOpt
             )
             // TODO Confirm that the correct config was sent to Marathon - see issue #38
             val packageInfo = Await.result(getPackageInfo(appId))
@@ -144,7 +145,6 @@ final class PackageInstallSpec extends FreeSpec with BeforeAndAfterAll with Cosm
         }
       }
     }
-
   }
 
   override protected def beforeAll(): Unit = { /*no-op*/ }
@@ -220,9 +220,9 @@ private object PackageInstallSpec extends CosmosSpec {
   )
 
   private val UniversePackagesTable = Table(
-    ("package name", "app id", "URI list", "Labels"),
-    ("helloworld", "helloworld", Set.empty[String], Some(HelloWorldLabels)),
-    ("cassandra", "cassandra/dcos", CassandraUris, None)
+    ("package name", "app id", "URI list", "Labels", "version"),
+    ("helloworld", "helloworld", Set.empty[String], Some(HelloWorldLabels), None),
+    ("cassandra", "cassandra/dcos", CassandraUris, None, Some("0.2.0-1"))
   )
 
   private def getPackageInfo(appId: String): Future[PackageInfo] = {
@@ -333,7 +333,8 @@ private final class ApiTestAssertionDecorator(apiClient: Service[Request, Respon
     content: Json,
     preInstallState: PreInstallState,
     postInstallState: PostInstallState,
-    appIdOpt: Option[String] = None
+    appIdOpt: Option[String] = None,
+    version: Option[String] = None
   ): Unit = {
 
     val appId = appIdOpt.getOrElse(packageName)
@@ -344,7 +345,7 @@ private final class ApiTestAssertionDecorator(apiClient: Service[Request, Respon
       case Anything => // Don't care
     }
 
-    val response = installPackage(apiClient, packageName)
+    val response = installPackage(apiClient, packageName, version)
     assertResult(status)(response.status)
     assertResult(Xor.Right(content))(parse(response.contentString))
 
@@ -370,10 +371,10 @@ private final class ApiTestAssertionDecorator(apiClient: Service[Request, Respon
   }
 
   private[this] def installPackage(
-    apiClient: Service[Request, Response], packageName: String
+    apiClient: Service[Request, Response], packageName: String, version: Option[String]
   ): Response = {
     val installRequest = requestBuilder(InstallEndpoint)
-      .buildPost(Buf.Utf8(InstallRequest(packageName).asJson.noSpaces))
+      .buildPost(Buf.Utf8(InstallRequest(packageName, version).asJson.noSpaces))
     Await.result(apiClient(installRequest))
   }
 

@@ -47,3 +47,43 @@ case class Resource(
   assets: Option[Assets],
   images: Option[Images]
 )
+
+// index.json schema for each package from Universe
+case class PackageIndex(
+  name: String,
+  currentVersion: String,
+  versions: Map[String, String], // software versions -> package revision
+  description: String,
+  framework: Boolean = false,
+  tags: List[String]
+)
+
+// index.json schema from Universe
+case class UniverseIndex(
+  version: String,
+  packages: List[PackageIndex]
+) {
+
+  def getPackages: Map[String, PackageInfo] = {
+    packages.map { packageInfo =>
+      (packageInfo.name,
+        PackageInfo(
+          packageInfo.versions(packageInfo.currentVersion),
+          packageInfo.versions,
+          packageInfo.description,
+          packageInfo.framework,
+          packageInfo.tags
+        )
+      )
+    }.toMap
+  }
+}
+
+case class PackageInfo(
+  currentRevision: String,
+  versions: Map[String, String], // version -> revision
+  description: String,
+  framework: Boolean = false,
+  tags: List[String]
+)
+

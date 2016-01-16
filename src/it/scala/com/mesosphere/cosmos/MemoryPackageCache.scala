@@ -10,7 +10,7 @@ import io.circe.Json
   */
 final case class MemoryPackageCache(packages: Map[String, Json]) extends PackageCache {
 
-  def getMarathonJson(packageName: String): Future[CosmosResult[Json]] = {
+  def getMarathonJson(packageName: String, version: Option[String]): Future[CosmosResult[Json]] = {
     Future.value(packages.get(packageName).toRightXor(errorNel(PackageNotFound(packageName))))
   }
 

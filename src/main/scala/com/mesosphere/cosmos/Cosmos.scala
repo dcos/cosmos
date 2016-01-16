@@ -47,7 +47,7 @@ private final class Cosmos(packageCache: PackageCache, packageRunner: PackageRun
 
     def respond(reqBody: InstallRequest): Future[Output[Json]] = {
       packageCache
-        .getMarathonJson(reqBody.name)
+        .getMarathonJson(reqBody.name, reqBody.version)
         .flatMap {
           case Right(marathonJson) => packageRunner.launch(marathonJson)
           case Left(errors) => Future.value(failureOutput(errors))
