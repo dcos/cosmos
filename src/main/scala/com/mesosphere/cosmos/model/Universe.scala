@@ -3,22 +3,22 @@ package com.mesosphere.cosmos.model
 case class License(name: String, url: String)
 
 case class PackageDefinition(
-  packagingVersion: Option[String],
+  packagingVersion: Option[String] = None,
   name: String,
   version: String,
   maintainer: String,
   description: String,
-  tags: List[String],
-  scm: Option[String],
-  website: Option[String],
-  framework: Option[Boolean],
-  preInstallNotes: Option[String],
-  postInstallNotes: Option[String],
-  postUninstallNotes: Option[String],
-  licenses: Option[List[License]],
+  tags: List[String] = Nil,
+  scm: Option[String] = None,
+  website: Option[String] = None,
+  framework: Option[Boolean] = None,
+  preInstallNotes: Option[String] = None,
+  postInstallNotes: Option[String] = None,
+  postUninstallNotes: Option[String] = None,
+  licenses: Option[List[License]] = None,
   // This is only here to support adding images to the DCOS_PACKAGE_METADATA Marathon label
   // GitHub issue #57 will decide whether to keep this here
-  images: Option[Images]
+  images: Option[Images] = None
 )
 
 case class Container(
@@ -44,8 +44,8 @@ case class Images(
 )
 
 case class Resource(
-  assets: Option[Assets],
-  images: Option[Images]
+  assets: Option[Assets] = None,
+  images: Option[Images] = None
 )
 
 // index.json schema for each package from Universe

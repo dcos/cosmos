@@ -1,10 +1,15 @@
 package com.mesosphere.cosmos
 
+import java.io.IOException
+import java.nio.file.attribute.BasicFileAttributes
+import java.nio.file.{FileVisitResult, Files, Path, SimpleFileVisitor}
+import java.util.{Base64, UUID}
+
 import cats.data.Xor
 import cats.data.Xor.Right
 import cats.std.list._
 import cats.syntax.traverse._
-import com.mesosphere.cosmos.model.InstallRequest
+import com.mesosphere.cosmos.model.{InstallRequest, PackageDefinition, PackageFiles, Resource}
 import com.netaporter.uri.Uri
 import com.netaporter.uri.dsl._
 import com.twitter.finagle.http._
@@ -14,13 +19,8 @@ import com.twitter.util._
 import io.circe.generic.auto._
 import io.circe.parse._
 import io.circe.syntax._
-import io.circe.{Cursor, Json}
+import io.circe.{Cursor, Json, JsonObject}
 import org.scalatest.{BeforeAndAfterAll, FreeSpec}
-
-import java.io.IOException
-import java.nio.file.attribute.BasicFileAttributes
-import java.nio.file.{FileVisitResult, Files, Path, SimpleFileVisitor}
-import java.util.{Base64, UUID}
 
 final class PackageInstallSpec extends FreeSpec with BeforeAndAfterAll with CosmosSpec {
 
@@ -206,9 +206,9 @@ private object PackageInstallSpec extends CosmosSpec {
 
   private val UniverseUri = Uri.parse("https://github.com/mesosphere/universe/archive/cli-test-3.zip")
 
-  private val PackageTableRows: Seq[(String, Json)] = Seq(
-    packageTableRow("helloworld2", 1, 512, 2),
-    packageTableRow("helloworld3", 0.75, 256, 3)
+  private val PackageTableRows: Seq[(String, PackageFiles)] = Seq(
+    packageTableRow("helloworld2", 1, 512.0, 2),
+    packageTableRow("helloworld3", 0.75, 256.0, 3)
   )
 
   private lazy val PackageTable = Table(
@@ -272,30 +272,60 @@ private object PackageInstallSpec extends CosmosSpec {
     }
   }
 
-  private lazy val PackageMap: Map[String, Json] = PackageTableRows.toMap
+  private lazy val PackageMap: Map[String, PackageFiles] = PackageTableRows.toMap
 
   private def packageTableRow(
-    name: String, cpus: Double, mem: Int, pythonVersion: Int
-  ): (String, Json) = {
+    name: String, cpus: Double, mem: Double, pythonVersion: Int
+  ): (String, PackageFiles) = {
     val cmd =
       if (pythonVersion <= 2) "python2 -m SimpleHTTPServer 8082" else "python3 -m http.server 8083"
 
-    name -> Json.obj(
-      "id" -> name,
-      "cpus" -> cpus,
-      "mem" -> mem,
-      "instances" -> 1,
-      "cmd" -> cmd,
-      "container" -> Json.obj(
-        "type" -> "DOCKER",
-        "docker" -> Json.obj(
-          "image" -> s"python:$pythonVersion",
-          "network" -> "HOST"
+    val packageDefinition = PackageDefinition(
+      packagingVersion = None,
+      name = name,
+      version = "0.1.0",
+      maintainer = "Mesosphere",
+      description = "Test framework",
+      tags = Nil,
+      scm = None,
+      website = None,
+      framework = None,
+      preInstallNotes = None,
+      postInstallNotes = None,
+      postUninstallNotes = None,
+      licenses = None,
+      images = None
+    )
+
+    val resource = Resource(
+      assets = None,
+      images = None
+    )
+
+    val marathonJson = MarathonJson(
+      id = name,
+      cpus = cpus,
+      mem = mem,
+      instances = 1,
+      cmd = cmd,
+      container = MarathonJsonContainer(
+        `type` = "DOCKER",
+        docker = MarathonJsonDocker(
+          image = s"python:$pythonVersion",
+          network = "HOST"
         )
       ),
-      "labels" -> Json.obj(
-        "test-id" -> UUID.randomUUID().toString
-      )
+      labels = Map("test-id" -> UUID.randomUUID().toString)
+    )
+
+    name -> PackageFiles(
+      version = "0.1.0",
+      revision = "0",
+      commandJson = Json.obj(),
+      configJson = Json.obj(),
+      marathonJsonMustache = marathonJson.asJson.noSpaces,
+      packageJson = packageDefinition,
+      resourceJson = resource
     )
   }
 
@@ -303,8 +333,12 @@ private object PackageInstallSpec extends CosmosSpec {
     Map("errors" -> Seq(Map("message" -> message))).asJson
   }
 
-  private def assertPackageInstalledFromCache(packageName: String, packageJson: Json): Unit = {
-    val expectedLabel = extractTestLabel(packageJson.cursor)
+  private def assertPackageInstalledFromCache(
+    packageName: String,
+    packageFiles: PackageFiles
+  ): Unit = {
+    val Right(marathonJson) = parse(packageFiles.marathonJsonMustache)
+    val expectedLabel = extractTestLabel(marathonJson.cursor)
     val actualLabel = Await.result(getMarathonJsonTestLabel(packageName))
     assertResult(expectedLabel)(actualLabel)
   }
@@ -350,6 +384,20 @@ private object PackageInstallSpec extends CosmosSpec {
   }
 
 }
+
+private case class MarathonJson(
+  id: String,
+  cpus: Double,
+  mem: Double,
+  instances: Int,
+  cmd: String,
+  container: MarathonJsonContainer,
+  labels: Map[String, String]
+)
+
+private case class MarathonJsonContainer(`type`: String, docker: MarathonJsonDocker)
+
+private case class MarathonJsonDocker(image: String, network: String)
 
 private final class ApiTestAssertionDecorator(apiClient: Service[Request, Response]) extends CosmosSpec {
 
@@ -402,7 +450,7 @@ private final class ApiTestAssertionDecorator(apiClient: Service[Request, Respon
     apiClient: Service[Request, Response], packageName: String, version: Option[String]
   ): Response = {
     val installRequest = requestBuilder(InstallEndpoint)
-      .buildPost(Buf.Utf8(InstallRequest(packageName, version).asJson.noSpaces))
+      .buildPost(Buf.Utf8(InstallRequest(packageName, version, JsonObject.empty).asJson.noSpaces))
     Await.result(apiClient(installRequest))
   }
 

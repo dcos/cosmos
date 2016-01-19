@@ -7,7 +7,9 @@ import com.mesosphere.cosmos.{CosmosError, PackageFileSchemaMismatch, errorNel}
 import io.circe.generic.auto._
 import io.circe.{Decoder, Json}
 
-case class PackageFiles private(
+case class PackageFiles private[cosmos] (
+  version: String,
+  revision: String,
   commandJson: Json,
   configJson: Json,
   marathonJsonMustache: String,
@@ -18,6 +20,8 @@ case class PackageFiles private(
 object PackageFiles {
 
   private[cosmos] def validate(
+    version: String,
+    revision: String,
     commandJson: Json,
     configJson: Json,
     marathonJsonMustache: String,
@@ -29,7 +33,9 @@ object PackageFiles {
 
     (packageDefValid |@| resourceDefValid)
       .map { (packageDef, resourceDef) =>
-        PackageFiles(commandJson, configJson, marathonJsonMustache, packageDef, resourceDef)
+        PackageFiles(
+          version, revision, commandJson, configJson, marathonJsonMustache, packageDef, resourceDef
+        )
       }
   }
 
