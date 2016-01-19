@@ -4,7 +4,7 @@ import java.io.{BufferedInputStream, ByteArrayInputStream, FileInputStream, Inpu
 import java.util.zip.ZipInputStream
 
 import cats.data.Xor.{Left, Right}
-import com.mesosphere.cosmos.model.InstallRequest
+import com.mesosphere.cosmos.model.{DescribeRequest, InstallRequest}
 import com.twitter.finagle.Service
 import com.twitter.finagle.http.exp.Multipart.{FileUpload, InMemoryFileUpload, OnDiskFileUpload}
 import com.twitter.finagle.http.{Request, Response, Status}
@@ -12,8 +12,9 @@ import io.github.benwhitehead.finch.FinchServer
 
 // Required for auto-parsing case classes from JSON
 import com.twitter.util.{Await, Future}
-import io.circe.Json
+import io.circe.{Json, JsonObject}
 import io.circe.generic.auto._    // Required for auto-parsing case classes from JSON
+
 import io.finch._
 import io.finch.circe._
 
@@ -58,7 +59,30 @@ private final class Cosmos(packageCache: PackageCache, packageRunner: PackageRun
     post("v1" / "package" / "install" ? body.as[InstallRequest])(respond _)
   }
 
-  val service: Service[Request, Response] = (ping :+: packageImport :+: packageInstall).toService
+  val packageDescribe: Endpoint[Json] = {
+
+    def respond(describe: DescribeRequest): Future[Output[Json]] = {
+      packageCache
+        .getPackageFiles(describe.packageName, describe.packageVersion)
+        .map { packageFilesXor =>
+          val responseContentXor = packageFilesXor.map(_.describeAsJson)
+
+          responseContentXor match {
+            case Right(json) => Ok(json)
+            case Left(errors) => failureOutput(errors)
+          }
+        }
+    }
+
+    val describe: RequestReader[DescribeRequest] = for {
+        name <- param("packageName")
+        version <- paramOption("packageVersion")
+    } yield DescribeRequest(name, version)
+
+    get("v1" / "package" / "describe" ? describe) (respond _)
+  }
+
+  val service: Service[Request, Response] = (ping :+: packageImport :+: packageInstall :+: packageDescribe).toService
 
   /** Attempts to provide access to the content of the given file upload as a byte stream.
     *

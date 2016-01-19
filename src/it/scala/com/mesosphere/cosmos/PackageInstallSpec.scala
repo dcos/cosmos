@@ -19,12 +19,13 @@ import com.twitter.util._
 import io.circe.generic.auto._
 import io.circe.parse._
 import io.circe.syntax._
-import io.circe.{Cursor, Json, JsonObject}
 import org.scalatest.{BeforeAndAfterAll, FreeSpec}
+import io.circe.{Cursor, Json, JsonObject}
 
 final class PackageInstallSpec extends FreeSpec with BeforeAndAfterAll with CosmosSpec {
 
   import PackageInstallSpec._
+  import IntegrationHelpers._
 
   "The package install endpoint" - {
 
@@ -345,10 +346,6 @@ private object PackageInstallSpec extends CosmosSpec {
     )
   }
 
-  private def errorJson(message: String): Json = {
-    Map("errors" -> Seq(Map("message" -> message))).asJson
-  }
-
   private def assertPackageInstalledFromCache(
     packageName: String,
     packageFiles: PackageFiles
@@ -372,31 +369,6 @@ private object PackageInstallSpec extends CosmosSpec {
       .downField("labels")
       .flatMap(_.downField("test-id"))
       .flatMap(_.as[String].toOption)
-  }
-
-  private def withTempDirectory[A](f: Path => A): A = {
-    val tempDir = Files.createTempDirectory("cosmos")
-    Try(f(tempDir)).ensure {
-      val visitor = new SimpleFileVisitor[Path] {
-
-        override def visitFile(file: Path, attrs: BasicFileAttributes): FileVisitResult = {
-          Files.delete(file)
-          FileVisitResult.CONTINUE
-        }
-
-        override def postVisitDirectory(dir: Path, e: IOException): FileVisitResult = {
-          Option(e) match {
-            case Some(failure) => throw failure
-            case _ =>
-              Files.delete(dir)
-              FileVisitResult.CONTINUE
-          }
-        }
-
-      }
-
-      val _ = Files.walkFileTree(tempDir, visitor)
-    }.get()
   }
 
 }
