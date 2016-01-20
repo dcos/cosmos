@@ -28,3 +28,18 @@ The `build/run_tests.sh` script will ask CCM for a temporary DCOS cluster:
 ```bash
 $ ./build/run_tests.sh
 ```
+
+## Running Cosmos
+
+To run the Cosmos process we need to first create a One-JAR:
+
+```bash
+$ sbt one-jar
+```
+
+The jar will be created in the `target/scala-2.11/` directory. This can be executed with:
+
+```bash
+java -jar target/scala-2.11/cosmos_2.11-<version>-SNAPSHOT-one-jar.jar  \
+     -com.mesosphere.cosmos.dcosHost=<dcos-host-url>
+```
