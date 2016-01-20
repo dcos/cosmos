@@ -5,7 +5,7 @@ import java.util.Base64
 
 import cats.data.Xor
 import com.github.mustachejava.DefaultMustacheFactory
-import com.mesosphere.cosmos.model.{PackageFiles, Resource}
+import com.mesosphere.cosmos.model.{InstallRequest, PackageFiles, Resource}
 import com.twitter.io.Charsets
 import io.circe.generic.auto._
 import io.circe.parse.parse
@@ -18,7 +18,20 @@ object PackageInstall {
 
   private[this] val MustacheFactory = new DefaultMustacheFactory()
 
-  private[cosmos] def renderMustacheTemplate(
+  private[cosmos] def preparePackageConfig(
+    request: InstallRequest,
+    packageFiles: PackageFiles
+  ): CosmosResult[Json] = {
+    val marathonJsonXor = renderMustacheTemplate(packageFiles, request.options)
+      .flatMap(addLabels(_, packageFiles))
+
+    request.appId match {
+      case Some(id) => marathonJsonXor.map(_.mapObject(_ + ("id", id.asJson)))
+      case _ => marathonJsonXor
+    }
+  }
+
+  private[this] def renderMustacheTemplate(
     packageFiles: PackageFiles,
     options: JsonObject
   ): CosmosResult[Json] = {
@@ -88,7 +101,7 @@ object PackageInstall {
     )
   }
 
-  private[cosmos] def addLabels(
+  private[this] def addLabels(
     marathonJson: Json,
     packageFiles: PackageFiles
   ): CosmosResult[Json] = {

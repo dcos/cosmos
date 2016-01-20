@@ -17,7 +17,7 @@ final class MarathonPackageRunner(adminRouter: AdminRouter) extends PackageRunne
             failureOutput(errorNel(MarathonBadResponse(status.code)), Status.InternalServerError)
           case status if (500 until 600).contains(status.code) =>
             failureOutput(errorNel(MarathonBadResponse(status.code)), Status.BadGateway)
-          case _ => Ok(Json.empty)
+          case _ => Ok(Json.obj())
         }
       }
   }

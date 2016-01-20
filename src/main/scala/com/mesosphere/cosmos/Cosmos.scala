@@ -48,12 +48,7 @@ private final class Cosmos(packageCache: PackageCache, packageRunner: PackageRun
     def respond(reqBody: InstallRequest): Future[Output[Json]] = {
       packageCache
         .getPackageFiles(reqBody.name, reqBody.version)
-        .map { packageFilesXor =>
-          packageFilesXor.flatMap { packageFiles =>
-            PackageInstall.renderMustacheTemplate(packageFiles, reqBody.options)
-              .flatMap(PackageInstall.addLabels(_, packageFiles))
-          }
-        }
+        .map(_.flatMap(PackageInstall.preparePackageConfig(reqBody, _)))
         .flatMap {
           case Right(marathonJson) => packageRunner.launch(marathonJson)
           case Left(errors) => Future.value(failureOutput(errors))
