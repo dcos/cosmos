@@ -32,9 +32,9 @@ final class PackageInstallSpec extends FreeSpec with BeforeAndAfterAll with Cosm
       runService() { apiClient =>
         forAll (PackageTable) { (packageName, packageJson) =>
           apiClient.installPackageAndAssert(
-            packageName,
+            InstallRequest(packageName),
             Status.Ok,
-            content = Json.empty,
+            content = Json.obj(),
             preInstallState = NotInstalled,
             postInstallState = Installed
           )
@@ -52,7 +52,7 @@ final class PackageInstallSpec extends FreeSpec with BeforeAndAfterAll with Cosm
 
         runService(packageCache = packageCache) { apiClient =>
           apiClient.installPackageAndAssert(
-            packageName,
+            InstallRequest(packageName),
             Status.BadRequest,
             content = errorJson(s"Package [$packageName] not found"),
             preInstallState = Anything,
@@ -70,7 +70,7 @@ final class PackageInstallSpec extends FreeSpec with BeforeAndAfterAll with Cosm
             // TODO This currently relies on test execution order to be correct
             // Update it to explicitly install a package twice
             apiClient.installPackageAndAssert(
-              packageName,
+              InstallRequest(packageName),
               Status.Conflict,
               content = errorJson("Package is already installed"),
               preInstallState = AlreadyInstalled,
@@ -90,7 +90,7 @@ final class PackageInstallSpec extends FreeSpec with BeforeAndAfterAll with Cosm
           runService(dcosClient = dcosClient) { apiClient =>
             forAll(PackageTable) { (packageName, packageJson) =>
               apiClient.installPackageAndAssert(
-                packageName,
+                InstallRequest(packageName),
                 Status.InternalServerError,
                 content = errorJson(s"Received response status code ${status.code} from Marathon"),
                 preInstallState = Anything,
@@ -110,7 +110,7 @@ final class PackageInstallSpec extends FreeSpec with BeforeAndAfterAll with Cosm
           runService(dcosClient = dcosClient) { apiClient =>
             forAll (PackageTable) { (packageName, packageJson) =>
               apiClient.installPackageAndAssert(
-                packageName,
+                InstallRequest(packageName),
                 Status.BadGateway,
                 content = errorJson(s"Received response status code ${status.code} from Marathon"),
                 preInstallState = Anything,
@@ -131,13 +131,12 @@ final class PackageInstallSpec extends FreeSpec with BeforeAndAfterAll with Cosm
             // TODO This currently relies on test execution order to be correct
             // Update it to explicitly install a package twice
             apiClient.installPackageAndAssert(
-              packageName,
+              InstallRequest(packageName, version = Some(packageVersion)),
               Status.BadRequest,
               content = errorJson(
                 s"Version [$packageVersion] of package [$packageName] not found"),
               preInstallState = NotInstalled,
-              postInstallState = Unchanged,
-              version = Some(packageVersion)
+              postInstallState = Unchanged
             )
           }
         }
@@ -151,19 +150,35 @@ final class PackageInstallSpec extends FreeSpec with BeforeAndAfterAll with Cosm
         runService(packageCache = universeCache) { apiClient =>
           forAll (UniversePackagesTable) { (packageName, appId, uriSet, labelsOpt, versionOpt) =>
             apiClient.installPackageAndAssert(
-              packageName,
+              InstallRequest(packageName, version = versionOpt),
               Status.Ok,
-              content = Json.empty,
+              content = Json.obj(),
               preInstallState = NotInstalled,
               postInstallState = Installed,
-              appIdOpt = Some(appId),
-              versionOpt
+              expectedAppIdOpt = Some(appId)
             )
             // TODO Confirm that the correct config was sent to Marathon - see issue #38
             val packageInfo = Await.result(getPackageInfo(appId))
             assertResult(uriSet)(packageInfo.uris)
             labelsOpt.foreach(labels => assertResult(labels)(StandardLabels(packageInfo.labels)))
           }
+        }
+      }
+    }
+
+    "supports custom app IDs" in {
+      val _ = withTempDirectory { universeDir =>
+        val universeCache = Await.result(UniversePackageCache(UniverseUri, universeDir))
+
+        runService(packageCache = universeCache) { apiClient =>
+          apiClient.installPackageAndAssert(
+            InstallRequest("cassandra", appId = Some("custom-app-id")),
+            Status.Ok,
+            content = Json.obj(),
+            preInstallState = NotInstalled,
+            postInstallState = Installed,
+            expectedAppIdOpt = Some("custom-app-id")
+          )
         }
       }
     }
@@ -177,7 +192,8 @@ final class PackageInstallSpec extends FreeSpec with BeforeAndAfterAll with Cosm
       adminRouter.deleteApp("/helloworld", force = true) map { resp => assert(resp.getStatusCode() === 200) },
       adminRouter.deleteApp("/helloworld2", force = true) map { resp => assert(resp.getStatusCode() === 200) },
       adminRouter.deleteApp("/helloworld3", force = true) map { resp => assert(resp.getStatusCode() === 200) },
-      adminRouter.deleteApp("/cassandra/dcos", force = true) map { resp => assert(resp.getStatusCode() === 200) }
+      adminRouter.deleteApp("/cassandra/dcos", force = true) map { resp => assert(resp.getStatusCode() === 200) },
+      adminRouter.deleteApp("/custom-app-id", force = true) map { resp => assert(resp.getStatusCode() === 200) }
     ))
     Await.result(deletes.flatMap { x => Future.Unit })
   }
@@ -404,24 +420,22 @@ private final class ApiTestAssertionDecorator(apiClient: Service[Request, Respon
   import ApiTestAssertionDecorator._
 
   private[cosmos] def installPackageAndAssert(
-    packageName: String,
+    installRequest: InstallRequest,
     status: Status,
     content: Json,
     preInstallState: PreInstallState,
     postInstallState: PostInstallState,
-    appIdOpt: Option[String] = None,
-    version: Option[String] = None
+    expectedAppIdOpt: Option[String] = None
   ): Unit = {
-
-    val appId = appIdOpt.getOrElse(packageName)
-    val packageWasInstalled = isAppInstalled(appId)
+    val expectedAppId = expectedAppIdOpt.getOrElse(installRequest.name)
+    val packageWasInstalled = isAppInstalled(expectedAppId)
     preInstallState match {
       case AlreadyInstalled => assertResult(true)(packageWasInstalled)
       case NotInstalled => assertResult(false)(packageWasInstalled)
       case Anything => // Don't care
     }
 
-    val response = installPackage(apiClient, packageName, version)
+    val response = installPackage(apiClient, installRequest)
     assertResult(status)(response.status)
     assertResult(Xor.Right(content))(parse(response.contentString))
 
@@ -429,7 +443,7 @@ private final class ApiTestAssertionDecorator(apiClient: Service[Request, Respon
       case Installed => true
       case Unchanged => packageWasInstalled
     }
-    val actuallyInstalled = isAppInstalled(appId)
+    val actuallyInstalled = isAppInstalled(expectedAppId)
     assertResult(expectedInstalled)(actuallyInstalled)
   }
 
@@ -447,11 +461,12 @@ private final class ApiTestAssertionDecorator(apiClient: Service[Request, Respon
   }
 
   private[this] def installPackage(
-    apiClient: Service[Request, Response], packageName: String, version: Option[String]
+    apiClient: Service[Request, Response],
+    installRequest: InstallRequest
   ): Response = {
-    val installRequest = requestBuilder(InstallEndpoint)
-      .buildPost(Buf.Utf8(InstallRequest(packageName, version, JsonObject.empty).asJson.noSpaces))
-    Await.result(apiClient(installRequest))
+    val request = requestBuilder(InstallEndpoint)
+      .buildPost(Buf.Utf8(installRequest.asJson.noSpaces))
+    Await.result(apiClient(request))
   }
 
 }
