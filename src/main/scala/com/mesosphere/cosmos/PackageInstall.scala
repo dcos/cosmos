@@ -22,7 +22,7 @@ object PackageInstall {
     request: InstallRequest,
     packageFiles: PackageFiles
   ): CosmosResult[Json] = {
-    val marathonJsonXor = renderMustacheTemplate(packageFiles, request.options)
+    val marathonJsonXor = renderMustacheTemplate(packageFiles, request.options.getOrElse(JsonObject.empty))
       .flatMap(addLabels(_, packageFiles))
 
     request.appId match {
