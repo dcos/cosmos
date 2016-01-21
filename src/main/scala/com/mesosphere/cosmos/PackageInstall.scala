@@ -5,6 +5,7 @@ import java.util.Base64
 
 import cats.data.Xor
 import com.github.mustachejava.DefaultMustacheFactory
+import com.mesosphere.cosmos.jsonschema.JsonSchemaValidation
 import com.mesosphere.cosmos.model.{InstallRequest, PackageFiles, Resource}
 import com.twitter.io.Charsets
 import io.circe.generic.auto._
@@ -40,6 +41,11 @@ object PackageInstall {
 
     val defaults = extractDefaultsFromConfig(packageFiles.configJson)
     val merged = merge(defaults, options)
+
+    if (!JsonSchemaValidation.matchesSchema(Json.fromJsonObject(merged), packageFiles.configJson)) {
+      throw JsonSchemaMismatch()
+    }
+
     val resource = extractAssetsAsJson(packageFiles.resourceJson)
     val complete = merged + ("resource", Json.fromJsonObject(resource))
     val params = jsonToJava(Json.fromJsonObject(complete))

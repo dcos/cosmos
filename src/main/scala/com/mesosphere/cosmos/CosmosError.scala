@@ -1,6 +1,7 @@
 package com.mesosphere.cosmos
 
 import cats.data.NonEmptyList
+import com.github.fge.jsonschema.core.report.ProcessingMessage
 import com.netaporter.uri.Uri
 import com.twitter.finagle.http.Status
 
@@ -23,7 +24,7 @@ sealed trait CosmosError extends RuntimeException {
         s"Received response status code ${marathonStatus.code} from Marathon"
       case MarathonBadGateway(marathonStatus) =>
         s"Received response status code ${marathonStatus.code} from Marathon"
-      case IndexNotFound(repoUri: Uri) => s"Index file missing for repo [$repoUri]"
+      case IndexNotFound(repoUri) => s"Index file missing for repo [$repoUri]"
       case MarathonAppMetadataError(note) => note
       case MarathonAppDeleteError(appId) => s"Error while deleting marathon app '$appId'"
       case MarathonAppNotFound(appId) => s"Unable to locate service with marathon appId: '$appId'"
@@ -35,6 +36,7 @@ sealed trait CosmosError extends RuntimeException {
       case mfi @ MultipleFrameworkIds(_, _) => mfi.toString
       case me @ MultipleError(_) => me.toString
       case nelE @ NelErrors(_) => nelE.toString
+      case JsonSchemaMismatch() => "Options JSON failed validation"
     }
   }
 
@@ -66,3 +68,5 @@ case class MultipleFrameworkIds(frameworkName: String, ids: List[String]) extend
 
 case class MultipleError(errs: List[CosmosError]) extends CosmosError
 case class NelErrors(errs: NonEmptyList[CosmosError]) extends CosmosError //TODO: Cleanup
+
+case class JsonSchemaMismatch() extends CosmosError

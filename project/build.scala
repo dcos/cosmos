@@ -18,6 +18,7 @@ object CosmosBuild extends Build {
     val scalaUri = "0.4.11"
     val scalaTest = "2.2.4"
     val scalaCheck = "1.10.0"
+    val jsonSchema = "2.2.6"
   }
 
   object Deps {
@@ -54,6 +55,10 @@ object CosmosBuild extends Build {
 
     val scalaTest = Seq(
       "org.scalatest"       %% "scalatest"        % V.scalaTest     % "test"
+    )
+
+    val jsonSchema = Seq(
+      "com.github.fge" % "json-schema-validator" % V.jsonSchema
     )
 
   }
@@ -139,6 +144,7 @@ object CosmosBuild extends Build {
           ++ Deps.mustache
           ++ Deps.scalaTest
           ++ Deps.scalaUri
+          ++ Deps.jsonSchema
     )
 
   //////////////////////////////////////////////////////////////////////////////
