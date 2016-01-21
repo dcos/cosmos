@@ -29,6 +29,8 @@ object `package` {
 
   def errorNel(error: CosmosError): NonEmptyList[CosmosError] = NonEmptyList(error)
 
+  def leftErrorNel(error: CosmosError): Left[NonEmptyList[CosmosError]] = Xor.Left(errorNel(error))
+
   def successOutput(message: String): Output[Json] = {
     Output.payload(Map("message" -> message).asJson)
   }

@@ -1,27 +1,21 @@
 package com.mesosphere.cosmos
 
-import java.io.IOException
-import java.nio.file.attribute.BasicFileAttributes
-import java.nio.file.{FileVisitResult, Files, Path, SimpleFileVisitor}
-import java.util.{Base64, UUID}
-
 import cats.data.Xor
 import cats.data.Xor.Right
-import com.mesosphere.cosmos.model.{InstallRequest, PackageDefinition, PackageFiles, Resource}
+import com.mesosphere.cosmos.model._
 import com.netaporter.uri.Uri
 import com.twitter.finagle.http._
 import com.twitter.finagle.{Http, Service}
-import com.twitter.io.{Buf, Charsets}
 import com.twitter.util._
 import io.circe.parse._
 import io.circe.generic.auto._
-import io.circe.{Cursor, Json, JsonObject}
-import org.scalatest.{BeforeAndAfterAll, FreeSpec}
+import io.circe.Json
+import org.scalatest.FreeSpec
 
 final class PackageDescribeSpec extends FreeSpec with CosmosSpec {
 
-  import PackageDescribeSpec._
   import IntegrationHelpers._
+  import PackageDescribeSpec._
 
   "The package describe endpoint" - {
     "don't install if specified version is not found" in {
@@ -60,8 +54,11 @@ final class PackageDescribeSpec extends FreeSpec with CosmosSpec {
   )(
     f: DescribeTestAssertionDecorator => Unit
   ): Unit = {
-    val adminRouter = new AdminRouter(dcosHost(), dcosClient)
-    val service = new Cosmos(packageCache, new MarathonPackageRunner(adminRouter)).service
+    val service = new Cosmos(
+      packageCache,
+      new MarathonPackageRunner(adminRouter),
+      (r : UninstallRequest) => { Future.value(Xor.Right(UninstallResponse(Nil))) }
+    ).service
     val server = Http.serve(s":$servicePort", service)
     val client = Http.newService(s"127.0.0.1:$servicePort")
 
