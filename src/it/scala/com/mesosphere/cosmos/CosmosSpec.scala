@@ -1,6 +1,7 @@
 package com.mesosphere.cosmos
 
 import com.netaporter.uri.Uri
+import com.netaporter.uri.Uri
 import com.twitter.app.{FlagParseException, FlagUsageError, Flags}
 import com.twitter.finagle.http.RequestBuilder
 import com.twitter.finagle.http.RequestConfig.Yes
@@ -32,7 +33,7 @@ trait CosmosSpec extends Matchers with TableDrivenPropertyChecks {
   logger.info("Connection to admin router located at: {}", adminRouterHost)
   /*TODO: Not crazy about this being here, possibly find a better place.*/
   protected[this] lazy val adminRouter: AdminRouter =
-    new AdminRouter(adminRouterHost, Services.adminRouterClient(adminRouterHost))
+    new AdminRouter(adminRouterHost, Services.adminRouterClient(adminRouterHost).get)
 
   protected[this] val servicePort: Int = 8081
 

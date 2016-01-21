@@ -1,38 +1,45 @@
 package com.mesosphere.cosmos
 
-import java.net.{Inet6Address, Inet4Address, InetAddress}
+import java.net.InetSocketAddress
 
 import com.netaporter.uri.Uri
+import com.twitter.finagle.client.Transporter
 import com.twitter.finagle.http.{Request, Response}
+import com.twitter.finagle.ssl.Ssl
+import com.twitter.finagle.transport.Transport
 import com.twitter.finagle.{Http, Service}
+import com.twitter.util.Try
 
 object Services {
-  def adminRouterClient(uri: Uri): Service[Request, Response] = {
-    extractHostAndPort(uri) match {
-      case Some(hostPort) => Http.client.newService(hostPort, "adminRouter")
-      case _ => throw new IllegalArgumentException(s"unable to connect to '${uri.toStringRaw}'.")
-    }
-  }
-
-  private[cosmos] def extractHostAndPort(uri: Uri): Option[String] = {
-    val ip = uri.host flatMap { hostNameOrIp =>
-      InetAddress.getByName(hostNameOrIp) match {
-        case v4: Inet4Address => Some(v4.getHostAddress)
-        case v6: Inet6Address => Some(s"[${v6.getHostAddress}]")
-        case _ => None
+  def adminRouterClient(uri: Uri): Try[Service[Request, Response]] = {
+    extractHostAndPort(uri) map { case ConnectionDetails(hostname, port, tls) =>
+      val cBuilder = tls match {
+        case false =>
+          Http.client
+        case true =>
+          Http.client
+            .configured(Transport.TLSClientEngine(Some({
+              case inet: InetSocketAddress => Ssl.client(hostname, inet.getPort)
+              case _ => Ssl.client()
+            })))
+            .configured(Transporter.TLSHostname(Some(hostname)))
       }
+
+      cBuilder.newService(s"$hostname:$port", "adminRouter")
     }
-    val hostPort = (uri.scheme, ip, uri.port) match {
-      case (_, Some(h), Some(p)) => Some(s"$h:$p")
-      case (Some(s), Some(h), None) => schemeDefaultPorts.get(s) map { p => s"$h:$p" }
-      case (_, None, _) => None
-      case (None, Some(h), None) => None
-    }
-    hostPort
   }
 
-  private[this] val schemeDefaultPorts: Map[String, Int] = Map(
-    "http" -> 80,
-    "https" -> 443
-  )
+  private[cosmos] def extractHostAndPort(uri: Uri): Try[ConnectionDetails] = Try {
+    (uri.scheme, uri.host, uri.port) match {
+      case (Some("https"), Some(h), p) => ConnectionDetails(h, p.getOrElse(443), tls = true)
+      case (Some("http"), Some(h), p) => ConnectionDetails(h, p.getOrElse(80), tls = false)
+      case (_, _, _) => throw err(uri.toString)
+    }
+  }
+
+  private def err(actual: String): Throwable = {
+    new IllegalArgumentException(s"Unsupported or invalid URI. Expected format 'http[s]://example.com[:port][/base-path]' actual '$actual'")
+  }
+
+  private[cosmos] case class ConnectionDetails(host: String, port: Int, tls: Boolean = false)
 }
