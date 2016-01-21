@@ -2,6 +2,13 @@
 
 An [orderly, harmonius, complete](http://www.thefreedictionary.com/cosmos) API for DCOS services.
 
+## Requirements
+
+- SBT
+- Install raml2html - This is needed to generate the HTML documentation from a RAML file.
+  - Install NPM
+  - Install raml2html - `npm i -g raml2html`
+
 ## Running tests
 
 Note that the tests currently leave some apps running on Marathon, and cannot be run again
@@ -10,7 +17,6 @@ for keeping test runs independent of each other.
 
 ### Requirements
 
-- SBT
 - An existing DCOS cluster or access to `ccm.mesosphere.com`
 
 ### Running with an existing cluster
