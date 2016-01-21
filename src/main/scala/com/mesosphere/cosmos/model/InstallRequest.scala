@@ -5,6 +5,6 @@ import io.circe.JsonObject
 case class InstallRequest(
   name: String,
   version: Option[String] = None,
-  options: JsonObject = JsonObject.empty,
+  options: Option[JsonObject] = None,
   appId: Option[String] = None
 )

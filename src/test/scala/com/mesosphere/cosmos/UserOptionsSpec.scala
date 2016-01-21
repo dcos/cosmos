@@ -24,7 +24,7 @@ final class UserOptionsSpec extends UnitSpec {
     "should happen as part of package install" in {
       forAll (Examples) { (defaultsJson, optionsJson, mergedJson) =>
         val packageName = "options-test"
-        val reqBody = InstallRequest(packageName, None, optionsJson)
+        val reqBody = InstallRequest(packageName, None, Some(optionsJson))
         val mustacheTemplate = buildMustacheTemplate(mergedJson)
 
         val packageFiles = PackageFiles(
