@@ -6,6 +6,7 @@ import cats.syntax.apply._
 import com.mesosphere.cosmos.{CosmosError, PackageFileSchemaMismatch, errorNel}
 import io.circe.generic.auto._
 import io.circe.{Decoder, Json}
+import io.circe.syntax._
 
 case class PackageFiles private[cosmos] (
   version: String,
@@ -15,7 +16,18 @@ case class PackageFiles private[cosmos] (
   marathonJsonMustache: String,
   packageJson: PackageDefinition,
   resourceJson: Resource
-)
+) {
+
+  def describeAsJson: Json = {
+    Json.obj(
+      "command" -> commandJson,
+      "config" -> configJson,
+      "marathonTemplate" -> marathonJsonMustache.asJson,
+      "package" -> packageJson.asJson,
+      "resource" -> resourceJson.asJson
+    )
+  }
+}
 
 object PackageFiles {
 
