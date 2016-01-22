@@ -49,7 +49,7 @@ final class UserOptionsSpec extends UnitSpec {
         val cosmos = new Cosmos(
           packageCache,
           packageRunner,
-          (r : UninstallRequest) => { Future.value(Xor.Right(UninstallResponse(Nil))) }
+          (r : UninstallRequest) => { Future.value(UninstallResponse(Nil)) }
         )
         val request = RequestBuilder()
           .url("http://dummy.cosmos.host/v1/package/install")

@@ -54,49 +54,50 @@ class AdminRouter(adminRouterUri: Uri, client: Service[Request, Response]) {
       .buildDelete()
   }
 
-  private[this] def validateResponseStatus(uri: Uri, response: Response): CosmosResult[Response] = {
+  private[this] def validateResponseStatus(uri: Uri, response: Response): Future[Response] = {
     response.status match {
       case Status.Ok =>
-        Right(response)
-      case s: Status => leftErrorNel(GenericHttpError(uri, s))
+        Future.value(response)
+      case s: Status =>
+        throw new GenericHttpError(uri, s)
     }
   }
 
-  private[this] def decodeJsonTo[A](response: Response)(implicit d: io.circe.Decoder[A]): CosmosResult[A] = {
+  private[this] def decodeJsonTo[A](response: Response)(implicit d: io.circe.Decoder[A]): A = {
     response.headerMap.get("Content-Type") match {
       case Some(ct) if ct.startsWith("application/json") =>
         decode[A](response.contentString) match {
-          case Left(err) => leftErrorNel(CirceError(err))
-          case Right(a) => Right(a)
+          case Left(err) => throw CirceError(err)
+          case Right(a) => a
         }
       case a: Option[String] =>
-        leftErrorNel(UnsupportedContentType(a, "application/json"))
+        throw UnsupportedContentType(a, "application/json")
     }
   }
 
-  private[this] def decodeTo[A](uri: Uri, response: Response)(implicit d: io.circe.Decoder[A]): CosmosResult[A] = {
+  private[this] def decodeTo[A](uri: Uri, response: Response)(implicit d: io.circe.Decoder[A]): Future[A] = {
     validateResponseStatus(uri, response)
-      .flatMap(decodeJsonTo[A])
+      .map(decodeJsonTo[A])
   }
 
   def createApp(appJson: Json): Future[Response] = {
     client(post("marathon" / "v2" / "apps" , appJson))
   }
 
-  def getApp(appId: Uri): Future[CosmosResult[MarathonAppResponse]] = {
+  def getApp(appId: Uri): Future[MarathonAppResponse] = {
     val uri = "marathon" / "v2" / "apps" / appId
     client(get(uri)).map { response =>
       response.status match {
-        case Status.Ok => decodeJsonTo(response)
-        case Status.NotFound => leftErrorNel(MarathonAppNotFound(appId.toString))
-        case s: Status => leftErrorNel(GenericHttpError(uri, s))
+        case Status.Ok => decodeJsonTo[MarathonAppResponse](response)
+        case Status.NotFound => throw MarathonAppNotFound(appId.toString)
+        case s: Status => throw GenericHttpError(uri, s)
       }
     }
   }
 
-  def listApps(): Future[CosmosResult[MarathonAppsResponse]] = {
+  def listApps(): Future[MarathonAppsResponse] = {
     val uri = "marathon" / "v2" / "apps"
-    client(get(uri)).map(decodeTo[MarathonAppsResponse](uri, _))
+    client(get(uri)).flatMap(decodeTo[MarathonAppsResponse](uri, _))
   }
 
   def deleteApp(appId: Uri, force: Boolean = false): Future[Response] = {
@@ -106,7 +107,7 @@ class AdminRouter(adminRouterUri: Uri, client: Service[Request, Response]) {
     }
   }
 
-  def tearDownFramework(frameworkId: String): Future[CosmosResult[MesosFrameworkTearDownResponse]] = {
+  def tearDownFramework(frameworkId: String): Future[MesosFrameworkTearDownResponse] = {
     val formData = Uri.empty.addParam("frameworkId", frameworkId)
     // scala-uri makes it convenient to encode the actual framework id, but it will think its for a Uri
     // so we strip the leading '?' that signifies the start of a query string
@@ -114,11 +115,11 @@ class AdminRouter(adminRouterUri: Uri, client: Service[Request, Response]) {
     val uri = "mesos" / "master" / "teardown"
     client(postForm(uri, encodedString))
       .map(validateResponseStatus(uri, _))
-      .flatMapXor { _ : Response => Future.value(Right(MesosFrameworkTearDownResponse())) }
+      .flatMap { _ => Future.value(MesosFrameworkTearDownResponse()) }
   }
 
-  def getMasterState(frameworkName: String): Future[CosmosResult[MasterState]] = {
+  def getMasterState(frameworkName: String): Future[MasterState] = {
     val uri = "mesos" / "master" / "state.json"
-    client(get(uri)).map(decodeTo[MasterState](uri, _))
+    client(get(uri)).flatMap(decodeTo[MasterState](uri, _))
   }
 }

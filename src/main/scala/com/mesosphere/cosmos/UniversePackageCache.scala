@@ -3,13 +3,8 @@ package com.mesosphere.cosmos
 import java.nio.file._
 import java.util.zip.ZipInputStream
 
-import cats.data.Validated.valid
-import cats.data.ValidatedNel
+import cats.data.Validated.{Valid, Invalid}
 import cats.data.Xor.{Left, Right}
-import cats.std.list._
-import cats.syntax.apply._
-import cats.syntax.option._
-import cats.syntax.traverse._
 import com.mesosphere.cosmos.model._
 import com.netaporter.uri.Uri
 import com.twitter.io.Charsets
@@ -29,12 +24,14 @@ final class UniversePackageCache private(repoDir: Path) extends PackageCache {
   override def getPackageFiles(
     packageName: String,
     version: Option[String]
-  ): Future[CosmosResult[PackageFiles]] = {
+  ): Future[PackageFiles] = {
     getRepoIndex(repoDir) // this will eventually be allIndexes
-      .flatMapXor { (repoIndex: UniverseIndex) =>
-        Future.value(getPackagePath(repoDir, repoIndex, packageName, version))
-          .flatMapXor((path: Path) => readPackageFiles(path, repoIndex.version))
-      }
+      .flatMap { repoIndex =>
+      getPackagePath(repoDir, repoIndex, packageName, version)
+        .flatMap(
+          path => readPackageFiles(path, repoIndex.version)
+        )
+    }
   }
 
 }
@@ -64,7 +61,7 @@ object UniversePackageCache {
       .takeWhile(_.isDefined)
       .flatten
 
-    Future {
+    Future.value {
       entries.foreach { entry =>
         val cachePath = cacheDir.resolve(entry.getName)
         if (entry.isDirectory) {
@@ -76,19 +73,14 @@ object UniversePackageCache {
     }
   }
 
-  private def getRepoIndex(repository: Path): Future[CosmosResult[UniverseIndex]] = {
+  private def getRepoIndex(repository: Path): Future[UniverseIndex] = {
     val indexFile = repository.resolve(Paths.get("meta", "index.json"))
     parseJsonFile(indexFile)
-      .map { indexValidated =>
-        indexValidated
-          .toXor
-          .leftMap(_ => errorNel(IndexNotFound))
-          .flatMap { index =>
-            index
-              .getOrElse(Json.obj())    // Json.obj() is {}, Json.empty is null
-              .as[UniverseIndex]
-              .leftMap(_ => errorNel(PackageFileSchemaMismatch("index.json")))
-          }
+      .map {
+        case None => throw IndexNotFound()
+        case Some(index) =>
+          index.as[UniverseIndex]
+            .getOrElse(throw PackageFileSchemaMismatch("index.json"))
       }
   }
 
@@ -97,21 +89,21 @@ object UniversePackageCache {
     repository: Path,
     universeIndex: UniverseIndex,
     packageName: String,
-    packageVersion: Option[String]): CosmosResult[Path] = {
+    packageVersion: Option[String]): Future[Path] = {
 
     universeIndex.getPackages.get(packageName) match {
-      case None => Left(errorNel(PackageNotFound(packageName)))
+      case None => throw PackageNotFound(packageName)
       case Some(packageInfo) =>
 
         val version = packageVersion.getOrElse(packageInfo.currentVersion)
         packageInfo.versions.get(version) match {
-          case None => Left(errorNel(VersionNotFound(packageName, version)))
+          case None => throw VersionNotFound(packageName, version)
           case Some(revision) =>
             val packagePath = Paths.get("packages",
-                                        packageName.charAt(0).toUpper.toString,
-                                        packageName,
-                                        revision)
-            Right(repository.resolve(packagePath))
+              packageName.charAt(0).toUpper.toString,
+              packageName,
+              revision)
+            Future.value(repository.resolve(packagePath))
         }
     }
   }
@@ -119,60 +111,52 @@ object UniversePackageCache {
   private def readPackageFiles(
     packageDir: Path,
     version: String
-  ): Future[CosmosResult[PackageFiles]] = {
-    val jsonFilesList = List("command", "config", "package", "resource")
-    val jsonFiles = Future.collect {
-      jsonFilesList.map { file =>
-        parseJsonFile(packageDir.resolve(s"${file}.json"))
-      }
-    }
+  ): Future[PackageFiles] = {
+    Future.join(
+        parseJsonFile(packageDir.resolve("command.json")),
+        parseJsonFile(packageDir.resolve("config.json")),
+        parseJsonFile(packageDir.resolve("package.json")),
+        parseJsonFile(packageDir.resolve("resource.json")),
+        readFile(packageDir.resolve("marathon.json.mustache"))
+      )
+      .map { case (commandJsonOpt, configJsonOpt, packageJsonOpt, resourceJsonOpt, mustacheOpt) =>
 
-    val marathonJsonMustache =
-      readFile(packageDir.resolve("marathon.json.mustache"))
-        .map(_.toValid(errorNel(PackageFileMissing("marathon.json.mustache"))))
+        val packageJson = packageJsonOpt.getOrElse(throw PackageFileMissing("package.json"))
+        val mustache = mustacheOpt.getOrElse(throw PackageFileMissing("marathon.json.mustache"))
 
-    Future
-      .join(jsonFiles, marathonJsonMustache)
-      .map { case (jsonPackageFiles, mustacheValid) =>
+        val revision = packageDir.getFileName.toString
+        val commandJson = commandJsonOpt.getOrElse(Json.empty)
+        val configJson = configJsonOpt.getOrElse(Json.empty)
+        val resourceJson = resourceJsonOpt.getOrElse(Json.empty)
 
-        (jsonPackageFiles.toList.sequenceU |@| mustacheValid).tupled.toXor.flatMap {
-          case (List(commandJsonOpt, configJsonOpt, packageJsonOpt, resourceJsonOpt), mustache) =>
-
-            packageJsonOpt
-              .toRightXor(errorNel(PackageFileMissing("package.json")))
-              .flatMap { packageJson =>
-                val revision = packageDir.getFileName.toString
-                val commandJson = commandJsonOpt.getOrElse(Json.empty)
-                val configJson = configJsonOpt.getOrElse(Json.empty)
-                val resourceJson = resourceJsonOpt.getOrElse(Json.empty)
-
-                PackageFiles
-                  .validate(
-                    version, revision, commandJson, configJson, mustache, packageJson, resourceJson
-                  )
-                  .toXor
-              }
+        PackageFiles.validate(
+          version, revision, commandJson, configJson, mustache, packageJson, resourceJson
+        ) match {
+          case Invalid(err) => throw NelErrors(err)
+          case Valid(valid) => valid
         }
       }
   }
 
-  private def parseJsonFile(file: Path): Future[ValidatedNel[CosmosError, Option[Json]]] = {
-    readFile(file).map { fileOpt =>
-      fileOpt match {
-        case None => valid(None)
-        case Some(content) =>
-          parse(content)
-            .leftMap(err => PackageFileNotJson(file.getFileName.toString, err.message))
-            .toValidated.toValidatedNel
-            .map((json: Json) => Some(json))
-       }
+  private def parseJsonFile(file: Path): Future[Option[Json]] = {
+    readFile(file).map {
+      _.map {
+        content =>
+          parse(content) match {
+            case Left(err) => throw PackageFileNotJson(file.getFileName.toString, err.message)
+            case Right(json) => json
+          }
+      }
     }
   }
 
   private def readFile(path: Path): Future[Option[String]] = {
-    Future(Some(Files.readAllBytes(path)))
-      .handle { case _: NoSuchFileException => None }
-      .map(_.map((bytes: Array[Byte]) => new String(bytes, Charsets.Utf8)))
+    path.toFile.exists() match {
+      case false => Future.value(None)
+      case true =>
+        Future.value(Some(new String(Files.readAllBytes(path), Charsets.Utf8))) // TODO: IO Future Pool
+          .rescue { case e: Throwable => Future.exception(PackageFileMissing(path.toString)) }
+    }
   }
 
 }

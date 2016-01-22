@@ -2,7 +2,6 @@ package com.mesosphere.cosmos
 
 import java.nio.file.Files
 
-import cats.data.Xor._
 import com.netaporter.uri.dsl._
 import com.twitter.finagle.Service
 import com.twitter.finagle.http.{Request, Response, Status}
@@ -41,7 +40,7 @@ final class UninstallHandlerSpec extends IntegrationSpec {
     logger.info("installResponseBody = {}", installResponseBody)
     assertResult(Status.Ok)(installResponse.status)
 
-    val Right(marathonApp) = Await.result(adminRouter.getApp("cassandra" / "dcos"))
+    val marathonApp = Await.result(adminRouter.getApp("cassandra" / "dcos"))
     assertResult("/cassandra/dcos")(marathonApp.app.id)
 
     //TODO: Assert framework starts up

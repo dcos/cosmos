@@ -1,6 +1,5 @@
 package com.mesosphere.cosmos
 
-import cats.syntax.option._
 import com.mesosphere.cosmos.model.PackageFiles
 import com.twitter.util.Future
 
@@ -13,8 +12,13 @@ final case class MemoryPackageCache(packages: Map[String, PackageFiles]) extends
   def getPackageFiles(
     packageName: String,
     version: Option[String]
-  ): Future[CosmosResult[PackageFiles]] = {
-    Future.value(packages.get(packageName).toRightXor(errorNel(PackageNotFound(packageName))))
+  ): Future[PackageFiles] = {
+    Future.value {
+      packages.get(packageName) match {
+        case None => throw PackageNotFound(packageName)
+        case Some(a) => a
+      }
+    }
   }
 
 }

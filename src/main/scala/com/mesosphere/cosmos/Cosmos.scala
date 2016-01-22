@@ -8,6 +8,7 @@ import com.mesosphere.cosmos.model.{UninstallResponse, DescribeRequest, InstallR
 import com.twitter.finagle.Service
 import com.twitter.finagle.http.exp.Multipart.{FileUpload, InMemoryFileUpload, OnDiskFileUpload}
 import com.twitter.finagle.http.{Request, Response, Status}
+import com.twitter.finagle.stats.{NullStatsReceiver, StatsReceiver}
 import io.circe.syntax.EncoderOps
 import io.github.benwhitehead.finch.FinchServer
 
@@ -21,8 +22,10 @@ import io.finch.circe._
 private final class Cosmos(
   packageCache: PackageCache,
   packageRunner: PackageRunner,
-  uninstallHandler: (UninstallRequest) => Future[CosmosResult[UninstallResponse]]
-) {
+  uninstallHandler: (UninstallRequest) => Future[UninstallResponse]
+)(implicit statsReceiver: StatsReceiver = NullStatsReceiver) {
+
+  implicit val statsBaseScope = BaseScope(Some("app"))
 
   val FilenameRegex = """/?([^/]+/)*[^-./]+-[^/]*-[^-./]+\.zip""".r
 
@@ -40,7 +43,7 @@ private final class Cosmos(
         if (nonEmptyArchive(fileBytes)) {
           successOutput("Import successful!")
         } else {
-          failureOutput(errorNel(EmptyPackageImport))
+          throw EmptyPackageImport()
         }
       }
     }
@@ -53,11 +56,8 @@ private final class Cosmos(
     def respond(reqBody: InstallRequest): Future[Output[Json]] = {
       packageCache
         .getPackageFiles(reqBody.name, reqBody.version)
-        .map(_.flatMap(PackageInstall.preparePackageConfig(reqBody, _)))
-        .flatMap {
-          case Right(marathonJson) => packageRunner.launch(marathonJson)
-          case Left(errors) => Future.value(failureOutput(errors))
-        }
+        .map(PackageInstall.preparePackageConfig(reqBody, _))
+        .flatMap(packageRunner.launch)
     }
 
     post("v1" / "package" / "install" ? body.as[InstallRequest])(respond _)
@@ -66,8 +66,7 @@ private final class Cosmos(
   val packageUninstall: Endpoint[Json] = {
     def respond(req: UninstallRequest): Future[Output[Json]] = {
       uninstallHandler(req).map {
-        case Right(r) => Ok(r.asJson)
-        case Left(err) => failureOutput(err)
+        case resp => Ok(resp.asJson)
       }
     }
 
@@ -79,13 +78,8 @@ private final class Cosmos(
     def respond(describe: DescribeRequest): Future[Output[Json]] = {
       packageCache
         .getPackageFiles(describe.packageName, describe.packageVersion)
-        .map { packageFilesXor =>
-          val responseContentXor = packageFilesXor.map(_.describeAsJson)
-
-          responseContentXor match {
-            case Right(json) => Ok(json)
-            case Left(errors) => failureOutput(errors)
-          }
+        .map { packageFiles =>
+          Ok(packageFiles.describeAsJson)
         }
     }
 
@@ -98,7 +92,7 @@ private final class Cosmos(
   }
 
   val service: Service[Request, Response] =
-    (ping
+    new CosmosErrorFilter() andThen (ping
       :+: packageImport
       :+: packageInstall
       :+: packageDescribe

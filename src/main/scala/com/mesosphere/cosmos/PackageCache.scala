@@ -1,6 +1,5 @@
 package com.mesosphere.cosmos
 
-import cats.data.Xor
 import com.mesosphere.cosmos.model.PackageFiles
 import com.twitter.util.Future
 
@@ -10,7 +9,7 @@ trait PackageCache {
   def getPackageFiles(
     packageName: String,
     version: Option[String]
-  ): Future[CosmosResult[PackageFiles]]
+  ): Future[PackageFiles]
 
 }
 
@@ -22,8 +21,8 @@ object PackageCache {
     def getPackageFiles(
       packageName: String,
       version: Option[String]
-    ): Future[CosmosResult[PackageFiles]] = {
-      Future.value(Xor.Left(errorNel(PackageNotFound(packageName))))
+    ): Future[PackageFiles] = {
+      Future.exception(PackageNotFound(packageName))
     }
   }
 
