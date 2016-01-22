@@ -32,13 +32,15 @@ sealed trait CosmosError extends RuntimeException {
       case MarathonAppNotFound(appId) => s"Unable to locate service with marathon appId: '$appId'"
       case CirceError(cerr) => cerr.getMessage
       case MesosRequestError(note) => note
+      case JsonSchemaMismatch() => "Options JSON failed validation"
+
+      // TODO(jose): Looking at the code these are all recursive!
       case uct @ UnsupportedContentType(_, _) => uct.toString
       case ghe @ GenericHttpError(uri, status) => ghe.toString
       case aai @ AmbiguousAppId(_, _) => aai.toString
       case mfi @ MultipleFrameworkIds(_, _) => mfi.toString
       case me @ MultipleError(_) => me.toString
-      case nelE @ NelErrors(_) => nelE.toString
-      case JsonSchemaMismatch() => "Options JSON failed validation"
+      case NelErrors(nelE) => nelE.toString
     }
   }
 
@@ -50,9 +52,15 @@ case class EmptyPackageImport() extends CosmosError
 case class PackageFileMissing(packageName: String) extends CosmosError
 case class PackageFileNotJson(fileName: String, parseError: String) extends CosmosError
 case class PackageFileSchemaMismatch(fileName: String) extends CosmosError
-case class PackageAlreadyInstalled() extends CosmosError { override val status = Status.Conflict }
-case class MarathonBadResponse(marathonStatus: Status) extends CosmosError { override val status = Status.InternalServerError }
-case class MarathonBadGateway(marathonStatus: Status) extends CosmosError { override val status = Status.BadGateway }
+case class PackageAlreadyInstalled() extends CosmosError {
+  override val status = Status.Conflict
+}
+case class MarathonBadResponse(marathonStatus: Status) extends CosmosError {
+  override val status = Status.InternalServerError
+}
+case class MarathonBadGateway(marathonStatus: Status) extends CosmosError {
+  override val status = Status.BadGateway
+}
 case class IndexNotFound(repoUri: Uri) extends CosmosError
 case class RepositoryNotFound() extends CosmosError
 

@@ -10,7 +10,6 @@ import io.circe.{Decoder, Json}
 import io.circe.syntax._
 
 case class PackageFiles private[cosmos] (
-  version: String,
   revision: String,
   sourceUri: Uri,
   commandJson: Json,
@@ -34,7 +33,6 @@ case class PackageFiles private[cosmos] (
 object PackageFiles {
 
   private[cosmos] def validate(
-    version: String,
     revision: String,
     sourceUri: Uri,
     commandJson: Json,
@@ -49,7 +47,13 @@ object PackageFiles {
     (packageDefValid |@| resourceDefValid)
       .map { (packageDef, resourceDef) =>
         PackageFiles(
-          version, revision, sourceUri, commandJson, configJson, marathonJsonMustache, packageDef, resourceDef
+          revision,
+          sourceUri,
+          commandJson,
+          configJson,
+          marathonJsonMustache,
+          packageDef,
+          resourceDef
         )
       }
   }

@@ -21,41 +21,38 @@ import io.finch._
   */
 final class UniversePackageCache private(repoDir: Path, source: Uri) extends PackageCache {
 
-  import UniversePackageCache._
-
-  override def getRepoIndex: Future[UniverseIndex] = {
-    val indexFile = repoDir.resolve(Paths.get("meta", "index.json"))
-    parseJsonFile(indexFile)
-      .map {
-        case None => throw IndexNotFound(source)
-        case Some(index) =>
-          index.as[UniverseIndex]
-            .getOrElse(throw PackageFileSchemaMismatch("index.json"))
-      }
+  override def getPackageByPackageVersion(
+    packageName: String,
+    packageVersion: Option[String]
+  ): Future[PackageFiles] = {
+    // This will eventually be allIndexes
+    Future {
+      val path = UniversePackageCache.getPackagePath(
+        repoDir,
+        repoIndex(),
+        packageName,
+        packageVersion)
+      readPackageFiles(path)
+    }
   }
 
-  override def getPackageFiles(
+  override def getPackageByReleaseVersion(
     packageName: String,
-    version: Option[String]
+    releaseVersion: String
   ): Future[PackageFiles] = {
-    getRepoIndex
-      .flatMap { repoIndex =>
-      getPackagePath(repoDir, repoIndex, packageName, version)
-        .flatMap(
-          path => readPackageFiles(path, repoIndex.version, source)
-        )
+    Future {
+      readPackageFiles(getPackagePath(packageName, releaseVersion))
     }
   }
 
   override def getPackageIndex(
     packageName: String
   ): Future[PackageInfo] = {
-    getRepoIndex
-      .map { repoIndex =>
-          repoIndex.getPackages.get(packageName) match {
-            case None => throw PackageNotFound(packageName)
-            case Some(packageInfo) => packageInfo
-        }
+    Future {
+      repoIndex().getPackages.get(packageName) match {
+        case None => throw PackageNotFound(packageName)
+        case Some(packageInfo) => packageInfo
+      }
     }
   }
 
@@ -64,34 +61,87 @@ final class UniversePackageCache private(repoDir: Path, source: Uri) extends Pac
   ): Future[Output[Json]] = {
     describe.packageVersions match {
       case Some(_) =>
-        getPackageIndex(describe.packageName)
-          .map { packageInfo => Ok(packageInfo.versions.asJson) }
+        getPackageIndex(describe.packageName).map { packageInfo =>
+          Ok(packageInfo.versions.asJson)
+        }
       case None =>
-        getPackageFiles(describe.packageName, describe.packageVersion)
-          .map { packageFiles => Ok(packageFiles.describeAsJson) }
+        getPackageByPackageVersion(
+          describe.packageName,
+          describe.packageVersion
+        ).map { packageFiles =>
+          Ok(packageFiles.describeAsJson)
+        }
     }
   }
 
+  override def getRepoIndex: Future[UniverseIndex] = {
+    Future {
+      repoIndex()
+    }
+  }
+
+  private[this] def repoIndex(): UniverseIndex = {
+    val indexFile = repoDir.resolve(Paths.get("meta", "index.json"))
+
+    UniversePackageCache.parseJsonFile(indexFile) match {
+      case None => throw IndexNotFound(source)
+      case Some(index) =>
+        index.as[UniverseIndex].getOrElse(throw PackageFileSchemaMismatch("index.json"))
+    }
+  }
+
+  private[this] def getPackagePath(packageName: String, releaseVersion: String): Path = {
+    repoDir.resolve(
+      Paths.get(
+        "packages",
+        packageName.charAt(0).toUpper.toString,
+        packageName,
+        releaseVersion))
+  }
+
+  private[this] def readPackageFiles(packageDir: Path): PackageFiles = {
+
+    val packageJson = UniversePackageCache.parseJsonFile(
+      packageDir.resolve("package.json")
+    ).getOrElse {
+      throw PackageFileMissing("package.json")
+    }
+    val mustache = UniversePackageCache.readFile(
+      packageDir.resolve("marathon.json.mustache")
+    ).getOrElse {
+      throw PackageFileMissing("marathon.json.mustache")
+    }
+
+    PackageFiles.validate(
+      packageDir.getFileName.toString,
+      source,
+      UniversePackageCache.parseJsonFile(packageDir.resolve("command.json")).getOrElse(Json.empty),
+      UniversePackageCache.parseJsonFile(packageDir.resolve("config.json")).getOrElse(Json.empty),
+      mustache,
+      packageJson,
+      UniversePackageCache.parseJsonFile(packageDir.resolve("resource.json")).getOrElse(Json.empty)
+    ) match {
+      case Invalid(err) => throw NelErrors(err)
+      case Valid(valid) => valid
+    }
+  }
 }
 
 object UniversePackageCache {
 
   /** Create a new package cache.
-    *
-    * @param universeBundle the location of the package bundle to cache; must be an HTTP URL
-    * @param universeDir the directory to cache the bundle files in; assumed to be empty
-    * @return The new cache, or an error.
-    */
+   *
+   * @param universeBundle the location of the package bundle to cache; must be an HTTP URL
+   * @param universeDir the directory to cache the bundle files in; assumed to be empty
+   * @return The new cache, or an error.
+   */
   def apply(universeBundle: Uri, universeDir: Path): Future[UniversePackageCache] = {
-    Future(new ZipInputStream(universeBundle.toURI.toURL.openStream()))
-      .flatMap { bundleStream =>
-        extractBundle(bundleStream, universeDir)
-          .ensure(bundleStream.close())
-      }
-      .map { _ =>
-        val rootDir = Files.list(universeDir).findFirst().get()
-        new UniversePackageCache(rootDir.resolve(Paths.get("repo")), universeBundle)
-      }
+    Future(new ZipInputStream(universeBundle.toURI.toURL.openStream())).flatMap { bundleStream =>
+      extractBundle(bundleStream, universeDir).ensure(bundleStream.close())
+    } map { _ =>
+      val rootDir = Files.list(universeDir).findFirst().get()
+      new UniversePackageCache(rootDir.resolve(Paths.get("repo")), universeBundle)
+    }
   }
 
   private[this] def extractBundle(bundle: ZipInputStream, cacheDir: Path): Future[Unit] = {
@@ -99,7 +149,7 @@ object UniversePackageCache {
       .takeWhile(_.isDefined)
       .flatten
 
-    Future.value {
+    Future {
       entries.foreach { entry =>
         val cachePath = cacheDir.resolve(entry.getName)
         if (entry.isDirectory) {
@@ -116,75 +166,45 @@ object UniversePackageCache {
     repository: Path,
     universeIndex: UniverseIndex,
     packageName: String,
-    packageVersion: Option[String]): Future[Path] = {
+    packageVersion: Option[String]): Path = {
 
-    universeIndex.getPackages.get(packageName) match {
-      case None => throw PackageNotFound(packageName)
-      case Some(packageInfo) =>
-
-        val version = packageVersion.getOrElse(packageInfo.currentVersion)
-        packageInfo.versions.get(version) match {
-          case None => throw VersionNotFound(packageName, version)
-          case Some(revision) =>
-            val packagePath = Paths.get("packages",
-              packageName.charAt(0).toUpper.toString,
-              packageName,
-              revision)
-            Future.value(repository.resolve(packagePath))
-        }
-    }
-  }
-
-  private def readPackageFiles(
-    packageDir: Path,
-    version: String,
-    source: Uri
-  ): Future[PackageFiles] = {
-    Future.join(
-        parseJsonFile(packageDir.resolve("command.json")),
-        parseJsonFile(packageDir.resolve("config.json")),
-        parseJsonFile(packageDir.resolve("package.json")),
-        parseJsonFile(packageDir.resolve("resource.json")),
-        readFile(packageDir.resolve("marathon.json.mustache"))
-      )
-      .map { case (commandJsonOpt, configJsonOpt, packageJsonOpt, resourceJsonOpt, mustacheOpt) =>
-
-        val packageJson = packageJsonOpt.getOrElse(throw PackageFileMissing("package.json"))
-        val mustache = mustacheOpt.getOrElse(throw PackageFileMissing("marathon.json.mustache"))
-
-        val revision = packageDir.getFileName.toString
-        val commandJson = commandJsonOpt.getOrElse(Json.empty)
-        val configJson = configJsonOpt.getOrElse(Json.empty)
-        val resourceJson = resourceJsonOpt.getOrElse(Json.empty)
-
-        PackageFiles.validate(
-          version, revision, source, commandJson, configJson, mustache, packageJson, resourceJson
-        ) match {
-          case Invalid(err) => throw NelErrors(err)
-          case Valid(valid) => valid
-        }
+      universeIndex.getPackages.get(packageName) match {
+        case None => throw PackageNotFound(packageName)
+        case Some(packageInfo) =>
+          val version = packageVersion.getOrElse(packageInfo.currentVersion)
+          packageInfo.versions.get(version) match {
+            case None => throw VersionNotFound(packageName, version)
+            case Some(revision) =>
+              val packagePath = Paths.get(
+                "packages",
+                packageName.charAt(0).toUpper.toString,
+                packageName,
+                revision)
+              repository.resolve(packagePath)
+          }
       }
   }
 
-  private def parseJsonFile(file: Path): Future[Option[Json]] = {
-    readFile(file).map {
-      _.map {
-        content =>
-          parse(content) match {
-            case Left(err) => throw PackageFileNotJson(file.getFileName.toString, err.message)
-            case Right(json) => json
-          }
-     }
+  private def parseJsonFile(file: Path): Option[Json] = {
+    readFile(file).map { content =>
+      parse(content) match {
+        case Left(err) => throw PackageFileNotJson(file.getFileName.toString, err.message)
+        case Right(json) => json
+      }
     }
   }
 
-  private def readFile(path: Path): Future[Option[String]] = {
-    path.toFile.exists() match {
-      case false => Future.value(None)
-      case true =>
-        Future.value(Some(new String(Files.readAllBytes(path), Charsets.Utf8))) // TODO: IO Future Pool
-          .rescue { case e: Throwable => Future.exception(PackageFileMissing(path.toString)) }
+  private def readFile(path: Path): Option[String] = {
+    if (path.toFile.exists()) {
+      try {
+        Some(new String(Files.readAllBytes(path), Charsets.Utf8))
+      } catch {
+        case e: Throwable =>
+          // TODO: Make sure that we pass along the cause e!
+          throw new PackageFileMissing(path.toString)
+      }
+    } else {
+      None
     }
   }
-
 }

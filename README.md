@@ -15,10 +15,18 @@ for keeping test runs independent of each other.
 
 ### Running with an existing cluster
 
-If the adminrouter host for the cluster is `your.adminrouter.host`, then:
+If the adminrouter host for the cluster is `http://your.adminrouter.host` and the universe
+repository that you would like to use is `http://your.universe.repository/url`, then we can run
+the unittest with:
 
 ```bash
-$ DCOS_ADMIN_ROUTER_HOST=your.adminrouter.host sbt test
+sbt test
+```
+
+And the integration tests with:
+
+```bash
+sbt -Dcom.mesosphere.cosmos.dcosHost=http://your.adminrouter.host -Dcom.mesosphere.cosmos.universeBundleUri=http://your.universe.repository/url
 ```
 
 ### Running with a temporary cluster
