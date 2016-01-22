@@ -1,7 +1,9 @@
 package com.mesosphere.cosmos
 
-import com.mesosphere.cosmos.model.PackageFiles
+import com.mesosphere.cosmos.model.{DescribeRequest, PackageInfo, PackageFiles}
 import com.twitter.util.Future
+import io.circe.Json
+import io.finch._
 
 /** A repository of packages that can be installed on DCOS. */
 trait PackageCache {
@@ -11,6 +13,9 @@ trait PackageCache {
     version: Option[String]
   ): Future[PackageFiles]
 
+  def getPackageIndex(packageName: String): Future[PackageInfo]
+
+  def getPackageDescribe(describeRequest: DescribeRequest): Future[Output[Json]]
 }
 
 object PackageCache {
@@ -24,6 +29,13 @@ object PackageCache {
     ): Future[PackageFiles] = {
       Future.exception(PackageNotFound(packageName))
     }
-  }
 
+    def getPackageIndex(packageName: String): Future[PackageInfo] = {
+      Future.exception(PackageNotFound(packageName))
+    }
+
+    def getPackageDescribe(describeRequest: DescribeRequest): Future[Output[Json]] = {
+      Future(Ok(Json.empty))
+    }
+  }
 }
