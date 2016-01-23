@@ -2,6 +2,7 @@ package com.mesosphere.cosmos
 
 import cats.data.Xor
 import com.mesosphere.cosmos.model._
+import com.netaporter.uri.Uri
 import com.twitter.finagle.http.RequestBuilder
 import com.twitter.io.Buf
 import com.twitter.util.{Future, Await}
@@ -31,6 +32,7 @@ final class UserOptionsSpec extends UnitSpec {
         val packageFiles = PackageFiles(
           version = "1.2.3",
           revision = "0",
+          sourceUri = Uri.parse("in/memory/source"),
           commandJson = Json.obj(),
           configJson = buildConfig(Json.fromJsonObject(defaultsJson)).asJson,
           marathonJsonMustache = mustacheTemplate,

@@ -130,7 +130,7 @@ object PackageInstall {
       Some("DCOS_PACKAGE_REGISTRY_VERSION" -> packageFiles.version),
       Some("DCOS_PACKAGE_NAME" -> packageDef.name),
       Some("DCOS_PACKAGE_VERSION" -> packageDef.version),
-      Some("DCOS_PACKAGE_SOURCE" -> universeBundleUri().toString),
+      Some("DCOS_PACKAGE_SOURCE" -> packageFiles.sourceUri.toString),
       Some("DCOS_PACKAGE_RELEASE" -> packageFiles.revision),
       Some("DCOS_PACKAGE_IS_FRAMEWORK" -> packageDef.framework.getOrElse(true).toString),
       Some("DCOS_PACKAGE_COMMAND" -> commandMetadata),

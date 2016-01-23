@@ -195,12 +195,12 @@ final class PackageInstallSpec extends FreeSpec with BeforeAndAfterAll with Cosm
   }
 
   private[this] def runService[A](
-    dcosClient: Service[Request, Response] = Services.adminRouterClient(dcosHost()),
+    dcosClient: Service[Request, Response] = Services.adminRouterClient(adminRouterHost),
     packageCache: PackageCache = MemoryPackageCache(PackageMap)
   )(
     f: ApiTestAssertionDecorator => Unit
   ): Unit = {
-    val adminRouter = new AdminRouter(dcosHost(), dcosClient)
+    val adminRouter = new AdminRouter(adminRouterHost, dcosClient)
     val service = new Cosmos(packageCache, new MarathonPackageRunner(adminRouter), new UninstallHandler(adminRouter)).service
     val server = Http.serve(s":$servicePort", service)
     val client = Http.newService(s"127.0.0.1:$servicePort")
@@ -321,6 +321,7 @@ private object PackageInstallSpec extends CosmosSpec {
     name -> PackageFiles(
       version = "0.1.0",
       revision = "0",
+      sourceUri = Uri.parse("in/memory/source"),
       commandJson = Json.obj(),
       configJson = Json.obj(),
       marathonJsonMustache = marathonJson.asJson.noSpaces,

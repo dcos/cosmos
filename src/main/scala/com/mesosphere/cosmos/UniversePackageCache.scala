@@ -17,7 +17,7 @@ import io.circe.parse._
   *
   * @param repoDir the local cache of the repository's `repo` directory
   */
-final class UniversePackageCache private(repoDir: Path) extends PackageCache {
+final class UniversePackageCache private(repoDir: Path, source: Uri) extends PackageCache {
 
   import UniversePackageCache._
 
@@ -25,11 +25,11 @@ final class UniversePackageCache private(repoDir: Path) extends PackageCache {
     packageName: String,
     version: Option[String]
   ): Future[PackageFiles] = {
-    getRepoIndex(repoDir) // this will eventually be allIndexes
+    getRepoIndex(repoDir, source) // this will eventually be allIndexes
       .flatMap { repoIndex =>
       getPackagePath(repoDir, repoIndex, packageName, version)
         .flatMap(
-          path => readPackageFiles(path, repoIndex.version)
+          path => readPackageFiles(path, repoIndex.version, source)
         )
     }
   }
@@ -52,7 +52,7 @@ object UniversePackageCache {
       }
       .map { _ =>
         val rootDir = Files.list(universeDir).findFirst().get()
-        new UniversePackageCache(rootDir.resolve(Paths.get("repo")))
+        new UniversePackageCache(rootDir.resolve(Paths.get("repo")), universeBundle)
       }
   }
 
@@ -73,11 +73,11 @@ object UniversePackageCache {
     }
   }
 
-  private def getRepoIndex(repository: Path): Future[UniverseIndex] = {
+  private def getRepoIndex(repository: Path, source: Uri): Future[UniverseIndex] = {
     val indexFile = repository.resolve(Paths.get("meta", "index.json"))
     parseJsonFile(indexFile)
       .map {
-        case None => throw IndexNotFound()
+        case None => throw IndexNotFound(source)
         case Some(index) =>
           index.as[UniverseIndex]
             .getOrElse(throw PackageFileSchemaMismatch("index.json"))
@@ -110,7 +110,8 @@ object UniversePackageCache {
 
   private def readPackageFiles(
     packageDir: Path,
-    version: String
+    version: String,
+    source: Uri
   ): Future[PackageFiles] = {
     Future.join(
         parseJsonFile(packageDir.resolve("command.json")),
@@ -130,7 +131,7 @@ object UniversePackageCache {
         val resourceJson = resourceJsonOpt.getOrElse(Json.empty)
 
         PackageFiles.validate(
-          version, revision, commandJson, configJson, mustache, packageJson, resourceJson
+          version, revision, source, commandJson, configJson, mustache, packageJson, resourceJson
         ) match {
           case Invalid(err) => throw NelErrors(err)
           case Valid(valid) => valid
