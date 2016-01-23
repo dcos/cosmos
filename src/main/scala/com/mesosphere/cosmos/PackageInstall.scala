@@ -21,20 +21,20 @@ object PackageInstall {
   private[cosmos] def preparePackageConfig(
     request: InstallRequest,
     packageFiles: PackageFiles
-  ): CosmosResult[Json] = {
-    val marathonJsonXor = renderMustacheTemplate(packageFiles, request.options.getOrElse(JsonObject.empty))
-      .flatMap(addLabels(_, packageFiles))
+  ): Json = {
+    val marathonJson = renderMustacheTemplate(packageFiles, request.options.getOrElse(JsonObject.empty))
+    val marathonJsonWithLabels = addLabels(marathonJson, packageFiles)
 
     request.appId match {
-      case Some(id) => marathonJsonXor.map(_.mapObject(_ + ("id", id.asJson)))
-      case _ => marathonJsonXor
+      case Some(id) => marathonJsonWithLabels.mapObject(_ + ("id", id.asJson))
+      case _ => marathonJsonWithLabels
     }
   }
 
   private[this] def renderMustacheTemplate(
     packageFiles: PackageFiles,
     options: JsonObject
-  ): CosmosResult[Json] = {
+  ): Json = {
     val strReader = new StringReader(packageFiles.marathonJsonMustache)
     val mustache = MustacheFactory.compile(strReader, "marathon.json.mustache")
 
@@ -46,8 +46,10 @@ object PackageInstall {
 
     val output = new StringWriter()
     mustache.execute(output, params)
-    parse(output.toString)
-      .leftMap(err => errorNel(PackageFileNotJson("marathon.json", err.message)))
+    parse(output.toString) match {
+      case Xor.Left(err) => throw PackageFileNotJson("marathon.json", err.message)
+      case Xor.Right(rendered) => rendered
+    }
   }
 
   private[this] def extractAssetsAsJson(resource: Resource): JsonObject = {
@@ -104,7 +106,7 @@ object PackageInstall {
   private[this] def addLabels(
     marathonJson: Json,
     packageFiles: PackageFiles
-  ): CosmosResult[Json] = {
+  ): Json = {
     // add images to package.json metadata for backwards compatability in the UI
     val packageDef = packageFiles.packageJson.copy(images = packageFiles.resourceJson.images)
 
@@ -138,7 +140,7 @@ object PackageInstall {
     val existingLabels = marathonJson.cursor
       .get[Map[String, String]]("labels").getOrElse(Map.empty)
 
-    Xor.Right(marathonJson.mapObject(_.+("labels", (existingLabels ++ packageLabels).asJson)))
+    marathonJson.mapObject(_.+("labels", (existingLabels ++ packageLabels).asJson))
   }
 
   private[cosmos] def merge(target: JsonObject, fragment: JsonObject): JsonObject = {

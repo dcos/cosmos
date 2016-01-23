@@ -154,7 +154,7 @@ final class PackageInstallSpec extends FreeSpec with BeforeAndAfterAll with Cosm
               expectedAppIdOpt = Some(appId)
             )
             // TODO Confirm that the correct config was sent to Marathon - see issue #38
-            val Right(packageInfo) = Await.result(getPackageInfo(appId))
+            val packageInfo = Await.result(getPackageInfo(appId))
             assertResult(uriSet)(packageInfo.uris.toSet)
             labelsOpt.foreach(labels => assertResult(labels)(StandardLabels(packageInfo.labels)))
           }
@@ -265,12 +265,10 @@ private object PackageInstallSpec extends CosmosSpec {
     ("cassandra", "foobar")
   )
 
-  private def getPackageInfo(appId: String): Future[CosmosResult[PackageInfo]] = {
+  private def getPackageInfo(appId: String): Future[PackageInfo] = {
     adminRouter.getApp(appId)
-      .map {
-        _.map { appResp =>
-          PackageInfo(appResp.app.uris, appResp.app.labels)
-        }
+      .map { appResp =>
+        PackageInfo(appResp.app.uris, appResp.app.labels)
       }
   }
 
@@ -337,13 +335,13 @@ private object PackageInstallSpec extends CosmosSpec {
   ): Unit = {
     val Right(marathonJson) = parse(packageFiles.marathonJsonMustache)
     val expectedLabel = extractTestLabel(marathonJson.cursor)
-    val Right(actualLabel) = Await.result(getMarathonJsonTestLabel(packageName))
+    val actualLabel = Await.result(getMarathonJsonTestLabel(packageName))
     assertResult(expectedLabel)(actualLabel)
   }
 
-  private def getMarathonJsonTestLabel(packageName: String): Future[CosmosResult[Option[String]]] = {
+  private def getMarathonJsonTestLabel(packageName: String): Future[Option[String]] = {
     adminRouter.getApp(Uri.parse(packageName)) map {
-      _.map(_.app.labels.get("test-id"))
+      _.app.labels.get("test-id")
     }
   }
 
@@ -403,15 +401,13 @@ private final class ApiTestAssertionDecorator(apiClient: Service[Request, Respon
   }
 
   private[this] def isAppInstalled(appId: String): Boolean = {
-    val Right(appIds) = Await.result(listMarathonAppIds())
+    val appIds = Await.result(listMarathonAppIds())
       appIds.contains(s"/$appId")
   }
 
-  private[this] def listMarathonAppIds(): Future[CosmosResult[Seq[String]]] = {
-    adminRouter.listApps() map {
-      _.map { marathonAppsResponse =>
-        marathonAppsResponse.apps.map(_.id)
-      }
+  private[this] def listMarathonAppIds(): Future[Seq[String]] = {
+    adminRouter.listApps() map { marathonAppsResponse =>
+      marathonAppsResponse.apps.map(_.id)
     }
   }
 

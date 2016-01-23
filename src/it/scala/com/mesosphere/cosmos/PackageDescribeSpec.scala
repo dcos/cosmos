@@ -57,7 +57,7 @@ final class PackageDescribeSpec extends FreeSpec with CosmosSpec {
     val service = new Cosmos(
       packageCache,
       new MarathonPackageRunner(adminRouter),
-      (r : UninstallRequest) => { Future.value(Xor.Right(UninstallResponse(Nil))) }
+      (r : UninstallRequest) => { Future.value(UninstallResponse(Nil)) }
     ).service
     val server = Http.serve(s":$servicePort", service)
     val client = Http.newService(s"127.0.0.1:$servicePort")

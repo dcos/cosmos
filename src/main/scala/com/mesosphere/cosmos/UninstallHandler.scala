@@ -1,82 +1,65 @@
 package com.mesosphere.cosmos
 
-import cats.data.Xor.{Left, Right}
 import com.mesosphere.cosmos.model.{UninstallResult, UninstallRequest, UninstallResponse}
 import com.netaporter.uri.dsl._
 import com.twitter.finagle.http.Status
 import com.twitter.util.Future
 
 private[cosmos] final class UninstallHandler(adminRouter: AdminRouter)
-  extends Function[UninstallRequest, Future[CosmosResult[UninstallResponse]]] {
+  extends Function[UninstallRequest, Future[UninstallResponse]] {
 
   private type FwIds = List[String]
 
-  private def lookupFrameworkIds(fwName: String): Future[CosmosResult[FwIds]] = {
-    adminRouter.getMasterState(fwName).map { xor =>
-      xor.map { masterState =>
+  private def lookupFrameworkIds(fwName: String): Future[FwIds] = {
+    adminRouter.getMasterState(fwName).map { masterState =>
         masterState.frameworks
           .filter(_.name == fwName)
           .map(_.id)
-      }
     }
   }
   private def destroyMarathonAppsAndTearDownFrameworkIfPresent(
-    xor: CosmosResult[List[UninstallOperation]]
-  ): Future[CosmosResult[List[UninstallDetails]]] = xor match {
-    case Left(err) => Future.value(Left(err))
-    case Right(uninstallOperations) =>
-      val appDeletes = for {
+    uninstallOperations: List[UninstallOperation]
+  ): Future[Seq[UninstallDetails]] = {
+      val fs = for {
         op <- uninstallOperations
         appId = op.appId
-      } yield destroyMarathonApp(appId) flatMap {
-        case Left(err) => Future.value(Left(err))
-        case Right(_) =>
+      } yield destroyMarathonApp(appId) flatMap { _ =>
           op.frameworkName match {
             case Some(fwName) =>
               lookupFrameworkIds(fwName).flatMap {
-                case Left(err) => Future.value(Left(err))
-                case Right(fwIds) =>
-                  fwIds match {
-                    case Nil =>
-                      Future.value(Right(UninstallDetails.from(op)))
-                    case fwId :: Nil =>
-                      adminRouter.tearDownFramework(fwId)
-                        .map { xor =>
-                          xor.map(_ => UninstallDetails.from(op).copy(frameworkId = Some(fwId)))
-                        }
-                    case all =>
-                      Future.value(leftErrorNel(MultipleFrameworkIds(fwName, all)))
-                  }
+                case Nil =>
+                  Future.value(UninstallDetails.from(op))
+                case fwId :: Nil =>
+                  adminRouter.tearDownFramework(fwId)
+                    .map { _ =>
+                      UninstallDetails.from(op).copy(frameworkId = Some(fwId))
+                    }
+                case all =>
+                  throw MultipleFrameworkIds(fwName, all)
               }
             case None =>
-              Future.value(Right(UninstallDetails.from(op)))
+              Future.value(UninstallDetails.from(op))
           }
       }
-
-      Future.collect(appDeletes) map { xors =>
-        import cats.std.list._
-        import cats.syntax.traverse._
-        xors.toList.sequenceU
-      }
+    Future.collect(fs)
   }
-  private def destroyMarathonApp(appId: String): Future[CosmosResult[MarathonAppDeleteSuccess]] = {
+  private def destroyMarathonApp(appId: String): Future[MarathonAppDeleteSuccess] = {
     adminRouter.deleteApp(appId, force = true) map { resp =>
       resp.status match {
-        case Status.Ok => Right(MarathonAppDeleteSuccess())
-        case a => leftErrorNel(MarathonAppDeleteError(appId))
+        case Status.Ok => MarathonAppDeleteSuccess()
+        case a => throw MarathonAppDeleteError(appId)
       }
     }
   }
 
-  override def apply(req: UninstallRequest): Future[CosmosResult[UninstallResponse]] = {
+  override def apply(req: UninstallRequest): Future[UninstallResponse] = {
     // the following implementation is based on what the current CLI implementation does.
     // I've decided to follow it as close as possible so that we reduce any possible behavioral
     // changes that could have unforeseen consequences.
     //
     // In the future this will probably be revisited once Cosmos is the actual authority on services
-    adminRouter.listApps().
-      map {
-        _.flatMap { marathonApps =>
+    adminRouter.listApps()
+      .map { marathonApps =>
           val appIds = for {
             app <- marathonApps.apps
             labels = app.labels
@@ -89,26 +72,20 @@ private[cosmos] final class UninstallHandler(adminRouter: AdminRouter)
             frameworkName = labels.get("DCOS_PACKAGE_FRAMEWORK_NAME")
           )
 
-          val res: CosmosResult[List[UninstallOperation]] = req.all match {
+          req.all match {
             case Some(true) =>
-              Right(appIds)
+              appIds
             case _ if appIds.size > 1 =>
-              leftErrorNel(AmbiguousAppId(req.name, appIds.map(_.appId)))
-            case _ => // we've only got one package installed with the name continue with it
-              Right(appIds)
+              throw AmbiguousAppId(req.name, appIds.map(_.appId))
+            case _ => // we've only got one package installed with the specified name, continue with it
+              appIds
           }
-          res
-        }
       }
-      .flatMap { xor =>
-        destroyMarathonAppsAndTearDownFrameworkIfPresent(xor)
-      }
-      .map {
-        _.map { uninstallDetails =>
-          UninstallResponse(
-            uninstallDetails.map { detail => UninstallResult(detail.packageName, detail.appId, detail.version) }
-          )
-        }
+      .flatMap(destroyMarathonAppsAndTearDownFrameworkIfPresent)
+      .map { uninstallDetails =>
+        UninstallResponse(
+          uninstallDetails.toList.map { detail => UninstallResult(detail.packageName, detail.appId, detail.version) }
+        )
       }
   }
 
