@@ -4,6 +4,7 @@ import cats.data.ValidatedNel
 import cats.std.list._
 import cats.syntax.apply._
 import com.mesosphere.cosmos.{CosmosError, PackageFileSchemaMismatch, errorNel}
+import com.netaporter.uri.Uri
 import io.circe.generic.auto._
 import io.circe.{Decoder, Json}
 import io.circe.syntax._
@@ -11,6 +12,7 @@ import io.circe.syntax._
 case class PackageFiles private[cosmos] (
   version: String,
   revision: String,
+  sourceUri: Uri,
   commandJson: Json,
   configJson: Json,
   marathonJsonMustache: String,
@@ -34,6 +36,7 @@ object PackageFiles {
   private[cosmos] def validate(
     version: String,
     revision: String,
+    sourceUri: Uri,
     commandJson: Json,
     configJson: Json,
     marathonJsonMustache: String,
@@ -46,7 +49,7 @@ object PackageFiles {
     (packageDefValid |@| resourceDefValid)
       .map { (packageDef, resourceDef) =>
         PackageFiles(
-          version, revision, commandJson, configJson, marathonJsonMustache, packageDef, resourceDef
+          version, revision, sourceUri, commandJson, configJson, marathonJsonMustache, packageDef, resourceDef
         )
       }
   }

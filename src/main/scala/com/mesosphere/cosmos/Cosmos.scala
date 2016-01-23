@@ -139,8 +139,8 @@ object Cosmos extends FinchServer {
     val host = dcosHost()
     logger.info("Connecting to DCOS Cluster at: {}", host.toStringRaw)
 
-    val dcosClient = Services.adminRouterClient(dcosHost())
-    val adminRouter = new AdminRouter(dcosHost(), dcosClient)
+    val dcosClient = Services.adminRouterClient(host)
+    val adminRouter = new AdminRouter(host, dcosClient)
 
     val universeBundle = universeBundleUri()
     val universeDir = universeCacheDir()

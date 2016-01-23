@@ -24,7 +24,7 @@ sealed trait CosmosError extends RuntimeException {
         s"Received response status code ${marathonStatus.code} from Marathon"
       case MarathonBadGateway(marathonStatus) =>
         s"Received response status code ${marathonStatus.code} from Marathon"
-      case IndexNotFound() => s"Index file missing for repo [${universeBundleUri()}]"
+      case IndexNotFound(repoUri: Uri) => s"Index file missing for repo [$repoUri]"
       case MarathonAppMetadataError(note) => note
       case MarathonAppDeleteError(appId) => s"Error while deleting marathon app '$appId'"
       case MarathonAppNotFound(appId) => s"Unable to locate service with marathon appId: '$appId'"
@@ -62,7 +62,7 @@ case class PackageFileSchemaMismatch(fileName: String) extends CosmosError
 case class PackageAlreadyInstalled() extends CosmosError { override val status = Status.Conflict }
 case class MarathonBadResponse(marathonStatus: Status) extends CosmosError { override val status = Status.InternalServerError }
 case class MarathonBadGateway(marathonStatus: Status) extends CosmosError { override val status = Status.BadGateway }
-case class IndexNotFound() extends CosmosError
+case class IndexNotFound(repoUri: Uri) extends CosmosError
 
 case class MarathonAppMetadataError(note: String) extends CosmosError
 case class MarathonAppDeleteError(appId: String) extends CosmosError

@@ -49,7 +49,7 @@ final class PackageDescribeSpec extends FreeSpec with CosmosSpec {
   }
 
   private[this] def runService[A](
-    dcosClient: Service[Request, Response] = Services.adminRouterClient(dcosHost()),
+    dcosClient: Service[Request, Response] = Services.adminRouterClient(adminRouterHost),
     packageCache: PackageCache
   )(
     f: DescribeTestAssertionDecorator => Unit
