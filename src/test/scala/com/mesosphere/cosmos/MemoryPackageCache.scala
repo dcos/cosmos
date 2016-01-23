@@ -1,6 +1,6 @@
 package com.mesosphere.cosmos
 
-import com.mesosphere.cosmos.model.{DescribeRequest, PackageInfo, PackageFiles}
+import com.mesosphere.cosmos.model.{DescribeRequest, PackageInfo, PackageFiles, UniverseIndex}
 import com.twitter.util.Future
 import io.circe.Json
 import io.finch._
@@ -21,6 +21,10 @@ final case class MemoryPackageCache(packages: Map[String, PackageFiles]) extends
         case Some(a) => a
       }
     }
+  }
+
+  def getRepoIndex: Future[UniverseIndex] = {
+    Future.exception(RepositoryNotFound())
   }
 
   def getPackageIndex(
