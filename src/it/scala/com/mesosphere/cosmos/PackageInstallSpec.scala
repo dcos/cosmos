@@ -2,7 +2,6 @@ package com.mesosphere.cosmos
 
 import java.util.{Base64, UUID}
 
-import cats.data.Xor
 import cats.data.Xor.Right
 import com.mesosphere.cosmos.model.{InstallRequest, PackageDefinition, PackageFiles, Resource}
 import com.netaporter.uri.Uri
@@ -30,7 +29,7 @@ final class PackageInstallSpec extends FreeSpec with BeforeAndAfterAll with Cosm
           apiClient.installPackageAndAssert(
             InstallRequest(packageName),
             Status.Ok,
-            content = Json.obj(),
+            expectedErrorMessage = None,
             preInstallState = NotInstalled,
             postInstallState = Installed
           )
@@ -50,7 +49,7 @@ final class PackageInstallSpec extends FreeSpec with BeforeAndAfterAll with Cosm
           apiClient.installPackageAndAssert(
             InstallRequest(packageName),
             Status.BadRequest,
-            content = errorJson(s"Package [$packageName] not found"),
+            expectedErrorMessage = Some(s"Package [$packageName] not found"),
             preInstallState = Anything,
             postInstallState = Unchanged
           )
@@ -68,7 +67,7 @@ final class PackageInstallSpec extends FreeSpec with BeforeAndAfterAll with Cosm
             apiClient.installPackageAndAssert(
               InstallRequest(packageName),
               Status.Conflict,
-              content = errorJson("Package is already installed"),
+              expectedErrorMessage = Some("Package is already installed"),
               preInstallState = AlreadyInstalled,
               postInstallState = Unchanged
             )
@@ -88,7 +87,7 @@ final class PackageInstallSpec extends FreeSpec with BeforeAndAfterAll with Cosm
               apiClient.installPackageAndAssert(
                 InstallRequest(packageName),
                 Status.InternalServerError,
-                content = errorJson(s"Received response status code ${status.code} from Marathon"),
+                expectedErrorMessage = Some(s"Received response status code ${status.code} from Marathon"),
                 preInstallState = Anything,
                 postInstallState = Unchanged
               )
@@ -108,7 +107,7 @@ final class PackageInstallSpec extends FreeSpec with BeforeAndAfterAll with Cosm
               apiClient.installPackageAndAssert(
                 InstallRequest(packageName),
                 Status.BadGateway,
-                content = errorJson(s"Received response status code ${status.code} from Marathon"),
+                expectedErrorMessage = Some(s"Received response status code ${status.code} from Marathon"),
                 preInstallState = Anything,
                 postInstallState = Unchanged
               )
@@ -129,8 +128,7 @@ final class PackageInstallSpec extends FreeSpec with BeforeAndAfterAll with Cosm
             apiClient.installPackageAndAssert(
               InstallRequest(packageName, version = Some(packageVersion)),
               Status.BadRequest,
-              content = errorJson(
-                s"Version [$packageVersion] of package [$packageName] not found"),
+              expectedErrorMessage = Some(s"Version [$packageVersion] of package [$packageName] not found"),
               preInstallState = NotInstalled,
               postInstallState = Unchanged
             )
@@ -148,7 +146,7 @@ final class PackageInstallSpec extends FreeSpec with BeforeAndAfterAll with Cosm
             apiClient.installPackageAndAssert(
               InstallRequest(packageName, version = versionOpt),
               Status.Ok,
-              content = Json.obj(),
+              expectedErrorMessage = None,
               preInstallState = NotInstalled,
               postInstallState = Installed,
               expectedAppIdOpt = Some(appId)
@@ -170,7 +168,7 @@ final class PackageInstallSpec extends FreeSpec with BeforeAndAfterAll with Cosm
           apiClient.installPackageAndAssert(
             InstallRequest("cassandra", appId = Some("custom-app-id")),
             Status.Ok,
-            content = Json.obj(),
+            expectedErrorMessage = None,
             preInstallState = NotInstalled,
             postInstallState = Installed,
             expectedAppIdOpt = Some("custom-app-id")
@@ -376,7 +374,7 @@ private final class ApiTestAssertionDecorator(apiClient: Service[Request, Respon
   private[cosmos] def installPackageAndAssert(
     installRequest: InstallRequest,
     status: Status,
-    content: Json,
+    expectedErrorMessage: Option[String],  //TODO: This is cludgy
     preInstallState: PreInstallState,
     postInstallState: PostInstallState,
     expectedAppIdOpt: Option[String] = None
@@ -391,7 +389,12 @@ private final class ApiTestAssertionDecorator(apiClient: Service[Request, Respon
 
     val response = installPackage(apiClient, installRequest)
     assertResult(status)(response.status)
-    assertResult(Xor.Right(content))(parse(response.contentString))
+    expectedErrorMessage match {
+      case Some(errMsg) =>
+        val Right(errorResponse) = decode[ErrorResponse](response.contentString)
+        assertResult(errMsg)(errorResponse.errors.head.message)
+      case None => // don't care
+    }
 
     val expectedInstalled = postInstallState match {
       case Installed => true

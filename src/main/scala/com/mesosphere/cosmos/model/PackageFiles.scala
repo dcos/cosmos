@@ -1,9 +1,9 @@
 package com.mesosphere.cosmos.model
 
-import cats.data.ValidatedNel
+import cats.data._
 import cats.std.list._
 import cats.syntax.apply._
-import com.mesosphere.cosmos.{CosmosError, PackageFileSchemaMismatch, errorNel}
+import com.mesosphere.cosmos.{CosmosError, PackageFileSchemaMismatch}
 import com.netaporter.uri.Uri
 import io.circe.generic.auto._
 import io.circe.{Decoder, Json}
@@ -63,5 +63,7 @@ object PackageFiles {
       .leftMap(_ => errorNel(PackageFileSchemaMismatch(packageFileName)))
       .toValidated
   }
+
+  def errorNel(error: CosmosError): NonEmptyList[CosmosError] = NonEmptyList(error)
 
 }

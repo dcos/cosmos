@@ -5,7 +5,7 @@ import cats.data.Xor.Right
 import com.mesosphere.cosmos.model._
 import com.netaporter.uri.Uri
 import com.twitter.finagle.http._
-import com.twitter.io.{Buf, Charsets}
+import com.twitter.io.{Buf}
 import com.twitter.finagle.{Http, Service}
 import com.twitter.util._
 import io.circe.parse._
@@ -20,7 +20,7 @@ final class PackageDescribeSpec extends FreeSpec with CosmosSpec {
   import PackageDescribeSpec._
 
   "The package describe endpoint" - {
-    "don't install if specified version is not found" in {
+    "don't install if specified version is not found"/*TODO: Copy paste test name */ in {
       val _ = withTempDirectory { universeDir =>
         val universeCache = Await.result(UniversePackageCache(UniverseUri, universeDir))
 
@@ -29,8 +29,7 @@ final class PackageDescribeSpec extends FreeSpec with CosmosSpec {
             apiClient.describeAndAssertError(
               packageName = packageName,
               status = Status.BadRequest,
-              content = errorJson(
-                s"Version [$packageVersion] of package [$packageName] not found"),
+              expectedMessage = s"Version [$packageVersion] of package [$packageName] not found",
               version = Some(packageVersion)
             )
           }
@@ -124,7 +123,7 @@ private object PackageDescribeSpec extends CosmosSpec {
     "http://json-schema.org/schema#",
     "object",
     HelloworldProperties(HelloworldPort("integer", 8080)),
-    false
+    additionalProperties = false
   )
 
   case class HelloworldCommand(pip: List[String])
@@ -156,17 +155,18 @@ private object PackageDescribeSpec extends CosmosSpec {
 private final class DescribeTestAssertionDecorator(apiClient: Service[Request, Response]) extends CosmosSpec {
   import PackageDescribeSpec._
 
-  final val DescribeEndpoint = "v1/package/describe"
+  val DescribeEndpoint = "v1/package/describe"
 
   private[cosmos] def describeAndAssertError(
     packageName: String,
     status: Status,
-    content: Json,
+    expectedMessage: String,
     version: Option[String] = None
   ): Unit = {
     val response = describeRequest(apiClient, DescribeRequest(packageName, version, None))
     assertResult(status)(response.status)
-    assertResult(Xor.Right(content))(parse(response.contentString))
+    val Right(errorResponse) = decode[ErrorResponse](response.contentString)
+    assertResult(expectedMessage)(errorResponse.errors.head.message)
   }
 
   private[cosmos] def describeVersionsAndAssert(

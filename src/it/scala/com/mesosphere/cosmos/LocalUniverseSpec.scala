@@ -14,13 +14,6 @@ final class LocalUniverseSpec extends IntegrationSpec {
 
   import LocalUniverseSpec._
 
-  "ping endpoint" should "respond" in { service =>
-    val request = Request(Method.Get, "/ping")
-    val response = service(request)
-    assertResult(Status.Ok)(response.status)
-    assertSuccessJson("pong")(response.contentString)
-  }
-
   "import endpoint" should "accept a Zip file" in { service =>
     forAll (ValidFilenamePrefixes) { filenamePrefix =>
       val packagePart = FileElement(
