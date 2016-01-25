@@ -12,7 +12,7 @@ abstract class IntegrationSpec
 
   def createService: Service[Request, Response] = {
     val adminRouterUri = adminRouterHost
-    val dcosClient = Services.adminRouterClient(adminRouterUri)
+    val dcosClient = Services.adminRouterClient(adminRouterUri).get
     val adminRouter = new AdminRouter(adminRouterUri, dcosClient)
     new Cosmos(PackageCache.empty, new MarathonPackageRunner(adminRouter), new UninstallHandler(adminRouter)).service
   }

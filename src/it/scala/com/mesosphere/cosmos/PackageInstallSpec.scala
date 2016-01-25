@@ -195,7 +195,7 @@ final class PackageInstallSpec extends FreeSpec with BeforeAndAfterAll with Cosm
   }
 
   private[this] def runService[A](
-    dcosClient: Service[Request, Response] = Services.adminRouterClient(adminRouterHost),
+    dcosClient: Service[Request, Response] = Services.adminRouterClient(adminRouterHost).get,
     packageCache: PackageCache = MemoryPackageCache(PackageMap)
   )(
     f: ApiTestAssertionDecorator => Unit
