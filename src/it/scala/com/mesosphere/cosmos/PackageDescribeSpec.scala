@@ -5,11 +5,13 @@ import cats.data.Xor.Right
 import com.mesosphere.cosmos.model._
 import com.netaporter.uri.Uri
 import com.twitter.finagle.http._
+import com.twitter.io.{Buf, Charsets}
 import com.twitter.finagle.{Http, Service}
 import com.twitter.util._
 import io.circe.parse._
 import io.circe.generic.auto._
 import io.circe.Json
+import io.circe.syntax._
 import org.scalatest.FreeSpec
 
 final class PackageDescribeSpec extends FreeSpec with CosmosSpec {
@@ -46,6 +48,22 @@ final class PackageDescribeSpec extends FreeSpec with CosmosSpec {
         }
       }
     }
+
+    "can successfully describe all versions from Universe" in {
+      val _ = withTempDirectory { universeDir =>
+        val universeCache = Await.result(UniversePackageCache(UniverseUri, universeDir))
+
+        runService(packageCache = universeCache) { apiClient =>
+          forAll (PackageVersionsTable) { (packageName, versions) =>
+            apiClient.describeVersionsAndAssert(
+              packageName=packageName,
+              status=Status.Ok,
+              content=versions.asJson
+            )
+          }
+        }
+      }
+    }
   }
 
   private[this] def runService[A](
@@ -78,6 +96,11 @@ private object PackageDescribeSpec extends CosmosSpec {
     ("package name", "version"),
     ("helloworld", "a.b.c"),
     ("cassandra", "foobar")
+  )
+
+  private val PackageVersionsTable = Table(
+    ("package name", "versions"),
+    ("helloworld", Map[String,String]("0.1.0" -> "0"))
   )
 
   val HelloworldPackageDef = PackageDefinition(
@@ -141,13 +164,23 @@ private final class DescribeTestAssertionDecorator(apiClient: Service[Request, R
     content: Json,
     version: Option[String] = None
   ): Unit = {
-    val response = describeRequest(apiClient, packageName, version)
+    val response = describeRequest(apiClient, DescribeRequest(packageName, version, None))
+    assertResult(status)(response.status)
+    assertResult(Xor.Right(content))(parse(response.contentString))
+  }
+
+  private[cosmos] def describeVersionsAndAssert(
+    packageName: String,
+    status: Status,
+    content: Json
+  ): Unit = {
+    val response = describeRequest(apiClient, DescribeRequest(packageName, None, Some(true)))
     assertResult(status)(response.status)
     assertResult(Xor.Right(content))(parse(response.contentString))
   }
 
   private[cosmos] def describeHelloworld(version: Option[String] = None) = {
-    val response = describeRequest(apiClient, "helloworld", version)
+    val response = describeRequest(apiClient, DescribeRequest("helloworld", version, None))
     assertResult(Status.Ok)(response.status)
     val Right(packageInfo) = parse(response.contentString)
 
@@ -166,12 +199,10 @@ private final class DescribeTestAssertionDecorator(apiClient: Service[Request, R
 
   private[this] def describeRequest(
     apiClient: Service[Request, Response],
-    packageName: String,
-    versionOpt: Option[String]
+    describeRequest: DescribeRequest
   ): Response = {
-    val versionParam = versionOpt.map { version => s"&packageVersion=$version" }.getOrElse("")
-    val request = requestBuilder(s"$DescribeEndpoint?packageName=$packageName$versionParam")
-      .buildGet()
+    val request = requestBuilder(DescribeEndpoint)
+      .buildPost(Buf.Utf8(describeRequest.asJson.noSpaces))
     Await.result(apiClient(request))
   }
 }

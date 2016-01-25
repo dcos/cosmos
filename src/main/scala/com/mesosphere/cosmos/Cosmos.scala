@@ -77,18 +77,10 @@ private final class Cosmos(
 
     def respond(describe: DescribeRequest): Future[Output[Json]] = {
       packageCache
-        .getPackageFiles(describe.packageName, describe.packageVersion)
-        .map { packageFiles =>
-          Ok(packageFiles.describeAsJson)
-        }
     }
+        .getPackageDescribe(describe)
 
-    val describe: RequestReader[DescribeRequest] = for {
-        name <- param("packageName")
-        version <- paramOption("packageVersion")
-    } yield DescribeRequest(name, version)
-
-    get("v1" / "package" / "describe" ? describe) (respond _)
+    post("v1" / "package" / "describe" ? body.as[DescribeRequest]) (respond _)
   }
 
   val service: Service[Request, Response] =

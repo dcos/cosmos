@@ -12,6 +12,8 @@ import com.twitter.util.Future
 import io.circe.Json
 import io.circe.generic.auto._
 import io.circe.parse._
+import io.circe.syntax._
+import io.finch._
 
 /** Stores packages from the Universe GitHub repository in the local filesystem.
   *
@@ -33,6 +35,33 @@ final class UniversePackageCache private(repoDir: Path, source: Uri) extends Pac
         )
     }
   }
+
+  override def getPackageIndex(
+    packageName: String
+  ): Future[PackageInfo] = {
+    getRepoIndex(repoDir, source)
+      .map { repoIndex =>
+          repoIndex.getPackages.get(packageName) match {
+            case None => throw PackageNotFound(packageName)
+            case Some(packageInfo) => packageInfo
+        }
+    }
+  }
+
+  override def getPackageDescribe(
+    describe: DescribeRequest
+  ): Future[Output[Json]] = {
+    describe.packageVersions match {
+      case Some(_) =>
+        getPackageIndex(describe.packageName)
+          .map { packageInfo => Ok(packageInfo.versions.asJson) }
+      case None =>
+        getPackageFiles(describe.packageName, describe.packageVersion)
+          .map { packageFiles => Ok(packageFiles.describeAsJson) }
+    }
+  }
+
+
 
 }
 
