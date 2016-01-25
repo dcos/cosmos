@@ -2,6 +2,7 @@ package com.mesosphere.cosmos
 
 import cats.data.NonEmptyList
 import com.github.fge.jsonschema.core.report.ProcessingMessage
+import com.mesosphere.cosmos.model.AppId
 import com.netaporter.uri.Uri
 import com.twitter.finagle.http.Status
 
@@ -56,8 +57,8 @@ case class IndexNotFound(repoUri: Uri) extends CosmosError
 case class RepositoryNotFound() extends CosmosError
 
 case class MarathonAppMetadataError(note: String) extends CosmosError
-case class MarathonAppDeleteError(appId: String) extends CosmosError
-case class MarathonAppNotFound(appId: String) extends CosmosError
+case class MarathonAppDeleteError(appId: AppId) extends CosmosError
+case class MarathonAppNotFound(appId: AppId) extends CosmosError
 case class MesosRequestError(note: String) extends CosmosError
 case class CirceError(cerr: io.circe.Error) extends CosmosError
 
@@ -65,7 +66,7 @@ case class UnsupportedContentType(contentType: Option[String], supported: String
 
 case class GenericHttpError(uri: Uri, override val status: Status) extends CosmosError
 
-case class AmbiguousAppId(packageName: String, appIds: List[String]) extends CosmosError
+case class AmbiguousAppId(packageName: String, appIds: List[AppId]) extends CosmosError
 case class MultipleFrameworkIds(frameworkName: String, ids: List[String]) extends CosmosError
 
 case class MultipleError(errs: List[CosmosError]) extends CosmosError

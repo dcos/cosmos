@@ -1,8 +1,7 @@
 package com.mesosphere.cosmos
 
 import com.mesosphere.cosmos.http.{MediaTypes, EndpointHandler}
-import com.mesosphere.cosmos.model.{UninstallResult, UninstallRequest, UninstallResponse}
-import com.netaporter.uri.dsl._
+import com.mesosphere.cosmos.model.{AppId, UninstallResult, UninstallRequest, UninstallResponse}
 import com.twitter.finagle.http.Status
 import com.twitter.util.Future
 import io.circe.Encoder
@@ -50,7 +49,7 @@ private[cosmos] final class UninstallHandler(adminRouter: AdminRouter)
       }
     Future.collect(fs)
   }
-  private def destroyMarathonApp(appId: String): Future[MarathonAppDeleteSuccess] = {
+  private def destroyMarathonApp(appId: AppId): Future[MarathonAppDeleteSuccess] = {
     adminRouter.deleteApp(appId, force = true) map { resp =>
       resp.status match {
         case Status.Ok => MarathonAppDeleteSuccess()
@@ -71,7 +70,7 @@ private[cosmos] final class UninstallHandler(adminRouter: AdminRouter)
             app <- marathonApps.apps
             labels = app.labels
             packageName <- labels.get("DCOS_PACKAGE_NAME")
-            if packageName == req.name
+            if packageName == req.packageName
           } yield UninstallOperation(
             appId = app.id,
             packageName = packageName,
@@ -83,7 +82,7 @@ private[cosmos] final class UninstallHandler(adminRouter: AdminRouter)
             case Some(true) =>
               appIds
             case _ if appIds.size > 1 =>
-              throw AmbiguousAppId(req.name, appIds.map(_.appId))
+              throw AmbiguousAppId(req.packageName, appIds.map(_.appId))
             case _ => // we've only got one package installed with the specified name, continue with it
               appIds
           }
@@ -98,13 +97,13 @@ private[cosmos] final class UninstallHandler(adminRouter: AdminRouter)
 
   private case class MarathonAppDeleteSuccess()
   private case class UninstallOperation(
-    appId: String,
+    appId: AppId,
     packageName: String,
     version: Option[String],
     frameworkName: Option[String]
   )
   private case class UninstallDetails(
-    appId: String,
+    appId: AppId,
     packageName: String,
     version: Option[String],
     frameworkName: Option[String] = None,

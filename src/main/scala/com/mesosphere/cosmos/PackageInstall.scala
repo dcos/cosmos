@@ -6,8 +6,9 @@ import java.util.Base64
 import cats.data.Xor
 import com.github.mustachejava.DefaultMustacheFactory
 import com.mesosphere.cosmos.jsonschema.JsonSchemaValidation
-import com.mesosphere.cosmos.model.{InstallRequest, PackageFiles, Resource}
+import com.mesosphere.cosmos.model.{InstallRequest, InstallResponse, PackageFiles, Resource}
 import com.twitter.io.Charsets
+import com.twitter.util.Future
 import io.circe.generic.auto._
 import io.circe.parse.parse
 import io.circe.syntax._
@@ -19,7 +20,25 @@ object PackageInstall {
 
   private[this] val MustacheFactory = new DefaultMustacheFactory()
 
-  private[cosmos] def preparePackageConfig(
+  private[cosmos] def install(packageCache: PackageCache, packageRunner: PackageRunner)(
+    request: InstallRequest
+  ): Future[InstallResponse] = {
+    packageCache
+      .getPackageFiles(request.packageName, request.packageVersion)
+      .flatMap { packageFiles =>
+        val packageConfig = preparePackageConfig(request, packageFiles)
+        packageRunner
+          .launch(packageConfig)
+          .map { runnerResponse =>
+            val packageName = packageFiles.packageJson.name
+            val packageVersion = packageFiles.packageJson.version
+            val appId = runnerResponse.id
+            InstallResponse(packageName, packageVersion, appId)
+          }
+      }
+  }
+
+  private[this] def preparePackageConfig(
     request: InstallRequest,
     packageFiles: PackageFiles
   ): Json = {
