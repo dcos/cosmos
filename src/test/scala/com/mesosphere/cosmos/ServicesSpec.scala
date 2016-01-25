@@ -22,6 +22,8 @@ final class ServicesSpec extends FreeSpec {
           assertResult(response.status)(Status.ServiceUnavailable)
         } catch {
           case e: NoBrokersAvailableException => // Success
+        } finally {
+          val _ = Await.ready(client.close())
         }
       }
     }
