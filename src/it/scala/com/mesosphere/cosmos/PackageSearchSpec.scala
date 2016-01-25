@@ -1,6 +1,7 @@
 package com.mesosphere.cosmos
 
 import cats.data.Xor.Right
+import com.mesosphere.cosmos.http.EndpointHandler
 import com.mesosphere.cosmos.model._
 import com.netaporter.uri.Uri
 import com.twitter.finagle.http._
@@ -58,10 +59,13 @@ final class PackageSearchSpec extends FreeSpec with CosmosSpec {
   )(
     f: SearchTestAssertionDecorator => Unit
   ): Unit = {
+    // these two imports provide the implicit DecodeRequest instances needed to instantiate Cosmos
+    import io.circe.generic.auto._
+    import io.finch.circe._
     val service = new Cosmos(
       packageCache,
       new MarathonPackageRunner(adminRouter),
-      (r : UninstallRequest) => { Future.value(UninstallResponse(Nil)) }
+      EndpointHandler.const(UninstallResponse(Nil))
     ).service
     val server = Http.serve(s":$servicePort", service)
     val client = Http.newService(s"127.0.0.1:$servicePort")

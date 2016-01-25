@@ -14,6 +14,9 @@ abstract class IntegrationSpec
     val adminRouterUri = adminRouterHost
     val dcosClient = Services.adminRouterClient(adminRouterUri).get
     val adminRouter = new AdminRouter(adminRouterUri, dcosClient)
+    // these two imports provide the implicit DecodeRequest instances needed to instantiate Cosmos
+    import io.circe.generic.auto._
+    import io.finch.circe._
     new Cosmos(PackageCache.empty, new MarathonPackageRunner(adminRouter), new UninstallHandler(adminRouter)).service
   }
 

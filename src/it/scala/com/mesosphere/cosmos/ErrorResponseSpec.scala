@@ -1,6 +1,7 @@
 package com.mesosphere.cosmos
 
 import cats.data.Xor
+import com.mesosphere.cosmos.http.MediaTypes
 import com.twitter.io.Buf
 import com.twitter.finagle.http.Status
 import io.circe.parse._
@@ -15,6 +16,7 @@ class ErrorResponseSpec extends IntegrationSpec {
     val response = service(post)
 
     assertResult(Status.BadRequest)(response.status)
+    assertResult(MediaTypes.ErrorResponse.show)(response.headerMap("Content-Type"))
     val Xor.Right(err) = decode[ErrorResponse](response.contentString)
     val msg = err.errors.head.message
     assert(msg.contains("body"))

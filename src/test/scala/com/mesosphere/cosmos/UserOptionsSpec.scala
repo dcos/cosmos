@@ -1,6 +1,7 @@
 package com.mesosphere.cosmos
 
 import cats.data.Xor
+import com.mesosphere.cosmos.http.EndpointHandler
 import com.mesosphere.cosmos.model._
 import com.netaporter.uri.Uri
 import com.twitter.finagle.http.RequestBuilder
@@ -48,10 +49,13 @@ final class UserOptionsSpec extends UnitSpec {
         val packageCache = MemoryPackageCache(packages)
         val packageRunner = new RecordingPackageRunner
 
+        // these two imports provide the implicit DecodeRequest instances needed to instantiate Cosmos
+        import io.circe.generic.auto._
+        import io.finch.circe._
         val cosmos = new Cosmos(
           packageCache,
           packageRunner,
-          (r : UninstallRequest) => { Future.value(UninstallResponse(Nil)) }
+          EndpointHandler.const(UninstallResponse(Nil))
         )
         val request = RequestBuilder()
           .url("http://dummy.cosmos.host/v1/package/install")

@@ -1,7 +1,7 @@
 package com.mesosphere.cosmos
 
 import java.nio.file.Files
-
+import com.mesosphere.cosmos.http.MediaTypes
 import com.netaporter.uri.dsl._
 import com.twitter.finagle.Service
 import com.twitter.finagle.http.{Request, Response, Status}
@@ -46,11 +46,14 @@ final class UninstallHandlerSpec extends IntegrationSpec {
     //TODO: Assert framework starts up
 
     val uninstallRequest = requestBuilder("v1/package/uninstall")
+      .setHeader("Accept", MediaTypes.UninstallResponse.show)
+      .setHeader("Content-Type", MediaTypes.UninstallRequest.show)
       .buildPost(Buf.Utf8("""{"name":"cassandra"}"""))
     val uninstallResponse = service(uninstallRequest)
     val uninstallResponseBody = uninstallResponse.contentString
     logger.info("uninstallResponseBody = {}", uninstallResponseBody)
     assertResult(Status.Ok)(uninstallResponse.status)
+    assertResult(MediaTypes.UninstallResponse.show)(uninstallResponse.headerMap("Content-Type"))
   }
 
 }

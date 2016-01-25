@@ -221,6 +221,9 @@ final class PackageInstallSpec extends FreeSpec with BeforeAndAfterAll with Cosm
     f: ApiTestAssertionDecorator => Unit
   ): Unit = {
     val adminRouter = new AdminRouter(adminRouterHost, dcosClient)
+    // these two imports provide the implicit DecodeRequest instances needed to instantiate Cosmos
+    import io.circe.generic.auto._
+    import io.finch.circe._
     val service = new Cosmos(packageCache, new MarathonPackageRunner(adminRouter), new UninstallHandler(adminRouter)).service
     val server = Http.serve(s":$servicePort", service)
     val client = Http.newService(s"127.0.0.1:$servicePort")
@@ -285,10 +288,10 @@ private object PackageInstallSpec extends CosmosSpec {
     ("cassandra", "foobar")
   )
 
-  private def getPackageInfo(appId: String): Future[PackageInfo] = {
+  private def getPackageInfo(appId: String): Future[ExpectedPackageInfo] = {
     adminRouter.getApp(appId)
       .map { appResp =>
-        PackageInfo(appResp.app.uris, appResp.app.labels)
+        ExpectedPackageInfo(appResp.app.uris, appResp.app.labels)
       }
   }
 
@@ -466,7 +469,7 @@ private sealed trait PostInstallState
 private case object Installed extends PostInstallState
 private case object Unchanged extends PostInstallState
 
-case class PackageInfo(uris: List[String], labels: Map[String, String])
+case class ExpectedPackageInfo(uris: List[String], labels: Map[String, String])
 
 case class StandardLabels(
   packageMetadata: Json,

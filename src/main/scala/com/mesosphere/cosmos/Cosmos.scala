@@ -3,7 +3,8 @@ package com.mesosphere.cosmos
 import java.io.{BufferedInputStream, ByteArrayInputStream, FileInputStream, InputStream}
 import java.util.zip.ZipInputStream
 
-import com.mesosphere.cosmos.model.{DescribeRequest, InstallRequest, SearchRequest, UninstallRequest, UninstallResponse}
+import com.mesosphere.cosmos.http.{MediaTypes, EndpointHandler}
+import com.mesosphere.cosmos.model._
 import com.twitter.finagle.Service
 import com.twitter.finagle.http.exp.Multipart.{FileUpload, InMemoryFileUpload, OnDiskFileUpload}
 import com.twitter.finagle.http.{Request, Response, Status}
@@ -18,10 +19,10 @@ import io.circe.generic.auto._    // Required for auto-parsing case classes from
 import io.finch._
 import io.finch.circe._
 
-private final class Cosmos(
+private[cosmos] final class Cosmos(
   packageCache: PackageCache,
   packageRunner: PackageRunner,
-  uninstallHandler: (UninstallRequest) => Future[UninstallResponse]
+  uninstallHandler: EndpointHandler[UninstallRequest, UninstallResponse]
 )(implicit statsReceiver: StatsReceiver = NullStatsReceiver) {
   lazy val logger = org.slf4j.LoggerFactory.getLogger(classOf[Cosmos])
 
@@ -64,11 +65,11 @@ private final class Cosmos(
   val packageUninstall: Endpoint[Json] = {
     def respond(req: UninstallRequest): Future[Output[Json]] = {
       uninstallHandler(req).map {
-        case resp => Ok(resp.asJson)
+        case resp => Ok(resp.asJson).withContentType(Some(uninstallHandler.produces.show))
       }
     }
 
-    post("v1" / "package" / "uninstall" ? body.as[UninstallRequest])(respond _)
+    post("v1" / "package" / "uninstall" ? uninstallHandler.reader)(respond _)
   }
 
   val packageDescribe: Endpoint[Json] = {
@@ -129,18 +130,30 @@ private final class Cosmos(
     )
       .handle {
         case ce: CosmosError =>
-          stats.counter(s"definedError/${ce.getClass.getName}").incr()
-          Output.failure(ce, ce.status)
+          stats.counter(s"definedError/${sanitiseClassName(ce.getClass)}").incr()
+          Output.failure(ce, ce.status).withContentType(Some(MediaTypes.ErrorResponse.show))
+        case fe: io.finch.Error =>
+          stats.counter(s"finchError/${sanitiseClassName(fe.getClass)}").incr()
+          Output.failure(fe, Status.BadRequest).withContentType(Some(MediaTypes.ErrorResponse.show))
         case e: Exception if !e.isInstanceOf[io.finch.Error] =>
-          stats.counter(s"unhandledException/${e.getClass.getName}").incr()
+          stats.counter(s"unhandledException/${sanitiseClassName(e.getClass)}").incr()
           logger.warn("Unhandled exception: ", e)
-          Output.failure(e, Status.InternalServerError)
+          Output.failure(e, Status.InternalServerError).withContentType(Some(MediaTypes.ErrorResponse.show))
         case t: Throwable if !t.isInstanceOf[io.finch.Error] =>
-          stats.counter(s"unhandledThrowable/${t.getClass.getName}").incr()
+          stats.counter(s"unhandledThrowable/${sanitiseClassName(t.getClass)}").incr()
           logger.warn("Unhandled throwable: ", t)
-          Output.failure(new Exception(t), Status.InternalServerError)
+          Output.failure(new Exception(t), Status.InternalServerError).withContentType(Some(MediaTypes.ErrorResponse.show))
       }
       .toService
+  }
+
+  /**
+    * Removes characters from class names that are disallowed by some metrics systems.
+    * @param clazz the class whose name is to be santised
+    * @return The name of the specified class with all "illegal characters" replaced with '.'
+    */
+  private[this] def sanitiseClassName(clazz: Class[_]): String = {
+    clazz.getName.replaceAllLiterally("$", ".")
   }
 
   /** Attempts to provide access to the content of the given file upload as a byte stream.
