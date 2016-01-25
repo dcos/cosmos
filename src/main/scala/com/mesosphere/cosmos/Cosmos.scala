@@ -3,7 +3,6 @@ package com.mesosphere.cosmos
 import java.io.{BufferedInputStream, ByteArrayInputStream, FileInputStream, InputStream}
 import java.util.zip.ZipInputStream
 
-import cats.data.Xor.{Left, Right}
 import com.mesosphere.cosmos.model.{UninstallResponse, DescribeRequest, InstallRequest, UninstallRequest}
 import com.twitter.finagle.Service
 import com.twitter.finagle.http.exp.Multipart.{FileUpload, InMemoryFileUpload, OnDiskFileUpload}
@@ -13,7 +12,7 @@ import io.circe.syntax.EncoderOps
 import io.github.benwhitehead.finch.FinchServer
 
 import com.twitter.util.{Await, Future}
-import io.circe.{Json, JsonObject}
+import io.circe.{Encoder, Json}
 import io.circe.generic.auto._    // Required for auto-parsing case classes from JSON
 
 import io.finch._
@@ -24,8 +23,9 @@ private final class Cosmos(
   packageRunner: PackageRunner,
   uninstallHandler: (UninstallRequest) => Future[UninstallResponse]
 )(implicit statsReceiver: StatsReceiver = NullStatsReceiver) {
+  lazy val logger = org.slf4j.LoggerFactory.getLogger(classOf[Cosmos])
 
-  implicit val statsBaseScope = BaseScope(Some("app"))
+  implicit val baseScope = BaseScope(Some("app"))
 
   val FilenameRegex = """/?([^/]+/)*[^-./]+-[^/]*-[^-./]+\.zip""".r
 
@@ -35,13 +35,11 @@ private final class Cosmos(
       FilenameRegex.unapplySeq(request.fileName).nonEmpty
     }
 
-  val ping: Endpoint[Json] = get("ping") { successOutput("pong") }
-
   val packageImport: Endpoint[Json] = {
     def respond(file: FileUpload): Output[Json] = {
       fileUploadBytes(file).flatMap { fileBytes =>
         if (nonEmptyArchive(fileBytes)) {
-          successOutput("Import successful!")
+          Ok(Map("message" -> "Import successful!").asJson)
         } else {
           throw EmptyPackageImport()
         }
@@ -83,13 +81,52 @@ private final class Cosmos(
     post("v1" / "package" / "describe" ? body.as[DescribeRequest]) (respond _)
   }
 
-  val service: Service[Request, Response] =
-    new CosmosErrorFilter() andThen (ping
-      :+: packageImport
+  def exceptionErrorResponse(t: Throwable): List[ErrorResponseEntry] = t match {
+    case Error.NotPresent(item) =>
+      List(ErrorResponseEntry("not_present", s"Item '${item.kind}' not present but required"))
+    case Error.NotParsed(item, typ, cause) =>
+      List(ErrorResponseEntry("not_parsed", s"Item '${item.kind}' unable to be parsed : '${cause.getMessage}'"))
+    case Error.NotValid(item, rule) =>
+      List(ErrorResponseEntry("not_valid", s"Item '${item.kind}' deemed invalid by rule: '$rule'"))
+    case Error.RequestErrors(ts) =>
+      ts.flatMap(exceptionErrorResponse).toList
+    case ce: CosmosError =>
+      List(ErrorResponseEntry(ce.getClass.getSimpleName, ce.getMessage))
+    case t: Throwable =>
+      List(ErrorResponseEntry("unhandled_exception", t.getMessage))
+  }
+
+  implicit val exceptionEncoder: Encoder[Exception] =
+    Encoder.instance { e => ErrorResponse(exceptionErrorResponse(e)).asJson }
+
+  val service: Service[Request, Response] = {
+    val stats = {
+      baseScope.name match {
+        case Some(bs) if bs.nonEmpty => statsReceiver.scope(s"$bs/errorFilter")
+        case _ => statsReceiver.scope("errorFilter")
+      }
+    }
+
+    (packageImport
       :+: packageInstall
       :+: packageDescribe
       :+: packageUninstall
-    ).toService
+    )
+      .handle {
+        case ce: CosmosError =>
+          stats.counter(s"definedError/${ce.getClass.getName}").incr()
+          Output.failure(ce, ce.status)
+        case e: Exception if !e.isInstanceOf[io.finch.Error] =>
+          stats.counter(s"unhandledException/${e.getClass.getName}").incr()
+          logger.warn("Unhandled exception: ", e)
+          Output.failure(e, Status.InternalServerError)
+        case t: Throwable if !t.isInstanceOf[io.finch.Error] =>
+          stats.counter(s"unhandledThrowable/${t.getClass.getName}").incr()
+          logger.warn("Unhandled throwable: ", t)
+          Output.failure(new Exception(t), Status.InternalServerError)
+      }
+      .toService
+  }
 
   /** Attempts to provide access to the content of the given file upload as a byte stream.
     *

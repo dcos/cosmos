@@ -3,7 +3,6 @@ package com.mesosphere.cosmos
 import cats.data.NonEmptyList
 import com.netaporter.uri.Uri
 import com.twitter.finagle.http.Status
-import io.circe.Encoder
 
 sealed trait CosmosError extends RuntimeException {
 
@@ -36,18 +35,6 @@ sealed trait CosmosError extends RuntimeException {
       case mfi @ MultipleFrameworkIds(_, _) => mfi.toString
       case me @ MultipleError(_) => me.toString
       case nelE @ NelErrors(_) => nelE.toString
-    }
-  }
-
-}
-
-object CosmosError {
-
-  implicit val jsonEncoder: Encoder[CosmosError] = {
-    Encoder[Map[String, List[Map[String, String]]]].contramap { error =>
-      Map("errors" -> List(
-        Map("message" -> error.getMessage)
-      ))
     }
   }
 
