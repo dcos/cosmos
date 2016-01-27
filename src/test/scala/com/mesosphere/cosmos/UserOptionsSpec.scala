@@ -1,14 +1,15 @@
 package com.mesosphere.cosmos
 
 import cats.data.Xor
-import com.mesosphere.cosmos.http.EndpointHandler
+import com.mesosphere.cosmos.handler.{EndpointHandler, PackageImportHandler, PackageInstallHandler}
+import com.mesosphere.cosmos.circe.Decoders._
+import com.mesosphere.cosmos.http.MediaTypes
 import com.mesosphere.cosmos.model._
 import com.mesosphere.cosmos.model.mesos.master.MarathonApp
 import com.netaporter.uri.Uri
 import com.twitter.finagle.http.RequestBuilder
 import com.twitter.io.Buf
 import com.twitter.util.{Future, Await}
-import io.circe.generic.auto._
 import io.circe.syntax._
 import io.circe.{Json, JsonObject}
 import io.finch.Input
@@ -20,7 +21,7 @@ final class UserOptionsSpec extends UnitSpec {
     "should pass on all examples" in {
       forAll (Examples) { (defaultsJson, optionsJson, mergedJson) =>
         assertResult(mergedJson) {
-          PackageInstall.merge(defaultsJson, optionsJson)
+          PackageInstallHandler.merge(defaultsJson, optionsJson)
         }
       }
     }
@@ -34,9 +35,6 @@ final class UserOptionsSpec extends UnitSpec {
         val packageFiles = PackageFiles(
           revision = "0",
           sourceUri = Uri.parse("in/memory/source"),
-          commandJson = Json.obj(),
-          configJson = buildConfig(Json.fromJsonObject(defaultsJson)).asJson,
-          marathonJsonMustache = mustacheTemplate,
           packageJson = PackageDefinition(
             packagingVersion = "2.0",
             name = packageName,
@@ -44,23 +42,32 @@ final class UserOptionsSpec extends UnitSpec {
             maintainer = "Mesosphere",
             description = "Testing user options"
           ),
-          resourceJson = Resource()
+          marathonJsonMustache = mustacheTemplate,
+          configJson = Some(buildConfig(Json.fromJsonObject(defaultsJson)))
         )
         val packages = Map(packageName -> packageFiles)
         val packageCache = MemoryPackageCache(packages)
         val packageRunner = new RecordingPackageRunner
 
         // these two imports provide the implicit DecodeRequest instances needed to instantiate Cosmos
-        import io.circe.generic.auto._
+        import com.mesosphere.cosmos.circe.Decoders._
+        import com.mesosphere.cosmos.circe.Encoders._
         import io.finch.circe._
         val cosmos = new Cosmos(
           packageCache,
           packageRunner,
           EndpointHandler.const(UninstallResponse(Nil)),
+          new PackageInstallHandler(packageCache, packageRunner),
+          EndpointHandler.const(SearchResponse(List.empty)),
+          new PackageImportHandler,
+          EndpointHandler.const(DescribeResponse(packageFiles.packageJson, packageFiles.marathonJsonMustache)),
+          EndpointHandler.const(ListVersionsResponse(Map.empty)),
           EndpointHandler.const(ListResponse(Nil))
         )
         val request = RequestBuilder()
           .url("http://dummy.cosmos.host/v1/package/install")
+          .addHeader("Content-Type", MediaTypes.InstallRequest.show)
+          .addHeader("Accept", MediaTypes.InstallResponse.show)
           .buildPost(Buf.Utf8(reqBody.asJson.noSpaces))
 
         val Some((_, eval)) = cosmos.packageInstall(Input(request))
@@ -80,35 +87,33 @@ final class UserOptionsSpec extends UnitSpec {
 
   }
 
-  private[this] val JFalse = Json.bool(false)
-
   private[this] val Examples = Table(
     ("defaults JSON", "options JSON", "merged JSON"),
     (JsonObject.empty, JsonObject.empty, JsonObject.empty),
 
     (JsonObject.empty,
-      JsonObject.singleton("a", JFalse),
-      JsonObject.singleton("a", JFalse)),
+      JsonObject.singleton("a", Json.False),
+      JsonObject.singleton("a", Json.False)),
 
-    (JsonObject.singleton("a", JFalse),
+    (JsonObject.singleton("a", Json.False),
       JsonObject.empty,
-      JsonObject.singleton("a", JFalse)),
+      JsonObject.singleton("a", Json.False)),
 
-    (JsonObject.singleton("a", JFalse),
-      JsonObject.singleton("a", JFalse),
-      JsonObject.singleton("a", JFalse)),
+    (JsonObject.singleton("a", Json.False),
+      JsonObject.singleton("a", Json.False),
+      JsonObject.singleton("a", Json.False)),
 
-    (JsonObject.singleton("a", Json.obj("a" -> JFalse)),
+    (JsonObject.singleton("a", Json.obj("a" -> Json.False)),
       JsonObject.singleton("a", Json.obj()),
-      JsonObject.singleton("a", Json.obj("a" -> JFalse))),
+      JsonObject.singleton("a", Json.obj("a" -> Json.False))),
 
-    (JsonObject.singleton("a", Json.obj("a" -> JFalse)),
-      JsonObject.singleton("a", Json.obj("a" -> JFalse)),
-      JsonObject.singleton("a", Json.obj("a" -> JFalse))),
+    (JsonObject.singleton("a", Json.obj("a" -> Json.False)),
+      JsonObject.singleton("a", Json.obj("a" -> Json.False)),
+      JsonObject.singleton("a", Json.obj("a" -> Json.False))),
 
-    (JsonObject.singleton("a", Json.obj("a" -> JFalse)),
-      JsonObject.singleton("a", Json.obj("b" -> JFalse)),
-      JsonObject.singleton("a", Json.obj("a" -> JFalse, "b" -> JFalse)))
+    (JsonObject.singleton("a", Json.obj("a" -> Json.False)),
+      JsonObject.singleton("a", Json.obj("b" -> Json.False)),
+      JsonObject.singleton("a", Json.obj("a" -> Json.False, "b" -> Json.False)))
   )
 
   private[this] def keyValify(mustacheScopeJson: JsonObject): Map[String, String] = {
@@ -146,18 +151,18 @@ final class UserOptionsSpec extends UnitSpec {
     )
   }
 
-  private[this] def buildConfig(defaultsJson: Json): Json = {
+  private[this] def buildConfig(defaultsJson: Json): JsonObject = {
     defaultsJson.fold(
-      jsonNull = Map("type" -> "null".asJson, "default" -> defaultsJson).asJson,
-      jsonBoolean = boolean => Map("type" -> "boolean".asJson, "default" -> defaultsJson).asJson,
-      jsonNumber = number => Map("type" -> "number".asJson, "default" -> defaultsJson).asJson,
-      jsonString = string => Map("type" -> "string".asJson, "default" -> defaultsJson).asJson,
-      jsonArray = array => Map("type" -> "array".asJson, "default" -> defaultsJson).asJson,
+      jsonNull = JsonObject.fromMap(Map("type" -> "null".asJson, "default" -> defaultsJson)),
+      jsonBoolean = boolean => JsonObject.fromMap(Map("type" -> "boolean".asJson, "default" -> defaultsJson)),
+      jsonNumber = number => JsonObject.fromMap(Map("type" -> "number".asJson, "default" -> defaultsJson)),
+      jsonString = string => JsonObject.fromMap(Map("type" -> "string".asJson, "default" -> defaultsJson)),
+      jsonArray = array => JsonObject.fromMap(Map("type" -> "array".asJson, "default" -> defaultsJson)),
       jsonObject =  { obj =>
-        Map(
+        JsonObject.fromMap(Map(
           "type" -> "object".asJson,
           "properties" -> obj.toMap.mapValues(buildConfig).asJson
-        ).asJson
+        ))
       }
     )
   }
@@ -182,7 +187,7 @@ private final class RecordingPackageRunner extends PackageRunner {
   override def launch(renderedConfig: Json): Future[MarathonApp] = {
     marathonJson = Some(renderedConfig)
     val Xor.Right(id) = renderedConfig.cursor.get[AppId]("id")
-    Future.value(MarathonApp(id, Map.empty, List.empty))
+    Future.value(MarathonApp(id, Map.empty, List.empty, 0.0, 0.0, 1, None, None))
   }
 
 }

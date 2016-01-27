@@ -3,6 +3,7 @@ package com.mesosphere.cosmos
 import cats.data.Xor.{Left, Right}
 import com.mesosphere.cosmos.model.AppId
 import com.mesosphere.cosmos.model.mesos.master._
+import com.mesosphere.cosmos.circe.Decoders._
 import com.netaporter.uri.Uri
 import com.netaporter.uri.dsl._
 import com.twitter.finagle.Service
@@ -11,7 +12,6 @@ import com.twitter.io.Buf
 import com.twitter.util.Future
 import io.circe.Json
 import io.circe.parse._
-import io.circe.generic.auto._
 
 class AdminRouter(adminRouterUri: Uri, client: Service[Request, Response]) {
 

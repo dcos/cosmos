@@ -1,6 +1,6 @@
 package com.mesosphere.cosmos
 
-import com.mesosphere.cosmos.endpoint.ListHandler
+import com.mesosphere.cosmos.handler._
 import com.twitter.finagle.Service
 import com.twitter.finagle.http.{Request, Response}
 import io.finch.test.ServiceIntegrationSuite
@@ -17,12 +17,20 @@ abstract class IntegrationSpec
     val adminRouter = new AdminRouter(adminRouterUri, dcosClient)
 
     // these two imports provide the implicit DecodeRequest instances needed to instantiate Cosmos
-    import io.circe.generic.auto._
+    import com.mesosphere.cosmos.circe.Decoders._
+    import com.mesosphere.cosmos.circe.Encoders._
     import io.finch.circe._
+    val marathonPackageRunner = new MarathonPackageRunner(adminRouter)
+    //TODO: Get rid of this duplication
     new Cosmos(
       PackageCache.empty,
-      new MarathonPackageRunner(adminRouter),
+      marathonPackageRunner,
       new UninstallHandler(adminRouter),
+      new PackageInstallHandler(PackageCache.empty, marathonPackageRunner),
+      new PackageSearchHandler(PackageCache.empty),
+      new PackageImportHandler,
+      new PackageDescribeHandler(PackageCache.empty),
+      new ListVersionsHandler(PackageCache.empty),
       new ListHandler(adminRouter, PackageCache.empty)
     ).service
   }

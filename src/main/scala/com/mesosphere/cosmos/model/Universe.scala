@@ -2,6 +2,9 @@ package com.mesosphere.cosmos.model
 
 case class License(name: String, url: String)
 
+/**
+  * Conforms to: https://github.com/mesosphere/universe/blob/version-2.x/repo/meta/schema/package-schema.json
+  */
 case class PackageDefinition(
   packagingVersion: String,
   name: String,
@@ -25,6 +28,11 @@ object Container {
   val empty = Container(Map.empty)
 }
 
+/**
+  * Conforms to: https://github.com/mesosphere/universe/blob/version-2.x/repo/meta/schema/command-schema.json
+  */
+case class CommandDefinition(pip: List[String])
+
 case class Assets(
   uris: Option[Map[String, String]], // GitHub issue #58
   container: Option[Container]
@@ -40,13 +48,16 @@ case class Images(
   screenshots: Option[List[String]]
 )
 
+/**
+  * Conforms to: https://github.com/mesosphere/universe/blob/version-2.x/repo/meta/schema/resource-schema.json
+  */
 case class Resource(
   assets: Option[Assets] = None,
   images: Option[Images] = None
 )
 
 // index.json schema for each package from Universe
-case class PackageIndex(
+case class UniverseIndexEntry(
   name: String,
   currentVersion: String,
   versions: Map[String, String], // software versions -> package revision
@@ -56,9 +67,12 @@ case class PackageIndex(
 )
 
 // index.json schema from Universe
+/**
+  * Conforms to: https://github.com/mesosphere/universe/blob/version-2.x/repo/meta/schema/index-schema.json
+  */
 case class UniverseIndex(
   version: String,
-  packages: List[PackageIndex]
+  packages: List[UniverseIndexEntry]
 ) {
 
   def getPackages: Map[String, PackageInfo] = {

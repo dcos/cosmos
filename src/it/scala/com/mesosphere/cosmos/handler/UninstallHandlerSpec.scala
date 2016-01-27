@@ -1,8 +1,10 @@
-package com.mesosphere.cosmos
+package com.mesosphere.cosmos.handler
 
 import java.nio.file.Files
+
 import com.mesosphere.cosmos.http.MediaTypes
 import com.mesosphere.cosmos.model.AppId
+import com.mesosphere.cosmos.{Cosmos, IntegrationSpec}
 import com.netaporter.uri.dsl._
 import com.twitter.finagle.Service
 import com.twitter.finagle.http.{Request, Response, Status}
@@ -35,6 +37,8 @@ final class UninstallHandlerSpec extends IntegrationSpec {
 
   "The uninstall handler" should "be able to uninstall a service" in { service =>
     val installRequest = requestBuilder("v1/package/install")
+      .addHeader("Content-Type", MediaTypes.InstallRequest.show)
+      .addHeader("Accept", MediaTypes.InstallResponse.show)
       .buildPost(Buf.Utf8("""{"packageName":"cassandra","options":{}}"""))
     val installResponse = service(installRequest)
     val installResponseBody = installResponse.contentString

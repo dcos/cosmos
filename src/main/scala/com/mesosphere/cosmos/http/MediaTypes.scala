@@ -15,5 +15,13 @@ object MediaTypes {
   val ListResponse = vnd("list-response")
 
   val ErrorResponse = vnd("error")
+  val InstallRequest = vnd("install-request")
+  val InstallResponse = vnd("install-response")
+  val SearchRequest = vnd("search-request")
+  val SearchResponse = vnd("search-response")
+  val DescribeRequest = vnd("describe-request")
+  val DescribeResponse = vnd("describe-response")
+  val ListVersionsRequest = vnd("list-versions-request")
+  val ListVersionsResponse = vnd("list-versions-response")
 
 }

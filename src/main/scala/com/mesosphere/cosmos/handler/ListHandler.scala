@@ -1,22 +1,11 @@
-package com.mesosphere.cosmos.endpoint
+package com.mesosphere.cosmos.handler
 
+import com.mesosphere.cosmos.http.MediaTypes
+import com.mesosphere.cosmos.model.{Installation, ListRequest, ListResponse, PackageInformation}
+import com.mesosphere.cosmos.{AdminRouter, PackageCache}
 import com.twitter.util.Future
 import io.circe.Encoder
 import io.finch.DecodeRequest
-
-import com.mesosphere.cosmos.http.{
-  EndpointHandler,
-  MediaTypes
-}
-import com.mesosphere.cosmos.model.mesos.master.MarathonAppsResponse
-import com.mesosphere.cosmos.{ AdminRouter, PackageCache }
-import com.mesosphere.cosmos.model.{
-  Installation,
-  ListRequest,
-  ListResponse,
-  PackageFiles,
-  PackageInformation
-}
 
 final class ListHandler(
   adminRouter: AdminRouter,
@@ -54,7 +43,7 @@ final class ListHandler(
                         releaseVersion,
                         packageSource,
                         packageFiles.packageJson,
-                        Option(packageFiles.resourceJson)
+                        packageFiles.resourceJson
                       )
                     )
                   )

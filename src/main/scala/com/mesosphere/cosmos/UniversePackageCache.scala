@@ -10,10 +10,8 @@ import com.netaporter.uri.Uri
 import com.twitter.io.Charsets
 import com.twitter.util.Future
 import io.circe.Json
-import io.circe.generic.auto._
+import com.mesosphere.cosmos.circe.Decoders._
 import io.circe.parse._
-import io.circe.syntax._
-import io.finch._
 
 /** Stores packages from the Universe GitHub repository in the local filesystem.
   *
@@ -40,7 +38,7 @@ final class UniversePackageCache private(repoDir: Path, source: Uri) extends Pac
     packageName: String,
     releaseVersion: String
   ): Future[PackageFiles] = {
-    Future {
+    Future.value {
       readPackageFiles(getPackagePath(packageName, releaseVersion))
     }
   }
@@ -48,7 +46,7 @@ final class UniversePackageCache private(repoDir: Path, source: Uri) extends Pac
   override def getPackageIndex(
     packageName: String
   ): Future[PackageInfo] = {
-    Future {
+    Future.value {
       repoIndex().getPackages.get(packageName) match {
         case None => throw PackageNotFound(packageName)
         case Some(packageInfo) => packageInfo
@@ -56,26 +54,8 @@ final class UniversePackageCache private(repoDir: Path, source: Uri) extends Pac
     }
   }
 
-  override def getPackageDescribe(
-    describe: DescribeRequest
-  ): Future[Output[Json]] = {
-    describe.packageVersions match {
-      case Some(_) =>
-        getPackageIndex(describe.packageName).map { packageInfo =>
-          Ok(packageInfo.versions.asJson)
-        }
-      case None =>
-        getPackageByPackageVersion(
-          describe.packageName,
-          describe.packageVersion
-        ).map { packageFiles =>
-          Ok(packageFiles.describeAsJson)
-        }
-    }
-  }
-
   override def getRepoIndex: Future[UniverseIndex] = {
-    Future {
+    Future.value {
       repoIndex()
     }
   }
@@ -115,16 +95,17 @@ final class UniversePackageCache private(repoDir: Path, source: Uri) extends Pac
     PackageFiles.validate(
       packageDir.getFileName.toString,
       source,
-      UniversePackageCache.parseJsonFile(packageDir.resolve("command.json")).getOrElse(Json.empty),
-      UniversePackageCache.parseJsonFile(packageDir.resolve("config.json")).getOrElse(Json.empty),
+      UniversePackageCache.parseJsonFile(packageDir.resolve("command.json")),
+      UniversePackageCache.parseJsonFile(packageDir.resolve("config.json")),
       mustache,
       packageJson,
-      UniversePackageCache.parseJsonFile(packageDir.resolve("resource.json")).getOrElse(Json.empty)
+      UniversePackageCache.parseJsonFile(packageDir.resolve("resource.json"))
     ) match {
       case Invalid(err) => throw NelErrors(err)
       case Valid(valid) => valid
     }
   }
+
 }
 
 object UniversePackageCache {

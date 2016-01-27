@@ -3,17 +3,18 @@ package com.mesosphere.cosmos
 import java.util.{Base64, UUID}
 
 import cats.data.Xor
-import cats.data.Xor
 import cats.data.Xor.Right
+import com.mesosphere.cosmos.handler._
+import com.mesosphere.cosmos.http.MediaTypes
 import com.mesosphere.cosmos.model._
-import com.mesosphere.cosmos.model.mesos.master.MarathonApp
-import com.mesosphere.cosmos.endpoint.ListHandler
+import com.mesosphere.cosmos.model.mesos.master._
 import com.netaporter.uri.Uri
 import com.twitter.finagle.http._
 import com.twitter.finagle.{Http, Service}
 import com.twitter.io.{Buf, Charsets}
 import com.twitter.util._
-import io.circe.generic.auto._
+import com.mesosphere.cosmos.circe.Decoders._
+import com.mesosphere.cosmos.circe.Encoders._
 import io.circe.parse._
 import io.circe.syntax._
 import org.scalatest.{BeforeAndAfterAll, FreeSpec}
@@ -227,12 +228,18 @@ final class PackageInstallSpec extends FreeSpec with BeforeAndAfterAll with Cosm
   ): Unit = {
     val adminRouter = new AdminRouter(adminRouterHost, dcosClient)
     // these two imports provide the implicit DecodeRequest instances needed to instantiate Cosmos
-    import io.circe.generic.auto._
     import io.finch.circe._
+    val marathonPackageRunner = new MarathonPackageRunner(adminRouter)
+    //TODO: Get rid of this duplication
     val service = new Cosmos(
       packageCache,
-      new MarathonPackageRunner(adminRouter),
+      marathonPackageRunner,
       new UninstallHandler(adminRouter),
+      new PackageInstallHandler(packageCache, marathonPackageRunner),
+      new PackageSearchHandler(packageCache),
+      new PackageImportHandler,
+      new PackageDescribeHandler(packageCache),
+      new ListVersionsHandler(packageCache),
       new ListHandler(adminRouter, packageCache)
     ).service
     val server = Http.serve(s":$servicePort", service)
@@ -325,35 +332,28 @@ private object PackageInstallSpec extends CosmosSpec {
       licenses = None
     )
 
-    val resource = Resource(
-      assets = None,
-      images = None
-    )
-
-    val marathonJson = MarathonJson(
-      id = name,
+    val marathonJson = MarathonApp(
+      id = AppId(name),
       cpus = cpus,
       mem = mem,
       instances = 1,
-      cmd = cmd,
-      container = MarathonJsonContainer(
+      cmd = Some(cmd),
+      container = Some(MarathonAppContainer(
         `type` = "DOCKER",
-        docker = MarathonJsonDocker(
+        docker = Some(MarathonAppContainerDocker(
           image = s"python:$pythonVersion",
           network = "HOST"
-        )
-      ),
-      labels = Map("test-id" -> UUID.randomUUID().toString)
+        ))
+      )),
+      labels = Map("test-id" -> UUID.randomUUID().toString),
+      uris = List.empty
     )
 
     val packageFiles = PackageFiles(
       revision = "0",
       sourceUri = Uri.parse("in/memory/source"),
-      commandJson = Json.obj(),
-      configJson = Json.obj(),
-      marathonJsonMustache = marathonJson.asJson.noSpaces,
       packageJson = packageDefinition,
-      resourceJson = resource
+      marathonJsonMustache = marathonJson.asJson.noSpaces
     )
 
     (name, packageFiles)
@@ -380,20 +380,6 @@ private object PackageInstallSpec extends CosmosSpec {
   }
 
 }
-
-private case class MarathonJson(
-  id: String,
-  cpus: Double,
-  mem: Double,
-  instances: Int,
-  cmd: String,
-  container: MarathonJsonContainer,
-  labels: Map[String, String]
-)
-
-private case class MarathonJsonContainer(`type`: String, docker: MarathonJsonDocker)
-
-private case class MarathonJsonDocker(image: String, network: String)
 
 private final class ApiTestAssertionDecorator(apiClient: Service[Request, Response]) extends CosmosSpec {
 
@@ -448,6 +434,8 @@ private final class ApiTestAssertionDecorator(apiClient: Service[Request, Respon
     installRequest: InstallRequest
   ): Response = {
     val request = requestBuilder(InstallEndpoint)
+      .addHeader("Content-Type", MediaTypes.InstallRequest.show)
+      .addHeader("Accept", MediaTypes.InstallResponse.show)
       .buildPost(Buf.Utf8(installRequest.asJson.noSpaces))
     Await.result(apiClient(request))
   }

@@ -6,7 +6,7 @@ case class ErrorResponse(errors: List[ErrorResponseEntry])
 case class ErrorResponseEntry(
   `type`: String,
   message: String,
-  data: Json = Json.obj()
+  data: JsonObject = JsonObject.empty
 )
 
 object ErrorResponse {
@@ -14,7 +14,7 @@ object ErrorResponse {
     new ErrorResponse(List(singleError))
   }
 
-  def apply(`type`: String, message: String, data: Json = Json.obj()): ErrorResponse = {
+  def apply(`type`: String, message: String, data: JsonObject = JsonObject.empty): ErrorResponse = {
     apply(ErrorResponseEntry(`type`, message, data))
   }
 

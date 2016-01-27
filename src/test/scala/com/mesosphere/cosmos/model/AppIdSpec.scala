@@ -2,6 +2,8 @@ package com.mesosphere.cosmos.model
 
 import cats.data.Xor
 import com.mesosphere.cosmos.UnitSpec
+import com.mesosphere.cosmos.circe.Encoders._
+import com.mesosphere.cosmos.circe.Decoders._
 import com.netaporter.uri.dsl._
 import io.circe.parse._
 import io.circe.syntax._

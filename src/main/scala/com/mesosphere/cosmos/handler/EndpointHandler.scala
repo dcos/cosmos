@@ -1,13 +1,14 @@
-package com.mesosphere.cosmos.http
+package com.mesosphere.cosmos.handler
 
-import FinchExtensions._
+import com.mesosphere.cosmos.http.FinchExtensions._
+import com.mesosphere.cosmos.http.MediaType
 import com.twitter.util.Future
 import io.circe.{Encoder, Printer}
 import io.finch._
 
 import scala.reflect.ClassTag
 
-abstract class EndpointHandler[Request, Response]
+private[cosmos] abstract class EndpointHandler[Request, Response]
 (implicit
   decoder: DecodeRequest[Request],
   requestClassTag: ClassTag[Request],
@@ -20,7 +21,7 @@ abstract class EndpointHandler[Request, Response]
 
   // This field HAS to be lazy, otherwise a NullPointerException will be thrown on class initialization
   // because the description provided by `beTheExpectedType` is eagerly evaluated.
-  final lazy val reader: RequestReader[Request] = for {
+  lazy val reader: RequestReader[Request] = for {
     accept <- header("Accept").as[MediaType].should(beTheExpectedType(produces))
     contentType <- header("Content-Type").as[MediaType].should(beTheExpectedType(accepts))
     req <- body.as[Request]
