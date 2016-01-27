@@ -1,6 +1,6 @@
 package com.mesosphere.cosmos
 
-import com.mesosphere.cosmos.model.{DescribeRequest, PackageInfo, PackageFiles, UniverseIndex}
+import com.mesosphere.cosmos.model.{DescribeRequest, PackageFiles, PackageInfo, UniverseIndex}
 import com.twitter.util.Future
 import io.circe.Json
 import io.finch._
