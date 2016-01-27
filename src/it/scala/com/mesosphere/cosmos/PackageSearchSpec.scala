@@ -134,7 +134,7 @@ private final class SearchTestAssertionDecorator(apiClient: Service[Request, Res
     status: Status,
     expectedResponse: SearchResponse
   ): Unit = {
-    val response = searchRequest(apiClient, SearchRequest(query))
+    val response = searchRequest(apiClient, SearchRequest(Some(query)))
     assertResult(status)(response.status)
     val Right(actualResponse) = decode[SearchResponse](response.contentString)
     assertResult(expectedResponse)(actualResponse)
