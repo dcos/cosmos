@@ -176,6 +176,25 @@ final class PackageInstallSpec extends FreeSpec with BeforeAndAfterAll with Cosm
         }
       }
     }
+
+    "validates merged config template options JSON schema" in {
+      val Some(badOptions) = Map("chronos" -> Map("zk-hosts" -> false)).asJson.asObject
+
+      val _ = withTempDirectory { universeDir =>
+        val universeCache = Await.result(UniversePackageCache(UniverseUri, universeDir))
+
+        runService(packageCache = universeCache) { apiClient =>
+          apiClient.installPackageAndAssert(
+            InstallRequest("chronos", options = Some(badOptions), appId = Some("chronos-bad-json")),
+            status = Status.BadRequest,
+            expectedErrorMessage = Some("Options JSON failed validation"),
+            preInstallState = Anything,
+            postInstallState = Unchanged
+          )
+        }
+      }
+    }
+
   }
 
   override protected def beforeAll(): Unit = { /*no-op*/ }
@@ -187,7 +206,10 @@ final class PackageInstallSpec extends FreeSpec with BeforeAndAfterAll with Cosm
       adminRouter.deleteApp("/helloworld2", force = true) map { resp => assert(resp.getStatusCode() === 200) },
       adminRouter.deleteApp("/helloworld3", force = true) map { resp => assert(resp.getStatusCode() === 200) },
       adminRouter.deleteApp("/cassandra/dcos", force = true) map { resp => assert(resp.getStatusCode() === 200) },
-      adminRouter.deleteApp("/custom-app-id", force = true) map { resp => assert(resp.getStatusCode() === 200) }
+      adminRouter.deleteApp("/custom-app-id", force = true) map { resp => assert(resp.getStatusCode() === 200) },
+
+      // Make sure this is cleaned up if its test failed
+      adminRouter.deleteApp("/chronos-bad-json", force = true) map { _ => () }
     ))
     Await.result(deletes.flatMap { x => Future.Unit })
   }
@@ -388,6 +410,9 @@ private final class ApiTestAssertionDecorator(apiClient: Service[Request, Respon
     }
 
     val response = installPackage(apiClient, installRequest)
+    logger.debug("Response status: {}", response.statusCode)
+    logger.debug("Response content: {}", response.contentString)
+
     assertResult(status)(response.status)
     expectedErrorMessage match {
       case Some(errMsg) =>

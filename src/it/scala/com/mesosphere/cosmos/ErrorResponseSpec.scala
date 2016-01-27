@@ -3,7 +3,6 @@ package com.mesosphere.cosmos
 import cats.data.Xor
 import com.twitter.io.Buf
 import com.twitter.finagle.http.Status
-import io.circe._
 import io.circe.parse._
 import io.circe.syntax._
 import io.circe.generic.auto._    // Required for auto-parsing case classes from JSON
