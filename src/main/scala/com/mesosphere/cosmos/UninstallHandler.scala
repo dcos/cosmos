@@ -1,12 +1,19 @@
 package com.mesosphere.cosmos
 
+import com.mesosphere.cosmos.http.{MediaTypes, EndpointHandler}
 import com.mesosphere.cosmos.model.{UninstallResult, UninstallRequest, UninstallResponse}
 import com.netaporter.uri.dsl._
 import com.twitter.finagle.http.Status
 import com.twitter.util.Future
+import io.circe.Encoder
+import io.finch.DecodeRequest
 
 private[cosmos] final class UninstallHandler(adminRouter: AdminRouter)
-  extends Function[UninstallRequest, Future[UninstallResponse]] {
+  (implicit bodyDecoder: DecodeRequest[UninstallRequest], encoder: Encoder[UninstallResponse])
+  extends EndpointHandler[UninstallRequest, UninstallResponse] {
+
+  val accepts = MediaTypes.UninstallRequest
+  val produces = MediaTypes.UninstallResponse
 
   private type FwIds = List[String]
 
