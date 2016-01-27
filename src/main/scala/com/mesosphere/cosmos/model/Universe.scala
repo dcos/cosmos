@@ -15,10 +15,7 @@ case class PackageDefinition(
   preInstallNotes: Option[String] = None,
   postInstallNotes: Option[String] = None,
   postUninstallNotes: Option[String] = None,
-  licenses: Option[List[License]] = None,
-  // This is only here to support adding images to the DCOS_PACKAGE_METADATA Marathon label
-  // GitHub issue #57 will decide whether to keep this here
-  images: Option[Images] = None
+  licenses: Option[List[License]] = None
 )
 
 case class Container(

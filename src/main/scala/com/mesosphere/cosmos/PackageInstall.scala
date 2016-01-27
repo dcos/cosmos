@@ -132,40 +132,61 @@ object PackageInstall {
     marathonJson: Json,
     packageFiles: PackageFiles
   ): Json = {
-    // add images to package.json metadata for backwards compatability in the UI
-    val packageDef = packageFiles.packageJson.copy(images = packageFiles.resourceJson.images)
+    val packageMetadataJson = getPackageMetadataJson(packageFiles)
+    val commandMetadataJson = packageFiles.commandJson
 
-    // Circe populates omitted fields with null values; remove them (see GitHub issue #56)
-    val packageJson = packageDef.asJson.mapObject { obj =>
-      JsonObject.fromMap(obj.toMap.filterNot { case (k, v) => v.isNull })
-    }
-    val packageBytes = packageJson.noSpaces.getBytes(Charsets.Utf8)
-    val packageMetadata = Base64.getEncoder.encodeToString(packageBytes)
+    val packageMetadata = encodeForLabel(packageMetadataJson)
+    val commandMetadata = encodeForLabel(commandMetadataJson)
 
-    val commandBytes = packageFiles.commandJson.noSpaces.getBytes(Charsets.Utf8)
-    val commandMetadata = Base64.getEncoder.encodeToString(commandBytes)
+    val isFramework = packageFiles.packageJson.framework.getOrElse(true)
 
     val frameworkName = packageFiles.configJson.cursor
-      .downField(packageDef.name)
+      .downField(packageFiles.packageJson.name)
       .flatMap(_.get[String]("framework-name").toOption)
 
-    // insert labels
-    val packageLabels: Map[String, String] = Seq(
-      Some("DCOS_PACKAGE_METADATA" -> packageMetadata),
-      Some("DCOS_PACKAGE_REGISTRY_VERSION" -> packageFiles.version),
-      Some("DCOS_PACKAGE_NAME" -> packageDef.name),
-      Some("DCOS_PACKAGE_VERSION" -> packageDef.version),
-      Some("DCOS_PACKAGE_SOURCE" -> packageFiles.sourceUri.toString),
-      Some("DCOS_PACKAGE_RELEASE" -> packageFiles.revision),
-      Some("DCOS_PACKAGE_IS_FRAMEWORK" -> packageDef.framework.getOrElse(true).toString),
-      Some("DCOS_PACKAGE_COMMAND" -> commandMetadata),
+    val requiredLabels: Map[String, String] = Map(
+      "DCOS_PACKAGE_METADATA" -> packageMetadata,
+      "DCOS_PACKAGE_REGISTRY_VERSION" -> packageFiles.version,
+      "DCOS_PACKAGE_NAME" -> packageFiles.packageJson.name,
+      "DCOS_PACKAGE_VERSION" -> packageFiles.packageJson.version,
+      "DCOS_PACKAGE_SOURCE" -> packageFiles.sourceUri.toString,
+      "DCOS_PACKAGE_RELEASE" -> packageFiles.revision,
+      "DCOS_PACKAGE_IS_FRAMEWORK" -> isFramework.toString,
+      "DCOS_PACKAGE_COMMAND" -> commandMetadata
+    )
+
+    val optionalLabels: Map[String, String] = Seq(
       frameworkName.map("PACKAGE_FRAMEWORK_NAME_KEY" -> _)
     ).flatten.toMap
 
     val existingLabels = marathonJson.cursor
       .get[Map[String, String]]("labels").getOrElse(Map.empty)
 
-    marathonJson.mapObject(_.+("labels", (existingLabels ++ packageLabels).asJson))
+    val packageLabels = existingLabels ++ requiredLabels ++ optionalLabels
+
+    marathonJson.mapObject(_ + ("labels", packageLabels.asJson))
+  }
+
+  private[this] def getPackageMetadataJson(packageFiles: PackageFiles): Json = {
+    val packageJson = packageFiles.packageJson.asJson
+
+    // add images to package.json metadata for backwards compatability in the UI
+    val imagesJson = packageFiles.resourceJson.images.asJson
+    val packageWithImages = packageJson.mapObject(_ + ("images", imagesJson))
+
+    removeNulls(packageWithImages)
+  }
+
+  /** Circe populates omitted fields with null values; remove them (see GitHub issue #56) */
+  private[this] def removeNulls(json: Json): Json = {
+    json.mapObject { obj =>
+      JsonObject.fromMap(obj.toMap.filterNot { case (k, v) => v.isNull })
+    }
+  }
+
+  private[this] def encodeForLabel(json: Json): String = {
+    val bytes = json.noSpaces.getBytes(Charsets.Utf8)
+    Base64.getEncoder.encodeToString(bytes)
   }
 
   private[cosmos] def merge(target: JsonObject, fragment: JsonObject): JsonObject = {

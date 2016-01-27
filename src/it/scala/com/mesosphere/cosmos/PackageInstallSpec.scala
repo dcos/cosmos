@@ -317,8 +317,7 @@ private object PackageInstallSpec extends CosmosSpec {
       preInstallNotes = None,
       postInstallNotes = None,
       postUninstallNotes = None,
-      licenses = None,
-      images = None
+      licenses = None
     )
 
     val resource = Resource(
