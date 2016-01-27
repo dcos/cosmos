@@ -1,6 +1,6 @@
 package com.mesosphere.cosmos
 
-import com.mesosphere.cosmos.model.{DescribeRequest, PackageInfo, PackageFiles}
+import com.mesosphere.cosmos.model.{DescribeRequest, PackageInfo, PackageFiles, UniverseIndex}
 import com.twitter.util.Future
 import io.circe.Json
 import io.finch._
@@ -15,6 +15,8 @@ trait PackageCache {
 
   def getPackageIndex(packageName: String): Future[PackageInfo]
 
+  def getRepoIndex: Future[UniverseIndex]
+
   def getPackageDescribe(describeRequest: DescribeRequest): Future[Output[Json]]
 }
 
@@ -28,6 +30,10 @@ object PackageCache {
       version: Option[String]
     ): Future[PackageFiles] = {
       Future.exception(PackageNotFound(packageName))
+    }
+
+    def getRepoIndex: Future[UniverseIndex] = {
+      Future.exception(RepositoryNotFound())
     }
 
     def getPackageIndex(packageName: String): Future[PackageInfo] = {

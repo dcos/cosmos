@@ -23,11 +23,22 @@ final class UniversePackageCache private(repoDir: Path, source: Uri) extends Pac
 
   import UniversePackageCache._
 
+  override def getRepoIndex: Future[UniverseIndex] = {
+    val indexFile = repoDir.resolve(Paths.get("meta", "index.json"))
+    parseJsonFile(indexFile)
+      .map {
+        case None => throw IndexNotFound(source)
+        case Some(index) =>
+          index.as[UniverseIndex]
+            .getOrElse(throw PackageFileSchemaMismatch("index.json"))
+      }
+  }
+
   override def getPackageFiles(
     packageName: String,
     version: Option[String]
   ): Future[PackageFiles] = {
-    getRepoIndex(repoDir, source) // this will eventually be allIndexes
+    getRepoIndex
       .flatMap { repoIndex =>
       getPackagePath(repoDir, repoIndex, packageName, version)
         .flatMap(
@@ -39,7 +50,7 @@ final class UniversePackageCache private(repoDir: Path, source: Uri) extends Pac
   override def getPackageIndex(
     packageName: String
   ): Future[PackageInfo] = {
-    getRepoIndex(repoDir, source)
+    getRepoIndex
       .map { repoIndex =>
           repoIndex.getPackages.get(packageName) match {
             case None => throw PackageNotFound(packageName)
@@ -60,8 +71,6 @@ final class UniversePackageCache private(repoDir: Path, source: Uri) extends Pac
           .map { packageFiles => Ok(packageFiles.describeAsJson) }
     }
   }
-
-
 
 }
 
@@ -100,17 +109,6 @@ object UniversePackageCache {
         }
       }
     }
-  }
-
-  private def getRepoIndex(repository: Path, source: Uri): Future[UniverseIndex] = {
-    val indexFile = repository.resolve(Paths.get("meta", "index.json"))
-    parseJsonFile(indexFile)
-      .map {
-        case None => throw IndexNotFound(source)
-        case Some(index) =>
-          index.as[UniverseIndex]
-            .getOrElse(throw PackageFileSchemaMismatch("index.json"))
-      }
   }
 
   // return path of specified version, or latest if version not specified
@@ -176,7 +174,7 @@ object UniversePackageCache {
             case Left(err) => throw PackageFileNotJson(file.getFileName.toString, err.message)
             case Right(json) => json
           }
-      }
+     }
     }
   }
 

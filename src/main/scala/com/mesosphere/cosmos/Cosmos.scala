@@ -3,7 +3,7 @@ package com.mesosphere.cosmos
 import java.io.{BufferedInputStream, ByteArrayInputStream, FileInputStream, InputStream}
 import java.util.zip.ZipInputStream
 
-import com.mesosphere.cosmos.model.{UninstallResponse, DescribeRequest, InstallRequest, UninstallRequest}
+import com.mesosphere.cosmos.model.{DescribeRequest, InstallRequest, SearchRequest, UninstallRequest, UninstallResponse}
 import com.twitter.finagle.Service
 import com.twitter.finagle.http.exp.Multipart.{FileUpload, InMemoryFileUpload, OnDiskFileUpload}
 import com.twitter.finagle.http.{Request, Response, Status}
@@ -75,10 +75,24 @@ private final class Cosmos(
 
     def respond(describe: DescribeRequest): Future[Output[Json]] = {
       packageCache
-    }
         .getPackageDescribe(describe)
+    }
 
     post("v1" / "package" / "describe" ? body.as[DescribeRequest]) (respond _)
+  }
+
+  val packageSearch: Endpoint[Json] = {
+
+    def respond(reqBody: SearchRequest): Future[Output[Json]] = {
+      packageCache
+        .getRepoIndex
+        .map(PackageSearch.getSearchResults(reqBody.query, _))
+        .map { searchResults =>
+          Ok(searchResults.asJson)
+        }
+    }
+
+    post("v1" / "package" / "search" ? body.as[SearchRequest]) (respond _)
   }
 
   def exceptionErrorResponse(t: Throwable): List[ErrorResponseEntry] = t match {
@@ -110,6 +124,7 @@ private final class Cosmos(
     (packageImport
       :+: packageInstall
       :+: packageDescribe
+      :+: packageSearch
       :+: packageUninstall
     )
       .handle {
