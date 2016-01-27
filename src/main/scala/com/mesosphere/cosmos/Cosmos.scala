@@ -53,10 +53,8 @@ private[cosmos] final class Cosmos(
   val packageInstall: Endpoint[Json] = {
 
     def respond(reqBody: InstallRequest): Future[Output[Json]] = {
-      packageCache
-        .getPackageFiles(reqBody.name, reqBody.version)
-        .map(PackageInstall.preparePackageConfig(reqBody, _))
-        .flatMap(packageRunner.launch)
+      PackageInstall.install(packageCache, packageRunner)(reqBody)
+        .map(res => Ok(res.asJson))
     }
 
     post("v1" / "package" / "install" ? body.as[InstallRequest])(respond _)

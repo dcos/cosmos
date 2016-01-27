@@ -3,6 +3,7 @@ package com.mesosphere.cosmos
 import cats.data.Xor
 import com.mesosphere.cosmos.http.EndpointHandler
 import com.mesosphere.cosmos.model._
+import com.mesosphere.cosmos.model.mesos.master.MarathonApp
 import com.netaporter.uri.Uri
 import com.twitter.finagle.http.RequestBuilder
 import com.twitter.io.Buf
@@ -10,7 +11,7 @@ import com.twitter.util.{Future, Await}
 import io.circe.generic.auto._
 import io.circe.syntax._
 import io.circe.{Json, JsonObject}
-import io.finch.{Output, Input}
+import io.finch.Input
 
 final class UserOptionsSpec extends UnitSpec {
 
@@ -161,9 +162,13 @@ final class UserOptionsSpec extends UnitSpec {
   }
 
   private[this] def buildMustacheTemplate(mustacheScopeJson: JsonObject): String = {
-    keyValify(mustacheScopeJson)
+    val parameters = keyValify(mustacheScopeJson)
       .keysIterator
-      .map(name => s""""$name":{{$name}}""")
+      .map(name => (name, s"{{$name}}"))
+      .toMap
+
+    (parameters + (("id", "\"options-test\"")))
+      .map { case (name, value) => s""""$name":$value""" }
       .mkString("{", ",", "}")
   }
 
@@ -173,9 +178,10 @@ private final class RecordingPackageRunner extends PackageRunner {
 
   private[cosmos] var marathonJson: Option[Json] = None
 
-  override def launch(renderedConfig: Json): Future[Output[Json]] = {
+  override def launch(renderedConfig: Json): Future[MarathonApp] = {
     marathonJson = Some(renderedConfig)
-    Future.value(Output.payload(Json.obj()))
+    val Xor.Right(id) = renderedConfig.cursor.get[AppId]("id")
+    Future.value(MarathonApp(id, Map.empty, List.empty))
   }
 
 }

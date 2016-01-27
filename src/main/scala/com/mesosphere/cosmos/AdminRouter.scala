@@ -1,6 +1,7 @@
 package com.mesosphere.cosmos
 
 import cats.data.Xor.{Left, Right}
+import com.mesosphere.cosmos.model.AppId
 import com.mesosphere.cosmos.model.mesos.master._
 import com.netaporter.uri.Uri
 import com.netaporter.uri.dsl._
@@ -84,14 +85,20 @@ class AdminRouter(adminRouterUri: Uri, client: Service[Request, Response]) {
     client(post("marathon" / "v2" / "apps" , appJson))
   }
 
-  def getApp(appId: Uri): Future[MarathonAppResponse] = {
-    val uri = "marathon" / "v2" / "apps" / appId
+  def getAppOption(appId: AppId): Future[Option[MarathonAppResponse]] = {
+    val uri = "marathon" / "v2" / "apps" / appId.toUri
     client(get(uri)).map { response =>
       response.status match {
-        case Status.Ok => decodeJsonTo[MarathonAppResponse](response)
-        case Status.NotFound => throw MarathonAppNotFound(appId.toString)
+        case Status.Ok => Some(decodeJsonTo[MarathonAppResponse](response))
+        case Status.NotFound => None
         case s: Status => throw GenericHttpError(uri, s)
       }
+    }
+  }
+
+  def getApp(appId: AppId): Future[MarathonAppResponse] = {
+    getAppOption(appId).map { appOption =>
+      appOption.getOrElse(throw MarathonAppNotFound(appId))
     }
   }
 
@@ -100,10 +107,12 @@ class AdminRouter(adminRouterUri: Uri, client: Service[Request, Response]) {
     client(get(uri)).flatMap(decodeTo[MarathonAppsResponse](uri, _))
   }
 
-  def deleteApp(appId: Uri, force: Boolean = false): Future[Response] = {
+  def deleteApp(appId: AppId, force: Boolean = false): Future[Response] = {
+    val uriPath = "marathon" / "v2" / "apps" / appId.toUri
+
     force match {
-      case true => client(delete("marathon" / "v2" / "apps" / appId ? ("force" -> "true")))
-      case false => client(delete("marathon" / "v2" / "apps" / appId))
+      case true => client(delete(uriPath ? ("force" -> "true")))
+      case false => client(delete(uriPath))
     }
   }
 

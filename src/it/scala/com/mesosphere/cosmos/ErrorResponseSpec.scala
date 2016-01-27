@@ -21,7 +21,7 @@ class ErrorResponseSpec extends IntegrationSpec {
     val msg = err.errors.head.message
     assert(msg.contains("body"))
     assert(msg.contains("decode value"))
-    assert(msg.contains("name"))
+    assert(msg.contains("packageName"))
   }
 
 }

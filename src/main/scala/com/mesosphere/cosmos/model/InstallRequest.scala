@@ -3,20 +3,27 @@ package com.mesosphere.cosmos.model
 import io.circe.JsonObject
 
 case class InstallRequest(
-  name: String,
-  version: Option[String] = None,
+  packageName: String,
+  packageVersion: Option[String] = None,
   options: Option[JsonObject] = None,
-  appId: Option[String] = None
+  appId: Option[AppId] = None
 )
+
+case class InstallResponse(
+  packageName: String,
+  packageVersion: String,
+  appId: AppId
+)
+
 case class UninstallRequest(
-  name: String,
-  appId: Option[String],
+  packageName: String,
+  appId: Option[AppId],
   all: Option[Boolean]
 )
 
 case class UninstallResponse(results: List[UninstallResult])
 case class UninstallResult(
-  name: String,
-  appId: String,
+  packageName: String,
+  appId: AppId,
   version: Option[String]
 )

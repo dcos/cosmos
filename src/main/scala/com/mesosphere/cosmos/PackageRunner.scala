@@ -1,8 +1,8 @@
 package com.mesosphere.cosmos
 
+import com.mesosphere.cosmos.model.mesos.master.MarathonApp
 import com.twitter.util.Future
 import io.circe.Json
-import io.finch.Output
 
 /** The service that packages are installed to; currently defaults to Marathon in DCOS. */
 trait PackageRunner {
@@ -10,8 +10,8 @@ trait PackageRunner {
   /** Execute the package described by the given JSON configuration.
     *
     * @param renderedConfig the fully-specified configuration of the package to run
-    * @return An HTTP status code and message indicating success or failure.
+    * @return The response from Marathon, if the request was successful.
     */
-  def launch(renderedConfig: Json): Future[Output[Json]]
+  def launch(renderedConfig: Json): Future[MarathonApp]
 
 }

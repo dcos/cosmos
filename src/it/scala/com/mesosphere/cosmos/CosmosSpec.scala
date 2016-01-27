@@ -1,17 +1,17 @@
 package com.mesosphere.cosmos
 
 import com.netaporter.uri.Uri
-import com.netaporter.uri.Uri
 import com.twitter.app.{FlagParseException, FlagUsageError, Flags}
 import com.twitter.finagle.http.RequestBuilder
 import com.twitter.finagle.http.RequestConfig.Yes
 import org.scalatest.Matchers
 import org.scalatest.prop.TableDrivenPropertyChecks
+import org.slf4j.{LoggerFactory, Logger}
 
 /** Mixins used by all Cosmos tests. */
 trait CosmosSpec extends Matchers with TableDrivenPropertyChecks {
-  private val name: String = getClass.getName.stripSuffix("$")
-  protected[this] lazy val logger = org.slf4j.LoggerFactory.getLogger(name)
+  private[this] val name: String = getClass.getName.stripSuffix("$")
+  protected[this] lazy val logger: Logger = LoggerFactory.getLogger(name)
 
   // Enable definition of implicit conversion methods; see below
   import scala.language.implicitConversions
