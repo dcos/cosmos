@@ -80,12 +80,12 @@ final class PackageSearchSpec extends FreeSpec with CosmosSpec {
 
 private object PackageSearchSpec extends CosmosSpec {
 
-  private val UniverseUri = Uri.parse("https://github.com/mesosphere/universe/archive/cli-test-3.zip")
+  private val UniverseUri = Uri.parse("https://github.com/mesosphere/universe/archive/cli-test-4.zip")
 
   val ArangodbPackageIndex = PackageIndex(
     name = "arangodb",
     currentVersion = "0.2.1",
-    versions = Map("0.2.0" -> "0", "0.2.1" -> "1"),
+    versions = Map("0.2.1" -> "0"),
     description = "A distributed free and open-source database with a flexible data model for documents, graphs, and key-values. " +
                   "Build high performance applications using a convenient SQL-like query language or JavaScript extensions.",
     framework = true,
@@ -95,20 +95,10 @@ private object PackageSearchSpec extends CosmosSpec {
   val CassandraPackageIndex = PackageIndex(
     name = "cassandra",
     currentVersion = "0.2.0-1",
-    versions = Map("0.1.0-1" -> "0", "0.2.0-1" -> "1"),
+    versions = Map("0.2.0-1" -> "0"),
     description = "Apache Cassandra running on Apache Mesos",
     framework = true,
     tags = List("data", "database", "nosql")
-  )
-
-  val MemsqlPackageIndex = PackageIndex(
-    name = "memsql",
-    currentVersion = "0.0.1",
-    versions = Map("0.0.1" -> "0"),
-    description = "MemSQL running on Apache Mesos. This framework provides the ability to create and manage a set of MemSQL clusters, " +
-                  "each running with the MemSQL Ops management tool.",
-    framework = true,
-    tags = List("mysql", "database", "rdbms")
   )
 
   private val PackageSearchTable = Table(
@@ -116,8 +106,7 @@ private object PackageSearchSpec extends CosmosSpec {
     ("aran", List(ArangodbPackageIndex)),
     ("cass", List(CassandraPackageIndex)),
     ("cassan", List(CassandraPackageIndex)),
-    ("emsql", List(MemsqlPackageIndex)),
-    ("databas", List(ArangodbPackageIndex, CassandraPackageIndex, MemsqlPackageIndex))
+    ("databas", List(ArangodbPackageIndex, CassandraPackageIndex))
   )
 
   private val PackageSearchRegexTable = Table(
@@ -125,7 +114,7 @@ private object PackageSearchSpec extends CosmosSpec {
     ("cassan*a", List(CassandraPackageIndex)),
     ("c*a", List(CassandraPackageIndex)),
     ("cass*", List(CassandraPackageIndex)),
-    ("data*e", List(ArangodbPackageIndex, CassandraPackageIndex, MemsqlPackageIndex))
+    ("data*e", List(ArangodbPackageIndex, CassandraPackageIndex))
   )
 }
 

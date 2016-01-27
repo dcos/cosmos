@@ -3,7 +3,7 @@ package com.mesosphere.cosmos.model
 case class License(name: String, url: String)
 
 case class PackageDefinition(
-  packagingVersion: Option[String] = None,
+  packagingVersion: String,
   name: String,
   version: String,
   maintainer: String,
