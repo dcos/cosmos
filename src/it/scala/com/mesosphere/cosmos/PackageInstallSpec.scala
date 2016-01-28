@@ -242,7 +242,7 @@ final class PackageInstallSpec extends FreeSpec with BeforeAndAfterAll with Cosm
 
 private object PackageInstallSpec extends CosmosSpec {
 
-  private val UniverseUri = Uri.parse("https://github.com/mesosphere/universe/archive/cli-test-3.zip")
+  private val UniverseUri = Uri.parse("https://github.com/mesosphere/universe/archive/cli-test-4.zip")
 
   private val PackageTableRows: Seq[(String, PackageFiles)] = Seq(
     packageTableRow("helloworld2", 1, 512.0, 2),
@@ -256,27 +256,25 @@ private object PackageInstallSpec extends CosmosSpec {
 
   private val HelloWorldLabels = StandardLabels(
     Map(
-      "DCOS_PACKAGE_METADATA" ->
-        ("eyJkZXNjcmlwdGlvbiI6ICJFeGFtcGxlIERDT1MgYXBwbGljYXRpb24gcGFja2FnZSIsICJtYWludGFpbmVyIjogIn" +
-        "N1cHBvcnRAbWVzb3NwaGVyZS5pbyIsICJuYW1lIjogImhlbGxvd29ybGQiLCAicG9zdEluc3RhbGxOb3RlcyI6IC" +
-        "JBIHNhbXBsZSBwb3N0LWluc3RhbGxhdGlvbiBtZXNzYWdlIiwgInByZUluc3RhbGxOb3RlcyI6ICJBIHNhbXBsZS" +
-        "BwcmUtaW5zdGFsbGF0aW9uIG1lc3NhZ2UiLCAidGFncyI6IFsibWVzb3NwaGVyZSIsICJleGFtcGxlIiwgInN1Ym" +
-        "NvbW1hbmQiXSwgInZlcnNpb24iOiAiMC4xLjAiLCAid2Vic2l0ZSI6ICJodHRwczovL2dpdGh1Yi5jb20vbWVzb3" +
-        "NwaGVyZS9kY29zLWhlbGxvd29ybGQifQ=="),
-      "DCOS_PACKAGE_COMMAND" ->
-        ("eyJwaXAiOiBbImRjb3M8MS4wIiwgImdpdCtodHRwczovL2dpdGh1Yi5jb20vbWVzb3NwaGVyZS9kY29zLWhlbGxvd2" +
-        "9ybGQuZ2l0I2Rjb3MtaGVsbG93b3JsZD0wLjEuMCJdfQ=="),
+      ("DCOS_PACKAGE_METADATA", "eyJ3ZWJzaXRlIjoiaHR0cHM6Ly9naXRodWIuY29tL21lc29zcGhlcmUvZGNvcy1" +
+        "oZWxsb3dvcmxkIiwibmFtZSI6ImhlbGxvd29ybGQiLCJwb3N0SW5zdGFsbE5vdGVzIjoiQSBzYW1wbGUgcG9zdC" +
+        "1pbnN0YWxsYXRpb24gbWVzc2FnZSIsImRlc2NyaXB0aW9uIjoiRXhhbXBsZSBEQ09TIGFwcGxpY2F0aW9uIHBhY" +
+        "2thZ2UiLCJwYWNrYWdpbmdWZXJzaW9uIjoiMi4wIiwidGFncyI6WyJtZXNvc3BoZXJlIiwiZXhhbXBsZSIsInN1" +
+        "YmNvbW1hbmQiXSwibWFpbnRhaW5lciI6InN1cHBvcnRAbWVzb3NwaGVyZS5pbyIsInZlcnNpb24iOiIwLjEuMCI" +
+        "sInByZUluc3RhbGxOb3RlcyI6IkEgc2FtcGxlIHByZS1pbnN0YWxsYXRpb24gbWVzc2FnZSJ9"),
+      ("DCOS_PACKAGE_COMMAND", "eyJwaXAiOlsiZGNvczwxLjAiLCJnaXQraHR0cHM6Ly9naXRodWIuY29tL21lc29z" +
+        "cGhlcmUvZGNvcy1oZWxsb3dvcmxkLmdpdCNkY29zLWhlbGxvd29ybGQ9MC4xLjAiXX0="),
       "DCOS_PACKAGE_REGISTRY_VERSION" -> "2.0.0-rc1",
       "DCOS_PACKAGE_NAME" -> "helloworld",
       "DCOS_PACKAGE_VERSION" -> "0.1.0",
-      "DCOS_PACKAGE_SOURCE" -> "https://github.com/mesosphere/universe/archive/cli-test-3.zip",
+      "DCOS_PACKAGE_SOURCE" -> "https://github.com/mesosphere/universe/archive/cli-test-4.zip",
       "DCOS_PACKAGE_RELEASE" -> "0"
     )
   )
 
   private val CassandraUris = Set(
-    "https://downloads.mesosphere.io/cassandra-mesos/artifacts/0.2.0-1/cassandra-mesos-0.2.0-1.tar.gz",
-    "https://downloads.mesosphere.io/java/jre-7u76-linux-x64.tar.gz"
+    "https://downloads.mesosphere.com/cassandra-mesos/artifacts/0.2.0-1/cassandra-mesos-0.2.0-1.tar.gz",
+    "https://downloads.mesosphere.com/java/jre-7u76-linux-x64.tar.gz"
   )
 
   private val UniversePackagesTable = Table(
@@ -305,7 +303,7 @@ private object PackageInstallSpec extends CosmosSpec {
       if (pythonVersion <= 2) "python2 -m SimpleHTTPServer 8082" else "python3 -m http.server 8083"
 
     val packageDefinition = PackageDefinition(
-      packagingVersion = None,
+      packagingVersion = "2.0",
       name = name,
       version = "0.1.0",
       maintainer = "Mesosphere",

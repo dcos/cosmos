@@ -93,7 +93,7 @@ final class PackageDescribeSpec extends FreeSpec with CosmosSpec {
 
 private object PackageDescribeSpec extends CosmosSpec {
 
-  private val UniverseUri = Uri.parse("https://github.com/mesosphere/universe/archive/cli-test-3.zip")
+  private val UniverseUri = Uri.parse("https://github.com/mesosphere/universe/archive/cli-test-4.zip")
 
   private val PackageDummyVersionsTable = Table(
     ("package name", "version"),
@@ -107,6 +107,7 @@ private object PackageDescribeSpec extends CosmosSpec {
   )
 
   val HelloworldPackageDef = PackageDefinition(
+    packagingVersion = "2.0",
     name = "helloworld",
     version = "0.1.0",
     website = Some("https://github.com/mesosphere/dcos-helloworld"),

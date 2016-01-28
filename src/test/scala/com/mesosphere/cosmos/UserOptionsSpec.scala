@@ -39,6 +39,7 @@ final class UserOptionsSpec extends UnitSpec {
           configJson = buildConfig(Json.fromJsonObject(defaultsJson)).asJson,
           marathonJsonMustache = mustacheTemplate,
           packageJson = PackageDefinition(
+            packagingVersion = "2.0",
             name = packageName,
             version = "1.2.3",
             maintainer = "Mesosphere",
