@@ -6,18 +6,22 @@ import scala.util.matching.Regex
 object PackageSearch {
 
   private[cosmos] def getSearchResults(
-    query: String,
+    query: Option[String],
     repoIndex: UniverseIndex
   ): SearchResponse = {
     SearchResponse(search(repoIndex.packages, query))
   }
 
-  private[this] def search(packages: List[PackageIndex], query: String): List[PackageIndex] = {
+  private[this] def search(packages: List[PackageIndex], queryOpt: Option[String]): List[PackageIndex] = {
     val wildcardSymbol = "*"
-    if (query.contains(wildcardSymbol)) {
-      packages.filter(searchRegexInPackageIndex(_, getRegex(query)))
-    } else {
-      packages.filter(searchPackageIndex(_, query.toLowerCase()))
+    queryOpt match {
+      case None => packages
+      case Some(query) =>
+        if (query.contains(wildcardSymbol)) {
+          packages.filter(searchRegexInPackageIndex(_, getRegex(query)))
+        } else {
+          packages.filter(searchPackageIndex(_, query.toLowerCase()))
+        }
     }
   }
 

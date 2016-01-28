@@ -1,4 +1,4 @@
 package com.mesosphere.cosmos.model
 
-case class SearchRequest(query: String)
-case class SearchResponse(results: List[PackageIndex])
+case class SearchRequest(query: Option[String])
+case class SearchResponse(packages: List[PackageIndex])
