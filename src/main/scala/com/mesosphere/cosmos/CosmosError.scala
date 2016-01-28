@@ -40,9 +40,7 @@ sealed trait CosmosError extends RuntimeException {
       case mfi @ MultipleFrameworkIds(_, _) => mfi.toString
       case me @ MultipleError(_) => me.toString
       case NelErrors(nelE) => nelE.toString
-      case JsonSchemaMismatch() => "Options JSON failed validation"
       case FileUploadError(msg) => msg
-      case NelErrors(nelE) => nelE.toString
     }
   }
 

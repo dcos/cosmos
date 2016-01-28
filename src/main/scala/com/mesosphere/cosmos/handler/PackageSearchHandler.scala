@@ -13,6 +13,8 @@ private[cosmos] class PackageSearchHandler(packageCache: PackageCache)
   (implicit searchRequestBodyDecoder: DecodeRequest[SearchRequest], encoder: Encoder[SearchResponse])
   extends EndpointHandler[SearchRequest, SearchResponse] {
 
+  import PackageSearchHandler._
+
   val accepts: MediaType = MediaTypes.SearchRequest
   val produces: MediaType = MediaTypes.SearchResponse
 
@@ -23,7 +25,11 @@ private[cosmos] class PackageSearchHandler(packageCache: PackageCache)
       }
   }
 
-  private[this] def search(packages: List[UniverseIndexEntry], queryOpt: Option[String]): List[UniverseIndexEntry] = {
+}
+
+private[cosmos] object PackageSearchHandler {
+
+  private[cosmos] def search(packages: List[UniverseIndexEntry], queryOpt: Option[String]): List[UniverseIndexEntry] = {
     val wildcardSymbol = "*"
     queryOpt match {
       case None => packages
@@ -51,4 +57,5 @@ private[cosmos] class PackageSearchHandler(packageCache: PackageCache)
       index.description.toLowerCase().contains(query) ||
         index.tags.exists(_.toLowerCase().contains(query))
   }
+
 }
