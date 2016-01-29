@@ -6,13 +6,16 @@ import com.twitter.io.Buf
 import com.twitter.finagle.http.Status
 import io.circe.parse._
 import io.circe.syntax._
-import io.circe.generic.auto._    // Required for auto-parsing case classes from JSON
+import com.mesosphere.cosmos.circe.Decoders._
 
 class ErrorResponseSpec extends IntegrationSpec {
 
   "An ErrorResponse" should "be returned as the body when a request can't be parsed" in { service =>
     val requestString = Map("invalid" -> true).asJson.noSpaces
-    val post = requestBuilder("v1/package/install").buildPost(Buf.Utf8(requestString))
+    val post = requestBuilder("v1/package/install")
+      .addHeader("Content-Type", MediaTypes.InstallRequest.show)
+      .addHeader("Accept", MediaTypes.InstallResponse.show)
+      .buildPost(Buf.Utf8(requestString))
     val response = service(post)
 
     assertResult(Status.BadRequest)(response.status)

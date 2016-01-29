@@ -1,7 +1,8 @@
-package com.mesosphere.cosmos
+package com.mesosphere.cosmos.handler
 
-import com.mesosphere.cosmos.http.{MediaTypes, EndpointHandler}
-import com.mesosphere.cosmos.model.{AppId, UninstallResult, UninstallRequest, UninstallResponse}
+import com.mesosphere.cosmos.http.MediaTypes
+import com.mesosphere.cosmos.model.{AppId, UninstallRequest, UninstallResponse, UninstallResult}
+import com.mesosphere.cosmos.{AdminRouter, AmbiguousAppId, MarathonAppDeleteError, MultipleFrameworkIds}
 import com.twitter.finagle.http.Status
 import com.twitter.util.Future
 import io.circe.Encoder

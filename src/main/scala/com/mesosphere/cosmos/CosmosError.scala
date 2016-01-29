@@ -1,7 +1,6 @@
 package com.mesosphere.cosmos
 
 import cats.data.NonEmptyList
-import com.github.fge.jsonschema.core.report.ProcessingMessage
 import com.mesosphere.cosmos.model.AppId
 import com.netaporter.uri.Uri
 import com.twitter.finagle.http.Status
@@ -40,6 +39,9 @@ sealed trait CosmosError extends RuntimeException {
       case aai @ AmbiguousAppId(_, _) => aai.toString
       case mfi @ MultipleFrameworkIds(_, _) => mfi.toString
       case me @ MultipleError(_) => me.toString
+      case NelErrors(nelE) => nelE.toString
+      case JsonSchemaMismatch() => "Options JSON failed validation"
+      case FileUploadError(msg) => msg
       case NelErrors(nelE) => nelE.toString
     }
   }
@@ -81,3 +83,5 @@ case class MultipleError(errs: List[CosmosError]) extends CosmosError
 case class NelErrors(errs: NonEmptyList[CosmosError]) extends CosmosError //TODO: Cleanup
 
 case class JsonSchemaMismatch() extends CosmosError
+
+case class FileUploadError(message: String) extends CosmosError { override val status = Status.NotImplemented }

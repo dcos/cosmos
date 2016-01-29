@@ -1,9 +1,7 @@
 package com.mesosphere.cosmos
 
-import com.mesosphere.cosmos.model.{DescribeRequest, PackageFiles, PackageInfo, UniverseIndex}
+import com.mesosphere.cosmos.model._
 import com.twitter.util.Future
-import io.circe.Json
-import io.finch._
 
 /** A package cache that stores all package information in memory. Useful for testing.
   *
@@ -45,9 +43,4 @@ final case class MemoryPackageCache(packages: Map[String, PackageFiles]) extends
     Future.exception(PackageNotFound(packageName))
   }
 
-  def getPackageDescribe(
-    describeRequest: DescribeRequest
-  ): Future[Output[Json]] = {
-    Future(Ok(Json.empty))
-  }
 }

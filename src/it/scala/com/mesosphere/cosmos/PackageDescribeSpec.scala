@@ -2,18 +2,22 @@ package com.mesosphere.cosmos
 
 import cats.data.Xor
 import cats.data.Xor.Right
-import com.mesosphere.cosmos.http.EndpointHandler
+import com.mesosphere.cosmos.circe.Decoders._
+import com.mesosphere.cosmos.circe.Encoders._
+import com.mesosphere.cosmos.handler._
+import com.mesosphere.cosmos.http.MediaTypes
 import com.mesosphere.cosmos.model._
+import com.mesosphere.cosmos.model.mesos.master._
 import com.netaporter.uri.Uri
 import com.twitter.finagle.http._
-import com.twitter.io.{Buf}
 import com.twitter.finagle.{Http, Service}
+import com.twitter.io.Buf
 import com.twitter.util._
-import io.circe.parse._
-import io.circe.generic.auto._
 import io.circe.Json
+import io.circe.parse._
 import io.circe.syntax._
 import org.scalatest.FreeSpec
+import io.finch.circe._
 
 final class PackageDescribeSpec extends FreeSpec with CosmosSpec {
 
@@ -73,13 +77,17 @@ final class PackageDescribeSpec extends FreeSpec with CosmosSpec {
     f: DescribeTestAssertionDecorator => Unit
   ): Unit = {
     // these two imports provide the implicit DecodeRequest instances needed to instantiate Cosmos
-    import io.circe.generic.auto._
-    import io.finch.circe._
+    val marathonPackageRunner = new MarathonPackageRunner(adminRouter)
     val service = new Cosmos(
       packageCache,
-      new MarathonPackageRunner(adminRouter),
-      EndpointHandler.const(UninstallResponse(Nil)),
-      EndpointHandler.const(ListResponse(Nil))
+      marathonPackageRunner,
+      new UninstallHandler(adminRouter),
+      new PackageInstallHandler(packageCache, marathonPackageRunner),
+      new PackageSearchHandler(packageCache),
+      new PackageImportHandler,
+      new PackageDescribeHandler(packageCache),
+      new ListVersionsHandler(packageCache),
+      new ListHandler(adminRouter, packageCache)
     ).service
     val server = Http.serve(s":$servicePort", service)
     val client = Http.newService(s"127.0.0.1:$servicePort")
@@ -104,7 +112,7 @@ private object PackageDescribeSpec extends CosmosSpec {
 
   private val PackageVersionsTable = Table(
     ("package name", "versions"),
-    ("helloworld", Map[String,String]("0.1.0" -> "0"))
+    ("helloworld", Map("results" -> Map("0.1.0" -> "0")))
   )
 
   val HelloworldPackageDef = PackageDefinition(
@@ -121,40 +129,31 @@ private object PackageDescribeSpec extends CosmosSpec {
 
   val HelloworldResource = Resource()
 
-  case class HelloworldPort(`type`: String, default: Int)
-  case class HelloworldProperties(port: HelloworldPort)
-  case class HelloworldConfig(`$schema`: String, `type`: String, properties: HelloworldProperties, additionalProperties: Boolean)
-
-  val HelloworldConfigDef = HelloworldConfig(
-    "http://json-schema.org/schema#",
-    "object",
-    HelloworldProperties(HelloworldPort("integer", 8080)),
-    additionalProperties = false
+  val HelloworldConfigDef = Json.obj(
+    "$schema" -> "http://json-schema.org/schema#".asJson,
+    "type" -> "object".asJson,
+    "properties" -> Json.obj(
+      "port" -> Json.obj(
+        "type" -> "integer".asJson,
+        "default" -> 8080.asJson
+      )
+    ),
+    "additionalProperties" -> Json.False
   )
 
-  case class HelloworldCommand(pip: List[String])
-  val HelloworldCommandDef = HelloworldCommand(
+  val HelloworldCommandDef = CommandDefinition(
     List("dcos<1.0", "git+https://github.com/mesosphere/dcos-helloworld.git#dcos-helloworld=0.1.0")
   )
 
-  case class HelloworldDocker(image: String, network: String)
-  case class HelloworldContainer(`type`: String, docker: HelloworldDocker)
-  case class HelloworldMustache(
-    id: String,
-    cpus: Double,
-    mem: Int,
-    instances: Int,
-    cmd: String,
-    container: HelloworldContainer
-  )
-
-  val HelloworldMustacheDef = HelloworldMustache(
-    id = "helloworld",
+  val HelloworldMustacheDef = MarathonApp(
+    id = AppId("helloworld"),
     cpus = 1.0,
     mem = 512,
     instances = 1,
-    cmd = "python3 -m http.server {{port}}",
-    container = HelloworldContainer("DOCKER", HelloworldDocker("python:3", "HOST"))
+    cmd = Some("python3 -m http.server {{port}}"),
+    container = Some(MarathonAppContainer("DOCKER", Some(MarathonAppContainerDocker("python:3", "HOST")))),
+    labels = Map.empty,
+    uris = List.empty
   )
 }
 
@@ -162,6 +161,7 @@ private final class DescribeTestAssertionDecorator(apiClient: Service[Request, R
   import PackageDescribeSpec._
 
   val DescribeEndpoint = "v1/package/describe"
+  val ListVersionsEndpoint = "v1/package/list-versions"
 
   private[cosmos] def describeAndAssertError(
     packageName: String,
@@ -169,7 +169,7 @@ private final class DescribeTestAssertionDecorator(apiClient: Service[Request, R
     expectedMessage: String,
     version: Option[String] = None
   ): Unit = {
-    val response = describeRequest(apiClient, DescribeRequest(packageName, version, None))
+    val response = describeRequest(apiClient, DescribeRequest(packageName, version))
     assertResult(status)(response.status)
     val Right(errorResponse) = decode[ErrorResponse](response.contentString)
     assertResult(expectedMessage)(errorResponse.errors.head.message)
@@ -180,13 +180,13 @@ private final class DescribeTestAssertionDecorator(apiClient: Service[Request, R
     status: Status,
     content: Json
   ): Unit = {
-    val response = describeRequest(apiClient, DescribeRequest(packageName, None, Some(true)))
+    val response = listVersionsRequest(apiClient, ListVersionsRequest(packageName, packageVersions = true))
     assertResult(status)(response.status)
     assertResult(Xor.Right(content))(parse(response.contentString))
   }
 
   private[cosmos] def describeHelloworld(version: Option[String] = None) = {
-    val response = describeRequest(apiClient, DescribeRequest("helloworld", version, None))
+    val response = describeRequest(apiClient, DescribeRequest("helloworld", version))
     assertResult(Status.Ok)(response.status)
     val Right(packageInfo) = parse(response.contentString)
 
@@ -196,10 +196,10 @@ private final class DescribeTestAssertionDecorator(apiClient: Service[Request, R
     val Right(resourceJson) = packageInfo.cursor.get[Resource]("resource")
     assertResult(HelloworldResource)(resourceJson)
 
-    val Right(configJson) = packageInfo.cursor.get[HelloworldConfig]("config")
+    val Right(configJson) = packageInfo.cursor.get[Json]("config")
     assertResult(HelloworldConfigDef)(configJson)
 
-    val Right(commandJson) = packageInfo.cursor.get[HelloworldCommand]("command")
+    val Right(commandJson) = packageInfo.cursor.get[CommandDefinition]("command")
     assertResult(HelloworldCommandDef)(commandJson)
   }
 
@@ -208,7 +208,19 @@ private final class DescribeTestAssertionDecorator(apiClient: Service[Request, R
     describeRequest: DescribeRequest
   ): Response = {
     val request = requestBuilder(DescribeEndpoint)
+      .addHeader("Content-Type", MediaTypes.DescribeRequest.show)
+      .addHeader("Accept", MediaTypes.DescribeResponse.show)
       .buildPost(Buf.Utf8(describeRequest.asJson.noSpaces))
+    Await.result(apiClient(request))
+  }
+  private[this] def listVersionsRequest(
+    apiClient: Service[Request, Response],
+    listVersionsRequest: ListVersionsRequest
+  ): Response = {
+    val request = requestBuilder(ListVersionsEndpoint)
+      .addHeader("Content-Type", MediaTypes.ListVersionsRequest.show)
+      .addHeader("Accept", MediaTypes.ListVersionsResponse.show)
+      .buildPost(Buf.Utf8(listVersionsRequest.asJson.noSpaces))
     Await.result(apiClient(request))
   }
 }
