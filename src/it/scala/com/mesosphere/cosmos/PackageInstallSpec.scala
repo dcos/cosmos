@@ -7,6 +7,7 @@ import cats.data.Xor
 import cats.data.Xor.Right
 import com.mesosphere.cosmos.model._
 import com.mesosphere.cosmos.model.mesos.master.MarathonApp
+import com.mesosphere.cosmos.endpoint.ListHandler
 import com.netaporter.uri.Uri
 import com.twitter.finagle.http._
 import com.twitter.finagle.{Http, Service}
@@ -32,7 +33,8 @@ final class PackageInstallSpec extends FreeSpec with BeforeAndAfterAll with Cosm
 
           apiClient.installPackageAndAssert(
             InstallRequest(packageName),
-            expectedResult = Success(InstallResponse(packageName, packageFiles.version, appId)),
+            expectedResult = Success(
+              InstallResponse(packageName, packageFiles.packageJson.version, appId)),
             preInstallState = NotInstalled,
             postInstallState = Installed
           )
@@ -227,7 +229,12 @@ final class PackageInstallSpec extends FreeSpec with BeforeAndAfterAll with Cosm
     // these two imports provide the implicit DecodeRequest instances needed to instantiate Cosmos
     import io.circe.generic.auto._
     import io.finch.circe._
-    val service = new Cosmos(packageCache, new MarathonPackageRunner(adminRouter), new UninstallHandler(adminRouter)).service
+    val service = new Cosmos(
+      packageCache,
+      new MarathonPackageRunner(adminRouter),
+      new UninstallHandler(adminRouter),
+      new ListHandler(adminRouter, packageCache)
+    ).service
     val server = Http.serve(s":$servicePort", service)
     val client = Http.newService(s"127.0.0.1:$servicePort")
 
@@ -264,7 +271,7 @@ private object PackageInstallSpec extends CosmosSpec {
         "sInByZUluc3RhbGxOb3RlcyI6IkEgc2FtcGxlIHByZS1pbnN0YWxsYXRpb24gbWVzc2FnZSJ9"),
       ("DCOS_PACKAGE_COMMAND", "eyJwaXAiOlsiZGNvczwxLjAiLCJnaXQraHR0cHM6Ly9naXRodWIuY29tL21lc29z" +
         "cGhlcmUvZGNvcy1oZWxsb3dvcmxkLmdpdCNkY29zLWhlbGxvd29ybGQ9MC4xLjAiXX0="),
-      "DCOS_PACKAGE_REGISTRY_VERSION" -> "2.0.0-rc1",
+      "DCOS_PACKAGE_REGISTRY_VERSION" -> "2.0",
       "DCOS_PACKAGE_NAME" -> "helloworld",
       "DCOS_PACKAGE_VERSION" -> "0.1.0",
       "DCOS_PACKAGE_SOURCE" -> "https://github.com/mesosphere/universe/archive/cli-test-4.zip",
@@ -340,7 +347,6 @@ private object PackageInstallSpec extends CosmosSpec {
     )
 
     val packageFiles = PackageFiles(
-      version = "0.1.0",
       revision = "0",
       sourceUri = Uri.parse("in/memory/source"),
       commandJson = Json.obj(),

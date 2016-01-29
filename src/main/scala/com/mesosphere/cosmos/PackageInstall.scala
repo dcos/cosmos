@@ -7,6 +7,7 @@ import cats.data.Xor
 import com.github.mustachejava.DefaultMustacheFactory
 import com.mesosphere.cosmos.jsonschema.JsonSchemaValidation
 import com.mesosphere.cosmos.model.{InstallRequest, InstallResponse, PackageFiles, Resource}
+import com.mesosphere.cosmos.model.mesos.master.MarathonApp
 import com.twitter.io.Charsets
 import com.twitter.util.Future
 import io.circe.generic.auto._
@@ -23,8 +24,7 @@ object PackageInstall {
   private[cosmos] def install(packageCache: PackageCache, packageRunner: PackageRunner)(
     request: InstallRequest
   ): Future[InstallResponse] = {
-    packageCache
-      .getPackageFiles(request.packageName, request.packageVersion)
+    packageCache.getPackageByPackageVersion(request.packageName, request.packageVersion)
       .flatMap { packageFiles =>
         val packageConfig = preparePackageConfig(request, packageFiles)
         packageRunner
@@ -145,14 +145,14 @@ object PackageInstall {
       .flatMap(_.get[String]("framework-name").toOption)
 
     val requiredLabels: Map[String, String] = Map(
-      "DCOS_PACKAGE_METADATA" -> packageMetadata,
-      "DCOS_PACKAGE_REGISTRY_VERSION" -> packageFiles.version,
-      "DCOS_PACKAGE_NAME" -> packageFiles.packageJson.name,
-      "DCOS_PACKAGE_VERSION" -> packageFiles.packageJson.version,
-      "DCOS_PACKAGE_SOURCE" -> packageFiles.sourceUri.toString,
-      "DCOS_PACKAGE_RELEASE" -> packageFiles.revision,
-      "DCOS_PACKAGE_IS_FRAMEWORK" -> isFramework.toString,
-      "DCOS_PACKAGE_COMMAND" -> commandMetadata
+      (MarathonApp.metadataLabel, packageMetadata),
+      (MarathonApp.registryVersionLabel, packageFiles.packageJson.packagingVersion),
+      (MarathonApp.nameLabel, packageFiles.packageJson.name),
+      (MarathonApp.versionLabel, packageFiles.packageJson.version),
+      (MarathonApp.sourceLabel, packageFiles.sourceUri.toString),
+      (MarathonApp.releaseLabel, packageFiles.revision),
+      (MarathonApp.isFrameworkLabel, isFramework.toString),
+      (MarathonApp.commandLabel, commandMetadata)
     )
 
     val optionalLabels: Map[String, String] = Seq(

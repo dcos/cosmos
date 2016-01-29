@@ -4,7 +4,16 @@ import java.io.{BufferedInputStream, ByteArrayInputStream, FileInputStream, Inpu
 import java.util.zip.ZipInputStream
 
 import com.mesosphere.cosmos.http.{MediaTypes, EndpointHandler}
-import com.mesosphere.cosmos.model._
+import com.mesosphere.cosmos.model.{
+  DescribeRequest,
+  InstallRequest,
+  ListRequest,
+  ListResponse,
+  SearchRequest,
+  UninstallRequest,
+  UninstallResponse
+}
+import com.mesosphere.cosmos.endpoint.ListHandler
 import com.twitter.finagle.Service
 import com.twitter.finagle.http.exp.Multipart.{FileUpload, InMemoryFileUpload, OnDiskFileUpload}
 import com.twitter.finagle.http.{Request, Response, Status}
@@ -22,8 +31,12 @@ import io.finch.circe._
 private[cosmos] final class Cosmos(
   packageCache: PackageCache,
   packageRunner: PackageRunner,
-  uninstallHandler: EndpointHandler[UninstallRequest, UninstallResponse]
-)(implicit statsReceiver: StatsReceiver = NullStatsReceiver) {
+  uninstallHandler: EndpointHandler[UninstallRequest, UninstallResponse],
+  listHandler: EndpointHandler[ListRequest, ListResponse]
+  )(implicit
+  statsReceiver: StatsReceiver = NullStatsReceiver
+  ) {
+
   lazy val logger = org.slf4j.LoggerFactory.getLogger(classOf[Cosmos])
 
   implicit val baseScope = BaseScope(Some("app"))
@@ -73,8 +86,7 @@ private[cosmos] final class Cosmos(
   val packageDescribe: Endpoint[Json] = {
 
     def respond(describe: DescribeRequest): Future[Output[Json]] = {
-      packageCache
-        .getPackageDescribe(describe)
+      packageCache.getPackageDescribe(describe)
     }
 
     post("v1" / "package" / "describe" ? body.as[DescribeRequest]) (respond _)
@@ -92,6 +104,16 @@ private[cosmos] final class Cosmos(
     }
 
     post("v1" / "package" / "search" ? body.as[SearchRequest]) (respond _)
+  }
+
+  val packageList: Endpoint[Json] = {
+    def respond(request: ListRequest): Future[Output[Json]] = {
+      listHandler(request).map { resp =>
+        Ok(resp.asJson)
+      }
+    }
+
+    post("package" / "list" ? body.as[ListRequest])(respond _)
   }
 
   def exceptionErrorResponse(t: Throwable): List[ErrorResponseEntry] = t match {
@@ -125,6 +147,7 @@ private[cosmos] final class Cosmos(
       :+: packageDescribe
       :+: packageSearch
       :+: packageUninstall
+      :+: packageList
     )
       .handle {
         case ce: CosmosError =>
@@ -186,7 +209,6 @@ private[cosmos] final class Cosmos(
       zis.close()
     }
   }
-
 }
 
 object Cosmos extends FinchServer {
@@ -204,11 +226,11 @@ object Cosmos extends FinchServer {
       val cosmos = new Cosmos(
         packageCache,
         new MarathonPackageRunner(adminRouter),
-        new UninstallHandler(adminRouter)
+        new UninstallHandler(adminRouter),
+        new ListHandler(adminRouter, packageCache)
       )
       cosmos.service
     }
     boot.get
   }
-
 }

@@ -11,9 +11,21 @@ import io.finch._
   */
 final case class MemoryPackageCache(packages: Map[String, PackageFiles]) extends PackageCache {
 
-  def getPackageFiles(
+  override def getPackageByPackageVersion(
     packageName: String,
-    version: Option[String]
+    packageVersion: Option[String]
+  ): Future[PackageFiles] = {
+    Future.value {
+      packages.get(packageName) match {
+        case None => throw PackageNotFound(packageName)
+        case Some(a) => a
+      }
+    }
+  }
+
+  override def getPackageByReleaseVersion(
+    packageName: String,
+    releaseVersion: String
   ): Future[PackageFiles] = {
     Future.value {
       packages.get(packageName) match {

@@ -32,7 +32,6 @@ final class UserOptionsSpec extends UnitSpec {
         val mustacheTemplate = buildMustacheTemplate(mergedJson)
 
         val packageFiles = PackageFiles(
-          version = "1.2.3",
           revision = "0",
           sourceUri = Uri.parse("in/memory/source"),
           commandJson = Json.obj(),
@@ -57,7 +56,8 @@ final class UserOptionsSpec extends UnitSpec {
         val cosmos = new Cosmos(
           packageCache,
           packageRunner,
-          EndpointHandler.const(UninstallResponse(Nil))
+          EndpointHandler.const(UninstallResponse(Nil)),
+          EndpointHandler.const(ListResponse(Nil))
         )
         val request = RequestBuilder()
           .url("http://dummy.cosmos.host/v1/package/install")

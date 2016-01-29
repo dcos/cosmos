@@ -8,9 +8,14 @@ import io.finch._
 /** A repository of packages that can be installed on DCOS. */
 trait PackageCache {
 
-  def getPackageFiles(
+  def getPackageByPackageVersion(
     packageName: String,
-    version: Option[String]
+    packageVersion: Option[String]
+  ): Future[PackageFiles]
+
+  def getPackageByReleaseVersion(
+    packageName: String,
+    releaseVersion: String
   ): Future[PackageFiles]
 
   def getPackageIndex(packageName: String): Future[PackageInfo]
@@ -25,9 +30,16 @@ object PackageCache {
   /** Useful when a cache is not needed or should not be used. */
   object empty extends PackageCache {
 
-    def getPackageFiles(
+    override def getPackageByPackageVersion(
       packageName: String,
-      version: Option[String]
+      packageVersion: Option[String]
+    ): Future[PackageFiles] = {
+      Future.exception(PackageNotFound(packageName))
+    }
+
+    override def getPackageByReleaseVersion(
+      packageName: String,
+      releaseVersion: String
     ): Future[PackageFiles] = {
       Future.exception(PackageNotFound(packageName))
     }

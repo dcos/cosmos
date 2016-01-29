@@ -78,7 +78,8 @@ final class PackageDescribeSpec extends FreeSpec with CosmosSpec {
     val service = new Cosmos(
       packageCache,
       new MarathonPackageRunner(adminRouter),
-      EndpointHandler.const(UninstallResponse(Nil))
+      EndpointHandler.const(UninstallResponse(Nil)),
+      EndpointHandler.const(ListResponse(Nil))
     ).service
     val server = Http.serve(s":$servicePort", service)
     val client = Http.newService(s"127.0.0.1:$servicePort")

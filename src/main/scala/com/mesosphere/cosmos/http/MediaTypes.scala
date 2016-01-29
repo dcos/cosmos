@@ -10,6 +10,10 @@ object MediaTypes {
 
   val UninstallRequest = vnd("uninstall-request")
   val UninstallResponse = vnd("uninstall-response")
+
+  val ListRequest = vnd("list-request")
+  val ListResponse = vnd("list-response")
+
   val ErrorResponse = vnd("error")
 
 }
