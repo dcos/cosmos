@@ -8,8 +8,8 @@ import com.github.mustachejava.DefaultMustacheFactory
 import com.mesosphere.cosmos.http.MediaTypes
 import com.mesosphere.cosmos.jsonschema.JsonSchemaValidation
 import com.mesosphere.cosmos.model._
-import com.mesosphere.cosmos.{JsonSchemaMismatch, PackageCache, PackageFileNotJson, PackageRunner}
 import com.mesosphere.cosmos.model.mesos.master.MarathonApp
+import com.mesosphere.cosmos.{JsonSchemaMismatch, PackageCache, PackageFileNotJson, PackageRunner}
 import com.twitter.io.Charsets
 import com.twitter.util.Future
 import io.circe.parse.parse
@@ -75,11 +75,14 @@ private[cosmos] object PackageInstallHandler {
     val merged: JsonObject = (packageFiles.configJson, options) match {
       case (None, None) => JsonObject.empty
       case (Some(config), None) => defaults   // TODO: Potential future improvement, validate the defaults against the schema
-      case (None, Some(_)) => throw JsonSchemaMismatch()
+      case (None, Some(_)) =>
+        val error = Map("message" -> "No schema available to validate the provided options").asJson
+        throw JsonSchemaMismatch(List(error))
       case (Some(config), Some(opts)) =>
         val m = merge(defaults, opts)
-        if (!JsonSchemaValidation.matchesSchema(m, config)) {
-          throw JsonSchemaMismatch()
+        val validationErrors = JsonSchemaValidation.matchesSchema(m, config)
+        if (validationErrors.nonEmpty) {
+          throw JsonSchemaMismatch(validationErrors)
         }
         m
     }
