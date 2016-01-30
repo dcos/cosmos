@@ -4,7 +4,7 @@ import com.mesosphere.cosmos.model._
 import com.mesosphere.cosmos.model.mesos.master._
 import com.mesosphere.cosmos.{CosmosError, ErrorResponse, ErrorResponseEntry}
 import com.netaporter.uri.Uri
-import io.circe.Encoder
+import io.circe.{Json, Encoder}
 import io.circe.generic.semiauto._
 import io.circe.syntax._
 import io.finch.Error
@@ -14,7 +14,14 @@ object Encoders {
   implicit val encodePackageDefinition: Encoder[PackageDefinition] = deriveFor[PackageDefinition].encoder
   implicit val encodeContainer: Encoder[Container] = deriveFor[Container].encoder
   implicit val encodeAssets: Encoder[Assets] = deriveFor[Assets].encoder
-  implicit val encodeImages: Encoder[Images] = deriveFor[Images].encoder
+  implicit val encodeImages: Encoder[Images] = Encoder.instance { (images: Images) =>
+    Json.obj(
+      "icon-small" -> images.iconSmall.asJson,
+      "icon-medium" -> images.iconMedium.asJson,
+      "icon-large" -> images.iconLarge.asJson,
+      "screenshots" -> images.screenshots.asJson
+    )
+  }
   implicit val encodeResource: Encoder[Resource] = deriveFor[Resource].encoder
   implicit val encodePackageIndex: Encoder[UniverseIndexEntry] = deriveFor[UniverseIndexEntry].encoder
   implicit val encodeUniverseIndex: Encoder[UniverseIndex] = deriveFor[UniverseIndex].encoder

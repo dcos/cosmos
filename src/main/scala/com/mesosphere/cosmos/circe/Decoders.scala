@@ -4,15 +4,22 @@ import com.mesosphere.cosmos.model._
 import com.mesosphere.cosmos.model.mesos.master._
 import com.mesosphere.cosmos.{ErrorResponse, ErrorResponseEntry}
 import com.netaporter.uri.Uri
-import io.circe.Decoder
 import io.circe.generic.semiauto._
+import io.circe.{Decoder, HCursor}
 
 object Decoders {
   implicit val decodeLicense: Decoder[License] = deriveFor[License].decoder
   implicit val decodePackageDefinition: Decoder[PackageDefinition] = deriveFor[PackageDefinition].decoder
   implicit val decodeContainer: Decoder[Container] = deriveFor[Container].decoder
   implicit val decodeAssets: Decoder[Assets] = deriveFor[Assets].decoder
-  implicit val decodeImages: Decoder[Images] = deriveFor[Images].decoder
+  implicit val decodeImages: Decoder[Images] = Decoder.instance { (cursor: HCursor) =>
+    for {
+      iS <- cursor.downField("icon-small").as[String]
+      iM <- cursor.downField("icon-medium").as[String]
+      iL <- cursor.downField("icon-large").as[String]
+      ss <- cursor.downField("screenshots").as[Option[List[String]]]
+    } yield Images(iS, iM, iL, ss)
+  }
   implicit val decodeResource: Decoder[Resource] = deriveFor[Resource].decoder
   implicit val decodePackageIndex: Decoder[UniverseIndexEntry] = deriveFor[UniverseIndexEntry].decoder
   implicit val decodeUniverseIndex: Decoder[UniverseIndex] = deriveFor[UniverseIndex].decoder
