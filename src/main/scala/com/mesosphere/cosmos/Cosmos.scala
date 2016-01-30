@@ -104,7 +104,7 @@ private[cosmos] final class Cosmos(
       }
     }
 
-    post("package" / "list" ? body.as[ListRequest])(respond _)
+    post("v1" / "package" / "list" ? body.as[ListRequest])(respond _)
   }
 
   val service: Service[Request, Response] = {
