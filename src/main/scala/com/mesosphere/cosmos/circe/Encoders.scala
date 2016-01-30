@@ -66,7 +66,7 @@ object Encoders {
     case Error.RequestErrors(ts) =>
       ts.flatMap(exceptionErrorResponse).toList
     case ce: CosmosError =>
-      List(ErrorResponseEntry(ce.getClass.getSimpleName, ce.getMessage))
+      List(ErrorResponseEntry(ce.getClass.getSimpleName, ce.getMessage, ce.getData))
     case t: Throwable =>
       List(ErrorResponseEntry("unhandled_exception", t.getMessage))
   }

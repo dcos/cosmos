@@ -4,6 +4,8 @@ import cats.data.NonEmptyList
 import com.mesosphere.cosmos.model.AppId
 import com.netaporter.uri.Uri
 import com.twitter.finagle.http.Status
+import io.circe.Json
+import io.circe.syntax._
 
 sealed trait CosmosError extends RuntimeException {
 
@@ -31,7 +33,7 @@ sealed trait CosmosError extends RuntimeException {
       case MarathonAppNotFound(appId) => s"Unable to locate service with marathon appId: '$appId'"
       case CirceError(cerr) => cerr.getMessage
       case MesosRequestError(note) => note
-      case JsonSchemaMismatch() => "Options JSON failed validation"
+      case JsonSchemaMismatch(_) => "Options JSON failed validation"
 
       // TODO(jose): Looking at the code these are all recursive!
       case uct @ UnsupportedContentType(_, _) => uct.toString
@@ -43,6 +45,8 @@ sealed trait CosmosError extends RuntimeException {
       case FileUploadError(msg) => msg
     }
   }
+
+  def getData: Json = Json.obj()
 
 }
 
@@ -80,6 +84,8 @@ case class MultipleFrameworkIds(frameworkName: String, ids: List[String]) extend
 case class MultipleError(errs: List[CosmosError]) extends CosmosError
 case class NelErrors(errs: NonEmptyList[CosmosError]) extends CosmosError //TODO: Cleanup
 
-case class JsonSchemaMismatch() extends CosmosError
+case class JsonSchemaMismatch(errors: Iterable[Json]) extends CosmosError {
+  override def getData: Json = errors.asJson
+}
 
 case class FileUploadError(message: String) extends CosmosError { override val status = Status.NotImplemented }
