@@ -42,9 +42,9 @@ object Assets {
 }
 
 case class Images(
-  `icon-small`: String,
-  `icon-medium`: String,
-  `icon-large`: String,
+  iconSmall: String,
+  iconMedium: String,
+  iconLarge: String,
   screenshots: Option[List[String]]
 )
 
