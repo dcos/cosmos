@@ -44,7 +44,6 @@ case class MediaType(
 
 
 object MediaType {
-  val applicationJson = MediaType("application", MediaTypeSubType("json"), Some(Map("charset" -> "utf-8")))
 
   def unapply(s: String): Option[MediaType] = {
     parse(s).toOption

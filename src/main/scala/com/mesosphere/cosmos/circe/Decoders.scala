@@ -1,8 +1,8 @@
 package com.mesosphere.cosmos.circe
 
+import com.mesosphere.cosmos.ErrorResponse
 import com.mesosphere.cosmos.model._
 import com.mesosphere.cosmos.model.mesos.master._
-import com.mesosphere.cosmos.{ErrorResponse, ErrorResponseEntry}
 import com.netaporter.uri.Uri
 import io.circe.generic.semiauto._
 import io.circe.{Decoder, HCursor}
@@ -48,7 +48,6 @@ object Decoders {
   implicit val decodeListVersionsRequest: Decoder[ListVersionsRequest] = deriveFor[ListVersionsRequest].decoder
   implicit val decodeListVersionsResponse: Decoder[ListVersionsResponse] = deriveFor[ListVersionsResponse].decoder
 
-  implicit val decodeErrorResponseEntry: Decoder[ErrorResponseEntry] = deriveFor[ErrorResponseEntry].decoder
   implicit val decodeErrorResponse: Decoder[ErrorResponse] = deriveFor[ErrorResponse].decoder
 
   implicit val decodeUri: Decoder[Uri] = Decoder.decodeString.map(Uri.parse)

@@ -21,7 +21,7 @@ class ErrorResponseSpec extends IntegrationSpec {
     assertResult(Status.BadRequest)(response.status)
     assertResult(MediaTypes.ErrorResponse.show)(response.headerMap("Content-Type"))
     val Xor.Right(err) = decode[ErrorResponse](response.contentString)
-    val msg = err.errors.head.message
+    val msg = err.message
     assert(msg.contains("body"))
     assert(msg.contains("decode value"))
     assert(msg.contains("packageName"))

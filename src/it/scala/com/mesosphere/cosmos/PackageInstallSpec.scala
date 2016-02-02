@@ -206,9 +206,9 @@ final class PackageInstallSpec extends FreeSpec with BeforeAndAfterAll with Cosm
         )
       }.asJson
 
-      val errorData = List(schemaError).asJson
+      val errorData = JsonObject.singleton("errors", List(schemaError).asJson)
       val errorResponse =
-        ErrorResponse("JsonSchemaMismatch", "Options JSON failed validation", errorData)
+        ErrorResponse("JsonSchemaMismatch", "Options JSON failed validation", Some(errorData))
 
       val _ = withTempDirectory { universeDir =>
         val universeCache = Await.result(UniversePackageCache(UniverseUri, universeDir))

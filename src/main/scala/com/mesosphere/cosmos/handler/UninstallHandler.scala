@@ -43,7 +43,7 @@ private[cosmos] final class UninstallHandler(adminRouter: AdminRouter)
                   UninstallDetails.from(op).copy(frameworkId = Some(fwId))
                 }
             case all =>
-              throw MultipleFrameworkIds(fwName, all)
+              throw MultipleFrameworkIds(op.packageName, fwName, all)
           }
         case None =>
           Future.value(UninstallDetails.from(op))

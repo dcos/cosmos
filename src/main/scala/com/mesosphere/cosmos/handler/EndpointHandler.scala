@@ -1,7 +1,7 @@
 package com.mesosphere.cosmos.handler
 
 import com.mesosphere.cosmos.http.FinchExtensions._
-import com.mesosphere.cosmos.http.MediaType
+import com.mesosphere.cosmos.http.{MediaTypes, MediaType}
 import com.twitter.util.Future
 import io.circe.{Encoder, Printer}
 import io.finch._
@@ -48,8 +48,8 @@ object EndpointHandler {
     responseClassTag: ClassTag[Response]
   ): EndpointHandler[Request, Response] = {
     new EndpointHandler[Request, Response] {
-      val accepts = MediaType.applicationJson
-      val produces = MediaType.applicationJson
+      val accepts = MediaTypes.applicationJson
+      val produces = MediaTypes.applicationJson
       override def apply(v1: Request): Future[Response] = Future.value(resp)
     }
   }

@@ -8,6 +8,8 @@ object MediaTypes {
       Some(Map("charset" -> "utf-8", "version" -> "v1"))
     )
 
+  val applicationJson = MediaType("application", MediaTypeSubType("json"), Some(Map("charset" -> "utf-8")))
+
   val UninstallRequest = vnd("uninstall-request")
   val UninstallResponse = vnd("uninstall-response")
 
