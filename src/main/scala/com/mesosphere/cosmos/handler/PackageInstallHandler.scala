@@ -64,7 +64,7 @@ private[cosmos] object PackageInstallHandler {
     }
   }
 
-  private[this] def renderMustacheTemplate(
+  private[cosmos] def renderMustacheTemplate(
     packageFiles: PackageFiles,
     options: Option[JsonObject]
   ): Json = {
