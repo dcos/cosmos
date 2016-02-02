@@ -190,19 +190,6 @@ final class PackageInstallSpec extends FreeSpec with BeforeAndAfterAll with Cosm
     "validates merged config template options JSON schema" in {
       val Some(badOptions) = Map("chronos" -> Map("zk-hosts" -> false)).asJson.asObject
 
-      val schemaWarning = JsonObject.fromIndexedSeq {
-        Vector(
-          "level" -> "warning".asJson,
-          "schema" -> Map(
-            "loadingURI" -> "#",
-            "pointer" -> "/properties/chronos/properties/leader-max-idle-time"
-          ).asJson,
-          "domain" -> "syntax".asJson,
-          "message" -> "the following keywords are unknown and will be ignored: [integer]".asJson,
-          "ignored" -> List("integer").asJson
-        )
-      }.asJson
-
       val schemaError = JsonObject.fromIndexedSeq {
         Vector(
           "level" -> "error".asJson,
@@ -219,7 +206,7 @@ final class PackageInstallSpec extends FreeSpec with BeforeAndAfterAll with Cosm
         )
       }.asJson
 
-      val errorData = List(schemaWarning, schemaWarning, schemaError).asJson
+      val errorData = List(schemaError).asJson
       val errorResponse =
         ErrorResponse("JsonSchemaMismatch", "Options JSON failed validation", errorData)
 
