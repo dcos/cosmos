@@ -38,11 +38,12 @@ sealed trait CosmosError extends RuntimeException {
       // TODO(jose): Looking at the code these are all recursive!
       case uct @ UnsupportedContentType(_, _) => uct.toString
       case ghe @ GenericHttpError(uri, status) => ghe.toString
-      case aai @ AmbiguousAppId(_, _) => aai.toString
+      case AmbiguousAppId(pkgName, appIds) => s"Multiple apps named [$pkgName] are installed: [${appIds.mkString(", ")}]"
       case mfi @ MultipleFrameworkIds(_, _) => mfi.toString
       case me @ MultipleError(_) => me.toString
       case NelErrors(nelE) => nelE.toString
       case FileUploadError(msg) => msg
+      case PackageNotInstalled(pkgName) => s"Package [$pkgName] is not installed"
     }
   }
 
@@ -80,6 +81,7 @@ case class GenericHttpError(uri: Uri, override val status: Status) extends Cosmo
 
 case class AmbiguousAppId(packageName: String, appIds: List[AppId]) extends CosmosError
 case class MultipleFrameworkIds(frameworkName: String, ids: List[String]) extends CosmosError
+case class PackageNotInstalled(packageName: String) extends CosmosError
 
 case class MultipleError(errs: List[CosmosError]) extends CosmosError
 case class NelErrors(errs: NonEmptyList[CosmosError]) extends CosmosError //TODO: Cleanup
