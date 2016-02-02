@@ -27,6 +27,7 @@ abstract class IntegrationSpec
       marathonPackageRunner,
       new UninstallHandler(adminRouter),
       new PackageInstallHandler(PackageCache.empty, marathonPackageRunner),
+      new PackageRenderHandler(PackageCache.empty),
       new PackageSearchHandler(PackageCache.empty),
       new PackageImportHandler,
       new PackageDescribeHandler(PackageCache.empty),

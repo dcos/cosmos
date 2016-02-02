@@ -45,6 +45,9 @@ object Encoders {
   implicit val encodeUninstallResponse: Encoder[UninstallResponse] = deriveFor[UninstallResponse].encoder
   implicit val encodeUninstallResult: Encoder[UninstallResult] = deriveFor[UninstallResult].encoder
 
+  implicit val encodeRenderRequest: Encoder[RenderRequest] = deriveFor[RenderRequest].encoder
+  implicit val encodeRenderResponse: Encoder[RenderResponse] = deriveFor[RenderResponse].encoder
+
   implicit val encodeCommandDefinition: Encoder[CommandDefinition] = deriveFor[CommandDefinition].encoder
   implicit val encodeDescribeResponse: Encoder[DescribeResponse] = deriveFor[DescribeResponse].encoder
   implicit val encodeListVersionsRequest: Encoder[ListVersionsRequest] = deriveFor[ListVersionsRequest].encoder

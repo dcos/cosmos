@@ -83,6 +83,7 @@ final class PackageDescribeSpec extends FreeSpec with CosmosSpec {
       marathonPackageRunner,
       new UninstallHandler(adminRouter),
       new PackageInstallHandler(packageCache, marathonPackageRunner),
+      new PackageRenderHandler(packageCache),
       new PackageSearchHandler(packageCache),
       new PackageImportHandler,
       new PackageDescribeHandler(packageCache),

@@ -43,6 +43,9 @@ object Decoders {
   implicit val decodeUninstallResponse: Decoder[UninstallResponse] = deriveFor[UninstallResponse].decoder
   implicit val decodeUninstallResult: Decoder[UninstallResult] = deriveFor[UninstallResult].decoder
 
+  implicit val decodeRenderRequest: Decoder[RenderRequest] = deriveFor[RenderRequest].decoder
+  implicit val decodeRenderResponse: Decoder[RenderResponse] = deriveFor[RenderResponse].decoder
+
   implicit val decodeCommandDefinition: Decoder[CommandDefinition] = deriveFor[CommandDefinition].decoder
   implicit val decodeDescribeResponse: Decoder[DescribeResponse] = deriveFor[DescribeResponse].decoder
   implicit val decodeListVersionsRequest: Decoder[ListVersionsRequest] = deriveFor[ListVersionsRequest].decoder

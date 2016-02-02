@@ -17,6 +17,8 @@ object MediaTypes {
   val ErrorResponse = vnd("error")
   val InstallRequest = vnd("install-request")
   val InstallResponse = vnd("install-response")
+  val RenderRequest = vnd("render-request")
+  val RenderResponse = vnd("render-response")
   val SearchRequest = vnd("search-request")
   val SearchResponse = vnd("search-response")
   val DescribeRequest = vnd("describe-request")

@@ -23,6 +23,7 @@ private[cosmos] final class Cosmos(
   packageRunner: PackageRunner,
   uninstallHandler: EndpointHandler[UninstallRequest, UninstallResponse],
   packageInstallHandler: EndpointHandler[InstallRequest, InstallResponse],
+  packageRenderHandler: EndpointHandler[RenderRequest, RenderResponse],
   packageSearchHandler: EndpointHandler[SearchRequest, SearchResponse],
   packageImportHandler: PackageImportHandler, // TODO: Real response Type
   packageDescribeHandler: EndpointHandler[DescribeRequest, DescribeResponse],
@@ -75,6 +76,16 @@ private[cosmos] final class Cosmos(
     post("v1" / "package" / "describe" ? packageDescribeHandler.reader) (respond _)
   }
 
+  val packageRender: Endpoint[Json] = {
+
+    def respond(reqBody: RenderRequest): Future[Output[Json]] = {
+      packageRenderHandler(reqBody)
+        .map(res => Ok(res.asJson))
+    }
+
+    post("v1" / "package" / "render" ? packageRenderHandler.reader)(respond _)
+  }
+
   val packageListVersions: Endpoint[Json] = {
     def respond(listVersions: ListVersionsRequest): Future[Output[Json]] = {
       packageListVersionsHandler(listVersions) map { resp =>
@@ -117,6 +128,7 @@ private[cosmos] final class Cosmos(
 
     (packageImport
       :+: packageInstall
+      :+: packageRender
       :+: packageDescribe
       :+: packageSearch
       :+: packageUninstall
@@ -172,6 +184,7 @@ object Cosmos extends FinchServer {
         marathonPackageRunner,
         new UninstallHandler(adminRouter),
         new PackageInstallHandler(packageCache, marathonPackageRunner),
+        new PackageRenderHandler(packageCache),
         new PackageSearchHandler(packageCache),
         new PackageImportHandler,
         new PackageDescribeHandler(packageCache),
