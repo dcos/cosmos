@@ -70,9 +70,12 @@ private[cosmos] final class UninstallHandler(adminRouter: AdminRouter, packageCa
     // In the future this will probably be revisited once Cosmos is the actual authority on services
     val f = req.appId match {
       case Some(appId) =>
-        adminRouter.getApp(appId)
-            .map { appResponse =>
-              createUninstallOperations(req.packageName, List(appResponse.app))
+        adminRouter.getAppOption(appId)
+            .map {
+              case Some(appResponse) =>
+                createUninstallOperations(req.packageName, List(appResponse.app))
+              case None =>
+                throw new UninstallNonExistentAppForPackage(req.packageName, appId)
             }
       case None =>
         adminRouter.listApps()

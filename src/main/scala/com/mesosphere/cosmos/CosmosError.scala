@@ -56,3 +56,5 @@ case class JsonSchemaMismatch(errors: Iterable[Json]) extends CosmosError {
 }
 
 case class FileUploadError(message: String) extends CosmosError { override val status = Status.NotImplemented }
+
+case class UninstallNonExistentAppForPackage(packageName: String, appId: AppId) extends CosmosError

@@ -135,5 +135,7 @@ object Encoders {
     case FileUploadError(msg) => msg
     case PackageNotInstalled(pkgName) =>
       s"Package [$pkgName] is not installed"
+    case UninstallNonExistentAppForPackage(pkgName, appId) =>
+      s"Package [$pkgName] with id [$appId] is not installed."
   }
 }
