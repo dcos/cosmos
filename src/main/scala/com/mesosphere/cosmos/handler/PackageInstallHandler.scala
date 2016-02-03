@@ -32,7 +32,7 @@ private[cosmos] final class PackageInstallHandler(packageCache: PackageCache, pa
     packageCache
       .getPackageByPackageVersion(request.packageName, request.packageVersion)
       .flatMap { packageFiles =>
-        val packageConfig = preparePackageConfig(request, packageFiles)
+        val packageConfig = preparePackageConfig(request.appId, request.options, packageFiles)
         packageRunner
           .launch(packageConfig)
           .map { runnerResponse =>
@@ -51,20 +51,21 @@ private[cosmos] object PackageInstallHandler {
   import com.mesosphere.cosmos.circe.Encoders._  //TODO: Not crazy about this being here
   private[this] val MustacheFactory = new DefaultMustacheFactory()
 
-  private def preparePackageConfig(
-    request: InstallRequest,
+  private[cosmos] def preparePackageConfig(
+    appId: Option[AppId],
+    options: Option[JsonObject],
     packageFiles: PackageFiles
   ): Json = {
-    val marathonJson = renderMustacheTemplate(packageFiles, request.options)
+    val marathonJson = renderMustacheTemplate(packageFiles, options)
     val marathonJsonWithLabels = addLabels(marathonJson, packageFiles)
 
-    request.appId match {
+    appId match {
       case Some(id) => marathonJsonWithLabels.mapObject(_ + ("id", id.asJson))
       case _ => marathonJsonWithLabels
     }
   }
 
-  private[cosmos] def renderMustacheTemplate(
+  private[this] def renderMustacheTemplate(
     packageFiles: PackageFiles,
     options: Option[JsonObject]
   ): Json = {

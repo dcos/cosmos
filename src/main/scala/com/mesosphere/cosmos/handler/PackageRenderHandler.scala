@@ -29,7 +29,9 @@ private[cosmos] final class PackageRenderHandler(packageCache: PackageCache)
     packageCache
       .getPackageByPackageVersion(request.packageName, request.packageVersion)
       .map { packageFiles =>
-        RenderResponse(renderMustacheTemplate(packageFiles, request.options))
+        RenderResponse(
+          preparePackageConfig(request.appId, request.options, packageFiles)
+        )
       }
   }
 }
