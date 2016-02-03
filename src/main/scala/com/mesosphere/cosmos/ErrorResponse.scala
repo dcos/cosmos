@@ -2,20 +2,8 @@ package com.mesosphere.cosmos
 
 import io.circe._
 
-case class ErrorResponse(errors: List[ErrorResponseEntry])
-case class ErrorResponseEntry(
+case class ErrorResponse(
   `type`: String,
   message: String,
-  data: Json = Json.obj()
+  data: Option[JsonObject] = None
 )
-
-object ErrorResponse {
-  def apply(singleError: ErrorResponseEntry): ErrorResponse = {
-    new ErrorResponse(List(singleError))
-  }
-
-  def apply(`type`: String, message: String, data: Json = Json.obj()): ErrorResponse = {
-    apply(ErrorResponseEntry(`type`, message, data))
-  }
-
-}

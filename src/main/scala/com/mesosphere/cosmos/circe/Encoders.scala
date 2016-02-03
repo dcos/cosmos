@@ -2,11 +2,11 @@ package com.mesosphere.cosmos.circe
 
 import com.mesosphere.cosmos.model._
 import com.mesosphere.cosmos.model.mesos.master._
-import com.mesosphere.cosmos.{CosmosError, ErrorResponse, ErrorResponseEntry}
+import com.mesosphere.cosmos._
 import com.netaporter.uri.Uri
-import io.circe.{Json, Encoder}
 import io.circe.generic.semiauto._
 import io.circe.syntax._
+import io.circe.{Encoder, Json, JsonObject}
 import io.finch.Error
 
 object Encoders {
@@ -53,7 +53,6 @@ object Encoders {
   implicit val encodeListVersionsRequest: Encoder[ListVersionsRequest] = deriveFor[ListVersionsRequest].encoder
   implicit val encodeListVersionsResponse: Encoder[ListVersionsResponse] = deriveFor[ListVersionsResponse].encoder
 
-  implicit val encodeErrorResponseEntry: Encoder[ErrorResponseEntry] = deriveFor[ErrorResponseEntry].encoder
   implicit val encodeErrorResponse: Encoder[ErrorResponse] = deriveFor[ErrorResponse].encoder
 
   implicit val encodeUri: Encoder[Uri] = Encoder.instance(_.toString.asJson)
@@ -64,21 +63,77 @@ object Encoders {
   implicit val encodePackageInformation: Encoder[PackageInformation] = deriveFor[PackageInformation].encoder
 
   implicit val exceptionEncoder: Encoder[Exception] =
-    Encoder.instance { e => ErrorResponse(exceptionErrorResponse(e)).asJson }
+    Encoder.instance { e => exceptionErrorResponse(e).asJson }
 
-  private[this] def exceptionErrorResponse(t: Throwable): List[ErrorResponseEntry] = t match {
+  private[this] def exceptionErrorResponse(t: Throwable): ErrorResponse = t match {
     case Error.NotPresent(item) =>
-      List(ErrorResponseEntry("not_present", s"Item '${item.kind}' not present but required"))
+      ErrorResponse("not_present", s"Item '${item.kind}' not present but required")
     case Error.NotParsed(item, typ, cause) =>
-      List(ErrorResponseEntry("not_parsed", s"Item '${item.kind}' unable to be parsed : '${cause.getMessage}'"))
+      ErrorResponse("not_parsed", s"Item '${item.kind}' unable to be parsed : '${cause.getMessage}'")
     case Error.NotValid(item, rule) =>
-      List(ErrorResponseEntry("not_valid", s"Item '${item.kind}' deemed invalid by rule: '$rule'"))
+      ErrorResponse("not_valid", s"Item '${item.kind}' deemed invalid by rule: '$rule'")
     case Error.RequestErrors(ts) =>
-      ts.flatMap(exceptionErrorResponse).toList
+      val details = ts.map(exceptionErrorResponse).toList.asJson
+      ErrorResponse(
+        "multiple_errors",
+        "Multiple errors while processing request",
+        Some(JsonObject.singleton("errors", details))
+      )
     case ce: CosmosError =>
-      List(ErrorResponseEntry(ce.getClass.getSimpleName, ce.getMessage, ce.getData))
+      ErrorResponse(ce.getClass.getSimpleName, msgForCosmosError(ce), ce.getData)
     case t: Throwable =>
-      List(ErrorResponseEntry("unhandled_exception", t.getMessage))
+      ErrorResponse("unhandled_exception", t.getMessage)
   }
 
+  private[this] def msgForCosmosError(err: CosmosError): String = err match {
+    case PackageNotFound(packageName) =>
+      s"Package [$packageName] not found"
+    case VersionNotFound(packageName, packageVersion) =>
+      s"Version [$packageVersion] of package [$packageName] not found"
+    case EmptyPackageImport() =>
+      "Package is empty"
+    case PackageFileMissing(fileName, _) =>
+      s"Package file [$fileName] not found"
+    case PackageFileNotJson(fileName, parseError) =>
+      s"Package file [$fileName] is not JSON: $parseError"
+    case PackageFileSchemaMismatch(fileName) =>
+      s"Package file [$fileName] does not match schema"
+    case PackageAlreadyInstalled() =>
+      "Package is already installed"
+    case MarathonBadResponse(marathonStatus) =>
+      s"Received response status code ${marathonStatus.code} from Marathon"
+    case MarathonBadGateway(marathonStatus) =>
+      s"Received response status code ${marathonStatus.code} from Marathon"
+    case IndexNotFound(repoUri) =>
+      s"Index file missing for repo [$repoUri]"
+    case RepositoryNotFound() =>
+      "No repository found"
+    case MarathonAppMetadataError(note) => note
+    case MarathonAppDeleteError(appId) =>
+      s"Error while deleting marathon app '$appId'"
+    case MarathonAppNotFound(appId) =>
+      s"Unable to locate service with marathon appId: '$appId'"
+    case CirceError(cerr) => cerr.getMessage
+    case MesosRequestError(note) => note
+    case JsonSchemaMismatch(_) =>
+      "Options JSON failed validation"
+    case UnsupportedContentType(supported, actual) =>
+      val acceptMsg = supported.map(_.show).mkString("[", ", ", "]")
+      actual match {
+        case Some(mt) =>
+          s"Unsupported Content-Type: ${mt.show} Accept: $acceptMsg"
+        case None =>
+          s"Unspecified Content-Type Accept: $acceptMsg"
+      }
+    case GenericHttpError(method, uri, status) =>
+      s"Unexpected down stream http error: ${method.getName} ${uri.toString} ${status.code}"
+    case AmbiguousAppId(pkgName, appIds) =>
+      s"Multiple apps named [$pkgName] are installed: [${appIds.mkString(", ")}]"
+    case MultipleFrameworkIds(pkgName, fwName, ids) =>
+      s"Package [$pkgName] with framework [$fwName] has multiple instances: [${ids.mkString(", ")}]"
+    case NelErrors(nelE) => nelE.toString
+    case FileUploadError(msg) => msg
+    case PackageNotInstalled(pkgName) =>
+      s"Package [$pkgName] is not installed"
+  }
 }

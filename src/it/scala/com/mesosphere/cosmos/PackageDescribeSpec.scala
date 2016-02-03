@@ -173,7 +173,7 @@ private final class DescribeTestAssertionDecorator(apiClient: Service[Request, R
     val response = describeRequest(apiClient, DescribeRequest(packageName, version))
     assertResult(status)(response.status)
     val Right(errorResponse) = decode[ErrorResponse](response.contentString)
-    assertResult(expectedMessage)(errorResponse.errors.head.message)
+    assertResult(expectedMessage)(errorResponse.message)
   }
 
   private[cosmos] def describeVersionsAndAssert(

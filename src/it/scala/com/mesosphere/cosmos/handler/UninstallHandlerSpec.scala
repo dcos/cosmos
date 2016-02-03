@@ -130,7 +130,7 @@ final class UninstallHandlerSpec extends IntegrationSpec {
     assertResult(Status.BadRequest)(uninstallResponse.status)
     assertResult(MediaTypes.ErrorResponse.show)(uninstallResponse.headerMap("Content-Type"))
     val Xor.Right(err) = decode[ErrorResponse](uninstallResponseBody)
-    assertResult(s"Multiple apps named [helloworld] are installed: [/$appId1, /$appId2]")(err.errors.head.message)
+    assertResult(s"Multiple apps named [helloworld] are installed: [/$appId1, /$appId2]")(err.message)
   }
 
 }

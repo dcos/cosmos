@@ -181,8 +181,7 @@ object UniversePackageCache {
         Some(new String(Files.readAllBytes(path), Charsets.Utf8))
       } catch {
         case e: Throwable =>
-          // TODO: Make sure that we pass along the cause e!
-          throw new PackageFileMissing(path.toString)
+          throw new PackageFileMissing(path.toString, e)
       }
     } else {
       None

@@ -5,9 +5,9 @@ import org.scalatest.FreeSpec
 
 import scala.language.implicitConversions
 
-class FinchExtensionsSpec extends FreeSpec {
+class MediaTypeOpsSpec extends FreeSpec {
 
-  "beTheExpectedType(MediaType) should" - {
+  "MediaTypeOps.compatible(MediaType, MediaType) should" - {
     "pass for" - {
       "type/subtype & type/subtype" in {
         shouldSucceed("type/subtype", "type/subtype")
@@ -60,7 +60,7 @@ class FinchExtensionsSpec extends FreeSpec {
     assertMatch(expected, actual, shouldPass = false)
   }
   private[this] def assertMatch(expected: Try[MediaType], actual: Try[MediaType], shouldPass: Boolean): Unit = {
-    assert(FinchExtensions.beTheExpectedType(expected.get())(actual.get()) == shouldPass)
+    assert(MediaTypeOps.compatible(expected.get(), actual.get()) == shouldPass)
   }
 
   private[this] implicit def stringToMediaType(s: String): Try[MediaType] = {
