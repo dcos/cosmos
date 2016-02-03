@@ -259,7 +259,7 @@ final class PackageInstallSpec extends FreeSpec with BeforeAndAfterAll with Cosm
     val service = new Cosmos(
       packageCache,
       marathonPackageRunner,
-      new UninstallHandler(adminRouter),
+      new UninstallHandler(adminRouter, packageCache),
       new PackageInstallHandler(packageCache, marathonPackageRunner),
       new PackageRenderHandler(packageCache),
       new PackageSearchHandler(packageCache),

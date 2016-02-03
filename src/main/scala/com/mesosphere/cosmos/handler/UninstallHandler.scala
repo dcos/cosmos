@@ -9,7 +9,7 @@ import com.twitter.util.Future
 import io.circe.Encoder
 import io.finch.DecodeRequest
 
-private[cosmos] final class UninstallHandler(adminRouter: AdminRouter)
+private[cosmos] final class UninstallHandler(adminRouter: AdminRouter, packageCache: PackageCache)
   (implicit bodyDecoder: DecodeRequest[UninstallRequest], encoder: Encoder[UninstallResponse])
   extends EndpointHandler[UninstallRequest, UninstallResponse] {
 
@@ -31,22 +31,24 @@ private[cosmos] final class UninstallHandler(adminRouter: AdminRouter)
     val fs = for {
       op <- uninstallOperations
       appId = op.appId
-    } yield destroyMarathonApp(appId) flatMap { _ =>
-      op.frameworkName match {
-        case Some(fwName) =>
-          lookupFrameworkIds(fwName).flatMap {
-            case Nil =>
-              Future.value(UninstallDetails.from(op))
-            case fwId :: Nil =>
-              adminRouter.tearDownFramework(fwId)
-                .map { _ =>
-                  UninstallDetails.from(op).copy(frameworkId = Some(fwId))
-                }
-            case all =>
-              throw MultipleFrameworkIds(op.packageName, fwName, all)
-          }
-        case None =>
-          Future.value(UninstallDetails.from(op))
+    } yield {
+      destroyMarathonApp(appId) flatMap { _ =>
+        op.frameworkName match {
+          case Some(fwName) =>
+            lookupFrameworkIds(fwName).flatMap {
+              case Nil =>
+                Future.value(UninstallDetails.from(op))
+              case fwId :: Nil =>
+                adminRouter.tearDownFramework(fwId)
+                  .map { _ =>
+                    UninstallDetails.from(op).copy(frameworkId = Some(fwId))
+                  }
+              case all =>
+                throw MultipleFrameworkIds(op.packageName, fwName, all)
+            }
+          case None =>
+            Future.value(UninstallDetails.from(op))
+        }
       }
     }
     Future.collect(fs)
@@ -90,10 +92,25 @@ private[cosmos] final class UninstallHandler(adminRouter: AdminRouter)
       }
     }
       .flatMap(destroyMarathonAppsAndTearDownFrameworkIfPresent)
-      .map { uninstallDetails =>
-        UninstallResponse(
-          uninstallDetails.toList.map { detail => UninstallResult(detail.packageName, detail.appId, detail.version) }
+      .flatMap { uninstallDetails =>
+        Future.collect(
+          uninstallDetails.map { detail =>
+            packageCache.getPackageByPackageVersion(detail.packageName, None).map { packageFiles =>
+              detail -> packageFiles
+            }
+          }
         )
+      }
+      .map { detailsAndPackageFiles =>
+        val results = detailsAndPackageFiles.map { case (detail, packageFiles) =>
+          UninstallResult(
+            detail.packageName,
+            detail.appId,
+            detail.version,
+            packageFiles.packageJson.postUninstallNotes
+          )
+        }
+        UninstallResponse(results.toList)
       }
   }
 
@@ -103,12 +120,14 @@ private[cosmos] final class UninstallHandler(adminRouter: AdminRouter)
       labels = app.labels
       packageName <- labels.get("DCOS_PACKAGE_NAME")
       if packageName == requestedPackageName
-    } yield UninstallOperation(
-      appId = app.id,
-      packageName = packageName,
-      version = labels.get("DCOS_PACKAGE_VERSION"),
-      frameworkName = labels.get("DCOS_PACKAGE_FRAMEWORK_NAME")
-    )
+    } yield {
+      UninstallOperation(
+        appId = app.id,
+        packageName = packageName,
+        version = labels.get("DCOS_PACKAGE_VERSION"),
+        frameworkName = labels.get("DCOS_PACKAGE_FRAMEWORK_NAME")
+      )
+    }
 
     if (uninstallOperations.isEmpty) {
       throw new PackageNotInstalled(requestedPackageName)
