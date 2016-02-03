@@ -83,3 +83,5 @@ case class ServiceUnavailable(
 }
 
 case class IncompleteUninstall(packageName: String, causedBy: Throwable) extends CosmosError(causedBy)
+
+final case class RepoNameOrUriMissing() extends CosmosError

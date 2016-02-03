@@ -4,10 +4,10 @@ import cats.data.Xor
 import cats.data.Xor.Right
 import com.mesosphere.cosmos.circe.Decoders._
 import com.mesosphere.cosmos.circe.Encoders._
-import com.mesosphere.cosmos.handler._
 import com.mesosphere.cosmos.http.MediaTypes
 import com.mesosphere.cosmos.model._
 import com.mesosphere.cosmos.model.thirdparty.marathon.{MarathonApp, MarathonAppContainer, MarathonAppContainerDocker}
+import com.mesosphere.cosmos.repository.PackageSourcesStorage
 import com.mesosphere.universe._
 import com.netaporter.uri.Uri
 import com.twitter.finagle.http._
@@ -18,11 +18,9 @@ import io.circe.Json
 import io.circe.parse._
 import io.circe.syntax._
 import org.scalatest.FreeSpec
-import io.finch.circe._
 
 final class PackageDescribeSpec extends FreeSpec with CosmosSpec {
 
-  import IntegrationHelpers._
   import PackageDescribeSpec._
 
   "The package describe endpoint" - {
@@ -78,20 +76,8 @@ final class PackageDescribeSpec extends FreeSpec with CosmosSpec {
     f: DescribeTestAssertionDecorator => Unit
   ): Unit = {
     val marathonPackageRunner = new MarathonPackageRunner(adminRouter)
-
-    val service = new Cosmos(
-      packageCache,
-      marathonPackageRunner,
-      new UninstallHandler(adminRouter, packageCache),
-      new PackageInstallHandler(packageCache, marathonPackageRunner),
-      new PackageRenderHandler(packageCache),
-      new PackageSearchHandler(packageCache),
-      new PackageImportHandler,
-      new PackageDescribeHandler(packageCache),
-      new ListVersionsHandler(packageCache),
-      new ListHandler(adminRouter, packageCache),
-      CapabilitiesHandler()
-    ).service
+    val sourcesStorage = PackageSourcesStorage.constUniverse(universeUri)
+    val service = Cosmos(adminRouter, packageCache, marathonPackageRunner, sourcesStorage).service
     val server = Http.serve(s":$servicePort", service)
     val client = Http.newService(s"127.0.0.1:$servicePort")
 
@@ -227,5 +213,3 @@ private final class DescribeTestAssertionDecorator(apiClient: Service[Request, R
     Await.result(apiClient(request))
   }
 }
-
-

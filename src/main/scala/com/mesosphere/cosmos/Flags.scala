@@ -21,6 +21,10 @@ object mesosMasterUri extends GlobalFlag[Uri](
   "The URI where the leading Mesos master can be found"
 )
 
+object zookeeperConnectString extends GlobalFlag[String](
+  "The ZooKeeper connection string"
+)
+
 // TODO: Make this application state instead of config parameter
 object universeBundleUri extends GlobalFlag[Uri](
   Uri.parse("https://github.com/mesosphere/universe/archive/version-2.x.zip"),

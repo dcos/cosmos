@@ -6,10 +6,10 @@ import cats.data.Xor
 import cats.data.Xor.Right
 import com.mesosphere.cosmos.circe.Decoders._
 import com.mesosphere.cosmos.circe.Encoders._
-import com.mesosphere.cosmos.handler._
 import com.mesosphere.cosmos.http.MediaTypes
 import com.mesosphere.cosmos.model._
 import com.mesosphere.cosmos.model.thirdparty.marathon.{MarathonApp, MarathonAppContainer, MarathonAppContainerDocker}
+import com.mesosphere.cosmos.repository.PackageSourcesStorage
 import com.mesosphere.universe.{PackageDetails, PackageDetailsVersion, PackageFiles, PackagingVersion}
 import com.netaporter.uri.Uri
 import com.twitter.finagle.http._
@@ -19,12 +19,10 @@ import com.twitter.util.{Await, Future}
 import io.circe.parse._
 import io.circe.syntax._
 import io.circe.{Cursor, Json, JsonObject}
-import io.finch.circe._
 import org.scalatest.{BeforeAndAfterAll, FreeSpec}
 
 final class PackageInstallSpec extends FreeSpec with BeforeAndAfterAll with CosmosSpec {
 
-  import IntegrationHelpers._
   import PackageInstallSpec._
 
   "The package install endpoint" - {
@@ -261,20 +259,8 @@ final class PackageInstallSpec extends FreeSpec with BeforeAndAfterAll with Cosm
     } getOrElse adminRouter
     // these two imports provide the implicit DecodeRequest instances needed to instantiate Cosmos
     val marathonPackageRunner = new MarathonPackageRunner(ar)
-    //TODO: Get rid of this duplication
-    val service = new Cosmos(
-      packageCache,
-      marathonPackageRunner,
-      new UninstallHandler(ar, packageCache),
-      new PackageInstallHandler(packageCache, marathonPackageRunner),
-      new PackageRenderHandler(packageCache),
-      new PackageSearchHandler(packageCache),
-      new PackageImportHandler,
-      new PackageDescribeHandler(packageCache),
-      new ListVersionsHandler(packageCache),
-      new ListHandler(ar, packageCache),
-      CapabilitiesHandler()
-    ).service
+    val sourcesStorage = PackageSourcesStorage.constUniverse(universeUri)
+    val service = Cosmos(ar, packageCache, marathonPackageRunner, sourcesStorage).service
     val server = Http.serve(s":$servicePort", service)
     val client = Http.newService(s"127.0.0.1:$servicePort")
 

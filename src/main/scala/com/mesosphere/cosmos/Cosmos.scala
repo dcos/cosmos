@@ -1,25 +1,27 @@
 package com.mesosphere.cosmos
 
-import com.mesosphere.cosmos.handler._
-import com.mesosphere.cosmos.http.MediaTypes
-import com.mesosphere.cosmos.model._
 import com.netaporter.uri.Uri
-import com.netaporter.uri.dsl._
 import com.twitter.finagle.Service
 import com.twitter.finagle.http.exp.Multipart.FileUpload
 import com.twitter.finagle.http.{Request, Response, Status}
 import com.twitter.finagle.stats.{NullStatsReceiver, StatsReceiver}
-import io.circe.syntax.EncoderOps
-import io.github.benwhitehead.finch.FinchServer
-
+import com.twitter.util.Await
 import com.twitter.util.Future
 import com.twitter.util.Try
 import io.circe.Json
-import com.mesosphere.cosmos.circe.Decoders._
-import com.mesosphere.cosmos.circe.Encoders._
-
+import io.circe.syntax.EncoderOps
 import io.finch._
 import io.finch.circe._
+import io.github.benwhitehead.finch.FinchServer
+import org.apache.curator.framework.CuratorFrameworkFactory
+import org.apache.curator.retry.ExponentialBackoffRetry
+
+import com.mesosphere.cosmos.circe.Decoders._
+import com.mesosphere.cosmos.circe.Encoders._
+import com.mesosphere.cosmos.handler._
+import com.mesosphere.cosmos.http.MediaTypes
+import com.mesosphere.cosmos.model._
+import com.mesosphere.cosmos.repository.{PackageSourcesStorage, ZooKeeperStorage}
 
 private[cosmos] final class Cosmos(
   packageCache: PackageCache,
@@ -32,6 +34,9 @@ private[cosmos] final class Cosmos(
   packageDescribeHandler: EndpointHandler[DescribeRequest, DescribeResponse],
   packageListVersionsHandler: EndpointHandler[ListVersionsRequest, ListVersionsResponse],
   listHandler: EndpointHandler[ListRequest, ListResponse],
+  listSourcesHandler: EndpointHandler[PackageRepositoryListRequest, PackageRepositoryListResponse],
+  addSourceHandler: EndpointHandler[PackageRepositoryAddRequest, PackageRepositoryAddResponse],
+  deleteSourceHandler: EndpointHandler[PackageRepositoryDeleteRequest, PackageRepositoryDeleteResponse],
   capabilitiesHandler: CapabilitiesHandler
 )(implicit statsReceiver: StatsReceiver = NullStatsReceiver) {
   lazy val logger = org.slf4j.LoggerFactory.getLogger(classOf[Cosmos])
@@ -132,6 +137,36 @@ private[cosmos] final class Cosmos(
     get("capabilities" ? capabilitiesHandler.reader)(respond _)
   }
 
+  val packageListSources: Endpoint[Json] = {
+    def respond(request: PackageRepositoryListRequest): Future[Output[Json]] = {
+      listSourcesHandler(request).map { response =>
+        Ok(response.asJson)
+      }
+    }
+
+    post("package" / "repository"/ "list" ? body.as[PackageRepositoryListRequest])(respond _)
+  }
+
+  val packageAddSource: Endpoint[Json] = {
+    def respond(request: PackageRepositoryAddRequest): Future[Output[Json]] = {
+      addSourceHandler(request).map { response =>
+        Ok(response.asJson)
+      }
+    }
+
+    post("package" / "repository" / "add" ? body.as[PackageRepositoryAddRequest])(respond _)
+  }
+
+  val packageDeleteSource: Endpoint[Json] = {
+    def respond(request: PackageRepositoryDeleteRequest): Future[Output[Json]] = {
+      deleteSourceHandler(request).map { response =>
+        Ok(response.asJson)
+      }
+    }
+
+    post("package" / "repository" / "delete" ? body.as[PackageRepositoryDeleteRequest])(respond _)
+  }
+
   val service: Service[Request, Response] = {
     val stats = {
       baseScope.name match {
@@ -148,6 +183,9 @@ private[cosmos] final class Cosmos(
       :+: packageUninstall
       :+: packageListVersions
       :+: packageList
+      :+: packageListSources
+      :+: packageAddSource
+      :+: packageDeleteSource
       :+: capabilities
     )
       .handle {
@@ -183,6 +221,8 @@ private[cosmos] final class Cosmos(
 
 object Cosmos extends FinchServer {
   def service = {
+    import com.netaporter.uri.dsl._
+
     val ar = Try(dcosUri())
       .map { dh =>
         val dcosHost: String = Uris.stripTrailingSlash(dh)
@@ -217,23 +257,55 @@ object Cosmos extends FinchServer {
       val dd = dataDir()
       logger.info("Using {} for data directory", dd)
       val packageCache = UniversePackageCache(universeBundle, dd)
+
+      val zkConnectString = zookeeperConnectString()
+      logger.info("Using {} for the zookeeper connection", zkConnectString)
+
       val marathonPackageRunner = new MarathonPackageRunner(adminRouter)
 
-      val cosmos = new Cosmos(
-        packageCache,
-        marathonPackageRunner,
-        new UninstallHandler(adminRouter, packageCache),
-        new PackageInstallHandler(packageCache, marathonPackageRunner),
-        new PackageRenderHandler(packageCache),
-        new PackageSearchHandler(packageCache),
-        new PackageImportHandler,
-        new PackageDescribeHandler(packageCache),
-        new ListVersionsHandler(packageCache),
-        new ListHandler(adminRouter, packageCache),
-        CapabilitiesHandler()
-      )
+      val zkRetryPolicy = new ExponentialBackoffRetry(1000, 3)
+      val zkClient = CuratorFrameworkFactory.builder()
+        .namespace("cosmos")
+        .connectString(zkConnectString)
+        .retryPolicy(zkRetryPolicy)
+        .build
+
+      // Start the client and close it on exit
+      zkClient.start()
+      onExit {
+        zkClient.close()
+      }
+
+      val sourcesStorage = new ZooKeeperStorage(zkClient, universeBundle)
+
+      val cosmos = Cosmos(adminRouter, packageCache, marathonPackageRunner, sourcesStorage)
       cosmos.service
     }
     boot.get
   }
+
+  private[cosmos] def apply(
+    adminRouter: AdminRouter,
+    packageCache: PackageCache,
+    packageRunner: PackageRunner,
+    sourcesStorage: PackageSourcesStorage
+  ): Cosmos = {
+    new Cosmos(
+      packageCache,
+      packageRunner,
+      new UninstallHandler(adminRouter, packageCache),
+      new PackageInstallHandler(packageCache, packageRunner),
+      new PackageRenderHandler(packageCache),
+      new PackageSearchHandler(packageCache),
+      new PackageImportHandler,
+      new PackageDescribeHandler(packageCache),
+      new ListVersionsHandler(packageCache),
+      new ListHandler(adminRouter, packageCache),
+      new PackageRepositoryListHandler(sourcesStorage),
+      new PackageRepositoryAddHandler(sourcesStorage),
+      new PackageRepositoryDeleteHandler(sourcesStorage),
+      CapabilitiesHandler()
+    )
+  }
+
 }

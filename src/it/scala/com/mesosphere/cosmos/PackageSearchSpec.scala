@@ -3,22 +3,21 @@ package com.mesosphere.cosmos
 import cats.data.Xor.Right
 import com.mesosphere.cosmos.circe.Decoders._
 import com.mesosphere.cosmos.circe.Encoders._
-import com.mesosphere.cosmos.handler._
 import com.mesosphere.cosmos.http.MediaTypes
 import com.mesosphere.cosmos.model._
+import com.mesosphere.cosmos.repository.PackageSourcesStorage
 import com.mesosphere.universe.{PackageDetailsVersion, ReleaseVersion, UniverseIndexEntry}
 import com.netaporter.uri.Uri
 import com.twitter.finagle.http._
 import com.twitter.finagle.{Http, Service}
 import com.twitter.io.Buf
-import com.twitter.util.Await
+import com.twitter.util._
 import io.circe.parse._
 import io.circe.syntax._
 import org.scalatest.FreeSpec
 
 final class PackageSearchSpec extends FreeSpec with CosmosSpec {
 
-  import IntegrationHelpers._
   import PackageSearchSpec._
 
   "The package search endpoint" - {
@@ -61,23 +60,9 @@ final class PackageSearchSpec extends FreeSpec with CosmosSpec {
   )(
     f: SearchTestAssertionDecorator => Unit
   ): Unit = {
-    // these two imports provide the implicit DecodeRequest instances needed to instantiate Cosmos
-    import io.finch.circe._
     val marathonPackageRunner = new MarathonPackageRunner(adminRouter)
-    //TODO: Get rid of this duplication
-    val service = new Cosmos(
-      packageCache,
-      marathonPackageRunner,
-      new UninstallHandler(adminRouter, packageCache),
-      new PackageInstallHandler(packageCache, marathonPackageRunner),
-      new PackageRenderHandler(packageCache),
-      new PackageSearchHandler(packageCache),
-      new PackageImportHandler,
-      new PackageDescribeHandler(packageCache),
-      new ListVersionsHandler(packageCache),
-      new ListHandler(adminRouter, packageCache),
-      CapabilitiesHandler()
-    ).service
+    val sourcesStorage = PackageSourcesStorage.constUniverse(universeUri)
+    val service = Cosmos(adminRouter, packageCache, marathonPackageRunner, sourcesStorage).service
     val server = Http.serve(s":$servicePort", service)
     val client = Http.newService(s"127.0.0.1:$servicePort")
 
