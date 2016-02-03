@@ -6,7 +6,7 @@ import java.util.UUID
 import cats.data.Xor
 import com.mesosphere.cosmos.circe.Decoders._
 import com.mesosphere.cosmos.http.MediaTypes
-import com.mesosphere.cosmos.model.AppId
+import com.mesosphere.cosmos.model.{UninstallResponse, AppId}
 import com.mesosphere.cosmos.{Cosmos, ErrorResponse, IntegrationSpec}
 import com.netaporter.uri.dsl._
 import com.twitter.finagle.Service
@@ -65,6 +65,8 @@ final class UninstallHandlerSpec extends IntegrationSpec {
     logger.info("uninstallResponseBody = {}", uninstallResponseBody)
     assertResult(Status.Ok)(uninstallResponse.status)
     assertResult(MediaTypes.UninstallResponse.show)(uninstallResponse.headerMap("Content-Type"))
+    val Xor.Right(body) = decode[UninstallResponse](uninstallResponseBody)
+    assert(body.results.flatMap(_.postUninstallNotes).nonEmpty)
   }
 
   it should "be able to uninstall multiple packages when 'all' is specified" in { service =>

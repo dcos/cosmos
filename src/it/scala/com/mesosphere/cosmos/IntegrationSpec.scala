@@ -25,7 +25,7 @@ abstract class IntegrationSpec
     new Cosmos(
       PackageCache.empty,
       marathonPackageRunner,
-      new UninstallHandler(adminRouter),
+      new UninstallHandler(adminRouter, PackageCache.empty),
       new PackageInstallHandler(PackageCache.empty, marathonPackageRunner),
       new PackageRenderHandler(PackageCache.empty),
       new PackageSearchHandler(PackageCache.empty),

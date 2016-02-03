@@ -25,5 +25,6 @@ case class UninstallResponse(results: List[UninstallResult])
 case class UninstallResult(
   packageName: String,
   appId: AppId,
-  version: Option[String]
+  version: Option[String],
+  postUninstallNotes: Option[String]
 )
