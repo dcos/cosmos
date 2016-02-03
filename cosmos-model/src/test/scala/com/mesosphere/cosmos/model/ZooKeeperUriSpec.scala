@@ -1,9 +1,10 @@
 package com.mesosphere.cosmos.model
 
-import com.mesosphere.cosmos.UnitSpec
 import com.twitter.util.Return
+import org.scalatest.FreeSpec
+import org.scalatest.prop.TableDrivenPropertyChecks
 
-final class ZooKeeperUriSpec extends UnitSpec {
+final class ZooKeeperUriSpec extends FreeSpec with TableDrivenPropertyChecks {
 
   import ZooKeeperUriSpec._
 
@@ -36,7 +37,7 @@ final class ZooKeeperUriSpec extends UnitSpec {
 
 }
 
-object ZooKeeperUriSpec extends UnitSpec {
+object ZooKeeperUriSpec extends TableDrivenPropertyChecks {
 
   val InvalidUris = Table(
     "string uri",

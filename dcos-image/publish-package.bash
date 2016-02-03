@@ -1,13 +1,13 @@
 #!/bin/bash
 set -o errexit -o nounset -o pipefail
 
-DCOS_IMAGE_DIR=$(dirname $0)
-PROJECT_DIR="${DCOS_IMAGE_DIR}/.."
+PROJECT_DIR=$(pwd -P)
+DCOS_IMAGE_DIR="${PROJECT_DIR}/dcos-image"
 TARGET_DIR="${DCOS_IMAGE_DIR}/target"
 
 VERSION=${VERSION:-"dev"}
 CLEAN_VERSION=${VERSION//\//_}
-ONE_JAR="cosmos-${CLEAN_VERSION}-one-jar.jar"
+ONE_JAR="cosmos-server-${CLEAN_VERSION}-one-jar.jar"
 SHA1_FILE="${ONE_JAR}.sha1"
 
 S3_DEPLOY_BUCKET="s3://downloads.mesosphere.io/dcos/cosmos/${CLEAN_VERSION}"
@@ -22,7 +22,7 @@ function clean {(
 function copy {(
 
   mkdir -p ${TARGET_DIR}
-  cp ${PROJECT_DIR}/target/scala-2.11/cosmos_2.11-*-one-jar.jar ${TARGET_DIR}/${ONE_JAR}
+  cp ${PROJECT_DIR}/cosmos-server/target/scala-2.11/cosmos-server_2.11-*-one-jar.jar ${TARGET_DIR}/${ONE_JAR}
   cp ${DCOS_IMAGE_DIR}/build ${TARGET_DIR}/build
 
 )}

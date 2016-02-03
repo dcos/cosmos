@@ -1,6 +1,9 @@
 package com.mesosphere.cosmos.circe
 
+import cats.data.Xor
+import com.mesosphere.cosmos.model.AppId
 import com.mesosphere.universe.Images
+import io.circe.parse._
 import io.circe.syntax._
 import io.circe.{Decoder, Json}
 import org.scalatest.FreeSpec
@@ -32,14 +35,25 @@ class EncodersDecodersSpec extends FreeSpec {
       assertResult(json)(images.asJson)
     }
     "decode" in {
-      assertResult(images)(decode[Images](json))
+      assertResult(images)(decodeJson[Images](json))
     }
     "round-trip" in {
-      assertResult(images)(decode[Images](images.asJson))
+      assertResult(images)(decodeJson[Images](images.asJson))
     }
   }
 
-  private[this] def decode[A: Decoder](json: Json)(implicit decoder: Decoder[A]): A = {
+  "AppId" - {
+    val relative: String = "cassandra/dcos"
+    val absolute: String = s"/$relative"
+    "encode" in {
+      assertResult(Json.string(absolute))(AppId(relative).asJson)
+    }
+    "decode" in {
+      assertResult(Xor.Right(AppId(absolute)))(decode[AppId](relative.asJson.noSpaces))
+    }
+  }
+
+  private[this] def decodeJson[A: Decoder](json: Json)(implicit decoder: Decoder[A]): A = {
     decoder.decodeJson(json).getOrElse(throw new AssertionError("Unable to decode"))
   }
 
