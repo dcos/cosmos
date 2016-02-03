@@ -136,6 +136,6 @@ object Encoders {
     case PackageNotInstalled(pkgName) =>
       s"Package [$pkgName] is not installed"
     case UninstallNonExistentAppForPackage(pkgName, appId) =>
-      s"Package [$pkgName] with id [$appId] is not installed."
+      s"Package [$pkgName] with id [${appId.toString.stripPrefix("/")}] is not installed"
   }
 }
