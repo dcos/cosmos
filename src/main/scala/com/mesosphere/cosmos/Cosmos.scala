@@ -49,7 +49,7 @@ private[cosmos] final class Cosmos(
 
     def respond(reqBody: InstallRequest): Future[Output[Json]] = {
       packageInstallHandler(reqBody)
-        .map(res => Ok(res.asJson))
+        .map(res => Ok(res.asJson).withContentType(Some(packageInstallHandler.produces.show)))
     }
 
     post("v1" / "package" / "install" ? packageInstallHandler.reader)(respond _)
@@ -69,7 +69,7 @@ private[cosmos] final class Cosmos(
 
     def respond(describe: DescribeRequest): Future[Output[Json]] = {
       packageDescribeHandler(describe) map { resp =>
-        Ok(resp.asJson)
+        Ok(resp.asJson).withContentType(Some(packageDescribeHandler.produces.show))
       }
     }
 
@@ -80,7 +80,7 @@ private[cosmos] final class Cosmos(
 
     def respond(reqBody: RenderRequest): Future[Output[Json]] = {
       packageRenderHandler(reqBody)
-        .map(res => Ok(res.asJson))
+        .map(res => Ok(res.asJson).withContentType(Some(packageRenderHandler.produces.show)))
     }
 
     post("v1" / "package" / "render" ? packageRenderHandler.reader)(respond _)
@@ -89,7 +89,7 @@ private[cosmos] final class Cosmos(
   val packageListVersions: Endpoint[Json] = {
     def respond(listVersions: ListVersionsRequest): Future[Output[Json]] = {
       packageListVersionsHandler(listVersions) map { resp =>
-        Ok(resp.asJson)
+        Ok(resp.asJson).withContentType(Some(packageListVersionsHandler.produces.show))
       }
     }
 
@@ -101,7 +101,7 @@ private[cosmos] final class Cosmos(
     def respond(reqBody: SearchRequest): Future[Output[Json]] = {
       packageSearchHandler(reqBody)
         .map { searchResults =>
-          Ok(searchResults.asJson)
+          Ok(searchResults.asJson).withContentType(Some(packageSearchHandler.produces.show))
         }
     }
 
@@ -111,11 +111,11 @@ private[cosmos] final class Cosmos(
   val packageList: Endpoint[Json] = {
     def respond(request: ListRequest): Future[Output[Json]] = {
       listHandler(request).map { resp =>
-        Ok(resp.asJson)
+        Ok(resp.asJson).withContentType(Some(listHandler.produces.show))
       }
     }
 
-    post("v1" / "package" / "list" ? body.as[ListRequest])(respond _)
+    post("v1" / "package" / "list" ? listHandler.reader)(respond _)
   }
 
   val service: Service[Request, Response] = {
