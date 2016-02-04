@@ -56,8 +56,9 @@ private[cosmos] object PackageInstallHandler {
     options: Option[JsonObject],
     packageFiles: PackageFiles
   ): Json = {
-    val marathonJson = renderMustacheTemplate(packageFiles, options)
-    val marathonJsonWithLabels = addLabels(marathonJson, packageFiles)
+    val mergedOptions = mergeOptions(packageFiles, options)
+    val marathonJson = renderMustacheTemplate(packageFiles, mergedOptions)
+    val marathonJsonWithLabels = addLabels(marathonJson, packageFiles, mergedOptions)
 
     appId match {
       case Some(id) => marathonJsonWithLabels.mapObject(_ + ("id", id.asJson))
@@ -65,13 +66,10 @@ private[cosmos] object PackageInstallHandler {
     }
   }
 
-  private[this] def renderMustacheTemplate(
+  private[this] def mergeOptions(
     packageFiles: PackageFiles,
     options: Option[JsonObject]
   ): Json = {
-    val strReader = new StringReader(packageFiles.marathonJsonMustache)
-    val mustache = MustacheFactory.compile(strReader, "marathon.json.mustache")
-
     val defaults = extractDefaultsFromConfig(packageFiles.configJson)
     val merged: JsonObject = (packageFiles.configJson, options) match {
       case (None, None) => JsonObject.empty
@@ -90,7 +88,16 @@ private[cosmos] object PackageInstallHandler {
 
     val resource = extractAssetsAsJson(packageFiles.resourceJson)
     val complete = merged + ("resource", Json.fromJsonObject(resource))
-    val params = jsonToJava(Json.fromJsonObject(complete))
+    Json.fromJsonObject(complete)
+  }
+
+  private[this] def renderMustacheTemplate(
+    packageFiles: PackageFiles,
+    mergedOptions: Json
+  ): Json = {
+    val strReader = new StringReader(packageFiles.marathonJsonMustache)
+    val mustache = MustacheFactory.compile(strReader, "marathon.json.mustache")
+    val params = jsonToJava(mergedOptions)
 
     val output = new StringWriter()
     mustache.execute(output, params)
@@ -154,7 +161,8 @@ private[cosmos] object PackageInstallHandler {
 
   private[this] def addLabels(
     marathonJson: Json,
-    packageFiles: PackageFiles
+    packageFiles: PackageFiles,
+    mergedOptions: Json
   ): Json = {
 
     val packageMetadataJson = getPackageMetadataJson(packageFiles)
@@ -168,11 +176,9 @@ private[cosmos] object PackageInstallHandler {
 
     val isFramework = packageFiles.packageJson.framework.getOrElse(true)
 
-    val frameworkName = packageFiles.configJson.flatMap { json =>
-      Json.fromJsonObject(json).cursor
+    val frameworkName = mergedOptions.cursor
         .downField(packageFiles.packageJson.name)
         .flatMap(_.get[String]("framework-name").toOption)
-    }
 
     val requiredLabels: Map[String, String] = Map(
       (MarathonApp.metadataLabel, packageMetadata),
@@ -185,7 +191,7 @@ private[cosmos] object PackageInstallHandler {
     )
 
     val optionalLabels: Map[String, String] = Seq(
-      frameworkName.map("PACKAGE_FRAMEWORK_NAME_KEY" -> _),
+      frameworkName.map("DCOS_PACKAGE_FRAMEWORK_NAME" -> _),
       commandMetadata.map(MarathonApp.commandLabel -> _)
     ).flatten.toMap
 
