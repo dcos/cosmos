@@ -14,7 +14,6 @@ sealed abstract class CosmosError(causedBy: Throwable = null /*java compatibilit
   def status: Status = Status.BadRequest
 
   def getData: Option[JsonObject] = None
-
 }
 
 case class PackageNotFound(packageName: String) extends CosmosError
@@ -33,7 +32,7 @@ case class MarathonBadGateway(marathonStatus: Status) extends CosmosError {
   override val status = Status.BadGateway
 }
 case class IndexNotFound(repoUri: Uri) extends CosmosError
-case class RepositoryNotFound() extends CosmosError
+case class RepositoryNotFound(repoUri: Uri) extends CosmosError
 
 case class MarathonAppMetadataError(note: String) extends CosmosError
 case class MarathonAppDeleteError(appId: AppId) extends CosmosError

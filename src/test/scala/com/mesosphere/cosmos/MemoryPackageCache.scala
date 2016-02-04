@@ -1,7 +1,9 @@
 package com.mesosphere.cosmos
 
-import com.mesosphere.cosmos.model._
+import com.netaporter.uri.dsl.stringToUri
 import com.twitter.util.Future
+
+import com.mesosphere.cosmos.model._
 
 /** A package cache that stores all package information in memory. Useful for testing.
   *
@@ -34,7 +36,7 @@ final case class MemoryPackageCache(packages: Map[String, PackageFiles]) extends
   }
 
   def getRepoIndex: Future[UniverseIndex] = {
-    Future.exception(RepositoryNotFound())
+    Future.exception(RepositoryNotFound("http://example.com/universe.zip"))
   }
 
   def getPackageIndex(

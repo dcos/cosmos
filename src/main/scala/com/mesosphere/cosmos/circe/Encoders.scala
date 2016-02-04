@@ -106,8 +106,8 @@ object Encoders {
       s"Received response status code ${marathonStatus.code} from Marathon"
     case IndexNotFound(repoUri) =>
       s"Index file missing for repo [$repoUri]"
-    case RepositoryNotFound() =>
-      "No repository found"
+    case RepositoryNotFound(repoUri) =>
+      s"No repository found [$repoUri]"
     case MarathonAppMetadataError(note) => note
     case MarathonAppDeleteError(appId) =>
       s"Error while deleting marathon app '$appId'"
