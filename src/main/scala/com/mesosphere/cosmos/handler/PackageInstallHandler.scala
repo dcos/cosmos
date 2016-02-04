@@ -8,8 +8,9 @@ import com.github.mustachejava.DefaultMustacheFactory
 import com.mesosphere.cosmos.http.MediaTypes
 import com.mesosphere.cosmos.jsonschema.JsonSchemaValidation
 import com.mesosphere.cosmos.model._
-import com.mesosphere.cosmos.model.mesos.master.MarathonApp
+import com.mesosphere.cosmos.model.thirdparty.marathon.MarathonApp
 import com.mesosphere.cosmos.{JsonSchemaMismatch, PackageCache, PackageFileNotJson, PackageRunner}
+import com.mesosphere.universe.{PackageFiles, Resource}
 import com.twitter.io.Charsets
 import com.twitter.util.Future
 import io.circe.parse.parse
@@ -182,9 +183,9 @@ private[cosmos] object PackageInstallHandler {
 
     val requiredLabels: Map[String, String] = Map(
       (MarathonApp.metadataLabel, packageMetadata),
-      (MarathonApp.registryVersionLabel, packageFiles.packageJson.packagingVersion),
+      (MarathonApp.registryVersionLabel, packageFiles.packageJson.packagingVersion.toString),
       (MarathonApp.nameLabel, packageFiles.packageJson.name),
-      (MarathonApp.versionLabel, packageFiles.packageJson.version),
+      (MarathonApp.versionLabel, packageFiles.packageJson.version.toString),
       (MarathonApp.sourceLabel, packageFiles.sourceUri.toString),
       (MarathonApp.releaseLabel, packageFiles.revision),
       (MarathonApp.isFrameworkLabel, isFramework.toString)

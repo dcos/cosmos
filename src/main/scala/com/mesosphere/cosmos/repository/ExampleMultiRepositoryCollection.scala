@@ -1,7 +1,7 @@
 package com.mesosphere.cosmos.repository
 
-import com.mesosphere.cosmos.model.{PackageFiles, PackageInfo, UniverseIndexEntry}
 import com.mesosphere.cosmos.{PackageCache, PackageNotFound}
+import com.mesosphere.universe.{ReleaseVersion, PackageDetailsVersion, PackageFiles, UniverseIndexEntry}
 import com.netaporter.uri.Uri
 import com.twitter.util.Future
 
@@ -20,19 +20,19 @@ private final class ExampleMultiRepositoryCollection
   /** Higher priority repositories are at smaller indices. */
   private[this] var repositoryOrdering: List[PackageCollection with Repository] = Nil
 
-  def getPackageByPackageVersion(packageName: String, version: Option[String]): Future[PackageFiles] = {
+  def getPackageByPackageVersion(packageName: String, packageVersion: Option[PackageDetailsVersion]): Future[PackageFiles] = {
     findFirst(repositoryOrdering, Future.exception(PackageNotFound(packageName))) { subCollection =>
-      subCollection.getPackageByPackageVersion(packageName, version)
+      subCollection.getPackageByPackageVersion(packageName, packageVersion)
     }
   }
 
-  def getPackageByReleaseVersion(packageName: String, releaseVersion: String): Future[PackageFiles] = {
+  def getPackageByReleaseVersion(packageName: String, releaseVersion: ReleaseVersion): Future[PackageFiles] = {
     findFirst(repositoryOrdering, Future.exception(PackageNotFound(packageName))) { subCollection =>
       subCollection.getPackageByReleaseVersion(packageName, releaseVersion)
     }
   }
 
-  def getPackageInfo(packageName: String): Future[PackageInfo] = {
+  def getPackageInfo(packageName: String): Future[UniverseIndexEntry] = {
     findFirst(repositoryOrdering, Future.exception(PackageNotFound(packageName))) { subCollection =>
       subCollection.getPackageInfo(packageName)
     }

@@ -1,17 +1,18 @@
 package com.mesosphere.cosmos
 
 import cats.data.Xor.Right
+import com.mesosphere.cosmos.circe.Decoders._
+import com.mesosphere.cosmos.circe.Encoders._
 import com.mesosphere.cosmos.handler._
 import com.mesosphere.cosmos.http.MediaTypes
 import com.mesosphere.cosmos.model._
+import com.mesosphere.universe.{PackageDetailsVersion, ReleaseVersion, UniverseIndexEntry}
 import com.netaporter.uri.Uri
 import com.twitter.finagle.http._
-import com.twitter.io.Buf
 import com.twitter.finagle.{Http, Service}
-import com.twitter.util._
+import com.twitter.io.Buf
+import com.twitter.util.Await
 import io.circe.parse._
-import com.mesosphere.cosmos.circe.Decoders._
-import com.mesosphere.cosmos.circe.Encoders._
 import io.circe.syntax._
 import org.scalatest.FreeSpec
 
@@ -93,8 +94,8 @@ private object PackageSearchSpec extends CosmosSpec {
 
   val ArangodbPackageIndex = UniverseIndexEntry(
     name = "arangodb",
-    currentVersion = "0.2.1",
-    versions = Map("0.2.1" -> "0"),
+    currentVersion = PackageDetailsVersion("0.2.1"),
+    versions = Map(PackageDetailsVersion("0.2.1") -> ReleaseVersion("0")),
     description = "A distributed free and open-source database with a flexible data model for documents, graphs, and key-values. " +
                   "Build high performance applications using a convenient SQL-like query language or JavaScript extensions.",
     framework = true,
@@ -103,8 +104,8 @@ private object PackageSearchSpec extends CosmosSpec {
 
   val CassandraPackageIndex = UniverseIndexEntry(
     name = "cassandra",
-    currentVersion = "0.2.0-1",
-    versions = Map("0.2.0-1" -> "0"),
+    currentVersion = PackageDetailsVersion("0.2.0-1"),
+    versions = Map(PackageDetailsVersion("0.2.0-1") -> ReleaseVersion("0")),
     description = "Apache Cassandra running on Apache Mesos",
     framework = true,
     tags = List("data", "database", "nosql")
@@ -112,8 +113,8 @@ private object PackageSearchSpec extends CosmosSpec {
 
   val MemsqlPackageIndex = UniverseIndexEntry(
     name = "memsql",
-    currentVersion = "0.0.1",
-    versions = Map("0.0.1" -> "0"),
+    currentVersion = PackageDetailsVersion("0.0.1"),
+    versions = Map(PackageDetailsVersion("0.0.1") -> ReleaseVersion("0")),
     description = "MemSQL running on Apache Mesos. This framework provides the ability to create and manage a set of MemSQL clusters, " +
                   "each running with the MemSQL Ops management tool.",
     framework = true,

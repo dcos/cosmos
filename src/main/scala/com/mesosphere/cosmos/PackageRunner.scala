@@ -1,6 +1,6 @@
 package com.mesosphere.cosmos
 
-import com.mesosphere.cosmos.model.mesos.master.MarathonApp
+import com.mesosphere.cosmos.model.thirdparty.marathon.MarathonApp
 import com.twitter.util.Future
 import io.circe.Json
 

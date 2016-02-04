@@ -5,7 +5,8 @@ import com.mesosphere.cosmos.handler.{EndpointHandler, PackageImportHandler, Pac
 import com.mesosphere.cosmos.circe.Decoders._
 import com.mesosphere.cosmos.http.MediaTypes
 import com.mesosphere.cosmos.model._
-import com.mesosphere.cosmos.model.mesos.master.MarathonApp
+import com.mesosphere.cosmos.model.thirdparty.marathon.MarathonApp
+import com.mesosphere.universe.{PackageDetailsVersion, PackagingVersion, PackageFiles, PackageDetails}
 import com.netaporter.uri.Uri
 import com.twitter.finagle.http.RequestBuilder
 import com.twitter.io.Buf
@@ -35,10 +36,10 @@ final class UserOptionsSpec extends UnitSpec {
         val packageFiles = PackageFiles(
           revision = "0",
           sourceUri = Uri.parse("in/memory/source"),
-          packageJson = PackageDefinition(
-            packagingVersion = "2.0",
+          packageJson = PackageDetails(
+            packagingVersion = PackagingVersion("2.0"),
             name = packageName,
-            version = "1.2.3",
+            version = PackageDetailsVersion("1.2.3"),
             maintainer = "Mesosphere",
             description = "Testing user options"
           ),

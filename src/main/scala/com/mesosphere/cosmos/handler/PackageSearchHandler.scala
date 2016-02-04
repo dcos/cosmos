@@ -3,6 +3,7 @@ package com.mesosphere.cosmos.handler
 import com.mesosphere.cosmos.PackageCache
 import com.mesosphere.cosmos.http.{MediaType, MediaTypes}
 import com.mesosphere.cosmos.model._
+import com.mesosphere.universe.UniverseIndexEntry
 import com.twitter.util.Future
 import io.circe.Encoder
 import io.finch.DecodeRequest

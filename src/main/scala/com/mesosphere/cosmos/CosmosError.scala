@@ -3,6 +3,7 @@ package com.mesosphere.cosmos
 import cats.data.NonEmptyList
 import com.mesosphere.cosmos.http.MediaType
 import com.mesosphere.cosmos.model.AppId
+import com.mesosphere.universe.PackageDetailsVersion
 import com.netaporter.uri.Uri
 import com.twitter.finagle.http.Status
 import io.circe.{JsonObject, Json}
@@ -17,7 +18,7 @@ sealed abstract class CosmosError(causedBy: Throwable = null /*java compatibilit
 }
 
 case class PackageNotFound(packageName: String) extends CosmosError
-case class VersionNotFound(packageName: String, packageVersion: String) extends CosmosError
+case class VersionNotFound(packageName: String, packageVersion: PackageDetailsVersion) extends CosmosError
 case class EmptyPackageImport() extends CosmosError
 case class PackageFileMissing(packageName: String, cause: Throwable = null) extends CosmosError(cause)
 case class PackageFileNotJson(fileName: String, parseError: String) extends CosmosError
@@ -47,7 +48,7 @@ case class GenericHttpError(method: HttpMethod, uri: Uri, override val status: S
 case class AmbiguousAppId(packageName: String, appIds: List[AppId]) extends CosmosError
 case class MultipleFrameworkIds(
   packageName: String,
-  packageVersion: Option[String],
+  packageVersion: Option[PackageDetailsVersion],
   frameworkName: String,
   ids: List[String]
 ) extends CosmosError

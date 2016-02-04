@@ -1,7 +1,7 @@
 package com.mesosphere.cosmos.handler
 
 import com.mesosphere.cosmos.http.MediaTypes
-import com.mesosphere.cosmos.model.{Installation, ListRequest, ListResponse, PackageInformation}
+import com.mesosphere.cosmos.model.{Installation, ListRequest, ListResponse, InstalledPackageInformation}
 import com.mesosphere.cosmos.{AdminRouter, PackageCache}
 import com.twitter.util.Future
 import io.circe.Encoder
@@ -22,13 +22,13 @@ final class ListHandler(
     adminRouter.listApps().flatMap { applications =>
       Future.collect {
         applications.apps.map { app =>
-          (app.packageReleaseVersion, app.packageSource, app.packageName) match {
-            case (Some(releaseVersion), Some(packageSource), Some(packageName)) =>
+          (app.packageReleaseVersion, app.packageName) match {
+            case (Some(releaseVersion), Some(packageName)) =>
               if (request.packageName.exists(_ != packageName)) {
                 // Package name was specified and it doesn't match
                 Future.value(None)
               } else if (request.appId.exists(_ != app.id)) {
-                // Application id was specifiedand it doesn't match
+                // Application id was specified and it doesn't match
                 Future.value(None)
               } else {
                 // TODO: We should change this to use a package cache collection
@@ -39,9 +39,7 @@ final class ListHandler(
                   Some(
                     Installation(
                       app.id.toString,
-                      PackageInformation(
-                        releaseVersion,
-                        packageSource,
+                      InstalledPackageInformation(
                         packageFiles.packageJson,
                         packageFiles.resourceJson
                       )

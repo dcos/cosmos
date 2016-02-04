@@ -2,7 +2,7 @@ package com.mesosphere.cosmos.repository
 
 import com.mesosphere.cosmos.PackageCache
 import com.mesosphere.cosmos.handler.PackageSearchHandler
-import com.mesosphere.cosmos.model.{PackageFiles, PackageInfo, UniverseIndexEntry}
+import com.mesosphere.universe.{ReleaseVersion, PackageDetailsVersion, PackageFiles, UniverseIndexEntry}
 import com.netaporter.uri.Uri
 import com.twitter.util.Future
 
@@ -16,15 +16,15 @@ private final class ExampleLocalPackageCollection(
   repository: PackageCache
 ) extends PackageCollection with Repository {
 
-  def getPackageByPackageVersion(packageName: String, packageVersion: Option[String]): Future[PackageFiles] = {
+  def getPackageByPackageVersion(packageName: String, packageVersion: Option[PackageDetailsVersion]): Future[PackageFiles] = {
     repository.getPackageByPackageVersion(packageName, packageVersion)
   }
 
-  def getPackageByReleaseVersion(packageName: String, releaseVersion: String): Future[PackageFiles] = {
+  def getPackageByReleaseVersion(packageName: String, releaseVersion: ReleaseVersion): Future[PackageFiles] = {
     repository.getPackageByReleaseVersion(packageName, releaseVersion)
   }
 
-  def getPackageInfo(packageName: String): Future[PackageInfo] = {
+  def getPackageInfo(packageName: String): Future[UniverseIndexEntry] = {
     repository.getPackageIndex(packageName)
   }
 
