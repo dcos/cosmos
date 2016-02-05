@@ -42,7 +42,7 @@ private[cosmos] final class Cosmos(
       }
     }
 
-    post("v1" / "package" / "import" ? packageImportHandler.reader)(respond _)
+    post("package" / "import" ? packageImportHandler.reader)(respond _)
   }
 
   val packageInstall: Endpoint[Json] = {
@@ -52,7 +52,7 @@ private[cosmos] final class Cosmos(
         .map(res => Ok(res.asJson).withContentType(Some(packageInstallHandler.produces.show)))
     }
 
-    post("v1" / "package" / "install" ? packageInstallHandler.reader)(respond _)
+    post("package" / "install" ? packageInstallHandler.reader)(respond _)
   }
 
   val packageUninstall: Endpoint[Json] = {
@@ -62,7 +62,7 @@ private[cosmos] final class Cosmos(
       }
     }
 
-    post("v1" / "package" / "uninstall" ? uninstallHandler.reader)(respond _)
+    post("package" / "uninstall" ? uninstallHandler.reader)(respond _)
   }
 
   val packageDescribe: Endpoint[Json] = {
@@ -73,7 +73,7 @@ private[cosmos] final class Cosmos(
       }
     }
 
-    post("v1" / "package" / "describe" ? packageDescribeHandler.reader) (respond _)
+    post("package" / "describe" ? packageDescribeHandler.reader) (respond _)
   }
 
   val packageRender: Endpoint[Json] = {
@@ -83,7 +83,7 @@ private[cosmos] final class Cosmos(
         .map(res => Ok(res.asJson).withContentType(Some(packageRenderHandler.produces.show)))
     }
 
-    post("v1" / "package" / "render" ? packageRenderHandler.reader)(respond _)
+    post("package" / "render" ? packageRenderHandler.reader)(respond _)
   }
 
   val packageListVersions: Endpoint[Json] = {
@@ -93,7 +93,7 @@ private[cosmos] final class Cosmos(
       }
     }
 
-    post("v1" / "package" / "list-versions" ? packageListVersionsHandler.reader) (respond _)
+    post("package" / "list-versions" ? packageListVersionsHandler.reader) (respond _)
   }
 
   val packageSearch: Endpoint[Json] = {
@@ -105,7 +105,7 @@ private[cosmos] final class Cosmos(
         }
     }
 
-    post("v1" / "package" / "search" ? packageSearchHandler.reader) (respond _)
+    post("package" / "search" ? packageSearchHandler.reader) (respond _)
   }
 
   val packageList: Endpoint[Json] = {
@@ -115,7 +115,7 @@ private[cosmos] final class Cosmos(
       }
     }
 
-    post("v1" / "package" / "list" ? listHandler.reader)(respond _)
+    post("package" / "list" ? listHandler.reader)(respond _)
   }
 
   val service: Service[Request, Response] = {

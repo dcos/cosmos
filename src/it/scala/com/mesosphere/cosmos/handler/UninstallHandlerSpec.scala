@@ -41,7 +41,7 @@ final class UninstallHandlerSpec extends IntegrationSpec {
   }
 
   "The uninstall handler" should "be able to uninstall a service" in { service =>
-    val installRequest = requestBuilder("v1/package/install")
+    val installRequest = requestBuilder("package/install")
       .addHeader("Content-Type", MediaTypes.InstallRequest.show)
       .addHeader("Accept", MediaTypes.InstallResponse.show)
       .buildPost(Buf.Utf8("""{"packageName":"cassandra","options":{}}"""))
@@ -56,7 +56,7 @@ final class UninstallHandlerSpec extends IntegrationSpec {
 
     //TODO: Assert framework starts up
 
-    val uninstallRequest = requestBuilder("v1/package/uninstall")
+    val uninstallRequest = requestBuilder("package/uninstall")
       .setHeader("Accept", MediaTypes.UninstallResponse.show)
       .setHeader("Content-Type", MediaTypes.UninstallRequest.show)
       .buildPost(Buf.Utf8("""{"packageName":"cassandra"}"""))
@@ -72,7 +72,7 @@ final class UninstallHandlerSpec extends IntegrationSpec {
   it should "be able to uninstall multiple packages when 'all' is specified" in { service =>
     // install 'helloworld' twice
     val installBody1 = s"""{"packageName":"helloworld", "appId":"${UUID.randomUUID()}"}"""
-    val installRequest1 = requestBuilder("v1/package/install")
+    val installRequest1 = requestBuilder("package/install")
       .addHeader("Content-Type", MediaTypes.InstallRequest.show)
       .addHeader("Accept", MediaTypes.InstallResponse.show)
       .buildPost(Buf.Utf8(installBody1))
@@ -82,7 +82,7 @@ final class UninstallHandlerSpec extends IntegrationSpec {
     assertResult(Status.Ok, s"install failed: $installBody1")(installResponse1.status)
 
     val installBody2 = s"""{"packageName":"helloworld", "appId":"${UUID.randomUUID()}"}"""
-    val installRequest2 = requestBuilder("v1/package/install")
+    val installRequest2 = requestBuilder("package/install")
       .addHeader("Content-Type", MediaTypes.InstallRequest.show)
       .addHeader("Accept", MediaTypes.InstallResponse.show)
       .buildPost(Buf.Utf8(installBody2))
@@ -91,7 +91,7 @@ final class UninstallHandlerSpec extends IntegrationSpec {
     logger.info("installResponse2Body = {}", installResponse2Body)
     assertResult(Status.Ok, s"install failed: $installBody2")(installResponse2.status)
 
-    val uninstallRequest = requestBuilder("v1/package/uninstall")
+    val uninstallRequest = requestBuilder("package/uninstall")
       .setHeader("Accept", MediaTypes.UninstallResponse.show)
       .setHeader("Content-Type", MediaTypes.UninstallRequest.show)
       .buildPost(Buf.Utf8("""{"packageName":"helloworld", "all":true}"""))
@@ -106,7 +106,7 @@ final class UninstallHandlerSpec extends IntegrationSpec {
     // install 'helloworld' twice
     val appId1 = UUID.randomUUID()
     val installBody1 = s"""{"packageName":"helloworld", "appId":"$appId1"}"""
-    val installRequest1 = requestBuilder("v1/package/install")
+    val installRequest1 = requestBuilder("package/install")
       .addHeader("Content-Type", MediaTypes.InstallRequest.show)
       .addHeader("Accept", MediaTypes.InstallResponse.show)
       .buildPost(Buf.Utf8(installBody1))
@@ -115,14 +115,14 @@ final class UninstallHandlerSpec extends IntegrationSpec {
 
     val appId2 = UUID.randomUUID()
     val installBody2 = s"""{"packageName":"helloworld", "appId":"$appId2"}"""
-    val installRequest2 = requestBuilder("v1/package/install")
+    val installRequest2 = requestBuilder("package/install")
       .addHeader("Content-Type", MediaTypes.InstallRequest.show)
       .addHeader("Accept", MediaTypes.InstallResponse.show)
       .buildPost(Buf.Utf8(installBody2))
     val installResponse2 = service(installRequest2)
     assertResult(Status.Ok, s"install failed: $installBody2")(installResponse2.status)
 
-    val uninstallRequest = requestBuilder("v1/package/uninstall")
+    val uninstallRequest = requestBuilder("package/uninstall")
       .setHeader("Accept", MediaTypes.UninstallResponse.show)
       .setHeader("Content-Type", MediaTypes.UninstallRequest.show)
       .buildPost(Buf.Utf8("""{"packageName":"helloworld"}"""))

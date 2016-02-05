@@ -12,7 +12,7 @@ class ErrorResponseSpec extends IntegrationSpec {
 
   "An ErrorResponse" should "be returned as the body when a request can't be parsed" in { service =>
     val requestString = Map("invalid" -> true).asJson.noSpaces
-    val post = requestBuilder("v1/package/install")
+    val post = requestBuilder("package/install")
       .addHeader("Content-Type", MediaTypes.InstallRequest.show)
       .addHeader("Accept", MediaTypes.InstallResponse.show)
       .buildPost(Buf.Utf8(requestString))

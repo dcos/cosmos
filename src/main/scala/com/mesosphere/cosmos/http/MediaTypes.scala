@@ -4,7 +4,7 @@ object MediaTypes {
   private[this] def vnd(kind: String): MediaType =
     MediaType(
       "application",
-      MediaTypeSubType(s"vnd.dcos.cosmos.$kind", Some("json")),
+      MediaTypeSubType(s"vnd.dcos.package.$kind", Some("json")),
       Some(Map("charset" -> "utf-8", "version" -> "v1"))
     )
 

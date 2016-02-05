@@ -161,8 +161,8 @@ private object PackageDescribeSpec extends CosmosSpec {
 private final class DescribeTestAssertionDecorator(apiClient: Service[Request, Response]) extends CosmosSpec {
   import PackageDescribeSpec._
 
-  val DescribeEndpoint = "v1/package/describe"
-  val ListVersionsEndpoint = "v1/package/list-versions"
+  val DescribeEndpoint = "package/describe"
+  val ListVersionsEndpoint = "package/list-versions"
 
   private[cosmos] def describeAndAssertError(
     packageName: String,
