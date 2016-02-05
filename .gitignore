@@ -75,3 +75,4 @@ project/boot/
 .history
 .cache
 
+dcos-image/target/

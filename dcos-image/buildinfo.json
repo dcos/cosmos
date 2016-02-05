@@ -1,0 +1,11 @@
+{
+  "requires": [
+    "java",
+    "exhibitor"
+  ],
+  "single_source": {
+    "kind": "url",
+    "url": "$URL",
+    "sha1": "$SAH1"
+  }
+}
