@@ -44,7 +44,7 @@ class MediaTypeSpec extends FreeSpec {
     }
 
     "parse a vendor type" in {
-      val Return(t) = MediaType.parse("application/vnd.dcos.cosmos.uninstall-request+json; charset=utf-8; version=v1")
+      val Return(t) = MediaType.parse("application/vnd.dcos.package.uninstall-request+json; charset=utf-8; version=v1")
       assertResult(MediaTypes.UninstallRequest)(t)
     }
 
@@ -65,9 +65,9 @@ class MediaTypeSpec extends FreeSpec {
     "application/xhtml+xml" in {
       assertResult("application/xhtml+xml")(MediaType("application", MediaTypeSubType("xhtml", Some("xml"))).show)
     }
-    "application/vnd.mesosphere.dcos.custom-request+json" in {
-      assertResult("application/vnd.mesosphere.dcos.custom-request+json")(
-        MediaType("application", MediaTypeSubType("vnd.mesosphere.dcos.custom-request", Some("json"))).show
+    "application/vnd.dcos.custom-request+json" in {
+      assertResult("application/vnd.dcos.custom-request+json")(
+        MediaType("application", MediaTypeSubType("vnd.dcos.custom-request", Some("json"))).show
       )
     }
   }

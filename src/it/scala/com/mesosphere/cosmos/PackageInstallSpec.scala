@@ -471,7 +471,7 @@ private final class ApiTestAssertionDecorator(apiClient: Service[Request, Respon
 
 private object ApiTestAssertionDecorator {
 
-  private val InstallEndpoint: String = "v1/package/install"
+  private val InstallEndpoint: String = "package/install"
 
 }
 

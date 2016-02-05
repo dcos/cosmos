@@ -104,7 +104,7 @@ final class LocalUniverseSpec extends IntegrationSpec {
 
 object LocalUniverseSpec extends IntegrationSpec {
 
-  val ImportEndpoint = "v1/package/import"
+  val ImportEndpoint = "package/import"
 
   lazy val HelloWorldZip: Buf = {
     val baos = new ByteArrayOutputStream

@@ -140,7 +140,7 @@ private object PackageSearchSpec extends CosmosSpec {
 
 private final class SearchTestAssertionDecorator(apiClient: Service[Request, Response]) extends CosmosSpec {
 
-  val SearchEndpoint = "v1/package/search"
+  val SearchEndpoint = "package/search"
 
   private[cosmos] def searchAndAssert(
     query: String,
