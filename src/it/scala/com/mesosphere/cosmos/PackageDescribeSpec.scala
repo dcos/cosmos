@@ -27,7 +27,7 @@ final class PackageDescribeSpec extends FreeSpec with CosmosSpec {
   "The package describe endpoint" - {
     "don't install if specified version is not found"/*TODO: Copy paste test name */ in {
       val _ = withTempDirectory { universeDir =>
-        val universeCache = Await.result(UniversePackageCache(UniverseUri, universeDir))
+        val universeCache = UniversePackageCache(UniverseUri, universeDir)
 
         runService(packageCache = universeCache) { apiClient =>
           forAll (PackageDummyVersionsTable) { (packageName, packageVersion) =>
@@ -44,7 +44,7 @@ final class PackageDescribeSpec extends FreeSpec with CosmosSpec {
 
     "can successfully describe helloworld from Universe" in {
       val _ = withTempDirectory { universeDir =>
-        val universeCache = Await.result(UniversePackageCache(UniverseUri, universeDir))
+        val universeCache = UniversePackageCache(UniverseUri, universeDir)
 
         runService(packageCache = universeCache) { apiClient =>
           apiClient.describeHelloworld()
@@ -55,7 +55,7 @@ final class PackageDescribeSpec extends FreeSpec with CosmosSpec {
 
     "can successfully describe all versions from Universe" in {
       val _ = withTempDirectory { universeDir =>
-        val universeCache = Await.result(UniversePackageCache(UniverseUri, universeDir))
+        val universeCache = UniversePackageCache(UniverseUri, universeDir)
 
         runService(packageCache = universeCache) { apiClient =>
           forAll (PackageVersionsTable) { (packageName, versions) =>

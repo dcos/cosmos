@@ -12,6 +12,10 @@ import com.twitter.util.Try
 
 object Services {
   def adminRouterClient(uri: Uri): Try[Service[Request, Response]] = {
+    httpClient("adminRouter", uri)
+  }
+
+  def httpClient(serviceName: String, uri: Uri): Try[Service[Request, Response]] = {
     extractHostAndPort(uri) map { case ConnectionDetails(hostname, port, tls) =>
       val cBuilder = tls match {
         case false =>
@@ -25,7 +29,7 @@ object Services {
             .configured(Transporter.TLSHostname(Some(hostname)))
       }
 
-      cBuilder.newService(s"$hostname:$port", "adminRouter")
+      cBuilder.newService(s"$hostname:$port", serviceName)
     }
   }
 

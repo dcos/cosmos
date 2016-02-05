@@ -127,7 +127,7 @@ final class PackageInstallSpec extends FreeSpec with BeforeAndAfterAll with Cosm
 
     "don't install if specified version is not found" in {
       val _ = withTempDirectory { universeDir =>
-        val universeCache = Await.result(UniversePackageCache(UniverseUri, universeDir))
+        val universeCache = UniversePackageCache(UniverseUri, universeDir)
 
         runService(packageCache = universeCache) { apiClient =>
           forAll (PackageDummyVersionsTable) { (packageName, packageVersion) =>
@@ -149,7 +149,7 @@ final class PackageInstallSpec extends FreeSpec with BeforeAndAfterAll with Cosm
 
     "can successfully install packages from Universe" in {
       val _ = withTempDirectory { universeDir =>
-        val universeCache = Await.result(UniversePackageCache(UniverseUri, universeDir))
+        val universeCache = UniversePackageCache(UniverseUri, universeDir)
 
         runService(packageCache = universeCache) { apiClient =>
           forAll (UniversePackagesTable) { (expectedResponse, forceVersion, uriSet, labelsOpt) =>
@@ -172,7 +172,7 @@ final class PackageInstallSpec extends FreeSpec with BeforeAndAfterAll with Cosm
 
     "supports custom app IDs" in {
       val _ = withTempDirectory { universeDir =>
-        val universeCache = Await.result(UniversePackageCache(UniverseUri, universeDir))
+        val universeCache = UniversePackageCache(UniverseUri, universeDir)
 
         runService(packageCache = universeCache) { apiClient =>
           val expectedResponse = InstallResponse("cassandra", "0.2.0-1", AppId("custom-app-id"))
@@ -211,7 +211,7 @@ final class PackageInstallSpec extends FreeSpec with BeforeAndAfterAll with Cosm
         ErrorResponse("JsonSchemaMismatch", "Options JSON failed validation", Some(errorData))
 
       val _ = withTempDirectory { universeDir =>
-        val universeCache = Await.result(UniversePackageCache(UniverseUri, universeDir))
+        val universeCache = UniversePackageCache(UniverseUri, universeDir)
 
         runService(packageCache = universeCache) { apiClient =>
           val appId = AppId("chronos-bad-json")

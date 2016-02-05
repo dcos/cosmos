@@ -176,7 +176,7 @@ object Cosmos extends FinchServer {
 
       val universeBundle = universeBundleUri()
       val universeDir = universeCacheDir()
-      val packageCache = Await.result(UniversePackageCache(universeBundle, universeDir))
+      val packageCache = UniversePackageCache(universeBundle, universeDir)
       val marathonPackageRunner = new MarathonPackageRunner(adminRouter)
 
       val cosmos = new Cosmos(

@@ -23,7 +23,7 @@ final class PackageSearchSpec extends FreeSpec with CosmosSpec {
   "The package search endpoint" - {
     "can successfully find packages" in {
       val _ = withTempDirectory { universeDir =>
-        val universeCache = Await.result(UniversePackageCache(UniverseUri, universeDir))
+        val universeCache = UniversePackageCache(UniverseUri, universeDir)
 
         runService(packageCache = universeCache) { apiClient =>
           forAll (PackageSearchTable) { (query, expectedResponse) =>
@@ -39,7 +39,7 @@ final class PackageSearchSpec extends FreeSpec with CosmosSpec {
 
     "can successfully find packages by regex match" in {
       val _ = withTempDirectory { universeDir =>
-        val universeCache = Await.result(UniversePackageCache(UniverseUri, universeDir))
+        val universeCache = UniversePackageCache(UniverseUri, universeDir)
 
         runService(packageCache = universeCache) { apiClient =>
           forAll (PackageSearchRegexTable) { (query, expectedResponse) =>
