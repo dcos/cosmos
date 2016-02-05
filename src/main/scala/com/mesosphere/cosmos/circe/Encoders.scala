@@ -129,13 +129,15 @@ object Encoders {
       s"Unexpected down stream http error: ${method.getName} ${uri.toString} ${status.code}"
     case AmbiguousAppId(pkgName, appIds) =>
       s"Multiple apps named [$pkgName] are installed: [${appIds.mkString(", ")}]"
-    case MultipleFrameworkIds(pkgName, fwName, ids) =>
-      s"Package [$pkgName] with framework [$fwName] has multiple instances: [${ids.mkString(", ")}]"
+    case MultipleFrameworkIds(pkgName, pkgVersion, fwName, ids) =>
+      s"Uninstalled package [$pkgName] version [$pkgVersion]\n" +
+        s"Unable to shutdown [$pkgName] service framework with name [$fwName] because there are multiple framework " +
+        s"ids matching this name: [${ids.mkString(", ")}]"
     case NelErrors(nelE) => nelE.toString
     case FileUploadError(msg) => msg
     case PackageNotInstalled(pkgName) =>
       s"Package [$pkgName] is not installed"
     case UninstallNonExistentAppForPackage(pkgName, appId) =>
-      s"Package [$pkgName] with id [$appId] is not installed."
+      s"Package [$pkgName] with id [$appId] is not installed"
   }
 }
