@@ -4,7 +4,8 @@ import cats.data.Xor.{Left, Right}
 import com.mesosphere.cosmos.http.MediaTypes
 import com.mesosphere.cosmos.http.MediaTypeOps
 import com.mesosphere.cosmos.model.AppId
-import com.mesosphere.cosmos.model.mesos.master._
+import com.mesosphere.cosmos.model.thirdparty.marathon.{MarathonAppsResponse, MarathonAppResponse}
+import com.mesosphere.cosmos.model.thirdparty.mesos.master._
 import com.mesosphere.cosmos.circe.Decoders._
 import com.netaporter.uri.Uri
 import com.netaporter.uri.dsl._

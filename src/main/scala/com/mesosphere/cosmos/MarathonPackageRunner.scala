@@ -1,7 +1,7 @@
 package com.mesosphere.cosmos
 
 import cats.data.Xor
-import com.mesosphere.cosmos.model.mesos.master.MarathonApp
+import com.mesosphere.cosmos.model.thirdparty.marathon.MarathonApp
 import com.twitter.finagle.http.Status
 import com.twitter.util.Future
 import com.mesosphere.cosmos.circe.Decoders._

@@ -1,6 +1,6 @@
 package com.mesosphere.cosmos.circe
 
-import com.mesosphere.cosmos.model.Images
+import com.mesosphere.universe.Images
 import io.circe.syntax._
 import io.circe.{Decoder, Json}
 import org.scalatest.FreeSpec

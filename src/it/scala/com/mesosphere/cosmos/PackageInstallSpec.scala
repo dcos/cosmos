@@ -9,15 +9,17 @@ import com.mesosphere.cosmos.circe.Encoders._
 import com.mesosphere.cosmos.handler._
 import com.mesosphere.cosmos.http.MediaTypes
 import com.mesosphere.cosmos.model._
-import com.mesosphere.cosmos.model.mesos.master._
+import com.mesosphere.cosmos.model.thirdparty.marathon.{MarathonApp, MarathonAppContainer, MarathonAppContainerDocker}
+import com.mesosphere.universe.{PackageDetails, PackageDetailsVersion, PackageFiles, PackagingVersion}
 import com.netaporter.uri.Uri
 import com.twitter.finagle.http._
 import com.twitter.finagle.{Http, Service}
 import com.twitter.io.{Buf, Charsets}
-import com.twitter.util._
+import com.twitter.util.{Await, Future}
 import io.circe.parse._
 import io.circe.syntax._
 import io.circe.{Cursor, Json, JsonObject}
+import io.finch.circe._
 import org.scalatest.{BeforeAndAfterAll, FreeSpec}
 
 final class PackageInstallSpec extends FreeSpec with BeforeAndAfterAll with CosmosSpec {
@@ -175,7 +177,7 @@ final class PackageInstallSpec extends FreeSpec with BeforeAndAfterAll with Cosm
         val universeCache = UniversePackageCache(UniverseUri, universeDir)
 
         runService(packageCache = universeCache) { apiClient =>
-          val expectedResponse = InstallResponse("cassandra", "0.2.0-1", AppId("custom-app-id"))
+          val expectedResponse = InstallResponse("cassandra", PackageDetailsVersion("0.2.0-1"), AppId("custom-app-id"))
 
           apiClient.installPackageAndAssert(
             InstallRequest(expectedResponse.packageName, appId = Some(expectedResponse.appId)),
@@ -253,7 +255,6 @@ final class PackageInstallSpec extends FreeSpec with BeforeAndAfterAll with Cosm
   ): Unit = {
     val adminRouter = new AdminRouter(adminRouterHost, dcosClient)
     // these two imports provide the implicit DecodeRequest instances needed to instantiate Cosmos
-    import io.finch.circe._
     val marathonPackageRunner = new MarathonPackageRunner(adminRouter)
     //TODO: Get rid of this duplication
     val service = new Cosmos(
@@ -319,14 +320,14 @@ private object PackageInstallSpec extends CosmosSpec {
 
   private val UniversePackagesTable = Table(
     ("expected response", "force version", "URI list", "Labels"),
-    (InstallResponse("helloworld", "0.1.0", AppId("helloworld")), false, Set.empty[String], Some(HelloWorldLabels)),
-    (InstallResponse("cassandra", "0.2.0-1", AppId("cassandra/dcos")), true, CassandraUris, None)
+    (InstallResponse("helloworld", PackageDetailsVersion("0.1.0"), AppId("helloworld")), false, Set.empty[String], Some(HelloWorldLabels)),
+    (InstallResponse("cassandra", PackageDetailsVersion("0.2.0-1"), AppId("cassandra/dcos")), true, CassandraUris, None)
   )
 
   private val PackageDummyVersionsTable = Table(
     ("package name", "version"),
-    ("helloworld", "a.b.c"),
-    ("cassandra", "foobar")
+    ("helloworld", PackageDetailsVersion("a.b.c")),
+    ("cassandra", PackageDetailsVersion("foobar"))
   )
 
   private def getMarathonApp(appId: AppId): Future[MarathonApp] = {
@@ -342,10 +343,10 @@ private object PackageInstallSpec extends CosmosSpec {
     val cmd =
       if (pythonVersion <= 2) "python2 -m SimpleHTTPServer 8082" else "python3 -m http.server 8083"
 
-    val packageDefinition = PackageDefinition(
-      packagingVersion = "2.0",
+    val packageDefinition = PackageDetails(
+      packagingVersion = PackagingVersion("2.0"),
       name = name,
-      version = "0.1.0",
+      version = PackageDetailsVersion("0.1.0"),
       maintainer = "Mesosphere",
       description = "Test framework",
       tags = Nil,

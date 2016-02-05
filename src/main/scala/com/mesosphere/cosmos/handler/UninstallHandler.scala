@@ -1,9 +1,10 @@
 package com.mesosphere.cosmos.handler
 
 import com.mesosphere.cosmos.http.MediaTypes
-import com.mesosphere.cosmos.model.mesos.master.MarathonApp
+import com.mesosphere.cosmos.model.thirdparty.marathon.MarathonApp
 import com.mesosphere.cosmos.model.{AppId, UninstallRequest, UninstallResponse, UninstallResult}
 import com.mesosphere.cosmos._
+import com.mesosphere.universe.PackageDetailsVersion
 import com.twitter.finagle.http.Status
 import com.twitter.util.Future
 import io.circe.Encoder
@@ -44,7 +45,7 @@ private[cosmos] final class UninstallHandler(adminRouter: AdminRouter, packageCa
                     UninstallDetails.from(op).copy(frameworkId = Some(fwId))
                   }
               case all =>
-                throw MultipleFrameworkIds(op.packageName, op.version, fwName, all)
+                throw MultipleFrameworkIds(op.packageName, op.packageVersion, fwName, all)
             }
           case None =>
             Future.value(UninstallDetails.from(op))
@@ -109,7 +110,7 @@ private[cosmos] final class UninstallHandler(adminRouter: AdminRouter, packageCa
           UninstallResult(
             detail.packageName,
             detail.appId,
-            detail.version,
+            detail.packageVersion,
             packageFiles.packageJson.postUninstallNotes
           )
         }
@@ -127,7 +128,7 @@ private[cosmos] final class UninstallHandler(adminRouter: AdminRouter, packageCa
       UninstallOperation(
         appId = app.id,
         packageName = packageName,
-        version = labels.get("DCOS_PACKAGE_VERSION"),
+        packageVersion = app.packageVersion,
         frameworkName = labels.get("DCOS_PACKAGE_FRAMEWORK_NAME")
       )
     }
@@ -142,13 +143,13 @@ private[cosmos] final class UninstallHandler(adminRouter: AdminRouter, packageCa
   private case class UninstallOperation(
     appId: AppId,
     packageName: String,
-    version: Option[String],
+    packageVersion: Option[PackageDetailsVersion],
     frameworkName: Option[String]
   )
   private case class UninstallDetails(
     appId: AppId,
     packageName: String,
-    version: Option[String],
+    packageVersion: Option[PackageDetailsVersion],
     frameworkName: Option[String] = None,
     frameworkId: Option[String] = None
   )
@@ -157,7 +158,7 @@ private[cosmos] final class UninstallHandler(adminRouter: AdminRouter, packageCa
       UninstallDetails(
         appId = uninstallOperation.appId,
         packageName = uninstallOperation.packageName,
-        version = uninstallOperation.version,
+        packageVersion = uninstallOperation.packageVersion,
         frameworkName = uninstallOperation.frameworkName
       )
     }

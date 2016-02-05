@@ -1,21 +1,7 @@
-package com.mesosphere.cosmos.model.mesos.master
+package com.mesosphere.cosmos.model.thirdparty.marathon
 
 import com.mesosphere.cosmos.model.AppId
-
-//todo: flush out
-case class MasterState(
-  frameworks: List[Framework]
-)
-
-case class Framework(
-  id: String,
-  name: String
-)
-
-case class MesosFrameworkTearDownResponse()
-
-case class MarathonAppResponse(app: MarathonApp)
-case class MarathonAppsResponse(apps: List[MarathonApp])
+import com.mesosphere.universe.{ReleaseVersion, PackageDetailsVersion}
 
 case class MarathonApp(
   id: AppId,
@@ -29,9 +15,9 @@ case class MarathonApp(
 ) {
   def packageName: Option[String] = labels.get(MarathonApp.nameLabel)
 
-  def packageReleaseVersion: Option[String] = labels.get(MarathonApp.releaseLabel)
+  def packageReleaseVersion: Option[ReleaseVersion] = labels.get(MarathonApp.releaseLabel).map(ReleaseVersion)
 
-  def packageVersion: Option[String] = labels.get(MarathonApp.versionLabel)
+  def packageVersion: Option[PackageDetailsVersion] = labels.get(MarathonApp.versionLabel).map(PackageDetailsVersion)
 
   def packageSource: Option[String] = labels.get(MarathonApp.sourceLabel)
 }
@@ -47,7 +33,3 @@ object MarathonApp {
   val versionLabel = "DCOS_PACKAGE_VERSION"
   val commandLabel = "DCOS_PACKAGE_COMMAND"
 }
-
-case class MarathonAppContainer(`type`: String, docker: Option[MarathonAppContainerDocker])
-
-case class MarathonAppContainerDocker(image: String, network: String)

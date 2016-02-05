@@ -7,12 +7,13 @@ import com.mesosphere.cosmos.circe.Encoders._
 import com.mesosphere.cosmos.handler._
 import com.mesosphere.cosmos.http.MediaTypes
 import com.mesosphere.cosmos.model._
-import com.mesosphere.cosmos.model.mesos.master._
+import com.mesosphere.cosmos.model.thirdparty.marathon.{MarathonApp, MarathonAppContainer, MarathonAppContainerDocker}
+import com.mesosphere.universe._
 import com.netaporter.uri.Uri
 import com.twitter.finagle.http._
 import com.twitter.finagle.{Http, Service}
 import com.twitter.io.Buf
-import com.twitter.util._
+import com.twitter.util.Await
 import io.circe.Json
 import io.circe.parse._
 import io.circe.syntax._
@@ -48,7 +49,7 @@ final class PackageDescribeSpec extends FreeSpec with CosmosSpec {
 
         runService(packageCache = universeCache) { apiClient =>
           apiClient.describeHelloworld()
-          apiClient.describeHelloworld(Some("0.1.0"))
+          apiClient.describeHelloworld(Some(PackageDetailsVersion("0.1.0")))
         }
       }
     }
@@ -76,7 +77,6 @@ final class PackageDescribeSpec extends FreeSpec with CosmosSpec {
   )(
     f: DescribeTestAssertionDecorator => Unit
   ): Unit = {
-    // these two imports provide the implicit DecodeRequest instances needed to instantiate Cosmos
     val marathonPackageRunner = new MarathonPackageRunner(adminRouter)
     val service = new Cosmos(
       packageCache,
@@ -107,8 +107,8 @@ private object PackageDescribeSpec extends CosmosSpec {
 
   private val PackageDummyVersionsTable = Table(
     ("package name", "version"),
-    ("helloworld", "a.b.c"),
-    ("cassandra", "foobar")
+    ("helloworld", PackageDetailsVersion("a.b.c")),
+    ("cassandra", PackageDetailsVersion("foobar"))
   )
 
   private val PackageVersionsTable = Table(
@@ -116,10 +116,10 @@ private object PackageDescribeSpec extends CosmosSpec {
     ("helloworld", Map("results" -> Map("0.1.0" -> "0")))
   )
 
-  val HelloworldPackageDef = PackageDefinition(
-    packagingVersion = "2.0",
+  val HelloworldPackageDef = PackageDetails(
+    packagingVersion = PackagingVersion("2.0"),
     name = "helloworld",
-    version = "0.1.0",
+    version = PackageDetailsVersion("0.1.0"),
     website = Some("https://github.com/mesosphere/dcos-helloworld"),
     maintainer = "support@mesosphere.io",
     description = "Example DCOS application package",
@@ -142,7 +142,7 @@ private object PackageDescribeSpec extends CosmosSpec {
     "additionalProperties" -> Json.False
   )
 
-  val HelloworldCommandDef = CommandDefinition(
+  val HelloworldCommandDef = Command(
     List("dcos<1.0", "git+https://github.com/mesosphere/dcos-helloworld.git#dcos-helloworld=0.1.0")
   )
 
@@ -168,7 +168,7 @@ private final class DescribeTestAssertionDecorator(apiClient: Service[Request, R
     packageName: String,
     status: Status,
     expectedMessage: String,
-    version: Option[String] = None
+    version: Option[PackageDetailsVersion] = None
   ): Unit = {
     val response = describeRequest(apiClient, DescribeRequest(packageName, version))
     assertResult(status)(response.status)
@@ -181,17 +181,17 @@ private final class DescribeTestAssertionDecorator(apiClient: Service[Request, R
     status: Status,
     content: Json
   ): Unit = {
-    val response = listVersionsRequest(apiClient, ListVersionsRequest(packageName, packageVersions = true))
+    val response = listVersionsRequest(apiClient, ListVersionsRequest(packageName, includePackageVersions = true))
     assertResult(status)(response.status)
     assertResult(Xor.Right(content))(parse(response.contentString))
   }
 
-  private[cosmos] def describeHelloworld(version: Option[String] = None) = {
+  private[cosmos] def describeHelloworld(version: Option[PackageDetailsVersion] = None) = {
     val response = describeRequest(apiClient, DescribeRequest("helloworld", version))
     assertResult(Status.Ok)(response.status)
     val Right(packageInfo) = parse(response.contentString)
 
-    val Right(packageJson) = packageInfo.cursor.get[PackageDefinition]("package")
+    val Right(packageJson) = packageInfo.cursor.get[PackageDetails]("package")
     assertResult(HelloworldPackageDef)(packageJson)
 
     val Right(resourceJson) = packageInfo.cursor.get[Resource]("resource")
@@ -200,7 +200,7 @@ private final class DescribeTestAssertionDecorator(apiClient: Service[Request, R
     val Right(configJson) = packageInfo.cursor.get[Json]("config")
     assertResult(HelloworldConfigDef)(configJson)
 
-    val Right(commandJson) = packageInfo.cursor.get[CommandDefinition]("command")
+    val Right(commandJson) = packageInfo.cursor.get[Command]("command")
     assertResult(HelloworldCommandDef)(commandJson)
   }
 

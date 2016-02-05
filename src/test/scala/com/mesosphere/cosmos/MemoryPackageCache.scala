@@ -1,9 +1,8 @@
 package com.mesosphere.cosmos
 
+import com.mesosphere.universe._
 import com.netaporter.uri.dsl.stringToUri
 import com.twitter.util.Future
-
-import com.mesosphere.cosmos.model._
 
 /** A package cache that stores all package information in memory. Useful for testing.
   *
@@ -13,7 +12,7 @@ final case class MemoryPackageCache(packages: Map[String, PackageFiles]) extends
 
   override def getPackageByPackageVersion(
     packageName: String,
-    packageVersion: Option[String]
+    packageVersion: Option[PackageDetailsVersion]
   ): Future[PackageFiles] = {
     Future.value {
       packages.get(packageName) match {
@@ -25,7 +24,7 @@ final case class MemoryPackageCache(packages: Map[String, PackageFiles]) extends
 
   override def getPackageByReleaseVersion(
     packageName: String,
-    releaseVersion: String
+    releaseVersion: ReleaseVersion
   ): Future[PackageFiles] = {
     Future.value {
       packages.get(packageName) match {
@@ -41,7 +40,7 @@ final case class MemoryPackageCache(packages: Map[String, PackageFiles]) extends
 
   def getPackageIndex(
     packageName: String
-  ): Future[PackageInfo] = {
+  ): Future[UniverseIndexEntry] = {
     Future.exception(PackageNotFound(packageName))
   }
 

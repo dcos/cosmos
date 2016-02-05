@@ -1,10 +1,6 @@
 package com.mesosphere.cosmos
 
-import java.nio.file.Files
-import java.nio.file.Path
-import java.nio.file.Paths
-import java.nio.file.StandardCopyOption
-import java.security.MessageDigest
+import java.nio.file._
 import java.time.LocalDateTime
 import java.util.Base64
 import java.util.concurrent.atomic.AtomicReference
@@ -12,22 +8,22 @@ import java.util.zip.ZipInputStream
 
 import cats.data.Validated.{Valid, Invalid}
 import cats.data.Xor.{Left, Right}
-import com.mesosphere.cosmos.circe.Decoders.decodeUniverseIndex
+import cats.data._
+import cats.std.option._
+import cats.std.list._           // allows for traversU in verifySchema
+import cats.syntax.apply._       // provides |@|
+import cats.syntax.option._
+import cats.syntax.traverse._
+import com.mesosphere.cosmos.circe.Decoders._
+import com.mesosphere.universe._
 import com.netaporter.uri.Uri
 import com.twitter.concurrent.AsyncMutex
-import com.twitter.finagle.Service
-import com.twitter.finagle.http.Request
-import com.twitter.finagle.http.RequestBuilder
-import com.twitter.finagle.http.Response
-import com.twitter.finagle.http.Status
 import com.twitter.io.Charsets
 import com.twitter.io.{Files => TwitterFiles }
-import com.twitter.util.Future
-import com.twitter.util.Return
-import com.twitter.util.Throw
-import com.twitter.util.Try
-import io.circe.Json
+import com.twitter.util.{Future, Return, Throw, Try}
+import io.circe.{Decoder, Json}
 import io.circe.parse._
+
 
 /** Stores packages from the Universe GitHub repository in the local filesystem.
   */
@@ -37,12 +33,10 @@ final class UniversePackageCache private(universeBundle: Uri, universeDir: Path)
 
   private[this] val lastModified = new AtomicReference(LocalDateTime.MIN)
 
-  private[this] val logger = org.slf4j.LoggerFactory.getLogger(getClass)
-
   override def getPackageByPackageVersion(
     packageName: String,
-    packageVersion: Option[String]
-  ): Future[model.PackageFiles] = {
+    packageVersion: Option[PackageDetailsVersion]
+  ): Future[PackageFiles] = {
     synchronizedUpdate().map { bundleDir =>
       val repoDir = repoDirectory(bundleDir)
       readPackageFiles(
@@ -58,8 +52,8 @@ final class UniversePackageCache private(universeBundle: Uri, universeDir: Path)
 
   override def getPackageByReleaseVersion(
     packageName: String,
-    releaseVersion: String
-  ): Future[model.PackageFiles] = {
+    releaseVersion: ReleaseVersion
+  ): Future[PackageFiles] = {
     synchronizedUpdate().map { bundleDir =>
       readPackageFiles(
         getPackageReleasePath(
@@ -71,7 +65,7 @@ final class UniversePackageCache private(universeBundle: Uri, universeDir: Path)
     }
   }
 
-  override def getPackageIndex(packageName: String): Future[model.PackageInfo] = {
+  override def getPackageIndex(packageName: String): Future[UniverseIndexEntry] = {
     synchronizedUpdate().map { bundleDir =>
       repoIndex(repoDirectory(bundleDir)).getPackages.get(packageName).getOrElse(
         throw PackageNotFound(packageName)
@@ -79,7 +73,7 @@ final class UniversePackageCache private(universeBundle: Uri, universeDir: Path)
     }
   }
 
-  override def getRepoIndex: Future[model.UniverseIndex] = {
+  override def getRepoIndex: Future[UniverseIndex] = {
     synchronizedUpdate().map { bundleDir =>
         repoIndex(repoDirectory(bundleDir))
     }
@@ -102,17 +96,17 @@ final class UniversePackageCache private(universeBundle: Uri, universeDir: Path)
     }
   }
 
-  private[this] def repoIndex(repoDir: Path): model.UniverseIndex = {
+  private[this] def repoIndex(repoDir: Path): UniverseIndex = {
     val indexFile = repoDir.resolve(Paths.get("meta", "index.json"))
 
     parseJsonFile(indexFile).map { index =>
-      index.as[model.UniverseIndex].getOrElse(throw PackageFileSchemaMismatch("index.json"))
+      index.as[UniverseIndex].getOrElse(throw PackageFileSchemaMismatch("index.json"))
     } getOrElse {
       throw IndexNotFound(universeBundle)
     }
   }
 
-  private[this] def readPackageFiles(packageDir: Path): model.PackageFiles = {
+  private[this] def readPackageFiles(packageDir: Path): PackageFiles = {
 
     val packageJson = parseJsonFile(
       packageDir.resolve("package.json")
@@ -125,7 +119,7 @@ final class UniversePackageCache private(universeBundle: Uri, universeDir: Path)
       throw PackageFileMissing("marathon.json.mustache")
     }
 
-    model.PackageFiles.validate(
+    validate(
       packageDir.getFileName.toString,
       universeBundle,
       parseJsonFile(packageDir.resolve("command.json")),
@@ -214,9 +208,7 @@ final class UniversePackageCache private(universeBundle: Uri, universeDir: Path)
       )
 
       // Delete the old bundle directory
-      oldBundlePath.foreach { path =>
-        TwitterFiles.delete(path.toFile)
-      }
+      oldBundlePath.foreach { p => TwitterFiles.delete(p.toFile) }
 
       path
     } catch {
@@ -228,20 +220,24 @@ final class UniversePackageCache private(universeBundle: Uri, universeDir: Path)
   }
 
   private[this] def readSymbolicLink(path: Path): Option[Path] = {
-    Try(Files.readSymbolicLink(path)) match {
-      case Throw(e) =>
-        logger.debug(s"Error while reading [$path]", e)
-        None
-      case Return(value) => Some(value)
-    }
+    Try(Files.readSymbolicLink(path))
+      .map { path =>
+        Some(path)
+      }
+      .handle {
+        case e: NoSuchFileException =>
+          // this is okay, we expect the link to not be there the first time
+          None
+      }
+      .get
   }
 
   // return path of specified version, or latest if version not specified
   private[this] def getPackagePath(
     repository: Path,
-    universeIndex: model.UniverseIndex,
+    universeIndex: UniverseIndex,
     packageName: String,
-    packageVersion: Option[String]
+    packageVersion: Option[PackageDetailsVersion]
   ): Path = {
     universeIndex.getPackages.get(packageName) match {
       case None => throw PackageNotFound(packageName)
@@ -255,7 +251,7 @@ final class UniversePackageCache private(universeBundle: Uri, universeDir: Path)
               "packages",
               packageName.charAt(0).toUpper.toString,
               packageName,
-              revision)
+              revision.toString)
             repository.resolve(packagePath)
         }
     }
@@ -284,17 +280,68 @@ final class UniversePackageCache private(universeBundle: Uri, universeDir: Path)
     }
   }
 
+  private def validate(
+    revision: String,
+    sourceUri: Uri,
+    commandJsonOpt: Option[Json],
+    configJsonOption: Option[Json],
+    marathonJsonMustache: String,
+    packageJsonOpt: Json,
+    resourceJsonOpt: Option[Json]
+  ): ValidatedNel[CosmosError, PackageFiles] = {
+    val packageDefValid = verifySchema[PackageDetails](packageJsonOpt, "package.json")
+    val resourceDefValid = verifySchema[Resource](resourceJsonOpt, "resource.json")
+    val commandJsonValid = verifySchema[Command](commandJsonOpt, "command.json")
+    val configJsonObject = configJsonOption.traverseU {json =>
+      json.asObject
+        .toValidNel[CosmosError](PackageFileSchemaMismatch("config.json"))
+    }
+
+    (packageDefValid |@| resourceDefValid |@| commandJsonValid |@| configJsonObject)
+      .map { (packageDef, resourceDef, commandJson, configJson) =>
+        PackageFiles(
+          revision,
+          sourceUri,
+          packageDef,
+          marathonJsonMustache,
+          commandJson,
+          configJson,
+          resourceDef
+        )
+      }
+  }
+
+  private[this] def verifySchema[A: Decoder](
+    json: Json,
+    packageFileName: String
+  ): ValidatedNel[CosmosError, A] = {
+    json
+      .as[A]
+      .leftMap(_ => errorNel(PackageFileSchemaMismatch(packageFileName)))
+      .toValidated
+  }
+
+  private[this] def verifySchema[A: Decoder](
+    json: Option[Json],
+    packageFileName: String
+  ): ValidatedNel[CosmosError, Option[A]] = {
+    json
+      .traverseU(verifySchema[A](_, packageFileName))
+  }
+
+  def errorNel(error: CosmosError): NonEmptyList[CosmosError] = NonEmptyList(error)
+
   private[this] def getPackageReleasePath(
     repoDir: Path,
     packageName: String,
-    releaseVersion: String
+    releaseVersion: ReleaseVersion
   ): Path = {
     repoDir.resolve(
       Paths.get(
         "packages",
         packageName.charAt(0).toUpper.toString,
         packageName,
-        releaseVersion
+        releaseVersion.toString
       )
     )
   }
@@ -303,11 +350,11 @@ final class UniversePackageCache private(universeBundle: Uri, universeDir: Path)
 object UniversePackageCache {
 
   /** Create a new package cache.
-   *
-   * @param universeBundle the location of the package bundle to cache; must be an HTTP URL
-   * @param universeDir the directory to cache the bundle files in; assumed to be empty
-   * @return The new cache, or an error.
-   */
+    *
+    * @param universeBundle the location of the package bundle to cache; must be an HTTP URL
+    * @param universeDir the directory to cache the bundle files in; assumed to be empty
+    * @return The new cache, or an error.
+    */
   def apply(universeBundle: Uri, universeDir: Path): UniversePackageCache = {
     new UniversePackageCache(universeBundle, universeDir)
   }

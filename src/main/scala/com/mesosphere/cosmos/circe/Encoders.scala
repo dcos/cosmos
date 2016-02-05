@@ -1,17 +1,19 @@
 package com.mesosphere.cosmos.circe
 
 import com.mesosphere.cosmos.model._
-import com.mesosphere.cosmos.model.mesos.master._
+import com.mesosphere.cosmos.model.thirdparty.marathon._
+import com.mesosphere.cosmos.model.thirdparty.mesos.master._
 import com.mesosphere.cosmos._
+import com.mesosphere.universe._
 import com.netaporter.uri.Uri
 import io.circe.generic.semiauto._
 import io.circe.syntax._
-import io.circe.{Encoder, Json, JsonObject}
+import io.circe.{ObjectEncoder, Encoder, Json, JsonObject}
 import io.finch.Error
 
 object Encoders {
   implicit val encodeLicense: Encoder[License] = deriveFor[License].encoder
-  implicit val encodePackageDefinition: Encoder[PackageDefinition] = deriveFor[PackageDefinition].encoder
+  implicit val encodePackageDefinition: Encoder[PackageDetails] = deriveFor[PackageDetails].encoder
   implicit val encodeContainer: Encoder[Container] = deriveFor[Container].encoder
   implicit val encodeAssets: Encoder[Assets] = deriveFor[Assets].encoder
   implicit val encodeImages: Encoder[Images] = Encoder.instance { (images: Images) =>
@@ -23,9 +25,19 @@ object Encoders {
     )
   }
   implicit val encodeResource: Encoder[Resource] = deriveFor[Resource].encoder
-  implicit val encodePackageIndex: Encoder[UniverseIndexEntry] = deriveFor[UniverseIndexEntry].encoder
+  implicit val encodePackageIndex: Encoder[UniverseIndexEntry] = ObjectEncoder.instance( entry => {
+    JsonObject.fromIndexedSeq(
+      Vector(
+        "name" -> entry.name.asJson,
+        "currentVersion" -> entry.currentVersion.asJson,
+        "versions" -> encodeMap(entry.versions),
+        "description" -> entry.description.asJson,
+        "framework" -> entry.framework.asJson,
+        "tags" -> entry.tags.asJson
+      )
+    )
+  })
   implicit val encodeUniverseIndex: Encoder[UniverseIndex] = deriveFor[UniverseIndex].encoder
-  implicit val encodePackageInfo: Encoder[PackageInfo] = deriveFor[PackageInfo].encoder
   implicit val encodeMasterState: Encoder[MasterState] = deriveFor[MasterState].encoder
   implicit val encodeFramework: Encoder[Framework] = deriveFor[Framework].encoder
   implicit val encodeMesosFrameworkTearDownResponse: Encoder[MesosFrameworkTearDownResponse] = deriveFor[MesosFrameworkTearDownResponse].encoder
@@ -48,10 +60,12 @@ object Encoders {
   implicit val encodeRenderRequest: Encoder[RenderRequest] = deriveFor[RenderRequest].encoder
   implicit val encodeRenderResponse: Encoder[RenderResponse] = deriveFor[RenderResponse].encoder
 
-  implicit val encodeCommandDefinition: Encoder[CommandDefinition] = deriveFor[CommandDefinition].encoder
+  implicit val encodeCommandDefinition: Encoder[Command] = deriveFor[Command].encoder
   implicit val encodeDescribeResponse: Encoder[DescribeResponse] = deriveFor[DescribeResponse].encoder
   implicit val encodeListVersionsRequest: Encoder[ListVersionsRequest] = deriveFor[ListVersionsRequest].encoder
-  implicit val encodeListVersionsResponse: Encoder[ListVersionsResponse] = deriveFor[ListVersionsResponse].encoder
+  implicit val encodeListVersionsResponse: Encoder[ListVersionsResponse] = ObjectEncoder.instance( response => {
+    JsonObject.singleton("results", encodeMap(response.results))
+  })
 
   implicit val encodeErrorResponse: Encoder[ErrorResponse] = deriveFor[ErrorResponse].encoder
 
@@ -60,7 +74,12 @@ object Encoders {
   implicit val encodeListRequest: Encoder[ListRequest] = deriveFor[ListRequest].encoder
   implicit val encodeListResponse: Encoder[ListResponse] = deriveFor[ListResponse].encoder
   implicit val encodeInstallation: Encoder[Installation] = deriveFor[Installation].encoder
-  implicit val encodePackageInformation: Encoder[PackageInformation] = deriveFor[PackageInformation].encoder
+  implicit val encodePackageInformation: Encoder[InstalledPackageInformation] = deriveFor[InstalledPackageInformation].encoder
+
+  implicit val encodeUniverseVersion: Encoder[UniverseVersion] = Encoder.instance(_.toString.asJson)
+  implicit val encodePackagingVersion: Encoder[PackagingVersion] = Encoder.instance(_.toString.asJson)
+  implicit val encodePackageRevision: Encoder[ReleaseVersion] = Encoder.instance(_.toString.asJson)
+  implicit val encodePackageDetailsVersion: Encoder[PackageDetailsVersion] = Encoder.instance(_.toString.asJson)
 
   implicit val exceptionEncoder: Encoder[Exception] =
     Encoder.instance { e => exceptionErrorResponse(e).asJson }
@@ -88,7 +107,7 @@ object Encoders {
   private[this] def msgForCosmosError(err: CosmosError): String = err match {
     case PackageNotFound(packageName) =>
       s"Package [$packageName] not found"
-    case VersionNotFound(packageName, packageVersion) =>
+    case VersionNotFound(packageName, PackageDetailsVersion(packageVersion)) =>
       s"Version [$packageVersion] of package [$packageName] not found"
     case EmptyPackageImport() =>
       "Package is empty"
@@ -146,5 +165,12 @@ object Encoders {
       s"Package [$pkgName] is not installed"
     case UninstallNonExistentAppForPackage(pkgName, appId) =>
       s"Package [$pkgName] with id [$appId] is not installed"
+  }
+
+  private[this] def encodeMap(versions: Map[PackageDetailsVersion, ReleaseVersion]): Json = {
+    versions
+      .map {
+        case (PackageDetailsVersion(pdv), ReleaseVersion(rv)) => pdv -> rv
+      }.asJson
   }
 }
