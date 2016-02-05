@@ -46,7 +46,12 @@ case class UnsupportedContentType(supported: List[MediaType], actual: Option[Med
 case class GenericHttpError(method: HttpMethod, uri: Uri, override val status: Status) extends CosmosError
 
 case class AmbiguousAppId(packageName: String, appIds: List[AppId]) extends CosmosError
-case class MultipleFrameworkIds(packageName: String, frameworkName: String, ids: List[String]) extends CosmosError
+case class MultipleFrameworkIds(
+  packageName: String,
+  packageVersion: Option[String],
+  frameworkName: String,
+  ids: List[String]
+) extends CosmosError
 case class PackageNotInstalled(packageName: String) extends CosmosError
 
 case class NelErrors(errs: NonEmptyList[CosmosError]) extends CosmosError //TODO: Cleanup
