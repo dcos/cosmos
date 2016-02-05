@@ -130,9 +130,16 @@ object Encoders {
     case AmbiguousAppId(pkgName, appIds) =>
       s"Multiple apps named [$pkgName] are installed: [${appIds.mkString(", ")}]"
     case MultipleFrameworkIds(pkgName, pkgVersion, fwName, ids) =>
-      s"Uninstalled package [$pkgName] version [$pkgVersion]\n" +
-        s"Unable to shutdown [$pkgName] service framework with name [$fwName] because there are multiple framework " +
-        s"ids matching this name: [${ids.mkString(", ")}]"
+      pkgVersion match {
+        case Some(ver) =>
+          s"Uninstalled package [$pkgName] version [$ver]\n" +
+            s"Unable to shutdown [$pkgName] service framework with name [$fwName] because there are multiple framework " +
+            s"ids matching this name: [${ids.mkString(", ")}]"
+        case None =>
+          s"Uninstalled package [$pkgName]\n" +
+            s"Unable to shutdown [$pkgName] service framework with name [$fwName] because there are multiple framework " +
+            s"ids matching this name: [${ids.mkString(", ")}]"
+      }
     case NelErrors(nelE) => nelE.toString
     case FileUploadError(msg) => msg
     case PackageNotInstalled(pkgName) =>
