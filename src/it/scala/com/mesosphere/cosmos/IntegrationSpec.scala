@@ -32,7 +32,8 @@ abstract class IntegrationSpec
       new PackageImportHandler,
       new PackageDescribeHandler(PackageCache.empty),
       new ListVersionsHandler(PackageCache.empty),
-      new ListHandler(adminRouter, PackageCache.empty)
+      new ListHandler(adminRouter, PackageCache.empty),
+      CapabilitiesHandler()
     ).service
   }
 
