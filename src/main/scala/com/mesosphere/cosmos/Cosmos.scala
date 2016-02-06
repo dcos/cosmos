@@ -10,7 +10,7 @@ import com.twitter.finagle.stats.{NullStatsReceiver, StatsReceiver}
 import io.circe.syntax.EncoderOps
 import io.github.benwhitehead.finch.FinchServer
 
-import com.twitter.util.{Await, Future}
+import com.twitter.util.Future
 import io.circe.Json
 import com.mesosphere.cosmos.circe.Decoders._
 import com.mesosphere.cosmos.circe.Encoders._
@@ -28,7 +28,8 @@ private[cosmos] final class Cosmos(
   packageImportHandler: PackageImportHandler, // TODO: Real response Type
   packageDescribeHandler: EndpointHandler[DescribeRequest, DescribeResponse],
   packageListVersionsHandler: EndpointHandler[ListVersionsRequest, ListVersionsResponse],
-  listHandler: EndpointHandler[ListRequest, ListResponse]
+  listHandler: EndpointHandler[ListRequest, ListResponse],
+  capabilitiesHandler: CapabilitiesHandler
 )(implicit statsReceiver: StatsReceiver = NullStatsReceiver) {
   lazy val logger = org.slf4j.LoggerFactory.getLogger(classOf[Cosmos])
 
@@ -118,6 +119,16 @@ private[cosmos] final class Cosmos(
     post("package" / "list" ? listHandler.reader)(respond _)
   }
 
+  val capabilities: Endpoint[Json] = {
+    def respond(any: Any): Future[Output[Json]] = {
+      capabilitiesHandler(None).map { resp =>
+        Ok(resp.asJson).withContentType(Some(capabilitiesHandler.produces.show))
+      }
+    }
+
+    get("capabilities" ? capabilitiesHandler.reader)(respond _)
+  }
+
   val service: Service[Request, Response] = {
     val stats = {
       baseScope.name match {
@@ -134,6 +145,7 @@ private[cosmos] final class Cosmos(
       :+: packageUninstall
       :+: packageListVersions
       :+: packageList
+      :+: capabilities
     )
       .handle {
         case ce: CosmosError =>
@@ -189,7 +201,8 @@ object Cosmos extends FinchServer {
         new PackageImportHandler,
         new PackageDescribeHandler(packageCache),
         new ListVersionsHandler(packageCache),
-        new ListHandler(adminRouter, packageCache)
+        new ListHandler(adminRouter, packageCache),
+        CapabilitiesHandler()
       )
       cosmos.service
     }

@@ -1,7 +1,7 @@
 package com.mesosphere.cosmos
 
 import cats.data.Xor
-import com.mesosphere.cosmos.handler.{EndpointHandler, PackageImportHandler, PackageInstallHandler, PackageRenderHandler}
+import com.mesosphere.cosmos.handler._
 import com.mesosphere.cosmos.circe.Decoders._
 import com.mesosphere.cosmos.http.MediaTypes
 import com.mesosphere.cosmos.model._
@@ -64,7 +64,8 @@ final class UserOptionsSpec extends UnitSpec {
           new PackageImportHandler,
           EndpointHandler.const(DescribeResponse(packageFiles.packageJson, packageFiles.marathonJsonMustache)),
           EndpointHandler.const(ListVersionsResponse(Map.empty)),
-          EndpointHandler.const(ListResponse(Nil))
+          EndpointHandler.const(ListResponse(Nil)),
+          CapabilitiesHandler()
         )
         val request = RequestBuilder()
           .url("http://dummy.cosmos.host/package/install")

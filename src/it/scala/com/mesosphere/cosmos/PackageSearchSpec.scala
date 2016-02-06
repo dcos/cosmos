@@ -75,7 +75,8 @@ final class PackageSearchSpec extends FreeSpec with CosmosSpec {
       new PackageImportHandler,
       new PackageDescribeHandler(packageCache),
       new ListVersionsHandler(packageCache),
-      new ListHandler(adminRouter, packageCache)
+      new ListHandler(adminRouter, packageCache),
+      CapabilitiesHandler()
     ).service
     val server = Http.serve(s":$servicePort", service)
     val client = Http.newService(s"127.0.0.1:$servicePort")

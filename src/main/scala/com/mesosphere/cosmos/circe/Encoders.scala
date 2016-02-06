@@ -81,6 +81,9 @@ object Encoders {
   implicit val encodePackageRevision: Encoder[ReleaseVersion] = Encoder.instance(_.toString.asJson)
   implicit val encodePackageDetailsVersion: Encoder[PackageDetailsVersion] = Encoder.instance(_.toString.asJson)
 
+  implicit val encodeCapabilitiesResponse: Encoder[CapabilitiesResponse] = deriveFor[CapabilitiesResponse].encoder
+  implicit val encodeCapability: Encoder[Capability] = deriveFor[Capability].encoder
+
   implicit val exceptionEncoder: Encoder[Exception] =
     Encoder.instance { e => exceptionErrorResponse(e).asJson }
 

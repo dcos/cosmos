@@ -78,6 +78,7 @@ final class PackageDescribeSpec extends FreeSpec with CosmosSpec {
     f: DescribeTestAssertionDecorator => Unit
   ): Unit = {
     val marathonPackageRunner = new MarathonPackageRunner(adminRouter)
+
     val service = new Cosmos(
       packageCache,
       marathonPackageRunner,
@@ -88,7 +89,8 @@ final class PackageDescribeSpec extends FreeSpec with CosmosSpec {
       new PackageImportHandler,
       new PackageDescribeHandler(packageCache),
       new ListVersionsHandler(packageCache),
-      new ListHandler(adminRouter, packageCache)
+      new ListHandler(adminRouter, packageCache),
+      CapabilitiesHandler()
     ).service
     val server = Http.serve(s":$servicePort", service)
     val client = Http.newService(s"127.0.0.1:$servicePort")
