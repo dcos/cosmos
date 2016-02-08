@@ -352,10 +352,10 @@ object UniversePackageCache {
   /** Create a new package cache.
     *
     * @param universeBundle the location of the package bundle to cache; must be an HTTP URL
-    * @param universeDir the directory to cache the bundle files in; assumed to be empty
+    * @param dataDir the directory to cache the bundle files in; assumed to be empty
     * @return The new cache, or an error.
     */
-  def apply(universeBundle: Uri, universeDir: Path): UniversePackageCache = {
-    new UniversePackageCache(universeBundle, universeDir)
+  def apply(universeBundle: Uri, dataDir: Path): UniversePackageCache = {
+    new UniversePackageCache(universeBundle, dataDir)
   }
 }

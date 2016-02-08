@@ -56,7 +56,7 @@ final class PackageSearchSpec extends FreeSpec with CosmosSpec {
   }
 
   private[this] def runService[A](
-    dcosClient: Service[Request, Response] = Services.adminRouterClient(adminRouterHost).get,
+    dcosClient: Service[Request, Response] = Services.adminRouterClient(adminRouterUri).get,
     packageCache: PackageCache
   )(
     f: SearchTestAssertionDecorator => Unit

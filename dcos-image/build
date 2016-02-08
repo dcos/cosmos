@@ -19,5 +19,9 @@ RestartSec=15
 EnvironmentFile=/opt/mesosphere/etc/num_masters.env
 EnvironmentFile=/opt/mesosphere/environment
 ExecStartPre=/opt/mesosphere/bin/exhibitor_wait.py \$ZOOKEEPER_CLUSTER_SIZE
+## CoreOS
+ExecStartPre=-/usr/bin/mkdir -p /var/lib/cosmos
+## Ubuntu
+ExecStartPre=-/bin/mkdir -p /var/lib/cosmos
 ExecStart=/opt/mesosphere/bin/java -Xmx2G -jar "$PKG_PATH/usr/cosmos.jar"
 EOF

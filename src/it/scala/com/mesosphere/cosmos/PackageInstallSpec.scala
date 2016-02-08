@@ -92,7 +92,7 @@ final class PackageInstallSpec extends FreeSpec with BeforeAndAfterAll with Cosm
           val errorMessage = s"Received response status code ${status.code} from Marathon"
           val errorResponse = ErrorResponse("MarathonGenericError", errorMessage)
 
-          runService(dcosClient = dcosClient) { apiClient =>
+          runService(marathonClientOverride = Some(dcosClient)) { apiClient =>
             forAll(PackageTable) { (packageName, _) =>
               apiClient.installPackageAndAssert(
                 InstallRequest(packageName),
@@ -113,7 +113,7 @@ final class PackageInstallSpec extends FreeSpec with BeforeAndAfterAll with Cosm
           val errorMessage = s"Received response status code ${status.code} from Marathon"
           val errorResponse = ErrorResponse("MarathonBadGateway", errorMessage)
 
-          runService(dcosClient = dcosClient) { apiClient =>
+          runService(marathonClientOverride = Some(dcosClient)) { apiClient =>
             forAll (PackageTable) { (packageName, _) =>
               apiClient.installPackageAndAssert(
                 InstallRequest(packageName),
@@ -248,26 +248,31 @@ final class PackageInstallSpec extends FreeSpec with BeforeAndAfterAll with Cosm
   }
 
   private[this] def runService[A](
-    dcosClient: Service[Request, Response] = Services.adminRouterClient(adminRouterHost).get,
+    marathonClientOverride: Option[Service[Request, Response]] = None,
     packageCache: PackageCache = MemoryPackageCache(PackageMap)
   )(
     f: ApiTestAssertionDecorator => Unit
   ): Unit = {
-    val adminRouter = new AdminRouter(adminRouterHost, dcosClient)
+    val ar = marathonClientOverride.map { mcOverride =>
+      new AdminRouter(
+        new MarathonClient(marathonUri, mcOverride),
+        new MesosMasterClient(mesosUri, Services.mesosClient(mesosUri).get)
+      )
+    } getOrElse adminRouter
     // these two imports provide the implicit DecodeRequest instances needed to instantiate Cosmos
-    val marathonPackageRunner = new MarathonPackageRunner(adminRouter)
+    val marathonPackageRunner = new MarathonPackageRunner(ar)
     //TODO: Get rid of this duplication
     val service = new Cosmos(
       packageCache,
       marathonPackageRunner,
-      new UninstallHandler(adminRouter, packageCache),
+      new UninstallHandler(ar, packageCache),
       new PackageInstallHandler(packageCache, marathonPackageRunner),
       new PackageRenderHandler(packageCache),
       new PackageSearchHandler(packageCache),
       new PackageImportHandler,
       new PackageDescribeHandler(packageCache),
       new ListVersionsHandler(packageCache),
-      new ListHandler(adminRouter, packageCache),
+      new ListHandler(ar, packageCache),
       CapabilitiesHandler()
     ).service
     val server = Http.serve(s":$servicePort", service)

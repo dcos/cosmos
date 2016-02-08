@@ -14,7 +14,7 @@ import io.circe.parse._
 final class CapabilitiesHandlerSpec extends IntegrationSpec {
 
   val tmpDir = {
-    val tempDir = Files.createTempDirectory("cosmos-UninstallHandlerSpec")
+    val tempDir = Files.createTempDirectory("cosmos-CapabilitiesHandlerSpec")
     val file = tempDir.toFile
     Runtime.getRuntime.addShutdownHook(new Thread() {
       override def run(): Unit = {
@@ -23,10 +23,9 @@ final class CapabilitiesHandlerSpec extends IntegrationSpec {
         }
       }
     })
-    file.deleteOnExit()
     val value = file.getAbsolutePath
-    logger.info("Setting com.mesosphere.cosmos.universeCacheDir={}", value)
-    System.setProperty("com.mesosphere.cosmos.universeCacheDir", value)
+    logger.info("Setting com.mesosphere.cosmos.dataDir={}", value)
+    System.setProperty("com.mesosphere.cosmos.dataDir", value)
     tempDir
   }
 

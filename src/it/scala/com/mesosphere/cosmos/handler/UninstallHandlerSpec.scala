@@ -27,10 +27,9 @@ final class UninstallHandlerSpec extends IntegrationSpec {
         }
       }
     })
-    file.deleteOnExit()
     val value = file.getAbsolutePath
-    logger.info("Setting com.mesosphere.cosmos.universeCacheDir={}", value)
-    System.setProperty("com.mesosphere.cosmos.universeCacheDir", value)
+    logger.info("Setting com.mesosphere.cosmos.dataDir={}", value)
+    System.setProperty("com.mesosphere.cosmos.dataDir", value)
     tempDir
   }
 
