@@ -68,6 +68,7 @@ object Encoders {
   })
 
   implicit val encodeErrorResponse: Encoder[ErrorResponse] = deriveFor[ErrorResponse].encoder
+  implicit val encodeMarathonError: Encoder[MarathonError] = deriveFor[MarathonError].encoder
 
   implicit val encodeUri: Encoder[Uri] = Encoder.instance(_.toString.asJson)
 
@@ -83,6 +84,7 @@ object Encoders {
 
   implicit val encodeCapabilitiesResponse: Encoder[CapabilitiesResponse] = deriveFor[CapabilitiesResponse].encoder
   implicit val encodeCapability: Encoder[Capability] = deriveFor[Capability].encoder
+
 
   implicit val exceptionEncoder: Encoder[Exception] =
     Encoder.instance { e => exceptionErrorResponse(e).asJson }
@@ -122,7 +124,8 @@ object Encoders {
       s"Package file [$fileName] does not match schema"
     case PackageAlreadyInstalled() =>
       "Package is already installed"
-    case MarathonBadResponse(marathonStatus) =>
+    case MarathonBadResponse(marathonErr) => marathonErr.message
+    case MarathonGenericError(marathonStatus) =>
       s"Received response status code ${marathonStatus.code} from Marathon"
     case MarathonBadGateway(marathonStatus) =>
       s"Received response status code ${marathonStatus.code} from Marathon"

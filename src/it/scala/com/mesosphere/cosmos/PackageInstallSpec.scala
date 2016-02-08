@@ -90,7 +90,7 @@ final class PackageInstallSpec extends FreeSpec with BeforeAndAfterAll with Cosm
         forAll (clientErrorStatuses) { status =>
           val dcosClient = Service.const(Future.value(Response(status)))
           val errorMessage = s"Received response status code ${status.code} from Marathon"
-          val errorResponse = ErrorResponse("MarathonBadResponse", errorMessage)
+          val errorResponse = ErrorResponse("MarathonGenericError", errorMessage)
 
           runService(dcosClient = dcosClient) { apiClient =>
             forAll(PackageTable) { (packageName, _) =>

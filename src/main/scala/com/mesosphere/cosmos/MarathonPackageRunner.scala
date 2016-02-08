@@ -1,7 +1,7 @@
 package com.mesosphere.cosmos
 
 import cats.data.Xor
-import com.mesosphere.cosmos.model.thirdparty.marathon.MarathonApp
+import com.mesosphere.cosmos.model.thirdparty.marathon.{ MarathonApp, MarathonError }
 import com.twitter.finagle.http.Status
 import com.twitter.util.Future
 import com.mesosphere.cosmos.circe.Decoders._
@@ -17,7 +17,12 @@ final class MarathonPackageRunner(adminRouter: AdminRouter) extends PackageRunne
         response.status match {
           case Status.Conflict => throw PackageAlreadyInstalled()
           case status if (400 until 500).contains(status.code) =>
-            throw MarathonBadResponse(status)
+            decode[MarathonError](response.contentString) match {
+              case Xor.Right(marathonError) =>
+                throw new MarathonBadResponse(marathonError)
+              case Xor.Left(parseError) =>
+                throw new MarathonGenericError(status)
+            }
           case status if (500 until 600).contains(status.code) =>
             throw MarathonBadGateway(status)
           case _ =>

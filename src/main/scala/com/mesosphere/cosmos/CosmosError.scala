@@ -3,6 +3,7 @@ package com.mesosphere.cosmos
 import cats.data.NonEmptyList
 import com.mesosphere.cosmos.http.MediaType
 import com.mesosphere.cosmos.model.AppId
+import com.mesosphere.cosmos.model.thirdparty.marathon.MarathonError
 import com.mesosphere.universe.PackageDetailsVersion
 import com.netaporter.uri.Uri
 import com.twitter.finagle.http.Status
@@ -26,7 +27,14 @@ case class PackageFileSchemaMismatch(fileName: String) extends CosmosError
 case class PackageAlreadyInstalled() extends CosmosError {
   override val status = Status.Conflict
 }
-case class MarathonBadResponse(marathonStatus: Status) extends CosmosError {
+case class MarathonBadResponse(marathonError: MarathonError) extends CosmosError {
+  val details = marathonError.details match {
+    case Some(details) => Some(JsonObject.singleton("errors", details.asJson))
+    case None => None
+  }
+  override def getData: Option[JsonObject] = details
+}
+case class MarathonGenericError(marathonStatus: Status) extends CosmosError {
   override val status = Status.InternalServerError
 }
 case class MarathonBadGateway(marathonStatus: Status) extends CosmosError {
