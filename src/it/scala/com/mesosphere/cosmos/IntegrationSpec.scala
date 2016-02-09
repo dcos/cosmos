@@ -12,10 +12,6 @@ abstract class IntegrationSpec
   with CosmosSpec {
 
   def createService: Service[Request, Response] = {
-    val adminRouterUri = adminRouterHost
-    val dcosClient = Services.adminRouterClient(adminRouterUri).get
-    val adminRouter = new AdminRouter(adminRouterUri, dcosClient)
-
     // these two imports provide the implicit DecodeRequest instances needed to instantiate Cosmos
     import com.mesosphere.cosmos.circe.Decoders._
     import com.mesosphere.cosmos.circe.Encoders._

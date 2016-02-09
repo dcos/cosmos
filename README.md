@@ -26,7 +26,7 @@ sbt test
 And the integration tests with:
 
 ```bash
-sbt -Dcom.mesosphere.cosmos.dcosHost=http://your.adminrouter.host -Dcom.mesosphere.cosmos.universeBundleUri=http://your.universe.repository/url
+sbt -DdcosUri=http://your.adminrouter.host -DuniverseBundleUri=http://your.universe.repository/url
 ```
 
 ### Running with a temporary cluster

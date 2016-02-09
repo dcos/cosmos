@@ -1,146 +1,26 @@
 package com.mesosphere.cosmos
 
-import cats.data.Xor.{Left, Right}
-import com.mesosphere.cosmos.http.MediaTypes
-import com.mesosphere.cosmos.http.MediaTypeOps
 import com.mesosphere.cosmos.model.AppId
-import com.mesosphere.cosmos.model.thirdparty.marathon.{MarathonAppsResponse, MarathonAppResponse}
+import com.mesosphere.cosmos.model.thirdparty.marathon.{MarathonAppResponse, MarathonAppsResponse}
 import com.mesosphere.cosmos.model.thirdparty.mesos.master._
-import com.mesosphere.cosmos.circe.Decoders._
-import com.netaporter.uri.Uri
-import com.netaporter.uri.dsl._
-import com.twitter.finagle.Service
 import com.twitter.finagle.http._
-import com.twitter.io.Buf
 import com.twitter.util.Future
 import io.circe.Json
-import io.circe.parse._
-import org.jboss.netty.handler.codec.http.HttpMethod
 
-class AdminRouter(adminRouterUri: Uri, client: Service[Request, Response]) {
+class AdminRouter(marathon: MarathonClient, mesos: MesosMasterClient) {
 
-  private val baseUri = {
-    val uri = adminRouterUri.toString
-    if (uri.endsWith("/")) {
-      uri.substring(0, uri.length)
-    }
-    else {
-      uri
-    }
-  }
+  def createApp(appJson: Json): Future[Response] = marathon.createApp(appJson)
 
-  private[this] def get(uri: Uri): Request = {
-    RequestBuilder()
-      .url(s"$baseUri${uri.toString}")
-      .setHeader("Accept", MediaTypes.applicationJson.show)
-      .buildGet
-  }
+  def getAppOption(appId: AppId): Future[Option[MarathonAppResponse]] = marathon.getAppOption(appId)
 
-  private[this] def post(uri: Uri, jsonBody: Json): Request = {
-    RequestBuilder()
-      .url(s"$baseUri${uri.toString}")
-      .setHeader("Accept", MediaTypes.applicationJson.show)
-      .setHeader("Content-Type", MediaTypes.applicationJson.show)
-      .buildPost(Buf.Utf8(jsonBody.noSpaces))
-  }
+  def getApp(appId: AppId): Future[MarathonAppResponse] = marathon.getApp(appId)
 
-  private[this] def postForm(uri: Uri, postBody: String): Request = {
-    RequestBuilder()
-      .url(s"$baseUri${uri.toString}")
-      .setHeader("Accept", MediaTypes.applicationJson.show)
-      .setHeader("Content-Type", "application/x-www-form-urlencoded; charset=utf-8")
-      .buildPost(Buf.Utf8(postBody))
-  }
+  def listApps(): Future[MarathonAppsResponse] = marathon.listApps()
 
-  private[this] def delete(uri: Uri): Request = {
-    RequestBuilder()
-      .url(s"$baseUri${uri.toString}")
-      .setHeader("Accept", MediaTypes.applicationJson.show)
-      .buildDelete()
-  }
+  def deleteApp(appId: AppId, force: Boolean = false): Future[Response] = marathon.deleteApp(appId, force)
 
-  private[this] def validateResponseStatus(method: HttpMethod, uri: Uri, response: Response): Future[Response] = {
-    response.status match {
-      case Status.Ok =>
-        Future.value(response)
-      case s: Status =>
-        throw new GenericHttpError(method, uri, s)
-    }
-  }
+  def tearDownFramework(frameworkId: String): Future[MesosFrameworkTearDownResponse] = mesos.tearDownFramework(frameworkId)
 
-  private[this] def decodeJsonTo[A](response: Response)(implicit d: io.circe.Decoder[A]): A = {
-    response.headerMap.get("Content-Type") match {
-      case Some(ct) =>
-        http.MediaType.parse(ct).map { mediaType =>
-          // Marathon and Mesos don't specify 'charset=utf-8' on it's json, so we are lax in our comparison here.
-          MediaTypeOps.compatibleIgnoringParameters(MediaTypes.applicationJson, mediaType) match {
-            case false =>
-              throw UnsupportedContentType(List(MediaTypes.applicationJson), Some(mediaType))
-            case true =>
-              decode[A](response.contentString) match {
-                case Left(err) => throw CirceError(err)
-                case Right(a) => a
-              }
-          }
-        }.get
-      case _ =>
-        throw UnsupportedContentType(List(MediaTypes.applicationJson))
-    }
-  }
+  def getMasterState(frameworkName: String): Future[MasterState] = mesos.getMasterState(frameworkName)
 
-  private[this] def decodeTo[A](method: HttpMethod, uri: Uri, response: Response)(implicit d: io.circe.Decoder[A]): Future[A] = {
-    validateResponseStatus(method, uri, response)
-      .map(decodeJsonTo[A])
-  }
-
-  def createApp(appJson: Json): Future[Response] = {
-    client(post("marathon" / "v2" / "apps" , appJson))
-  }
-
-  def getAppOption(appId: AppId): Future[Option[MarathonAppResponse]] = {
-    val uri = "marathon" / "v2" / "apps" / appId.toUri
-    client(get(uri)).map { response =>
-      response.status match {
-        case Status.Ok => Some(decodeJsonTo[MarathonAppResponse](response))
-        case Status.NotFound => None
-        case s: Status => throw GenericHttpError(HttpMethod.GET, uri, s)
-      }
-    }
-  }
-
-  def getApp(appId: AppId): Future[MarathonAppResponse] = {
-    getAppOption(appId).map { appOption =>
-      appOption.getOrElse(throw MarathonAppNotFound(appId))
-    }
-  }
-
-  def listApps(): Future[MarathonAppsResponse] = {
-    val uri = "marathon" / "v2" / "apps"
-    client(get(uri)).flatMap(decodeTo[MarathonAppsResponse](HttpMethod.GET, uri, _))
-  }
-
-  def deleteApp(appId: AppId, force: Boolean = false): Future[Response] = {
-    val uriPath = "marathon" / "v2" / "apps" / appId.toUri
-
-    force match {
-      case true => client(delete(uriPath ? ("force" -> "true")))
-      case false => client(delete(uriPath))
-    }
-  }
-
-  def tearDownFramework(frameworkId: String): Future[MesosFrameworkTearDownResponse] = {
-    val formData = Uri.empty.addParam("frameworkId", frameworkId)
-    // scala-uri makes it convenient to encode the actual framework id, but it will think its for a Uri
-    // so we strip the leading '?' that signifies the start of a query string
-    val encodedString = formData.toString.substring(1)
-    val uri = "mesos" / "master" / "teardown"
-    client(postForm(uri, encodedString))
-      .map(validateResponseStatus(HttpMethod.POST, uri, _))
-      .flatMap { _ => Future.value(MesosFrameworkTearDownResponse()) }
-  }
-
-  def getMasterState(frameworkName: String): Future[MasterState] = {
-    val uri = "mesos" / "master" / "state.json"
-    client(get(uri)).flatMap(decodeTo[MasterState](HttpMethod.GET, uri, _))
-  }
 }

@@ -1,6 +1,6 @@
 package com.mesosphere.cosmos.circe
 
-import com.mesosphere.cosmos.ErrorResponse
+import com.mesosphere.cosmos.{Uris, ErrorResponse}
 import com.mesosphere.cosmos.model._
 import com.mesosphere.cosmos.model.thirdparty.marathon._
 import com.mesosphere.cosmos.model.thirdparty.mesos.master._

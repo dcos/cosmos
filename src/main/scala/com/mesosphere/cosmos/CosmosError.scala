@@ -71,3 +71,15 @@ case class JsonSchemaMismatch(errors: Iterable[Json]) extends CosmosError {
 case class FileUploadError(message: String) extends CosmosError { override val status = Status.NotImplemented }
 
 case class UninstallNonExistentAppForPackage(packageName: String, appId: AppId) extends CosmosError
+
+case class ServiceUnavailable(
+  serviceName: String,
+  causedBy: Throwable
+) extends CosmosError(causedBy) {
+  override val status = Status.ServiceUnavailable
+  override val getData = Some(JsonObject.fromMap(Map(
+    "serviceName" -> serviceName.asJson
+  )))
+}
+
+case class IncompleteUninstall(packageName: String, causedBy: Throwable) extends CosmosError(causedBy)

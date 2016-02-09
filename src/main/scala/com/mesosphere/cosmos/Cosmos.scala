@@ -3,6 +3,8 @@ package com.mesosphere.cosmos
 import com.mesosphere.cosmos.handler._
 import com.mesosphere.cosmos.http.MediaTypes
 import com.mesosphere.cosmos.model._
+import com.netaporter.uri.Uri
+import com.netaporter.uri.dsl._
 import com.twitter.finagle.Service
 import com.twitter.finagle.http.exp.Multipart.FileUpload
 import com.twitter.finagle.http.{Request, Response, Status}
@@ -11,6 +13,7 @@ import io.circe.syntax.EncoderOps
 import io.github.benwhitehead.finch.FinchServer
 
 import com.twitter.util.Future
+import com.twitter.util.Try
 import io.circe.Json
 import com.mesosphere.cosmos.circe.Decoders._
 import com.mesosphere.cosmos.circe.Encoders._
@@ -180,15 +183,40 @@ private[cosmos] final class Cosmos(
 
 object Cosmos extends FinchServer {
   def service = {
-    val host = dcosHost()
-    logger.info("Connecting to DCOS Cluster at: {}", host.toStringRaw)
+    val ar = Try(dcosUri())
+      .map { dh =>
+        val dcosHost: String = Uris.stripTrailingSlash(dh)
+        logger.info("Connecting to DCOS Cluster at: {}", dcosHost)
+        val mar: Uri = dcosHost / "marathon"
+        val mesos: Uri = dcosHost / "mesos"
+        mar -> mesos
+      }
+      .handle {
+        case _: IllegalArgumentException =>
+          val mar: Uri = marathonUri().toStringRaw
+          val master: Uri = mesosMasterUri().toStringRaw
+          logger.info("Connecting to Marathon at: {}", mar)
+          logger.info("Connecting to Mesos master at: {}", master)
+          mar -> master
+      }
+      .flatMap { case (marathon, mesosMaster) =>
+        Trys.join(
+          Services.marathonClient(marathon).map { marathon -> _ },
+          Services.mesosClient(mesosMaster).map { mesosMaster -> _ }
+        )
+      }
+      .map { case (marathon, mesosMaster) =>
+        new AdminRouter(
+          new MarathonClient(marathon._1, marathon._2),
+          new MesosMasterClient(mesosMaster._1, mesosMaster._2)
+        )
+      }
 
-    val boot = Services.adminRouterClient(host) map { dcosClient =>
-      val adminRouter = new AdminRouter(host, dcosClient)
-
+    val boot = ar map { adminRouter =>
       val universeBundle = universeBundleUri()
-      val universeDir = universeCacheDir()
-      val packageCache = UniversePackageCache(universeBundle, universeDir)
+      val dd = dataDir()
+      logger.info("Using {} for data directory", dd)
+      val packageCache = UniversePackageCache(universeBundle, dd)
       val marathonPackageRunner = new MarathonPackageRunner(adminRouter)
 
       val cosmos = new Cosmos(

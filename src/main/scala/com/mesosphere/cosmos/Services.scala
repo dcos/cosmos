@@ -7,12 +7,21 @@ import com.twitter.finagle.client.Transporter
 import com.twitter.finagle.http.{Request, Response}
 import com.twitter.finagle.ssl.Ssl
 import com.twitter.finagle.transport.Transport
-import com.twitter.finagle.{Http, Service}
-import com.twitter.util.Try
+import com.twitter.finagle.{ChannelWriteException, Http, Service, SimpleFilter}
+import com.twitter.util.{Future, Try}
+
 
 object Services {
   def adminRouterClient(uri: Uri): Try[Service[Request, Response]] = {
     httpClient("adminRouter", uri)
+  }
+
+  def marathonClient(uri: Uri): Try[Service[Request, Response]] = {
+    httpClient("marathon", uri)
+  }
+
+  def mesosClient(uri: Uri): Try[Service[Request, Response]] = {
+    httpClient("mesos", uri)
   }
 
   def httpClient(serviceName: String, uri: Uri): Try[Service[Request, Response]] = {
@@ -29,7 +38,7 @@ object Services {
             .configured(Transporter.TLSHostname(Some(hostname)))
       }
 
-      cBuilder.newService(s"$hostname:$port", serviceName)
+      new ConnectionExceptionHandler(serviceName) andThen cBuilder.newService(s"$hostname:$port", serviceName)
     }
   }
 
@@ -46,4 +55,14 @@ object Services {
   }
 
   private[cosmos] case class ConnectionDetails(host: String, port: Int, tls: Boolean = false)
+
+  private[this] class ConnectionExceptionHandler(serviceName: String) extends SimpleFilter[Request, Response] {
+    override def apply(request: Request, service: Service[Request, Response]): Future[Response] = {
+      service(request)
+        .rescue {
+          case ce: ChannelWriteException =>
+            Future.exception(new ServiceUnavailable(serviceName, ce))
+        }
+    }
+  }
 }

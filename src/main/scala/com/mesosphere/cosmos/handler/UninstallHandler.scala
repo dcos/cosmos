@@ -47,6 +47,10 @@ private[cosmos] final class UninstallHandler(adminRouter: AdminRouter, packageCa
               case all =>
                 throw MultipleFrameworkIds(op.packageName, op.packageVersion, fwName, all)
             }
+              .handle {
+                case su: ServiceUnavailable =>
+                  throw IncompleteUninstall(op.packageName, su)
+              }
           case None =>
             Future.value(UninstallDetails.from(op))
         }
