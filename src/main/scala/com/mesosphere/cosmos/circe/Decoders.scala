@@ -76,6 +76,7 @@ object Decoders {
   }
 
   implicit val decodeErrorResponse: Decoder[ErrorResponse] = deriveFor[ErrorResponse].decoder
+  implicit val decodeMarathonError: Decoder[MarathonError] = deriveFor[MarathonError].decoder
 
   implicit val decodeUri: Decoder[Uri] = Decoder.decodeString.map(Uri.parse)
 
