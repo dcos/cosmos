@@ -10,7 +10,7 @@ CLEAN_VERSION=${VERSION//\//_}
 ONE_JAR="cosmos-${CLEAN_VERSION}-one-jar.jar"
 SHA1_FILE="${ONE_JAR}.sha1"
 
-DEPLOY_BUCKET=${DEPLOY_BUCKET:-"downloads.mesosphere.io/dcos/cosmos"}/${CLEAN_VERSION}
+DEPLOY_BUCKET=${DEPLOY_BUCKET:-"downloads.mesosphere.com/dcos/cosmos"}/${CLEAN_VERSION}
 S3_DEPLOY_BUCKET="s3://${DEPLOY_BUCKET}"
 HTTPS_DEPLOY_BUCKET="https://${DEPLOY_BUCKET}"
 
