@@ -67,6 +67,14 @@ private[cosmos] object PackageInstallHandler {
     }
   }
 
+  private[this] def validConfig(options: JsonObject, config: JsonObject): JsonObject = {
+    val validationErrors = JsonSchemaValidation.matchesSchema(options, config)
+    if (validationErrors.nonEmpty) {
+      throw JsonSchemaMismatch(validationErrors)
+    }
+    options
+  }
+
   private[this] def mergeOptions(
     packageFiles: PackageFiles,
     options: Option[JsonObject]
@@ -74,17 +82,13 @@ private[cosmos] object PackageInstallHandler {
     val defaults = extractDefaultsFromConfig(packageFiles.configJson)
     val merged: JsonObject = (packageFiles.configJson, options) match {
       case (None, None) => JsonObject.empty
-      case (Some(config), None) => defaults   // TODO: Potential future improvement, validate the defaults against the schema
+      case (Some(config), None) => validConfig(defaults, config)
       case (None, Some(_)) =>
         val error = Map("message" -> "No schema available to validate the provided options").asJson
         throw JsonSchemaMismatch(List(error))
       case (Some(config), Some(opts)) =>
         val m = merge(defaults, opts)
-        val validationErrors = JsonSchemaValidation.matchesSchema(m, config)
-        if (validationErrors.nonEmpty) {
-          throw JsonSchemaMismatch(validationErrors)
-        }
-        m
+        validConfig(m, config)
     }
 
     val resource = extractAssetsAsJson(packageFiles.resourceJson)
