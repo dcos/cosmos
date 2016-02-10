@@ -14,10 +14,6 @@ trait Repository extends PackageCollection {
     packageName: String,
     releaseVersion: ReleaseVersion
   ): Future[PackageFiles]
-
-  // TODO XXX (jsancio): We need to remove this!!
-  def getRepoIndex: Future[UniverseIndex]
-
 }
 
 object Repository {
@@ -39,12 +35,12 @@ object Repository {
       Future.exception(PackageNotFound(packageName))
     }
 
-    override def getRepoIndex: Future[UniverseIndex] = {
-      Future.exception(RepositoryNotFound("http://example.com/universe.zip"))
-    }
-
     override def getPackageIndex(packageName: String): Future[UniverseIndexEntry] = {
       Future.exception(PackageNotFound(packageName))
+    }
+
+    override def search(query: Option[String]): Future[List[UniverseIndexEntry]] = {
+      Future.exception(RepositoryNotFound("http://example.com/universe.zip"))
     }
   }
 }

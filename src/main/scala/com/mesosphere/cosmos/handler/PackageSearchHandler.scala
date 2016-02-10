@@ -15,49 +15,12 @@ private[cosmos] class PackageSearchHandler(packageCache: Repository)
   (implicit searchRequestBodyDecoder: DecodeRequest[SearchRequest], encoder: Encoder[SearchResponse])
   extends EndpointHandler[SearchRequest, SearchResponse] {
 
-  import PackageSearchHandler._
-
   val accepts: MediaType = MediaTypes.SearchRequest
   val produces: MediaType = MediaTypes.SearchResponse
 
   override def apply(request: SearchRequest): Future[SearchResponse] = {
-    packageCache.getRepoIndex
-      .map { repoIndex =>
-        SearchResponse(search(repoIndex.packages, request.query))
-      }
-  }
-
-}
-
-private[cosmos] object PackageSearchHandler {
-
-  private[cosmos] def search(packages: List[UniverseIndexEntry], queryOpt: Option[String]): List[UniverseIndexEntry] = {
-    val wildcardSymbol = "*"
-    queryOpt match {
-      case None => packages
-      case Some(query) =>
-        if (query.contains(wildcardSymbol)) {
-          packages.filter(searchRegexInPackageIndex(_, getRegex(query)))
-        } else {
-          packages.filter(searchPackageIndex(_, query.toLowerCase()))
-        }
+    packageCache.search(request.query) map { packages =>
+      SearchResponse(packages)
     }
   }
-
-  private[this] def getRegex(query: String): Regex = {
-    s"""^${query.replaceAll("\\*", ".*")}$$""".r
-  }
-
-  private[this] def searchRegexInPackageIndex(index: UniverseIndexEntry, regex: Regex): Boolean = {
-    regex.findFirstIn(index.name).isDefined ||
-      regex.findFirstIn(index.description).isDefined ||
-        index.tags.exists(regex.findFirstIn(_).isDefined)
-  }
-
-  private[this] def searchPackageIndex(index: UniverseIndexEntry, query: String): Boolean= {
-    index.name.toLowerCase().contains(query) ||
-      index.description.toLowerCase().contains(query) ||
-        index.tags.exists(_.toLowerCase().contains(query))
-  }
-
 }

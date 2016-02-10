@@ -36,7 +36,7 @@ final case class MemoryPackageCache(packages: Map[String, PackageFiles]) extends
     }
   }
 
-  override def getRepoIndex: Future[UniverseIndex] = {
+  override def search(query: Option[String]): Future[List[UniverseIndexEntry]] = {
     Future.exception(RepositoryNotFound("http://example.com/universe.zip"))
   }
 
