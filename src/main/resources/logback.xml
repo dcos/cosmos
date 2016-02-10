@@ -20,11 +20,14 @@
     </encoder>
   </appender>
 
+  <logger name="org.apache.zookeeper" level="warn"/>
+  <logger name="org.apache.curator" level="info"/>
+
   <logger name="access-log" level="trace">
     <appender-ref ref="access-log"/>
   </logger>
 
-  <root level="debug">
+  <root level="info">
     <appender-ref ref="STDOUT"/>
   </root>
 </configuration>

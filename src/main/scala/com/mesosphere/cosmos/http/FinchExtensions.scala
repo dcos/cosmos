@@ -5,7 +5,7 @@ import io.finch.{DecodeRequest, ValidationRule}
 object FinchExtensions {
 
   def beTheExpectedType(expected: MediaType): ValidationRule[MediaType] =
-    ValidationRule(s"be of type ${expected.show}") { actual =>
+    ValidationRule(s"match ${expected.show}") { actual =>
       MediaTypeOps.compatible(expected, actual)
     }
 

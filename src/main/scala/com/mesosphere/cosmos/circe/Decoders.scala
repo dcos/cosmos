@@ -1,22 +1,18 @@
 package com.mesosphere.cosmos.circe
 
-import com.mesosphere.cosmos.Uris
+import java.nio.ByteBuffer
+import java.util.Base64
+
 import com.mesosphere.cosmos.ErrorResponse
-import com.mesosphere.cosmos.CirceError
 import com.mesosphere.cosmos.model._
 import com.mesosphere.cosmos.model.thirdparty.marathon._
 import com.mesosphere.cosmos.model.thirdparty.mesos.master._
 import com.mesosphere.universe._
 import com.netaporter.uri.Uri
 import io.circe.generic.semiauto._
-import io.circe.parse.decode
 import io.circe.{Decoder, HCursor}
 
 object Decoders {
-
-  private[cosmos] def decodeOrThrow[A](s: String)(implicit d: Decoder[A]): A = {
-    decode[A](s).valueOr(error => throw CirceError(error))
-  }
 
   implicit val decodeLicense: Decoder[License] = deriveFor[License].decoder
   implicit val decodePackageDefinition: Decoder[PackageDetails] = deriveFor[PackageDetails].decoder
@@ -123,4 +119,10 @@ object Decoders {
     deriveFor[PackageRepositoryDeleteResponse].decoder
   }
 
+  implicit val decodeZooKeeperStorageEnvelope: Decoder[ZooKeeperStorageEnvelope] =
+    deriveFor[ZooKeeperStorageEnvelope].decoder
+
+  implicit val decodeByteBuffer: Decoder[ByteBuffer] = Decoder.decodeString.map { b64String =>
+    ByteBuffer.wrap(Base64.getDecoder.decode(b64String))
+  }
 }

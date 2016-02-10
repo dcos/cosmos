@@ -1,5 +1,8 @@
 package com.mesosphere.cosmos.circe
 
+import java.nio.ByteBuffer
+import java.util.Base64
+
 import com.mesosphere.cosmos.model._
 import com.mesosphere.cosmos.model.thirdparty.marathon._
 import com.mesosphere.cosmos.model.thirdparty.mesos.master._
@@ -107,17 +110,24 @@ object Encoders {
     deriveFor[PackageRepositoryDeleteResponse].encoder
   }
 
+  implicit val encodeZooKeeperStorageEnvelope: Encoder[ZooKeeperStorageEnvelope] =
+    deriveFor[ZooKeeperStorageEnvelope].encoder
+
   implicit val exceptionEncoder: Encoder[Exception] = {
     Encoder.instance { e => exceptionErrorResponse(e).asJson }
   }
 
+  implicit val encodeByteBuffer: Encoder[ByteBuffer] = Encoder.instance { bb =>
+    Base64.getEncoder.encodeToString(ByteBuffers.getBytes(bb)).asJson
+  }
+
   private[this] def exceptionErrorResponse(t: Throwable): ErrorResponse = t match {
     case Error.NotPresent(item) =>
-      ErrorResponse("not_present", s"Item '${item.kind}' not present but required")
+      ErrorResponse("not_present", s"Item '${item.description}' not present but required")
     case Error.NotParsed(item, typ, cause) =>
-      ErrorResponse("not_parsed", s"Item '${item.kind}' unable to be parsed : '${cause.getMessage}'")
+      ErrorResponse("not_parsed", s"Item '${item.description}' unable to be parsed : '${cause.getMessage}'")
     case Error.NotValid(item, rule) =>
-      ErrorResponse("not_valid", s"Item '${item.kind}' deemed invalid by rule: '$rule'")
+      ErrorResponse("not_valid", s"Item '${item.description}' deemed invalid by rule: '$rule'")
     case Error.RequestErrors(ts) =>
       val details = ts.map(exceptionErrorResponse).toList.asJson
       ErrorResponse(
@@ -201,6 +211,7 @@ object Encoders {
 
     case RepoNameOrUriMissing() =>
       s"Must specify either the name or URI of the repository"
+    case ZooKeeperStorageError(msg) => msg
   }
 
   private[this] def encodeMap(versions: Map[PackageDetailsVersion, ReleaseVersion]): Json = {

@@ -22,6 +22,7 @@ object mesosMasterUri extends GlobalFlag[Uri](
 )
 
 object zookeeperConnectString extends GlobalFlag[String](
+  "localhost:2181",
   "The ZooKeeper connection string"
 )
 
