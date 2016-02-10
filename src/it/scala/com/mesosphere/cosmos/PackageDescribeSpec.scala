@@ -8,6 +8,7 @@ import com.mesosphere.cosmos.http.MediaTypes
 import com.mesosphere.cosmos.model._
 import com.mesosphere.cosmos.model.thirdparty.marathon.{MarathonApp, MarathonAppContainer, MarathonAppContainerDocker}
 import com.mesosphere.cosmos.repository.PackageSourcesStorage
+import com.mesosphere.cosmos.repository.Repository
 import com.mesosphere.universe._
 import com.netaporter.uri.Uri
 import com.twitter.finagle.http._
@@ -71,7 +72,7 @@ final class PackageDescribeSpec extends FreeSpec with CosmosSpec {
 
   private[this] def runService[A](
     dcosClient: Service[Request, Response] = Services.adminRouterClient(adminRouterUri).get,
-    packageCache: PackageCache
+    packageCache: Repository
   )(
     f: DescribeTestAssertionDecorator => Unit
   ): Unit = {

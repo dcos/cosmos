@@ -1,15 +1,19 @@
 package com.mesosphere.cosmos.handler
 
-import com.mesosphere.cosmos.PackageCache
-import com.mesosphere.cosmos.http.{MediaTypes, MediaType}
-import com.mesosphere.cosmos.model.{DescribeRequest, DescribeResponse}
 import com.twitter.util.Future
 import io.circe.Encoder
 import io.finch.DecodeRequest
 
-private[cosmos] class PackageDescribeHandler(packageCache: PackageCache)
-  (implicit bodyDecoder: DecodeRequest[DescribeRequest], encoder: Encoder[DescribeResponse])
-  extends EndpointHandler[DescribeRequest, DescribeResponse] {
+import com.mesosphere.cosmos.http.{MediaTypes, MediaType}
+import com.mesosphere.cosmos.model.{DescribeRequest, DescribeResponse}
+import com.mesosphere.cosmos.repository.Repository
+
+private[cosmos] class PackageDescribeHandler(
+  packageCache: Repository
+)(implicit
+  bodyDecoder: DecodeRequest[DescribeRequest],
+  encoder: Encoder[DescribeResponse]
+) extends EndpointHandler[DescribeRequest, DescribeResponse] {
   override def accepts: MediaType = MediaTypes.DescribeRequest
   override def produces: MediaType = MediaTypes.DescribeResponse
 

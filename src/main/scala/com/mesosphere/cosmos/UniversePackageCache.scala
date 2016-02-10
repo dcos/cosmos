@@ -9,25 +9,29 @@ import java.util.zip.ZipInputStream
 import cats.data.Validated.{Valid, Invalid}
 import cats.data.Xor.{Left, Right}
 import cats.data._
-import cats.std.option._
 import cats.std.list._           // allows for traversU in verifySchema
+import cats.std.option._
 import cats.syntax.apply._       // provides |@|
 import cats.syntax.option._
 import cats.syntax.traverse._
-import com.mesosphere.cosmos.circe.Decoders._
-import com.mesosphere.universe._
 import com.netaporter.uri.Uri
 import com.twitter.concurrent.AsyncMutex
 import com.twitter.io.Charsets
 import com.twitter.io.{Files => TwitterFiles }
 import com.twitter.util.{Future, Return, Throw, Try}
-import io.circe.{Decoder, Json}
 import io.circe.parse._
+import io.circe.{Decoder, Json}
 
+import com.mesosphere.cosmos.circe.Decoders._
+import com.mesosphere.cosmos.repository.Repository
+import com.mesosphere.universe._
 
 /** Stores packages from the Universe GitHub repository in the local filesystem.
   */
-final class UniversePackageCache private(universeBundle: Uri, universeDir: Path) extends PackageCache {
+final class UniversePackageCache private(
+  universeBundle: Uri,
+  universeDir: Path
+) extends Repository {
   // This mutex serializes updates to the local package cache
   private[this] val updateMutex = new AsyncMutex()
 

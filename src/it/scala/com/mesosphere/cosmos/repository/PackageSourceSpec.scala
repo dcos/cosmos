@@ -91,12 +91,22 @@ private[cosmos] object PackageSourceSpec extends UnitSpec {
 
   private val PackageSourcesZkPath = "/package-sources/v1"
 
-  private[cosmos] val SourceVersion2x =
-    PackageSource("foo", Uri.parse("https://github.com/mesosphere/universe/archive/version-2.x.zip"))
-  private[cosmos] val SourceCliTest4 =
-    PackageSource("bar", Uri.parse("https://github.com/mesosphere/universe/archive/cli-test-4.zip"))
-  private[cosmos] val SourceMesosphere = PackageSource("baz", Uri.parse("https://mesosphere.com"))
-  private[cosmos] val SourceExample = PackageSource("quux", Uri.parse("http://example.com"))
+  private[cosmos] val SourceVersion2x = PackageRepository(
+    "foo",
+    Uri.parse("https://github.com/mesosphere/universe/archive/version-2.x.zip")
+  )
+  private[cosmos] val SourceCliTest4 = PackageRepository(
+    "bar",
+    Uri.parse("https://github.com/mesosphere/universe/archive/cli-test-4.zip")
+  )
+  private[cosmos] val SourceMesosphere = PackageRepository(
+    "baz",
+    Uri.parse("https://mesosphere.com")
+  )
+  private[cosmos] val SourceExample = PackageRepository(
+    "quux",
+    Uri.parse("http://example.com")
+  )
 
   private val PackageRepositoryListValues = Table(
     "sources list",
@@ -155,15 +165,22 @@ private[cosmos] object PackageSourceSpec extends UnitSpec {
   // TODO cruhland: Delete source request with neither name nor URI
   // TODO cruhland: Delete source request with name and URI
 
-  private[this] def addRequest(source: PackageSource, index: Option[Int]): PackageRepositoryAddRequest = {
+  private[this] def addRequest(
+    source: PackageRepository,
+    index: Option[Int]
+  ): PackageRepositoryAddRequest = {
     PackageRepositoryAddRequest(source.name, source.uri, index)
   }
 
-  private[this] def deleteRequestByName(source: PackageSource): PackageRepositoryDeleteRequest = {
+  private[this] def deleteRequestByName(
+    source: PackageRepository
+  ): PackageRepositoryDeleteRequest = {
     PackageRepositoryDeleteRequest(name = Some(source.name))
   }
 
-  private[this] def deleteRequestByUri(source: PackageSource): PackageRepositoryDeleteRequest = {
+  private[this] def deleteRequestByUri(
+    source: PackageRepository
+  ): PackageRepositoryDeleteRequest = {
     PackageRepositoryDeleteRequest(uri = Some(source.uri))
   }
 
@@ -171,10 +188,10 @@ private[cosmos] object PackageSourceSpec extends UnitSpec {
 
 private case class AddSourceAssertion(
   request: PackageRepositoryAddRequest,
-  responseList: List[PackageSource]
+  responseList: List[PackageRepository]
 )
 
 private case class DeleteSourceAssertion(
   request: PackageRepositoryDeleteRequest,
-  responseList: List[PackageSource]
+  responseList: List[PackageRepository]
 )

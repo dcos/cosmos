@@ -10,6 +10,7 @@ import com.mesosphere.cosmos.http.MediaTypes
 import com.mesosphere.cosmos.model._
 import com.mesosphere.cosmos.model.thirdparty.marathon.{MarathonApp, MarathonAppContainer, MarathonAppContainerDocker}
 import com.mesosphere.cosmos.repository.PackageSourcesStorage
+import com.mesosphere.cosmos.repository.Repository
 import com.mesosphere.universe.{PackageDetails, PackageDetailsVersion, PackageFiles, PackagingVersion}
 import com.netaporter.uri.Uri
 import com.twitter.finagle.http._
@@ -247,7 +248,7 @@ final class PackageInstallSpec extends FreeSpec with BeforeAndAfterAll with Cosm
 
   private[this] def runService[A](
     marathonClientOverride: Option[Service[Request, Response]] = None,
-    packageCache: PackageCache = MemoryPackageCache(PackageMap)
+    packageCache: Repository = MemoryPackageCache(PackageMap)
   )(
     f: ApiTestAssertionDecorator => Unit
   ): Unit = {

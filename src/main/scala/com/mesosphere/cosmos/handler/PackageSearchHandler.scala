@@ -1,16 +1,17 @@
 package com.mesosphere.cosmos.handler
 
-import com.mesosphere.cosmos.PackageCache
-import com.mesosphere.cosmos.http.{MediaType, MediaTypes}
-import com.mesosphere.cosmos.model._
-import com.mesosphere.universe.UniverseIndexEntry
+import scala.util.matching.Regex
+
 import com.twitter.util.Future
 import io.circe.Encoder
 import io.finch.DecodeRequest
 
-import scala.util.matching.Regex
+import com.mesosphere.cosmos.http.{MediaType, MediaTypes}
+import com.mesosphere.cosmos.model._
+import com.mesosphere.cosmos.repository.Repository
+import com.mesosphere.universe.UniverseIndexEntry
 
-private[cosmos] class PackageSearchHandler(packageCache: PackageCache)
+private[cosmos] class PackageSearchHandler(packageCache: Repository)
   (implicit searchRequestBodyDecoder: DecodeRequest[SearchRequest], encoder: Encoder[SearchResponse])
   extends EndpointHandler[SearchRequest, SearchResponse] {
 

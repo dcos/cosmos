@@ -3,7 +3,7 @@ package com.mesosphere.cosmos.handler
 import com.mesosphere.cosmos.http.{MediaType, MediaTypes}
 import com.mesosphere.cosmos.model.PackageRepositoryAddRequest
 import com.mesosphere.cosmos.model.PackageRepositoryAddResponse
-import com.mesosphere.cosmos.model.PackageSource
+import com.mesosphere.cosmos.model.PackageRepository
 import com.mesosphere.cosmos.repository.PackageSourcesStorage
 import com.twitter.util.Future
 import io.circe.Encoder
@@ -25,7 +25,7 @@ final class PackageRepositoryAddHandler(sourcesStorage: PackageSourcesStorage)(
       val index = request.index.getOrElse(0)
       val (leftSources, rightSources) = sources.splitAt(index)
       val updatedSources = leftSources ++ (
-        PackageSource(request.name, request.uri) :: rightSources
+        PackageRepository(request.name, request.uri) :: rightSources
       )
       sourcesStorage.write(updatedSources)
     } map { sources =>

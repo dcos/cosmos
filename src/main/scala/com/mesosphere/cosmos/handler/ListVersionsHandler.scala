@@ -1,15 +1,20 @@
 package com.mesosphere.cosmos.handler
 
-import com.mesosphere.cosmos.PackageCache
-import com.mesosphere.cosmos.http.{MediaType, MediaTypes}
-import com.mesosphere.cosmos.model.{ListVersionsRequest, ListVersionsResponse}
 import com.twitter.util.Future
 import io.circe.Encoder
 import io.finch.DecodeRequest
 
-private[cosmos] class ListVersionsHandler(packageCache: PackageCache)
-  (implicit bodyDecoder: DecodeRequest[ListVersionsRequest], encoder: Encoder[ListVersionsResponse])
+import com.mesosphere.cosmos.repository.Repository
+import com.mesosphere.cosmos.http.{MediaType, MediaTypes}
+import com.mesosphere.cosmos.model.{ListVersionsRequest, ListVersionsResponse}
+
+private[cosmos] class ListVersionsHandler(
+  packageCache: Repository
+)(implicit
+  bodyDecoder: DecodeRequest[ListVersionsRequest],
+  encoder: Encoder[ListVersionsResponse])
   extends EndpointHandler[ListVersionsRequest, ListVersionsResponse] {
+
   override def accepts: MediaType = MediaTypes.ListVersionsRequest
   override def produces: MediaType = MediaTypes.ListVersionsResponse
 

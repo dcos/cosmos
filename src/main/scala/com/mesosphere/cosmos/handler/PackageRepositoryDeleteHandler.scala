@@ -8,7 +8,7 @@ import com.mesosphere.cosmos.RepoNameOrUriMissing
 import com.mesosphere.cosmos.http.{MediaType, MediaTypes}
 import com.mesosphere.cosmos.model.PackageRepositoryDeleteRequest
 import com.mesosphere.cosmos.model.PackageRepositoryDeleteResponse
-import com.mesosphere.cosmos.model.PackageSource
+import com.mesosphere.cosmos.model.PackageRepository
 import com.mesosphere.cosmos.repository.PackageSourcesStorage
 
 private[cosmos] final class PackageRepositoryDeleteHandler(sourcesStorage: PackageSourcesStorage)(
@@ -23,8 +23,8 @@ private[cosmos] final class PackageRepositoryDeleteHandler(sourcesStorage: Packa
   override def apply(
     request: PackageRepositoryDeleteRequest
   ): Future[PackageRepositoryDeleteResponse] = {
-    val nameFilter = request.name.map(name => (source: PackageSource) => source.name == name)
-    val uriFilter = request.uri.map(uri => (source: PackageSource) => source.uri == uri)
+    val nameFilter = request.name.map(name => (source: PackageRepository) => source.name == name)
+    val uriFilter = request.uri.map(uri => (source: PackageRepository) => source.uri == uri)
 
     nameFilter.orElse(uriFilter) match {
       case Some(filterFn) =>
