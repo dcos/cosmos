@@ -6,10 +6,10 @@ import io.finch.DecodeRequest
 
 import com.mesosphere.cosmos.http.{MediaTypes, MediaType}
 import com.mesosphere.cosmos.model.{DescribeRequest, DescribeResponse}
-import com.mesosphere.cosmos.repository.Repository
+import com.mesosphere.cosmos.repository.PackageCollection
 
 private[cosmos] class PackageDescribeHandler(
-  packageCache: Repository
+  packageCache: PackageCollection
 )(implicit
   bodyDecoder: DecodeRequest[DescribeRequest],
   encoder: Encoder[DescribeResponse]

@@ -18,12 +18,12 @@ import com.mesosphere.cosmos.http.MediaTypes
 import com.mesosphere.cosmos.jsonschema.JsonSchemaValidation
 import com.mesosphere.cosmos.model._
 import com.mesosphere.cosmos.model.thirdparty.marathon.MarathonApp
+import com.mesosphere.cosmos.repository.PackageCollection
 import com.mesosphere.cosmos.{JsonSchemaMismatch, PackageFileNotJson, PackageRunner}
 import com.mesosphere.universe.{PackageFiles, Resource}
-import com.mesosphere.cosmos.repository.Repository
 
 private[cosmos] final class PackageInstallHandler(
-  packageCache: Repository,
+  packageCache: PackageCollection,
   packageRunner: PackageRunner
 )(implicit
   bodyDecoder: DecodeRequest[InstallRequest],
@@ -50,7 +50,6 @@ private[cosmos] final class PackageInstallHandler(
           }
       }
   }
-
 }
 
 private[cosmos] object PackageInstallHandler {

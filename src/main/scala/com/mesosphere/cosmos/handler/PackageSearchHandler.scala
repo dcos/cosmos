@@ -8,12 +8,15 @@ import io.finch.DecodeRequest
 
 import com.mesosphere.cosmos.http.{MediaType, MediaTypes}
 import com.mesosphere.cosmos.model._
-import com.mesosphere.cosmos.repository.Repository
+import com.mesosphere.cosmos.repository.PackageCollection
 import com.mesosphere.universe.UniverseIndexEntry
 
-private[cosmos] class PackageSearchHandler(packageCache: Repository)
-  (implicit searchRequestBodyDecoder: DecodeRequest[SearchRequest], encoder: Encoder[SearchResponse])
-  extends EndpointHandler[SearchRequest, SearchResponse] {
+private[cosmos] class PackageSearchHandler(
+  packageCache: PackageCollection
+)(implicit
+  searchRequestBodyDecoder: DecodeRequest[SearchRequest],
+  encoder: Encoder[SearchResponse]
+) extends EndpointHandler[SearchRequest, SearchResponse] {
 
   val accepts: MediaType = MediaTypes.SearchRequest
   val produces: MediaType = MediaTypes.SearchResponse
