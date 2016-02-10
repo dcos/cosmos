@@ -87,7 +87,7 @@ private object PackageSourcesIntegrationSpec extends CosmosSpec {
       PackageRepositoryListRequest(),
       MediaTypes.PackageRepositoryListRequest,
       MediaTypes.PackageRepositoryListResponse
-    ).sources
+    ).repositories
   }
 
   private def addSource(
