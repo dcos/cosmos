@@ -26,7 +26,7 @@ sbt test
 And the integration tests with:
 
 ```bash
-sbt -DdcosUri=http://your.adminrouter.host -DuniverseBundleUri=http://your.universe.repository/url
+sbt -Dcom.mesosphere.cosmos.dcosUri=http://your.adminrouter.host -Dcom.mesosphere.cosmos.universeBundleUri=http://your.universe.repository/url
 ```
 
 ### Running with a temporary cluster
@@ -49,5 +49,5 @@ The jar will be created in the `target/scala-2.11/` directory. This can be execu
 
 ```bash
 java -jar target/scala-2.11/cosmos_2.11-<version>-SNAPSHOT-one-jar.jar  \
-     -com.mesosphere.cosmos.dcosHost=<dcos-host-url>
+     -com.mesosphere.cosmos.dcosUri=<dcos-host-url>
 ```
