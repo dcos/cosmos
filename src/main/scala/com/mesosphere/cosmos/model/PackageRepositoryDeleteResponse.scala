@@ -1,3 +1,3 @@
 package com.mesosphere.cosmos.model
 
-case class PackageRepositoryDeleteResponse(sources: Seq[PackageRepository])
+case class PackageRepositoryDeleteResponse(repositories: Seq[PackageRepository])
