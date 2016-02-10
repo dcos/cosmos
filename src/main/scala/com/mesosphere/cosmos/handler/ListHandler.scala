@@ -1,15 +1,20 @@
 package com.mesosphere.cosmos.handler
 
-import com.mesosphere.cosmos.http.MediaTypes
-import com.mesosphere.cosmos.model.{Installation, ListRequest, ListResponse, InstalledPackageInformation}
-import com.mesosphere.cosmos.{AdminRouter, PackageCache}
 import com.twitter.util.Future
 import io.circe.Encoder
 import io.finch.DecodeRequest
 
+import com.mesosphere.cosmos.AdminRouter
+import com.mesosphere.cosmos.repository.Repository
+import com.mesosphere.cosmos.http.MediaTypes
+import com.mesosphere.cosmos.model.Installation
+import com.mesosphere.cosmos.model.InstalledPackageInformation
+import com.mesosphere.cosmos.model.ListRequest
+import com.mesosphere.cosmos.model.ListResponse
+
 final class ListHandler(
   adminRouter: AdminRouter,
-  packageCache: PackageCache
+  packageCache: Repository
   )(implicit
   requestDecoder: DecodeRequest[ListRequest],
   responseEncoder: Encoder[ListResponse]

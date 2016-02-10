@@ -1,7 +1,10 @@
 package com.mesosphere.cosmos.repository
 
-import com.mesosphere.universe.{ReleaseVersion, PackageDetailsVersion, PackageFiles, UniverseIndexEntry}
 import com.twitter.util.Future
+
+import com.mesosphere.universe.PackageDetailsVersion
+import com.mesosphere.universe.PackageFiles
+import com.mesosphere.universe.UniverseIndexEntry
 
 /** An aggregation of packages, possibly from multiple repositories.
   *
@@ -10,14 +13,12 @@ import com.twitter.util.Future
   * way, a hierarchy of [[PackageCollection]]s can work together without generating unwieldy amounts
   * of data.
   */
-private trait PackageCollection {
+trait PackageCollection {
 
-  def getPackageByPackageVersion(packageName: String, packageVersion: Option[PackageDetailsVersion]): Future[PackageFiles]
+  def getPackageByPackageVersion(
+    packageName: String,
+    packageVersion: Option[PackageDetailsVersion])
+  : Future[PackageFiles]
 
-  def getPackageByReleaseVersion(packageName: String, releaseVersion: ReleaseVersion): Future[PackageFiles]
-
-  def getPackageInfo(packageName: String): Future[UniverseIndexEntry]
-
-  def search(query: Option[String]): Future[Seq[UniverseIndexEntry]]
-
+  def getPackageIndex(packageName: String): Future[UniverseIndexEntry]
 }

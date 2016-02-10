@@ -78,9 +78,9 @@ final class PackageSourcesIntegrationSpec extends FreeSpec with CosmosSpec with 
 
 private object PackageSourcesIntegrationSpec extends CosmosSpec {
 
-  private val UniverseSource: PackageSource = PackageSource("Universe", universeUri)
+  private val UniverseSource = PackageRepository("Universe", universeUri)
 
-  private def listSources(cosmosService: Service[Request, Response]): Seq[PackageSource] = {
+  private def listSources(cosmosService: Service[Request, Response]): Seq[PackageRepository] = {
     callEndpoint[PackageRepositoryListRequest, PackageRepositoryListResponse](
       cosmosService,
       "package/repository/list",
@@ -92,7 +92,7 @@ private object PackageSourcesIntegrationSpec extends CosmosSpec {
 
   private def addSource(
     cosmosService: Service[Request, Response],
-    source: PackageSource
+    source: PackageRepository
   ): PackageRepositoryAddResponse = {
     callEndpoint[PackageRepositoryAddRequest, PackageRepositoryAddResponse](
       cosmosService,
@@ -105,7 +105,7 @@ private object PackageSourcesIntegrationSpec extends CosmosSpec {
 
   private def deleteSource(
     cosmosService: Service[Request, Response],
-    source: PackageSource
+    source: PackageRepository
   ): PackageRepositoryDeleteResponse = {
     callEndpoint[PackageRepositoryDeleteRequest, PackageRepositoryDeleteResponse](
       cosmosService,

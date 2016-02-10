@@ -3,14 +3,10 @@ package com.mesosphere.cosmos.handler
 import java.io.{StringReader, StringWriter}
 import java.util.Base64
 
+import scala.collection.JavaConverters._
+
 import cats.data.Xor
 import com.github.mustachejava.DefaultMustacheFactory
-import com.mesosphere.cosmos.http.MediaTypes
-import com.mesosphere.cosmos.jsonschema.JsonSchemaValidation
-import com.mesosphere.cosmos.model._
-import com.mesosphere.cosmos.model.thirdparty.marathon.MarathonApp
-import com.mesosphere.cosmos.{JsonSchemaMismatch, PackageCache, PackageFileNotJson, PackageRunner}
-import com.mesosphere.universe.{PackageFiles, Resource}
 import com.twitter.io.Charsets
 import com.twitter.util.Future
 import io.circe.parse.parse
@@ -18,11 +14,21 @@ import io.circe.syntax._
 import io.circe.{Encoder, Json, JsonObject}
 import io.finch.DecodeRequest
 
-import scala.collection.JavaConverters._
+import com.mesosphere.cosmos.http.MediaTypes
+import com.mesosphere.cosmos.jsonschema.JsonSchemaValidation
+import com.mesosphere.cosmos.model._
+import com.mesosphere.cosmos.model.thirdparty.marathon.MarathonApp
+import com.mesosphere.cosmos.{JsonSchemaMismatch, PackageFileNotJson, PackageRunner}
+import com.mesosphere.universe.{PackageFiles, Resource}
+import com.mesosphere.cosmos.repository.Repository
 
-private[cosmos] final class PackageInstallHandler(packageCache: PackageCache, packageRunner: PackageRunner)
-  (implicit bodyDecoder: DecodeRequest[InstallRequest], encoder: Encoder[InstallResponse])
-  extends EndpointHandler[InstallRequest, InstallResponse] {
+private[cosmos] final class PackageInstallHandler(
+  packageCache: Repository,
+  packageRunner: PackageRunner
+)(implicit
+  bodyDecoder: DecodeRequest[InstallRequest],
+  encoder: Encoder[InstallResponse]
+) extends EndpointHandler[InstallRequest, InstallResponse] {
 
   val accepts = MediaTypes.InstallRequest
   val produces = MediaTypes.InstallResponse

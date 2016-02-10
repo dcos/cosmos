@@ -21,10 +21,12 @@ import com.mesosphere.cosmos.circe.Encoders._
 import com.mesosphere.cosmos.handler._
 import com.mesosphere.cosmos.http.MediaTypes
 import com.mesosphere.cosmos.model._
-import com.mesosphere.cosmos.repository.{PackageSourcesStorage, ZooKeeperStorage}
+import com.mesosphere.cosmos.repository.PackageSourcesStorage
+import com.mesosphere.cosmos.repository.ZooKeeperStorage
+import com.mesosphere.cosmos.repository.Repository
 
 private[cosmos] final class Cosmos(
-  packageCache: PackageCache,
+  packageCache: Repository,
   packageRunner: PackageRunner,
   uninstallHandler: EndpointHandler[UninstallRequest, UninstallResponse],
   packageInstallHandler: EndpointHandler[InstallRequest, InstallResponse],
@@ -286,7 +288,7 @@ object Cosmos extends FinchServer {
 
   private[cosmos] def apply(
     adminRouter: AdminRouter,
-    packageCache: PackageCache,
+    packageCache: Repository,
     packageRunner: PackageRunner,
     sourcesStorage: PackageSourcesStorage
   ): Cosmos = {

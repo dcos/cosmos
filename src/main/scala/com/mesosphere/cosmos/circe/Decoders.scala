@@ -107,7 +107,9 @@ object Decoders {
   implicit val decodePackageRepositoryListResponse: Decoder[PackageRepositoryListResponse] = {
     deriveFor[PackageRepositoryListResponse].decoder
   }
-  implicit val decodePackageSource: Decoder[PackageSource] = deriveFor[PackageSource].decoder
+  implicit val decodePackageRepository: Decoder[PackageRepository] = {
+    deriveFor[PackageRepository].decoder
+  }
   implicit val decodePackageRepositoryAddRequest: Decoder[PackageRepositoryAddRequest] = {
     deriveFor[PackageRepositoryAddRequest].decoder
   }
