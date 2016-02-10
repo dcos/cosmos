@@ -21,4 +21,6 @@ trait PackageCollection {
   : Future[PackageFiles]
 
   def getPackageIndex(packageName: String): Future[UniverseIndexEntry]
+
+  def search(query: Option[String]): Future[List[UniverseIndexEntry]]
 }

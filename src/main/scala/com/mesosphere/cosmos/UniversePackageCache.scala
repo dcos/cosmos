@@ -6,6 +6,8 @@ import java.util.Base64
 import java.util.concurrent.atomic.AtomicReference
 import java.util.zip.ZipInputStream
 
+import scala.util.matching.Regex
+
 import cats.data.Validated.{Valid, Invalid}
 import cats.data.Xor.{Left, Right}
 import cats.data._
@@ -77,10 +79,36 @@ final class UniversePackageCache private(
     }
   }
 
-  override def getRepoIndex: Future[UniverseIndex] = {
+  override def search(queryOpt: Option[String]): Future[List[UniverseIndexEntry]] = {
     synchronizedUpdate().map { bundleDir =>
-        repoIndex(repoDirectory(bundleDir))
+      val packages = repoIndex(repoDirectory(bundleDir)).packages
+      val wildcardSymbol = "*"
+      queryOpt match {
+        case None => packages
+        case Some(query) =>
+          if (query.contains(wildcardSymbol)) {
+            packages.filter(searchRegexInPackageIndex(_, getRegex(query)))
+          } else {
+            packages.filter(searchPackageIndex(_, query.toLowerCase()))
+          }
+      }
     }
+  }
+
+  private[this] def getRegex(query: String): Regex = {
+    s"""^${query.replaceAll("\\*", ".*")}$$""".r
+  }
+
+  private[this] def searchRegexInPackageIndex(index: UniverseIndexEntry, regex: Regex): Boolean = {
+    regex.findFirstIn(index.name).isDefined ||
+      regex.findFirstIn(index.description).isDefined ||
+        index.tags.exists(regex.findFirstIn(_).isDefined)
+  }
+
+  private[this] def searchPackageIndex(index: UniverseIndexEntry, query: String): Boolean= {
+    index.name.toLowerCase().contains(query) ||
+      index.description.toLowerCase().contains(query) ||
+        index.tags.exists(_.toLowerCase().contains(query))
   }
 
   private[this] def synchronizedUpdate(): Future[Path] = {
