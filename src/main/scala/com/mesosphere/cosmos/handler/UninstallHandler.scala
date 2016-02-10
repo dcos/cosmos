@@ -9,12 +9,16 @@ import com.mesosphere.cosmos._
 import com.mesosphere.cosmos.http.MediaTypes
 import com.mesosphere.cosmos.model.thirdparty.marathon.MarathonApp
 import com.mesosphere.cosmos.model.{AppId, UninstallRequest, UninstallResponse, UninstallResult}
-import com.mesosphere.cosmos.repository.Repository
+import com.mesosphere.cosmos.repository.PackageCollection
 import com.mesosphere.universe.PackageDetailsVersion
 
-private[cosmos] final class UninstallHandler(adminRouter: AdminRouter, packageCache: Repository)
-  (implicit bodyDecoder: DecodeRequest[UninstallRequest], encoder: Encoder[UninstallResponse])
-  extends EndpointHandler[UninstallRequest, UninstallResponse] {
+private[cosmos] final class UninstallHandler(
+  adminRouter: AdminRouter,
+  packageCache: PackageCollection
+)(implicit
+  bodyDecoder: DecodeRequest[UninstallRequest],
+  encoder: Encoder[UninstallResponse]
+) extends EndpointHandler[UninstallRequest, UninstallResponse] {
 
   val accepts = MediaTypes.UninstallRequest
   val produces = MediaTypes.UninstallResponse

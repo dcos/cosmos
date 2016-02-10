@@ -6,11 +6,14 @@ import io.finch.DecodeRequest
 
 import com.mesosphere.cosmos.http.MediaTypes
 import com.mesosphere.cosmos.model._
-import com.mesosphere.cosmos.repository.Repository
+import com.mesosphere.cosmos.repository.PackageCollection
 
-private[cosmos] final class PackageRenderHandler(packageCache: Repository)
-  (implicit bodyDecoder: DecodeRequest[RenderRequest], encoder: Encoder[RenderResponse])
-  extends EndpointHandler[RenderRequest, RenderResponse] {
+private[cosmos] final class PackageRenderHandler(
+  packageCache: PackageCollection
+)(implicit
+  bodyDecoder: DecodeRequest[RenderRequest],
+  encoder: Encoder[RenderResponse]
+) extends EndpointHandler[RenderRequest, RenderResponse] {
 
   val accepts = MediaTypes.RenderRequest
   val produces = MediaTypes.RenderResponse

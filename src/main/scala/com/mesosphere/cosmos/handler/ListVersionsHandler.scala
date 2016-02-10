@@ -4,12 +4,12 @@ import com.twitter.util.Future
 import io.circe.Encoder
 import io.finch.DecodeRequest
 
-import com.mesosphere.cosmos.repository.Repository
+import com.mesosphere.cosmos.repository.PackageCollection
 import com.mesosphere.cosmos.http.{MediaType, MediaTypes}
 import com.mesosphere.cosmos.model.{ListVersionsRequest, ListVersionsResponse}
 
 private[cosmos] class ListVersionsHandler(
-  packageCache: Repository
+  packageCache: PackageCollection
 )(implicit
   bodyDecoder: DecodeRequest[ListVersionsRequest],
   encoder: Encoder[ListVersionsResponse])
