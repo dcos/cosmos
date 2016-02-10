@@ -1,6 +1,6 @@
 package com.mesosphere.cosmos
 
-import cats.data.NonEmptyList
+import cats.data.{Ior, NonEmptyList}
 import com.mesosphere.cosmos.http.MediaType
 import com.mesosphere.cosmos.model.AppId
 import com.mesosphere.cosmos.model.thirdparty.marathon.MarathonError
@@ -88,3 +88,5 @@ case class ZooKeeperStorageError(msg: String) extends CosmosError
 case class ConcurrentAccess(causedBy: Throwable) extends CosmosError(causedBy)
 
 final case class RepoNameOrUriMissing() extends CosmosError
+
+case class RepositoryAlreadyPresent(nameOrUri: Ior[String, Uri]) extends CosmosError

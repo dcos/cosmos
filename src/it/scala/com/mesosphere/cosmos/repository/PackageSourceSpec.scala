@@ -1,16 +1,16 @@
 package com.mesosphere.cosmos.repository
 
+import cats.data.Ior
 import com.mesosphere.cosmos.circe.Decoders._
 import com.mesosphere.cosmos.circe.Encoders._
 import com.mesosphere.cosmos.handler.PackageRepositoryAddHandler
 import com.mesosphere.cosmos.handler.PackageRepositoryDeleteHandler
 import com.mesosphere.cosmos.handler.PackageRepositoryListHandler
 import com.mesosphere.cosmos.model._
-import com.mesosphere.cosmos.{UnitSpec, ZooKeeperFixture}
+import com.mesosphere.cosmos.{CosmosError, RepositoryAlreadyPresent, UnitSpec, ZooKeeperFixture}
 import com.netaporter.uri.Uri
 import com.twitter.io.Charsets
-import com.twitter.util.Await
-import com.twitter.util.Future
+import com.twitter.util._
 import io.circe.Json
 import io.finch.circe._
 
@@ -20,39 +20,78 @@ final class PackageSourceSpec extends UnitSpec with ZooKeeperFixture {
 
   "List sources endpoint" in {
     withZooKeeperClient { client =>
-      val sourcesStorage = new ZooKeeperStorage(client, SourceVersion2x.uri)
+      val sourcesStorage = new ZooKeeperStorage(client, UniverseRepository.uri)
       val listSourceHandler = new PackageRepositoryListHandler(sourcesStorage)
       val request = PackageRepositoryListRequest()
 
       assertResult(
-        PackageRepositoryListResponse(List(SourceVersion2x))
+        PackageRepositoryListResponse(List(UniverseRepository))
       )(
         Await.result(listSourceHandler(request))
       )
     }
   }
 
-  "Add source endpoint" in {
-    withZooKeeperClient { client =>
-      val sourcesStorage = new ZooKeeperStorage(client, SourceVersion2x.uri)
-      val deleteSourceHandler = new PackageRepositoryDeleteHandler(sourcesStorage)
-      val addSourceHandler = new PackageRepositoryAddHandler(sourcesStorage)
-      val listSourceHandler = new PackageRepositoryListHandler(sourcesStorage)
+  "Add source endpoint" - {
+    "adding a repository to the default list" in {
+      withZooKeeperClient { client =>
+        val repositoryStorage = new ZooKeeperStorage(client, UniverseRepository.uri)
+        implicit val handler = new PackageRepositoryAddHandler(repositoryStorage)
 
-      forAll (PackageRepositoryAddScenarios) { scenario =>
-        setStorageState(listSourceHandler, addSourceHandler, deleteSourceHandler, Nil)
-
-        scenario.foreach { assertion =>
-          val addResponse = Await.result(addSourceHandler(assertion.request))
-          assertResult(PackageRepositoryAddResponse(assertion.responseList))(addResponse)
-        }
+        assertAdd(List(SourceCliTest4, UniverseRepository), SourceCliTest4)
       }
     }
+
+    "adding repositories at explicit indices" in {
+      withZooKeeperClient { client =>
+        val repositoryStorage = new ZooKeeperStorage(client, UniverseRepository.uri)
+        implicit val handler = new PackageRepositoryAddHandler(repositoryStorage)
+
+        val firstResult = List(UniverseRepository, SourceCliTest4)
+        val secondResult = List(SourceMesosphere, UniverseRepository, SourceCliTest4)
+        val thirdResult = List(SourceMesosphere, UniverseRepository, SourceExample, SourceCliTest4)
+
+        assertAdd(firstResult, SourceCliTest4, Some(1))
+        assertAdd(secondResult, SourceMesosphere, Some(0))
+        assertAdd(thirdResult, SourceExample, Some(2))
+      }
+    }
+
+    "adding duplicate repositories" in {
+      withZooKeeperClient { client =>
+        val repositoryStorage = new ZooKeeperStorage(client, UniverseRepository.uri)
+        implicit val addHandler = new PackageRepositoryAddHandler(repositoryStorage)
+        implicit val listHandler = new PackageRepositoryListHandler(repositoryStorage)
+
+        assertAddFailure(
+          RepositoryAlreadyPresent(Ior.Both(UniverseRepository.name, UniverseRepository.uri)),
+          UniverseRepository
+        )
+
+        assertAddFailure(
+          RepositoryAlreadyPresent(Ior.Right(UniverseRepository.uri)),
+          UniverseRepository.copy(name = SourceCliTest4.name)
+        )
+
+        assertAddFailure(
+          RepositoryAlreadyPresent(Ior.Left(UniverseRepository.name)),
+          UniverseRepository.copy(uri = SourceCliTest4.uri)
+        )
+
+        assertAdd(List(SourceCliTest4, UniverseRepository), SourceCliTest4)
+
+        assertAddFailure(
+          RepositoryAlreadyPresent(Ior.Both(UniverseRepository.name, SourceCliTest4.uri)),
+          UniverseRepository.copy(uri = SourceCliTest4.uri)
+        )
+      }
+    }
+
   }
 
   "Delete source endpoint" in {
     withZooKeeperClient { client =>
-      val sourcesStorage = new ZooKeeperStorage(client, SourceVersion2x.uri)
+      val sourcesStorage = new ZooKeeperStorage(client, UniverseRepository.uri)
       val deleteSourceHandler = new PackageRepositoryDeleteHandler(sourcesStorage)
       val addSourceHandler = new PackageRepositoryAddHandler(sourcesStorage)
       val listSourceHandler = new PackageRepositoryListHandler(sourcesStorage)
@@ -71,7 +110,7 @@ final class PackageSourceSpec extends UnitSpec with ZooKeeperFixture {
 
 private[cosmos] object PackageSourceSpec extends UnitSpec {
 
-  private[cosmos] val SourceVersion2x = PackageRepository(
+  private[cosmos] val UniverseRepository = PackageRepository(
     "Universe",
     Uri.parse("https://github.com/mesosphere/universe/archive/version-2.x.zip")
   )
@@ -88,50 +127,53 @@ private[cosmos] object PackageSourceSpec extends UnitSpec {
     Uri.parse("http://example.com")
   )
 
-  private val PackageRepositoryAddScenarios = Table(
-    "scenario",
-    List(AddSourceAssertion(addRequest(SourceVersion2x, None), List(SourceVersion2x))),
-    List(AddSourceAssertion(addRequest(SourceCliTest4, None), List(SourceCliTest4))),
-    List(AddSourceAssertion(addRequest(SourceVersion2x, None), List(SourceVersion2x)),
-      AddSourceAssertion(addRequest(SourceCliTest4, None), List(SourceCliTest4, SourceVersion2x))),
-    List(AddSourceAssertion(addRequest(SourceCliTest4, None), List(SourceCliTest4)),
-      AddSourceAssertion(addRequest(SourceVersion2x, None), List(SourceVersion2x, SourceCliTest4))),
-    List(AddSourceAssertion(addRequest(SourceMesosphere, Some(0)), List(SourceMesosphere)),
-      AddSourceAssertion(addRequest(SourceVersion2x, Some(1)),
-        List(SourceMesosphere, SourceVersion2x)),
-      AddSourceAssertion(addRequest(SourceCliTest4, Some(0)),
-        List(SourceCliTest4, SourceMesosphere, SourceVersion2x)),
-      AddSourceAssertion(addRequest(SourceExample, Some(2)),
-        List(SourceCliTest4, SourceMesosphere, SourceExample, SourceVersion2x)))
-  )
-
   private val PackageRepositoryDeleteScenarios = Table(
     ("starting value", "delete scenario"),
-    (List(SourceVersion2x), List(DeleteSourceAssertion(deleteRequestByName(SourceVersion2x), Nil))),
-    (List(SourceVersion2x), List(DeleteSourceAssertion(deleteRequestByUri(SourceVersion2x), Nil))),
+    (List(UniverseRepository), List(DeleteSourceAssertion(deleteRequestByName(UniverseRepository), Nil))),
+    (List(UniverseRepository), List(DeleteSourceAssertion(deleteRequestByUri(UniverseRepository), Nil))),
     (List(SourceCliTest4), List(DeleteSourceAssertion(deleteRequestByName(SourceCliTest4), Nil))),
     (List(SourceCliTest4), List(DeleteSourceAssertion(deleteRequestByUri(SourceCliTest4), Nil))),
-    (List(SourceVersion2x, SourceCliTest4),
-      List(DeleteSourceAssertion(deleteRequestByName(SourceVersion2x), List(SourceCliTest4)),
+    (List(UniverseRepository, SourceCliTest4),
+      List(DeleteSourceAssertion(deleteRequestByName(UniverseRepository), List(SourceCliTest4)),
         DeleteSourceAssertion(deleteRequestByName(SourceCliTest4), Nil))),
-    (List(SourceVersion2x, SourceCliTest4),
-      List(DeleteSourceAssertion(deleteRequestByName(SourceCliTest4), List(SourceVersion2x)),
-        DeleteSourceAssertion(deleteRequestByName(SourceVersion2x), Nil))),
-    (List(SourceMesosphere, SourceCliTest4, SourceExample, SourceVersion2x),
+    (List(UniverseRepository, SourceCliTest4),
+      List(DeleteSourceAssertion(deleteRequestByName(SourceCliTest4), List(UniverseRepository)),
+        DeleteSourceAssertion(deleteRequestByName(UniverseRepository), Nil))),
+    (List(SourceMesosphere, SourceCliTest4, SourceExample, UniverseRepository),
       List(
         DeleteSourceAssertion(deleteRequestByUri(SourceExample),
-          List(SourceMesosphere, SourceCliTest4, SourceVersion2x)),
+          List(SourceMesosphere, SourceCliTest4, UniverseRepository)),
         DeleteSourceAssertion(deleteRequestByUri(SourceCliTest4),
-          List(SourceMesosphere, SourceVersion2x)),
-        DeleteSourceAssertion(deleteRequestByUri(SourceMesosphere), List(SourceVersion2x)),
-        DeleteSourceAssertion(deleteRequestByUri(SourceVersion2x), Nil)))
+          List(SourceMesosphere, UniverseRepository)),
+        DeleteSourceAssertion(deleteRequestByUri(SourceMesosphere), List(UniverseRepository)),
+        DeleteSourceAssertion(deleteRequestByUri(UniverseRepository), Nil)))
   )
 
-  private[this] def addRequest(
-    source: PackageRepository,
-    index: Option[Int]
-  ): PackageRepositoryAddRequest = {
-    PackageRepositoryAddRequest(source.name, source.uri, index)
+  private def assertAdd(
+    expectedResponseList: List[PackageRepository],
+    repository: PackageRepository,
+    index: Option[Int] = None
+  )(implicit handler: PackageRepositoryAddRequest => Future[PackageRepositoryAddResponse]): Unit = {
+    val addRequest = PackageRepositoryAddRequest(repository.name, repository.uri, index)
+    val addResponse = Await.result(handler(addRequest))
+    assertResult(expectedResponseList)(addResponse.repositories)
+  }
+
+  private def assertAddFailure(expectedResponse: CosmosError, repository: PackageRepository)(
+    implicit
+    addHandler: PackageRepositoryAddRequest => Future[PackageRepositoryAddResponse],
+    listHandler: PackageRepositoryListRequest => Future[PackageRepositoryListResponse]
+  ): Unit = {
+    val repositoriesBeforeAdd = Await.result(listHandler(PackageRepositoryListRequest()))
+
+    assertResult(Throw(expectedResponse)) {
+      val addRequest = PackageRepositoryAddRequest(repository.name, repository.uri)
+      Await.result(addHandler(addRequest).liftToTry)
+    }
+
+    assertResult(repositoriesBeforeAdd.repositories) {
+      Await.result(listHandler(PackageRepositoryListRequest())).repositories
+    }
   }
 
   private[this] def deleteRequestByName(
@@ -165,11 +207,6 @@ private[cosmos] object PackageSourceSpec extends UnitSpec {
     }
   }
 }
-
-private case class AddSourceAssertion(
-  request: PackageRepositoryAddRequest,
-  responseList: List[PackageRepository]
-)
 
 private case class DeleteSourceAssertion(
   request: PackageRepositoryDeleteRequest,

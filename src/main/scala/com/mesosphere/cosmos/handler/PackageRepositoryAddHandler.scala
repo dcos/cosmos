@@ -1,5 +1,6 @@
 package com.mesosphere.cosmos.handler
 
+import com.mesosphere.cosmos.RepositoryAlreadyPresent
 import com.mesosphere.cosmos.http.{MediaType, MediaTypes}
 import com.mesosphere.cosmos.model.PackageRepositoryAddRequest
 import com.mesosphere.cosmos.model.PackageRepositoryAddResponse
