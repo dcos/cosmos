@@ -83,5 +83,6 @@ case class ServiceUnavailable(
 }
 
 case class IncompleteUninstall(packageName: String, causedBy: Throwable) extends CosmosError(causedBy)
+case class ZooKeeperStorageError(msg: String) extends CosmosError
 
 final case class RepoNameOrUriMissing() extends CosmosError

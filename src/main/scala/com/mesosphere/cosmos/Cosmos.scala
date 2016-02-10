@@ -36,15 +36,12 @@ private[cosmos] final class Cosmos(
   packageDescribeHandler: EndpointHandler[DescribeRequest, DescribeResponse],
   packageListVersionsHandler: EndpointHandler[ListVersionsRequest, ListVersionsResponse],
   listHandler: EndpointHandler[ListRequest, ListResponse],
-  listSourcesHandler: EndpointHandler[PackageRepositoryListRequest, PackageRepositoryListResponse],
-  addSourceHandler: EndpointHandler[PackageRepositoryAddRequest, PackageRepositoryAddResponse],
-  deleteSourceHandler: EndpointHandler[PackageRepositoryDeleteRequest, PackageRepositoryDeleteResponse],
+  listRepositoryHandler: EndpointHandler[PackageRepositoryListRequest, PackageRepositoryListResponse],
+  addRepositoryHandler: EndpointHandler[PackageRepositoryAddRequest, PackageRepositoryAddResponse],
+  deleteRepositoryHandler: EndpointHandler[PackageRepositoryDeleteRequest, PackageRepositoryDeleteResponse],
   capabilitiesHandler: CapabilitiesHandler
 )(implicit statsReceiver: StatsReceiver = NullStatsReceiver) {
   lazy val logger = org.slf4j.LoggerFactory.getLogger(classOf[Cosmos])
-
-  implicit val baseScope = BaseScope(Some("app"))
-
 
   val packageImport: Endpoint[Json] = {
     def respond(file: FileUpload): Future[Output[Json]] = {
@@ -141,41 +138,36 @@ private[cosmos] final class Cosmos(
 
   val packageListSources: Endpoint[Json] = {
     def respond(request: PackageRepositoryListRequest): Future[Output[Json]] = {
-      listSourcesHandler(request).map { response =>
-        Ok(response.asJson)
+      listRepositoryHandler(request).map { response =>
+        Ok(response.asJson).withContentType(Some(listRepositoryHandler.produces.show))
       }
     }
 
-    post("package" / "repository"/ "list" ? body.as[PackageRepositoryListRequest])(respond _)
+    post("package" / "repository"/ "list" ? listRepositoryHandler.reader)(respond _)
   }
 
   val packageAddSource: Endpoint[Json] = {
     def respond(request: PackageRepositoryAddRequest): Future[Output[Json]] = {
-      addSourceHandler(request).map { response =>
-        Ok(response.asJson)
+      addRepositoryHandler(request).map { response =>
+        Ok(response.asJson).withContentType(Some(addRepositoryHandler.produces.show))
       }
     }
 
-    post("package" / "repository" / "add" ? body.as[PackageRepositoryAddRequest])(respond _)
+    post("package" / "repository" / "add" ? addRepositoryHandler.reader)(respond _)
   }
 
   val packageDeleteSource: Endpoint[Json] = {
     def respond(request: PackageRepositoryDeleteRequest): Future[Output[Json]] = {
-      deleteSourceHandler(request).map { response =>
-        Ok(response.asJson)
+      deleteRepositoryHandler(request).map { response =>
+        Ok(response.asJson).withContentType(Some(deleteRepositoryHandler.produces.show))
       }
     }
 
-    post("package" / "repository" / "delete" ? body.as[PackageRepositoryDeleteRequest])(respond _)
+    post("package" / "repository" / "delete" ? deleteRepositoryHandler.reader)(respond _)
   }
 
   val service: Service[Request, Response] = {
-    val stats = {
-      baseScope.name match {
-        case Some(bs) if bs.nonEmpty => statsReceiver.scope(s"$bs/errorFilter")
-        case _ => statsReceiver.scope("errorFilter")
-      }
-    }
+    val stats = statsReceiver.scope("errorFilter")
 
     (packageImport
       :+: packageInstall
@@ -223,6 +215,7 @@ private[cosmos] final class Cosmos(
 
 object Cosmos extends FinchServer {
   def service = {
+    implicit val stats = statsReceiver.scope("cosmos")
     import com.netaporter.uri.dsl._
 
     val ar = Try(dcosUri())
@@ -291,7 +284,8 @@ object Cosmos extends FinchServer {
     packageCache: Repository,
     packageRunner: PackageRunner,
     sourcesStorage: PackageSourcesStorage
-  ): Cosmos = {
+  )(implicit statsReceiver: StatsReceiver = NullStatsReceiver): Cosmos = {
+
     new Cosmos(
       packageCache,
       packageRunner,
@@ -307,7 +301,7 @@ object Cosmos extends FinchServer {
       new PackageRepositoryAddHandler(sourcesStorage),
       new PackageRepositoryDeleteHandler(sourcesStorage),
       CapabilitiesHandler()
-    )
+    )(statsReceiver)
   }
 
 }
