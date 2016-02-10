@@ -7,7 +7,7 @@ import cats.data.Xor
 import com.mesosphere.cosmos.circe.Decoders._
 import com.mesosphere.cosmos.http.MediaTypes
 import com.mesosphere.cosmos.model.{UninstallResponse, AppId}
-import com.mesosphere.cosmos.{Cosmos, ErrorResponse, IntegrationSpec}
+import com.mesosphere.cosmos.{Cosmos, ErrorResponse, IntegrationSpec, ZooKeeperFixture}
 import com.netaporter.uri.dsl._
 import com.twitter.finagle.Service
 import com.twitter.finagle.http.{Request, Response, Status}
@@ -15,7 +15,7 @@ import com.twitter.io.Buf
 import com.twitter.util.Await
 import io.circe.parse._
 
-final class UninstallHandlerSpec extends IntegrationSpec {
+final class UninstallHandlerSpec extends IntegrationSpec with ZooKeeperFixture {
 
   val tmpDir = {
     val tempDir = Files.createTempDirectory("cosmos-UninstallHandlerSpec")
@@ -33,7 +33,18 @@ final class UninstallHandlerSpec extends IntegrationSpec {
     tempDir
   }
 
-  val service = Cosmos.service
+  var service: Service[Request, Response] = _
+
+  override def beforeAll(): Unit = {
+    // This must come first so that `zkCluster` gets initialized
+    super.beforeAll()
+    val propertyName = "com.mesosphere.cosmos.zookeeperConnectString"
+    val connectString = zkCluster.getConnectString
+    logger.info("Setting {}={}", Seq(propertyName, connectString): _*)
+    System.setProperty(propertyName, connectString)
+
+    service = Cosmos.service
+  }
 
   override def createService: Service[Request, Response] = {
     service

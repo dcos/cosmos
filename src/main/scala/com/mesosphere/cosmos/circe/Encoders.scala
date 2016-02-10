@@ -85,9 +85,29 @@ object Encoders {
   implicit val encodeCapabilitiesResponse: Encoder[CapabilitiesResponse] = deriveFor[CapabilitiesResponse].encoder
   implicit val encodeCapability: Encoder[Capability] = deriveFor[Capability].encoder
 
+  implicit val encodePackageRepositoryListRequest: Encoder[PackageRepositoryListRequest] = {
+    deriveFor[PackageRepositoryListRequest].encoder
+  }
+  implicit val encodePackageRepositoryListResponse: Encoder[PackageRepositoryListResponse] = {
+    deriveFor[PackageRepositoryListResponse].encoder
+  }
+  implicit val encodePackageSource: Encoder[PackageSource] = deriveFor[PackageSource].encoder
+  implicit val encodePackageRepositoryAddRequest: Encoder[PackageRepositoryAddRequest] = {
+    deriveFor[PackageRepositoryAddRequest].encoder
+  }
+  implicit val encodePackageRepositoryAddResponse: Encoder[PackageRepositoryAddResponse] = {
+    deriveFor[PackageRepositoryAddResponse].encoder
+  }
+  implicit val encodePackageRepositoryDeleteRequest: Encoder[PackageRepositoryDeleteRequest] = {
+    deriveFor[PackageRepositoryDeleteRequest].encoder
+  }
+  implicit val encodePackageRepositoryDeleteResponse: Encoder[PackageRepositoryDeleteResponse] = {
+    deriveFor[PackageRepositoryDeleteResponse].encoder
+  }
 
-  implicit val exceptionEncoder: Encoder[Exception] =
+  implicit val exceptionEncoder: Encoder[Exception] = {
     Encoder.instance { e => exceptionErrorResponse(e).asJson }
+  }
 
   private[this] def exceptionErrorResponse(t: Throwable): ErrorResponse = t match {
     case Error.NotPresent(item) =>
@@ -171,10 +191,14 @@ object Encoders {
       s"Package [$pkgName] is not installed"
     case UninstallNonExistentAppForPackage(pkgName, appId) =>
       s"Package [$pkgName] with id [$appId] is not installed"
+
     case ServiceUnavailable(serviceName, _) =>
       s"Unable to complete request due to downstream service [$serviceName] unavailability"
     case IncompleteUninstall(packageName, _) =>
       s"Incomplete uninstall of package [$packageName] due to Mesos unavailability"
+
+    case RepoNameOrUriMissing() =>
+      s"Must specify either the name or URI of the repository"
   }
 
   private[this] def encodeMap(versions: Map[PackageDetailsVersion, ReleaseVersion]): Json = {

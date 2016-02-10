@@ -1,6 +1,6 @@
 package com.mesosphere.cosmos
 
-import com.mesosphere.cosmos.handler._
+import com.mesosphere.cosmos.repository.PackageSourcesStorage
 import com.twitter.finagle.Service
 import com.twitter.finagle.http.{Request, Response}
 import io.finch.test.ServiceIntegrationSuite
@@ -12,25 +12,10 @@ abstract class IntegrationSpec
   with CosmosSpec {
 
   def createService: Service[Request, Response] = {
-    // these two imports provide the implicit DecodeRequest instances needed to instantiate Cosmos
-    import com.mesosphere.cosmos.circe.Decoders._
-    import com.mesosphere.cosmos.circe.Encoders._
-    import io.finch.circe._
     val marathonPackageRunner = new MarathonPackageRunner(adminRouter)
-    //TODO: Get rid of this duplication
-    new Cosmos(
-      PackageCache.empty,
-      marathonPackageRunner,
-      new UninstallHandler(adminRouter, PackageCache.empty),
-      new PackageInstallHandler(PackageCache.empty, marathonPackageRunner),
-      new PackageRenderHandler(PackageCache.empty),
-      new PackageSearchHandler(PackageCache.empty),
-      new PackageImportHandler,
-      new PackageDescribeHandler(PackageCache.empty),
-      new ListVersionsHandler(PackageCache.empty),
-      new ListHandler(adminRouter, PackageCache.empty),
-      CapabilitiesHandler()
-    ).service
+    val sourcesStorage = PackageSourcesStorage.constUniverse(universeUri)
+
+    Cosmos(adminRouter, PackageCache.empty, marathonPackageRunner, sourcesStorage).service
   }
 
   protected[this] final override val servicePort: Int = port

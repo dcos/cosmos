@@ -11,14 +11,15 @@ object CosmosBuild extends Build {
 
   object V {
     val circe = "0.2.1"
+    val curator = "2.9.1"
     val finch = "0.9.3"
     val finchServer = "0.9.0"
+    val jsonSchema = "2.2.6"
     val logback = "1.1.3"
     val mustache = "0.9.1"
     val scalaUri = "0.4.11"
     val scalaTest = "2.2.4"
     val scalaCheck = "1.10.0"
-    val jsonSchema = "2.2.6"
   }
 
   object Deps {
@@ -26,6 +27,11 @@ object CosmosBuild extends Build {
       "io.circe" %% "circe-core" % V.circe,
       "io.circe" %% "circe-generic" % V.circe,
       "io.circe" %% "circe-parse" % V.circe
+    )
+
+    val curator = Seq(
+      "org.apache.curator" % "curator-recipes" % V.curator,
+      "org.apache.curator" % "curator-test" % V.curator % "test"
     )
 
     val finch = Seq(
@@ -39,6 +45,10 @@ object CosmosBuild extends Build {
 
     val finchTest = Seq(
       "com.github.finagle" %% "finch-test" % V.finch % "test"
+    )
+
+    val jsonSchema = Seq(
+      "com.github.fge" % "json-schema-validator" % V.jsonSchema
     )
 
     val logback = Seq(
@@ -55,10 +65,6 @@ object CosmosBuild extends Build {
 
     val scalaTest = Seq(
       "org.scalatest"       %% "scalatest"        % V.scalaTest     % "test"
-    )
-
-    val jsonSchema = Seq(
-      "com.github.fge" % "json-schema-validator" % V.jsonSchema
     )
 
   }
@@ -137,14 +143,14 @@ object CosmosBuild extends Build {
     .settings(
       libraryDependencies ++=
         Deps.circe
+          ++ Deps.curator
           ++ Deps.finch
           ++ Deps.finchServer
           ++ Deps.finchTest
+          ++ Deps.jsonSchema
           ++ Deps.logback
           ++ Deps.mustache
-          ++ Deps.scalaTest
           ++ Deps.scalaUri
-          ++ Deps.jsonSchema
     )
 
   //////////////////////////////////////////////////////////////////////////////

@@ -62,9 +62,14 @@ final class UserOptionsSpec extends UnitSpec {
           new PackageRenderHandler(packageCache),
           EndpointHandler.const(SearchResponse(List.empty)),
           new PackageImportHandler,
-          EndpointHandler.const(DescribeResponse(packageFiles.packageJson, packageFiles.marathonJsonMustache)),
+          EndpointHandler.const(
+            DescribeResponse(packageFiles.packageJson, packageFiles.marathonJsonMustache)
+          ),
           EndpointHandler.const(ListVersionsResponse(Map.empty)),
           EndpointHandler.const(ListResponse(Nil)),
+          EndpointHandler.const(PackageRepositoryListResponse(Nil)),
+          EndpointHandler.const(PackageRepositoryAddResponse(Nil)),
+          EndpointHandler.const(PackageRepositoryDeleteResponse(Nil)),
           CapabilitiesHandler()
         )
         val request = RequestBuilder()

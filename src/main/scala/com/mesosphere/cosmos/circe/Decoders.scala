@@ -1,15 +1,23 @@
 package com.mesosphere.cosmos.circe
 
-import com.mesosphere.cosmos.{Uris, ErrorResponse}
+import com.mesosphere.cosmos.Uris
+import com.mesosphere.cosmos.ErrorResponse
+import com.mesosphere.cosmos.CirceError
 import com.mesosphere.cosmos.model._
 import com.mesosphere.cosmos.model.thirdparty.marathon._
 import com.mesosphere.cosmos.model.thirdparty.mesos.master._
 import com.mesosphere.universe._
 import com.netaporter.uri.Uri
 import io.circe.generic.semiauto._
+import io.circe.parse.decode
 import io.circe.{Decoder, HCursor}
 
 object Decoders {
+
+  private[cosmos] def decodeOrThrow[A](s: String)(implicit d: Decoder[A]): A = {
+    decode[A](s).valueOr(error => throw CirceError(error))
+  }
+
   implicit val decodeLicense: Decoder[License] = deriveFor[License].decoder
   implicit val decodePackageDefinition: Decoder[PackageDetails] = deriveFor[PackageDetails].decoder
   implicit val decodeContainer: Decoder[Container] = deriveFor[Container].decoder
@@ -92,4 +100,25 @@ object Decoders {
 
   implicit val decodeCapabilitiesResponse: Decoder[CapabilitiesResponse] = deriveFor[CapabilitiesResponse].decoder
   implicit val decodeCapability: Decoder[Capability] = deriveFor[Capability].decoder
+
+  implicit val decodePackageRepositoryListRequest: Decoder[PackageRepositoryListRequest] = {
+    deriveFor[PackageRepositoryListRequest].decoder
+  }
+  implicit val decodePackageRepositoryListResponse: Decoder[PackageRepositoryListResponse] = {
+    deriveFor[PackageRepositoryListResponse].decoder
+  }
+  implicit val decodePackageSource: Decoder[PackageSource] = deriveFor[PackageSource].decoder
+  implicit val decodePackageRepositoryAddRequest: Decoder[PackageRepositoryAddRequest] = {
+    deriveFor[PackageRepositoryAddRequest].decoder
+  }
+  implicit val decodePackageRepositoryAddResponse: Decoder[PackageRepositoryAddResponse] = {
+    deriveFor[PackageRepositoryAddResponse].decoder
+  }
+  implicit val decodePackageRepositoryDeleteRequest: Decoder[PackageRepositoryDeleteRequest] = {
+    deriveFor[PackageRepositoryDeleteRequest].decoder
+  }
+  implicit val decodePackageRepositoryDeleteResponse: Decoder[PackageRepositoryDeleteResponse] = {
+    deriveFor[PackageRepositoryDeleteResponse].decoder
+  }
+
 }
