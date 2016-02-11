@@ -195,7 +195,7 @@ private[cosmos] object PackageInstallHandler {
       (MarathonApp.registryVersionLabel, packageFiles.packageJson.packagingVersion.toString),
       (MarathonApp.nameLabel, packageFiles.packageJson.name),
       (MarathonApp.versionLabel, packageFiles.packageJson.version.toString),
-      (MarathonApp.sourceLabel, packageFiles.sourceUri.toString),
+      (MarathonApp.repositoryLabel, packageFiles.sourceUri.toString),
       (MarathonApp.releaseLabel, packageFiles.revision),
       (MarathonApp.isFrameworkLabel, isFramework.toString)
     )

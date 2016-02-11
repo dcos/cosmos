@@ -1,5 +1,7 @@
 package com.mesosphere.cosmos
 
+import java.nio.file.Path
+
 import cats.data.Xor.Right
 import com.mesosphere.cosmos.circe.Decoders._
 import com.mesosphere.cosmos.circe.Encoders._
@@ -24,9 +26,7 @@ final class PackageSearchSpec extends FreeSpec with CosmosSpec {
   "The package search endpoint" - {
     "can successfully find packages" in {
       val _ = withTempDirectory { universeDir =>
-        val universeCache = UniversePackageCache(UniverseUri, universeDir)
-
-        runService(packageCache = universeCache) { apiClient =>
+        runService(universeDir = universeDir) { apiClient =>
           forAll (PackageSearchTable) { (query, expectedResponse) =>
             apiClient.searchAndAssert(
               query=query,
@@ -40,9 +40,7 @@ final class PackageSearchSpec extends FreeSpec with CosmosSpec {
 
     "can successfully find packages by regex match" in {
       val _ = withTempDirectory { universeDir =>
-        val universeCache = UniversePackageCache(UniverseUri, universeDir)
-
-        runService(packageCache = universeCache) { apiClient =>
+        runService(universeDir = universeDir) { apiClient =>
           forAll (PackageSearchRegexTable) { (query, expectedResponse) =>
             apiClient.searchAndAssert(
               query=query,
@@ -57,13 +55,13 @@ final class PackageSearchSpec extends FreeSpec with CosmosSpec {
 
   private[this] def runService[A](
     dcosClient: Service[Request, Response] = Services.adminRouterClient(adminRouterUri).get,
-    packageCache: Repository
+    universeDir: Path
   )(
     f: SearchTestAssertionDecorator => Unit
   ): Unit = {
     val marathonPackageRunner = new MarathonPackageRunner(adminRouter)
     val sourcesStorage = PackageSourcesStorage.constUniverse(universeUri)
-    val service = Cosmos(adminRouter, packageCache, marathonPackageRunner, sourcesStorage).service
+    val service = Cosmos(adminRouter, marathonPackageRunner, sourcesStorage, universeDir).service
     val server = Http.serve(s":$servicePort", service)
     val client = Http.newService(s"127.0.0.1:$servicePort")
 
@@ -76,8 +74,6 @@ final class PackageSearchSpec extends FreeSpec with CosmosSpec {
 }
 
 private object PackageSearchSpec extends CosmosSpec {
-
-  private val UniverseUri = Uri.parse("https://github.com/mesosphere/universe/archive/cli-test-4.zip")
 
   val ArangodbPackageIndex = UniverseIndexEntry(
     name = "arangodb",

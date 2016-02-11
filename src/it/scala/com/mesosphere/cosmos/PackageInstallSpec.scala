@@ -1,5 +1,6 @@
 package com.mesosphere.cosmos
 
+import java.nio.file.Path
 import java.util.{Base64, UUID}
 
 import cats.data.Xor
@@ -28,59 +29,24 @@ final class PackageInstallSpec extends FreeSpec with BeforeAndAfterAll with Cosm
 
   "The package install endpoint" - {
 
-    "can successfully deploy a service to Marathon" in {
-      runService() { apiClient =>
-        forAll (PackageTable) { (packageName, packageFiles) =>
-          val appId = AppId(packageName)
-
-          apiClient.installPackageAndAssert(
-            InstallRequest(packageName),
-            expectedResult = Success(
-              InstallResponse(packageName, packageFiles.packageJson.version, appId)),
-            preInstallState = NotInstalled,
-            postInstallState = Installed
-          )
-
-          assertPackageInstalledFromCache(appId, packageFiles)
-
-          // TODO: Uninstall the package, or use custom Marathon app IDs to avoid name clashes
-        }
-      }
-    }
-
     "reports an error if the requested package is not in the cache" in {
       forAll (PackageTable) { (packageName, _) =>
-        val packageCache = MemoryPackageCache(PackageMap - packageName)
         val errorResponse = ErrorResponse("PackageNotFound", s"Package [$packageName] not found")
 
-        runService(packageCache = packageCache) { apiClient =>
-          apiClient.installPackageAndAssert(
-            InstallRequest(packageName),
-            expectedResult = Failure(Status.BadRequest, errorResponse),
-            preInstallState = Anything,
-            postInstallState = Unchanged
-          )
-        }
-      }
-    }
-
-    "reports an error if the request to Marathon fails" - {
-
-      "due to the package already being installed" in {
-        val errorResponse = ErrorResponse("PackageAlreadyInstalled", "Package is already installed")
-        runService() { apiClient =>
-          forAll (PackageTable) { (packageName, _) =>
-            // TODO This currently relies on test execution order to be correct
-            // Update it to explicitly install a package twice
+        val _ = withTempDirectory { universeDir =>
+          runService(universeDir = universeDir) { apiClient =>
             apiClient.installPackageAndAssert(
               InstallRequest(packageName),
-              expectedResult = Failure(Status.Conflict, errorResponse),
-              preInstallState = AlreadyInstalled,
+              expectedResult = Failure(Status.BadRequest, errorResponse),
+              preInstallState = Anything,
               postInstallState = Unchanged
             )
           }
         }
       }
+    }
+
+    "reports an error if the request to Marathon fails" - {
 
       "with a generic client error" in {
         // Taken from Marathon API docs
@@ -91,14 +57,16 @@ final class PackageInstallSpec extends FreeSpec with BeforeAndAfterAll with Cosm
           val errorMessage = s"Received response status code ${status.code} from Marathon"
           val errorResponse = ErrorResponse("MarathonGenericError", errorMessage)
 
-          runService(marathonClientOverride = Some(dcosClient)) { apiClient =>
-            forAll(PackageTable) { (packageName, _) =>
-              apiClient.installPackageAndAssert(
-                InstallRequest(packageName),
-                expectedResult = Failure(Status.InternalServerError, errorResponse),
-                preInstallState = Anything,
-                postInstallState = Unchanged
-              )
+          val _ = withTempDirectory { universeDir =>
+            runService(Some(dcosClient), universeDir) { apiClient =>
+              forAll(UniversePackagesTable) { (expectedResponse, _, _, _) =>
+                apiClient.installPackageAndAssert(
+                  InstallRequest(expectedResponse.packageName),
+                  expectedResult = Failure(Status.InternalServerError, errorResponse),
+                  preInstallState = Anything,
+                  postInstallState = Unchanged
+                )
+              }
             }
           }
         }
@@ -112,14 +80,16 @@ final class PackageInstallSpec extends FreeSpec with BeforeAndAfterAll with Cosm
           val errorMessage = s"Received response status code ${status.code} from Marathon"
           val errorResponse = ErrorResponse("MarathonBadGateway", errorMessage)
 
-          runService(marathonClientOverride = Some(dcosClient)) { apiClient =>
-            forAll (PackageTable) { (packageName, _) =>
-              apiClient.installPackageAndAssert(
-                InstallRequest(packageName),
-                expectedResult = Failure(Status.BadGateway, errorResponse),
-                preInstallState = Anything,
-                postInstallState = Unchanged
-              )
+          val _ = withTempDirectory { universeDir =>
+            runService(Some(dcosClient), universeDir) { apiClient =>
+              forAll(UniversePackagesTable) { (expectedResponse, _, _, _) =>
+                apiClient.installPackageAndAssert(
+                  InstallRequest(expectedResponse.packageName),
+                  expectedResult = Failure(Status.BadGateway, errorResponse),
+                  preInstallState = Anything,
+                  postInstallState = Unchanged
+                )
+              }
             }
           }
         }
@@ -128,9 +98,7 @@ final class PackageInstallSpec extends FreeSpec with BeforeAndAfterAll with Cosm
 
     "don't install if specified version is not found" in {
       val _ = withTempDirectory { universeDir =>
-        val universeCache = UniversePackageCache(UniverseUri, universeDir)
-
-        runService(packageCache = universeCache) { apiClient =>
+        runService(universeDir = universeDir) { apiClient =>
           forAll (PackageDummyVersionsTable) { (packageName, packageVersion) =>
             val errorMessage = s"Version [$packageVersion] of package [$packageName] not found"
             val errorResponse = ErrorResponse("VersionNotFound", errorMessage)
@@ -150,9 +118,7 @@ final class PackageInstallSpec extends FreeSpec with BeforeAndAfterAll with Cosm
 
     "can successfully install packages from Universe" in {
       val _ = withTempDirectory { universeDir =>
-        val universeCache = UniversePackageCache(UniverseUri, universeDir)
-
-        runService(packageCache = universeCache) { apiClient =>
+        runService(universeDir = universeDir) { apiClient =>
           forAll (UniversePackagesTable) { (expectedResponse, forceVersion, uriSet, labelsOpt) =>
             val versionOption = if (forceVersion) Some(expectedResponse.packageVersion) else None
 
@@ -166,6 +132,21 @@ final class PackageInstallSpec extends FreeSpec with BeforeAndAfterAll with Cosm
             val packageInfo = Await.result(getMarathonApp(expectedResponse.appId))
             assertResult(uriSet)(packageInfo.uris.toSet)
             labelsOpt.foreach(labels => assertResult(labels)(StandardLabels(packageInfo.labels)))
+
+            // Assert that installing twice gives us a package already installed error
+            apiClient.installPackageAndAssert(
+              InstallRequest(expectedResponse.packageName, packageVersion = versionOption),
+              expectedResult = Failure(
+                Status.Conflict,
+                ErrorResponse(
+                  "PackageAlreadyInstalled",
+                  "Package is already installed"
+                ),
+                Some(expectedResponse.appId)
+              ),
+              preInstallState = AlreadyInstalled,
+              postInstallState = Unchanged
+            )
           }
         }
       }
@@ -173,9 +154,7 @@ final class PackageInstallSpec extends FreeSpec with BeforeAndAfterAll with Cosm
 
     "supports custom app IDs" in {
       val _ = withTempDirectory { universeDir =>
-        val universeCache = UniversePackageCache(UniverseUri, universeDir)
-
-        runService(packageCache = universeCache) { apiClient =>
+        runService(universeDir = universeDir) { apiClient =>
           val expectedResponse = InstallResponse("cassandra", PackageDetailsVersion("0.2.0-1"), AppId("custom-app-id"))
 
           apiClient.installPackageAndAssert(
@@ -212,9 +191,7 @@ final class PackageInstallSpec extends FreeSpec with BeforeAndAfterAll with Cosm
         ErrorResponse("JsonSchemaMismatch", "Options JSON failed validation", Some(errorData))
 
       val _ = withTempDirectory { universeDir =>
-        val universeCache = UniversePackageCache(UniverseUri, universeDir)
-
-        runService(packageCache = universeCache) { apiClient =>
+        runService(universeDir = universeDir) { apiClient =>
           val appId = AppId("chronos-bad-json")
 
           apiClient.installPackageAndAssert(
@@ -235,8 +212,6 @@ final class PackageInstallSpec extends FreeSpec with BeforeAndAfterAll with Cosm
     // TODO: This should actually happen between each test, but for now tests depend on eachother :(
     val deletes: Future[Seq[Unit]] = Future.collect(Seq(
       adminRouter.deleteApp(AppId("/helloworld"), force = true) map { resp => assert(resp.getStatusCode() === 200) },
-      adminRouter.deleteApp(AppId("/helloworld2"), force = true) map { resp => assert(resp.getStatusCode() === 200) },
-      adminRouter.deleteApp(AppId("/helloworld3"), force = true) map { resp => assert(resp.getStatusCode() === 200) },
       adminRouter.deleteApp(AppId("/cassandra/dcos"), force = true) map { resp => assert(resp.getStatusCode() === 200) },
       adminRouter.deleteApp(AppId("/custom-app-id"), force = true) map { resp => assert(resp.getStatusCode() === 200) },
 
@@ -248,7 +223,7 @@ final class PackageInstallSpec extends FreeSpec with BeforeAndAfterAll with Cosm
 
   private[this] def runService[A](
     marathonClientOverride: Option[Service[Request, Response]] = None,
-    packageCache: Repository = MemoryPackageCache(PackageMap)
+    universeDir: Path
   )(
     f: ApiTestAssertionDecorator => Unit
   ): Unit = {
@@ -261,7 +236,7 @@ final class PackageInstallSpec extends FreeSpec with BeforeAndAfterAll with Cosm
     // these two imports provide the implicit DecodeRequest instances needed to instantiate Cosmos
     val marathonPackageRunner = new MarathonPackageRunner(ar)
     val sourcesStorage = PackageSourcesStorage.constUniverse(universeUri)
-    val service = Cosmos(ar, packageCache, marathonPackageRunner, sourcesStorage).service
+    val service = Cosmos(ar, marathonPackageRunner, sourcesStorage, universeDir).service
     val server = Http.serve(s":$servicePort", service)
     val client = Http.newService(s"127.0.0.1:$servicePort")
 
@@ -275,8 +250,6 @@ final class PackageInstallSpec extends FreeSpec with BeforeAndAfterAll with Cosm
 }
 
 private object PackageInstallSpec extends CosmosSpec {
-
-  private val UniverseUri = Uri.parse("https://github.com/mesosphere/universe/archive/cli-test-4.zip")
 
   private val PackageTableRows: Seq[(String, PackageFiles)] = Seq(
     packageTableRow("helloworld2", 1, 512.0, 2),
@@ -328,8 +301,6 @@ private object PackageInstallSpec extends CosmosSpec {
       .map(_.app)
   }
 
-  private lazy val PackageMap: Map[String, PackageFiles] = PackageTableRows.toMap
-
   private def packageTableRow(
     name: String, cpus: Double, mem: Double, pythonVersion: Int
   ): (String, PackageFiles) = {
@@ -378,27 +349,6 @@ private object PackageInstallSpec extends CosmosSpec {
 
     (name, packageFiles)
   }
-
-  private def assertPackageInstalledFromCache(appId: AppId, packageFiles: PackageFiles): Unit = {
-    val Right(marathonJson) = parse(packageFiles.marathonJsonMustache)
-    val expectedLabel = extractTestLabel(marathonJson.cursor)
-    val actualLabel = Await.result(getMarathonJsonTestLabel(appId))
-    assertResult(expectedLabel)(actualLabel)
-  }
-
-  private def getMarathonJsonTestLabel(appId: AppId): Future[Option[String]] = {
-    adminRouter.getApp(appId) map {
-      _.app.labels.get("test-id")
-    }
-  }
-
-  private def extractTestLabel(marathonJsonCursor: Cursor): Option[String] = {
-    marathonJsonCursor
-      .downField("labels")
-      .flatMap(_.downField("test-id"))
-      .flatMap(_.as[String].toOption)
-  }
-
 }
 
 private final class ApiTestAssertionDecorator(apiClient: Service[Request, Response]) extends CosmosSpec {
@@ -429,7 +379,7 @@ private final class ApiTestAssertionDecorator(apiClient: Service[Request, Respon
       case Success(expectedBody) =>
         val Xor.Right(actualBody) = decode[InstallResponse](response.contentString)
         assertResult(expectedBody)(actualBody)
-      case Failure(_, expectedBody) =>
+      case Failure(_, expectedBody, _) =>
         val Xor.Right(actualBody) = decode[ErrorResponse](response.contentString)
         assertResult(expectedBody)(actualBody)
     }
@@ -473,8 +423,11 @@ private sealed abstract class ExpectedResult(val status: Status, val appId: Opti
 private case class Success(body: InstallResponse)
   extends ExpectedResult(Status.Ok, Some(body.appId))
 
-private case class Failure(override val status: Status, body: ErrorResponse)
-  extends ExpectedResult(status, None)
+private case class Failure(
+  override val status: Status,
+  body: ErrorResponse,
+  override val appId: Option[AppId] = None
+) extends ExpectedResult(status, appId)
 
 private sealed trait PreInstallState
 private case object AlreadyInstalled extends PreInstallState

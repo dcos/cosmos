@@ -1,5 +1,7 @@
 package com.mesosphere.cosmos
 
+import java.nio.file.Path
+
 import cats.data.Xor
 import cats.data.Xor.Right
 import com.mesosphere.cosmos.circe.Decoders._
@@ -27,9 +29,8 @@ final class PackageDescribeSpec extends FreeSpec with CosmosSpec {
   "The package describe endpoint" - {
     "don't install if specified version is not found"/*TODO: Copy paste test name */ in {
       val _ = withTempDirectory { universeDir =>
-        val universeCache = UniversePackageCache(UniverseUri, universeDir)
 
-        runService(packageCache = universeCache) { apiClient =>
+        runService(universeDir = universeDir) { apiClient =>
           forAll (PackageDummyVersionsTable) { (packageName, packageVersion) =>
             apiClient.describeAndAssertError(
               packageName = packageName,
@@ -44,9 +45,8 @@ final class PackageDescribeSpec extends FreeSpec with CosmosSpec {
 
     "can successfully describe helloworld from Universe" in {
       val _ = withTempDirectory { universeDir =>
-        val universeCache = UniversePackageCache(UniverseUri, universeDir)
 
-        runService(packageCache = universeCache) { apiClient =>
+        runService(universeDir = universeDir) { apiClient =>
           apiClient.describeHelloworld()
           apiClient.describeHelloworld(Some(PackageDetailsVersion("0.1.0")))
         }
@@ -55,9 +55,8 @@ final class PackageDescribeSpec extends FreeSpec with CosmosSpec {
 
     "can successfully describe all versions from Universe" in {
       val _ = withTempDirectory { universeDir =>
-        val universeCache = UniversePackageCache(UniverseUri, universeDir)
 
-        runService(packageCache = universeCache) { apiClient =>
+        runService(universeDir = universeDir) { apiClient =>
           forAll (PackageVersionsTable) { (packageName, versions) =>
             apiClient.describeVersionsAndAssert(
               packageName=packageName,
@@ -72,13 +71,13 @@ final class PackageDescribeSpec extends FreeSpec with CosmosSpec {
 
   private[this] def runService[A](
     dcosClient: Service[Request, Response] = Services.adminRouterClient(adminRouterUri).get,
-    packageCache: Repository
+    universeDir: Path
   )(
     f: DescribeTestAssertionDecorator => Unit
   ): Unit = {
     val marathonPackageRunner = new MarathonPackageRunner(adminRouter)
     val sourcesStorage = PackageSourcesStorage.constUniverse(universeUri)
-    val service = Cosmos(adminRouter, packageCache, marathonPackageRunner, sourcesStorage).service
+    val service = Cosmos(adminRouter, marathonPackageRunner, sourcesStorage, universeDir).service
     val server = Http.serve(s":$servicePort", service)
     val client = Http.newService(s"127.0.0.1:$servicePort")
 
@@ -91,8 +90,6 @@ final class PackageDescribeSpec extends FreeSpec with CosmosSpec {
 }
 
 private object PackageDescribeSpec extends CosmosSpec {
-
-  private val UniverseUri = Uri.parse("https://github.com/mesosphere/universe/archive/cli-test-4.zip")
 
   private val PackageDummyVersionsTable = Table(
     ("package name", "version"),
