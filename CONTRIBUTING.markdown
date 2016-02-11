@@ -51,3 +51,7 @@ It should be easy to figure out what a test is actually verifying.
   development is complete, use `git rebase master` and force push to [clean up the history][squash].
 * Commit messages should generally use the present tense, normal sentence capitalization, and no final
   punctuation.
+
+[fork-and-pull]: https://help.github.com/articles/using-pull-requests/
+[scalatest]: http://www.scalatest.org/
+[squash]: http://gitready.com/advanced/2009/02/10/squashing-commits-with-rebase.html
