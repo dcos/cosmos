@@ -28,7 +28,7 @@ object zookeeperConnectString extends GlobalFlag[String](
 
 // TODO: Make this application state instead of config parameter
 object universeBundleUri extends GlobalFlag[Uri](
-  Uri.parse("https://github.com/mesosphere/universe/archive/version-2.x.zip"),
+  Uri.parse("https://universe.mesosphere.com/repo"),
   "uri of universe bundle"
 )
 
