@@ -3,6 +3,7 @@ package com.mesosphere.cosmos
 import java.nio.file
 
 import com.mesosphere.cosmos.Flaggables._
+import com.mesosphere.cosmos.model.ZooKeeperUri
 import com.twitter.app.GlobalFlag
 import com.netaporter.uri.Uri
 
@@ -21,8 +22,8 @@ object mesosMasterUri extends GlobalFlag[Uri](
   "The URI where the leading Mesos master can be found"
 )
 
-object zookeeperConnectString extends GlobalFlag[String](
-  "localhost:2181",
+object zookeeperUri extends GlobalFlag[ZooKeeperUri](
+  ZooKeeperUri.parse("zk://localhost:2181/cosmos").get(),
   "The ZooKeeper connection string"
 )
 
