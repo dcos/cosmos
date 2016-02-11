@@ -27,12 +27,6 @@ object zookeeperUri extends GlobalFlag[ZooKeeperUri](
   "The ZooKeeper connection string"
 )
 
-// TODO: Make this application state instead of config parameter
-object universeBundleUri extends GlobalFlag[Uri](
-  Uri.parse("https://universe.mesosphere.com/repo"),
-  "uri of universe bundle"
-)
-
 object dataDir extends GlobalFlag[file.Path](
   file.Paths.get("/var/lib/cosmos"),
   help = "Root directory for all cosmos runtime "

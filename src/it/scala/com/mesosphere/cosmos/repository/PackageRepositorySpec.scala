@@ -37,7 +37,7 @@ final class PackageRepositorySpec extends UnitSpec with BeforeAndAfter with Even
 
   "List sources endpoint" in {
       assertResult(
-        PackageRepositoryListResponse(List(UniverseRepository))
+        PackageRepositoryListResponse(defaultRepos)
       )(
         listRepos()
       )
@@ -45,17 +45,19 @@ final class PackageRepositorySpec extends UnitSpec with BeforeAndAfter with Even
 
   "Add source endpoint" - {
     "adding a repository to the default list" in {
-      assertAdd(List(UniverseRepository, SourceCliTest4), SourceCliTest4)
+      assertAdd(defaultRepos :+ SourceCliTest4, SourceCliTest4)
     }
 
-    "adding repositories at explicit indices" in {
-      val firstResult = List(UniverseRepository, SourceCliTest4)
-      val secondResult = List(SourceMesosphere, UniverseRepository, SourceCliTest4)
-      val thirdResult = List(SourceMesosphere, UniverseRepository, SourceExample, SourceCliTest4)
-
-      assertAdd(firstResult, SourceCliTest4, Some(1))
-      assertAdd(secondResult, SourceMesosphere, Some(0))
-      assertAdd(thirdResult, SourceExample, Some(2))
+    "adding a repository at an explicit indices" - {
+      "append" in {
+        assertAdd(defaultRepos :+ SourceCliTest4, SourceCliTest4, Some(defaultRepos.size)) // append
+      }
+      "prepend" in {
+        assertAdd(SourceMesosphere +: defaultRepos, SourceMesosphere, Some(0)) // prepend
+      }
+      "insert" in {
+        assertAdd(defaultRepos.head :: SourceExample :: defaultRepos(1) :: Nil, SourceExample, Some(1)) // insert
+      }
     }
 
     "adding duplicate repositories" in {
@@ -76,7 +78,7 @@ final class PackageRepositorySpec extends UnitSpec with BeforeAndAfter with Even
         UniverseRepository.copy(uri = SourceCliTest4.uri)
       )
 
-      assertAdd(List(UniverseRepository, SourceCliTest4), SourceCliTest4)
+      assertAdd(defaultRepos :+ SourceCliTest4, SourceCliTest4)
 
       assertAddFailure(
         s"Repository name [$n] and URI [${SourceCliTest4.uri}] are both already present in the list",
@@ -99,7 +101,7 @@ final class PackageRepositorySpec extends UnitSpec with BeforeAndAfter with Even
     // TODO: Using an external test dependency. Change to something local once the test is working
     val repoUri = Uri.parse("https://github.com/mesosphere/universe/archive/version-1.x.zip")
     val oldVersionRepository = PackageRepository("old-version", repoUri)
-    val expectedList = Seq(UniverseRepository, oldVersionRepository)
+    val expectedList = defaultRepos :+ oldVersionRepository
     val expectedMsg = s"Repository version [1.0.0-rc1] is not supported"
     assertAdd(expectedList, oldVersionRepository)
 
@@ -133,7 +135,7 @@ final class PackageRepositorySpec extends UnitSpec with BeforeAndAfter with Even
 
     def assertBrokenUri(uriText: String): Unit = {
       val bogusRepository = PackageRepository("bogus", Uri.parse(uriText))
-      assertAdd(Seq(UniverseRepository, bogusRepository), bogusRepository)
+      assertAdd(defaultRepos :+ bogusRepository, bogusRepository)
 
       val expectedMsg = s"URI for repository [${bogusRepository.name}] is invalid: ${bogusRepository.uri}"
 
@@ -172,7 +174,7 @@ final class PackageRepositorySpec extends UnitSpec with BeforeAndAfter with Even
       }
 
       val invalidRepo = PackageRepository("invalid", Uri.parse(uriText))
-      assertAdd(Seq(UniverseRepository, invalidRepo), invalidRepo)
+      assertAdd(defaultRepos :+ invalidRepo, invalidRepo)
 
       eventually { assertIndexNotFound() }
 
@@ -185,10 +187,9 @@ final class PackageRepositorySpec extends UnitSpec with BeforeAndAfter with Even
 
 private[cosmos] object PackageRepositorySpec extends UnitSpec {
 
-  private[cosmos] val UniverseRepository = PackageRepository(
-    "Universe",
-    Uri.parse(System.getProperty("com.mesosphere.cosmos.universeBundleUri"))
-  )
+  private val defaultRepos = DefaultRepositories().getOrThrow
+  private[cosmos] val UniverseRepository = defaultRepos.head
+
   private[cosmos] val SourceCliTest4 = PackageRepository(
     "bar",
     Uri.parse("https://github.com/mesosphere/universe/archive/cli-test-4.zip")

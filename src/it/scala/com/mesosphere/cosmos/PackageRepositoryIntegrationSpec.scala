@@ -4,7 +4,7 @@ import com.mesosphere.cosmos.circe.Decoders._
 import com.mesosphere.cosmos.circe.Encoders._
 import com.mesosphere.cosmos.http.MediaTypes
 import com.mesosphere.cosmos.model._
-import com.mesosphere.cosmos.repository.PackageRepositorySpec
+import com.mesosphere.cosmos.repository.{DefaultRepositories, PackageRepositorySpec}
 import com.mesosphere.cosmos.test.CosmosIntegrationTestClient.CosmosClient
 import com.netaporter.uri.Uri
 import com.netaporter.uri.dsl._
@@ -18,6 +18,7 @@ final class PackageRepositoryIntegrationSpec extends FreeSpec with BeforeAndAfte
 
   import PackageRepositoryIntegrationSpec._
 
+  private val defaultRepos = DefaultRepositories().getOrThrow
   var originalRepositories: Seq[PackageRepository] = null
 
   before {
@@ -34,33 +35,31 @@ final class PackageRepositoryIntegrationSpec extends FreeSpec with BeforeAndAfte
   }
 
   "Package repository endpoints" in {
-    assertResult(List(UniverseSource))(listRepositories())
+    // assert repos are default list
+    val list1 = listRepositories()
+    assertResult(defaultRepos)(list1)
+
+    // add SourceCliTest4 to repo list
     assertResult(
       PackageRepositoryAddResponse(
-        List(
-          UniverseSource,
-          PackageRepositorySpec.SourceCliTest4
-        )
+        defaultRepos :+ PackageRepositorySpec.SourceCliTest4
       )
     )(
       addRepository(PackageRepositorySpec.SourceCliTest4)
     )
 
-    assertResult(List(UniverseSource, PackageRepositorySpec.SourceCliTest4)) {
+    // assert repos are default + SourceCliTest4
+    assertResult(defaultRepos :+ PackageRepositorySpec.SourceCliTest4) {
       listRepositories()
     }
 
-    assertResult(PackageRepositoryDeleteResponse(List(PackageRepositorySpec.SourceCliTest4))) {
-      deleteRepository(UniverseSource)
-    }
-
-    assertResult(List(PackageRepositorySpec.SourceCliTest4))(listRepositories())
-
-    assertResult(PackageRepositoryDeleteResponse(Nil)) {
+    // delete SourceCliTest4
+    assertResult(PackageRepositoryDeleteResponse(defaultRepos)) {
       deleteRepository(PackageRepositorySpec.SourceCliTest4)
     }
 
-    assertResult(Nil)(listRepositories())
+    // assert repos are default list
+    assertResult(defaultRepos)(listRepositories())
   }
 
   "Package repo add should" - {
@@ -73,7 +72,7 @@ final class PackageRepositoryIntegrationSpec extends FreeSpec with BeforeAndAfte
       }
 
       "2" in {
-          val addRequest = PackageRepositoryAddRequest("name", "http://fake.fake", Some(2))
+          val addRequest = PackageRepositoryAddRequest("name", "http://fake.fake", Some(defaultRepos.size + 1))
 
           val response = sendAddRequest(addRequest)
           assertResult(Status.BadRequest)(response.status)
@@ -94,7 +93,7 @@ final class PackageRepositoryIntegrationSpec extends FreeSpec with BeforeAndAfte
         assertResult(Status.Ok)(response.status)
 
         val sources = listRepositories()
-        assertResult(PackageRepository(addRequest.name, addRequest.uri))(sources(1))
+        assertResult(PackageRepository(addRequest.name, addRequest.uri))(sources(defaultRepos.size))
     }
 
     "allows insertion at specific index" in {
@@ -110,10 +109,6 @@ final class PackageRepositoryIntegrationSpec extends FreeSpec with BeforeAndAfte
 }
 
 private object PackageRepositoryIntegrationSpec extends TableDrivenPropertyChecks {
-
-  protected[this] val universeUri: Uri =
-    Uri.parse(System.getProperty("com.mesosphere.cosmos.universeBundleUri"))
-  private val UniverseSource = PackageRepository("Universe", universeUri)
 
   private def listRepositories(): Seq[PackageRepository] = {
     CosmosClient.callEndpoint[PackageRepositoryListRequest, PackageRepositoryListResponse](

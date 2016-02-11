@@ -4,6 +4,13 @@ import java.nio.ByteBuffer
 import java.nio.charset.StandardCharsets
 
 import cats.data.Ior
+import com.mesosphere.cosmos._
+import com.mesosphere.cosmos.circe.Decoders._
+import com.mesosphere.cosmos.circe.Encoders._
+import com.mesosphere.cosmos.http.{MediaType, MediaTypeOps, MediaTypeSubType}
+import com.mesosphere.cosmos.model.{PackageRepository, ZooKeeperStorageEnvelope}
+import com.mesosphere.cosmos.{ByteBuffers, CirceError, ZooKeeperStorageError}
+import com.mesosphere.cosmos.repository.DefaultRepositories._
 import com.netaporter.uri.Uri
 import com.twitter.finagle.stats.{NullStatsReceiver, Stat, StatsReceiver}
 import com.twitter.util._
@@ -18,15 +25,8 @@ import org.apache.curator.framework.recipes.cache.NodeCache
 import org.apache.zookeeper.KeeperException
 import org.apache.zookeeper.data.{Stat => ZooKeeperStat}
 
-import com.mesosphere.cosmos._
-import com.mesosphere.cosmos.circe.Decoders._
-import com.mesosphere.cosmos.circe.Encoders._
-import com.mesosphere.cosmos.http.{MediaType, MediaTypeOps, MediaTypeSubType}
-import com.mesosphere.cosmos.model.{PackageRepository, ZooKeeperStorageEnvelope}
-
 private[cosmos] final class ZooKeeperStorage(
-  zkClient: CuratorFramework,
-  defaultUniverseUri: Uri
+  zkClient: CuratorFramework
 )(implicit
   statsReceiver: StatsReceiver = NullStatsReceiver
 ) extends PackageSourcesStorage {
@@ -47,8 +47,7 @@ private[cosmos] final class ZooKeeperStorage(
     ))
   )
 
-  private[this] val DefaultSources: List[PackageRepository] =
-    List(PackageRepository("Universe", defaultUniverseUri))
+  private[this] val DefaultRepos: List[PackageRepository] = DefaultRepositories().getOrElse(Nil)
 
   override def read(): Future[List[PackageRepository]] = {
     Stat.timeFuture(stats.stat("read")) {
@@ -56,7 +55,7 @@ private[cosmos] final class ZooKeeperStorage(
         case Some((_, bytes)) =>
           Future(decodeData(bytes))
         case None =>
-          create(DefaultSources)
+          create(DefaultRepos)
       }
     }
   }
@@ -70,7 +69,7 @@ private[cosmos] final class ZooKeeperStorage(
           Future(decodeData(bytes))
         case None =>
           readCacheStats.counter("miss").incr
-          create(DefaultSources)
+          create(DefaultRepos)
       }
     }
   }
@@ -86,7 +85,7 @@ private[cosmos] final class ZooKeeperStorage(
           write(stat, addToList(index, packageRepository, decodeData(bytes)))
 
         case None =>
-          create(addToList(index, packageRepository, DefaultSources))
+          create(addToList(index, packageRepository, DefaultRepos))
       }
     }
   }
@@ -98,7 +97,7 @@ private[cosmos] final class ZooKeeperStorage(
           case Some((stat, bytes)) =>
             write(stat, decodeData(bytes).filterNot(predicate))
           case None =>
-            create(DefaultSources.filterNot(predicate))
+            create(DefaultRepos.filterNot(predicate))
         }
       }
     }

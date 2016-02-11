@@ -155,7 +155,8 @@ object CosmosBuild extends Build {
     test in IntegrationTest <<= (test in IntegrationTest).dependsOn(oneJar),
     cosmosIntegrationTestServer in IntegrationTest := new CosmosIntegrationTestServer(
       (javaHome in run).value.map(_.getCanonicalPath),
-      (artifactPath in oneJar).value.getCanonicalPath
+      (resourceDirectories in IntegrationTest).value,
+      (artifactPath in oneJar).value
     ),
     testOptions in IntegrationTest += Tests.Setup(() =>
       (cosmosIntegrationTestServer in IntegrationTest).value.setup((streams in runMain).value.log)

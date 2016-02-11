@@ -247,7 +247,6 @@ object Cosmos extends FinchServer {
       }
 
     val boot = ar map { adminRouter =>
-      val universeBundle = universeBundleUri()
       val dd = dataDir()
       logger.info("Using {} for data directory", dd)
 
@@ -269,7 +268,7 @@ object Cosmos extends FinchServer {
         zkClient.close()
       }
 
-      val sourcesStorage = new ZooKeeperStorage(zkClient, universeBundle)
+      val sourcesStorage = new ZooKeeperStorage(zkClient)()
 
       val cosmos = Cosmos(adminRouter, marathonPackageRunner, sourcesStorage, dd)
       cosmos.service

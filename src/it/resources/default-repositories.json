@@ -1,0 +1,10 @@
+[
+  {
+    "name": "Universe",
+    "uri": "https://universe.mesosphere.com/repo"
+  },
+  {
+    "name": "Hello World",
+    "uri": "https://downloads.mesosphere.io/universe/helloworld.zip"
+  }
+]
