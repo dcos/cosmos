@@ -12,7 +12,7 @@ trait ZooKeeperFixture extends BeforeAndAfterAll { this: Suite =>
   var zkCluster: TestingCluster = _
 
   override def beforeAll(): Unit = {
-    zkCluster = new TestingCluster(3)
+    zkCluster = new TestingCluster(1)
     zkCluster.start()
     super.beforeAll()
   }
