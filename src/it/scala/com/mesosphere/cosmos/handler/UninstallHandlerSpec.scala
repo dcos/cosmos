@@ -38,10 +38,6 @@ final class UninstallHandlerSpec extends IntegrationSpec with ZooKeeperFixture {
   override def beforeAll(): Unit = {
     // This must come first so that `zkCluster` gets initialized
     super.beforeAll()
-    val propertyName = "com.mesosphere.cosmos.zookeeperConnectString"
-    val connectString = zkCluster.getConnectString
-    logger.info("Setting {}={}", Seq(propertyName, connectString): _*)
-    System.setProperty(propertyName, connectString)
 
     service = Cosmos.service
   }
