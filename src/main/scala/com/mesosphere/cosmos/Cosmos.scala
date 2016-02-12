@@ -1,5 +1,7 @@
 package com.mesosphere.cosmos
 
+import java.nio.file.Path
+
 import com.netaporter.uri.Uri
 import com.twitter.finagle.Service
 import com.twitter.finagle.http.exp.Multipart.FileUpload
@@ -26,8 +28,6 @@ import com.mesosphere.cosmos.repository.ZooKeeperStorage
 import com.mesosphere.cosmos.repository.Repository
 
 private[cosmos] final class Cosmos(
-  packageCache: Repository,
-  packageRunner: PackageRunner,
   uninstallHandler: EndpointHandler[UninstallRequest, UninstallResponse],
   packageInstallHandler: EndpointHandler[InstallRequest, InstallResponse],
   packageRenderHandler: EndpointHandler[RenderRequest, RenderResponse],
@@ -251,7 +251,6 @@ object Cosmos extends FinchServer {
       val universeBundle = universeBundleUri()
       val dd = dataDir()
       logger.info("Using {} for data directory", dd)
-      val packageCache = UniversePackageCache(universeBundle, dd)
 
       val zkUri = zookeeperUri()
       logger.info("Using {} for the zookeeper connection", zkUri)
@@ -273,7 +272,7 @@ object Cosmos extends FinchServer {
 
       val sourcesStorage = new ZooKeeperStorage(zkClient, universeBundle)
 
-      val cosmos = Cosmos(adminRouter, packageCache, marathonPackageRunner, sourcesStorage)
+      val cosmos = Cosmos(adminRouter, marathonPackageRunner, sourcesStorage, dd)
       cosmos.service
     }
     boot.get
@@ -281,22 +280,22 @@ object Cosmos extends FinchServer {
 
   private[cosmos] def apply(
     adminRouter: AdminRouter,
-    packageCache: Repository,
     packageRunner: PackageRunner,
-    sourcesStorage: PackageSourcesStorage
+    sourcesStorage: PackageSourcesStorage,
+    dataDir: Path
   )(implicit statsReceiver: StatsReceiver = NullStatsReceiver): Cosmos = {
 
+    val repositories = new MultiRepository(sourcesStorage, dataDir)
+
     new Cosmos(
-      packageCache,
-      packageRunner,
-      new UninstallHandler(adminRouter, packageCache),
-      new PackageInstallHandler(packageCache, packageRunner),
-      new PackageRenderHandler(packageCache),
-      new PackageSearchHandler(packageCache),
+      new UninstallHandler(adminRouter, repositories),
+      new PackageInstallHandler(repositories, packageRunner),
+      new PackageRenderHandler(repositories),
+      new PackageSearchHandler(repositories),
       new PackageImportHandler,
-      new PackageDescribeHandler(packageCache),
-      new ListVersionsHandler(packageCache),
-      new ListHandler(adminRouter, packageCache),
+      new PackageDescribeHandler(repositories),
+      new ListVersionsHandler(repositories),
+      new ListHandler(adminRouter, uri => repositories.getRepository(uri)),
       new PackageRepositoryListHandler(sourcesStorage),
       new PackageRepositoryAddHandler(sourcesStorage),
       new PackageRepositoryDeleteHandler(sourcesStorage),

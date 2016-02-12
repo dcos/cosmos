@@ -55,8 +55,6 @@ final class UserOptionsSpec extends UnitSpec {
         import com.mesosphere.cosmos.circe.Encoders._
         import io.finch.circe._
         val cosmos = new Cosmos(
-          packageCache,
-          packageRunner,
           EndpointHandler.const(UninstallResponse(Nil)),
           new PackageInstallHandler(packageCache, packageRunner),
           new PackageRenderHandler(packageCache),
