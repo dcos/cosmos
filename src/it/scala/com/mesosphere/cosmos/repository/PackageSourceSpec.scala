@@ -10,6 +10,7 @@ import com.mesosphere.cosmos.{UnitSpec, ZooKeeperFixture}
 import com.netaporter.uri.Uri
 import com.twitter.io.Charsets
 import com.twitter.util.Await
+import com.twitter.util.Future
 import io.circe.Json
 import io.finch.circe._
 
@@ -19,16 +20,15 @@ final class PackageSourceSpec extends UnitSpec with ZooKeeperFixture {
 
   "List sources endpoint" in {
     withZooKeeperClient { client =>
-      client.create.creatingParentsIfNeeded.forPath(PackageSourcesZkPath)
       val sourcesStorage = new ZooKeeperStorage(client, SourceVersion2x.uri)
-      val listSourcesHandler = new PackageRepositoryListHandler(sourcesStorage)
+      val listSourceHandler = new PackageRepositoryListHandler(sourcesStorage)
       val request = PackageRepositoryListRequest()
 
-      forAll (PackageRepositoryListValues) { sourcesList =>
-        val _ = Await.result(sourcesStorage.write(sourcesList))
-        val actualResponse = Await.result(listSourcesHandler(request))
-        assertResult(PackageRepositoryListResponse(sourcesList))(actualResponse)
-      }
+      assertResult(
+        PackageRepositoryListResponse(List(SourceVersion2x))
+      )(
+        Await.result(listSourceHandler(request))
+      )
     }
   }
 
@@ -40,21 +40,17 @@ final class PackageSourceSpec extends UnitSpec with ZooKeeperFixture {
 
   "Add source endpoint" in {
     withZooKeeperClient { client =>
-      val emptySources = Json.array().noSpaces.getBytes(Charsets.Utf8)
-      client.create.creatingParentsIfNeeded.forPath(PackageSourcesZkPath, emptySources)
       val sourcesStorage = new ZooKeeperStorage(client, SourceVersion2x.uri)
+      val deleteSourceHandler = new PackageRepositoryDeleteHandler(sourcesStorage)
       val addSourceHandler = new PackageRepositoryAddHandler(sourcesStorage)
-      val listSourcesHandler = new PackageRepositoryListHandler(sourcesStorage)
+      val listSourceHandler = new PackageRepositoryListHandler(sourcesStorage)
 
       forAll (PackageRepositoryAddScenarios) { scenario =>
-        Await.result(sourcesStorage.write(Nil))
+        setStorageState(listSourceHandler, addSourceHandler, deleteSourceHandler, Nil)
 
         scenario.foreach { assertion =>
           val addResponse = Await.result(addSourceHandler(assertion.request))
           assertResult(PackageRepositoryAddResponse(assertion.responseList))(addResponse)
-
-          val listResponse = Await.result(listSourcesHandler(PackageRepositoryListRequest()))
-          assertResult(PackageRepositoryListResponse(assertion.responseList))(listResponse)
         }
       }
     }
@@ -65,34 +61,27 @@ final class PackageSourceSpec extends UnitSpec with ZooKeeperFixture {
 
   "Delete source endpoint" in {
     withZooKeeperClient { client =>
-      val emptySources = Json.array().noSpaces.getBytes(Charsets.Utf8)
-      client.create.creatingParentsIfNeeded.forPath(PackageSourcesZkPath, emptySources)
       val sourcesStorage = new ZooKeeperStorage(client, SourceVersion2x.uri)
       val deleteSourceHandler = new PackageRepositoryDeleteHandler(sourcesStorage)
-      val listSourcesHandler = new PackageRepositoryListHandler(sourcesStorage)
+      val addSourceHandler = new PackageRepositoryAddHandler(sourcesStorage)
+      val listSourceHandler = new PackageRepositoryListHandler(sourcesStorage)
 
       forAll(PackageRepositoryDeleteScenarios) { (startingSources, scenario) =>
-        Await.result(sourcesStorage.write(startingSources))
+        setStorageState(listSourceHandler, addSourceHandler, deleteSourceHandler, startingSources)
 
         scenario.foreach { assertion =>
           val deleteResponse = Await.result(deleteSourceHandler(assertion.request))
           assertResult(PackageRepositoryDeleteResponse(assertion.responseList))(deleteResponse)
-
-          val listResponse = Await.result(listSourcesHandler(PackageRepositoryListRequest()))
-          assertResult(PackageRepositoryListResponse(assertion.responseList))(listResponse)
         }
       }
     }
   }
-
 }
 
 private[cosmos] object PackageSourceSpec extends UnitSpec {
 
-  private val PackageSourcesZkPath = "/package-sources/v1"
-
   private[cosmos] val SourceVersion2x = PackageRepository(
-    "foo",
+    "Universe",
     Uri.parse("https://github.com/mesosphere/universe/archive/version-2.x.zip")
   )
   private[cosmos] val SourceCliTest4 = PackageRepository(
@@ -106,14 +95,6 @@ private[cosmos] object PackageSourceSpec extends UnitSpec {
   private[cosmos] val SourceExample = PackageRepository(
     "quux",
     Uri.parse("http://example.com")
-  )
-
-  private val PackageRepositoryListValues = Table(
-    "sources list",
-    Nil,
-    List(SourceVersion2x),
-    List(SourceCliTest4),
-    List(SourceVersion2x, SourceCliTest4)
   )
 
   private val PackageRepositoryAddScenarios = Table(
@@ -184,6 +165,24 @@ private[cosmos] object PackageSourceSpec extends UnitSpec {
     PackageRepositoryDeleteRequest(uri = Some(source.uri))
   }
 
+  private def setStorageState(
+    lister: (PackageRepositoryListRequest) => Future[PackageRepositoryListResponse],
+    adder: (PackageRepositoryAddRequest) => Future[PackageRepositoryAddResponse],
+    deleter: (PackageRepositoryDeleteRequest) => Future[PackageRepositoryDeleteResponse],
+    state: List[PackageRepository]
+  ): Unit = {
+    // TODO: not ideal but okay for now
+
+    Await.result(lister(PackageRepositoryListRequest())).repositories.map { repository =>
+      Await.result {
+        deleter(PackageRepositoryDeleteRequest(uri = Some(repository.uri)))
+      }
+    }
+
+    state.reverse.foreach { repository =>
+      Await.result(adder(PackageRepositoryAddRequest(repository.name, repository.uri)))
+    }
+  }
 }
 
 private case class AddSourceAssertion(

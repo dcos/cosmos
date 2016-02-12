@@ -21,16 +21,11 @@ final class PackageRepositoryAddHandler(sourcesStorage: PackageSourcesStorage)(
   override def apply(
     request: PackageRepositoryAddRequest
   ): Future[PackageRepositoryAddResponse] = {
-    sourcesStorage.read().flatMap { sources =>
-      val index = request.index.getOrElse(0)
-      val (leftSources, rightSources) = sources.splitAt(index)
-      val updatedSources = leftSources ++ (
-        PackageRepository(request.name, request.uri) :: rightSources
-      )
-      sourcesStorage.write(updatedSources)
-    } map { sources =>
+    sourcesStorage.add(
+      request.index.getOrElse(0),
+      PackageRepository(request.name, request.uri)
+    ) map { sources =>
       PackageRepositoryAddResponse(sources)
     }
   }
-
 }

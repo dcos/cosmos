@@ -23,18 +23,8 @@ private[cosmos] final class PackageRepositoryDeleteHandler(sourcesStorage: Packa
   override def apply(
     request: PackageRepositoryDeleteRequest
   ): Future[PackageRepositoryDeleteResponse] = {
-    val nameFilter = request.name.map(name => (source: PackageRepository) => source.name == name)
-    val uriFilter = request.uri.map(uri => (source: PackageRepository) => source.uri == uri)
-
-    nameFilter.orElse(uriFilter) match {
-      case Some(filterFn) =>
-        sourcesStorage.read().flatMap { sources =>
-          val updatedSources = sources.filterNot(filterFn)
-          sourcesStorage.write(updatedSources)
-        }.map(sources => PackageRepositoryDeleteResponse(sources))
-      case None =>
-        Future.exception(RepoNameOrUriMissing())
+    sourcesStorage.delete(request.name, request.uri).map { sources =>
+      PackageRepositoryDeleteResponse(sources)
     }
   }
-
 }
