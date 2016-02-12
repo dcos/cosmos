@@ -53,13 +53,12 @@ final class PackageSourcesIntegrationSpec extends FreeSpec with CosmosSpec with 
 
   private[this] def withCosmosService(f: Service[Request, Response] => Unit): Unit = {
     withTempDirectory { universeDir =>
-      val packageCache = UniversePackageCache(universeUri, universeDir)
       val packageRunner = new MarathonPackageRunner(adminRouter)
 
       withZooKeeperClient { zkClient =>
         val sourcesStorage = new ZooKeeperStorage(zkClient, universeUri)
 
-        val cosmos = Cosmos(adminRouter, packageCache, packageRunner, sourcesStorage)
+        val cosmos = Cosmos(adminRouter, packageRunner, sourcesStorage, universeDir)
 
         val service = cosmos.service
         val server = Http.serve(s":$servicePort", service)

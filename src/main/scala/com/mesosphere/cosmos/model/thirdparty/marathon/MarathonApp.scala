@@ -19,7 +19,7 @@ case class MarathonApp(
 
   def packageVersion: Option[PackageDetailsVersion] = labels.get(MarathonApp.versionLabel).map(PackageDetailsVersion)
 
-  def packageSource: Option[String] = labels.get(MarathonApp.sourceLabel)
+  def packageRepository: Option[String] = labels.get(MarathonApp.repositoryLabel)
 }
 
 object MarathonApp {
@@ -29,7 +29,7 @@ object MarathonApp {
   val nameLabel = "DCOS_PACKAGE_NAME"
   val registryVersionLabel = "DCOS_PACKAGE_REGISTRY_VERSION"
   val releaseLabel = "DCOS_PACKAGE_RELEASE"
-  val sourceLabel = "DCOS_PACKAGE_SOURCE"
+  val repositoryLabel = "DCOS_PACKAGE_SOURCE"
   val versionLabel = "DCOS_PACKAGE_VERSION"
   val commandLabel = "DCOS_PACKAGE_COMMAND"
 }

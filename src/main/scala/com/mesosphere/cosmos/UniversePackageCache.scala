@@ -30,10 +30,10 @@ import com.mesosphere.universe._
 
 /** Stores packages from the Universe GitHub repository in the local filesystem.
   */
-final class UniversePackageCache private(
-  universeBundle: Uri,
+final class UniversePackageCache private (
+  val universeBundle: Uri,
   universeDir: Path
-) extends Repository {
+) extends Repository with AutoCloseable {
   // This mutex serializes updates to the local package cache
   private[this] val updateMutex = new AsyncMutex()
 
@@ -95,6 +95,21 @@ final class UniversePackageCache private(
     }
   }
 
+  override def close(): Unit = {
+    // Note: The order is very important!!
+
+    val symlinkBundlePath = universeDir.resolve(base64(universeBundle))
+
+    // Remember the old bundle path so we can delete it later
+    val bundlePath = readSymbolicLink(symlinkBundlePath)
+
+    // Delete the symbolic link
+    Files.delete(symlinkBundlePath)
+
+    // Delete the bundle directory
+    bundlePath.foreach { p => TwitterFiles.delete(p.toFile) }
+  }
+
   private[this] def getRegex(query: String): Regex = {
     s"""^${query.replaceAll("\\*", ".*")}$$""".r
   }
@@ -122,7 +137,9 @@ final class UniversePackageCache private(
 
         path
       } else {
-        // We don't need to fetch the latest package information; just return the current information.
+        /* We don't need to fetch the latest package information; just return the current
+         * information.
+         */
         Future(universeDir.resolve(base64(universeBundle)))
       }
     }
