@@ -253,15 +253,15 @@ object Cosmos extends FinchServer {
       logger.info("Using {} for data directory", dd)
       val packageCache = UniversePackageCache(universeBundle, dd)
 
-      val zkConnectString = zookeeperConnectString()
-      logger.info("Using {} for the zookeeper connection", zkConnectString)
+      val zkUri = zookeeperUri()
+      logger.info("Using {} for the zookeeper connection", zkUri)
 
       val marathonPackageRunner = new MarathonPackageRunner(adminRouter)
 
       val zkRetryPolicy = new ExponentialBackoffRetry(1000, 3)
       val zkClient = CuratorFrameworkFactory.builder()
-        .namespace("cosmos")
-        .connectString(zkConnectString)
+        .namespace(zkUri.path.stripPrefix("/"))
+        .connectString(zkUri.connectString)
         .retryPolicy(zkRetryPolicy)
         .build
 
