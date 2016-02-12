@@ -1,9 +1,5 @@
 package com.mesosphere.cosmos
 
-import java.io.IOException
-import java.nio.file.attribute.BasicFileAttributes
-import java.nio.file.{FileVisitResult, Files, Path, SimpleFileVisitor}
-
 import com.netaporter.uri.Uri
 import com.netaporter.uri.dsl._
 import com.twitter.app.{FlagParseException, FlagUsageError, Flags}
@@ -50,31 +46,6 @@ trait CosmosSpec extends Matchers with TableDrivenPropertyChecks {
 
   protected[this] final def requestBuilder(endpointPath: String): RequestBuilder[Yes, Nothing] = {
     RequestBuilder().url(s"http://localhost:$servicePort/$endpointPath")
-  }
-
-  protected[this] final def withTempDirectory(f: Path => Unit): Unit = {
-    val tempDir = Files.createTempDirectory("cosmos")
-    try { f(tempDir) } finally {
-      val visitor = new SimpleFileVisitor[Path] {
-
-        override def visitFile(file: Path, attrs: BasicFileAttributes): FileVisitResult = {
-          Files.delete(file)
-          FileVisitResult.CONTINUE
-        }
-
-        override def postVisitDirectory(dir: Path, e: IOException): FileVisitResult = {
-          Option(e) match {
-            case Some(failure) => throw failure
-            case _ =>
-              Files.delete(dir)
-              FileVisitResult.CONTINUE
-          }
-        }
-
-      }
-
-      val _ = Files.walkFileTree(tempDir, visitor)
-    }
   }
 
 }

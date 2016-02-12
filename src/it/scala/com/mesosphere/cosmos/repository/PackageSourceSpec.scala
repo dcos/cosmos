@@ -32,12 +32,6 @@ final class PackageSourceSpec extends UnitSpec with ZooKeeperFixture {
     }
   }
 
-  // TODO cruhland list-sources: Test for missing ZooKeeper package-sources/v1 node
-  // TODO cruhland list-sources: Test for invalid JSON data for package-sources
-  // TODO cruhland list-sources: Test for URIs with invalid syntax in the package sources list
-  // TODO cruhland list-sources: Test for URIs that don't resolve to repo bundles in the sources list
-  // TODO cruhland list-sources: Test for sources that don't have distinct names
-
   "Add source endpoint" in {
     withZooKeeperClient { client =>
       val sourcesStorage = new ZooKeeperStorage(client, SourceVersion2x.uri)
@@ -55,9 +49,6 @@ final class PackageSourceSpec extends UnitSpec with ZooKeeperFixture {
       }
     }
   }
-
-  // TODO cruhland add-source: Test for failure on concurrent update
-  // TODO cruhland add-source: Test for failure on ZK node missing, or other ZK error
 
   "Delete source endpoint" in {
     withZooKeeperClient { client =>
@@ -114,12 +105,6 @@ private[cosmos] object PackageSourceSpec extends UnitSpec {
         List(SourceCliTest4, SourceMesosphere, SourceExample, SourceVersion2x)))
   )
 
-  // TODO cruhland: Adding sources with duplicate names
-  // TODO cruhland: Adding sources with duplicate URIs
-  // TODO cruhland: Adding sources at indices outside the list boundaries
-  // TODO cruhland: Adding names or URIs with invalid values
-  // TODO cruhland: Adding URIs that don't resolve
-
   private val PackageRepositoryDeleteScenarios = Table(
     ("starting value", "delete scenario"),
     (List(SourceVersion2x), List(DeleteSourceAssertion(deleteRequestByName(SourceVersion2x), Nil))),
@@ -141,10 +126,6 @@ private[cosmos] object PackageSourceSpec extends UnitSpec {
         DeleteSourceAssertion(deleteRequestByUri(SourceMesosphere), List(SourceVersion2x)),
         DeleteSourceAssertion(deleteRequestByUri(SourceVersion2x), Nil)))
   )
-
-  // TODO cruhland: Deleting source that is not present
-  // TODO cruhland: Delete source request with neither name nor URI
-  // TODO cruhland: Delete source request with name and URI
 
   private[this] def addRequest(
     source: PackageRepository,

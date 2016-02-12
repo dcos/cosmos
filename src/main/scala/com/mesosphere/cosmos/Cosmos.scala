@@ -25,7 +25,6 @@ import com.mesosphere.cosmos.http.MediaTypes
 import com.mesosphere.cosmos.model._
 import com.mesosphere.cosmos.repository.PackageSourcesStorage
 import com.mesosphere.cosmos.repository.ZooKeeperStorage
-import com.mesosphere.cosmos.repository.Repository
 
 private[cosmos] final class Cosmos(
   uninstallHandler: EndpointHandler[UninstallRequest, UninstallResponse],

@@ -5,12 +5,12 @@ import java.util.{Base64, UUID}
 
 import cats.data.Xor
 import cats.data.Xor.Right
+import com.mesosphere.cosmos.IntegrationTests.{constUniverse, withTempDirectory}
 import com.mesosphere.cosmos.circe.Decoders._
 import com.mesosphere.cosmos.circe.Encoders._
 import com.mesosphere.cosmos.http.MediaTypes
 import com.mesosphere.cosmos.model._
 import com.mesosphere.cosmos.model.thirdparty.marathon.{MarathonApp, MarathonAppContainer, MarathonAppContainerDocker}
-import com.mesosphere.cosmos.repository.PackageSourcesStorage
 import com.mesosphere.cosmos.repository.Repository
 import com.mesosphere.universe.{PackageDetails, PackageDetailsVersion, PackageFiles, PackagingVersion}
 import com.netaporter.uri.Uri
@@ -235,7 +235,7 @@ final class PackageInstallSpec extends FreeSpec with BeforeAndAfterAll with Cosm
     } getOrElse adminRouter
     // these two imports provide the implicit DecodeRequest instances needed to instantiate Cosmos
     val marathonPackageRunner = new MarathonPackageRunner(ar)
-    val sourcesStorage = PackageSourcesStorage.constUniverse(universeUri)
+    val sourcesStorage = constUniverse(universeUri)
     val service = Cosmos(ar, marathonPackageRunner, sourcesStorage, universeDir).service
     val server = Http.serve(s":$servicePort", service)
     val client = Http.newService(s"127.0.0.1:$servicePort")

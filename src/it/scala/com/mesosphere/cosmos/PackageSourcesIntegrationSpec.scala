@@ -1,6 +1,7 @@
 package com.mesosphere.cosmos
 
 import cats.data.Xor
+import com.mesosphere.cosmos.IntegrationTests.withTempDirectory
 import com.mesosphere.cosmos.circe.Decoders._
 import com.mesosphere.cosmos.circe.Encoders._
 import com.mesosphere.cosmos.http.{MediaType, MediaTypes}
