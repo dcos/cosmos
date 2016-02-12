@@ -1,0 +1,41 @@
+#%RAML 0.8
+title: Cosmos API
+version: v1
+schemas:
+  - InstallRequest: schema/install_request.json
+  - InstallResponse: schema/install_response.json
+traits:
+  - errored:
+      responses:
+        400:
+          body:
+            application/json:
+              schema: # TODO: specify this better
+        500:
+          body:
+            application/json:
+              schema: # TODO: specify this better
+
+/package/install:
+  is: [ errored ]
+  post:
+    body:
+      application/json:
+        example: |
+          {
+            "name": "cassandra",
+            "version": "0.1.0",
+            "options": {...}
+          }
+        schema: # TODO: specify this with an external file
+    responses:
+      200:
+        body:
+          application/json:
+            example: |
+              {
+                "name": "cassandra",
+                "version": "0.1.0",
+                "appId": "cassnadra.dcos"
+              }
+            schema: # TODO: specify this with an external file

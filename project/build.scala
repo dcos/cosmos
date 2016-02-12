@@ -92,6 +92,29 @@ object CosmosBuild extends Build {
       "-Xlint:deprecation"
     ),
 
+    resourceGenerators in Compile += Def.task {
+      val logger = streams.value.log
+      val inputRaml = (sourceDirectory in Compile).value / "resources" / "api" / "api.raml"
+      val outputHtml = (resourceManaged in Compile).value / "api.html"
+
+      logger.debug(s"inputRaml = ${inputRaml.getPath}")
+      logger.debug(s"outputHtml = ${outputHtml.getPath}")
+
+      // Make sure that we create all of the necessary directories
+      outputHtml.getParentFile.mkdirs()
+
+      val raml2html = Process(
+        "raml2html",
+        Seq("--input", inputRaml.getPath, "--output", outputHtml.getPath)
+      )
+
+      if (raml2html.run().exitValue() != 0) {
+        logger.warn(s"Unable to generate API HTML for ${inputRaml.getPath}")
+      }
+
+      Seq(outputHtml)
+    }.taskValue,
+
     scalacOptions ++= Seq(
       "-deprecation", // Emit warning and location for usages of deprecated APIs.
       "-encoding", "UTF-8",
