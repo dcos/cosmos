@@ -10,9 +10,8 @@ CLEAN_VERSION=${VERSION//\//_}
 ONE_JAR="cosmos-${CLEAN_VERSION}-one-jar.jar"
 SHA1_FILE="${ONE_JAR}.sha1"
 
-DEPLOY_BUCKET=${DEPLOY_BUCKET:-"downloads.mesosphere.com/dcos/cosmos"}/${CLEAN_VERSION}
-S3_DEPLOY_BUCKET="s3://${DEPLOY_BUCKET}"
-HTTPS_DEPLOY_BUCKET="https://${DEPLOY_BUCKET}"
+S3_DEPLOY_BUCKET="s3://downloads.mesosphere.io/dcos/cosmos/${CLEAN_VERSION}"
+HTTPS_READ_BUCKET="https://downloads.mesosphere.com/dcos/cosmos/${CLEAN_VERSION}"
 
 function clean {(
 
@@ -56,7 +55,7 @@ function deploy {(
 
   info "Generating buildinfo.json"
   cat ${DCOS_IMAGE_DIR}/buildinfo.json | \
-    jq ".single_source.url |= \"${HTTPS_DEPLOY_BUCKET}/${ONE_JAR}\" | .single_source.sha1 |= \"$(getSha1)\"" \
+    jq ".single_source.url |= \"${HTTPS_READ_BUCKET}/${ONE_JAR}\" | .single_source.sha1 |= \"$(getSha1)\"" \
       > ${TARGET_DIR}/buildinfo.json
   info "buildinfo.json written ${TARGET_DIR}/buildinfo.json"
 
