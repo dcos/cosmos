@@ -2,6 +2,7 @@ package com.mesosphere.cosmos
 
 import java.nio.file.Path
 
+import com.mesosphere.cosmos.http.FinchExtensions._
 import com.netaporter.uri.Uri
 import com.twitter.finagle.Service
 import com.twitter.finagle.http.exp.Multipart.FileUpload
@@ -21,7 +22,7 @@ import org.apache.curator.retry.ExponentialBackoffRetry
 import com.mesosphere.cosmos.circe.Decoders._
 import com.mesosphere.cosmos.circe.Encoders._
 import com.mesosphere.cosmos.handler._
-import com.mesosphere.cosmos.http.MediaTypes
+import com.mesosphere.cosmos.http.{MediaType, MediaTypes}
 import com.mesosphere.cosmos.model._
 import com.mesosphere.cosmos.repository.PackageSourcesStorage
 import com.mesosphere.cosmos.repository.ZooKeeperStorage
@@ -106,14 +107,48 @@ private[cosmos] final class Cosmos(
 
   val packageSearch: Endpoint[Json] = {
 
+    var acc: MediaType = MediaTypes.applicationJson
+
     def respond(reqBody: SearchRequest): Future[Output[Json]] = {
-      packageSearchHandler(reqBody)
-        .map { searchResults =>
-          Ok(searchResults.asJson).withContentType(Some(packageSearchHandler.produces.show))
-        }
+      if (acc == MediaTypes.SearchResponse) {
+        packageSearchHandler(reqBody)
+          .map { searchResults =>
+            Ok(searchResults.asJson).withContentType(Some(packageSearchHandler.produces.show))
+          }
+      } else if (acc == MediaTypes.SearchResponseV2) {
+        packageSearchHandler(reqBody)
+          .map { searchResults =>
+            val ret = SearchResponseV2(
+              searchResults.packages.map { pkg =>
+                SearchResponseV2Entry(
+                  pkg.name,
+                  pkg.currentVersion,
+                  pkg.description,
+                  pkg.framework,
+                  pkg.tags,
+                  List(
+                    s"/service/${pkg.name}"
+                  )
+                )
+              }
+            )
+            Ok(ret.asJson).withContentType(Some(MediaTypes.SearchResponseV2.show))
+          }
+      } else {
+        throw new RuntimeException("Shouldn't happen")
+      }
     }
 
-    post("package" / "search" ? packageSearchHandler.reader) (respond _)
+    val reader: RequestReader[SearchRequest] = for {
+      accept <- header("Accept").as[MediaType].should(beOneOfTheExpectedTypes(Set(MediaTypes.SearchResponse, MediaTypes.SearchResponseV2)))
+      contentType <- header("Content-Type").as[MediaType].should(beTheExpectedType(MediaTypes.SearchRequest))
+      b <- body.as[SearchRequest]
+    } yield {
+      acc = accept
+      b
+    }
+
+    post("package" / "search" ? reader) (respond _)
   }
 
   val packageList: Endpoint[Json] = {
