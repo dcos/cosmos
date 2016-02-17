@@ -87,7 +87,7 @@ final class MultiRepository (
   }
 
   private def repositories(): Future[List[UniversePackageCache]] = {
-    packageRepositoryStorage.read().map { repositories =>
+    packageRepositoryStorage.readCache().map { repositories =>
       val oldRepositories: Map[Uri, UniversePackageCache] = cachedRepositories
       val result = repositories.map { repository =>
         oldRepositories.get(repository.uri).getOrElse(

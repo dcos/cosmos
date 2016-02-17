@@ -20,5 +20,4 @@ private[cosmos] final class PackageRepositoryListHandler(
   override def apply(req: PackageRepositoryListRequest): Future[PackageRepositoryListResponse] = {
     sourcesStorage.read().map(PackageRepositoryListResponse(_))
   }
-
 }

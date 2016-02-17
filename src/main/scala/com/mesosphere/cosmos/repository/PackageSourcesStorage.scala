@@ -8,8 +8,11 @@ private[cosmos] trait PackageSourcesStorage {
 
   def read(): Future[List[PackageRepository]]
 
-  def write(sources: List[PackageRepository]): Future[List[PackageRepository]]
+  def readCache(): Future[List[PackageRepository]]
 
+  def add(index: Int, packageRepository: PackageRepository): Future[List[PackageRepository]]
+
+  def delete(name: Option[String], uri: Option[Uri]): Future[List[PackageRepository]]
 }
 
 private[cosmos] object PackageSourcesStorage {
@@ -20,10 +23,16 @@ private[cosmos] object PackageSourcesStorage {
       Future.value(List(PackageRepository("Universe", uri)))
     }
 
-    def write(sources: List[PackageRepository]): Future[List[PackageRepository]] = {
+    val readCache: Future[List[PackageRepository]] = {
+      Future.value(List(PackageRepository("Universe", uri)))
+    }
+
+    def add(index: Int, packageRepository: PackageRepository): Future[List[PackageRepository]] = {
       Future.exception(new UnsupportedOperationException)
     }
 
+    def delete(name: Option[String], uri: Option[Uri]): Future[List[PackageRepository]] = {
+      Future.exception(new UnsupportedOperationException)
+    }
   }
-
 }

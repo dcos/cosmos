@@ -212,6 +212,8 @@ object Encoders {
     case RepoNameOrUriMissing() =>
       s"Must specify either the name or URI of the repository"
     case ZooKeeperStorageError(msg) => msg
+    case ConcurrentAccess(_) =>
+      s"Retry operation. Operation didn't complete due to concurrent access."
   }
 
   private[this] def encodeMap(versions: Map[PackageDetailsVersion, ReleaseVersion]): Json = {
