@@ -28,7 +28,11 @@ object MediaTypes {
   val DescribeResponse = vnd("describe-response")
   val ListVersionsRequest = vnd("list-versions-request")
   val ListVersionsResponse = vnd("list-versions-response")
-  val CapabilitiesResponse = vnd("capabilities-response")
+  val CapabilitiesResponse = MediaType(
+    "application",
+    MediaTypeSubType("capabilities", Some("json")),
+    Some(Map("charset" -> "utf-8", "version" -> "v1"))
+  )
 
   /* TODO(jsancio): Hack to get the correct vendor type to show. Should separate
    * the vendoer type into a (namespace, type) tuple. Issue #190.
