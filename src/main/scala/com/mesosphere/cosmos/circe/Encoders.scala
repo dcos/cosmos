@@ -110,6 +110,9 @@ object Encoders {
     deriveFor[PackageRepositoryDeleteResponse].encoder
   }
 
+  implicit val encodeSearchResponseV2: Encoder[SearchResponseV2] = deriveFor[SearchResponseV2].encoder
+  implicit val encodeSearchResponseV2Entry: Encoder[SearchResponseV2Entry] = deriveFor[SearchResponseV2Entry].encoder
+
   implicit val encodeZooKeeperStorageEnvelope: Encoder[ZooKeeperStorageEnvelope] =
     deriveFor[ZooKeeperStorageEnvelope].encoder
 
