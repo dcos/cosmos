@@ -15,13 +15,15 @@ import io.circe.parse._
 import io.circe.syntax._
 import io.circe.{Decoder, Encoder}
 import org.scalatest.FreeSpec
+import org.scalatest.concurrent.Eventually
 
-final class PackageSourcesIntegrationSpec extends FreeSpec with CosmosSpec with ZooKeeperFixture {
+final class PackageSourcesIntegrationSpec
+  extends FreeSpec with CosmosSpec with ZooKeeperFixture with Eventually {
 
   import PackageSourcesIntegrationSpec._
 
   "Package sources endpoints" in {
-    withCosmosService { cosmosService =>
+    withCosmosService { implicit cosmosService =>
       assertResult(List(PackageSourceSpec.UniverseRepository))(listSources(cosmosService))
       assertResult(
         PackageRepositoryAddResponse(
@@ -34,21 +36,19 @@ final class PackageSourcesIntegrationSpec extends FreeSpec with CosmosSpec with 
         addSource(cosmosService, PackageSourceSpec.SourceCliTest4)
       )
 
-      assertResult(List(PackageSourceSpec.SourceCliTest4, PackageSourceSpec.UniverseRepository)) {
-        listSources(cosmosService)
-      }
+      assertListResult(List(PackageSourceSpec.SourceCliTest4, PackageSourceSpec.UniverseRepository))
 
       assertResult(PackageRepositoryDeleteResponse(List(PackageSourceSpec.SourceCliTest4))) {
         deleteSource(cosmosService, PackageSourceSpec.UniverseRepository)
       }
 
-      assertResult(List(PackageSourceSpec.SourceCliTest4))(listSources(cosmosService))
+      assertListResult(List(PackageSourceSpec.SourceCliTest4))
 
       assertResult(PackageRepositoryDeleteResponse(Nil)) {
         deleteSource(cosmosService, PackageSourceSpec.SourceCliTest4)
       }
 
-      assertResult(Nil)(listSources(cosmosService))
+      assertListResult(Nil)
     }
   }
 
@@ -74,9 +74,19 @@ final class PackageSourcesIntegrationSpec extends FreeSpec with CosmosSpec with 
     }
   }
 
+  private[this] def assertListResult(expected: List[PackageRepository])(
+    implicit cosmosService: Service[Request, Response]
+  ): Unit = {
+    eventually {
+      assertResult(expected)(listSources(cosmosService))
+    }
+  }
+
 }
 
 private object PackageSourcesIntegrationSpec extends CosmosSpec {
+
+  import IntegrationTests.RepositoryMetadataOps
 
   private def listSources(cosmosService: Service[Request, Response]): Seq[PackageRepository] = {
     callEndpoint[PackageRepositoryListRequest, PackageRepositoryListResponse](
@@ -85,7 +95,7 @@ private object PackageSourcesIntegrationSpec extends CosmosSpec {
       PackageRepositoryListRequest(),
       MediaTypes.PackageRepositoryListRequest,
       MediaTypes.PackageRepositoryListResponse
-    ).repositories
+    ).repositories.map(_.toDescriptor)
   }
 
   private def addSource(

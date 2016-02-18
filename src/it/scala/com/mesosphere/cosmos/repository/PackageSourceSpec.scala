@@ -1,116 +1,195 @@
 package com.mesosphere.cosmos.repository
 
 import cats.data.Ior
+import com.mesosphere.cosmos.IntegrationTests.RepositoryMetadataOps
+import com.mesosphere.cosmos._
 import com.mesosphere.cosmos.circe.Decoders._
 import com.mesosphere.cosmos.circe.Encoders._
 import com.mesosphere.cosmos.handler.PackageRepositoryAddHandler
 import com.mesosphere.cosmos.handler.PackageRepositoryDeleteHandler
 import com.mesosphere.cosmos.handler.PackageRepositoryListHandler
+import com.mesosphere.cosmos.handler.PackageSearchHandler
 import com.mesosphere.cosmos.model._
-import com.mesosphere.cosmos.{CosmosError, RepositoryAlreadyPresent, UnitSpec, ZooKeeperFixture}
 import com.netaporter.uri.Uri
-import com.twitter.io.Charsets
 import com.twitter.util._
-import io.circe.Json
 import io.finch.circe._
+import org.scalatest.concurrent.Eventually
 
-final class PackageSourceSpec extends UnitSpec with ZooKeeperFixture {
+final class PackageSourceSpec extends UnitSpec with ZooKeeperFixture with Eventually {
 
   import PackageSourceSpec._
 
   "List sources endpoint" in {
-    withZooKeeperClient { client =>
-      val sourcesStorage = new ZooKeeperStorage(client, UniverseRepository.uri)
-      val listSourceHandler = new PackageRepositoryListHandler(sourcesStorage)
-      val request = PackageRepositoryListRequest()
+    IntegrationTests.withTempDirectory { dataDir =>
+      withZooKeeperClient { client =>
+        val sourcesStorage = new ZooKeeperStorage(client, UniverseRepository.uri)
+        val repositories = new MultiRepository(sourcesStorage, dataDir)
+        val listSourceHandler = new PackageRepositoryListHandler(repositories)
+        val request = PackageRepositoryListRequest()
 
-      assertResult(
-        PackageRepositoryListResponse(List(UniverseRepository))
-      )(
-        Await.result(listSourceHandler(request))
-      )
+        assertResult(List(UniverseRepository)) {
+          Await.result(listSourceHandler(request)).repositories.map(_.toDescriptor)
+        }
+      }
     }
   }
 
   "Add source endpoint" - {
     "adding a repository to the default list" in {
-      withZooKeeperClient { client =>
-        val repositoryStorage = new ZooKeeperStorage(client, UniverseRepository.uri)
-        implicit val handler = new PackageRepositoryAddHandler(repositoryStorage)
+      IntegrationTests.withTempDirectory { dataDir =>
+        withZooKeeperClient { client =>
+          val repositoryStorage = new ZooKeeperStorage(client, UniverseRepository.uri)
+          val repositories = new MultiRepository(repositoryStorage, dataDir)
+          implicit val addHandler = new PackageRepositoryAddHandler(repositoryStorage)
+          implicit val listHandler = new PackageRepositoryListHandler(repositories)
 
-        assertAdd(List(SourceCliTest4, UniverseRepository), SourceCliTest4)
+          assertAdd(List(SourceCliTest4, UniverseRepository), SourceCliTest4)
+        }
       }
     }
 
     "adding repositories at explicit indices" in {
-      withZooKeeperClient { client =>
-        val repositoryStorage = new ZooKeeperStorage(client, UniverseRepository.uri)
-        implicit val handler = new PackageRepositoryAddHandler(repositoryStorage)
+      IntegrationTests.withTempDirectory { dataDir =>
+        withZooKeeperClient { client =>
+          val repositoryStorage = new ZooKeeperStorage(client, UniverseRepository.uri)
+          val repositories = new MultiRepository(repositoryStorage, dataDir)
+          implicit val addHandler = new PackageRepositoryAddHandler(repositoryStorage)
+          implicit val listHandler = new PackageRepositoryListHandler(repositories)
 
-        val firstResult = List(UniverseRepository, SourceCliTest4)
-        val secondResult = List(SourceMesosphere, UniverseRepository, SourceCliTest4)
-        val thirdResult = List(SourceMesosphere, UniverseRepository, SourceExample, SourceCliTest4)
+          val firstResult = List(UniverseRepository, SourceCliTest4)
+          val secondResult = List(SourceMesosphere, UniverseRepository, SourceCliTest4)
+          val thirdResult = List(SourceMesosphere, UniverseRepository, SourceExample, SourceCliTest4)
 
-        assertAdd(firstResult, SourceCliTest4, Some(1))
-        assertAdd(secondResult, SourceMesosphere, Some(0))
-        assertAdd(thirdResult, SourceExample, Some(2))
+          assertAdd(firstResult, SourceCliTest4, Some(1))
+          assertAdd(secondResult, SourceMesosphere, Some(0))
+          assertAdd(thirdResult, SourceExample, Some(2))
+        }
       }
     }
 
-    "adding duplicate repositories" in {
-      withZooKeeperClient { client =>
-        val repositoryStorage = new ZooKeeperStorage(client, UniverseRepository.uri)
-        implicit val addHandler = new PackageRepositoryAddHandler(repositoryStorage)
-        implicit val listHandler = new PackageRepositoryListHandler(repositoryStorage)
+    "adding duplicate repositories" - {
+      "fail to add duplicate name and URI" in {
+        withHandlers { implicit listHandler => implicit addHandler =>
+          assertAddFailure(
+            RepositoryAlreadyPresent(Ior.Both(UniverseRepository.name, UniverseRepository.uri)),
+            UniverseRepository
+          )
+        }
+      }
 
-        assertAddFailure(
-          RepositoryAlreadyPresent(Ior.Both(UniverseRepository.name, UniverseRepository.uri)),
-          UniverseRepository
-        )
+      "fail to add duplicate URI" in {
+        withHandlers { implicit listHandler => implicit addHandler =>
+          assertAddFailure(
+            RepositoryAlreadyPresent(Ior.Right(UniverseRepository.uri)),
+            UniverseRepository.copy(name = SourceCliTest4.name)
+          )
+        }
+      }
 
-        assertAddFailure(
-          RepositoryAlreadyPresent(Ior.Right(UniverseRepository.uri)),
-          UniverseRepository.copy(name = SourceCliTest4.name)
-        )
+      "fail to add duplicate name" in {
+        withHandlers { implicit listHandler => implicit addHandler =>
+          assertAddFailure(
+            RepositoryAlreadyPresent(Ior.Left(UniverseRepository.name)),
+            UniverseRepository.copy(uri = SourceCliTest4.uri)
+          )
+        }
+      }
 
-        assertAddFailure(
-          RepositoryAlreadyPresent(Ior.Left(UniverseRepository.name)),
-          UniverseRepository.copy(uri = SourceCliTest4.uri)
-        )
+      "fail to add duplicate name and URI, from separate entries" in {
+        withHandlers { implicit listHandler => implicit addHandler =>
+          assertAdd(List(SourceCliTest4, UniverseRepository), SourceCliTest4)
 
-        assertAdd(List(SourceCliTest4, UniverseRepository), SourceCliTest4)
-
-        assertAddFailure(
-          RepositoryAlreadyPresent(Ior.Both(UniverseRepository.name, SourceCliTest4.uri)),
-          UniverseRepository.copy(uri = SourceCliTest4.uri)
-        )
+          assertAddFailure(
+            RepositoryAlreadyPresent(Ior.Both(UniverseRepository.name, SourceCliTest4.uri)),
+            UniverseRepository.copy(uri = SourceCliTest4.uri)
+          )
+        }
       }
     }
 
   }
 
   "Delete source endpoint" in {
-    withZooKeeperClient { client =>
-      val sourcesStorage = new ZooKeeperStorage(client, UniverseRepository.uri)
-      val deleteSourceHandler = new PackageRepositoryDeleteHandler(sourcesStorage)
-      val addSourceHandler = new PackageRepositoryAddHandler(sourcesStorage)
-      val listSourceHandler = new PackageRepositoryListHandler(sourcesStorage)
+    IntegrationTests.withTempDirectory { dataDir =>
+      withZooKeeperClient { client =>
+        val sourcesStorage = new ZooKeeperStorage(client, UniverseRepository.uri)
+        val repositories = new MultiRepository(sourcesStorage, dataDir)
+        val deleteSourceHandler = new PackageRepositoryDeleteHandler(sourcesStorage)
+        val addSourceHandler = new PackageRepositoryAddHandler(sourcesStorage)
+        val listSourceHandler = new PackageRepositoryListHandler(repositories)
 
-      forAll(PackageRepositoryDeleteScenarios) { (startingSources, scenario) =>
-        setStorageState(listSourceHandler, addSourceHandler, deleteSourceHandler, startingSources)
+        forAll(PackageRepositoryDeleteScenarios) { (startingSources, scenario) =>
+          setStorageState(listSourceHandler, addSourceHandler, deleteSourceHandler, startingSources)
 
-        scenario.foreach { assertion =>
-          val deleteResponse = Await.result(deleteSourceHandler(assertion.request))
-          assertResult(PackageRepositoryDeleteResponse(assertion.responseList))(deleteResponse)
+          scenario.foreach { assertion =>
+            val deleteResponse = Await.result(deleteSourceHandler(assertion.request))
+            assertResult(PackageRepositoryDeleteResponse(assertion.responseList))(deleteResponse)
+          }
         }
       }
     }
   }
+
+  "Issue #209: repository versions must be validated" in {
+    IntegrationTests.withTempDirectory { dataDir =>
+      withZooKeeperClient { client =>
+        // TODO: Using an external test dependency. Change to something local once the test is working
+        val repoUri = Uri.parse("https://github.com/mesosphere/universe/archive/version-1.x.zip")
+        val expectedErrorMessage = s"Repository version [1.0.0-rc1] is not supported"
+        val error = ErrorResponse("UnsupportedRepositoryVersion", expectedErrorMessage)
+        val packageRepository = RepositoryMetadata("old-version", repoUri, Unhealthy(error))
+        val universeRepository =
+          RepositoryMetadata(UniverseRepository.name, UniverseRepository.uri, Healthy)
+        val expectedResponseAfterUse =
+          PackageRepositoryListResponse(Seq(packageRepository, universeRepository))
+
+        val sourcesStorage = new ZooKeeperStorage(client, UniverseRepository.uri)
+        val repositories = new MultiRepository(sourcesStorage, dataDir)
+        val addRepositoryHandler = new PackageRepositoryAddHandler(sourcesStorage)
+        val listRepositoryHandler = new PackageRepositoryListHandler(repositories)
+        val addRequest = PackageRepositoryAddRequest(packageRepository.name, packageRepository.uri)
+        ignoreReturnValue(Await.result(addRepositoryHandler(addRequest)))
+
+        val expectedListBeforeUse = Seq(packageRepository.toDescriptor, UniverseRepository)
+        eventually {
+          val actual = Await.result(listRepositoryHandler(PackageRepositoryListRequest()))
+          assertResult(expectedListBeforeUse)(actual.repositories.map(_.toDescriptor))
+        }(patienceConfig)
+
+        val searchHandler = new PackageSearchHandler(repositories)
+        ignoreReturnValue {
+          intercept[UnsupportedRepositoryVersion](Await.result(searchHandler(SearchRequest(None))))
+        }
+
+        eventually {
+          val actual = Await.result(listRepositoryHandler(PackageRepositoryListRequest()))
+          assertResult(expectedResponseAfterUse)(actual)
+        }(patienceConfig)
+      }
+    }
+  }
+
+  private[this] def withHandlers(f: ListHandlerFn => AddHandlerFn => Unit): Unit = {
+    IntegrationTests.withTempDirectory { dataDir =>
+      withZooKeeperClient { client =>
+        val repositoryStorage = new ZooKeeperStorage(client, UniverseRepository.uri)
+        val repositories = new MultiRepository(repositoryStorage, dataDir)
+        val addHandler = new PackageRepositoryAddHandler(repositoryStorage)
+        val listHandler = new PackageRepositoryListHandler(repositories)
+
+        f(listHandler)(addHandler)
+      }
+    }
+  }
+
 }
 
-private[cosmos] object PackageSourceSpec extends UnitSpec {
+private[cosmos] object PackageSourceSpec extends UnitSpec with Eventually {
 
-  private[cosmos] val UniverseRepository = PackageRepository(
+  private type ListHandlerFn = PackageRepositoryListRequest => Future[PackageRepositoryListResponse]
+  private type AddHandlerFn = PackageRepositoryAddRequest => Future[PackageRepositoryAddResponse]
+
+  private[cosmos] val UniverseRepository = RepositoryDescriptor(
     "Universe",
     Uri.parse("https://github.com/mesosphere/universe/archive/version-2.x.zip")
   )
@@ -153,14 +232,25 @@ private[cosmos] object PackageSourceSpec extends UnitSpec {
     expectedResponseList: List[PackageRepository],
     repository: PackageRepository,
     index: Option[Int] = None
-  )(implicit handler: PackageRepositoryAddRequest => Future[PackageRepositoryAddResponse]): Unit = {
+  )(implicit
+    addHandler: PackageRepositoryAddRequest => Future[PackageRepositoryAddResponse],
+    listHandler: PackageRepositoryListRequest => Future[PackageRepositoryListResponse]
+  ): Unit = {
     val addRequest = PackageRepositoryAddRequest(repository.name, repository.uri, index)
-    val addResponse = Await.result(handler(addRequest))
+    val addResponse = Await.result(addHandler(addRequest))
     assertResult(expectedResponseList)(addResponse.repositories)
+
+    eventually {
+      assertResult(expectedResponseList) {
+        Await.result(listHandler(PackageRepositoryListRequest())).repositories.map(_.toDescriptor)
+      }
+    }
   }
 
-  private def assertAddFailure(expectedResponse: CosmosError, repository: PackageRepository)(
-    implicit
+  private def assertAddFailure(
+    expectedResponse: CosmosError,
+    repository: PackageRepository
+  )(implicit
     addHandler: PackageRepositoryAddRequest => Future[PackageRepositoryAddResponse],
     listHandler: PackageRepositoryListRequest => Future[PackageRepositoryListResponse]
   ): Unit = {
@@ -171,8 +261,10 @@ private[cosmos] object PackageSourceSpec extends UnitSpec {
       Await.result(addHandler(addRequest).liftToTry)
     }
 
-    assertResult(repositoriesBeforeAdd.repositories) {
-      Await.result(listHandler(PackageRepositoryListRequest())).repositories
+    eventually {
+      assertResult(repositoriesBeforeAdd.repositories) {
+        Await.result(listHandler(PackageRepositoryListRequest())).repositories
+      }
     }
   }
 
@@ -206,6 +298,9 @@ private[cosmos] object PackageSourceSpec extends UnitSpec {
       Await.result(adder(PackageRepositoryAddRequest(repository.name, repository.uri)))
     }
   }
+
+  private def ignoreReturnValue(a: Any): Unit = ()
+
 }
 
 private case class DeleteSourceAssertion(

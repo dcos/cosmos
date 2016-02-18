@@ -1,3 +1,3 @@
 package com.mesosphere.cosmos.model
 
-case class PackageRepositoryListResponse(repositories: Seq[PackageRepository])
+case class PackageRepositoryListResponse(repositories: Seq[RepositoryMetadata])

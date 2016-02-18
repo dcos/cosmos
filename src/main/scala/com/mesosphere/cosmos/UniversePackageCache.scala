@@ -3,12 +3,9 @@ package com.mesosphere.cosmos
 import java.nio.file._
 import java.time.LocalDateTime
 import java.util.Base64
-import java.util.concurrent.atomic.AtomicReference
 import java.util.zip.ZipInputStream
 
-import scala.util.matching.Regex
-
-import cats.data.Validated.{Valid, Invalid}
+import cats.data.Validated.{Invalid, Valid}
 import cats.data.Xor.{Left, Right}
 import cats.data._
 import cats.std.list._           // allows for traversU in verifySchema
@@ -16,28 +13,34 @@ import cats.std.option._
 import cats.syntax.apply._       // provides |@|
 import cats.syntax.option._
 import cats.syntax.traverse._
+import com.mesosphere.cosmos.circe.Decoders._
+import com.mesosphere.cosmos.circe.Encoders
+import com.mesosphere.cosmos.model._
+import com.mesosphere.cosmos.repository.Repository
+import com.mesosphere.universe._
 import com.netaporter.uri.Uri
 import com.twitter.concurrent.AsyncMutex
-import com.twitter.io.Charsets
-import com.twitter.io.{Files => TwitterFiles }
-import com.twitter.util.{Future, Return, Throw, Try}
+import com.twitter.io.{Charsets, Files => TwitterFiles}
+import com.twitter.util.{Future, Try}
 import io.circe.parse._
 import io.circe.{Decoder, Json}
 
-import com.mesosphere.cosmos.circe.Decoders._
-import com.mesosphere.cosmos.repository.Repository
-import com.mesosphere.universe._
+import scala.util.matching.Regex
 
 /** Stores packages from the Universe GitHub repository in the local filesystem.
   */
 final class UniversePackageCache private (
+  name: String,
   val universeBundle: Uri,
   universeDir: Path
 ) extends Repository with AutoCloseable {
   // This mutex serializes updates to the local package cache
   private[this] val updateMutex = new AsyncMutex()
 
-  private[this] val lastModified = new AtomicReference(LocalDateTime.MIN)
+  // Protected by updateMutex
+  private[this] var lastModified: LocalDateTime = LocalDateTime.MIN
+  // Protected by updateMutex
+  private[this] var state: RepositoryState = Unused
 
   override def getPackageByPackageVersion(
     packageName: String,
@@ -100,15 +103,16 @@ final class UniversePackageCache private (
 
     val symlinkBundlePath = universeDir.resolve(base64(universeBundle))
 
-    // Remember the old bundle path so we can delete it later
-    val bundlePath = readSymbolicLink(symlinkBundlePath)
+    readSymbolicLink(symlinkBundlePath).foreach { bundlePath =>
+      // Delete the symbolic link
+      Files.delete(symlinkBundlePath)
 
-    // Delete the symbolic link
-    Files.delete(symlinkBundlePath)
-
-    // Delete the bundle directory
-    bundlePath.foreach { p => TwitterFiles.delete(p.toFile) }
+      // Delete the bundle directory
+      TwitterFiles.delete(bundlePath.toFile)
+    }
   }
+
+  private[cosmos] def metadata: RepositoryMetadata = RepositoryMetadata(name, universeBundle, state)
 
   private[this] def getRegex(query: String): Regex = {
     s"""^${query.replaceAll("\\*", ".*")}$$""".r
@@ -129,11 +133,11 @@ final class UniversePackageCache private (
   private[this] def synchronizedUpdate(): Future[Path] = {
     updateMutex.acquireAndRun {
       // TODO: How often we check should be configurable
-      if (lastModified.get().plusMinutes(1).isBefore(LocalDateTime.now())) {
+      if (lastModified.plusMinutes(1).isBefore(LocalDateTime.now())) {
         val path = updateUniverseCache(universeBundle, universeDir)
 
         // Update the last modified date
-        lastModified.set(LocalDateTime.now())
+        lastModified = LocalDateTime.now()
 
         path
       } else {
@@ -186,17 +190,27 @@ final class UniversePackageCache private (
     universeBundle: Uri,
     universeDir: Path
   ): Future[Path] = {
-    Future(universeBundle.toURI.toURL.openStream()).map { bundleStream =>
-      try {
-        extractBundle(
-          new ZipInputStream(bundleStream),
-          universeBundle,
-          universeDir
-        )
-      } finally {
-        bundleStream.close()
+    Future(universeBundle.toURI.toURL.openStream())
+      .map { bundleStream =>
+        try {
+          val path = extractBundle(
+            new ZipInputStream(bundleStream),
+            universeBundle,
+            universeDir
+          )
+
+          val repoVersion = repoIndex(repoDirectory(path)).version
+          if (!repoVersion.toString.startsWith("2.")) {
+            throw new UnsupportedRepositoryVersion(repoVersion)
+          }
+
+          state = Healthy
+          path
+        } finally {
+          bundleStream.close()
+        }
       }
-    }
+      .onFailure(t => state = Unhealthy(Encoders.exceptionErrorResponse(t)))
   }
 
   private[this] def repoDirectory(bundleDir: Path) = bundleDir.resolve("repo")
@@ -398,13 +412,7 @@ final class UniversePackageCache private (
 
 object UniversePackageCache {
 
-  /** Create a new package cache.
-    *
-    * @param universeBundle the location of the package bundle to cache; must be an HTTP URL
-    * @param dataDir the directory to cache the bundle files in; assumed to be empty
-    * @return The new cache, or an error.
-    */
-  def apply(universeBundle: Uri, dataDir: Path): UniversePackageCache = {
-    new UniversePackageCache(universeBundle, dataDir)
+  def apply(name: String, universeBundle: Uri, dataDir: Path): UniversePackageCache = {
+    new UniversePackageCache(name, universeBundle, dataDir)
   }
 }

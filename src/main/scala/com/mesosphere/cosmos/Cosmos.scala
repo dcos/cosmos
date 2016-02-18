@@ -2,14 +2,18 @@ package com.mesosphere.cosmos
 
 import java.nio.file.Path
 
+import com.mesosphere.cosmos.circe.Decoders._
+import com.mesosphere.cosmos.circe.Encoders._
+import com.mesosphere.cosmos.handler._
+import com.mesosphere.cosmos.http.MediaTypes
+import com.mesosphere.cosmos.model._
+import com.mesosphere.cosmos.repository.{PackageSourcesStorage, ZooKeeperStorage}
 import com.netaporter.uri.Uri
 import com.twitter.finagle.Service
 import com.twitter.finagle.http.exp.Multipart.FileUpload
 import com.twitter.finagle.http.{Request, Response, Status}
 import com.twitter.finagle.stats.{NullStatsReceiver, StatsReceiver}
-import com.twitter.util.Await
-import com.twitter.util.Future
-import com.twitter.util.Try
+import com.twitter.util.{Future, Try}
 import io.circe.Json
 import io.circe.syntax.EncoderOps
 import io.finch._
@@ -17,14 +21,6 @@ import io.finch.circe._
 import io.github.benwhitehead.finch.FinchServer
 import org.apache.curator.framework.CuratorFrameworkFactory
 import org.apache.curator.retry.ExponentialBackoffRetry
-
-import com.mesosphere.cosmos.circe.Decoders._
-import com.mesosphere.cosmos.circe.Encoders._
-import com.mesosphere.cosmos.handler._
-import com.mesosphere.cosmos.http.MediaTypes
-import com.mesosphere.cosmos.model._
-import com.mesosphere.cosmos.repository.PackageSourcesStorage
-import com.mesosphere.cosmos.repository.ZooKeeperStorage
 
 private[cosmos] final class Cosmos(
   uninstallHandler: EndpointHandler[UninstallRequest, UninstallResponse],
@@ -295,7 +291,7 @@ object Cosmos extends FinchServer {
       new PackageDescribeHandler(repositories),
       new ListVersionsHandler(repositories),
       new ListHandler(adminRouter, uri => repositories.getRepository(uri)),
-      new PackageRepositoryListHandler(sourcesStorage),
+      new PackageRepositoryListHandler(repositories),
       new PackageRepositoryAddHandler(sourcesStorage),
       new PackageRepositoryDeleteHandler(sourcesStorage),
       CapabilitiesHandler()

@@ -3,6 +3,7 @@ package com.mesosphere.cosmos.circe
 import java.nio.ByteBuffer
 import java.util.Base64
 
+import cats.data.Xor
 import com.mesosphere.cosmos.ErrorResponse
 import com.mesosphere.cosmos.model._
 import com.mesosphere.cosmos.model.thirdparty.marathon._
@@ -10,7 +11,7 @@ import com.mesosphere.cosmos.model.thirdparty.mesos.master._
 import com.mesosphere.universe._
 import com.netaporter.uri.Uri
 import io.circe.generic.semiauto._
-import io.circe.{Decoder, HCursor}
+import io.circe.{Decoder, DecodingFailure, HCursor}
 
 object Decoders {
 
@@ -103,9 +104,30 @@ object Decoders {
   implicit val decodePackageRepositoryListResponse: Decoder[PackageRepositoryListResponse] = {
     deriveFor[PackageRepositoryListResponse].decoder
   }
-  implicit val decodePackageRepository: Decoder[PackageRepository] = {
-    deriveFor[PackageRepository].decoder
+
+  implicit val decodeRepositoryState: Decoder[RepositoryState] = Decoder.instance { cursor =>
+    cursor.get[String]("type").flatMap { stateType =>
+      stateType match {
+        case "Healthy" => Xor.Right(Healthy)
+        case "Unused" => Xor.Right(Unused)
+        case "Unhealthy" => cursor.get[ErrorResponse]("reason").map(Unhealthy(_))
+        case _ => Xor.Left(DecodingFailure(s"Invalid RepositoryState type: $stateType", Nil))
+      }
+    }
   }
+
+  implicit val decodeRepositoryDescriptor: Decoder[RepositoryDescriptor] = {
+    deriveFor[RepositoryDescriptor].decoder
+  }
+
+  implicit val decodeRepositoryMetadata: Decoder[RepositoryMetadata] = {
+    deriveFor[RepositoryMetadata].decoder
+  }
+
+  implicit val decodePackageRepository: Decoder[PackageRepository] = {
+    decodeRepositoryDescriptor.map(d => d)
+  }
+
   implicit val decodePackageRepositoryAddRequest: Decoder[PackageRepositoryAddRequest] = {
     deriveFor[PackageRepositoryAddRequest].decoder
   }
