@@ -4,15 +4,15 @@ import java.nio.ByteBuffer
 import java.util.Base64
 
 import cats.data.Ior
+import com.mesosphere.cosmos._
 import com.mesosphere.cosmos.model._
 import com.mesosphere.cosmos.model.thirdparty.marathon._
 import com.mesosphere.cosmos.model.thirdparty.mesos.master._
-import com.mesosphere.cosmos._
 import com.mesosphere.universe._
 import com.netaporter.uri.Uri
 import io.circe.generic.semiauto._
 import io.circe.syntax._
-import io.circe.{ObjectEncoder, Encoder, Json, JsonObject}
+import io.circe.{Encoder, Json, JsonObject, ObjectEncoder}
 import io.finch.Error
 
 object Encoders {
@@ -95,9 +95,27 @@ object Encoders {
   implicit val encodePackageRepositoryListResponse: Encoder[PackageRepositoryListResponse] = {
     deriveFor[PackageRepositoryListResponse].encoder
   }
-  implicit val encodePackageRepository: Encoder[PackageRepository] = {
-    deriveFor[PackageRepository].encoder
+
+  implicit val encodeRepositoryState: Encoder[RepositoryState] = Encoder.instance { state =>
+    state match {
+      case Healthy => Map("type" -> "Healthy").asJson
+      case Unused => Map("type" -> "Unused").asJson
+      case Unhealthy(reason) => Map("type" -> "Unhealthy".asJson, "reason" -> reason.asJson).asJson
+    }
   }
+
+  implicit val encodeRepositoryDescriptor: Encoder[RepositoryDescriptor] = {
+    deriveFor[RepositoryDescriptor].encoder
+  }
+
+  implicit val encodeRepositoryMetadata: Encoder[RepositoryMetadata] = {
+    deriveFor[RepositoryMetadata].encoder
+  }
+
+  implicit val encodePackageRepository: Encoder[PackageRepository] = {
+    encodeRepositoryDescriptor.contramap(r => RepositoryDescriptor(r.name, r.uri))
+  }
+
   implicit val encodePackageRepositoryAddRequest: Encoder[PackageRepositoryAddRequest] = {
     deriveFor[PackageRepositoryAddRequest].encoder
   }
@@ -122,7 +140,7 @@ object Encoders {
     Base64.getEncoder.encodeToString(ByteBuffers.getBytes(bb)).asJson
   }
 
-  private[this] def exceptionErrorResponse(t: Throwable): ErrorResponse = t match {
+  private[cosmos] def exceptionErrorResponse(t: Throwable): ErrorResponse = t match {
     case Error.NotPresent(item) =>
       ErrorResponse("not_present", s"Item '${item.description}' not present but required")
     case Error.NotParsed(item, typ, cause) =>
@@ -222,6 +240,7 @@ object Encoders {
         case Ior.Left(n) => s"Repository name [$n] is already present in the list"
         case Ior.Right(u) => s"Repository URI [$u] is already present in the list"
       }
+    case UnsupportedRepositoryVersion(version) => s"Repository version [$version] is not supported"
   }
 
   private[this] def encodeMap(versions: Map[PackageDetailsVersion, ReleaseVersion]): Json = {

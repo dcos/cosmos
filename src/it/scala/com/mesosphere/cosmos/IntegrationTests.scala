@@ -4,7 +4,7 @@ import java.io.IOException
 import java.nio.file.attribute.BasicFileAttributes
 import java.nio.file.{FileVisitResult, Files, Path, SimpleFileVisitor}
 
-import com.mesosphere.cosmos.model.PackageRepository
+import com.mesosphere.cosmos.model.{PackageRepository, RepositoryDescriptor, RepositoryMetadata}
 import com.mesosphere.cosmos.repository.PackageSourcesStorage
 import com.netaporter.uri.Uri
 import com.twitter.util.Future
@@ -57,6 +57,10 @@ private object IntegrationTests {
       Future.exception(new UnsupportedOperationException)
     }
 
+  }
+
+  private[cosmos] implicit final class RepositoryMetadataOps(val r: RepositoryMetadata) extends AnyVal {
+    def toDescriptor: RepositoryDescriptor = RepositoryDescriptor(r.name, r.uri)
   }
 
 }

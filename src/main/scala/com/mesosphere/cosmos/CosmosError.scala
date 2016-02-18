@@ -4,11 +4,11 @@ import cats.data.{Ior, NonEmptyList}
 import com.mesosphere.cosmos.http.MediaType
 import com.mesosphere.cosmos.model.AppId
 import com.mesosphere.cosmos.model.thirdparty.marathon.MarathonError
-import com.mesosphere.universe.PackageDetailsVersion
+import com.mesosphere.universe.{PackageDetailsVersion, UniverseVersion}
 import com.netaporter.uri.Uri
 import com.twitter.finagle.http.Status
-import io.circe.{JsonObject, Json}
 import io.circe.syntax._
+import io.circe.{Json, JsonObject}
 import org.jboss.netty.handler.codec.http.HttpMethod
 
 sealed abstract class CosmosError(causedBy: Throwable = null /*java compatibility*/) extends RuntimeException(causedBy) {
@@ -21,7 +21,7 @@ sealed abstract class CosmosError(causedBy: Throwable = null /*java compatibilit
 case class PackageNotFound(packageName: String) extends CosmosError
 case class VersionNotFound(packageName: String, packageVersion: PackageDetailsVersion) extends CosmosError
 case class EmptyPackageImport() extends CosmosError
-case class PackageFileMissing(packageName: String, cause: Throwable = null) extends CosmosError(cause)
+case class PackageFileMissing(fileName: String, cause: Throwable = null) extends CosmosError(cause)
 case class PackageFileNotJson(fileName: String, parseError: String) extends CosmosError
 case class PackageFileSchemaMismatch(fileName: String) extends CosmosError
 case class PackageAlreadyInstalled() extends CosmosError {
@@ -90,3 +90,5 @@ case class ConcurrentAccess(causedBy: Throwable) extends CosmosError(causedBy)
 final case class RepoNameOrUriMissing() extends CosmosError
 
 case class RepositoryAlreadyPresent(nameOrUri: Ior[String, Uri]) extends CosmosError
+
+case class UnsupportedRepositoryVersion(version: UniverseVersion) extends CosmosError
