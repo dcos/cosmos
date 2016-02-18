@@ -3,11 +3,11 @@ package com.mesosphere.cosmos
 import java.nio.file.Path
 
 import cats.data.Xor.Right
+import com.mesosphere.cosmos.IntegrationTests.{constUniverse, withTempDirectory}
 import com.mesosphere.cosmos.circe.Decoders._
 import com.mesosphere.cosmos.circe.Encoders._
 import com.mesosphere.cosmos.http.MediaTypes
 import com.mesosphere.cosmos.model._
-import com.mesosphere.cosmos.repository.PackageSourcesStorage
 import com.mesosphere.cosmos.repository.Repository
 import com.mesosphere.universe.{PackageDetailsVersion, ReleaseVersion, UniverseIndexEntry}
 import com.netaporter.uri.Uri
@@ -60,7 +60,7 @@ final class PackageSearchSpec extends FreeSpec with CosmosSpec {
     f: SearchTestAssertionDecorator => Unit
   ): Unit = {
     val marathonPackageRunner = new MarathonPackageRunner(adminRouter)
-    val sourcesStorage = PackageSourcesStorage.constUniverse(universeUri)
+    val sourcesStorage = constUniverse(universeUri)
     val service = Cosmos(adminRouter, marathonPackageRunner, sourcesStorage, universeDir).service
     val server = Http.serve(s":$servicePort", service)
     val client = Http.newService(s"127.0.0.1:$servicePort")
