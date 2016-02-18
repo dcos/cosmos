@@ -222,6 +222,8 @@ object Encoders {
         case Ior.Left(n) => s"Repository name [$n] is already present in the list"
         case Ior.Right(u) => s"Repository URI [$u] is already present in the list"
       }
+    case RepositoryAddIndexOutOfBounds(attempted, max) =>
+      s"Index out of range: $attempted"
   }
 
   private[this] def encodeMap(versions: Map[PackageDetailsVersion, ReleaseVersion]): Json = {

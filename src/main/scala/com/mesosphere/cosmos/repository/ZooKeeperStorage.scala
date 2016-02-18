@@ -76,7 +76,7 @@ private[cosmos] final class ZooKeeperStorage(
 
 
   override def add(
-    index: Int,
+    index: Option[Int],
     packageRepository: PackageRepository
   ): Future[List[PackageRepository]] = {
     Stat.timeFuture(stats.stat("add")) {
@@ -163,7 +163,7 @@ private[cosmos] final class ZooKeeperStorage(
   }
 
   private[this] def addToList(
-    index: Int,
+    index: Option[Int],
     elem: PackageRepository,
     list: List[PackageRepository]
   ): List[PackageRepository] = {
@@ -177,9 +177,17 @@ private[cosmos] final class ZooKeeperStorage(
     }
     duplicates.foreach(d => throw new RepositoryAlreadyPresent(d))
 
-    val (leftSources, rightSources) = list.splitAt(index)
-
-    leftSources ++ (elem :: rightSources)
+    index match {
+      case Some(i) if 0 <= i && i < list.size =>
+        val (leftSources, rightSources) = list.splitAt(i)
+        leftSources ++ (elem :: rightSources)
+      case Some(i) if i == list.size =>
+        list :+ elem
+      case None =>
+        list :+ elem
+      case Some(i) =>
+        throw new RepositoryAddIndexOutOfBounds(i, list.size - 1)
+    }
   }
 
   private[this] def decodeData(bytes: Array[Byte]): List[PackageRepository] = {

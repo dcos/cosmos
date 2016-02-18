@@ -10,7 +10,7 @@ private[cosmos] trait PackageSourcesStorage {
 
   def readCache(): Future[List[PackageRepository]]
 
-  def add(index: Int, packageRepository: PackageRepository): Future[List[PackageRepository]]
+  def add(index: Option[Int], packageRepository: PackageRepository): Future[List[PackageRepository]]
 
   def delete(name: Option[String], uri: Option[Uri]): Future[List[PackageRepository]]
 }

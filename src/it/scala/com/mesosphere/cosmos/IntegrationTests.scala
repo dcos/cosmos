@@ -49,7 +49,7 @@ private object IntegrationTests {
       Future.value(List(PackageRepository("Universe", uri)))
     }
 
-    def add(index: Int, packageRepository: PackageRepository): Future[List[PackageRepository]] = {
+    def add(index: Option[Int], packageRepository: PackageRepository): Future[List[PackageRepository]] = {
       Future.exception(new UnsupportedOperationException)
     }
 

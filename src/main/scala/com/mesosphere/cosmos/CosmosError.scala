@@ -90,3 +90,4 @@ case class ConcurrentAccess(causedBy: Throwable) extends CosmosError(causedBy)
 final case class RepoNameOrUriMissing() extends CosmosError
 
 case class RepositoryAlreadyPresent(nameOrUri: Ior[String, Uri]) extends CosmosError
+case class RepositoryAddIndexOutOfBounds(attempted: Int, max: Int) extends CosmosError
