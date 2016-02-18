@@ -22,24 +22,24 @@ final class PackageSourcesIntegrationSpec extends FreeSpec with CosmosSpec with 
 
   "Package sources endpoints" in {
     withCosmosService { cosmosService =>
-      assertResult(List(UniverseSource))(listSources(cosmosService))
+      assertResult(List(PackageSourceSpec.UniverseRepository))(listSources(cosmosService))
       assertResult(
         PackageRepositoryAddResponse(
           List(
             PackageSourceSpec.SourceCliTest4,
-            UniverseSource
+            PackageSourceSpec.UniverseRepository
           )
         )
       )(
         addSource(cosmosService, PackageSourceSpec.SourceCliTest4)
       )
 
-      assertResult(List(PackageSourceSpec.SourceCliTest4, UniverseSource)) {
+      assertResult(List(PackageSourceSpec.SourceCliTest4, PackageSourceSpec.UniverseRepository)) {
         listSources(cosmosService)
       }
 
       assertResult(PackageRepositoryDeleteResponse(List(PackageSourceSpec.SourceCliTest4))) {
-        deleteSource(cosmosService, UniverseSource)
+        deleteSource(cosmosService, PackageSourceSpec.UniverseRepository)
       }
 
       assertResult(List(PackageSourceSpec.SourceCliTest4))(listSources(cosmosService))
@@ -57,7 +57,7 @@ final class PackageSourcesIntegrationSpec extends FreeSpec with CosmosSpec with 
       val packageRunner = new MarathonPackageRunner(adminRouter)
 
       withZooKeeperClient { zkClient =>
-        val sourcesStorage = new ZooKeeperStorage(zkClient, universeUri)
+        val sourcesStorage = new ZooKeeperStorage(zkClient, PackageSourceSpec.UniverseRepository.uri)
 
         val cosmos = Cosmos(adminRouter, packageRunner, sourcesStorage, universeDir)
 
@@ -77,8 +77,6 @@ final class PackageSourcesIntegrationSpec extends FreeSpec with CosmosSpec with 
 }
 
 private object PackageSourcesIntegrationSpec extends CosmosSpec {
-
-  private val UniverseSource = PackageRepository("Universe", universeUri)
 
   private def listSources(cosmosService: Service[Request, Response]): Seq[PackageRepository] = {
     callEndpoint[PackageRepositoryListRequest, PackageRepositoryListResponse](
@@ -127,7 +125,10 @@ private object PackageSourcesIntegrationSpec extends CosmosSpec {
       .addHeader("Content-type", requestMediaType.show)
       .addHeader("Accept", responseMediaType.show)
         .buildPost(Buf.Utf8(requestBody.asJson.noSpaces))
+
     val response = Await.result(cosmosService(request))
+    logger.debug("response to endpoint {}: {}", Seq(path, response.contentString): _*)
+
     assertResult(Status.Ok)(response.status)
     val Xor.Right(decodedBody) = decode[Res](response.contentString)
     decodedBody

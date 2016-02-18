@@ -3,6 +3,7 @@ package com.mesosphere.cosmos.repository
 import java.nio.ByteBuffer
 import java.nio.charset.StandardCharsets
 
+import cats.data.Ior
 import com.netaporter.uri.Uri
 import com.twitter.finagle.stats.{NullStatsReceiver, Stat, StatsReceiver}
 import com.twitter.util.Future
@@ -18,11 +19,7 @@ import org.apache.curator.framework.recipes.cache.NodeCache
 import org.apache.zookeeper.KeeperException
 import org.apache.zookeeper.data.{Stat => ZooKeeperStat}
 
-import com.mesosphere.cosmos.ByteBuffers
-import com.mesosphere.cosmos.CirceError
-import com.mesosphere.cosmos.RepoNameOrUriMissing
-import com.mesosphere.cosmos.ZooKeeperStorageError
-import com.mesosphere.cosmos.ConcurrentAccess
+import com.mesosphere.cosmos._
 import com.mesosphere.cosmos.circe.Decoders._
 import com.mesosphere.cosmos.circe.Encoders._
 import com.mesosphere.cosmos.http.{MediaType, MediaTypeOps, MediaTypeSubType}
@@ -170,6 +167,16 @@ private[cosmos] final class ZooKeeperStorage(
     elem: PackageRepository,
     list: List[PackageRepository]
   ): List[PackageRepository] = {
+    val duplicateName = list.find(_.name == elem.name).map(_.name)
+    val duplicateUri = list.find(_.uri == elem.uri).map(_.uri)
+    val duplicates = (duplicateName, duplicateUri) match {
+      case (Some(n), Some(u)) => Some(Ior.Both(n, u))
+      case (Some(n), _) => Some(Ior.Left(n))
+      case (_, Some(u)) => Some(Ior.Right(u))
+      case _ => None
+    }
+    duplicates.foreach(d => throw new RepositoryAlreadyPresent(d))
+
     val (leftSources, rightSources) = list.splitAt(index)
 
     leftSources ++ (elem :: rightSources)

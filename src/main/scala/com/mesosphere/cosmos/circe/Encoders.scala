@@ -3,6 +3,7 @@ package com.mesosphere.cosmos.circe
 import java.nio.ByteBuffer
 import java.util.Base64
 
+import cats.data.Ior
 import com.mesosphere.cosmos.model._
 import com.mesosphere.cosmos.model.thirdparty.marathon._
 import com.mesosphere.cosmos.model.thirdparty.mesos.master._
@@ -214,6 +215,13 @@ object Encoders {
     case ZooKeeperStorageError(msg) => msg
     case ConcurrentAccess(_) =>
       s"Retry operation. Operation didn't complete due to concurrent access."
+    case RepositoryAlreadyPresent(nameOrUri) =>
+      nameOrUri match {
+        case Ior.Both(n, u) =>
+          s"Repository name [$n] and URI [$u] are both already present in the list"
+        case Ior.Left(n) => s"Repository name [$n] is already present in the list"
+        case Ior.Right(u) => s"Repository URI [$u] is already present in the list"
+      }
   }
 
   private[this] def encodeMap(versions: Map[PackageDetailsVersion, ReleaseVersion]): Json = {
