@@ -30,7 +30,7 @@ object MediaTypes {
   val ListVersionsResponse = vnd("list-versions-response")
   val CapabilitiesResponse = MediaType(
     "application",
-    MediaTypeSubType("capabilities", Some("json")),
+    MediaTypeSubType("vnd.dcos.capabilities", Some("json")),
     Some(Map("charset" -> "utf-8", "version" -> "v1"))
   )
 
