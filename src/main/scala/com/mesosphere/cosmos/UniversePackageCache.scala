@@ -100,11 +100,13 @@ final class UniversePackageCache private (
     // Remember the old bundle path so we can delete it later
     val bundlePath = readSymbolicLink(symlinkBundlePath)
 
-    // Delete the symbolic link
-    Files.delete(symlinkBundlePath)
-
     // Delete the bundle directory
-    bundlePath.foreach { p => TwitterFiles.delete(p.toFile) }
+    bundlePath.foreach { p =>
+      //TODO: This needs to be more robust to handle potential lingering symlinks
+      Files.delete(symlinkBundlePath)  // work around until https://github.com/mesosphere/cosmos/issues/246 is fixed
+      // Delete the symbolic link
+      TwitterFiles.delete(p.toFile)
+    }
   }
 
   def universeBundle: Uri = repository.uri

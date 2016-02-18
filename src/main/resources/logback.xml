@@ -7,11 +7,6 @@
     <encoder>
       <pattern>%d{HH:mm:ss.SSS} %-5level [%thread] %logger{36} - %msg%n</pattern>
     </encoder>
-    <filter class="ch.qos.logback.classic.filter.LevelFilter">
-      <level>TRACE</level>
-      <onMatch>DENY</onMatch>
-      <onMismatch>ACCEPT</onMismatch>
-    </filter>
   </appender>
 
   <appender name="access-log" class="ch.qos.logback.core.ConsoleAppender">
@@ -20,10 +15,26 @@
     </encoder>
   </appender>
 
-  <logger name="org.apache.zookeeper" level="warn"/>
-  <logger name="org.apache.curator" level="info"/>
+  <appender name="NOEXCEPTION" class="ch.qos.logback.core.ConsoleAppender">
+    <encoder>
+      <pattern>%d{HH:mm:ss.SSS} %-5level [%thread] %logger{36} - %msg%nopex%n</pattern>
+    </encoder>
+  </appender>
 
-  <logger name="access-log" level="trace">
+  <logger name="org.apache.zookeeper" level="error" additivity="false">
+    <appender-ref ref="NOEXCEPTION"/>
+  </logger>
+  <logger name="org.apache.curator" level="warn" additivity="false">
+    <appender-ref ref="NOEXCEPTION"/>
+  </logger>
+  <logger name="org.apache.zookeeper.server.quorum.QuorumCnxManager" level="off" additivity="false">
+    <appender-ref ref="NOEXCEPTION"/>
+  </logger>
+  <logger name="org.apache.zookeeper.ClientCnxn" level="error" additivity="false">
+    <appender-ref ref="NOEXCEPTION"/>
+  </logger>
+
+  <logger name="access-log" level="trace" additivity="false">
     <appender-ref ref="access-log"/>
   </logger>
 

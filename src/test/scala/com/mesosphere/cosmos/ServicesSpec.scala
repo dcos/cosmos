@@ -2,9 +2,8 @@ package com.mesosphere.cosmos
 
 import com.mesosphere.cosmos.Services.ConnectionDetails
 import com.netaporter.uri.dsl._
-import com.twitter.finagle.NoBrokersAvailableException
 import com.twitter.finagle.http._
-import com.twitter.util.{Await, Throw, Return}
+import com.twitter.util.{Await, Return, Throw}
 import org.scalatest.FreeSpec
 
 final class ServicesSpec extends FreeSpec {
@@ -21,7 +20,7 @@ final class ServicesSpec extends FreeSpec {
           val response = Await.result(client(request))
           assertResult(response.status)(Status.ServiceUnavailable)
         } catch {
-          case e: NoBrokersAvailableException => // Success
+          case e: ServiceUnavailable => // Success
         } finally {
           val _ = Await.ready(client.close())
         }

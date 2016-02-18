@@ -1,79 +1,62 @@
 package com.mesosphere.cosmos
 
-import java.nio.file.Path
-
 import cats.data.Xor.Right
-import com.mesosphere.cosmos.IntegrationTests.{constUniverse, withTempDirectory}
 import com.mesosphere.cosmos.circe.Decoders._
 import com.mesosphere.cosmos.circe.Encoders._
 import com.mesosphere.cosmos.http.MediaTypes
 import com.mesosphere.cosmos.model._
-import com.mesosphere.cosmos.repository.Repository
+import com.mesosphere.cosmos.test.CosmosIntegrationTestClient.CosmosClient
 import com.mesosphere.universe.{PackageDetailsVersion, ReleaseVersion, UniverseIndexEntry}
-import com.netaporter.uri.Uri
 import com.twitter.finagle.http._
-import com.twitter.finagle.{Http, Service}
 import com.twitter.io.Buf
-import com.twitter.util._
 import io.circe.parse._
 import io.circe.syntax._
 import org.scalatest.FreeSpec
+import org.scalatest.prop.TableDrivenPropertyChecks
 
-final class PackageSearchSpec extends FreeSpec with CosmosSpec {
+final class PackageSearchSpec extends FreeSpec {
 
   import PackageSearchSpec._
 
   "The package search endpoint" - {
     "can successfully find packages" in {
-      val _ = withTempDirectory { universeDir =>
-        runService(universeDir = universeDir) { apiClient =>
-          forAll (PackageSearchTable) { (query, expectedResponse) =>
-            apiClient.searchAndAssert(
-              query=query,
-              status=Status.Ok,
-              expectedResponse=SearchResponse(expectedResponse)
-            )
-          }
-        }
+      forAll (PackageSearchTable) { (query, expectedResponse) =>
+        searchAndAssert(
+          query=query,
+          status=Status.Ok,
+          expectedResponse=SearchResponse(expectedResponse)
+        )
       }
     }
 
     "can successfully find packages by regex match" in {
-      val _ = withTempDirectory { universeDir =>
-        runService(universeDir = universeDir) { apiClient =>
-          forAll (PackageSearchRegexTable) { (query, expectedResponse) =>
-            apiClient.searchAndAssert(
-              query=query,
-              status=Status.Ok,
-              expectedResponse=SearchResponse(expectedResponse)
-            )
-          }
-        }
+      forAll (PackageSearchRegexTable) { (query, expectedResponse) =>
+        searchAndAssert(
+          query=query,
+          status=Status.Ok,
+          expectedResponse=SearchResponse(expectedResponse)
+        )
       }
     }
   }
 
-  private[this] def runService[A](
-    dcosClient: Service[Request, Response] = Services.adminRouterClient(adminRouterUri).get,
-    universeDir: Path
-  )(
-    f: SearchTestAssertionDecorator => Unit
+  private[cosmos] def searchAndAssert(
+    query: String,
+    status: Status,
+    expectedResponse: SearchResponse
   ): Unit = {
-    val marathonPackageRunner = new MarathonPackageRunner(adminRouter)
-    val sourcesStorage = constUniverse(universeUri)
-    val service = Cosmos(adminRouter, marathonPackageRunner, sourcesStorage, universeDir).service
-    val server = Http.serve(s":$servicePort", service)
-    val client = Http.newService(s"127.0.0.1:$servicePort")
-
-    try {
-      f(new SearchTestAssertionDecorator(client))
-    } finally {
-      Await.all(server.close(), client.close(), service.close())
-    }
+    val request = CosmosClient.requestBuilder("package/search")
+      .addHeader("Content-Type", MediaTypes.SearchRequest.show)
+      .addHeader("Accept", MediaTypes.SearchResponse.show)
+      .buildPost(Buf.Utf8(SearchRequest(Some(query)).asJson.noSpaces))
+    val response = CosmosClient(request)
+    assertResult(status)(response.status)
+    val Right(actualResponse) = decode[SearchResponse](response.contentString)
+    assertResult(expectedResponse)(actualResponse)
   }
 }
 
-private object PackageSearchSpec extends CosmosSpec {
+private object PackageSearchSpec extends TableDrivenPropertyChecks {
 
   val ArangodbPackageIndex = UniverseIndexEntry(
     name = "arangodb",
@@ -120,32 +103,3 @@ private object PackageSearchSpec extends CosmosSpec {
     ("data*e", List(ArangodbPackageIndex, CassandraPackageIndex))
   )
 }
-
-private final class SearchTestAssertionDecorator(apiClient: Service[Request, Response]) extends CosmosSpec {
-
-  val SearchEndpoint = "package/search"
-
-  private[cosmos] def searchAndAssert(
-    query: String,
-    status: Status,
-    expectedResponse: SearchResponse
-  ): Unit = {
-    val response = searchRequest(apiClient, SearchRequest(Some(query)))
-    assertResult(status)(response.status)
-    val Right(actualResponse) = decode[SearchResponse](response.contentString)
-    assertResult(expectedResponse)(actualResponse)
-  }
-
-  private[this] def searchRequest(
-    apiClient: Service[Request, Response],
-    searchRequest: SearchRequest
-  ): Response = {
-    val request = requestBuilder(SearchEndpoint)
-      .addHeader("Content-Type", MediaTypes.SearchRequest.show)
-      .addHeader("Accept", MediaTypes.SearchResponse.show)
-      .buildPost(Buf.Utf8(searchRequest.asJson.noSpaces))
-    Await.result(apiClient(request))
-  }
-}
-
-

@@ -20,6 +20,7 @@ object CosmosBuild extends Build {
     val scalaUri = "0.4.11"
     val scalaTest = "2.2.4"
     val scalaCheck = "1.10.0"
+    val zookeeper = "3.4.6"
   }
 
   object Deps {
@@ -32,7 +33,17 @@ object CosmosBuild extends Build {
     val curator = Seq(
       "org.apache.curator" % "curator-recipes" % V.curator,
       "org.apache.curator" % "curator-test" % V.curator % "test"
-    )
+    ).map(_.excludeAll(
+      // Exclude log4j and slf4j-log4j12 because we're using logback as our logging backend.
+      // exclude jmx items since we're only using the curator client, not it's server
+      // exclude jline from zk since we're not using it's console
+      ExclusionRule("log4j", "log4j"),
+      ExclusionRule("org.slf4j", "slf4j-log4j12"),
+      ExclusionRule("com.sun.jdmk", "jmxtools"),
+      ExclusionRule("com.sun.jmx", "jmxri"),
+      ExclusionRule("javax.jms", "jms"),
+      ExclusionRule("jline", "jline")
+    ))
 
     val finch = Seq(
       "com.github.finagle" %% "finch-core" % V.finch,
@@ -41,7 +52,11 @@ object CosmosBuild extends Build {
 
     val finchServer = Seq(
       "io.github.benwhitehead.finch" %% "finch-server" % V.finchServer
-    )
+    ).map(_.excludeAll(
+      // mustache is pulled in for the core application, so we exclude the transitive version
+      // pulled in my twitter-server
+      ExclusionRule("com.github.spullara.mustache.java", "compiler")
+    ))
 
     val finchTest = Seq(
       "com.github.finagle" %% "finch-test" % V.finch % "test"
@@ -72,7 +87,7 @@ object CosmosBuild extends Build {
   val extraSettings = Defaults.coreDefaultSettings
 
   val sharedSettings = extraSettings ++ Seq(
-    organization := "mesosphere.mm.collector",
+    organization := "com.mesosphere.cosmos",
     scalaVersion := projectScalaVersion,
     version := projectVersion,
 
@@ -134,9 +149,25 @@ object CosmosBuild extends Build {
     cancelable in Global := true
   )
 
+  private lazy val cosmosIntegrationTestServer = settingKey[CosmosIntegrationTestServer]("cosmos-it-server")
+
+  val itSettings = Defaults.itSettings ++ Seq(
+    test in IntegrationTest <<= (test in IntegrationTest).dependsOn(oneJar),
+    cosmosIntegrationTestServer in IntegrationTest := new CosmosIntegrationTestServer(
+      (javaHome in run).value.map(_.getCanonicalPath),
+      (artifactPath in oneJar).value.getCanonicalPath
+    ),
+    testOptions in IntegrationTest += Tests.Setup(() =>
+      (cosmosIntegrationTestServer in IntegrationTest).value.setup((streams in runMain).value.log)
+    ),
+    testOptions in IntegrationTest += Tests.Cleanup(() =>
+      (cosmosIntegrationTestServer in IntegrationTest).value.cleanup()
+    )
+  )
+
   lazy val cosmos = Project("cosmos", file("."))
     .configs(IntegrationTest extend Test)
-    .settings(Defaults.itSettings)
+    .settings(itSettings)
     .settings(sharedSettings)
     .settings(oneJarSettings)
     .settings(mainClass in oneJar := Some("com.mesosphere.cosmos.Cosmos"))
