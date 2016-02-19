@@ -1,20 +1,21 @@
 package com.mesosphere.cosmos.repository
 
 import cats.data.Ior
+import com.mesosphere.cosmos._
 import com.mesosphere.cosmos.circe.Decoders._
 import com.mesosphere.cosmos.circe.Encoders._
 import com.mesosphere.cosmos.handler.PackageRepositoryAddHandler
 import com.mesosphere.cosmos.handler.PackageRepositoryDeleteHandler
 import com.mesosphere.cosmos.handler.PackageRepositoryListHandler
+import com.mesosphere.cosmos.handler.PackageSearchHandler
 import com.mesosphere.cosmos.model._
-import com.mesosphere.cosmos.{CosmosError, RepositoryAlreadyPresent, UnitSpec, ZooKeeperFixture}
+import com.mesosphere.universe.UniverseVersion
 import com.netaporter.uri.Uri
-import com.twitter.io.Charsets
 import com.twitter.util._
-import io.circe.Json
 import io.finch.circe._
+import org.scalatest.concurrent.Eventually
 
-final class PackageSourceSpec extends UnitSpec with ZooKeeperFixture {
+final class PackageSourceSpec extends UnitSpec with ZooKeeperFixture with Eventually {
 
   import PackageSourceSpec._
 
@@ -106,6 +107,37 @@ final class PackageSourceSpec extends UnitSpec with ZooKeeperFixture {
       }
     }
   }
+
+  "Issue #209: repository versions must be validated" in {
+    IntegrationTests.withTempDirectory { dataDir =>
+      withZooKeeperClient { client =>
+        val sourcesStorage = new ZooKeeperStorage(client, UniverseRepository.uri)
+        val repositories = new MultiRepository(sourcesStorage, dataDir)
+        val addRepositoryHandler = new PackageRepositoryAddHandler(sourcesStorage)
+        // TODO: Using an external test dependency. Change to something local once the test is working
+        val repoUri = Uri.parse("https://github.com/mesosphere/universe/archive/version-1.x.zip")
+        val oldVersionRepository = PackageRepository("old-version", repoUri)
+        val addRequest = PackageRepositoryAddRequest(oldVersionRepository.name, oldVersionRepository.uri)
+        val addResponse = Await.result(addRepositoryHandler(addRequest))
+        val expectedList = Seq(UniverseRepository, oldVersionRepository)
+        assertResult(expectedList)(addResponse.repositories)
+
+        val searchHandler = new PackageSearchHandler(repositories)
+        eventually {
+          assertResult(Throw(UnsupportedRepositoryVersion(UniverseVersion("1.0.0-rc1")))) {
+            Await.result(searchHandler(SearchRequest(None)).liftToTry)
+          }
+        }
+
+        // Make sure we always check the version, not just when updating the repo
+        // This relies on Cosmos not updating the repo again within a short time window
+        assertResult(Throw(UnsupportedRepositoryVersion(UniverseVersion("1.0.0-rc1")))) {
+          Await.result(searchHandler(SearchRequest(None)).liftToTry)
+        }
+      }
+    }
+  }
+
 }
 
 private[cosmos] object PackageSourceSpec extends UnitSpec {

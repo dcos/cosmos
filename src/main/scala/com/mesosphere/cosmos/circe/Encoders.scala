@@ -4,15 +4,15 @@ import java.nio.ByteBuffer
 import java.util.Base64
 
 import cats.data.Ior
+import com.mesosphere.cosmos._
 import com.mesosphere.cosmos.model._
 import com.mesosphere.cosmos.model.thirdparty.marathon._
 import com.mesosphere.cosmos.model.thirdparty.mesos.master._
-import com.mesosphere.cosmos._
 import com.mesosphere.universe._
 import com.netaporter.uri.Uri
 import io.circe.generic.semiauto._
 import io.circe.syntax._
-import io.circe.{ObjectEncoder, Encoder, Json, JsonObject}
+import io.circe.{Encoder, Json, JsonObject, ObjectEncoder}
 import io.finch.Error
 
 object Encoders {
@@ -224,6 +224,7 @@ object Encoders {
       }
     case RepositoryAddIndexOutOfBounds(attempted, max) =>
       s"Index out of range: $attempted"
+    case UnsupportedRepositoryVersion(version) => s"Repository version [$version] is not supported"
   }
 
   private[this] def encodeMap(versions: Map[PackageDetailsVersion, ReleaseVersion]): Json = {

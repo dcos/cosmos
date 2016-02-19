@@ -6,9 +6,7 @@ import java.util.Base64
 import java.util.concurrent.atomic.AtomicReference
 import java.util.zip.ZipInputStream
 
-import scala.util.matching.Regex
-
-import cats.data.Validated.{Valid, Invalid}
+import cats.data.Validated.{Invalid, Valid}
 import cats.data.Xor.{Left, Right}
 import cats.data._
 import cats.std.list._           // allows for traversU in verifySchema
@@ -16,17 +14,17 @@ import cats.std.option._
 import cats.syntax.apply._       // provides |@|
 import cats.syntax.option._
 import cats.syntax.traverse._
-import com.netaporter.uri.Uri
-import com.twitter.concurrent.AsyncMutex
-import com.twitter.io.Charsets
-import com.twitter.io.{Files => TwitterFiles }
-import com.twitter.util.{Future, Return, Throw, Try}
-import io.circe.parse._
-import io.circe.{Decoder, Json}
-
 import com.mesosphere.cosmos.circe.Decoders._
 import com.mesosphere.cosmos.repository.Repository
 import com.mesosphere.universe._
+import com.netaporter.uri.Uri
+import com.twitter.concurrent.AsyncMutex
+import com.twitter.io.{Charsets, Files => TwitterFiles}
+import com.twitter.util.{Future, Try}
+import io.circe.parse._
+import io.circe.{Decoder, Json}
+
+import scala.util.matching.Regex
 
 /** Stores packages from the Universe GitHub repository in the local filesystem.
   */
@@ -43,12 +41,12 @@ final class UniversePackageCache private (
     packageName: String,
     packageVersion: Option[PackageDetailsVersion]
   ): Future[PackageFiles] = {
-    synchronizedUpdate().map { bundleDir =>
+    mostRecentBundle().map { case (bundleDir, universeIndex) =>
       val repoDir = repoDirectory(bundleDir)
       readPackageFiles(
         getPackagePath(
           repoDir,
-          repoIndex(repoDir),
+          universeIndex,
           packageName,
           packageVersion
         )
@@ -60,7 +58,7 @@ final class UniversePackageCache private (
     packageName: String,
     releaseVersion: ReleaseVersion
   ): Future[PackageFiles] = {
-    synchronizedUpdate().map { bundleDir =>
+    mostRecentBundle().map { case (bundleDir, _) =>
       readPackageFiles(
         getPackageReleasePath(
           repoDirectory(bundleDir),
@@ -72,24 +70,21 @@ final class UniversePackageCache private (
   }
 
   override def getPackageIndex(packageName: String): Future[UniverseIndexEntry] = {
-    synchronizedUpdate().map { bundleDir =>
-      repoIndex(repoDirectory(bundleDir)).getPackages.get(packageName).getOrElse(
-        throw PackageNotFound(packageName)
-      )
+    mostRecentBundle().map { case (bundleDir, universeIndex) =>
+      universeIndex.getPackages.getOrElse(packageName, throw PackageNotFound(packageName))
     }
   }
 
   override def search(queryOpt: Option[String]): Future[List[UniverseIndexEntry]] = {
-    synchronizedUpdate().map { bundleDir =>
-      val packages = repoIndex(repoDirectory(bundleDir)).packages
+    mostRecentBundle().map { case (bundleDir, universeIndex) =>
       val wildcardSymbol = "*"
       queryOpt match {
-        case None => packages
+        case None => universeIndex.packages
         case Some(query) =>
           if (query.contains(wildcardSymbol)) {
-            packages.filter(searchRegexInPackageIndex(_, getRegex(query)))
+            universeIndex.packages.filter(searchRegexInPackageIndex(_, getRegex(query)))
           } else {
-            packages.filter(searchPackageIndex(_, query.toLowerCase()))
+            universeIndex.packages.filter(searchPackageIndex(_, query.toLowerCase()))
           }
       }
     }
@@ -126,6 +121,26 @@ final class UniversePackageCache private (
         index.tags.exists(_.toLowerCase().contains(query))
   }
 
+  private[this] def mostRecentBundle(): Future[(Path, UniverseIndex)] = {
+    synchronizedUpdate().map { bundlePath =>
+      val indexFile = repoDirectory(bundlePath).resolve(Paths.get("meta", "index.json"))
+
+      val repoIndex = parseJsonFile(indexFile)
+        .toRightXor(new IndexNotFound(universeBundle))
+        .flatMap { index =>
+          index.as[UniverseIndex].leftMap(_ => PackageFileSchemaMismatch("index.json"))
+        }
+        .valueOr(err => throw err)
+
+      val repoVersion = repoIndex.version
+      if (repoVersion.toString.startsWith("2.")) {
+        (bundlePath, repoIndex)
+      } else {
+        throw new UnsupportedRepositoryVersion(repoVersion)
+      }
+    }
+  }
+
   private[this] def synchronizedUpdate(): Future[Path] = {
     updateMutex.acquireAndRun {
       // TODO: How often we check should be configurable
@@ -142,16 +157,6 @@ final class UniversePackageCache private (
          */
         Future(universeDir.resolve(base64(universeBundle)))
       }
-    }
-  }
-
-  private[this] def repoIndex(repoDir: Path): UniverseIndex = {
-    val indexFile = repoDir.resolve(Paths.get("meta", "index.json"))
-
-    parseJsonFile(indexFile).map { index =>
-      index.as[UniverseIndex].getOrElse(throw PackageFileSchemaMismatch("index.json"))
-    } getOrElse {
-      throw IndexNotFound(universeBundle)
     }
   }
 
