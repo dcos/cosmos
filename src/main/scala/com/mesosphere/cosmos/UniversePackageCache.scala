@@ -1,5 +1,6 @@
 package com.mesosphere.cosmos
 
+import java.net.{MalformedURLException, UnknownHostException}
 import java.nio.file._
 import java.time.LocalDateTime
 import java.util.Base64
@@ -15,6 +16,7 @@ import cats.syntax.apply._       // provides |@|
 import cats.syntax.option._
 import cats.syntax.traverse._
 import com.mesosphere.cosmos.circe.Decoders._
+import com.mesosphere.cosmos.model.PackageRepository
 import com.mesosphere.cosmos.repository.Repository
 import com.mesosphere.universe._
 import com.netaporter.uri.Uri
@@ -29,7 +31,7 @@ import scala.util.matching.Regex
 /** Stores packages from the Universe GitHub repository in the local filesystem.
   */
 final class UniversePackageCache private (
-  val universeBundle: Uri,
+  repository: PackageRepository,
   universeDir: Path
 ) extends Repository with AutoCloseable {
   // This mutex serializes updates to the local package cache
@@ -105,6 +107,8 @@ final class UniversePackageCache private (
     bundlePath.foreach { p => TwitterFiles.delete(p.toFile) }
   }
 
+  def universeBundle: Uri = repository.uri
+
   private[this] def getRegex(query: String): Regex = {
     s"""^${query.replaceAll("\\*", ".*")}$$""".r
   }
@@ -145,7 +149,7 @@ final class UniversePackageCache private (
     updateMutex.acquireAndRun {
       // TODO: How often we check should be configurable
       if (lastModified.get().plusMinutes(1).isBefore(LocalDateTime.now())) {
-        val path = updateUniverseCache(universeBundle, universeDir)
+        val path = updateUniverseCache()
 
         // Update the last modified date
         lastModified.set(LocalDateTime.now())
@@ -187,21 +191,23 @@ final class UniversePackageCache private (
     }
   }
 
-  private[this] def updateUniverseCache(
-    universeBundle: Uri,
-    universeDir: Path
-  ): Future[Path] = {
-    Future(universeBundle.toURI.toURL.openStream()).map { bundleStream =>
-      try {
-        extractBundle(
-          new ZipInputStream(bundleStream),
-          universeBundle,
-          universeDir
-        )
-      } finally {
-        bundleStream.close()
+  private[this] def updateUniverseCache(): Future[Path] = {
+    Future(universeBundle.toURI.toURL.openStream())
+      .handle {
+        case e @ (_: IllegalArgumentException | _: MalformedURLException | _: UnknownHostException) =>
+          throw new InvalidRepositoryUri(repository, e)
       }
-    }
+      .map { bundleStream =>
+        try {
+          extractBundle(
+            new ZipInputStream(bundleStream),
+            universeBundle,
+            universeDir
+          )
+        } finally {
+          bundleStream.close()
+        }
+      }
   }
 
   private[this] def repoDirectory(bundleDir: Path) = bundleDir.resolve("repo")
@@ -403,13 +409,8 @@ final class UniversePackageCache private (
 
 object UniversePackageCache {
 
-  /** Create a new package cache.
-    *
-    * @param universeBundle the location of the package bundle to cache; must be an HTTP URL
-    * @param dataDir the directory to cache the bundle files in; assumed to be empty
-    * @return The new cache, or an error.
-    */
-  def apply(universeBundle: Uri, dataDir: Path): UniversePackageCache = {
-    new UniversePackageCache(universeBundle, dataDir)
+  def apply(repository: PackageRepository, dataDir: Path): UniversePackageCache = {
+    new UniversePackageCache(repository, dataDir)
   }
+
 }

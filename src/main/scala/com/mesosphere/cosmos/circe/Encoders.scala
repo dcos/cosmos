@@ -225,6 +225,8 @@ object Encoders {
     case RepositoryAddIndexOutOfBounds(attempted, max) =>
       s"Index out of range: $attempted"
     case UnsupportedRepositoryVersion(version) => s"Repository version [$version] is not supported"
+    case InvalidRepositoryUri(repository, _) =>
+      s"URI for repository [${repository.name}] is invalid: ${repository.uri}"
   }
 
   private[this] def encodeMap(versions: Map[PackageDetailsVersion, ReleaseVersion]): Json = {
