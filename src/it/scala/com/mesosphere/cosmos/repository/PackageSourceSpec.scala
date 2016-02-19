@@ -38,7 +38,7 @@ final class PackageSourceSpec extends UnitSpec with ZooKeeperFixture {
         val repositoryStorage = new ZooKeeperStorage(client, UniverseRepository.uri)
         implicit val handler = new PackageRepositoryAddHandler(repositoryStorage)
 
-        assertAdd(List(SourceCliTest4, UniverseRepository), SourceCliTest4)
+        assertAdd(List(UniverseRepository, SourceCliTest4), SourceCliTest4)
       }
     }
 
@@ -78,7 +78,7 @@ final class PackageSourceSpec extends UnitSpec with ZooKeeperFixture {
           UniverseRepository.copy(uri = SourceCliTest4.uri)
         )
 
-        assertAdd(List(SourceCliTest4, UniverseRepository), SourceCliTest4)
+        assertAdd(List(UniverseRepository, SourceCliTest4), SourceCliTest4)
 
         assertAddFailure(
           RepositoryAlreadyPresent(Ior.Both(UniverseRepository.name, SourceCliTest4.uri)),
@@ -202,7 +202,7 @@ private[cosmos] object PackageSourceSpec extends UnitSpec {
       }
     }
 
-    state.reverse.foreach { repository =>
+    state.foreach { repository =>
       Await.result(adder(PackageRepositoryAddRequest(repository.name, repository.uri)))
     }
   }

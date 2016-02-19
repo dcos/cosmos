@@ -7,10 +7,11 @@ import com.mesosphere.cosmos.circe.Encoders._
 import com.mesosphere.cosmos.http.{MediaType, MediaTypes}
 import com.mesosphere.cosmos.model._
 import com.mesosphere.cosmos.repository.{PackageSourceSpec, ZooKeeperStorage}
+import com.netaporter.uri.dsl._
 import com.twitter.finagle.http.{Request, Response, Status}
 import com.twitter.finagle.{Http, Service}
 import com.twitter.io.Buf
-import com.twitter.util.Await
+import com.twitter.util.{Future, Await}
 import io.circe.parse._
 import io.circe.syntax._
 import io.circe.{Decoder, Encoder}
@@ -26,15 +27,15 @@ final class PackageSourcesIntegrationSpec extends FreeSpec with CosmosSpec with 
       assertResult(
         PackageRepositoryAddResponse(
           List(
-            PackageSourceSpec.SourceCliTest4,
-            PackageSourceSpec.UniverseRepository
+            PackageSourceSpec.UniverseRepository,
+            PackageSourceSpec.SourceCliTest4
           )
         )
       )(
         addSource(cosmosService, PackageSourceSpec.SourceCliTest4)
       )
 
-      assertResult(List(PackageSourceSpec.SourceCliTest4, PackageSourceSpec.UniverseRepository)) {
+      assertResult(List(PackageSourceSpec.UniverseRepository, PackageSourceSpec.SourceCliTest4)) {
         listSources(cosmosService)
       }
 
@@ -49,6 +50,61 @@ final class PackageSourcesIntegrationSpec extends FreeSpec with CosmosSpec with 
       }
 
       assertResult(Nil)(listSources(cosmosService))
+    }
+  }
+
+  "Package repo add should" - {
+    "enforce not adding outside list bounds" - {
+      "-1" in {
+        withCosmosService { cosmosService =>
+          val addRequest = PackageRepositoryAddRequest("name", "http://fake.fake", Some(-1))
+
+          val response = Await.result(sendAddRequest(cosmosService, addRequest))
+          assertResult(Status.BadRequest)(response.status)
+        }
+      }
+
+      "2" in {
+        withCosmosService { cosmosService =>
+          val addRequest = PackageRepositoryAddRequest("name", "http://fake.fake", Some(2))
+
+          val response = Await.result(sendAddRequest(cosmosService, addRequest))
+          assertResult(Status.BadRequest)(response.status)
+        }
+      }
+
+      "10" in {
+        withCosmosService { cosmosService =>
+          val addRequest = PackageRepositoryAddRequest("name", "http://fake.fake", Some(10))
+
+          val response = Await.result(sendAddRequest(cosmosService, addRequest))
+          assertResult(Status.BadRequest)(response.status)
+        }
+      }
+    }
+
+    "append to the list if no index defined" in {
+      withCosmosService { cosmosService =>
+        val addRequest = PackageRepositoryAddRequest("name", "http://fake.fake")
+
+        val response = Await.result(sendAddRequest(cosmosService, addRequest))
+        assertResult(Status.Ok)(response.status)
+
+        val sources = listSources(cosmosService)
+        assertResult(PackageRepository(addRequest.name, addRequest.uri))(sources(1))
+      }
+    }
+
+    "allows insertion at specific index" in {
+      withCosmosService { cosmosService =>
+        val addRequest = PackageRepositoryAddRequest("name", "http://fake.fake", Some(0))
+
+        val response = Await.result(sendAddRequest(cosmosService, addRequest))
+        assertResult(Status.Ok)(response.status)
+
+        val sources = listSources(cosmosService)
+        assertResult(PackageRepository(addRequest.name, addRequest.uri))(sources.head)
+      }
     }
   }
 
@@ -134,4 +190,19 @@ private object PackageSourcesIntegrationSpec extends CosmosSpec {
     decodedBody
   }
 
+
+  private def sendAddRequest(
+    cosmosService: Service[Request, Response],
+    addRequest: PackageRepositoryAddRequest
+  ): Future[Response] = {
+    val path = "package/repository/add"
+    val request = requestBuilder(path)
+      .addHeader("Content-type", MediaTypes.PackageRepositoryAddRequest.show)
+      .addHeader("Accept", MediaTypes.PackageRepositoryAddResponse.show)
+      .buildPost(Buf.Utf8(addRequest.asJson.noSpaces))
+
+    cosmosService(request).onSuccess { response =>
+      logger.debug("response to endpoint {}: {}", Seq(path, response.contentString): _*)
+    }
+  }
 }

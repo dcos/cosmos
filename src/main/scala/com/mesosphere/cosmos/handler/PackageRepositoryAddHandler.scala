@@ -1,6 +1,5 @@
 package com.mesosphere.cosmos.handler
 
-import com.mesosphere.cosmos.RepositoryAlreadyPresent
 import com.mesosphere.cosmos.http.{MediaType, MediaTypes}
 import com.mesosphere.cosmos.model.PackageRepositoryAddRequest
 import com.mesosphere.cosmos.model.PackageRepositoryAddResponse
@@ -23,7 +22,7 @@ final class PackageRepositoryAddHandler(sourcesStorage: PackageSourcesStorage)(
     request: PackageRepositoryAddRequest
   ): Future[PackageRepositoryAddResponse] = {
     sourcesStorage.add(
-      request.index.getOrElse(0),
+      request.index,
       PackageRepository(request.name, request.uri)
     ) map { sources =>
       PackageRepositoryAddResponse(sources)
