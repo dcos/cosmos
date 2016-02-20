@@ -2,8 +2,8 @@ package com.mesosphere.cosmos
 
 import cats.data.{Ior, NonEmptyList}
 import com.mesosphere.cosmos.http.MediaType
-import com.mesosphere.cosmos.model.AppId
 import com.mesosphere.cosmos.model.thirdparty.marathon.MarathonError
+import com.mesosphere.cosmos.model.{AppId, PackageRepository}
 import com.mesosphere.universe.{PackageDetailsVersion, UniverseVersion}
 import com.netaporter.uri.Uri
 import com.twitter.finagle.http.Status
@@ -93,3 +93,6 @@ case class RepositoryAlreadyPresent(nameOrUri: Ior[String, Uri]) extends CosmosE
 case class RepositoryAddIndexOutOfBounds(attempted: Int, max: Int) extends CosmosError
 
 case class UnsupportedRepositoryVersion(version: UniverseVersion) extends CosmosError
+
+case class InvalidRepositoryUri(repository: PackageRepository, causedBy: Throwable)
+  extends CosmosError(causedBy)

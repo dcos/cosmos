@@ -2,18 +2,10 @@ package com.mesosphere.cosmos
 
 import java.nio.file.Path
 
+import com.mesosphere.cosmos.repository.{PackageCollection, PackageSourcesStorage, Repository}
+import com.mesosphere.universe.{PackageDetailsVersion, PackageFiles, UniverseIndexEntry}
 import com.netaporter.uri.Uri
 import com.twitter.util.Future
-import com.twitter.util.Return
-import com.twitter.util.Throw
-import com.twitter.util.Try
-
-import com.mesosphere.cosmos.repository.PackageCollection
-import com.mesosphere.cosmos.repository.PackageSourcesStorage
-import com.mesosphere.cosmos.repository.Repository
-import com.mesosphere.universe.PackageDetailsVersion
-import com.mesosphere.universe.PackageFiles
-import com.mesosphere.universe.UniverseIndexEntry
 
 final class MultiRepository (
   packageRepositoryStorage: PackageSourcesStorage,
@@ -90,9 +82,7 @@ final class MultiRepository (
     packageRepositoryStorage.readCache().map { repositories =>
       val oldRepositories: Map[Uri, UniversePackageCache] = cachedRepositories
       val result = repositories.map { repository =>
-        oldRepositories.get(repository.uri).getOrElse(
-          UniversePackageCache(repository.uri, universeDir)
-        )
+        oldRepositories.getOrElse(repository.uri, UniversePackageCache(repository, universeDir))
       }
 
       val newRepositories: Map[Uri, UniversePackageCache] = result.map(repository =>

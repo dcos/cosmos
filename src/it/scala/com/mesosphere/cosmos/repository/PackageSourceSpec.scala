@@ -109,31 +109,67 @@ final class PackageSourceSpec extends UnitSpec with ZooKeeperFixture with Eventu
   }
 
   "Issue #209: repository versions must be validated" in {
+    withHandlers { implicit addRepositoryHandler => implicit searchHandler =>
+      // TODO: Using an external test dependency. Change to something local once the test is working
+      val repoUri = Uri.parse("https://github.com/mesosphere/universe/archive/version-1.x.zip")
+      val oldVersionRepository = PackageRepository("old-version", repoUri)
+      val expectedList = Seq(UniverseRepository, oldVersionRepository)
+      assertAdd(expectedList, oldVersionRepository)
+
+      def assertUnsupportedVersion(): Unit = {
+        assertResult(Throw(UnsupportedRepositoryVersion(UniverseVersion("1.0.0-rc1")))) {
+          Await.result(searchHandler(SearchRequest(None)).liftToTry)
+        }
+      }
+
+      eventually { assertUnsupportedVersion() }
+
+      // Make sure we always check the version, not just when updating the repo
+      // This relies on Cosmos not updating the repo again within a short time window
+      assertUnsupportedVersion()
+    }
+  }
+
+  "Issue #204: respond with an error when trying to use a repo with a broken URI" - {
+
+    "relative URI" in {
+      assertBrokenUri("foobar")
+    }
+
+    "absolute URI" in {
+      assertBrokenUri("http://foobar")
+    }
+
+    "unknown protocol" in {
+      assertBrokenUri("cosmos://universe.mesosphere.com/")
+    }
+
+    def assertBrokenUri(uriText: String): Unit = {
+      withHandlers { implicit addRepositoryHandler => implicit searchHandler =>
+        val bogusRepository = PackageRepository("bogus", Uri.parse(uriText))
+        assertAdd(Seq(UniverseRepository, bogusRepository), bogusRepository)
+
+        eventually {
+          assertResult(bogusRepository) {
+            val response = Await.result(searchHandler(SearchRequest(None)).liftToTry)
+            val Throw(InvalidRepositoryUri(repo, _)) = response
+            repo
+          }
+        }
+      }
+    }
+
+  }
+
+  private[this] def withHandlers(f: AddHandlerFn => SearchHandlerFn => Unit): Unit = {
     IntegrationTests.withTempDirectory { dataDir =>
       withZooKeeperClient { client =>
         val sourcesStorage = new ZooKeeperStorage(client, UniverseRepository.uri)
         val repositories = new MultiRepository(sourcesStorage, dataDir)
         val addRepositoryHandler = new PackageRepositoryAddHandler(sourcesStorage)
-        // TODO: Using an external test dependency. Change to something local once the test is working
-        val repoUri = Uri.parse("https://github.com/mesosphere/universe/archive/version-1.x.zip")
-        val oldVersionRepository = PackageRepository("old-version", repoUri)
-        val addRequest = PackageRepositoryAddRequest(oldVersionRepository.name, oldVersionRepository.uri)
-        val addResponse = Await.result(addRepositoryHandler(addRequest))
-        val expectedList = Seq(UniverseRepository, oldVersionRepository)
-        assertResult(expectedList)(addResponse.repositories)
-
         val searchHandler = new PackageSearchHandler(repositories)
-        eventually {
-          assertResult(Throw(UnsupportedRepositoryVersion(UniverseVersion("1.0.0-rc1")))) {
-            Await.result(searchHandler(SearchRequest(None)).liftToTry)
-          }
-        }
 
-        // Make sure we always check the version, not just when updating the repo
-        // This relies on Cosmos not updating the repo again within a short time window
-        assertResult(Throw(UnsupportedRepositoryVersion(UniverseVersion("1.0.0-rc1")))) {
-          Await.result(searchHandler(SearchRequest(None)).liftToTry)
-        }
+        f(addRepositoryHandler)(searchHandler)
       }
     }
   }
@@ -141,6 +177,9 @@ final class PackageSourceSpec extends UnitSpec with ZooKeeperFixture with Eventu
 }
 
 private[cosmos] object PackageSourceSpec extends UnitSpec {
+
+  private type AddHandlerFn = PackageRepositoryAddRequest => Future[PackageRepositoryAddResponse]
+  private type SearchHandlerFn = SearchRequest => Future[SearchResponse]
 
   private[cosmos] val UniverseRepository = PackageRepository(
     "Universe",
@@ -182,7 +221,7 @@ private[cosmos] object PackageSourceSpec extends UnitSpec {
   )
 
   private def assertAdd(
-    expectedResponseList: List[PackageRepository],
+    expectedResponseList: Seq[PackageRepository],
     repository: PackageRepository,
     index: Option[Int] = None
   )(implicit handler: PackageRepositoryAddRequest => Future[PackageRepositoryAddResponse]): Unit = {
