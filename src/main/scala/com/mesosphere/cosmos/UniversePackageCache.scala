@@ -151,12 +151,8 @@ final class UniversePackageCache private (
     updateMutex.acquireAndRun {
       // TODO: How often we check should be configurable
       if (lastModified.get().plusMinutes(1).isBefore(LocalDateTime.now())) {
-        val path = updateUniverseCache()
-
-        // Update the last modified date
-        lastModified.set(LocalDateTime.now())
-
-        path
+        updateUniverseCache()
+          .onSuccess { _ => lastModified.set(LocalDateTime.now()) }
       } else {
         /* We don't need to fetch the latest package information; just return the current
          * information.
