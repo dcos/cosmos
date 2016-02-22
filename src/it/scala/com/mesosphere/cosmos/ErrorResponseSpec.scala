@@ -1,22 +1,24 @@
 package com.mesosphere.cosmos
 
 import cats.data.Xor
+import com.mesosphere.cosmos.circe.Decoders._
 import com.mesosphere.cosmos.http.MediaTypes
-import com.twitter.io.Buf
+import com.mesosphere.cosmos.test.CosmosIntegrationTestClient._
 import com.twitter.finagle.http.Status
+import com.twitter.io.Buf
 import io.circe.parse._
 import io.circe.syntax._
-import com.mesosphere.cosmos.circe.Decoders._
+import org.scalatest.FreeSpec
 
-class ErrorResponseSpec extends IntegrationSpec {
+class ErrorResponseSpec extends FreeSpec {
 
-  "An ErrorResponse" should "be returned as the body when a request can't be parsed" in { service =>
+  "An ErrorResponse should be returned as the body when a request can't be parsed" in {
     val requestString = Map("invalid" -> true).asJson.noSpaces
-    val post = requestBuilder("package/install")
+    val post = CosmosClient.requestBuilder("package/install")
       .addHeader("Content-Type", MediaTypes.InstallRequest.show)
       .addHeader("Accept", MediaTypes.InstallResponse.show)
       .buildPost(Buf.Utf8(requestString))
-    val response = service(post)
+    val response = CosmosClient(post)
 
     assertResult(Status.BadRequest)(response.status)
     assertResult(MediaTypes.ErrorResponse.show)(response.headerMap("Content-Type"))

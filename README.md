@@ -4,45 +4,34 @@ An [orderly, harmonius, complete](http://www.thefreedictionary.com/cosmos) API f
 
 ## Running tests
 
-Note that the tests currently leave some apps running on Marathon, and cannot be run again
-successfully until those apps are destroyed. This is a temporary inconvenience until we add support
-for keeping test runs independent of each other.
+### Unit Tests
+There is a suite of unit tests that can be ran by running `sbt clean test`
 
-### Requirements
+### Integration Tests
+There is a suite of integration tests that can be ran by running `sbt clean it:test`
 
-- SBT
-- An existing DCOS cluster or access to `ccm.mesosphere.com`
+#### Requirements
 
-### Running with an existing cluster
+- A running DCOS cluster
 
-If the adminrouter host for the cluster is `http://your.adminrouter.host` and the universe
-repository that you would like to use is `http://your.universe.repository/url`, then we can run
-the unittest with:
+#### Running the tests
 
-```bash
-sbt test
+The test runner will automatically start an in process zk cluster, create a temporary directory for repo caches, and
+start the Cosmos server.
+
+The test suite will then be configured to interact with this cluster by setting the following system property:
+```
+-Dcom.mesosphere.cosmos.test.CosmosIntegrationTestClient.CosmosClient.uri
 ```
 
-And the integration tests with:
-
-```bash
-sbt -Dcom.mesosphere.cosmos.dcosUri=http://your.adminrouter.host -Dcom.mesosphere.cosmos.universeBundleUri=http://your.universe.repository/url
-```
-
-### Running with a temporary cluster
-
-The `build/run_tests.sh` script will ask CCM for a temporary DCOS cluster:
-
-```bash
-$ ./build/run_tests.sh
-```
+Any system properties that are passed to sbt will be inherited by the test suite, but not the Cosmos server.
 
 ## Running Cosmos
 
 To run the Cosmos process we need to first create a One-JAR:
 
 ```bash
-$ sbt one-jar
+sbt one-jar
 ```
 
 The jar will be created in the `target/scala-2.11/` directory. This can be executed with:

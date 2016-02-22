@@ -7,7 +7,7 @@ import com.twitter.finagle.client.Transporter
 import com.twitter.finagle.http.{Request, Response}
 import com.twitter.finagle.ssl.Ssl
 import com.twitter.finagle.transport.Transport
-import com.twitter.finagle.{ChannelWriteException, Http, Service, SimpleFilter}
+import com.twitter.finagle._
 import com.twitter.util.{Future, Try}
 
 
@@ -62,6 +62,8 @@ object Services {
         .rescue {
           case ce: ChannelWriteException =>
             Future.exception(new ServiceUnavailable(serviceName, ce))
+          case e: NoBrokersAvailableException =>
+            Future.exception(new ServiceUnavailable(serviceName, e))
         }
     }
   }
