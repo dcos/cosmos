@@ -9,6 +9,7 @@ import com.mesosphere.cosmos.test.CosmosIntegrationTestClient._
 import com.mesosphere.cosmos.{UnitSpec, _}
 import com.netaporter.uri.Uri
 import com.twitter.finagle.http._
+import com.twitter.util.Future
 import io.circe.parse._
 import org.scalatest.BeforeAndAfter
 import org.scalatest.concurrent.Eventually
@@ -103,13 +104,7 @@ final class PackageRepositorySpec extends UnitSpec with BeforeAndAfter with Even
     assertAdd(expectedList, oldVersionRepository)
 
     def assertUnsupportedVersion(): Unit = {
-      val request = CosmosClient.buildPost(
-        "package/search",
-        SearchRequest(None),
-        MediaTypes.SearchRequest,
-        MediaTypes.SearchResponse
-      )
-      val response = CosmosClient(request)
+      val response = searchPackages(SearchRequest(None))
       assertResult(Status.BadRequest)(response.status)
       val Xor.Right(err) = decode[ErrorResponse](response.contentString)
       assertResult(expectedMsg)(err.message)
@@ -144,13 +139,7 @@ final class PackageRepositorySpec extends UnitSpec with BeforeAndAfter with Even
 
       eventually {
         assertResult(expectedMsg) {
-          val request = CosmosClient.buildPost(
-            "package/search",
-            SearchRequest(None),
-            MediaTypes.SearchRequest,
-            MediaTypes.SearchResponse
-          )
-          val response = CosmosClient(request)
+          val response = searchPackages(SearchRequest(None))
           assertResult(Status.BadRequest)(response.status)
           val Xor.Right(err) = decode[ErrorResponse](response.contentString)
           val repo = err.message
@@ -159,6 +148,39 @@ final class PackageRepositorySpec extends UnitSpec with BeforeAndAfter with Even
       }
     }
   }
+
+  "Issue #219: respond with an error when a repo URI does not resolve to a valid repo" - {
+
+    "bad file layout" in {
+      // TODO: Use a more reliable URI
+      assertInvalidRepo("https://github.com/mesosphere/dcos-cli/archive/master.zip")
+    }
+
+    "non-Zip-encoded repo bundle" in {
+      // TODO: Use a more reliable URI
+      assertInvalidRepo("https://github.com/mesosphere/dcos-cli")
+    }
+
+    def assertInvalidRepo(uriText: String): Unit = {
+      val expectedMsg = s"Index file missing for repo [$uriText]"
+
+      def assertIndexNotFound(): Unit = {
+        val response = searchPackages(SearchRequest(None))
+        assertResult(Status.BadRequest)(response.status)
+        val Xor.Right(err) = decode[ErrorResponse](response.contentString)
+        assertResult(expectedMsg)(err.message)
+      }
+
+      val invalidRepo = PackageRepository("invalid", Uri.parse(uriText))
+      assertAdd(Seq(UniverseRepository, invalidRepo), invalidRepo)
+
+      eventually { assertIndexNotFound() }
+
+      assertIndexNotFound()
+    }
+
+  }
+
 }
 
 private[cosmos] object PackageRepositorySpec extends UnitSpec {
@@ -258,6 +280,16 @@ private[cosmos] object PackageRepositorySpec extends UnitSpec {
       MediaTypes.PackageRepositoryListRequest,
       MediaTypes.PackageRepositoryListResponse
     )
+  }
+
+  private def searchPackages(req: SearchRequest): Response = {
+    val request = CosmosClient.buildPost(
+      "package/search",
+      req,
+      MediaTypes.SearchRequest,
+      MediaTypes.SearchResponse
+    )
+    CosmosClient(request)
   }
 
   private[this] def deleteRequestByName(
