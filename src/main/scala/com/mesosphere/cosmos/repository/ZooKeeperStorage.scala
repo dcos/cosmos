@@ -6,8 +6,7 @@ import java.nio.charset.StandardCharsets
 import cats.data.Ior
 import com.netaporter.uri.Uri
 import com.twitter.finagle.stats.{NullStatsReceiver, Stat, StatsReceiver}
-import com.twitter.util.Future
-import com.twitter.util.Promise
+import com.twitter.util._
 import io.circe.Encoder
 import io.circe.parse._
 import io.circe.syntax._
@@ -31,6 +30,8 @@ private[cosmos] final class ZooKeeperStorage(
 )(implicit
   statsReceiver: StatsReceiver = NullStatsReceiver
 ) extends PackageSourcesStorage {
+
+  import ZooKeeperStorage._
 
   private[this] val caching = new NodeCache(zkClient, ZooKeeperStorage.PackageRepositoriesPath)
   caching.start()
@@ -91,22 +92,14 @@ private[cosmos] final class ZooKeeperStorage(
   }
 
   override def delete(name: Option[String], uri: Option[Uri]): Future[List[PackageRepository]] = {
-    val nameFilter = name.map(name => (repo: PackageRepository) => repo.name == name)
-    val uriFilter = uri.map(uri => (repo: PackageRepository) => repo.uri == uri)
-
-    // TODO: Figure out how this should work when both are defined
-    Stat.timeFuture(stats.stat("delete")) {
-      nameFilter.orElse(uriFilter) match {
-        case Some(filterFn) =>
-          readFromZooKeeper.flatMap {
-            case Some((stat, bytes)) =>
-              write(stat, decodeData(bytes).filterNot(filterFn))
-
-            case None =>
-              create(DefaultSources.filterNot(filterFn))
-          }
-        case None =>
-          Future.exception(RepoNameOrUriMissing())
+    Future.value(getPredicate(name, uri)).lowerFromTry.flatMap { predicate =>
+      Stat.timeFuture(stats.stat("delete")) {
+        readFromZooKeeper.flatMap {
+          case Some((stat, bytes)) =>
+            write(stat, decodeData(bytes).filterNot(predicate))
+          case None =>
+            create(DefaultSources.filterNot(predicate))
+        }
       }
     }
   }
@@ -231,6 +224,22 @@ private[cosmos] final class ZooKeeperStorage(
 
 private object ZooKeeperStorage {
   private val PackageRepositoriesPath: String = "/package/repositories"
+
+  private[cosmos] def getPredicate(name: Option[String], uri: Option[Uri]): Try[(PackageRepository) => Boolean] = {
+    def namePredicate(n: String) = (repo: PackageRepository) => repo.name == n
+    def uriPredicate(u: Uri) = (repo: PackageRepository) => repo.uri == u
+
+    (name, uri) match {
+      case (Some(n), Some(u)) =>
+        Return((repo: PackageRepository) => namePredicate(n)(repo) && uriPredicate(u)(repo))
+      case (Some(n), None) =>
+        Return(namePredicate(n))
+      case (None, Some(u)) =>
+        Return(uriPredicate(u))
+      case (None, None) =>
+        Throw(new RepoNameOrUriMissing())
+    }
+  }
 }
 
 private final class WriteHandler(
