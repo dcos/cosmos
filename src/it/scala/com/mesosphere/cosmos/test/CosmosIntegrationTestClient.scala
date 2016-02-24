@@ -2,6 +2,7 @@ package com.mesosphere.cosmos.test
 
 import cats.data.Xor
 import com.mesosphere.cosmos._
+import com.mesosphere.cosmos.circe.Decoders._
 import com.mesosphere.cosmos.http.MediaType
 import com.netaporter.uri.Uri
 import com.netaporter.uri.dsl._
@@ -91,13 +92,24 @@ object CosmosIntegrationTestClient extends Matchers {
       path: String,
       requestBody: Req,
       requestMediaType: MediaType,
-      responseMediaType: MediaType
-    )(implicit decoder: Decoder[Res], encoder: Encoder[Req]): Res = {
+      responseMediaType: MediaType,
+      status: Status = Status.Ok
+    )(implicit decoder: Decoder[Res], encoder: Encoder[Req]): Xor[ErrorResponse, Res] = {
       val request = buildPost(path, requestBody, requestMediaType, responseMediaType)
       val response = CosmosClient(request)
-      assertResult(Status.Ok)(response.status)
-      val Xor.Right(decodedBody) = decode[Res](response.contentString)
-      decodedBody
+      assertResult(status)(response.status)
+
+      if (response.status.code / 100 == 2) {
+        decode[Res](response.contentString) match {
+          case Xor.Left(_) => fail("Could not decode as successful response: " + response.contentString)
+          case Xor.Right(successfulResponse) => Xor.Right(successfulResponse)
+        }
+      } else {
+        decode[ErrorResponse](response.contentString) match {
+          case Xor.Left(_) => fail("Could not decode as error response: " + response.contentString)
+          case Xor.Right(errorResponse) => Xor.Left(errorResponse)
+        }
+      }
     }
 
     def fmtHeaders(h: HeaderMap): String = {

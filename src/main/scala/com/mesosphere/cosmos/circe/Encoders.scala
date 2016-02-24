@@ -227,6 +227,12 @@ object Encoders {
     case UnsupportedRepositoryVersion(version) => s"Repository version [$version] is not supported"
     case InvalidRepositoryUri(repository, _) =>
       s"URI for repository [${repository.name}] is invalid: ${repository.uri}"
+    case RepositoryNotPresent(nameOrUri) =>
+      nameOrUri match {
+        case Ior.Both(n, u) => s"Neither repository name [$n] nor URI [$u] are present in the list"
+        case Ior.Left(n) => s"Repository name [$n] is not present in the list"
+        case Ior.Right(u) => s"Repository URI [$u] is not present in the list"
+      }
   }
 
   private[this] def encodeMap(versions: Map[PackageDetailsVersion, ReleaseVersion]): Json = {

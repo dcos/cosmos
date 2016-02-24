@@ -1,15 +1,13 @@
 package com.mesosphere.cosmos.handler
 
+import cats.data.Ior
+import com.mesosphere.cosmos.RepoNameOrUriMissing
+import com.mesosphere.cosmos.http.{MediaType, MediaTypes}
+import com.mesosphere.cosmos.model.{PackageRepositoryDeleteRequest, PackageRepositoryDeleteResponse}
+import com.mesosphere.cosmos.repository.PackageSourcesStorage
 import com.twitter.util.Future
 import io.circe.Encoder
 import io.finch.DecodeRequest
-
-import com.mesosphere.cosmos.RepoNameOrUriMissing
-import com.mesosphere.cosmos.http.{MediaType, MediaTypes}
-import com.mesosphere.cosmos.model.PackageRepositoryDeleteRequest
-import com.mesosphere.cosmos.model.PackageRepositoryDeleteResponse
-import com.mesosphere.cosmos.model.PackageRepository
-import com.mesosphere.cosmos.repository.PackageSourcesStorage
 
 private[cosmos] final class PackageRepositoryDeleteHandler(sourcesStorage: PackageSourcesStorage)(
   implicit
@@ -17,14 +15,30 @@ private[cosmos] final class PackageRepositoryDeleteHandler(sourcesStorage: Packa
   encoder: Encoder[PackageRepositoryDeleteResponse]
 ) extends EndpointHandler[PackageRepositoryDeleteRequest, PackageRepositoryDeleteResponse] {
 
+  import PackageRepositoryDeleteHandler._
+
   override val accepts: MediaType = MediaTypes.PackageRepositoryDeleteRequest
   override val produces: MediaType = MediaTypes.PackageRepositoryDeleteResponse
 
   override def apply(
     request: PackageRepositoryDeleteRequest
   ): Future[PackageRepositoryDeleteResponse] = {
-    sourcesStorage.delete(request.name, request.uri).map { sources =>
+    val nameOrUri = optionsToIor(request.name, request.uri).getOrElse(throw RepoNameOrUriMissing())
+    sourcesStorage.delete(nameOrUri).map { sources =>
       PackageRepositoryDeleteResponse(sources)
     }
   }
+}
+
+private object PackageRepositoryDeleteHandler {
+
+  private def optionsToIor[A, B](aOpt: Option[A], bOpt: Option[B]): Option[Ior[A, B]] = {
+    (aOpt, bOpt) match {
+      case (Some(a), Some(b)) => Some(Ior.Both(a, b))
+      case (Some(a), _) => Some(Ior.Left(a))
+      case (_, Some(b)) => Some(Ior.Right(b))
+      case _ => None
+    }
+  }
+
 }
