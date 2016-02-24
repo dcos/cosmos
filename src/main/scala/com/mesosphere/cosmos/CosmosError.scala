@@ -1,6 +1,7 @@
 package com.mesosphere.cosmos
 
 import cats.data.{Ior, NonEmptyList}
+import com.mesosphere.cosmos.circe.Encoders._
 import com.mesosphere.cosmos.http.MediaType
 import com.mesosphere.cosmos.model.thirdparty.marathon.MarathonError
 import com.mesosphere.cosmos.model.{AppId, PackageRepository}
@@ -96,3 +97,14 @@ case class UnsupportedRepositoryVersion(version: UniverseVersion) extends Cosmos
 
 case class InvalidRepositoryUri(repository: PackageRepository, causedBy: Throwable)
   extends CosmosError(causedBy)
+
+case class RepositoryNotPresent(nameOrUri: Ior[String, Uri]) extends CosmosError {
+  override def getData: Option[JsonObject] = {
+    val jsonMap = nameOrUri match {
+      case Ior.Both(n, u) => Map("name" -> n.asJson, "uri" -> u.asJson)
+      case Ior.Left(n) => Map("name" -> n.asJson)
+      case Ior.Right(u) => Map("uri" -> u.asJson)
+    }
+    Some(JsonObject.fromMap(jsonMap))
+  }
+}

@@ -90,12 +90,18 @@ private[cosmos] final class ZooKeeperStorage(
     }
   }
 
-  override def delete(name: Option[String], uri: Option[Uri]): Future[List[PackageRepository]] = {
-    Future.value(getPredicate(name, uri)).lowerFromTry.flatMap { predicate =>
+  override def delete(nameOrUri: Ior[String, Uri]): Future[List[PackageRepository]] = {
+    Future.value(getPredicate(nameOrUri)).flatMap { predicate =>
       Stat.timeFuture(stats.stat("delete")) {
         readFromZooKeeper.flatMap {
           case Some((stat, bytes)) =>
-            write(stat, decodeData(bytes).filterNot(predicate))
+            val originalData = decodeData(bytes)
+            val updatedData = originalData.filterNot(predicate)
+            if (originalData.size == updatedData.size) {
+              throw new RepositoryNotPresent(nameOrUri)
+            }
+
+            write(stat, updatedData)
           case None =>
             create(DefaultRepos.filterNot(predicate))
         }
@@ -224,21 +230,17 @@ private[cosmos] final class ZooKeeperStorage(
 private object ZooKeeperStorage {
   private val PackageRepositoriesPath: String = "/package/repositories"
 
-  private[cosmos] def getPredicate(name: Option[String], uri: Option[Uri]): Try[(PackageRepository) => Boolean] = {
+  private[cosmos] def getPredicate(nameOrUri: Ior[String, Uri]): PackageRepository => Boolean = {
     def namePredicate(n: String) = (repo: PackageRepository) => repo.name == n
     def uriPredicate(u: Uri) = (repo: PackageRepository) => repo.uri == u
 
-    (name, uri) match {
-      case (Some(n), Some(u)) =>
-        Return((repo: PackageRepository) => namePredicate(n)(repo) && uriPredicate(u)(repo))
-      case (Some(n), None) =>
-        Return(namePredicate(n))
-      case (None, Some(u)) =>
-        Return(uriPredicate(u))
-      case (None, None) =>
-        Throw(new RepoNameOrUriMissing())
+    nameOrUri match {
+      case Ior.Both(n, u) => (repo: PackageRepository) => namePredicate(n)(repo) && uriPredicate(u)(repo)
+      case Ior.Left(n) => namePredicate(n)
+      case Ior.Right(u) => uriPredicate(u)
     }
   }
+
 }
 
 private final class WriteHandler(

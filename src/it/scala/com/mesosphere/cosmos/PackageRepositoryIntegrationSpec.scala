@@ -1,5 +1,6 @@
 package com.mesosphere.cosmos
 
+import cats.data.Xor
 import com.mesosphere.cosmos.circe.Decoders._
 import com.mesosphere.cosmos.circe.Encoders._
 import com.mesosphere.cosmos.http.MediaTypes
@@ -111,34 +112,37 @@ final class PackageRepositoryIntegrationSpec extends FreeSpec with BeforeAndAfte
 private object PackageRepositoryIntegrationSpec extends TableDrivenPropertyChecks {
 
   private def listRepositories(): Seq[PackageRepository] = {
-    CosmosClient.callEndpoint[PackageRepositoryListRequest, PackageRepositoryListResponse](
+    val Xor.Right(response) = CosmosClient.callEndpoint[PackageRepositoryListRequest, PackageRepositoryListResponse](
       "package/repository/list",
       PackageRepositoryListRequest(),
       MediaTypes.PackageRepositoryListRequest,
       MediaTypes.PackageRepositoryListResponse
-    ).repositories
+    )
+    response.repositories
   }
 
   private def addRepository(
     source: PackageRepository
   ): PackageRepositoryAddResponse = {
-    CosmosClient.callEndpoint[PackageRepositoryAddRequest, PackageRepositoryAddResponse](
+    val Xor.Right(response) = CosmosClient.callEndpoint[PackageRepositoryAddRequest, PackageRepositoryAddResponse](
       "package/repository/add",
       PackageRepositoryAddRequest(source.name, source.uri),
       MediaTypes.PackageRepositoryAddRequest,
       MediaTypes.PackageRepositoryAddResponse
     )
+    response
   }
 
   private def deleteRepository(
     source: PackageRepository
   ): PackageRepositoryDeleteResponse = {
-    CosmosClient.callEndpoint[PackageRepositoryDeleteRequest, PackageRepositoryDeleteResponse](
+    val Xor.Right(response) = CosmosClient.callEndpoint[PackageRepositoryDeleteRequest, PackageRepositoryDeleteResponse](
       "package/repository/delete",
       PackageRepositoryDeleteRequest(name = Some(source.name)),
       MediaTypes.PackageRepositoryDeleteRequest,
       MediaTypes.PackageRepositoryDeleteResponse
     )
+    response
   }
 
   private def sendAddRequest(

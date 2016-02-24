@@ -9,12 +9,15 @@ import com.mesosphere.cosmos.test.CosmosIntegrationTestClient._
 import com.mesosphere.cosmos.{UnitSpec, _}
 import com.netaporter.uri.Uri
 import com.twitter.finagle.http._
-import com.twitter.util.Future
 import io.circe.parse._
-import org.scalatest.BeforeAndAfter
+import io.circe.syntax._
+import io.circe.{Encoder, Json, JsonObject}
 import org.scalatest.concurrent.Eventually
+import org.scalatest.{AppendedClues, BeforeAndAfter}
 
-final class PackageRepositorySpec extends UnitSpec with BeforeAndAfter with Eventually {
+final class PackageRepositorySpec
+  extends UnitSpec with BeforeAndAfter with Eventually with AppendedClues {
+
   lazy val logger = org.slf4j.LoggerFactory.getLogger(classOf[PackageRepositorySpec])
 
   import PackageRepositorySpec._
@@ -87,13 +90,22 @@ final class PackageRepositorySpec extends UnitSpec with BeforeAndAfter with Even
     }
   }
 
-  "Delete source endpoint" in {
-    forAll(PackageRepositoryDeleteScenarios) { (startingSources, scenario) =>
-      setStorageState(startingSources)
+  "Delete source endpoint" - {
+    "should pass all scenarios" in {
+      forAll(PackageRepositoryDeleteScenarios) { (startingSources, scenario) =>
+        setStorageState(startingSources)
 
-      scenario.foreach { assertion =>
-        assertResult(PackageRepositoryDeleteResponse(assertion.responseList))(deleteRepo(assertion.request))
+        scenario.foreach { assertion =>
+          assertResult(Xor.Right(PackageRepositoryDeleteResponse(assertion.responseList))) {
+            deleteRepo(assertion.request)
+          }
+        }
       }
+    }
+
+    "should respond with an error when neither name nor uri are specified" in {
+      val Xor.Left(errorResponse) = deleteRepo(PackageRepositoryDeleteRequest(), status = Status.BadRequest)
+      assertResult(classOf[RepoNameOrUriMissing].getSimpleName)(errorResponse.`type`)
     }
   }
 
@@ -183,6 +195,61 @@ final class PackageRepositorySpec extends UnitSpec with BeforeAndAfter with Even
 
   }
 
+  "Issue #200: respond with an error when repo delete has no effect" - {
+
+    "by name only" in {
+      val badName = "doesnotexist"
+      val request = PackageRepositoryDeleteRequest(name = Some(badName))
+
+      assertDeleteAbsentRepo(request)
+    }
+
+    "by uri only" in {
+      val badUri = Uri.parse("/not/a/repo/uri")
+      val request = PackageRepositoryDeleteRequest(uri = Some(badUri))
+
+      assertDeleteAbsentRepo(request)
+    }
+
+    "by name and uri" in {
+      val badName = "nonrepo"
+      val badUri = Uri.parse("/non/repo")
+      val request = PackageRepositoryDeleteRequest(name = Some(badName), uri = Some(badUri))
+
+      assertDeleteAbsentRepo(request)
+    }
+
+    "by valid name and invalid uri" in {
+      val validName = UniverseRepository.name
+      val badUri = Uri.parse("/not/universe")
+      val request = PackageRepositoryDeleteRequest(name = Some(validName), uri = Some(badUri))
+
+      assertDeleteAbsentRepo(request)
+    }
+
+    "by invalid name and valid uri" in {
+      val badName = "notuniverse"
+      val validUri = UniverseRepository.uri
+      val request = PackageRepositoryDeleteRequest(name = Some(badName), uri = Some(validUri))
+
+      assertDeleteAbsentRepo(request)
+    }
+
+    def assertDeleteAbsentRepo(request: PackageRepositoryDeleteRequest): Unit = {
+      val Xor.Left(errorResponse) =
+        deleteRepo(request, status = Status.BadRequest) withClue "when deleting a repo"
+      val errorData = optionToJsonMap("name", request.name) ++ optionToJsonMap("uri", request.uri)
+
+      assertResult("RepositoryNotPresent")(errorResponse.`type`)
+      assertResult(Some(JsonObject.fromMap(errorData)))(errorResponse.data)
+    }
+
+    def optionToJsonMap[A : Encoder](key: String, aOpt: Option[A]): Map[String, Json] = {
+      aOpt.map(a => Map(key -> a.asJson)).getOrElse(Map.empty)
+    }
+
+  }
+
 }
 
 private[cosmos] object PackageRepositorySpec extends UnitSpec {
@@ -257,30 +324,36 @@ private[cosmos] object PackageRepositorySpec extends UnitSpec {
   }
 
   private def addRepo(addRequest: PackageRepositoryAddRequest): PackageRepositoryAddResponse  = {
-    CosmosClient.callEndpoint[PackageRepositoryAddRequest, PackageRepositoryAddResponse](
+    val Xor.Right(response) = CosmosClient.callEndpoint[PackageRepositoryAddRequest, PackageRepositoryAddResponse](
       "package/repository/add",
       addRequest,
       MediaTypes.PackageRepositoryAddRequest,
       MediaTypes.PackageRepositoryAddResponse
     )
+    response
   }
 
-  private def deleteRepo(deleteRequest: PackageRepositoryDeleteRequest): PackageRepositoryDeleteResponse  = {
+  private def deleteRepo(
+    deleteRequest: PackageRepositoryDeleteRequest,
+    status: Status = Status.Ok
+  ): Xor[ErrorResponse, PackageRepositoryDeleteResponse]  = {
     CosmosClient.callEndpoint[PackageRepositoryDeleteRequest, PackageRepositoryDeleteResponse](
       "package/repository/delete",
       deleteRequest,
       MediaTypes.PackageRepositoryDeleteRequest,
-      MediaTypes.PackageRepositoryDeleteResponse
+      MediaTypes.PackageRepositoryDeleteResponse,
+      status
     )
   }
 
   private def listRepos(): PackageRepositoryListResponse = {
-    CosmosClient.callEndpoint[PackageRepositoryListRequest, PackageRepositoryListResponse](
+    val Xor.Right(response) = CosmosClient.callEndpoint[PackageRepositoryListRequest, PackageRepositoryListResponse](
       "package/repository/list",
       PackageRepositoryListRequest(),
       MediaTypes.PackageRepositoryListRequest,
       MediaTypes.PackageRepositoryListResponse
     )
+    response
   }
 
   private def searchPackages(req: SearchRequest): Response = {
