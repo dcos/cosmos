@@ -9,6 +9,7 @@ import com.mesosphere.cosmos.circe.Encoders._
 import com.mesosphere.cosmos.http.MediaTypes
 import com.mesosphere.cosmos.model._
 import com.mesosphere.cosmos.model.thirdparty.marathon.{MarathonApp, MarathonAppContainer, MarathonAppContainerDocker}
+import com.mesosphere.cosmos.repository.DefaultRepositories
 import com.mesosphere.cosmos.test.CosmosIntegrationTestClient._
 import com.mesosphere.universe.{PackageDetails, PackageDetailsVersion, PackageFiles, PackagingVersion}
 import com.netaporter.uri.Uri
@@ -234,7 +235,7 @@ private object PackageInstallIntegrationSpec extends Matchers with TableDrivenPr
       "DCOS_PACKAGE_REGISTRY_VERSION" -> "2.0",
       "DCOS_PACKAGE_NAME" -> "helloworld",
       "DCOS_PACKAGE_VERSION" -> "0.1.0",
-      "DCOS_PACKAGE_SOURCE" -> System.getProperty("com.mesosphere.cosmos.universeBundleUri"),
+      "DCOS_PACKAGE_SOURCE" -> DefaultRepositories().getOrThrow(1).uri.toString,
       "DCOS_PACKAGE_RELEASE" -> "0"
     )
   )

@@ -15,7 +15,7 @@ import scala.concurrent.duration._
 import scala.concurrent.{Future, TimeoutException}
 import scala.util.Random
 
-class CosmosIntegrationTestServer(javaHome: Option[String], oneJarPath: String) {
+class CosmosIntegrationTestServer(javaHome: Option[String], itResourceDirs: Seq[File], oneJarPath: File) {
   private val originalProperties: Properties = System.getProperties
   private var process: Option[Process] = None
   private var dataDir: Option[String] = None
@@ -55,16 +55,20 @@ class CosmosIntegrationTestServer(javaHome: Option[String], oneJarPath: String) 
     )
 
     val args = Seq(
-      systemProperty("com.mesosphere.cosmos.universeBundleUri")
-        .map(s => s"-com.mesosphere.cosmos.universeBundleUri=$s"),
       dataDir.map(s => s"-com.mesosphere.cosmos.dataDir=$s")
     ).flatten
+
+    val pathSeparator = System.getProperty("path.separator")
+    val classpath =
+      s"${itResourceDirs.map(_.getCanonicalPath).mkString("", pathSeparator, pathSeparator)}" +
+        s"${oneJarPath.getCanonicalPath}"
 
     val cmd = Seq(
       java,
       "-agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=5005",
-      "-jar",
-      oneJarPath,
+      "-classpath",
+      classpath,
+      "com.simontuffs.onejar.Boot",
       s"-com.mesosphere.cosmos.zookeeperUri=$zkUri",
       s"-com.mesosphere.cosmos.dcosUri=$dcosUri"
     ) ++ args

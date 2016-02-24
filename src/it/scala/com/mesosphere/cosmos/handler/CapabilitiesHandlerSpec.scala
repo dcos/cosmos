@@ -10,20 +10,16 @@ import io.circe.parse._
 import org.scalatest.FreeSpec
 
 final class CapabilitiesHandlerSpec extends FreeSpec {
-  lazy val logger = org.slf4j.LoggerFactory.getLogger(classOf[CapabilitiesHandlerSpec])
 
-  "The capabilites handler should" - {
-    "be return a document" in {
-      val request = CosmosClient.requestBuilder("capabilities")
-        .setHeader("Accept", MediaTypes.CapabilitiesResponse.show)
-        .buildGet()
-      val response = CosmosClient(request)
-      val responseBody = response.contentString
-      logger.info("responseBody = {}", responseBody)
-      assertResult(Status.Ok)(response.status)
-      assertResult(MediaTypes.CapabilitiesResponse.show)(response.headerMap("Content-Type"))
-      val Xor.Right(body) = decode[CapabilitiesResponse](responseBody)
-      assertResult(CapabilitiesResponse(List(Capability("PACKAGE_MANAGEMENT"))))(body)
-    }
+  "The capabilities handler should return a document" in {
+    val request = CosmosClient.requestBuilder("capabilities")
+      .setHeader("Accept", MediaTypes.CapabilitiesResponse.show)
+      .buildGet()
+    val response = CosmosClient(request)
+    val responseBody = response.contentString
+    assertResult(Status.Ok)(response.status)
+    assertResult(MediaTypes.CapabilitiesResponse.show)(response.headerMap("Content-Type"))
+    val Xor.Right(body) = decode[CapabilitiesResponse](responseBody)
+    assertResult(CapabilitiesResponse(List(Capability("PACKAGE_MANAGEMENT"))))(body)
   }
 }

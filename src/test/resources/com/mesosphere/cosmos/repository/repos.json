@@ -1,0 +1,14 @@
+[
+  {
+    "name": "repo1",
+    "uri": "http://someplace/repo1"
+  },
+  {
+    "name": "repo2",
+    "uri": "http://someplace/repo2"
+  },
+  {
+    "name": "repo3",
+    "uri": "http://someplace/repo3"
+  }
+]
