@@ -20,7 +20,7 @@ final class MultiRepository (
     /* Fold over all the results in order and ignore PackageNotFound and VersionNotFound errors.
      * We have found our answer when we find a PackageFile or a generic exception.
      */
-    repositories.flatMap { repositories =>
+    repositories().flatMap { repositories =>
       Future.collect {
         repositories.map { repository =>
           repository.getPackageByPackageVersion(packageName, packageVersion)
@@ -45,7 +45,7 @@ final class MultiRepository (
     /* Fold over all the results in order and ignore PackageNotFound errors.
      * We have found our answer when we find a UniverseIndexEntry or a generic exception.
      */
-    repositories.flatMap { repositories =>
+    repositories().flatMap { repositories =>
       Future.collect {
         repositories.map { repository =>
           repository.getPackageIndex(packageName)
@@ -61,7 +61,7 @@ final class MultiRepository (
   }
 
   override def search(query: Option[String]): Future[List[UniverseIndexEntry]] = {
-    repositories.flatMap { repositories =>
+    repositories().flatMap { repositories =>
       Future.collect {
         repositories.map { repository =>
           repository.search(query)
@@ -70,11 +70,9 @@ final class MultiRepository (
     }
   }
 
-  def getRepository(uri: Uri): Future[Repository] = {
-   repositories.map { repositories =>
-      repositories.find { repository =>
-        repository.universeBundle == uri
-      } getOrElse(throw RepositoryNotFound(uri))
+  def getRepository(uri: Uri): Future[Option[Repository]] = {
+   repositories().map { repositories =>
+      repositories.find(_.universeBundle == uri)
     }
   }
 
