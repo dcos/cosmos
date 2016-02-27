@@ -9,6 +9,7 @@ import com.mesosphere.cosmos.http.MediaTypes
 import com.mesosphere.cosmos.model._
 import com.mesosphere.cosmos.repository.DefaultRepositories
 import com.mesosphere.cosmos.test.CosmosIntegrationTestClient
+import com.mesosphere.universe.{PackagingVersion, PackageDetailsVersion, PackageDetails}
 import org.scalatest.concurrent.Eventually
 import org.scalatest.{AppendedClues, FreeSpec, Inside}
 
@@ -26,7 +27,7 @@ final class PackageListIntegrationSpec
   "The package list endpoint" - {
     "responds with repo and package data for packages whose repositories are in the repo list" in {
       withInstalledPackage("helloworld") { installResponse =>
-        withInstalledPackageInListResponse(installResponse) { case Some(Installation(_, Some(_))) =>
+        withInstalledPackageInListResponse(installResponse) { case Some(Installation(_, _)) =>
           // Success
         }
       }
@@ -34,9 +35,23 @@ final class PackageListIntegrationSpec
   }
 
   "Issue #251: Package list should include packages whose repositories have been removed" in {
+    val expectedPackageInformation = InstalledPackageInformation(
+      PackageDetails(
+        packagingVersion = PackagingVersion.validated("2.0"),
+        name = "helloworld",
+        version = PackageDetailsVersion("0.1.0"),
+        website = Some("https://github.com/mesosphere/dcos-helloworld"),
+        maintainer = "support@mesosphere.io",
+        description = "Example DCOS application package",
+        preInstallNotes = Some("A sample pre-installation message"),
+        postInstallNotes = Some("A sample post-installation message"),
+        tags = List("mesosphere", "example", "subcommand")
+      )
+    )
     withInstalledPackage("helloworld") { installResponse =>
       withDeletedRepository(helloWorldRepository) {
-        withInstalledPackageInListResponse(installResponse) { case Some(Installation(_, None)) =>
+        withInstalledPackageInListResponse(installResponse) { case Some(Installation(_, pkg)) =>
+            assertResult(expectedPackageInformation)(pkg)
           // Success
         }
       }
