@@ -31,7 +31,7 @@ import scala.util.matching.Regex
 /** Stores packages from the Universe GitHub repository in the local filesystem.
   */
 final class UniversePackageCache private (
-  repository: PackageRepository,
+  override val repository: PackageRepository,
   universeDir: Path
 ) extends Repository with AutoCloseable {
   // This mutex serializes updates to the local package cache

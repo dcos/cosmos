@@ -1,22 +1,19 @@
 package com.mesosphere.cosmos.handler
 
+import com.mesosphere.cosmos.AdminRouter
+import com.mesosphere.cosmos.http.MediaTypes
+import com.mesosphere.cosmos.model.{Installation, InstalledPackageInformation, ListRequest, ListResponse}
+import com.mesosphere.cosmos.repository.Repository
+import com.mesosphere.universe.ReleaseVersion
 import com.netaporter.uri.Uri
 import com.netaporter.uri.dsl.stringToUri
 import com.twitter.util.Future
 import io.circe.Encoder
 import io.finch.DecodeRequest
 
-import com.mesosphere.cosmos.AdminRouter
-import com.mesosphere.cosmos.http.MediaTypes
-import com.mesosphere.cosmos.model.Installation
-import com.mesosphere.cosmos.model.InstalledPackageInformation
-import com.mesosphere.cosmos.model.ListRequest
-import com.mesosphere.cosmos.model.ListResponse
-import com.mesosphere.cosmos.repository.Repository
-
 final class ListHandler(
   adminRouter: AdminRouter,
-  repositories: (Uri) => Future[Repository]
+  repositories: (Uri) => Future[Option[Repository]]
 )(implicit
   requestDecoder: DecodeRequest[ListRequest],
   responseEncoder: Encoder[ListResponse]
@@ -30,31 +27,10 @@ final class ListHandler(
       Future.collect {
         applications.apps.map { app =>
           (app.packageReleaseVersion, app.packageName, app.packageRepository) match {
-            case (Some(releaseVersion), Some(packageName), Some(packageRepository)) =>
-              if (request.packageName.exists(_ != packageName)) {
-                // Package name was specified and it doesn't match
-                Future.value(None)
-              } else if (request.appId.exists(_ != app.id)) {
-                // Application id was specified and it doesn't match
-                Future.value(None)
-              } else {
-                repositories(packageRepository).flatMap { repository =>
-                  repository.getPackageByReleaseVersion(
-                    packageName,
-                    releaseVersion
-                  )
-                } map { packageFiles =>
-                  Some(
-                    Installation(
-                      app.id.toString,
-                      InstalledPackageInformation(
-                        packageFiles.packageJson,
-                        packageFiles.resourceJson
-                      )
-                    )
-                  )
-                }
-              }
+            case (Some(releaseVersion), Some(packageName), Some(repositoryUri))
+              if request.packageName.forall(_ == packageName) && request.appId.forall(_ == app.id) =>
+                installedPackageInformation(packageName, releaseVersion, repositoryUri)
+                  .map(packageInformation => Some(Installation(app.id, packageInformation)))
             case _ =>
               // TODO: log debug message when one of them is Some.
               Future.value(None)
@@ -65,4 +41,21 @@ final class ListHandler(
       }
     }
   }
+
+  private[this] def installedPackageInformation(
+    packageName: String,
+    releaseVersion: ReleaseVersion,
+    repositoryUri: Uri
+  ): Future[Option[InstalledPackageInformation]] = {
+    repositories(repositoryUri)
+      .flatMap {
+        case Some(repository) =>
+          repository.getPackageByReleaseVersion(packageName, releaseVersion)
+            .map { packageFiles =>
+              Some(InstalledPackageInformation(packageFiles.packageJson, packageFiles.resourceJson))
+            }
+        case _ => Future.value(None)
+      }
+  }
+
 }
