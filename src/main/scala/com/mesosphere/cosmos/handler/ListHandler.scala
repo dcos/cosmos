@@ -1,14 +1,21 @@
 package com.mesosphere.cosmos.handler
 
-import com.mesosphere.cosmos.AdminRouter
+import java.nio.charset.StandardCharsets
+import java.util.Base64
+
+import cats.data.Xor
+import com.mesosphere.cosmos.circe.Decoders._
+import com.mesosphere.cosmos.{CirceError, AdminRouter}
 import com.mesosphere.cosmos.http.MediaTypes
+import com.mesosphere.cosmos.model.thirdparty.marathon.MarathonApp
 import com.mesosphere.cosmos.model.{Installation, InstalledPackageInformation, ListRequest, ListResponse}
 import com.mesosphere.cosmos.repository.Repository
-import com.mesosphere.universe.ReleaseVersion
+import com.mesosphere.universe.{PackageDetails, ReleaseVersion}
 import com.netaporter.uri.Uri
 import com.netaporter.uri.dsl.stringToUri
 import com.twitter.util.Future
 import io.circe.Encoder
+import io.circe.parse._
 import io.finch.DecodeRequest
 
 final class ListHandler(
@@ -30,7 +37,19 @@ final class ListHandler(
             case (Some(releaseVersion), Some(packageName), Some(repositoryUri))
               if request.packageName.forall(_ == packageName) && request.appId.forall(_ == app.id) =>
                 installedPackageInformation(packageName, releaseVersion, repositoryUri)
-                  .map(packageInformation => Some(Installation(app.id, packageInformation)))
+                  .map {
+                    case Some(resolvedFromRepo) => resolvedFromRepo
+                    case None =>
+                      val b64PkgInfo = app.labels(MarathonApp.metadataLabel)
+                      val pkgInfoBytes = Base64.getDecoder.decode(b64PkgInfo)
+                      val pkgInfoString = new String(pkgInfoBytes, StandardCharsets.UTF_8)
+
+                      decode[PackageDetails](pkgInfoString) match {
+                        case Xor.Left(err) => throw new CirceError(err)
+                        case Xor.Right(pkgDetails) => InstalledPackageInformation(pkgDetails)
+                      }
+                  }
+                .map(packageInformation => Some(Installation(app.id, packageInformation)))
             case _ =>
               // TODO: log debug message when one of them is Some.
               Future.value(None)
