@@ -16,7 +16,7 @@ import cats.syntax.apply._       // provides |@|
 import cats.syntax.option._
 import cats.syntax.traverse._
 import com.mesosphere.cosmos.circe.Decoders._
-import com.mesosphere.cosmos.model.PackageRepository
+import com.mesosphere.cosmos.model.{PackageRepository, SearchResult}
 import com.mesosphere.cosmos.repository.Repository
 import com.mesosphere.universe._
 import com.netaporter.uri.Uri
@@ -34,6 +34,9 @@ final class UniversePackageCache private (
   override val repository: PackageRepository,
   universeDir: Path
 ) extends Repository with AutoCloseable {
+
+  import UniversePackageCache._
+
   // This mutex serializes updates to the local package cache
   private[this] val updateMutex = new AsyncMutex()
 
@@ -45,14 +48,8 @@ final class UniversePackageCache private (
   ): Future[PackageFiles] = {
     mostRecentBundle().map { case (bundleDir, universeIndex) =>
       val repoDir = repoDirectory(bundleDir)
-      readPackageFiles(
-        getPackagePath(
-          repoDir,
-          universeIndex,
-          packageName,
-          packageVersion
-        )
-      )
+      val packageDir = getPackagePath(repoDir, universeIndex, packageName, packageVersion)
+      readPackageFiles(universeBundle, packageDir)
     }
   }
 
@@ -61,13 +58,8 @@ final class UniversePackageCache private (
     releaseVersion: ReleaseVersion
   ): Future[PackageFiles] = {
     mostRecentBundle().map { case (bundleDir, _) =>
-      readPackageFiles(
-        getPackageReleasePath(
-          repoDirectory(bundleDir),
-          packageName,
-          releaseVersion
-        )
-      )
+      val packageDir = getPackageReleasePath(repoDirectory(bundleDir), packageName, releaseVersion)
+      readPackageFiles(universeBundle, packageDir)
     }
   }
 
@@ -77,18 +69,9 @@ final class UniversePackageCache private (
     }
   }
 
-  override def search(queryOpt: Option[String]): Future[List[UniverseIndexEntry]] = {
+  override def search(queryOpt: Option[String]): Future[List[SearchResult]] = {
     mostRecentBundle().map { case (bundleDir, universeIndex) =>
-      val wildcardSymbol = "*"
-      queryOpt match {
-        case None => universeIndex.packages
-        case Some(query) =>
-          if (query.contains(wildcardSymbol)) {
-            universeIndex.packages.filter(searchRegexInPackageIndex(_, getRegex(query)))
-          } else {
-            universeIndex.packages.filter(searchPackageIndex(_, query.toLowerCase()))
-          }
-      }
+      UniversePackageCache.search(bundleDir, universeIndex, queryOpt)
     }
   }
 
@@ -110,22 +93,6 @@ final class UniversePackageCache private (
   }
 
   def universeBundle: Uri = repository.uri
-
-  private[this] def getRegex(query: String): Regex = {
-    s"""^${query.replaceAll("\\*", ".*")}$$""".r
-  }
-
-  private[this] def searchRegexInPackageIndex(index: UniverseIndexEntry, regex: Regex): Boolean = {
-    regex.findFirstIn(index.name).isDefined ||
-      regex.findFirstIn(index.description).isDefined ||
-        index.tags.exists(regex.findFirstIn(_).isDefined)
-  }
-
-  private[this] def searchPackageIndex(index: UniverseIndexEntry, query: String): Boolean= {
-    index.name.toLowerCase().contains(query) ||
-      index.description.toLowerCase().contains(query) ||
-        index.tags.exists(_.toLowerCase().contains(query))
-  }
 
   private[this] def mostRecentBundle(): Future[(Path, UniverseIndex)] = {
     synchronizedUpdate().map { bundlePath =>
@@ -162,33 +129,6 @@ final class UniversePackageCache private (
     }
   }
 
-  private[this] def readPackageFiles(packageDir: Path): PackageFiles = {
-
-    val packageJson = parseJsonFile(
-      packageDir.resolve("package.json")
-    ).getOrElse {
-      throw PackageFileMissing("package.json")
-    }
-    val mustache = readFile(
-      packageDir.resolve("marathon.json.mustache")
-    ).getOrElse {
-      throw PackageFileMissing("marathon.json.mustache")
-    }
-
-    validate(
-      packageDir.getFileName.toString,
-      universeBundle,
-      parseJsonFile(packageDir.resolve("command.json")),
-      parseJsonFile(packageDir.resolve("config.json")),
-      mustache,
-      packageJson,
-      parseJsonFile(packageDir.resolve("resource.json"))
-    ) match {
-      case Invalid(err) => throw NelErrors(err)
-      case Valid(valid) => valid
-    }
-  }
-
   private[this] def updateUniverseCache(): Future[Path] = {
     Future(universeBundle.toURI.toURL.openStream())
       .handle {
@@ -207,8 +147,6 @@ final class UniversePackageCache private (
         }
       }
   }
-
-  private[this] def repoDirectory(bundleDir: Path) = bundleDir.resolve("repo")
 
   private[this] def base64(universeBundle: Uri): String = {
     Base64.getUrlEncoder().encodeToString(
@@ -290,8 +228,92 @@ final class UniversePackageCache private (
       .get
   }
 
+}
+
+object UniversePackageCache {
+
+  def apply(repository: PackageRepository, dataDir: Path): UniversePackageCache = {
+    new UniversePackageCache(repository, dataDir)
+  }
+
+  private[cosmos] def search(
+    bundleDir: Path,
+    universeIndex: UniverseIndex,
+    queryOpt: Option[String]
+  ): List[SearchResult] = {
+    val repoDir = repoDirectory(bundleDir)
+
+    searchIndex(universeIndex.packages, queryOpt)
+      .map { indexEntry =>
+        val resources = packageResources(repoDir, universeIndex, indexEntry.name)
+        SearchResult(
+          name = indexEntry.name,
+          currentVersion = indexEntry.currentVersion,
+          versions = indexEntry.versions,
+          description = indexEntry.description,
+          framework = indexEntry.framework,
+          tags = indexEntry.tags,
+          images = resources.images
+        )
+      }
+  }
+
+  private[cosmos] def repoDirectory(bundleDir: Path) = bundleDir.resolve("repo")
+
+  private[this] def searchIndex(
+    entries: List[UniverseIndexEntry],
+    queryOpt: Option[String]
+  ): List[UniverseIndexEntry] = {
+    queryOpt match {
+      case None => entries
+      case Some(query) =>
+        if (query.contains("*")) {
+          val regex = getRegex(query)
+          entries.filter(searchRegexInPackageIndex(_, regex))
+        } else {
+          entries.filter(searchPackageIndex(_, query.toLowerCase()))
+        }
+    }
+  }
+
+  private[this] def searchRegexInPackageIndex(index: UniverseIndexEntry, regex: Regex): Boolean = {
+    regex.findFirstIn(index.name).isDefined ||
+      regex.findFirstIn(index.description).isDefined ||
+      index.tags.exists(regex.findFirstIn(_).isDefined)
+  }
+
+  private[this] def searchPackageIndex(index: UniverseIndexEntry, query: String): Boolean= {
+    index.name.toLowerCase().contains(query) ||
+      index.description.toLowerCase().contains(query) ||
+      index.tags.exists(_.toLowerCase().contains(query))
+  }
+
+  private[this] def getRegex(query: String): Regex = {
+    s"""^${query.replaceAll("\\*", ".*")}$$""".r
+  }
+
+  private[cosmos] def packageResources(
+    repoDir: Path,
+    universeIndex: UniverseIndex,
+    packageName: String
+  ): Resource = {
+    val packageDir = getPackagePath(repoDir, universeIndex, packageName, packageVersion = None)
+    parseAndVerify[Resource](packageDir, "resource.json")
+      .valueOr(err => throw err)
+      .getOrElse(Resource())
+  }
+
+  private[this] def parseAndVerify[A : Decoder](
+    packageDir: Path,
+    fileName: String
+  ): Xor[CosmosError, Option[A]] = {
+    parseJsonFile(packageDir.resolve(fileName)).traverseU { json =>
+      json.as[A].leftMap(_ => PackageFileSchemaMismatch(fileName))
+    }
+  }
+
   // return path of specified version, or latest if version not specified
-  private[this] def getPackagePath(
+  private def getPackagePath(
     repository: Path,
     universeIndex: UniverseIndex,
     packageName: String,
@@ -315,7 +337,61 @@ final class UniversePackageCache private (
     }
   }
 
-  private[this] def parseJsonFile(file: Path): Option[Json] = {
+  private def getPackageReleasePath(
+    repoDir: Path,
+    packageName: String,
+    releaseVersion: ReleaseVersion
+  ): Path = {
+    repoDir.resolve(
+      Paths.get(
+        "packages",
+        packageName.charAt(0).toUpper.toString,
+        packageName,
+        releaseVersion.toString
+      )
+    )
+  }
+
+  private def readPackageFiles(universeBundle: Uri, packageDir: Path): PackageFiles = {
+
+    val packageJson = parseJsonFile(
+      packageDir.resolve("package.json")
+    ).getOrElse {
+      throw PackageFileMissing("package.json")
+    }
+    val mustache = readFile(
+      packageDir.resolve("marathon.json.mustache")
+    ).getOrElse {
+      throw PackageFileMissing("marathon.json.mustache")
+    }
+
+    val packageDefValid = verifySchema[PackageDetails](packageJson, "package.json")
+    val resourceDefValid = parseAndVerify[Resource](packageDir, "resource.json").toValidated.toValidatedNel
+    val commandJsonValid = parseAndVerify[Command](packageDir, "command.json").toValidated.toValidatedNel
+    val configJsonObject = parseJsonFile(packageDir.resolve("config.json"))
+      .traverseU { json =>
+        json
+          .asObject
+          .toValidNel[CosmosError](PackageFileSchemaMismatch("config.json"))
+      }
+
+    (packageDefValid |@| resourceDefValid |@| commandJsonValid |@| configJsonObject)
+      .map { (packageDef, resourceDef, commandJson, configJson) =>
+        PackageFiles(
+          packageDir.getFileName.toString,
+          universeBundle,
+          packageDef,
+          mustache,
+          commandJson,
+          configJson,
+          resourceDef
+        )
+      }
+      .toXor
+      .valueOr(err => throw NelErrors(err))
+  }
+
+  private def parseJsonFile(file: Path): Option[Json] = {
     readFile(file).map { content =>
       parse(content) match {
         case Left(err) => throw PackageFileNotJson(file.getFileName.toString, err.message)
@@ -338,77 +414,15 @@ final class UniversePackageCache private (
     }
   }
 
-  private def validate(
-    revision: String,
-    sourceUri: Uri,
-    commandJsonOpt: Option[Json],
-    configJsonOption: Option[Json],
-    marathonJsonMustache: String,
-    packageJsonOpt: Json,
-    resourceJsonOpt: Option[Json]
-  ): ValidatedNel[CosmosError, PackageFiles] = {
-    val packageDefValid = verifySchema[PackageDetails](packageJsonOpt, "package.json")
-    val resourceDefValid = verifySchema[Resource](resourceJsonOpt, "resource.json")
-    val commandJsonValid = verifySchema[Command](commandJsonOpt, "command.json")
-    val configJsonObject = configJsonOption.traverseU {json =>
-      json.asObject
-        .toValidNel[CosmosError](PackageFileSchemaMismatch("config.json"))
-    }
-
-    (packageDefValid |@| resourceDefValid |@| commandJsonValid |@| configJsonObject)
-      .map { (packageDef, resourceDef, commandJson, configJson) =>
-        PackageFiles(
-          revision,
-          sourceUri,
-          packageDef,
-          marathonJsonMustache,
-          commandJson,
-          configJson,
-          resourceDef
-        )
-      }
-  }
-
   private[this] def verifySchema[A: Decoder](
     json: Json,
     packageFileName: String
   ): ValidatedNel[CosmosError, A] = {
     json
       .as[A]
-      .leftMap(_ => errorNel(PackageFileSchemaMismatch(packageFileName)))
+      .leftMap(_ => PackageFileSchemaMismatch(packageFileName))
       .toValidated
-  }
-
-  private[this] def verifySchema[A: Decoder](
-    json: Option[Json],
-    packageFileName: String
-  ): ValidatedNel[CosmosError, Option[A]] = {
-    json
-      .traverseU(verifySchema[A](_, packageFileName))
-  }
-
-  def errorNel(error: CosmosError): NonEmptyList[CosmosError] = NonEmptyList(error)
-
-  private[this] def getPackageReleasePath(
-    repoDir: Path,
-    packageName: String,
-    releaseVersion: ReleaseVersion
-  ): Path = {
-    repoDir.resolve(
-      Paths.get(
-        "packages",
-        packageName.charAt(0).toUpper.toString,
-        packageName,
-        releaseVersion.toString
-      )
-    )
-  }
-}
-
-object UniversePackageCache {
-
-  def apply(repository: PackageRepository, dataDir: Path): UniversePackageCache = {
-    new UniversePackageCache(repository, dataDir)
+      .toValidatedNel
   }
 
 }

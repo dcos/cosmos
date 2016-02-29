@@ -42,6 +42,24 @@ object Decoders {
       UniverseIndexEntry(n, c, versions, d, f, t)
     }
   }
+
+  implicit val decodeSearchResult: Decoder[SearchResult] = Decoder.instance { cursor =>
+    for {
+      indexEntry <- decodePackageIndex(cursor)
+      images <- cursor.downField("images").as[Option[Images]]
+    } yield {
+      SearchResult(
+        name = indexEntry.name,
+        currentVersion = indexEntry.currentVersion,
+        versions = indexEntry.versions,
+        description = indexEntry.description,
+        framework = indexEntry.framework,
+        tags = indexEntry.tags,
+        images = images
+      )
+    }
+  }
+
   implicit val decodeUniverseIndex: Decoder[UniverseIndex] = deriveFor[UniverseIndex].decoder
   implicit val decodeMasterState: Decoder[MasterState] = deriveFor[MasterState].decoder
   implicit val decodeFramework: Decoder[Framework] = deriveFor[Framework].decoder
@@ -125,4 +143,5 @@ object Decoders {
   implicit val decodeByteBuffer: Decoder[ByteBuffer] = Decoder.decodeString.map { b64String =>
     ByteBuffer.wrap(Base64.getDecoder.decode(b64String))
   }
+
 }

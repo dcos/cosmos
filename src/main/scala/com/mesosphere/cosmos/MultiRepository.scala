@@ -2,6 +2,7 @@ package com.mesosphere.cosmos
 
 import java.nio.file.Path
 
+import com.mesosphere.cosmos.model.SearchResult
 import com.mesosphere.cosmos.repository.{PackageCollection, PackageSourcesStorage, Repository}
 import com.mesosphere.universe.{PackageDetailsVersion, PackageFiles, UniverseIndexEntry}
 import com.netaporter.uri.Uri
@@ -60,7 +61,7 @@ final class MultiRepository (
     }
   }
 
-  override def search(query: Option[String]): Future[List[UniverseIndexEntry]] = {
+  override def search(query: Option[String]): Future[List[SearchResult]] = {
     repositories().flatMap { repositories =>
       Future.collect {
         repositories.map { repository =>
