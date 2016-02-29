@@ -60,9 +60,11 @@ object Services {
     override def apply(request: Request, service: Service[Request, Response]): Future[Response] = {
       service(request)
         .rescue {
-          case ce: ChannelWriteException =>
+          case ce: ChannelException =>
             Future.exception(new ServiceUnavailable(serviceName, ce))
           case e: NoBrokersAvailableException =>
+            Future.exception(new ServiceUnavailable(serviceName, e))
+          case e: RequestException =>
             Future.exception(new ServiceUnavailable(serviceName, e))
         }
     }
