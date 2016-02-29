@@ -131,18 +131,26 @@ final class PackageRepositorySpec
     assertUnsupportedVersion()
   }
 
-  "Issue #204: respond with an error when trying to use a repo with a broken URI" - {
-
-    "relative URI" in {
-      assertBrokenUri("foobar")
+  "Package repo should should not add unsupported uri protocols" - {
+    "file" in {
+      val uri = Uri.parse("file://foo/bar")
+      val bogusRepository = PackageRepository("foobar", uri)
+      assertAddFailure(unsupportedUriMsg(uri), bogusRepository)
     }
+    "no scheme" in {
+      val uri = Uri.parse("foobar")
+      val bogusRepository = PackageRepository("foobar", uri)
+      assertAddFailure(unsupportedUriMsg(uri), bogusRepository)
+    }
+    def unsupportedUriMsg(uri: Uri): String = {
+      s"Repository URI [${uri}] uses an unsupported scheme. Only http and https are supported"
+    }
+  }
+
+  "Issue #204: respond with an error when trying to use a repo with a broken URI" - {
 
     "absolute URI" in {
       assertBrokenUri("http://foobar")
-    }
-
-    "unknown protocol" in {
-      assertBrokenUri("cosmos://universe.mesosphere.com/")
     }
 
     def assertBrokenUri(uriText: String): Unit = {

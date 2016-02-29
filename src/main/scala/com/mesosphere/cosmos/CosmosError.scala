@@ -94,6 +94,7 @@ case class RepositoryAlreadyPresent(nameOrUri: Ior[String, Uri]) extends CosmosE
 case class RepositoryAddIndexOutOfBounds(attempted: Int, max: Int) extends CosmosError
 
 case class UnsupportedRepositoryVersion(version: UniverseVersion) extends CosmosError
+case class UnsupportedRepositoryUri(uri: Uri) extends CosmosError
 
 case class InvalidRepositoryUri(repository: PackageRepository, causedBy: Throwable)
   extends CosmosError(causedBy)

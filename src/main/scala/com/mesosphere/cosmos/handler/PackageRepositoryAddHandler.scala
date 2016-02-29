@@ -1,5 +1,6 @@
 package com.mesosphere.cosmos.handler
 
+import com.mesosphere.cosmos.UnsupportedRepositoryUri
 import com.mesosphere.cosmos.http.{MediaType, MediaTypes}
 import com.mesosphere.cosmos.model.PackageRepositoryAddRequest
 import com.mesosphere.cosmos.model.PackageRepositoryAddResponse
@@ -21,11 +22,15 @@ final class PackageRepositoryAddHandler(sourcesStorage: PackageSourcesStorage)(
   override def apply(
     request: PackageRepositoryAddRequest
   ): Future[PackageRepositoryAddResponse] = {
-    sourcesStorage.add(
-      request.index,
-      PackageRepository(request.name, request.uri)
-    ) map { sources =>
-      PackageRepositoryAddResponse(sources)
+    request.uri.scheme match {
+      case Some("http") | Some("https") =>
+        sourcesStorage.add(
+          request.index,
+          PackageRepository(request.name, request.uri)
+        ) map { sources =>
+          PackageRepositoryAddResponse(sources)
+        }
+      case _ => throw UnsupportedRepositoryUri(request.uri)
     }
   }
 }
