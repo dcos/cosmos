@@ -1,10 +1,8 @@
 package com.mesosphere.cosmos.repository
 
+import com.mesosphere.cosmos.model.SearchResult
+import com.mesosphere.universe.{PackageDetailsVersion, PackageFiles, UniverseIndexEntry}
 import com.twitter.util.Future
-
-import com.mesosphere.universe.PackageDetailsVersion
-import com.mesosphere.universe.PackageFiles
-import com.mesosphere.universe.UniverseIndexEntry
 
 /** An aggregation of packages, possibly from multiple repositories.
   *
@@ -22,5 +20,6 @@ trait PackageCollection {
 
   def getPackageIndex(packageName: String): Future[UniverseIndexEntry]
 
-  def search(query: Option[String]): Future[List[UniverseIndexEntry]]
+  def search(query: Option[String]): Future[List[SearchResult]]
+
 }

@@ -1,6 +1,6 @@
 package com.mesosphere.cosmos.repository
 
-import com.mesosphere.cosmos.model.PackageRepository
+import com.mesosphere.cosmos.model.{PackageRepository, SearchResult}
 import com.mesosphere.cosmos.{PackageNotFound, RepositoryNotFound}
 import com.mesosphere.universe.{PackageDetailsVersion, PackageFiles, ReleaseVersion, UniverseIndexEntry}
 import com.netaporter.uri.Uri
@@ -29,7 +29,7 @@ object EmptyRepository extends Repository {
     Future.exception(PackageNotFound(packageName))
   }
 
-  override def search(query: Option[String]): Future[List[UniverseIndexEntry]] = {
+  override def search(query: Option[String]): Future[List[SearchResult]] = {
     Future.exception(RepositoryNotFound(Uri.parse("http://example.com/universe.zip")))
   }
 

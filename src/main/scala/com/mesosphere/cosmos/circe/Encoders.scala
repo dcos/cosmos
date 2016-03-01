@@ -29,18 +29,31 @@ object Encoders {
     )
   }
   implicit val encodeResource: Encoder[Resource] = deriveFor[Resource].encoder
-  implicit val encodePackageIndex: Encoder[UniverseIndexEntry] = ObjectEncoder.instance( entry => {
-    JsonObject.fromIndexedSeq(
-      Vector(
-        "name" -> entry.name.asJson,
-        "currentVersion" -> entry.currentVersion.asJson,
-        "versions" -> encodeMap(entry.versions),
-        "description" -> entry.description.asJson,
-        "framework" -> entry.framework.asJson,
-        "tags" -> entry.tags.asJson
-      )
+
+  implicit val encodePackageIndex: Encoder[UniverseIndexEntry] = ObjectEncoder.instance { entry =>
+    val encodedFields = encodeIndexEntryFields(
+      entry.name,
+      entry.currentVersion,
+      entry.versions,
+      entry.description,
+      entry.framework,
+      entry.tags
     )
-  })
+    JsonObject.fromIndexedSeq(encodedFields)
+  }
+
+  implicit val encodeSearchResult: Encoder[SearchResult] = ObjectEncoder.instance { searchResult =>
+    val encodedFields = encodeIndexEntryFields(
+      searchResult.name,
+      searchResult.currentVersion,
+      searchResult.versions,
+      searchResult.description,
+      searchResult.framework,
+      searchResult.tags
+    )
+    JsonObject.fromIndexedSeq(encodedFields :+ ("images" -> searchResult.images.asJson))
+  }
+
   implicit val encodeUniverseIndex: Encoder[UniverseIndex] = deriveFor[UniverseIndex].encoder
   implicit val encodeMasterState: Encoder[MasterState] = deriveFor[MasterState].encoder
   implicit val encodeFramework: Encoder[Framework] = deriveFor[Framework].encoder
@@ -243,4 +256,23 @@ object Encoders {
         case (PackageDetailsVersion(pdv), ReleaseVersion(rv)) => pdv -> rv
       }.asJson
   }
+
+  private[this] def encodeIndexEntryFields(
+    name: String,
+    currentVersion: PackageDetailsVersion,
+    versions: Map[PackageDetailsVersion, ReleaseVersion],
+    description: String,
+    framework: Boolean,
+    tags: List[String]
+  ): Vector[(String, Json)] = {
+    Vector(
+      "name" -> name.asJson,
+      "currentVersion" -> currentVersion.asJson,
+      "versions" -> encodeMap(versions),
+      "description" -> description.asJson,
+      "framework" -> framework.asJson,
+      "tags" -> tags.asJson
+    )
+  }
+
 }
