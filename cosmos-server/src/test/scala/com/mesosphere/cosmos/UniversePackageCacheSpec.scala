@@ -1,69 +1,44 @@
 package com.mesosphere.cosmos
 
-import java.nio.file.{Files, Path, Paths}
+import java.nio.file.Paths
 
 import com.mesosphere.cosmos.circe.Encoders._
 import com.mesosphere.cosmos.model.SearchResult
 import com.mesosphere.universe._
+import com.netaporter.uri.Uri
 import com.twitter.io.Charsets
+import com.twitter.util.Await
 import io.circe.syntax._
-import org.scalatest.{BeforeAndAfterAll, FreeSpec}
+import org.mockito.Mockito._
+import org.scalatest.FreeSpec
+import org.scalatest.mock.MockitoSugar
 
-final class UniversePackageCacheSpec extends FreeSpec with BeforeAndAfterAll {
+final class UniversePackageCacheSpec extends FreeSpec {
 
   import UniversePackageCacheSpec._
 
-  // TODO: This is not really a unit test because we have to use a temporary directory to
-  // store inputs for the test. Refactor UniversePackageCache so that it uses a trait to access
-  // package files, allowing this test to mock the trait. See issue #275.
-  var bundleDir: Path = _
+  "Issue #270: include package resources in search results" in {
+    val searchResult = SearchResult(
+      SomeIndexEntry.name,
+      SomeIndexEntry.currentVersion,
+      SomeIndexEntry.versions,
+      SomeIndexEntry.description,
+      SomeIndexEntry.framework,
+      SomeIndexEntry.tags,
+      images = SomeResource.images
+    )
 
-  override def beforeAll(): Unit = {
-    bundleDir = Files.createTempDirectory(getClass.getSimpleName)
-    initializePackageCache(bundleDir, List((SomeIndexEntry, SomeResource)))
-  }
-
-  override def afterAll(): Unit = {
-    assert(com.twitter.io.Files.delete(bundleDir.toFile))
-  }
-
-  "Issue #270: include package resources in search results" - {
-
-    "packageResources()" in {
-      val repoDir = UniversePackageCache.repoDirectory(bundleDir)
-      val universeIndex = UniverseIndex(SomeUniverseVersion, List(SomeIndexEntry))
-
-      assertResult(SomeResource) {
-        UniversePackageCache.packageResources(repoDir, universeIndex, SomeIndexEntry.name)
-      }
+    assertResult(List(searchResult)) {
+      Await.result(SomeUniversePackageCache.search(queryOpt = None))
     }
-
-    "search()" in {
-      val universeIndex = UniverseIndex(SomeUniverseVersion, List(SomeIndexEntry))
-
-      val searchResult = SearchResult(
-        SomeIndexEntry.name,
-        SomeIndexEntry.currentVersion,
-        SomeIndexEntry.versions,
-        SomeIndexEntry.description,
-        SomeIndexEntry.framework,
-        SomeIndexEntry.tags,
-        images = SomeResource.images
-      )
-
-      assertResult(List(searchResult)) {
-        UniversePackageCache.search(bundleDir, universeIndex, queryOpt = None)
-      }
-    }
-
   }
 
 }
 
-object UniversePackageCacheSpec {
+object UniversePackageCacheSpec extends MockitoSugar {
 
   private val SomeReleaseVersion = ReleaseVersion("1")
-  private val SomeUniverseVersion = UniverseVersion("4.5.6")
+  private val SomeUniverseVersion = UniverseVersion("2.3.4")
 
   private val SomeIndexEntry: UniverseIndexEntry = {
     val currentVersion = PackageDetailsVersion("1.2.3")
@@ -89,27 +64,18 @@ object UniversePackageCacheSpec {
     )
   }
 
-  private def initializePackageCache(
-    bundleDir: Path,
-    packageInfo: List[(UniverseIndexEntry, Resource)]
-  ): Unit = {
-    val indexEntries = packageInfo.map(_._1)
-    val universeIndex = UniverseIndex(SomeUniverseVersion, indexEntries)
-    val indexJson = universeIndex.asJson.noSpaces.getBytes(Charsets.Utf8)
-    val metaDir = bundleDir.resolve(Paths.get("repo", "meta"))
-    Files.createDirectories(metaDir)
-    Files.write(metaDir.resolve("index.json"), indexJson)
+  private val SomeUniversePackageCache: UniversePackageCache = {
+    val universeIndex = UniverseIndex(SomeUniverseVersion, List(SomeIndexEntry))
+    val indexPath = Paths.get("/repo/meta/index.json")
+    val indexBytes = universeIndex.asJson.noSpaces.getBytes(Charsets.Utf8)
+    val resourcePath = Paths.get("/repo/packages/S/somePackage/1/resource.json")
+    val resourceBytes = SomeResource.asJson.noSpaces.getBytes(Charsets.Utf8)
 
-    packageInfo.foreach { case (indexEntry, resource) =>
-      val resourceJson = resource.asJson.noSpaces.getBytes(Charsets.Utf8)
-      val packageName = indexEntry.name
-      val packageFirstLetter = packageName.charAt(0).toUpper.toString
-      val packagePath =
-        Paths.get("repo", "packages", packageFirstLetter, packageName, SomeReleaseVersion.toString)
-      val packageDir = bundleDir.resolve(packagePath)
-      Files.createDirectories(packageDir)
-      Files.write(packageDir.resolve("resource.json"), resourceJson)
-    }
+    val packageMetadataStore = mock[PackageMetadataStore]
+    when(packageMetadataStore.readFile(resourcePath)).thenReturn(Some(resourceBytes))
+    when(packageMetadataStore.readFile(indexPath)).thenReturn(Some(indexBytes))
+
+    UniversePackageCache(Uri.parse("/any/uri"), Paths.get("/"), packageMetadataStore)
   }
 
 }

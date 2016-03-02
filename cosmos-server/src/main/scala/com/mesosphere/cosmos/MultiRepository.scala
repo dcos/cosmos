@@ -12,7 +12,7 @@ final class MultiRepository (
   packageRepositoryStorage: PackageSourcesStorage,
   universeDir: Path
 ) extends PackageCollection {
-  @volatile private[this] var cachedRepositories = Map.empty[Uri, UniversePackageCache]
+  @volatile private[this] var cachedRepositories = Map.empty[Uri, Repository with AutoCloseable]
 
   override def getPackageByPackageVersion(
     packageName: String,
@@ -73,20 +73,18 @@ final class MultiRepository (
 
   def getRepository(uri: Uri): Future[Option[Repository]] = {
    repositories().map { repositories =>
-      repositories.find(_.universeBundle == uri)
+      repositories.find(_.uri == uri)
     }
   }
 
-  private def repositories(): Future[List[UniversePackageCache]] = {
+  private def repositories(): Future[List[Repository]] = {
     packageRepositoryStorage.readCache().map { repositories =>
-      val oldRepositories: Map[Uri, UniversePackageCache] = cachedRepositories
+      val oldRepositories = cachedRepositories
       val result = repositories.map { repository =>
-        oldRepositories.getOrElse(repository.uri, UniversePackageCache(repository, universeDir))
+        oldRepositories.getOrElse(repository.uri, new PackageCacheSynchronizer(repository, universeDir))
       }
 
-      val newRepositories: Map[Uri, UniversePackageCache] = result.map(repository =>
-          (repository.universeBundle, repository)
-      ).toMap
+      val newRepositories = result.map(repository => (repository.uri, repository)).toMap
 
       // Clean any repository that is not used anymore
       (oldRepositories -- newRepositories.keys).foreach { case (_, value) =>
