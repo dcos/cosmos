@@ -76,8 +76,11 @@ private object PackageSearchSpec extends TableDrivenPropertyChecks {
 
   val CassandraSearchResult = SearchResult(
     name = "cassandra",
-    currentVersion = PackageDetailsVersion("0.2.0-1"),
-    versions = Map(PackageDetailsVersion("0.2.0-1") -> ReleaseVersion("0")),
+    currentVersion = PackageDetailsVersion("0.2.0-2"),
+    versions = Map(
+      PackageDetailsVersion("0.2.0-1") -> ReleaseVersion("0"),
+      PackageDetailsVersion("0.2.0-2") -> ReleaseVersion("1")
+    ),
     description = "Apache Cassandra running on Apache Mesos",
     framework = true,
     tags = List("data", "database", "nosql"),

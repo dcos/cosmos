@@ -90,7 +90,7 @@ final class PackageInstallIntegrationSpec extends FreeSpec with BeforeAndAfterAl
     }
 
     "supports custom app IDs" in {
-      val expectedResponse = InstallResponse("cassandra", PackageDetailsVersion("0.2.0-1"), AppId("custom-app-id"))
+      val expectedResponse = InstallResponse("cassandra", PackageDetailsVersion("0.2.0-2"), AppId("custom-app-id"))
 
       installPackageAndAssert(
         InstallRequest(expectedResponse.packageName, appId = Some(expectedResponse.appId)),
