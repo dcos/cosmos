@@ -20,12 +20,17 @@ object CosmosBuild extends Build {
     val scalaUri = "0.4.11"
     val scalaTest = "2.2.4"
     val scalaCheck = "1.10.0"
+    val twitterUtilCore = "6.30.0"
     val zookeeper = "3.4.6"
   }
 
   object Deps {
-    val circe = Seq(
-      "io.circe" %% "circe-core" % V.circe,
+
+    val circeCore = Seq(
+      "io.circe" %% "circe-core" % V.circe
+    )
+
+    val circe = circeCore ++ Seq(
       "io.circe" %% "circe-generic" % V.circe,
       "io.circe" %% "circe-parse" % V.circe
     )
@@ -82,6 +87,10 @@ object CosmosBuild extends Build {
       "org.scalatest"       %% "scalatest"        % V.scalaTest     % "test"
     )
 
+    val twitterUtilCore = Seq(
+      "com.twitter" %% "util-core" % V.twitterUtilCore
+    )
+
   }
 
   val extraSettings = Defaults.coreDefaultSettings
@@ -90,6 +99,8 @@ object CosmosBuild extends Build {
     organization := "com.mesosphere.cosmos",
     scalaVersion := projectScalaVersion,
     version := projectVersion,
+
+    exportJars := true,
 
     resolvers ++= Seq(
       "Clojars Repository" at "http://clojars.org/repo",
@@ -167,6 +178,20 @@ object CosmosBuild extends Build {
   )
 
   lazy val cosmos = Project("cosmos", file("."))
+    .settings(sharedSettings)
+    .aggregate(model, server)
+
+  lazy val model = Project("cosmos-model", file("cosmos-model"))
+    .settings(sharedSettings)
+    .settings(
+      libraryDependencies ++=
+        Deps.scalaUri
+        ++ Deps.circeCore
+        ++ Deps.twitterUtilCore
+        ++ Deps.scalaTest
+    )
+
+  lazy val server = Project("cosmos-server", file("cosmos-server"))
     .configs(IntegrationTest extend Test)
     .settings(itSettings)
     .settings(sharedSettings)
@@ -182,8 +207,10 @@ object CosmosBuild extends Build {
           ++ Deps.jsonSchema
           ++ Deps.logback
           ++ Deps.mustache
+          ++ Deps.scalaTest
           ++ Deps.scalaUri
     )
+    .dependsOn(model)
 
   //////////////////////////////////////////////////////////////////////////////
   // BUILD TASKS
