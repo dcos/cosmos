@@ -164,7 +164,7 @@ private object PackageDescribeSpec extends TableDrivenPropertyChecks {
     mem = 512,
     instances = 1,
     cmd = Some("python3 -m http.server {{port}}"),
-    container = Some(MarathonAppContainer("DOCKER", Some(MarathonAppContainerDocker("python:3", "HOST")))),
+    container = Some(MarathonAppContainer("DOCKER", Some(MarathonAppContainerDocker("python:3", Some("HOST"))))),
     labels = Map.empty,
     uris = List.empty
   )
