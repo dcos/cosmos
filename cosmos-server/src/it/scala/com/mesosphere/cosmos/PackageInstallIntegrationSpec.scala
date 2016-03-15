@@ -288,7 +288,7 @@ private object PackageInstallIntegrationSpec extends Matchers with TableDrivenPr
         `type` = "DOCKER",
         docker = Some(MarathonAppContainerDocker(
           image = s"python:$pythonVersion",
-          network = "HOST"
+          network = Some("HOST")
         ))
       )),
       labels = Map("test-id" -> UUID.randomUUID().toString),
