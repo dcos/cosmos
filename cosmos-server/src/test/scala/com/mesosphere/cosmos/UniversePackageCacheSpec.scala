@@ -48,7 +48,7 @@ final class UniversePackageCacheSpec extends FreeSpec with BeforeAndAfterAll {
         SomeIndexEntry.description,
         SomeIndexEntry.framework,
         SomeIndexEntry.tags,
-        SomeResource.images
+        images = SomeResource.images
       )
 
       assertResult(List(searchResult)) {

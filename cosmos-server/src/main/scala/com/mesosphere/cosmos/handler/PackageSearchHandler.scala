@@ -1,15 +1,11 @@
 package com.mesosphere.cosmos.handler
 
-import scala.util.matching.Regex
-
-import com.twitter.util.Future
-import io.circe.Encoder
-import io.finch.DecodeRequest
-
 import com.mesosphere.cosmos.http.{MediaType, MediaTypes}
 import com.mesosphere.cosmos.model._
 import com.mesosphere.cosmos.repository.PackageCollection
-import com.mesosphere.universe.UniverseIndexEntry
+import com.twitter.util.Future
+import io.circe.Encoder
+import io.finch.DecodeRequest
 
 private[cosmos] class PackageSearchHandler(
   packageCache: PackageCollection
@@ -23,7 +19,8 @@ private[cosmos] class PackageSearchHandler(
 
   override def apply(request: SearchRequest): Future[SearchResponse] = {
     packageCache.search(request.query) map { packages =>
-      SearchResponse(packages)
+      val sortedPackages = packages.sortBy(p => (!p.promoted.getOrElse(false), p.name.toLowerCase))
+      SearchResponse(sortedPackages)
     }
   }
 }

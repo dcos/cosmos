@@ -37,7 +37,8 @@ object Encoders {
       entry.versions,
       entry.description,
       entry.framework,
-      entry.tags
+      entry.tags,
+      entry.promoted
     )
     JsonObject.fromIndexedSeq(encodedFields)
   }
@@ -49,7 +50,8 @@ object Encoders {
       searchResult.versions,
       searchResult.description,
       searchResult.framework,
-      searchResult.tags
+      searchResult.tags,
+      searchResult.promoted
     )
     JsonObject.fromIndexedSeq(encodedFields :+ ("images" -> searchResult.images.asJson))
   }
@@ -263,7 +265,8 @@ object Encoders {
     versions: Map[PackageDetailsVersion, ReleaseVersion],
     description: String,
     framework: Boolean,
-    tags: List[String]
+    tags: List[String],
+    promoted: Option[Boolean]
   ): Vector[(String, Json)] = {
     Vector(
       "name" -> name.asJson,
@@ -271,7 +274,8 @@ object Encoders {
       "versions" -> encodeMap(versions),
       "description" -> description.asJson,
       "framework" -> framework.asJson,
-      "tags" -> tags.asJson
+      "tags" -> tags.asJson,
+      "promoted" -> promoted.asJson
     )
   }
 
