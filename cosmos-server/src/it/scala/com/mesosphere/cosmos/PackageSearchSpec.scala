@@ -60,8 +60,8 @@ private object PackageSearchSpec extends TableDrivenPropertyChecks {
 
   val ArangodbSearchResult = SearchResult(
     name = "arangodb",
-    currentVersion = PackageDetailsVersion("0.2.1"),
-    versions = Map(PackageDetailsVersion("0.2.1") -> ReleaseVersion("0")),
+    currentVersion = PackageDetailsVersion("0.3.0"),
+    versions = Map(PackageDetailsVersion("0.2.1") -> ReleaseVersion("0"), PackageDetailsVersion("0.3.0") -> ReleaseVersion("1")),
     description = "A distributed free and open-source database with a flexible data model for documents, graphs, and key-values. " +
       "Build high performance applications using a convenient SQL-like query language or JavaScript extensions.",
     framework = true,
