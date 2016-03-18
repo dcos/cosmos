@@ -16,6 +16,7 @@ object CosmosBuild extends Build {
     val finchServer = "0.9.0"
     val jsonSchema = "2.2.6"
     val logback = "1.1.3"
+    val mockito = "1.10.19"
     val mustache = "0.9.1"
     val scalaUri = "0.4.11"
     val scalaTest = "2.2.4"
@@ -75,6 +76,10 @@ object CosmosBuild extends Build {
       "ch.qos.logback" % "logback-classic" % V.logback
     )
 
+    val mockito = Seq(
+      "org.mockito" % "mockito-core" % V.mockito % "test"
+    )
+
     val mustache = Seq(
       "com.github.spullara.mustache.java" % "compiler" % V.mustache
     )
@@ -109,7 +114,7 @@ object CosmosBuild extends Build {
       "finch-server" at "http://storage.googleapis.com/benwhitehead_me/maven/public"
     ),
 
-    libraryDependencies ++= Deps.scalaTest,
+    libraryDependencies ++= Deps.mockito ++ Deps.scalaTest,
 
     javacOptions in Compile ++= Seq(
       "-source", "1.8",

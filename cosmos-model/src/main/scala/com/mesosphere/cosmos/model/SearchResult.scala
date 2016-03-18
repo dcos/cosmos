@@ -8,6 +8,7 @@ case class SearchResult(
   versions: Map[PackageDetailsVersion, ReleaseVersion],
   description: String,
   framework: Boolean = false,
-  tags: List[String],    //TODO: pattern: "^[^\\s]+$"
+  tags: List[String],    //TODO: pattern: "^[^\\s]+$",
+  promoted: Option[Boolean] = None,
   images: Option[Images] = None
 )

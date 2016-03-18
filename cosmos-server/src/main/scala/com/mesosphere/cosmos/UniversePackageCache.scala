@@ -246,16 +246,21 @@ object UniversePackageCache {
     searchIndex(universeIndex.packages, queryOpt)
       .map { indexEntry =>
         val resources = packageResources(repoDir, universeIndex, indexEntry.name)
-        SearchResult(
-          name = indexEntry.name,
-          currentVersion = indexEntry.currentVersion,
-          versions = indexEntry.versions,
-          description = indexEntry.description,
-          framework = indexEntry.framework,
-          tags = indexEntry.tags,
-          images = resources.images
-        )
+        searchResult(indexEntry, resources.images)
       }
+  }
+
+  private[cosmos] def searchResult(indexEntry: UniverseIndexEntry, images: Option[Images]): SearchResult = {
+    SearchResult(
+      name = indexEntry.name,
+      currentVersion = indexEntry.currentVersion,
+      versions = indexEntry.versions,
+      description = indexEntry.description,
+      framework = indexEntry.framework,
+      tags = indexEntry.tags,
+      promoted = indexEntry.promoted,
+      images = images
+    )
   }
 
   private[cosmos] def repoDirectory(bundleDir: Path) = bundleDir.resolve("repo")
