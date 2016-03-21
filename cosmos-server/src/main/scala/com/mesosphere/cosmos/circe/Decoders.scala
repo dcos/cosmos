@@ -110,7 +110,7 @@ object Decoders {
   implicit val decodePackageInformation: Decoder[InstalledPackageInformation] = deriveFor[InstalledPackageInformation].decoder
 
   implicit val decodeUniverseVersion: Decoder[UniverseVersion] = Decoder.decodeString.map(UniverseVersion)
-  implicit val decodePackagingVersion: Decoder[PackagingVersion] = Decoder.decodeString.map(PackagingVersion.validated)
+  implicit val decodePackagingVersion: Decoder[PackagingVersion] = Decoder.decodeString.map(PackagingVersion)
   implicit val decodePackageRevision: Decoder[ReleaseVersion] = Decoder.decodeString.map(ReleaseVersion)
   implicit val decodePackageDetailsVersion: Decoder[PackageDetailsVersion] = Decoder.decodeString.map(PackageDetailsVersion)
 
