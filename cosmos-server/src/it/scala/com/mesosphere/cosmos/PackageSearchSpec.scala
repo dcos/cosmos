@@ -66,6 +66,7 @@ private object PackageSearchSpec extends TableDrivenPropertyChecks {
       "Build high performance applications using a convenient SQL-like query language or JavaScript extensions.",
     framework = true,
     tags = List("arangodb", "NoSQL", "database", "framework"),
+    promoted = Some(true),
     images = Some(Images(
       iconSmall = "https://raw.githubusercontent.com/arangodb/arangodb-dcos/master/icons/arangodb_small.png",
       iconMedium = "https://raw.githubusercontent.com/arangodb/arangodb-dcos/master/icons/arangodb_medium.png",
@@ -84,6 +85,7 @@ private object PackageSearchSpec extends TableDrivenPropertyChecks {
     description = "Apache Cassandra running on Apache Mesos",
     framework = true,
     tags = List("data", "database", "nosql"),
+    promoted = Some(true),
     images = Some(Images(
       iconSmall = "https://downloads.mesosphere.com/cassandra-mesos/assets/cassandra-small.png",
       iconMedium = "https://downloads.mesosphere.com/cassandra-mesos/assets/cassandra-medium.png",
