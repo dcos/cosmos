@@ -217,6 +217,8 @@ object Cosmos extends FinchServer {
     implicit val stats = statsReceiver.scope("cosmos")
     import com.netaporter.uri.dsl._
 
+    HttpProxySupport.configureProxySupport()
+
     val ar = Try(dcosUri())
       .map { dh =>
         val dcosHost: String = Uris.stripTrailingSlash(dh)

@@ -2,6 +2,7 @@ package com.mesosphere.cosmos
 
 import java.net.InetSocketAddress
 
+import com.mesosphere.cosmos.Uris._
 import com.netaporter.uri.Uri
 import com.twitter.finagle.client.Transporter
 import com.twitter.finagle.http.{Request, Response}
@@ -41,20 +42,6 @@ object Services {
       new ConnectionExceptionHandler(serviceName) andThen cBuilder.newService(s"$hostname:$port", serviceName)
     }
   }
-
-  private[cosmos] def extractHostAndPort(uri: Uri): Try[ConnectionDetails] = Try {
-    (uri.scheme, uri.host, uri.port) match {
-      case (Some("https"), Some(h), p) => ConnectionDetails(h, p.getOrElse(443), tls = true)
-      case (Some("http"), Some(h), p) => ConnectionDetails(h, p.getOrElse(80), tls = false)
-      case (_, _, _) => throw err(uri.toString)
-    }
-  }
-
-  private def err(actual: String): Throwable = {
-    new IllegalArgumentException(s"Unsupported or invalid URI. Expected format 'http[s]://example.com[:port][/base-path]' actual '$actual'")
-  }
-
-  private[cosmos] case class ConnectionDetails(host: String, port: Int, tls: Boolean = false)
 
   private[this] class ConnectionExceptionHandler(serviceName: String) extends SimpleFilter[Request, Response] {
     override def apply(request: Request, service: Service[Request, Response]): Future[Response] = {
