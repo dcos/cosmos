@@ -186,10 +186,6 @@ private[cosmos] object PackageInstallHandler {
 
     val isFramework = packageFiles.packageJson.framework.getOrElse(true)
 
-    val frameworkName = mergedOptions.cursor
-        .downField(packageFiles.packageJson.name)
-        .flatMap(_.get[String]("framework-name").toOption)
-
     val requiredLabels: Map[String, String] = Map(
       (MarathonApp.metadataLabel, packageMetadata),
       (MarathonApp.registryVersionLabel, packageFiles.packageJson.packagingVersion.toString),
@@ -200,15 +196,14 @@ private[cosmos] object PackageInstallHandler {
       (MarathonApp.isFrameworkLabel, isFramework.toString)
     )
 
-    val optionalLabels: Map[String, String] = Seq(
-      frameworkName.map("DCOS_PACKAGE_FRAMEWORK_NAME" -> _),
+    val nonOverridableLabels: Map[String, String] = Seq(
       commandMetadata.map(MarathonApp.commandLabel -> _)
     ).flatten.toMap
 
     val existingLabels = marathonJson.cursor
       .get[Map[String, String]]("labels").getOrElse(Map.empty)
 
-    val packageLabels = existingLabels ++ requiredLabels ++ optionalLabels
+    val packageLabels = requiredLabels ++ existingLabels ++ nonOverridableLabels
 
     marathonJson.mapObject(_ + ("labels", packageLabels.asJson))
   }
