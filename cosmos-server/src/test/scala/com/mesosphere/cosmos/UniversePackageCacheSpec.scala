@@ -1,44 +1,46 @@
 package com.mesosphere.cosmos
 
+import java.io.{ByteArrayInputStream, IOException, InputStream}
+import java.net.{MalformedURLException, URL}
 import java.nio.file.{Files, Path, Paths}
 
 import com.mesosphere.cosmos.circe.Encoders._
-import com.mesosphere.cosmos.model.SearchResult
+import com.mesosphere.cosmos.model.{PackageRepository, SearchResult}
+import com.mesosphere.cosmos.test.TestUtil
 import com.mesosphere.universe._
-import com.twitter.io.Charsets
+import com.netaporter.uri.Uri
+import com.twitter.io.{Charsets, StreamIO}
+import com.twitter.util.{Await, Throw}
 import io.circe.syntax._
-import org.scalatest.{BeforeAndAfterAll, FreeSpec}
+import org.scalatest.FreeSpec
 
-final class UniversePackageCacheSpec extends FreeSpec with BeforeAndAfterAll {
+final class UniversePackageCacheSpec extends FreeSpec {
 
   import UniversePackageCacheSpec._
 
   // TODO: This is not really a unit test because we have to use a temporary directory to
   // store inputs for the test. Refactor UniversePackageCache so that it uses a trait to access
   // package files, allowing this test to mock the trait. See issue #275.
-  var bundleDir: Path = _
-
-  override def beforeAll(): Unit = {
-    bundleDir = Files.createTempDirectory(getClass.getSimpleName)
-    initializePackageCache(bundleDir, List((SomeIndexEntry, SomeResource)))
-  }
-
-  override def afterAll(): Unit = {
-    assert(com.twitter.io.Files.delete(bundleDir.toFile))
-  }
-
   "Issue #270: include package resources in search results" - {
 
     "packageResources()" in {
+      val bundleDir = Files.createTempDirectory(getClass.getSimpleName)
+      initializePackageCache(bundleDir, List((SomeIndexEntry, SomeResource)))
+
       val repoDir = UniversePackageCache.repoDirectory(bundleDir)
       val universeIndex = UniverseIndex(SomeUniverseVersion, List(SomeIndexEntry))
 
       assertResult(SomeResource) {
         UniversePackageCache.packageResources(repoDir, universeIndex, SomeIndexEntry.name)
       }
+
+      TestUtil.deleteRecursively(bundleDir)
     }
 
     "search()" in {
+      val bundleDir = Files.createTempDirectory(getClass.getSimpleName)
+      initializePackageCache(bundleDir, List((SomeIndexEntry, SomeResource)))
+
       val universeIndex = UniverseIndex(SomeUniverseVersion, List(SomeIndexEntry))
 
       val searchResult = SearchResult(
@@ -54,8 +56,81 @@ final class UniversePackageCacheSpec extends FreeSpec with BeforeAndAfterAll {
       assertResult(List(searchResult)) {
         UniversePackageCache.search(bundleDir, universeIndex, queryOpt = None)
       }
+
+      TestUtil.deleteRecursively(bundleDir)
     }
 
+  }
+
+  "streamBundle()" - {
+    "URI/URL syntax" - {
+      "relative URI" in {
+        val expectedRepo = PackageRepository(name = "FooBar", uri = Uri.parse("foo/bar"))
+        val Throw(RepositoryUriSyntax(actualRepo, causedBy)) =
+          Await.result(UniversePackageCache.streamBundle(expectedRepo, _.openStream()).liftToTry)
+        assertResult(expectedRepo)(actualRepo)
+        assert(causedBy.isInstanceOf[IllegalArgumentException])
+      }
+
+      "unknown protocol" in {
+        val expectedRepo = PackageRepository(name = "FooBar", uri = Uri.parse("foo://bar.com"))
+        val Throw(RepositoryUriSyntax(actualRepo, causedBy)) =
+          Await.result(UniversePackageCache.streamBundle(expectedRepo, _.openStream()).liftToTry)
+        assertResult(expectedRepo)(actualRepo)
+        assert(causedBy.isInstanceOf[MalformedURLException])
+      }
+    }
+
+    "Connection failure" in {
+      val expectedRepo = PackageRepository(name = "BadRepo", uri = Uri.parse("http://example.com"))
+      val errorMessage = "No one's home"
+      val streamUrl: URL => InputStream = _ => throw new IOException(errorMessage)
+      val Throw(RepositoryUriConnection(actualRepo, causedBy)) =
+        Await.result(UniversePackageCache.streamBundle(expectedRepo, streamUrl).liftToTry)
+      assertResult(expectedRepo)(actualRepo)
+      assert(causedBy.isInstanceOf[IOException])
+      assertResult(errorMessage)(causedBy.getMessage)
+    }
+
+    "Connection success" in {
+      val repository = PackageRepository(name = "GoodRepo", uri = Uri.parse("http://example.com"))
+      val bundleContent = "Pretend this is a package repository zip file"
+      val bundleStream = new ByteArrayInputStream(bundleContent.getBytes(Charsets.Utf8))
+      val streamFuture = UniversePackageCache.streamBundle(repository, _ => bundleStream)
+      val downloadStream = Await.result(streamFuture)
+      val downloadContent = StreamIO.buffer(downloadStream).toString(Charsets.Utf8.name)
+      assertResult(bundleContent)(downloadContent)
+    }
+  }
+
+  "updateUniverseCache()" - {
+    "uses streamBundle()" - {
+      "error" in {
+        val universeDir = Files.createTempDirectory(getClass.getSimpleName)
+
+        val repository = PackageRepository(name = "BadRepo", uri = Uri.parse("http://example.com"))
+        val bundleDirFuture = UniversePackageCache.updateUniverseCache(repository, universeDir) {
+          _ => throw new IOException("No one's home")
+        }
+        val Throw(t) = Await.result(bundleDirFuture.liftToTry)
+        assert(t.isInstanceOf[RepositoryUriConnection])
+
+        TestUtil.deleteRecursively(universeDir)
+      }
+
+      "success" in {
+        val universeDir = Files.createTempDirectory(getClass.getSimpleName)
+
+        val repository = PackageRepository(name = "GoodRepo", uri = Uri.parse("http://example.com"))
+        val bundleContent = "Not a zip file, but good enough to pass the test"
+        val bundleStream = new ByteArrayInputStream(bundleContent.getBytes(Charsets.Utf8))
+        val bundleDirFuture =
+          UniversePackageCache.updateUniverseCache(repository, universeDir)(_ => bundleStream)
+        assert(Await.result(bundleDirFuture.liftToTry).isReturn)
+
+        TestUtil.deleteRecursively(universeDir)
+      }
+    }
   }
 
 }

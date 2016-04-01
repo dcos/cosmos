@@ -242,8 +242,10 @@ object Encoders {
     case UnsupportedRepositoryVersion(version) => s"Repository version [$version] is not supported"
     case UnsupportedRepositoryUri(uri) => s"Repository URI [$uri] uses an unsupported scheme. " +
       "Only http and https are supported"
-    case InvalidRepositoryUri(repository, _) =>
-      s"URI for repository [${repository.name}] is invalid: ${repository.uri}"
+    case RepositoryUriSyntax(repository, _) =>
+      s"URI for repository [${repository.name}] has invalid syntax: ${repository.uri}"
+    case RepositoryUriConnection(repository, _) =>
+      s"Could not access data at URI for repository [${repository.name}]: ${repository.uri}"
     case RepositoryNotPresent(nameOrUri) =>
       nameOrUri match {
         case Ior.Both(n, u) => s"Neither repository name [$n] nor URI [$u] are present in the list"

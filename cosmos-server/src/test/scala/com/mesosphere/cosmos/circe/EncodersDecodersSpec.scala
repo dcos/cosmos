@@ -1,11 +1,13 @@
 package com.mesosphere.cosmos.circe
 
 import cats.data.Xor
-import com.mesosphere.cosmos.model.AppId
+import com.mesosphere.cosmos.model.{AppId, PackageRepository}
+import com.mesosphere.cosmos.{ErrorResponse, RepositoryUriConnection, RepositoryUriSyntax}
 import com.mesosphere.universe.Images
+import com.netaporter.uri.Uri
 import io.circe.parse._
 import io.circe.syntax._
-import io.circe.{Decoder, Json}
+import io.circe.{Decoder, Json, JsonObject}
 import org.scalatest.FreeSpec
 
 class EncodersDecodersSpec extends FreeSpec {
@@ -50,6 +52,30 @@ class EncodersDecodersSpec extends FreeSpec {
     }
     "decode" in {
       assertResult(Xor.Right(AppId(absolute)))(decode[AppId](relative.asJson.noSpaces))
+    }
+  }
+
+  "CosmosError" - {
+    "RepositoryUriSyntax" in {
+      assertRoundTrip("RepositoryUriSyntax", RepositoryUriSyntax.apply)
+    }
+
+
+    "RepositoryUriConnection" in {
+      assertRoundTrip("RepositoryUriConnection", RepositoryUriConnection.apply)
+    }
+
+    def assertRoundTrip(
+      errorType: String,
+      errorConstructor: (PackageRepository, Throwable) => Exception
+    ): Unit = {
+      val repo = PackageRepository("repo", Uri.parse("http://example.com"))
+      val cause = "original failure message"
+      val error = errorConstructor(repo, new Throwable(cause))
+
+      val Xor.Right(roundTripError) = error.asJson.as[ErrorResponse]
+      assertResult(errorType)(roundTripError.`type`)
+      assertResult(Some(JsonObject.singleton("cause", cause.asJson)))(roundTripError.data)
     }
   }
 

@@ -1,13 +1,13 @@
 package com.mesosphere.cosmos
 
-import java.net.{MalformedURLException, UnknownHostException}
+import java.io.{IOException, InputStream}
+import java.net.{MalformedURLException, URISyntaxException, URL}
 import java.nio.file._
 import java.time.LocalDateTime
 import java.util.Base64
 import java.util.concurrent.atomic.AtomicReference
 import java.util.zip.ZipInputStream
 
-import cats.data.Validated.{Invalid, Valid}
 import cats.data.Xor.{Left, Right}
 import cats.data._
 import cats.std.list._           // allows for traversU in verifySchema
@@ -118,7 +118,7 @@ final class UniversePackageCache private (
     updateMutex.acquireAndRun {
       // TODO: How often we check should be configurable
       if (lastModified.get().plusMinutes(1).isBefore(LocalDateTime.now())) {
-        updateUniverseCache()
+        updateUniverseCache(repository, universeDir)(_.openStream())
           .onSuccess { _ => lastModified.set(LocalDateTime.now()) }
       } else {
         /* We don't need to fetch the latest package information; just return the current
@@ -129,17 +129,23 @@ final class UniversePackageCache private (
     }
   }
 
-  private[this] def updateUniverseCache(): Future[Path] = {
-    Future(universeBundle.toURI.toURL.openStream())
-      .handle {
-        case e @ (_: IllegalArgumentException | _: MalformedURLException | _: UnknownHostException) =>
-          throw new InvalidRepositoryUri(repository, e)
-      }
+}
+
+object UniversePackageCache {
+
+  def apply(repository: PackageRepository, dataDir: Path): UniversePackageCache = {
+    new UniversePackageCache(repository, dataDir)
+  }
+
+  private[cosmos] def updateUniverseCache(repository: PackageRepository, universeDir: Path)(
+    streamUrl: URL => InputStream
+  ): Future[Path] = {
+    streamBundle(repository, streamUrl)
       .map { bundleStream =>
         try {
           extractBundle(
             new ZipInputStream(bundleStream),
-            universeBundle,
+            repository.uri,
             universeDir
           )
         } finally {
@@ -148,10 +154,20 @@ final class UniversePackageCache private (
       }
   }
 
-  private[this] def base64(universeBundle: Uri): String = {
-    Base64.getUrlEncoder().encodeToString(
-      universeBundle.toString.getBytes(Charsets.Utf8)
-    )
+  private[cosmos] def streamBundle(
+    repository: PackageRepository,
+    streamUrl: URL => InputStream
+  ): Future[InputStream] = {
+    Future(Xor.Right(repository.uri.toURI.toURL))
+      .handle {
+        case t @ (_: IllegalArgumentException | _: MalformedURLException | _: URISyntaxException) =>
+          Xor.Left(RepositoryUriSyntax(repository, t))
+      }
+      .map(_.map(streamUrl))
+      .handle { case t: IOException =>
+        Xor.Left(RepositoryUriConnection(repository, t))
+      }
+      .map(_.valueOr(throw _))
   }
 
   private[this] def extractBundle(
@@ -209,13 +225,19 @@ final class UniversePackageCache private (
       path
     } catch {
       case e: Exception =>
-      // Only delete directory on failures because we want to keep it around on success.
-      TwitterFiles.delete(tempDir.toFile)
-      throw e
+        // Only delete directory on failures because we want to keep it around on success.
+        TwitterFiles.delete(tempDir.toFile)
+        throw e
     }
   }
 
-  private[this] def readSymbolicLink(path: Path): Option[Path] = {
+  private def base64(universeBundle: Uri): String = {
+    Base64.getUrlEncoder().encodeToString(
+      universeBundle.toString.getBytes(Charsets.Utf8)
+    )
+  }
+
+  private def readSymbolicLink(path: Path): Option[Path] = {
     Try(Files.readSymbolicLink(path))
       .map { path =>
         Some(path)
@@ -226,14 +248,6 @@ final class UniversePackageCache private (
           None
       }
       .get
-  }
-
-}
-
-object UniversePackageCache {
-
-  def apply(repository: PackageRepository, dataDir: Path): UniversePackageCache = {
-    new UniversePackageCache(repository, dataDir)
   }
 
   private[cosmos] def search(
