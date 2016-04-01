@@ -8,5 +8,5 @@ case class UniverseIndexEntry(
   description: String,
   framework: Boolean = false,
   tags: List[String],    //TODO: pattern: "^[^\\s]+$"
-  promoted: Option[Boolean] = None
+  selected: Option[Boolean] = None
 )

@@ -19,7 +19,7 @@ private[cosmos] class PackageSearchHandler(
 
   override def apply(request: SearchRequest): Future[SearchResponse] = {
     packageCache.search(request.query) map { packages =>
-      val sortedPackages = packages.sortBy(p => (!p.promoted.getOrElse(false), p.name.toLowerCase))
+      val sortedPackages = packages.sortBy(p => (!p.selected.getOrElse(false), p.name.toLowerCase))
       SearchResponse(sortedPackages)
     }
   }

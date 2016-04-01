@@ -38,7 +38,7 @@ object Encoders {
       entry.description,
       entry.framework,
       entry.tags,
-      entry.promoted
+      entry.selected
     )
     JsonObject.fromIndexedSeq(encodedFields)
   }
@@ -51,7 +51,7 @@ object Encoders {
       searchResult.description,
       searchResult.framework,
       searchResult.tags,
-      searchResult.promoted
+      searchResult.selected
     )
     JsonObject.fromIndexedSeq(encodedFields :+ ("images" -> searchResult.images.asJson))
   }
@@ -266,7 +266,7 @@ object Encoders {
     description: String,
     framework: Boolean,
     tags: List[String],
-    promoted: Option[Boolean]
+    selected: Option[Boolean]
   ): Vector[(String, Json)] = {
     Vector(
       "name" -> name.asJson,
@@ -275,7 +275,7 @@ object Encoders {
       "description" -> description.asJson,
       "framework" -> framework.asJson,
       "tags" -> tags.asJson,
-      "promoted" -> promoted.asJson
+      "selected" -> selected.asJson
     )
   }
 
