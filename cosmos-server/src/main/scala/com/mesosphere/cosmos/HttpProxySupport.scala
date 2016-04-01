@@ -5,8 +5,6 @@ import java.net.{Authenticator, PasswordAuthentication}
 
 import com.netaporter.uri.Uri
 
-import scala.collection.JavaConverters._
-
 private[cosmos] object HttpProxySupport {
 
   private[this] val HttpProxyHost = "http.proxyHost"

@@ -3,6 +3,7 @@ package com.mesosphere.cosmos
 import com.mesosphere.cosmos.model.{PackageRepository, SearchResult}
 import com.mesosphere.cosmos.repository.Repository
 import com.mesosphere.universe._
+import com.netaporter.uri.Uri
 import com.netaporter.uri.dsl.stringToUri
 import com.twitter.util.Future
 
@@ -12,7 +13,7 @@ import com.twitter.util.Future
   */
 final case class MemoryPackageCache(packages: Map[String, PackageFiles]) extends Repository {
 
-  override def repository: PackageRepository = throw new UnsupportedOperationException()
+  override def uri: Uri = throw new UnsupportedOperationException()
 
   override def getPackageByPackageVersion(
     packageName: String,

@@ -9,7 +9,7 @@ import com.twitter.util.Future
 /** Useful when a repository is not needed or should not be used. */
 object EmptyRepository extends Repository {
 
-  override def repository: PackageRepository = throw new UnsupportedOperationException()
+  override def uri: Uri = throw new UnsupportedOperationException()
 
   override def getPackageByPackageVersion(
     packageName: String,
