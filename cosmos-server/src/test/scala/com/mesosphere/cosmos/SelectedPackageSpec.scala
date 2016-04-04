@@ -14,26 +14,26 @@ import io.circe.{Decoder, Encoder, Printer}
 import io.finch.circe._
 import org.mockito.Mockito._
 
-final class PromotedPackageSpec extends UnitSpec {
+final class SelectedPackageSpec extends UnitSpec {
 
-  import PromotedPackageSpec._
+  import SelectedPackageSpec._
 
-  "Promoted packages appear first in search results" - {
+  "selected packages appear first in search results" - {
     "with same package name" in {
-      val promotedResult = makeSearchResult(promoted = Some(true))
-      val ordinaryResult = makeSearchResult(promoted = Some(false))
-      val anotherOrdinaryResult = makeSearchResult(promoted = None)
+      val selectedResult = makeSearchResult(selected = Some(true))
+      val ordinaryResult = makeSearchResult(selected = Some(false))
+      val anotherOrdinaryResult = makeSearchResult(selected = None)
 
-      val beforeSorting = List(ordinaryResult, promotedResult, anotherOrdinaryResult)
-      val afterSorting = List(promotedResult, ordinaryResult, anotherOrdinaryResult)
+      val beforeSorting = List(ordinaryResult, selectedResult, anotherOrdinaryResult)
+      val afterSorting = List(selectedResult, ordinaryResult, anotherOrdinaryResult)
       assertSearchResults(beforeSorting, afterSorting)
     }
 
     "with sorted package names" in {
-      val first = makeSearchResult(promoted = Some(true), name = "antelope")
-      val second = makeSearchResult(promoted = Some(true), name = "xylocarp")
-      val third = makeSearchResult(promoted = Some(false), name = "aardvark")
-      val fourth = makeSearchResult(promoted = Some(false), name = "zebra")
+      val first = makeSearchResult(selected = Some(true), name = "antelope")
+      val second = makeSearchResult(selected = Some(true), name = "xylocarp")
+      val third = makeSearchResult(selected = Some(false), name = "aardvark")
+      val fourth = makeSearchResult(selected = Some(false), name = "zebra")
 
       val beforeSorting = List(fourth, second, first, third)
       val afterSorting = List(first, second, third, fourth)
@@ -56,22 +56,22 @@ final class PromotedPackageSpec extends UnitSpec {
     }
   }
 
-  "The promoted fields from the index are carried through to search results" - {
+  "The selected fields from the index are carried through to search results" - {
     "UniversePackageCache.searchResult" - {
-      "promoted=true" in {
-        assertPromotedPropagated(Some(true))
+      "selected=true" in {
+        assertSelectedPropagated(Some(true))
       }
 
-      "promoted=false" in {
-        assertPromotedPropagated(Some(false))
+      "selected=false" in {
+        assertSelectedPropagated(Some(false))
       }
 
-      "promoted=None" in {
-        assertPromotedPropagated(None)
+      "selected=None" in {
+        assertSelectedPropagated(None)
       }
 
-      def assertPromotedPropagated(promoted: Option[Boolean]): Unit = {
-        val searchResult = makeSearchResult(promoted)
+      def assertSelectedPropagated(selected: Option[Boolean]): Unit = {
+        val searchResult = makeSearchResult(selected)
         val indexEntry = makeIndexEntry(searchResult)
 
         assertResult(searchResult)(UniversePackageCache.searchResult(indexEntry, images = None))
@@ -82,63 +82,63 @@ final class PromotedPackageSpec extends UnitSpec {
 
   }
 
-  "Promoted field is preserved by encoders/decoders" - {
+  "selected field is preserved by encoders/decoders" - {
     "SearchResult" - {
-      "promoted=true" in {
-        assertEncodeDecode(makeSearchResult(promoted = Some(true)))
+      "selected=true" in {
+        assertEncodeDecode(makeSearchResult(selected = Some(true)))
       }
 
-      "promoted=false" in {
-        assertEncodeDecode(makeSearchResult(promoted = Some(false)))
+      "selected=false" in {
+        assertEncodeDecode(makeSearchResult(selected = Some(false)))
       }
 
-      "promoted=None" - {
+      "selected=None" - {
         "keep null" in {
-          assertEncodeDecode(makeSearchResult(promoted = None))
+          assertEncodeDecode(makeSearchResult(selected = None))
         }
 
         "drop null" in {
-          assertEncodeDecode(makeSearchResult(promoted = None), dropNullKeys = true)
+          assertEncodeDecode(makeSearchResult(selected = None), dropNullKeys = true)
         }
       }
     }
 
     "UniverseIndexEntry" - {
-      "promoted=true" in {
-        assertEncodeDecode(makeIndexEntry(makeSearchResult(promoted = Some(true))))
+      "selected=true" in {
+        assertEncodeDecode(makeIndexEntry(makeSearchResult(selected = Some(true))))
       }
 
-      "promoted=false" in {
-        assertEncodeDecode(makeIndexEntry(makeSearchResult(promoted = Some(false))))
+      "selected=false" in {
+        assertEncodeDecode(makeIndexEntry(makeSearchResult(selected = Some(false))))
       }
 
-      "promoted=None" - {
+      "selected=None" - {
         "keep null" in {
-          assertEncodeDecode(makeIndexEntry(makeSearchResult(promoted = None)))
+          assertEncodeDecode(makeIndexEntry(makeSearchResult(selected = None)))
         }
 
         "drop null" in {
-          assertEncodeDecode(makeIndexEntry(makeSearchResult(promoted = None)), dropNullKeys = true)
+          assertEncodeDecode(makeIndexEntry(makeSearchResult(selected = None)), dropNullKeys = true)
         }
       }
     }
 
     "PackageDetails" - {
-      "promoted=true" in {
-        assertEncodeDecode(makePackageDetails(makeSearchResult(promoted = Some(true))))
+      "selected=true" in {
+        assertEncodeDecode(makePackageDetails(makeSearchResult(selected = Some(true))))
       }
 
-      "promoted=false" in {
-        assertEncodeDecode(makePackageDetails(makeSearchResult(promoted = Some(false))))
+      "selected=false" in {
+        assertEncodeDecode(makePackageDetails(makeSearchResult(selected = Some(false))))
       }
 
-      "promoted=None" - {
+      "selected=None" - {
         "keep null" in {
-          assertEncodeDecode(makePackageDetails(makeSearchResult(promoted = None)))
+          assertEncodeDecode(makePackageDetails(makeSearchResult(selected = None)))
         }
 
         "drop null" in {
-          assertEncodeDecode(makePackageDetails(makeSearchResult(promoted = None)), dropNullKeys = true)
+          assertEncodeDecode(makePackageDetails(makeSearchResult(selected = None)), dropNullKeys = true)
         }
       }
     }
@@ -155,16 +155,16 @@ final class PromotedPackageSpec extends UnitSpec {
 
 }
 
-object PromotedPackageSpec {
+object SelectedPackageSpec {
 
-  def makeSearchResult(promoted: Option[Boolean], name: String = "some-package"): SearchResult = {
+  def makeSearchResult(selected: Option[Boolean], name: String = "some-package"): SearchResult = {
     SearchResult(
       name = name,
       currentVersion = PackageDetailsVersion("1.2.3"),
       versions = Map(PackageDetailsVersion("1.2.3") -> ReleaseVersion("0")),
       description = "An arbitrary package",
       tags = Nil,
-      promoted = promoted
+      selected = selected
     )
   }
 
@@ -176,7 +176,7 @@ object PromotedPackageSpec {
       description = searchResult.description,
       framework = searchResult.framework,
       tags = searchResult.tags,
-      promoted = searchResult.promoted
+      selected = searchResult.selected
     )
   }
 
@@ -188,7 +188,7 @@ object PromotedPackageSpec {
       maintainer = "mesosphere",
       description = searchResult.description,
       tags = searchResult.tags,
-      promoted = searchResult.promoted
+      selected = searchResult.selected
     )
   }
 

@@ -258,7 +258,7 @@ object UniversePackageCache {
       description = indexEntry.description,
       framework = indexEntry.framework,
       tags = indexEntry.tags,
-      promoted = indexEntry.promoted,
+      selected = indexEntry.selected,
       images = images
     )
   }

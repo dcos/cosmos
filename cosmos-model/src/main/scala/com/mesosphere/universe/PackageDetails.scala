@@ -10,7 +10,7 @@ case class PackageDetails(
   maintainer: String,
   description: String,
   tags: List[String] = Nil,         //TODO: pattern: "^[^\\s]+$"
-  promoted: Option[Boolean] = None,
+  selected: Option[Boolean] = None,
   scm: Option[String] = None,
   website: Option[String] = None,
   framework: Option[Boolean] = None,

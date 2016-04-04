@@ -35,7 +35,7 @@ object Decoders {
       d <- cursor.downField("description").as[String]
       f <- cursor.downField("framework").as[Boolean]
       t <- cursor.downField("tags").as[List[String]]
-      p <- cursor.downField("promoted").as[Option[Boolean]]
+      p <- cursor.downField("selected").as[Option[Boolean]]
     } yield {
       val versions = v.map { case (s1, s2) =>
           PackageDetailsVersion(s1) -> ReleaseVersion(s2)
@@ -56,7 +56,7 @@ object Decoders {
         description = indexEntry.description,
         framework = indexEntry.framework,
         tags = indexEntry.tags,
-        promoted = indexEntry.promoted,
+        selected = indexEntry.selected,
         images = images
       )
     }
