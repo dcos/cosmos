@@ -123,6 +123,18 @@ class HttpProxySupportSpec extends FreeSpec {
           assertResult(ProxyEnvVariables(None, None, Some("val_proxy_no")))(vars)
         }
 
+        "should allow excluded hosts to be separated by ','" in {
+          HttpProxySupport.initNoProxyProperties(Some("127.0.0.1,localhost"))
+          assertResult("127.0.0.1|localhost")(System.getProperty("http.nonProxyHosts"))
+          clearSystemProperty("http.nonProxyHosts")
+        }
+
+        "should allow excluded hosts to be separated by '|'" in {
+          HttpProxySupport.initNoProxyProperties(Some("127.0.0.1|localhost"))
+          assertResult("127.0.0.1|localhost")(System.getProperty("http.nonProxyHosts"))
+          clearSystemProperty("http.nonProxyHosts")
+        }
+
       }
       
       "Proxy Credentials" - {
@@ -207,7 +219,7 @@ class HttpProxySupportSpec extends FreeSpec {
           assert(authentication == null)
         }
 
-        "are not provided when no pass in url" in {
+        "are not provided when no password in url" in {
           val vars = ProxyEnvVariables(Some("http://bill@localhost:3128"), Some("http://alice@hostlocal:8213"), Some("no_proxy_vals"))
           val auth = new CosmosHttpProxyPasswordAuthenticator(vars) {
             override def getRequestorType: RequestorType = RequestorType.PROXY
