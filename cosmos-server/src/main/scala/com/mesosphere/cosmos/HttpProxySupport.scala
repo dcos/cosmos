@@ -5,8 +5,6 @@ import java.net.{Authenticator, PasswordAuthentication}
 
 import com.netaporter.uri.Uri
 
-import scala.collection.JavaConverters._
-
 private[cosmos] object HttpProxySupport {
 
   private[this] val HttpProxyHost = "http.proxyHost"
@@ -131,6 +129,9 @@ private[cosmos] object HttpProxySupport {
 
   private[cosmos] def initNoProxyProperties(noProxy: Option[String]): Unit = {
     noProxy
+      .map { pattern =>
+        pattern.replaceAllLiterally(",", "|")
+      }
       .foreach {
         case pattern =>
           if (System.getProperty(HttpProxyNoHosts) == null) {
