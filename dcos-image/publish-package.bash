@@ -23,7 +23,6 @@ function copy {(
 
   mkdir -p ${TARGET_DIR}
   cp ${PROJECT_DIR}/cosmos-server/target/scala-2.11/cosmos-server_2.11-*-one-jar.jar ${TARGET_DIR}/${ONE_JAR}
-  cp ${DCOS_IMAGE_DIR}/build ${TARGET_DIR}/build
 
 )}
 
