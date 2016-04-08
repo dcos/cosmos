@@ -1,5 +1,9 @@
 package com.mesosphere.cosmos
 
+import cats.data.Xor
+import com.mesosphere.cosmos.handler.PackageInstallHandler
+import com.netaporter.uri.dsl._
+import com.mesosphere.universe.{PackageDetails, PackageDetailsVersion, PackageFiles, PackagingVersion}
 import org.scalatest.prop.TableDrivenPropertyChecks
 import org.scalatest.{FreeSpec, Matchers}
 
@@ -72,6 +76,80 @@ class PackageInstallSpec extends FreeSpec with Matchers with TableDrivenProperty
       //        }
       //      }
     }
+  }
+
+  "if the labels object from marathon.json.mustache isn't Map[String, String] an error is returned" in {
+    val mustache =
+      """
+        |{
+        |  "labels": {
+        |    "idx": 0,
+        |    "string": "value"
+        |  }
+        |}
+      """.stripMargin
+
+    val pf = PackageFiles(
+      revision = "0",
+      sourceUri = "http://someplace",
+      packageJson = PackageDetails(
+        packagingVersion = PackagingVersion("2.0"),
+        name = "testing",
+        version = PackageDetailsVersion("a.b.c"),
+        maintainer = "foo@bar.baz",
+        description = "blah"
+      ),
+      marathonJsonMustache = mustache
+    )
+
+    try {
+      val json = PackageInstallHandler.preparePackageConfig(None, None, pf)
+
+      val _ = for {
+        i <- json.hcursor.downField("labels").downField("idx").as[Int]
+      } yield {
+        i
+      }
+
+      fail("expected a CirceError to be thrown")
+    } catch {
+      case e @ CirceError(err) =>
+        assertResult("String: El(DownField(idx),true),El(DownField(labels),true)")(err.getMessage)
+    }
+  }
+
+  "if the labels object from marathon.json.mustache does not exist, a default empty object is used" in {
+    val mustache =
+      """
+        |{
+        |  "env": {
+        |    "some": "thing"
+        |  }
+        |}
+      """.stripMargin
+
+    val pf = PackageFiles(
+      revision = "0",
+      sourceUri = "http://someplace",
+      packageJson = PackageDetails(
+        packagingVersion = PackagingVersion("2.0"),
+        name = "testing",
+        version = PackageDetailsVersion("a.b.c"),
+        maintainer = "foo@bar.baz",
+        description = "blah"
+      ),
+      marathonJsonMustache = mustache
+    )
+
+    val json = PackageInstallHandler.preparePackageConfig(None, None, pf)
+
+    val Xor.Right(some) = for {
+      i <- json.hcursor.downField("env").downField("some").as[String]
+    } yield {
+      i
+    }
+
+    assertResult("thing")(some)
   }
 
 }
