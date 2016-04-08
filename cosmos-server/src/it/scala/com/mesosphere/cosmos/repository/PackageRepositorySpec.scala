@@ -157,16 +157,10 @@ final class PackageRepositorySpec
       val bogusRepository = PackageRepository("bogus", Uri.parse(uriText))
       assertAdd(defaultRepos :+ bogusRepository, bogusRepository)
 
-      val expectedMsg = s"URI for repository [${bogusRepository.name}] is invalid: ${bogusRepository.uri}"
-
       eventually {
-        assertResult(expectedMsg) {
-          val response = searchPackages(SearchRequest(None))
-          assertResult(Status.BadRequest)(response.status)
-          val Xor.Right(err) = decode[ErrorResponse](response.contentString)
-          val repo = err.message
-          repo
-        }
+        val response = searchPackages(SearchRequest(None))
+        assertResult(Status.BadRequest)(response.status)
+        assert(decode[ErrorResponse](response.contentString).isRight)
       }
     }
   }

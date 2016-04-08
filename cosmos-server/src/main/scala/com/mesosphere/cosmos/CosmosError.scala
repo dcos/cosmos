@@ -96,8 +96,23 @@ case class RepositoryAddIndexOutOfBounds(attempted: Int, max: Int) extends Cosmo
 case class UnsupportedRepositoryVersion(version: UniverseVersion) extends CosmosError
 case class UnsupportedRepositoryUri(uri: Uri) extends CosmosError
 
-case class InvalidRepositoryUri(repository: PackageRepository, causedBy: Throwable)
-  extends CosmosError(causedBy)
+case class RepositoryUriSyntax(
+  repository: PackageRepository,
+  causedBy: Throwable
+) extends CosmosError(causedBy) {
+  override def getData: Option[JsonObject] = {
+    Some(JsonObject.singleton("cause", causedBy.getMessage.asJson))
+  }
+}
+
+case class RepositoryUriConnection(
+  repository: PackageRepository,
+  causedBy: Throwable
+) extends CosmosError(causedBy) {
+  override def getData: Option[JsonObject] = {
+    Some(JsonObject.singleton("cause", causedBy.getMessage.asJson))
+  }
+}
 
 case class RepositoryNotPresent(nameOrUri: Ior[String, Uri]) extends CosmosError {
   override def getData: Option[JsonObject] = {
