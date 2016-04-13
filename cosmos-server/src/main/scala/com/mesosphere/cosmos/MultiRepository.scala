@@ -63,11 +63,19 @@ final class MultiRepository (
 
   override def search(query: Option[String]): Future[List[SearchResult]] = {
     repositories().flatMap { repositories =>
-      Future.collect {
-        repositories.map { repository =>
-          repository.search(query)
-        }
-      } map(_.toList.flatten)
+      val searches = repositories.zipWithIndex.map { case (repository, repositoryIndex) =>
+        repository.search(query)
+          .map { results =>
+            results.map( _ -> repositoryIndex )
+          }
+      }
+      val fSearchResults = Future.collect(searches).map(_.toList.flatten)
+      fSearchResults.map { results =>
+        results.groupBy(_._1.name)
+          .map { case (name, list) =>
+            list.sortBy(_._2).head._1
+          }.toList
+      }
     }
   }
 
