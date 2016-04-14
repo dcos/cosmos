@@ -10,8 +10,8 @@ CLEAN_VERSION=${VERSION//\//_}
 ONE_JAR="cosmos-server-${CLEAN_VERSION}-one-jar.jar"
 SHA1_FILE="${ONE_JAR}.sha1"
 
-S3_DEPLOY_BUCKET="s3://downloads.mesosphere.io/dcos/cosmos/${CLEAN_VERSION}"
-HTTPS_READ_BUCKET="https://downloads.mesosphere.com/dcos/cosmos/${CLEAN_VERSION}"
+S3_DEPLOY_BUCKET="s3://downloads.dcos.io/cosmos/${CLEAN_VERSION}"
+HTTPS_READ_BUCKET="https://downloads.dcos.io/cosmos/${CLEAN_VERSION}"
 
 function clean {(
 
