@@ -27,6 +27,11 @@ object Decoders {
     } yield Images(iS, iM, iL, ss)
   }
   implicit val decodeResource: Decoder[Resource] = deriveFor[Resource].decoder
+  implicit val decodeHashInfo: Decoder[HashInfo] = deriveFor[HashInfo].decoder
+  implicit val decodeBinary: Decoder[Binary] = deriveFor[Binary].decoder
+  implicit val decodeArchitectures: Decoder[Architectures] = deriveFor[Architectures].decoder
+  implicit val decodePlatforms: Decoder[Platforms] = deriveFor[Platforms].decoder
+  implicit val decodeCli: Decoder[Cli] = deriveFor[Cli].decoder
   implicit val decodePackageIndex: Decoder[UniverseIndexEntry] = Decoder.instance { (cursor: HCursor) =>
     for {
       n <- cursor.downField("name").as[String]
