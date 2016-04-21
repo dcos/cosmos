@@ -13,6 +13,7 @@ import com.twitter.util.Future
 import io.circe.parse._
 
 import scala.io.Source
+import scala.language.implicitConversions
 import java.io.InputStream
 import java.util.Properties
 import java.util.zip.GZIPInputStream
@@ -115,6 +116,12 @@ class UniverseRepositoryFetcher(adminRouter: AdminRouter)(implicit statsReceiver
             repo.packages.map(asV3Package)
           )
         }
+    }
+  }
+  implicit def v2ResourceToV3Resource(r2: Option[V2Resource]): Option[V3Resource] = {
+    r2 match {
+      case None => None
+      case Some(r) => Some(V3Resource(r.assets, r.images))
     }
   }
 
