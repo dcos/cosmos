@@ -5,5 +5,6 @@ package com.mesosphere.universe
   */
 case class Resource(
   assets: Option[Assets] = None,
-  images: Option[Images] = None
+  images: Option[Images] = None,
+  cli: Option[Cli] = None
 )

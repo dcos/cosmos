@@ -29,6 +29,11 @@ object Encoders {
     )
   }
   implicit val encodeResource: Encoder[Resource] = deriveFor[Resource].encoder
+  implicit val encodeHashInfo: Encoder[HashInfo] = deriveFor[HashInfo].encoder
+  implicit val encodeBinary: Encoder[Binary] = deriveFor[Binary].encoder
+  implicit val encodeArchitectures: Encoder[Architectures] = deriveFor[Architectures].encoder
+  implicit val encodePlatforms: Encoder[Platforms] = deriveFor[Platforms].encoder
+  implicit val encodeCli: Encoder[Cli] = deriveFor[Cli].encoder
 
   implicit val encodePackageIndex: Encoder[UniverseIndexEntry] = ObjectEncoder.instance { entry =>
     val encodedFields = encodeIndexEntryFields(
