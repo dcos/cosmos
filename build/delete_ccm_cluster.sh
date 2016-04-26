@@ -2,7 +2,7 @@
 
 # Used by the TeamCity build for this project
 
-set -ex -o pipefail
+set -e -o pipefail
 
 # Check that required env vars are defined
 : "${CCM_AUTH_TOKEN:?}"

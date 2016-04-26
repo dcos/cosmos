@@ -3,7 +3,7 @@
 # Provides a convenient way to test the TeamCity build scripts locally.
 # Can also be used to run the tests locally without an existing DCOS cluster.
 
-set -ex -o pipefail
+set -e -o pipefail
 
 # Taken from http://stackoverflow.com/a/246128
 SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
