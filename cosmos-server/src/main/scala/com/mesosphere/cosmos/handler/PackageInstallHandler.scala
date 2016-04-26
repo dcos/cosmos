@@ -4,7 +4,6 @@ import java.io.{StringReader, StringWriter}
 import java.util.Base64
 
 import scala.collection.JavaConverters._
-
 import cats.data.Xor
 import com.github.mustachejava.DefaultMustacheFactory
 import com.twitter.io.Charsets
@@ -13,13 +12,12 @@ import io.circe.parse.parse
 import io.circe.syntax._
 import io.circe.{Encoder, Json, JsonObject}
 import io.finch.DecodeRequest
-
 import com.mesosphere.cosmos.http.MediaTypes
 import com.mesosphere.cosmos.jsonschema.JsonSchemaValidation
 import com.mesosphere.cosmos.model._
 import com.mesosphere.cosmos.model.thirdparty.marathon.MarathonApp
 import com.mesosphere.cosmos.repository.PackageCollection
-import com.mesosphere.cosmos.{JsonSchemaMismatch, PackageFileNotJson, PackageRunner}
+import com.mesosphere.cosmos.{CirceError, JsonSchemaMismatch, PackageFileNotJson, PackageRunner}
 import com.mesosphere.universe.{PackageFiles, Resource}
 
 private[cosmos] final class PackageInstallHandler(
@@ -200,8 +198,15 @@ private[cosmos] object PackageInstallHandler {
       commandMetadata.map(MarathonApp.commandLabel -> _)
     ).flatten.toMap
 
-    val existingLabels = marathonJson.cursor
-      .get[Map[String, String]]("labels").getOrElse(Map.empty)
+    val hasLabels = marathonJson.cursor.fieldSet.exists(_.contains("labels"))
+    val existingLabels = if (hasLabels) {
+        marathonJson.cursor.get[Map[String, String]]("labels") match {
+          case Xor.Left(df) => throw CirceError(df)
+          case Xor.Right(labels) => labels
+        }
+    } else {
+      Map.empty[String, String]
+    }
 
     val packageLabels = requiredLabels ++ existingLabels ++ nonOverridableLabels
 
