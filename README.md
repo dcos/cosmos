@@ -34,9 +34,9 @@ To run the Cosmos process we need to first create a One-JAR:
 sbt one-jar
 ```
 
-The jar will be created in the `target/scala-2.11/` directory. This can be executed with:
+The jar will be created in the `cosmos-server/target/scala-2.11/` directory. This can be executed with:
 
 ```bash
-java -jar target/scala-2.11/cosmos_2.11-<version>-SNAPSHOT-one-jar.jar  \
+java -jar cosmos-server/target/scala-2.11/cosmos-server_2.11-<version>-SNAPSHOT-one-jar.jar  \
      -com.mesosphere.cosmos.dcosUri=<dcos-host-url>
 ```
