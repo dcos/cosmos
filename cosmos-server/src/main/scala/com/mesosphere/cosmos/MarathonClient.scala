@@ -11,8 +11,11 @@ import com.twitter.util.Future
 import io.circe.Json
 import org.jboss.netty.handler.codec.http.HttpMethod
 
-class MarathonClient(marathonUri: Uri, client: Service[Request, Response])
-  extends ServiceClient(marathonUri, authorization = None) {
+class MarathonClient(
+  marathonUri: Uri,
+  client: Service[Request, Response],
+  authorization: Option[String]
+) extends ServiceClient(marathonUri, authorization) {
 
   def createApp(appJson: Json): Future[Response] = {
     client(post("v2" / "apps" , appJson))
