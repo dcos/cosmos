@@ -16,31 +16,27 @@ abstract class ServiceClient(baseUri: Uri, authorization: Option[String]) {
   private[this] val cleanedBaseUri: String = Uris.stripTrailingSlash(baseUri)
 
   protected def get(uri: Uri): Request = {
-    RequestBuilder()
-      .url(s"$cleanedBaseUri${uri.toString}")
+    baseRequestBuilder(uri)
       .setHeader("Accept", MediaTypes.applicationJson.show)
       .buildGet
   }
 
   protected def post(uri: Uri, jsonBody: Json): Request = {
-    RequestBuilder()
-      .url(s"$cleanedBaseUri${uri.toString}")
+    baseRequestBuilder(uri)
       .setHeader("Accept", MediaTypes.applicationJson.show)
       .setHeader("Content-Type", MediaTypes.applicationJson.show)
       .buildPost(Buf.Utf8(jsonBody.noSpaces))
   }
 
   protected def postForm(uri: Uri, postBody: String): Request = {
-    RequestBuilder()
-      .url(s"$cleanedBaseUri${uri.toString}")
+    baseRequestBuilder(uri)
       .setHeader("Accept", MediaTypes.applicationJson.show)
       .setHeader("Content-Type", "application/x-www-form-urlencoded; charset=utf-8")
       .buildPost(Buf.Utf8(postBody))
   }
 
   protected def delete(uri: Uri): Request = {
-    RequestBuilder()
-      .url(s"$cleanedBaseUri${uri.toString}")
+    baseRequestBuilder(uri)
       .setHeader("Accept", MediaTypes.applicationJson.show)
       .buildDelete()
   }
