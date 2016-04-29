@@ -1,16 +1,17 @@
 package com.mesosphere.cosmos
 
-import cats.data.Xor.{Right, Left}
+import cats.data.Xor.{Left, Right}
 import com.mesosphere.cosmos.http.{MediaTypeOps, MediaTypes}
 import com.netaporter.uri.Uri
-import com.twitter.finagle.http.{Status, Response, RequestBuilder, Request}
+import com.twitter.finagle.http.RequestConfig.Yes
+import com.twitter.finagle.http.{Request, RequestBuilder, Response, Status}
 import com.twitter.io.Buf
 import com.twitter.util.Future
 import io.circe.Json
 import io.circe.parse._
 import org.jboss.netty.handler.codec.http.HttpMethod
 
-abstract class ServiceClient(baseUri: Uri) {
+abstract class ServiceClient(baseUri: Uri, authorization: Option[String]) {
 
   private[this] val cleanedBaseUri: String = Uris.stripTrailingSlash(baseUri)
 
@@ -76,6 +77,11 @@ abstract class ServiceClient(baseUri: Uri) {
   protected def decodeTo[A](method: HttpMethod, uri: Uri, response: Response)(implicit d: io.circe.Decoder[A]): Future[A] = {
     validateResponseStatus(method, uri, response)
       .map(decodeJsonTo[A])
+  }
+
+  private[cosmos] final def baseRequestBuilder(uri: Uri): RequestBuilder[Yes, Nothing] = {
+    RequestBuilder()
+      .url(s"$cleanedBaseUri${uri.toString}")
   }
 
 }

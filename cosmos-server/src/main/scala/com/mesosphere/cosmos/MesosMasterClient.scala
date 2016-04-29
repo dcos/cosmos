@@ -9,7 +9,8 @@ import com.twitter.finagle.http._
 import com.twitter.util.Future
 import org.jboss.netty.handler.codec.http.HttpMethod
 
-class MesosMasterClient(mesosUri: Uri, client: Service[Request, Response]) extends ServiceClient(mesosUri) {
+class MesosMasterClient(mesosUri: Uri, client: Service[Request, Response])
+  extends ServiceClient(mesosUri, authorization = None) {
 
   def tearDownFramework(frameworkId: String): Future[MesosFrameworkTearDownResponse] = {
     val formData = Uri.empty.addParam("frameworkId", frameworkId)
