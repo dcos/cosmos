@@ -80,8 +80,13 @@ abstract class ServiceClient(baseUri: Uri, authorization: Option[String]) {
   }
 
   private[cosmos] final def baseRequestBuilder(uri: Uri): RequestBuilder[Yes, Nothing] = {
-    RequestBuilder()
+    val builder = RequestBuilder()
       .url(s"$cleanedBaseUri${uri.toString}")
+
+    authorization match {
+      case Some(value) => builder.setHeader("Authorization", value)
+      case _ => builder
+    }
   }
 
 }
