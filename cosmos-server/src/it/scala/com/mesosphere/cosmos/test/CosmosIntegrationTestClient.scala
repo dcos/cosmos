@@ -39,7 +39,7 @@ object CosmosIntegrationTestClient extends Matchers {
       .map { case (marathon, mesosMaster) =>
         new AdminRouter(
           new MarathonClient(marathon._1, marathon._2, authorization = None),
-          new MesosMasterClient(mesosMaster._1, mesosMaster._2)
+          new MesosMasterClient(mesosMaster._1, mesosMaster._2, authorization = None)
         )
       }
 
