@@ -37,9 +37,10 @@ object CosmosIntegrationTestClient extends Matchers {
         )
       }
       .map { case (marathon, mesosMaster) =>
+        val authorization = Cosmos.authorizationRequestHeader
         new AdminRouter(
-          new MarathonClient(marathon._1, marathon._2, authorization = None),
-          new MesosMasterClient(mesosMaster._1, mesosMaster._2, authorization = None)
+          new MarathonClient(marathon._1, marathon._2, authorization),
+          new MesosMasterClient(mesosMaster._1, mesosMaster._2, authorization)
         )
       }
 
