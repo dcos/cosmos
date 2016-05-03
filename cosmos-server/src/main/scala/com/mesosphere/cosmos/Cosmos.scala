@@ -242,9 +242,10 @@ object Cosmos extends FinchServer {
         )
       }
       .map { case (marathon, mesosMaster) =>
+        val authorization = authorizationRequestHeader
         new AdminRouter(
-          new MarathonClient(marathon._1, marathon._2),
-          new MesosMasterClient(mesosMaster._1, mesosMaster._2)
+          new MarathonClient(marathon._1, marathon._2, authorization),
+          new MesosMasterClient(mesosMaster._1, mesosMaster._2, authorization)
         )
       }
 
@@ -301,6 +302,13 @@ object Cosmos extends FinchServer {
       new PackageRepositoryDeleteHandler(sourcesStorage),
       CapabilitiesHandler()
     )(statsReceiver)
+  }
+
+  /** Using an environment variable to keep the credentials secure; command-line arguments can be
+    * seen by other processes and might be shown in build logs.
+    */
+  private[cosmos] def authorizationRequestHeader: Option[String] = {
+    sys.env.get("COSMOS_AUTHORIZATION_HEADER")
   }
 
 }
