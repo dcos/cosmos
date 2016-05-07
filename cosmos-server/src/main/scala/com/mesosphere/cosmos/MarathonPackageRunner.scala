@@ -1,17 +1,18 @@
 package com.mesosphere.cosmos
 
 import cats.data.Xor
-import com.mesosphere.cosmos.model.thirdparty.marathon.{ MarathonApp, MarathonError }
+import com.mesosphere.cosmos.model.thirdparty.marathon.{MarathonApp, MarathonError}
 import com.twitter.finagle.http.Status
 import com.twitter.util.Future
 import com.mesosphere.cosmos.circe.Decoders._
+import com.mesosphere.cosmos.http.RequestSession
 import io.circe.parse.decode
 import io.circe.Json
 
 /** A [[com.mesosphere.cosmos.PackageRunner]] implementation for Marathon. */
 final class MarathonPackageRunner(adminRouter: AdminRouter) extends PackageRunner {
 
-  def launch(renderedConfig: Json): Future[MarathonApp] = {
+  def launch(renderedConfig: Json)(implicit session: RequestSession): Future[MarathonApp] = {
     adminRouter.createApp(renderedConfig)
       .map { response =>
         response.status match {

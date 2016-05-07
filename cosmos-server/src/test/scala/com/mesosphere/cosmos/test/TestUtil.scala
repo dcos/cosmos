@@ -1,5 +1,7 @@
 package com.mesosphere.cosmos.test
 
+import com.mesosphere.cosmos.http.RequestSession
+
 import java.io.IOException
 import java.nio.file._
 import java.nio.file.attribute.BasicFileAttributes
@@ -25,5 +27,7 @@ object TestUtil {
 
     val _ = Files.walkFileTree(path, visitor)
   }
+
+  implicit val Anonymous = RequestSession(None)
 
 }

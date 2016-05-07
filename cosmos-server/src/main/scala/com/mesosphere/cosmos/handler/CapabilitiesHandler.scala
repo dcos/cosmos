@@ -1,7 +1,7 @@
 package com.mesosphere.cosmos.handler
 
 import com.mesosphere.cosmos.http.FinchExtensions._
-import com.mesosphere.cosmos.http.{MediaType, MediaTypes}
+import com.mesosphere.cosmos.http.{Authorization, MediaType, MediaTypes, RequestSession}
 import com.mesosphere.cosmos.model.{CapabilitiesResponse, Capability}
 import com.twitter.util.{Future, Try}
 import io.circe.Encoder
@@ -16,12 +16,15 @@ class CapabilitiesHandler private(implicit decodeRequest: DecodeRequest[Any], en
   override val accepts: MediaType = MediaTypes.any
   override val produces: MediaType = MediaTypes.CapabilitiesResponse
 
-  override lazy val reader: RequestReader[Any] = for {
+  override lazy val reader: RequestReader[(RequestSession, Any)] = for {
     accept <- header("Accept").as[MediaType].should(beTheExpectedType(produces))
-  } yield None
+    auth <- headerOption("Authorization").as[String]
+  } yield {
+    RequestSession(auth.map(Authorization(_))) -> None
+  }
 
 
-  override def apply(v1: Any): Future[CapabilitiesResponse] = {
+  override def apply(v1: Any)(implicit session: RequestSession): Future[CapabilitiesResponse] = {
     Future.value(response)
   }
 }

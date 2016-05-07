@@ -1,6 +1,6 @@
 package com.mesosphere.cosmos.handler
 
-import com.mesosphere.cosmos.http.{MediaType, MediaTypes}
+import com.mesosphere.cosmos.http.{MediaType, MediaTypes, RequestSession}
 import com.mesosphere.cosmos.model._
 import com.mesosphere.cosmos.repository.PackageSourcesStorage
 import com.twitter.util.Future
@@ -17,7 +17,7 @@ private[cosmos] final class PackageRepositoryListHandler(
   override val accepts: MediaType = MediaTypes.PackageRepositoryListRequest
   override val produces: MediaType = MediaTypes.PackageRepositoryListResponse
 
-  override def apply(req: PackageRepositoryListRequest): Future[PackageRepositoryListResponse] = {
+  override def apply(req: PackageRepositoryListRequest)(implicit session: RequestSession): Future[PackageRepositoryListResponse] = {
     sourcesStorage.read().map(PackageRepositoryListResponse(_))
   }
 }

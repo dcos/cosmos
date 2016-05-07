@@ -17,6 +17,7 @@ import org.mockito.Mockito._
 final class SelectedPackageSpec extends UnitSpec {
 
   import SelectedPackageSpec._
+  import com.mesosphere.cosmos.test.TestUtil.Anonymous
 
   "selected packages appear first in search results" - {
     "with same package name" in {

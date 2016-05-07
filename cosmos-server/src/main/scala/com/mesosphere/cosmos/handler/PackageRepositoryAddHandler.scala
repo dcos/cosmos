@@ -1,7 +1,7 @@
 package com.mesosphere.cosmos.handler
 
 import com.mesosphere.cosmos.UnsupportedRepositoryUri
-import com.mesosphere.cosmos.http.{MediaType, MediaTypes}
+import com.mesosphere.cosmos.http.{MediaType, MediaTypes, RequestSession}
 import com.mesosphere.cosmos.model.PackageRepositoryAddRequest
 import com.mesosphere.cosmos.model.PackageRepositoryAddResponse
 import com.mesosphere.cosmos.model.PackageRepository
@@ -21,7 +21,7 @@ final class PackageRepositoryAddHandler(sourcesStorage: PackageSourcesStorage)(
 
   override def apply(
     request: PackageRepositoryAddRequest
-  ): Future[PackageRepositoryAddResponse] = {
+  )(implicit session: RequestSession): Future[PackageRepositoryAddResponse] = {
     request.uri.scheme match {
       case Some("http") | Some("https") =>
         sourcesStorage.add(

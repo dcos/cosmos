@@ -1,13 +1,10 @@
 package com.mesosphere.cosmos
 
 import java.nio.file.Path
-
 import com.netaporter.uri.Uri
 import com.twitter.finagle.Service
-import com.twitter.finagle.http.exp.Multipart.FileUpload
 import com.twitter.finagle.http.{Request, Response, Status}
 import com.twitter.finagle.stats.{NullStatsReceiver, StatsReceiver}
-import com.twitter.util.Await
 import com.twitter.util.Future
 import com.twitter.util.Try
 import io.circe.Json
@@ -17,11 +14,10 @@ import io.finch.circe._
 import io.github.benwhitehead.finch.FinchServer
 import org.apache.curator.framework.CuratorFrameworkFactory
 import org.apache.curator.retry.ExponentialBackoffRetry
-
 import com.mesosphere.cosmos.circe.Decoders._
 import com.mesosphere.cosmos.circe.Encoders._
 import com.mesosphere.cosmos.handler._
-import com.mesosphere.cosmos.http.MediaTypes
+import com.mesosphere.cosmos.http.{MediaTypes, RequestSession}
 import com.mesosphere.cosmos.model._
 import com.mesosphere.cosmos.repository.PackageSourcesStorage
 import com.mesosphere.cosmos.repository.ZooKeeperStorage
@@ -31,7 +27,6 @@ private[cosmos] final class Cosmos(
   packageInstallHandler: EndpointHandler[InstallRequest, InstallResponse],
   packageRenderHandler: EndpointHandler[RenderRequest, RenderResponse],
   packageSearchHandler: EndpointHandler[SearchRequest, SearchResponse],
-  packageImportHandler: PackageImportHandler, // TODO: Real response Type
   packageDescribeHandler: EndpointHandler[DescribeRequest, DescribeResponse],
   packageListVersionsHandler: EndpointHandler[ListVersionsRequest, ListVersionsResponse],
   listHandler: EndpointHandler[ListRequest, ListResponse],
@@ -42,20 +37,11 @@ private[cosmos] final class Cosmos(
 )(implicit statsReceiver: StatsReceiver = NullStatsReceiver) {
   lazy val logger = org.slf4j.LoggerFactory.getLogger(classOf[Cosmos])
 
-  val packageImport: Endpoint[Json] = {
-    def respond(file: FileUpload): Future[Output[Json]] = {
-      packageImportHandler(file).map { output =>
-        Ok(output)
-      }
-    }
-
-    post("package" / "import" ? packageImportHandler.reader)(respond _)
-  }
-
   val packageInstall: Endpoint[Json] = {
 
-    def respond(reqBody: InstallRequest): Future[Output[Json]] = {
-      packageInstallHandler(reqBody)
+    def respond(t: (RequestSession, InstallRequest)): Future[Output[Json]] = {
+      implicit val (session, request) = t
+      packageInstallHandler(request)
         .map(res => Ok(res.asJson).withContentType(Some(packageInstallHandler.produces.show)))
     }
 
@@ -63,8 +49,9 @@ private[cosmos] final class Cosmos(
   }
 
   val packageUninstall: Endpoint[Json] = {
-    def respond(req: UninstallRequest): Future[Output[Json]] = {
-      uninstallHandler(req).map {
+    def respond(t: (RequestSession, UninstallRequest)): Future[Output[Json]] = {
+      implicit val (session, request) = t
+      uninstallHandler(request).map {
         case resp => Ok(resp.asJson).withContentType(Some(uninstallHandler.produces.show))
       }
     }
@@ -74,8 +61,9 @@ private[cosmos] final class Cosmos(
 
   val packageDescribe: Endpoint[Json] = {
 
-    def respond(describe: DescribeRequest): Future[Output[Json]] = {
-      packageDescribeHandler(describe) map { resp =>
+    def respond(t: (RequestSession, DescribeRequest)): Future[Output[Json]] = {
+      implicit val (session, request) = t
+      packageDescribeHandler(request) map { resp =>
         Ok(resp.asJson).withContentType(Some(packageDescribeHandler.produces.show))
       }
     }
@@ -85,8 +73,9 @@ private[cosmos] final class Cosmos(
 
   val packageRender: Endpoint[Json] = {
 
-    def respond(reqBody: RenderRequest): Future[Output[Json]] = {
-      packageRenderHandler(reqBody)
+    def respond(t: (RequestSession, RenderRequest)): Future[Output[Json]] = {
+      implicit val (session, request) = t
+      packageRenderHandler(request)
         .map(res => Ok(res.asJson).withContentType(Some(packageRenderHandler.produces.show)))
     }
 
@@ -94,8 +83,9 @@ private[cosmos] final class Cosmos(
   }
 
   val packageListVersions: Endpoint[Json] = {
-    def respond(listVersions: ListVersionsRequest): Future[Output[Json]] = {
-      packageListVersionsHandler(listVersions) map { resp =>
+    def respond(t: (RequestSession, ListVersionsRequest)): Future[Output[Json]] = {
+      implicit val (session, request) = t
+      packageListVersionsHandler(request) map { resp =>
         Ok(resp.asJson).withContentType(Some(packageListVersionsHandler.produces.show))
       }
     }
@@ -105,8 +95,9 @@ private[cosmos] final class Cosmos(
 
   val packageSearch: Endpoint[Json] = {
 
-    def respond(reqBody: SearchRequest): Future[Output[Json]] = {
-      packageSearchHandler(reqBody)
+    def respond(t: (RequestSession, SearchRequest)): Future[Output[Json]] = {
+      implicit val (session, request) = t
+      packageSearchHandler(request)
         .map { searchResults =>
           Ok(searchResults.asJson).withContentType(Some(packageSearchHandler.produces.show))
         }
@@ -116,7 +107,8 @@ private[cosmos] final class Cosmos(
   }
 
   val packageList: Endpoint[Json] = {
-    def respond(request: ListRequest): Future[Output[Json]] = {
+    def respond(t: (RequestSession, ListRequest)): Future[Output[Json]] = {
+      implicit val (session, request) = t
       listHandler(request).map { resp =>
         Ok(resp.asJson).withContentType(Some(listHandler.produces.show))
       }
@@ -126,7 +118,8 @@ private[cosmos] final class Cosmos(
   }
 
   val capabilities: Endpoint[Json] = {
-    def respond(any: Any): Future[Output[Json]] = {
+    def respond(t: (RequestSession, Any)): Future[Output[Json]] = {
+      implicit val (session, _) = t
       capabilitiesHandler(None).map { resp =>
         Ok(resp.asJson).withContentType(Some(capabilitiesHandler.produces.show))
       }
@@ -136,7 +129,8 @@ private[cosmos] final class Cosmos(
   }
 
   val packageListSources: Endpoint[Json] = {
-    def respond(request: PackageRepositoryListRequest): Future[Output[Json]] = {
+    def respond(t: (RequestSession, PackageRepositoryListRequest)): Future[Output[Json]] = {
+      implicit val (session, request) = t
       listRepositoryHandler(request).map { response =>
         Ok(response.asJson).withContentType(Some(listRepositoryHandler.produces.show))
       }
@@ -146,7 +140,8 @@ private[cosmos] final class Cosmos(
   }
 
   val packageAddSource: Endpoint[Json] = {
-    def respond(request: PackageRepositoryAddRequest): Future[Output[Json]] = {
+    def respond(t: (RequestSession, PackageRepositoryAddRequest)): Future[Output[Json]] = {
+      implicit val (session, request) = t
       addRepositoryHandler(request).map { response =>
         Ok(response.asJson).withContentType(Some(addRepositoryHandler.produces.show))
       }
@@ -156,7 +151,8 @@ private[cosmos] final class Cosmos(
   }
 
   val packageDeleteSource: Endpoint[Json] = {
-    def respond(request: PackageRepositoryDeleteRequest): Future[Output[Json]] = {
+    def respond(t: (RequestSession, PackageRepositoryDeleteRequest)): Future[Output[Json]] = {
+      implicit val (session, request) = t
       deleteRepositoryHandler(request).map { response =>
         Ok(response.asJson).withContentType(Some(deleteRepositoryHandler.produces.show))
       }
@@ -168,8 +164,7 @@ private[cosmos] final class Cosmos(
   val service: Service[Request, Response] = {
     val stats = statsReceiver.scope("errorFilter")
 
-    (packageImport
-      :+: packageInstall
+    (packageInstall
       :+: packageRender
       :+: packageDescribe
       :+: packageSearch
@@ -184,7 +179,8 @@ private[cosmos] final class Cosmos(
       .handle {
         case ce: CosmosError =>
           stats.counter(s"definedError/${sanitiseClassName(ce.getClass)}").incr()
-          Output.failure(ce, ce.status).withContentType(Some(MediaTypes.ErrorResponse.show))
+          val output = Output.failure(ce, ce.status).withContentType(Some(MediaTypes.ErrorResponse.show))
+          ce.getHeaders.foldLeft(output) { case (out, kv) => out.withHeader(kv) }
         case fe: io.finch.Error =>
           stats.counter(s"finchError/${sanitiseClassName(fe.getClass)}").incr()
           Output.failure(fe, Status.BadRequest).withContentType(Some(MediaTypes.ErrorResponse.show))
@@ -242,10 +238,9 @@ object Cosmos extends FinchServer {
         )
       }
       .map { case (marathon, mesosMaster) =>
-        val authorization = authorizationRequestHeader
         new AdminRouter(
-          new MarathonClient(marathon._1, marathon._2, authorization),
-          new MesosMasterClient(mesosMaster._1, mesosMaster._2, authorization)
+          new MarathonClient(marathon._1, marathon._2),
+          new MesosMasterClient(mesosMaster._1, mesosMaster._2)
         )
       }
 
@@ -293,7 +288,6 @@ object Cosmos extends FinchServer {
       new PackageInstallHandler(repositories, packageRunner),
       new PackageRenderHandler(repositories),
       new PackageSearchHandler(repositories),
-      new PackageImportHandler,
       new PackageDescribeHandler(repositories),
       new ListVersionsHandler(repositories),
       new ListHandler(adminRouter, uri => repositories.getRepository(uri)),
@@ -302,13 +296,6 @@ object Cosmos extends FinchServer {
       new PackageRepositoryDeleteHandler(sourcesStorage),
       CapabilitiesHandler()
     )(statsReceiver)
-  }
-
-  /** Using an environment variable to keep the credentials secure; command-line arguments can be
-    * seen by other processes and might be shown in build logs.
-    */
-  private[cosmos] def authorizationRequestHeader: Option[String] = {
-    sys.env.get("COSMOS_AUTHORIZATION_HEADER")
   }
 
 }

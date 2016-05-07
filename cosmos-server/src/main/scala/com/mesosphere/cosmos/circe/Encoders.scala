@@ -221,7 +221,12 @@ object Encoders {
       s"Package [$pkgName] with id [$appId] is not installed"
 
     case ServiceUnavailable(serviceName, _) =>
-      s"Unable to complete request due to downstream service [$serviceName] unavailability"
+      s"Unable to complete request due to service [$serviceName] unavailability"
+    case u: Unauthorized =>
+      u.getMessage
+    case f: Forbidden =>
+      f.getMessage
+
     case IncompleteUninstall(packageName, _) =>
       s"Incomplete uninstall of package [$packageName] due to Mesos unavailability"
 

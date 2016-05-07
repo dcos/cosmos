@@ -1,5 +1,7 @@
 package com.mesosphere.cosmos
 
+import com.mesosphere.cosmos.http.{Authorization, RequestSession}
+import com.mesosphere.cosmos.test.TestUtil
 import com.netaporter.uri.Uri
 import com.twitter.finagle.http.Request
 import io.circe.Json
@@ -10,51 +12,54 @@ final class ServiceClientSpec extends FreeSpec with Inside {
   import ServiceClientSpec._
 
   "A ServiceClient" - {
-    "supports an optional Authorization request header" - {
+    "supports an optional AuthorizationHeaderName request header" - {
       "so that Cosmos can interact with security-enabled AdminRouters" - {
+        val testClient = new AuthorizationTestClient()
         "header not provided" - {
-          val unauthorizedClient = new AuthorizationTestClient(None)
+
+          implicit val session = TestUtil.Anonymous
 
           "with baseRequestBuilder()" in {
-            val requestBuilder = unauthorizedClient.baseRequestBuilder(Uri.parse("/foo/bar/baz"))
-            assert(!requestBuilder.buildGet.headerMap.contains(Authorization))
+            val requestBuilder = testClient.baseRequestBuilder(Uri.parse("/foo/bar/baz"))
+            assert(!requestBuilder.buildGet.headerMap.contains(AuthorizationHeaderName))
           }
           "with get()" in {
-            assert(!unauthorizedClient.testGet.headerMap.contains(Authorization))
+            assert(!testClient.testGet.headerMap.contains(AuthorizationHeaderName))
           }
           "with post()" in {
-            assert(!unauthorizedClient.testPost.headerMap.contains(Authorization))
+            assert(!testClient.testPost.headerMap.contains(AuthorizationHeaderName))
           }
           "with postForm()" in {
-            assert(!unauthorizedClient.testPostForm.headerMap.contains(Authorization))
+            assert(!testClient.testPostForm.headerMap.contains(AuthorizationHeaderName))
           }
           "with delete()" in {
-            assert(!unauthorizedClient.testDelete.headerMap.contains(Authorization))
+            assert(!testClient.testDelete.headerMap.contains(AuthorizationHeaderName))
           }
         }
 
         "header provided" - {
-          val authorizedClient = new AuthorizationTestClient(Some("credentials"))
+
+          implicit val session = RequestSession(Some(Authorization("credentials")))
 
           "with baseRequestBuilder()" in {
-            val requestBuilder = authorizedClient.baseRequestBuilder(Uri.parse("/foo/bar/baz"))
-            val headerOpt = requestBuilder.buildDelete.headerMap.get(Authorization)
+            val requestBuilder = testClient.baseRequestBuilder(Uri.parse("/foo/bar/baz"))
+            val headerOpt = requestBuilder.buildDelete.headerMap.get(AuthorizationHeaderName)
             inside(headerOpt) { case Some(header) => assertResult("credentials")(header) }
           }
           "with get()" in {
-            val headerOpt = authorizedClient.testGet.headerMap.get(Authorization)
+            val headerOpt = testClient.testGet.headerMap.get(AuthorizationHeaderName)
             inside (headerOpt) { case Some(header) => assertResult("credentials")(header) }
           }
           "with post()" in {
-            val headerOpt = authorizedClient.testPost.headerMap.get(Authorization)
+            val headerOpt = testClient.testPost.headerMap.get(AuthorizationHeaderName)
             inside (headerOpt) { case Some(header) => assertResult("credentials")(header) }
           }
           "with postForm()" in {
-            val headerOpt = authorizedClient.testPostForm.headerMap.get(Authorization)
+            val headerOpt = testClient.testPostForm.headerMap.get(AuthorizationHeaderName)
             inside (headerOpt) { case Some(header) => assertResult("credentials")(header) }
           }
           "with delete()" in {
-            val headerOpt = authorizedClient.testDelete.headerMap.get(Authorization)
+            val headerOpt = testClient.testDelete.headerMap.get(AuthorizationHeaderName)
             inside (headerOpt) { case Some(header) => assertResult("credentials")(header) }
           }
         }
@@ -66,15 +71,15 @@ final class ServiceClientSpec extends FreeSpec with Inside {
 
 object ServiceClientSpec {
   private[cosmos] val PathUri: Uri = Uri.parse("/foo/bar/baz")
-  private val Authorization: String = "Authorization"
+  private val AuthorizationHeaderName: String = "Authorization"
 }
 
-private final class AuthorizationTestClient(authorization: Option[String])
-  extends ServiceClient(Uri.parse("http://example.com"), authorization) {
+private final class AuthorizationTestClient
+  extends ServiceClient(Uri.parse("http://example.com")) {
 
-  def testGet: Request = get(ServiceClientSpec.PathUri)
-  def testPost: Request = post(ServiceClientSpec.PathUri, Json.empty)
-  def testPostForm: Request = postForm(ServiceClientSpec.PathUri, "")
-  def testDelete: Request = delete(ServiceClientSpec.PathUri)
+  def testGet(implicit session: RequestSession): Request = get(ServiceClientSpec.PathUri)
+  def testPost(implicit session: RequestSession): Request = post(ServiceClientSpec.PathUri, Json.empty)
+  def testPostForm(implicit session: RequestSession): Request = postForm(ServiceClientSpec.PathUri, "")
+  def testDelete(implicit session: RequestSession): Request = delete(ServiceClientSpec.PathUri)
 
 }

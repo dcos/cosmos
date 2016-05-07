@@ -12,11 +12,15 @@ import io.circe.syntax._
 import io.circe.{Json, JsonObject}
 import org.jboss.netty.handler.codec.http.HttpMethod
 
+import scala.util.control.NoStackTrace
+
 sealed abstract class CosmosError(causedBy: Throwable = null /*java compatibility*/) extends RuntimeException(causedBy) {
 
   def status: Status = Status.BadRequest
 
   def getData: Option[JsonObject] = None
+
+  def getHeaders: Map[String, String] = Map.empty
 }
 
 case class PackageNotFound(packageName: String) extends CosmosError
@@ -78,9 +82,23 @@ case class ServiceUnavailable(
   causedBy: Throwable
 ) extends CosmosError(causedBy) {
   override val status = Status.ServiceUnavailable
-  override val getData = Some(JsonObject.fromMap(Map(
-    "serviceName" -> serviceName.asJson
-  )))
+  override val getData = Some(JsonObject.singleton("serviceName", serviceName.asJson))
+}
+case class Unauthorized(serviceName: String, realm: Option[String]) extends CosmosError with NoStackTrace {
+  override val getMessage: String = s"Unable to complete request due to Unauthorized response from service [$serviceName]"
+  override val status: Status = Status.Unauthorized
+  override val getData: Option[JsonObject] = Some(JsonObject.singleton("serviceName", serviceName.asJson))
+  override val getHeaders: Map[String, String] = realm match {
+    case Some(r) =>
+      Map("WWW-Authenticate" -> r)
+    case _ =>
+      Map.empty
+  }
+}
+case class Forbidden(serviceName: String) extends CosmosError with NoStackTrace {
+  override val getMessage: String = s"Unable to complete request due to Forbidden response from service [$serviceName]"
+  override val status: Status = Status.Forbidden
+  override val getData: Option[JsonObject] = Some(JsonObject.singleton("serviceName", serviceName.asJson))
 }
 
 case class IncompleteUninstall(packageName: String, causedBy: Throwable) extends CosmosError(causedBy)

@@ -2,11 +2,10 @@ package com.mesosphere.cosmos.handler
 
 import java.nio.charset.StandardCharsets
 import java.util.Base64
-
 import cats.data.Xor
 import com.mesosphere.cosmos.circe.Decoders._
-import com.mesosphere.cosmos.{CirceError, AdminRouter}
-import com.mesosphere.cosmos.http.MediaTypes
+import com.mesosphere.cosmos.{AdminRouter, CirceError}
+import com.mesosphere.cosmos.http.{MediaTypes, RequestSession}
 import com.mesosphere.cosmos.model.thirdparty.marathon.MarathonApp
 import com.mesosphere.cosmos.model.{Installation, InstalledPackageInformation, ListRequest, ListResponse}
 import com.mesosphere.cosmos.repository.Repository
@@ -29,7 +28,7 @@ final class ListHandler(
   val accepts = MediaTypes.ListRequest
   val produces = MediaTypes.ListResponse
 
-  override def apply(request: ListRequest): Future[ListResponse] = {
+  override def apply(request: ListRequest)(implicit session: RequestSession): Future[ListResponse] = {
     adminRouter.listApps().flatMap { applications =>
       Future.collect {
         applications.apps.map { app =>

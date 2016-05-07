@@ -1,7 +1,7 @@
 package com.mesosphere.cosmos
 
 import cats.data.Xor.{Left, Right}
-import com.mesosphere.cosmos.http.{MediaTypeOps, MediaTypes}
+import com.mesosphere.cosmos.http.{MediaTypeOps, MediaTypes, RequestSession}
 import com.netaporter.uri.Uri
 import com.twitter.finagle.http.RequestConfig.Yes
 import com.twitter.finagle.http.{Request, RequestBuilder, Response, Status}
@@ -11,31 +11,31 @@ import io.circe.Json
 import io.circe.parse._
 import org.jboss.netty.handler.codec.http.HttpMethod
 
-abstract class ServiceClient(baseUri: Uri, authorization: Option[String]) {
+abstract class ServiceClient(baseUri: Uri) {
 
   private[this] val cleanedBaseUri: String = Uris.stripTrailingSlash(baseUri)
 
-  protected def get(uri: Uri): Request = {
+  protected def get(uri: Uri)(implicit session: RequestSession): Request = {
     baseRequestBuilder(uri)
       .setHeader("Accept", MediaTypes.applicationJson.show)
       .buildGet
   }
 
-  protected def post(uri: Uri, jsonBody: Json): Request = {
+  protected def post(uri: Uri, jsonBody: Json)(implicit session: RequestSession): Request = {
     baseRequestBuilder(uri)
       .setHeader("Accept", MediaTypes.applicationJson.show)
       .setHeader("Content-Type", MediaTypes.applicationJson.show)
       .buildPost(Buf.Utf8(jsonBody.noSpaces))
   }
 
-  protected def postForm(uri: Uri, postBody: String): Request = {
+  protected def postForm(uri: Uri, postBody: String)(implicit session: RequestSession): Request = {
     baseRequestBuilder(uri)
       .setHeader("Accept", MediaTypes.applicationJson.show)
       .setHeader("Content-Type", "application/x-www-form-urlencoded; charset=utf-8")
       .buildPost(Buf.Utf8(postBody))
   }
 
-  protected def delete(uri: Uri): Request = {
+  protected def delete(uri: Uri)(implicit session: RequestSession): Request = {
     baseRequestBuilder(uri)
       .setHeader("Accept", MediaTypes.applicationJson.show)
       .buildDelete()
@@ -75,14 +75,13 @@ abstract class ServiceClient(baseUri: Uri, authorization: Option[String]) {
       .map(decodeJsonTo[A])
   }
 
-  private[cosmos] final def baseRequestBuilder(uri: Uri): RequestBuilder[Yes, Nothing] = {
+  private[cosmos] final def baseRequestBuilder(uri: Uri)(implicit session: RequestSession): RequestBuilder[Yes, Nothing] = {
     val builder = RequestBuilder()
       .url(s"$cleanedBaseUri${uri.toString}")
 
-    authorization match {
-      case Some(value) => builder.setHeader("Authorization", value)
+    session.authorization match {
+      case Some(auth) => builder.setHeader("Authorization", auth.headerValue)
       case _ => builder
     }
   }
-
 }

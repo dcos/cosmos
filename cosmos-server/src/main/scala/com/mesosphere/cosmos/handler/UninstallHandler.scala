@@ -4,9 +4,8 @@ import com.twitter.finagle.http.Status
 import com.twitter.util.Future
 import io.circe.Encoder
 import io.finch.DecodeRequest
-
 import com.mesosphere.cosmos._
-import com.mesosphere.cosmos.http.MediaTypes
+import com.mesosphere.cosmos.http.{MediaTypes, RequestSession}
 import com.mesosphere.cosmos.model.thirdparty.marathon.MarathonApp
 import com.mesosphere.cosmos.model.{AppId, UninstallRequest, UninstallResponse, UninstallResult}
 import com.mesosphere.cosmos.repository.PackageCollection
@@ -25,7 +24,7 @@ private[cosmos] final class UninstallHandler(
 
   private type FwIds = List[String]
 
-  private def lookupFrameworkIds(fwName: String): Future[FwIds] = {
+  private def lookupFrameworkIds(fwName: String)(implicit session: RequestSession): Future[FwIds] = {
     adminRouter.getMasterState(fwName).map { masterState =>
       masterState.frameworks
         .filter(_.name == fwName)
@@ -34,7 +33,7 @@ private[cosmos] final class UninstallHandler(
   }
   private def destroyMarathonAppsAndTearDownFrameworkIfPresent(
     uninstallOperations: List[UninstallOperation]
-  ): Future[Seq[UninstallDetails]] = {
+  )(implicit session: RequestSession): Future[Seq[UninstallDetails]] = {
     val fs = for {
       op <- uninstallOperations
       appId = op.appId
@@ -64,7 +63,7 @@ private[cosmos] final class UninstallHandler(
     }
     Future.collect(fs)
   }
-  private def destroyMarathonApp(appId: AppId): Future[MarathonAppDeleteSuccess] = {
+  private def destroyMarathonApp(appId: AppId)(implicit session: RequestSession): Future[MarathonAppDeleteSuccess] = {
     adminRouter.deleteApp(appId, force = true) map { resp =>
       resp.status match {
         case Status.Ok => MarathonAppDeleteSuccess()
@@ -73,7 +72,7 @@ private[cosmos] final class UninstallHandler(
     }
   }
 
-  override def apply(req: UninstallRequest): Future[UninstallResponse] = {
+  override def apply(req: UninstallRequest)(implicit session: RequestSession): Future[UninstallResponse] = {
     // the following implementation is based on what the current CLI implementation does.
     // I've decided to follow it as close as possible so that we reduce any possible behavioral
     // changes that could have unforeseen consequences.
