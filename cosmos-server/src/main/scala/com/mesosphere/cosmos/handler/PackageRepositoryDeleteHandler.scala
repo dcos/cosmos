@@ -2,7 +2,7 @@ package com.mesosphere.cosmos.handler
 
 import cats.data.Ior
 import com.mesosphere.cosmos.RepoNameOrUriMissing
-import com.mesosphere.cosmos.http.{MediaType, MediaTypes}
+import com.mesosphere.cosmos.http.{MediaType, MediaTypes, RequestSession}
 import com.mesosphere.cosmos.model.{PackageRepositoryDeleteRequest, PackageRepositoryDeleteResponse}
 import com.mesosphere.cosmos.repository.PackageSourcesStorage
 import com.twitter.util.Future
@@ -22,7 +22,7 @@ private[cosmos] final class PackageRepositoryDeleteHandler(sourcesStorage: Packa
 
   override def apply(
     request: PackageRepositoryDeleteRequest
-  ): Future[PackageRepositoryDeleteResponse] = {
+  )(implicit session: RequestSession): Future[PackageRepositoryDeleteResponse] = {
     val nameOrUri = optionsToIor(request.name, request.uri).getOrElse(throw RepoNameOrUriMissing())
     sourcesStorage.delete(nameOrUri).map { sources =>
       PackageRepositoryDeleteResponse(sources)

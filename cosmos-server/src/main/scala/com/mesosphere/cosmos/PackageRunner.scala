@@ -1,5 +1,6 @@
 package com.mesosphere.cosmos
 
+import com.mesosphere.cosmos.http.RequestSession
 import com.mesosphere.cosmos.model.thirdparty.marathon.MarathonApp
 import com.twitter.util.Future
 import io.circe.Json
@@ -12,6 +13,6 @@ trait PackageRunner {
     * @param renderedConfig the fully-specified configuration of the package to run
     * @return The response from Marathon, if the request was successful.
     */
-  def launch(renderedConfig: Json): Future[MarathonApp]
+  def launch(renderedConfig: Json)(implicit session: RequestSession): Future[MarathonApp]
 
 }

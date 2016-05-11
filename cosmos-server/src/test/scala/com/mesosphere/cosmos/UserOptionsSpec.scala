@@ -3,14 +3,14 @@ package com.mesosphere.cosmos
 import cats.data.Xor
 import com.mesosphere.cosmos.handler._
 import com.mesosphere.cosmos.circe.Decoders._
-import com.mesosphere.cosmos.http.MediaTypes
+import com.mesosphere.cosmos.http.{MediaTypes, RequestSession}
 import com.mesosphere.cosmos.model._
 import com.mesosphere.cosmos.model.thirdparty.marathon.MarathonApp
-import com.mesosphere.universe.{PackageDetailsVersion, PackagingVersion, PackageFiles, PackageDetails}
+import com.mesosphere.universe.{PackageDetails, PackageDetailsVersion, PackageFiles, PackagingVersion}
 import com.netaporter.uri.Uri
 import com.twitter.finagle.http.RequestBuilder
 import com.twitter.io.Buf
-import com.twitter.util.{Future, Await}
+import com.twitter.util.{Await, Future}
 import io.circe.syntax._
 import io.circe.{Json, JsonObject}
 import io.finch.Input
@@ -53,13 +53,13 @@ final class UserOptionsSpec extends UnitSpec {
         // these two imports provide the implicit DecodeRequest instances needed to instantiate Cosmos
         import com.mesosphere.cosmos.circe.Decoders._
         import com.mesosphere.cosmos.circe.Encoders._
+        import com.mesosphere.cosmos.test.TestUtil.Anonymous
         import io.finch.circe._
         val cosmos = new Cosmos(
           EndpointHandler.const(UninstallResponse(Nil)),
           new PackageInstallHandler(packageCache, packageRunner),
           new PackageRenderHandler(packageCache),
           EndpointHandler.const(SearchResponse(List.empty)),
-          new PackageImportHandler,
           EndpointHandler.const(
             DescribeResponse(packageFiles.packageJson, packageFiles.marathonJsonMustache)
           ),
@@ -190,7 +190,7 @@ private final class RecordingPackageRunner extends PackageRunner {
 
   private[cosmos] var marathonJson: Option[Json] = None
 
-  override def launch(renderedConfig: Json): Future[MarathonApp] = {
+  override def launch(renderedConfig: Json)(implicit session: RequestSession): Future[MarathonApp] = {
     marathonJson = Some(renderedConfig)
     val Xor.Right(id) = renderedConfig.cursor.get[AppId]("id")
     Future.value(MarathonApp(id, Map.empty, List.empty, 0.0, 0.0, 1, None, None))

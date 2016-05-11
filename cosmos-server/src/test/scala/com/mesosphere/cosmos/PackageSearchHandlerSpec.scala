@@ -13,6 +13,7 @@ import org.mockito.Mockito._
 final class PackageSearchHandlerSpec extends UnitSpec {
 
   import PackageSearchHandlerSpec._
+  import com.mesosphere.cosmos.test.TestUtil.Anonymous
 
   "Search results are sorted by case-insensitive package name" in {
     val a = searchResult("a")

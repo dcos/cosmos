@@ -25,7 +25,11 @@ object Services {
     httpClient("mesos", uri)
   }
 
-  def httpClient(serviceName: String, uri: Uri): Try[Service[Request, Response]] = {
+  def httpClient(
+    serviceName: String,
+    uri: Uri,
+    postAuthFilter: SimpleFilter[Request, Response] = Filter.identity
+  ): Try[Service[Request, Response]] = {
     extractHostAndPort(uri) map { case ConnectionDetails(hostname, port, tls) =>
       val cBuilder = tls match {
         case false =>
@@ -39,7 +43,10 @@ object Services {
             .configured(Transporter.TLSHostname(Some(hostname)))
       }
 
-      new ConnectionExceptionHandler(serviceName) andThen cBuilder.newService(s"$hostname:$port", serviceName)
+      new ConnectionExceptionHandler(serviceName) andThen
+        new AuthFilter(serviceName) andThen
+        postAuthFilter andThen
+        cBuilder.newService(s"$hostname:$port", serviceName)
     }
   }
 
@@ -56,4 +63,18 @@ object Services {
         }
     }
   }
+
+  private[this] class AuthFilter(serviceName: String) extends SimpleFilter[Request, Response] {
+    override def apply(request: Request, service: Service[Request, Response]): Future[Response] = {
+      service(request)
+        .map { response =>
+          response.statusCode match {
+            case 401 => throw Unauthorized(serviceName, response.headerMap.get("WWW-Authenticate"))
+            case 403 => throw Forbidden(serviceName)
+            case _ => response
+          }
+        }
+    }
+  }
+
 }

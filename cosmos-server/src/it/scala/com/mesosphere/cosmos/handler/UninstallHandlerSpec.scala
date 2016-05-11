@@ -1,13 +1,12 @@
 package com.mesosphere.cosmos.handler
 
 import java.util.UUID
-
 import cats.data.Xor
 import com.mesosphere.cosmos.ErrorResponse
 import com.mesosphere.cosmos.circe.Decoders._
 import com.mesosphere.cosmos.http.MediaTypes
 import com.mesosphere.cosmos.model.{AppId, UninstallResponse}
-import com.mesosphere.cosmos.test.CosmosIntegrationTestClient._
+import com.mesosphere.cosmos.test.CosmosIntegrationTestClient
 import com.netaporter.uri.dsl._
 import com.twitter.finagle.http.Status
 import com.twitter.io.Buf
@@ -16,6 +15,8 @@ import io.circe.parse._
 import org.scalatest.FreeSpec
 
 final class UninstallHandlerSpec extends FreeSpec {
+
+  import CosmosIntegrationTestClient._
 
   "The uninstall handler should" - {
     "be able to uninstall a service" in {

@@ -2,7 +2,6 @@ package com.mesosphere.cosmos.handler
 
 import java.io.{StringReader, StringWriter}
 import java.util.Base64
-
 import scala.collection.JavaConverters._
 import cats.data.Xor
 import com.github.mustachejava.DefaultMustacheFactory
@@ -12,7 +11,7 @@ import io.circe.parse.parse
 import io.circe.syntax._
 import io.circe.{Encoder, Json, JsonObject}
 import io.finch.DecodeRequest
-import com.mesosphere.cosmos.http.MediaTypes
+import com.mesosphere.cosmos.http.{MediaTypes, RequestSession}
 import com.mesosphere.cosmos.jsonschema.JsonSchemaValidation
 import com.mesosphere.cosmos.model._
 import com.mesosphere.cosmos.model.thirdparty.marathon.MarathonApp
@@ -33,7 +32,7 @@ private[cosmos] final class PackageInstallHandler(
 
   import PackageInstallHandler._
 
-  override def apply(request: InstallRequest): Future[InstallResponse] = {
+  override def apply(request: InstallRequest)(implicit session: RequestSession): Future[InstallResponse] = {
     packageCache
       .getPackageByPackageVersion(request.packageName, request.packageVersion)
       .flatMap { packageFiles =>

@@ -1,6 +1,7 @@
 package com.mesosphere.cosmos
 
 import com.mesosphere.cosmos.circe.Decoders._
+import com.mesosphere.cosmos.http.RequestSession
 import com.mesosphere.cosmos.model.thirdparty.mesos.master.{MasterState, MesosFrameworkTearDownResponse}
 import com.netaporter.uri.Uri
 import com.netaporter.uri.dsl._
@@ -11,11 +12,10 @@ import org.jboss.netty.handler.codec.http.HttpMethod
 
 class MesosMasterClient(
   mesosUri: Uri,
-  client: Service[Request, Response],
-  authorization: Option[String]
-) extends ServiceClient(mesosUri, authorization) {
+  client: Service[Request, Response]
+) extends ServiceClient(mesosUri) {
 
-  def tearDownFramework(frameworkId: String): Future[MesosFrameworkTearDownResponse] = {
+  def tearDownFramework(frameworkId: String)(implicit session: RequestSession): Future[MesosFrameworkTearDownResponse] = {
     val formData = Uri.empty.addParam("frameworkId", frameworkId)
     // scala-uri makes it convenient to encode the actual framework id, but it will think its for a Uri
     // so we strip the leading '?' that signifies the start of a query string
@@ -26,7 +26,7 @@ class MesosMasterClient(
       .map { _ => MesosFrameworkTearDownResponse() }
   }
 
-  def getMasterState(frameworkName: String): Future[MasterState] = {
+  def getMasterState(frameworkName: String)(implicit session: RequestSession): Future[MasterState] = {
     val uri = "master" / "state.json"
     val request = get(uri)
     client(request).flatMap(decodeTo[MasterState](HttpMethod.GET, uri, _))

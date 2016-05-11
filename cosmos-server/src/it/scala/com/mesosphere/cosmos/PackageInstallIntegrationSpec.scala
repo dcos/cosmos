@@ -1,16 +1,15 @@
 package com.mesosphere.cosmos
 
 import java.util.{Base64, UUID}
-
 import cats.data.Xor
 import cats.data.Xor.Right
 import com.mesosphere.cosmos.circe.Decoders._
 import com.mesosphere.cosmos.circe.Encoders._
-import com.mesosphere.cosmos.http.MediaTypes
+import com.mesosphere.cosmos.http.{MediaTypes, RequestSession}
 import com.mesosphere.cosmos.model._
 import com.mesosphere.cosmos.model.thirdparty.marathon.{MarathonApp, MarathonAppContainer, MarathonAppContainerDocker}
 import com.mesosphere.cosmos.repository.DefaultRepositories
-import com.mesosphere.cosmos.test.CosmosIntegrationTestClient._
+import com.mesosphere.cosmos.test.CosmosIntegrationTestClient
 import com.mesosphere.universe.{PackageDetails, PackageDetailsVersion, PackageFiles, PackagingVersion}
 import com.netaporter.uri.Uri
 import com.twitter.finagle.http._
@@ -25,6 +24,7 @@ import org.scalatest.{BeforeAndAfterAll, FreeSpec, Matchers}
 final class PackageInstallIntegrationSpec extends FreeSpec with BeforeAndAfterAll {
 
   import PackageInstallIntegrationSpec._
+  import CosmosIntegrationTestClient._
 
   "The package install endpoint" - {
 
@@ -251,8 +251,8 @@ private object PackageInstallIntegrationSpec extends Matchers with TableDrivenPr
     (InstallResponse("cassandra", PackageDetailsVersion("0.2.0-1"), AppId("cassandra/dcos")), true, CassandraUris, None)
   )
 
-  private def getMarathonApp(appId: AppId): Future[MarathonApp] = {
-    adminRouter.getApp(appId)
+  private def getMarathonApp(appId: AppId)(implicit session: RequestSession): Future[MarathonApp] = {
+    CosmosIntegrationTestClient.adminRouter.getApp(appId)
       .map(_.app)
   }
 
