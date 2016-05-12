@@ -126,7 +126,6 @@ object CosmosIntegrationTestClient extends Matchers {
     }
 
     private[cosmos] object RequestLogging extends SimpleFilter[Request, Response] {
-      lazy val logger = org.slf4j.LoggerFactory.getLogger("com.mesosphere.cosmos.Services.RequestLogging")
       val counter = new AtomicInteger()
       override def apply(req: Request, service: Service[Request, Response]): Future[Response] = {
         val c = counter.getAndIncrement
