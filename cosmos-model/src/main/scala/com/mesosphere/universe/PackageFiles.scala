@@ -7,7 +7,7 @@ case class PackageFiles(
   revision: String,
   sourceUri: Uri,
   packageJson: PackageDetails,
-  marathonJsonMustache: String,
+  marathonJsonMustache: Option[String] = None,
   commandJson: Option[Command] = None,
   configJson: Option[JsonObject] = None,
   resourceJson: Option[Resource] = None

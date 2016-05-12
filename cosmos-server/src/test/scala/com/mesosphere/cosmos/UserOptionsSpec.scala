@@ -43,7 +43,7 @@ final class UserOptionsSpec extends UnitSpec {
             maintainer = "Mesosphere",
             description = "Testing user options"
           ),
-          marathonJsonMustache = mustacheTemplate,
+          marathonJsonMustache = Some(mustacheTemplate),
           configJson = Some(buildConfig(Json.fromJsonObject(defaultsJson)))
         )
         val packages = Map(packageName -> packageFiles)

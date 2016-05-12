@@ -16,7 +16,7 @@ import com.mesosphere.cosmos.jsonschema.JsonSchemaValidation
 import com.mesosphere.cosmos.model._
 import com.mesosphere.cosmos.model.thirdparty.marathon.MarathonApp
 import com.mesosphere.cosmos.repository.PackageCollection
-import com.mesosphere.cosmos.{CirceError, JsonSchemaMismatch, PackageFileNotJson, PackageRunner}
+import com.mesosphere.cosmos.{CirceError, JsonSchemaMismatch, NoMarathonApp, PackageFileNotJson, PackageRunner}
 import com.mesosphere.universe.{PackageFiles, Resource}
 
 private[cosmos] final class PackageInstallHandler(
@@ -102,7 +102,10 @@ private[cosmos] object PackageInstallHandler {
     packageFiles: PackageFiles,
     mergedOptions: Json
   ): Json = {
-    val strReader = new StringReader(packageFiles.marathonJsonMustache)
+    val packageName = packageFiles.packageJson.name
+    val marathonJsonMustache = packageFiles.marathonJsonMustache.getOrElse(
+        throw NoMarathonApp(packageName))
+    val strReader = new StringReader(marathonJsonMustache)
     val mustache = MustacheFactory.compile(strReader, "marathon.json.mustache")
     val params = jsonToJava(mergedOptions)
 

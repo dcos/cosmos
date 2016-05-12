@@ -378,12 +378,8 @@ object UniversePackageCache {
     ).getOrElse {
       throw PackageFileMissing("package.json")
     }
-    val mustache = readFile(
-      packageDir.resolve("marathon.json.mustache")
-    ).getOrElse {
-      throw PackageFileMissing("marathon.json.mustache")
-    }
 
+    val mustache = readFile(packageDir.resolve("marathon.json.mustache"))
     val packageDefValid = verifySchema[PackageDetails](packageJson, "package.json")
     val resourceDefValid = parseAndVerify[Resource](packageDir, "resource.json").toValidated.toValidatedNel
     val commandJsonValid = parseAndVerify[Command](packageDir, "command.json").toValidated.toValidatedNel

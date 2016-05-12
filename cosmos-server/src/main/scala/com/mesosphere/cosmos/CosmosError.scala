@@ -52,6 +52,7 @@ case class MarathonAppMetadataError(note: String) extends CosmosError
 case class MarathonAppDeleteError(appId: AppId) extends CosmosError
 case class MarathonAppNotFound(appId: AppId) extends CosmosError
 case class MesosRequestError(note: String) extends CosmosError
+case class NoMarathonApp(packageName: String) extends CosmosError
 case class CirceError(cerr: io.circe.Error) extends CosmosError
 
 case class UnsupportedContentType(supported: List[MediaType], actual: Option[MediaType] = None) extends CosmosError
