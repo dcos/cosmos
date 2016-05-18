@@ -1,8 +1,9 @@
 package com.mesosphere.cosmos
 
-import java.io.{ByteArrayInputStream, IOException, InputStream}
+import java.io.{ByteArrayInputStream, ByteArrayOutputStream, IOException, InputStream}
 import java.net.{MalformedURLException, URL}
 import java.nio.file.{Files, Path, Paths}
+import java.util.zip.{ZipEntry, ZipInputStream, ZipOutputStream}
 
 import com.mesosphere.cosmos.circe.Encoders._
 import com.mesosphere.cosmos.model.{PackageRepository, SearchResult}
@@ -12,9 +13,9 @@ import com.netaporter.uri.Uri
 import com.twitter.io.{Charsets, StreamIO}
 import com.twitter.util.{Await, Throw}
 import io.circe.syntax._
-import org.scalatest.FreeSpec
+import org.scalatest.{FreeSpec, PrivateMethodTester}
 
-final class UniversePackageCacheSpec extends FreeSpec {
+final class UniversePackageCacheSpec extends FreeSpec with PrivateMethodTester {
 
   import UniversePackageCacheSpec._
 
@@ -130,6 +131,66 @@ final class UniversePackageCacheSpec extends FreeSpec {
 
         TestUtil.deleteRecursively(universeDir)
       }
+    }
+  }
+
+  "Issue #250: create parent directories for unzipped files" - {
+    "extractBundleToDirectory()" in {
+      val tempDir = Files.createTempDirectory(getClass.getSimpleName)
+
+      val extractBundleToDirectory = PrivateMethod[Unit]('extractBundleToDirectory)
+      val bundle = createBundle
+
+      // No exceptions will be thrown if this is successful
+      UniversePackageCache invokePrivate extractBundleToDirectory(bundle, tempDir)
+
+      assertExtractedFiles(tempDir)
+
+      TestUtil.deleteRecursively(tempDir)
+    }
+
+    "extractBundle()" in {
+      val universeDir = Files.createTempDirectory(getClass.getSimpleName)
+
+      val extractBundle = PrivateMethod[Path]('extractBundle)
+      val bundle = createBundle
+
+      // No exceptions will be thrown if this is successful
+      val repoDir =
+        UniversePackageCache invokePrivate extractBundle(bundle, Uri.parse("repo/uri"), universeDir)
+
+      assertExtractedFiles(repoDir)
+
+      TestUtil.deleteRecursively(universeDir)
+    }
+
+    def createBundle: ZipInputStream = {
+      val baos = new ByteArrayOutputStream
+      val zipOut = new ZipOutputStream(baos)
+      val firstEntry = new ZipEntry("bar/baz.txt")
+      val secondEntry = new ZipEntry("foo/bar/baz.txt")
+      val fileBytes = "hello world".getBytes(Charsets.Utf8)
+
+      zipOut.putNextEntry(firstEntry)
+      zipOut.write(fileBytes, 0, fileBytes.length)
+      zipOut.closeEntry()
+
+      zipOut.putNextEntry(secondEntry)
+      zipOut.write(fileBytes, 0, fileBytes.length)
+      zipOut.closeEntry()
+
+      zipOut.finish()
+      zipOut.close()
+
+      val bais = new ByteArrayInputStream(baos.toByteArray)
+      new ZipInputStream(bais)
+    }
+
+    def assertExtractedFiles(targetDir: Path): Unit = {
+      val firstBytes = Files.readAllBytes(targetDir.resolve("baz.txt"))
+      val secondBytes = Files.readAllBytes(targetDir.resolve("bar/baz.txt"))
+      assertResult("hello world")(new String(firstBytes, Charsets.Utf8))
+      assertResult("hello world")(new String(secondBytes, Charsets.Utf8))
     }
   }
 
