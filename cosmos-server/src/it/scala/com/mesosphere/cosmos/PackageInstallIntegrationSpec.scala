@@ -299,7 +299,7 @@ private object PackageInstallIntegrationSpec extends Matchers with TableDrivenPr
       revision = "0",
       sourceUri = Uri.parse("in/memory/source"),
       packageJson = packageDefinition,
-      marathonJsonMustache = marathonJson.asJson.noSpaces
+      marathonJsonMustache = Some(marathonJson.asJson.noSpaces)
     )
 
     (name, packageFiles)

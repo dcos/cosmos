@@ -191,6 +191,8 @@ object Encoders {
       s"Error while deleting marathon app '$appId'"
     case MarathonAppNotFound(appId) =>
       s"Unable to locate service with marathon appId: '$appId'"
+    case NoMarathonApp(packageName) =>
+      s"No application specified for package [$packageName]"
     case CirceError(cerr) => cerr.getMessage
     case MesosRequestError(note) => note
     case JsonSchemaMismatch(_) =>

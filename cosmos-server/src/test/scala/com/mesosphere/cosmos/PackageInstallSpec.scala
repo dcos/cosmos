@@ -99,7 +99,7 @@ class PackageInstallSpec extends FreeSpec with Matchers with TableDrivenProperty
         maintainer = "foo@bar.baz",
         description = "blah"
       ),
-      marathonJsonMustache = mustache
+      marathonJsonMustache = Some(mustache)
     )
 
     try {
@@ -138,7 +138,7 @@ class PackageInstallSpec extends FreeSpec with Matchers with TableDrivenProperty
         maintainer = "foo@bar.baz",
         description = "blah"
       ),
-      marathonJsonMustache = mustache
+      marathonJsonMustache = Some(mustache)
     )
 
     val json = PackageInstallHandler.preparePackageConfig(None, None, pf)

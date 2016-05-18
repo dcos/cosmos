@@ -5,7 +5,7 @@ import io.circe.JsonObject
 
 case class DescribeResponse(
   `package`: PackageDetails,
-  marathonMustache: String,
+  marathonMustache: Option[String] = None,
   command: Option[Command] = None,
   config: Option[JsonObject] = None,
   resource: Option[Resource] = None
