@@ -32,6 +32,14 @@ object zookeeperUri extends GlobalFlag[ZooKeeperUri](
   "The ZooKeeper connection string"
 )
 
+object zookeeperAclUser extends GlobalFlag[String](
+  help = "User for ZooKeeper ACL"
+)
+
+object zookeeperAclSecret extends GlobalFlag[String](
+  help = "Secret for ZooKeeper ACL"
+)
+
 object dataDir extends GlobalFlag[file.Path](
   file.Paths.get("/var/lib/cosmos"),
   help = "Root directory for all cosmos runtime "
