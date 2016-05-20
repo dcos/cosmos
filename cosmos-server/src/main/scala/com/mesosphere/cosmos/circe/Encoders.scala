@@ -5,15 +5,18 @@ import java.util.Base64
 
 import cats.data.Ior
 import com.mesosphere.cosmos._
+import com.mesosphere.cosmos.http.{MediaType, MediaTypeSubType}
 import com.mesosphere.cosmos.model._
 import com.mesosphere.cosmos.model.thirdparty.marathon._
 import com.mesosphere.cosmos.model.thirdparty.mesos.master._
 import com.mesosphere.universe._
 import com.netaporter.uri.Uri
+import com.twitter.finagle.http.Status
 import io.circe.generic.semiauto._
 import io.circe.syntax._
 import io.circe.{Encoder, Json, JsonObject, ObjectEncoder}
 import io.finch.Error
+import org.jboss.netty.handler.codec.http.HttpMethod
 
 object Encoders {
   implicit val encodeLicense: Encoder[License] = deriveFor[License].encoder
@@ -137,6 +140,23 @@ object Encoders {
     Base64.getEncoder.encodeToString(ByteBuffers.getBytes(bb)).asJson
   }
 
+  implicit val encodeThrowable: Encoder[Throwable] = Encoder.instance(_.getMessage.asJson)
+  implicit val encodeStatus: Encoder[Status] = Encoder.encodeInt.contramap(_.code)
+  implicit val encodeCirceError: Encoder[CirceError] = encodeThrowable.contramap(identity)
+
+  implicit val encodeMediaTypeSubType: Encoder[MediaTypeSubType] =
+    deriveFor[MediaTypeSubType].encoder
+
+  implicit val encodeMediaType: Encoder[MediaType] = deriveFor[MediaType].encoder
+  implicit val encodeHttpMethod: Encoder[HttpMethod] = Encoder.encodeString.contramap(_.getName)
+
+  implicit def encodeIor[A, B](implicit
+    encodeA: Encoder[A],
+    encodeB: Encoder[B]
+  ): Encoder[Ior[A, B]] = deriveFor[Ior[A, B]].encoder
+
+  implicit val encodeCosmosError: Encoder[CosmosError] = deriveFor[CosmosError].encoder
+
   private[this] def exceptionErrorResponse(t: Throwable): ErrorResponse = t match {
     case Error.NotPresent(item) =>
       ErrorResponse("not_present", s"Item '${item.description}' not present but required")
@@ -152,7 +172,7 @@ object Encoders {
         Some(JsonObject.singleton("errors", details))
       )
     case ce: CosmosError =>
-      ErrorResponse(ce.getClass.getSimpleName, msgForCosmosError(ce), ce.getData)
+      ErrorResponse(ce.getClass.getSimpleName, msgForCosmosError(ce), Some(ce.getData))
     case t: Throwable =>
       ErrorResponse("unhandled_exception", t.getMessage)
   }

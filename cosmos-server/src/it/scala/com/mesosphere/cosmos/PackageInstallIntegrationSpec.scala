@@ -30,7 +30,11 @@ final class PackageInstallIntegrationSpec extends FreeSpec with BeforeAndAfterAl
 
     "reports an error if the requested package is not in the cache" in {
       forAll (PackageTable) { (packageName, _) =>
-        val errorResponse = ErrorResponse("PackageNotFound", s"Package [$packageName] not found")
+        val errorResponse = ErrorResponse(
+          `type` = "PackageNotFound",
+          message = s"Package [$packageName] not found",
+          data = Some(JsonObject.singleton("packageName", packageName.asJson))
+        )
 
         installPackageAndAssert(
           InstallRequest(packageName),
@@ -44,7 +48,14 @@ final class PackageInstallIntegrationSpec extends FreeSpec with BeforeAndAfterAl
     "don't install if specified version is not found" in {
       forAll (PackageDummyVersionsTable) { (packageName, packageVersion) =>
         val errorMessage = s"Version [$packageVersion] of package [$packageName] not found"
-        val errorResponse = ErrorResponse("VersionNotFound", errorMessage)
+        val errorResponse = ErrorResponse(
+          `type` = "VersionNotFound",
+          message = errorMessage,
+          data = Some(JsonObject.fromMap(Map(
+            "packageName" -> packageName.asJson,
+            "packageVersion" -> packageVersion.toString.asJson
+          )))
+        )
 
         // TODO This currently relies on test execution order to be correct
         // Update it to explicitly install a package twice
@@ -79,7 +90,8 @@ final class PackageInstallIntegrationSpec extends FreeSpec with BeforeAndAfterAl
             Status.Conflict,
             ErrorResponse(
               "PackageAlreadyInstalled",
-              "Package is already installed"
+              "Package is already installed",
+              Some(JsonObject.empty)
             ),
             Some(expectedResponse.appId)
           ),
