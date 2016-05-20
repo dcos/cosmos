@@ -176,30 +176,11 @@ object UniversePackageCache {
     universeDir: Path
   ): Path = {
 
-    val entries = Iterator.continually(Option(bundle.getNextEntry()))
-      .takeWhile(_.isDefined)
-      .flatten
-
     val tempDir = Files.createTempDirectory(universeDir, "repository")
     tempDir.toFile.deleteOnExit()
 
     try {
-      // Copy all of the entry to a temporary folder
-      entries.foreach { entry =>
-        val entryPath = Paths.get(entry.getName)
-
-        // Skip the root directory
-        if (entryPath.getNameCount > 1) {
-          val tempEntryPath = tempDir
-            .resolve(entryPath.subpath(1, entryPath.getNameCount))
-
-          if (entry.isDirectory) {
-            Files.createDirectory(tempEntryPath)
-          } else {
-            Files.copy(bundle, tempEntryPath)
-          }
-        }
-      }
+      extractBundleToDirectory(bundle, tempDir)
 
       // Move the symblic to the temp directory to the actual universe directory...
       val bundlePath = universeDir.resolve(base64(universeBundle))
@@ -228,6 +209,22 @@ object UniversePackageCache {
         // Only delete directory on failures because we want to keep it around on success.
         TwitterFiles.delete(tempDir.toFile)
         throw e
+    }
+  }
+
+  private[this] def extractBundleToDirectory(bundle: ZipInputStream, directory: Path): Unit = {
+    // getNextEntry() returns null when there are no more entries
+    Iterator.continually(Option(bundle.getNextEntry()))
+      .takeWhile(_.isDefined)
+      .flatten
+      .filter(!_.isDirectory)
+      .map(entry => Paths.get(entry.getName))
+      // Skip the root directory
+      .filter(entryPath => entryPath.getNameCount > 1)
+      .foreach { entryPath =>
+        val tempEntryPath = directory.resolve(entryPath.subpath(1, entryPath.getNameCount))
+        Option(tempEntryPath.getParent).foreach(Files.createDirectories(_))
+        Files.copy(bundle, tempEntryPath)
     }
   }
 
