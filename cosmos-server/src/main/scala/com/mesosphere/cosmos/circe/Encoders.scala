@@ -144,8 +144,9 @@ object Encoders {
   implicit val encodeStatus: Encoder[Status] = Encoder.encodeInt.contramap(_.code)
   implicit val encodeCirceError: Encoder[CirceError] = encodeThrowable.contramap(identity)
 
-  implicit val encodeMediaTypeSubType: Encoder[MediaTypeSubType] =
+  implicit val encodeMediaTypeSubType: Encoder[MediaTypeSubType] = {
     deriveFor[MediaTypeSubType].encoder
+  }
 
   implicit val encodeMediaType: Encoder[MediaType] = deriveFor[MediaType].encoder
   implicit val encodeHttpMethod: Encoder[HttpMethod] = Encoder.encodeString.contramap(_.getName)
@@ -172,7 +173,7 @@ object Encoders {
         Some(JsonObject.singleton("errors", details))
       )
     case ce: CosmosError =>
-      ErrorResponse(ce.getClass.getSimpleName, msgForCosmosError(ce), Some(ce.getData))
+      ErrorResponse(ce.getClass.getSimpleName, msgForCosmosError(ce), ce.getData)
     case t: Throwable =>
       ErrorResponse("unhandled_exception", t.getMessage)
   }

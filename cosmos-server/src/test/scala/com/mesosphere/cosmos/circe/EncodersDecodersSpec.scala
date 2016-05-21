@@ -75,11 +75,7 @@ class EncodersDecodersSpec extends FreeSpec {
 
       val Xor.Right(roundTripError) = error.asJson.as[ErrorResponse]
       assertResult(errorType)(roundTripError.`type`)
-      val expectedData = JsonObject.fromMap(Map(
-        "causedBy" -> cause.asJson,
-        "repository" -> Map("name" -> "repo", "uri" -> "http://example.com").asJson
-      ))
-      assertResult(Some(expectedData))(roundTripError.data)
+      assertResult(Some(JsonObject.singleton("cause", cause.asJson)))(roundTripError.data)
     }
   }
 
