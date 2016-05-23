@@ -8,6 +8,8 @@ import java.util.Base64
 import java.util.concurrent.atomic.AtomicReference
 import java.util.zip.ZipInputStream
 
+import scala.util.matching.Regex
+
 import cats.data.Xor.{Left, Right}
 import cats.data._
 import cats.std.list._           // allows for traversU in verifySchema
@@ -15,10 +17,6 @@ import cats.std.option._
 import cats.syntax.apply._       // provides |@|
 import cats.syntax.option._
 import cats.syntax.traverse._
-import com.mesosphere.cosmos.circe.Decoders._
-import com.mesosphere.cosmos.model.{PackageRepository, SearchResult}
-import com.mesosphere.cosmos.repository.Repository
-import com.mesosphere.universe._
 import com.netaporter.uri.Uri
 import com.twitter.concurrent.AsyncMutex
 import com.twitter.io.{Charsets, Files => TwitterFiles}
@@ -26,13 +24,19 @@ import com.twitter.util.{Future, Try}
 import io.circe.parse._
 import io.circe.{Decoder, Json}
 
-import scala.util.matching.Regex
+import com.mesosphere.cosmos.circe.Decoders._
+import com.mesosphere.cosmos.model.{PackageRepository, SearchResult}
+import com.mesosphere.cosmos.repository.Repository
+import com.mesosphere.cosmos.repository.UniverseClient
+import com.mesosphere.universe._
+
 
 /** Stores packages from the Universe GitHub repository in the local filesystem.
   */
 final class UniversePackageCache private (
   override val repository: PackageRepository,
-  universeDir: Path
+  universeDir: Path,
+  universeClient: UniverseClient
 ) extends Repository with AutoCloseable {
 
   import UniversePackageCache._
@@ -86,7 +90,8 @@ final class UniversePackageCache private (
     // Delete the bundle directory
     bundlePath.foreach { p =>
       //TODO: This needs to be more robust to handle potential lingering symlinks
-      Files.delete(symlinkBundlePath)  // work around until https://github.com/mesosphere/cosmos/issues/246 is fixed
+      // work around until https://github.com/mesosphere/cosmos/issues/246 is fixed
+      Files.delete(symlinkBundlePath)
       // Delete the symbolic link
       TwitterFiles.delete(p.toFile)
     }
@@ -118,7 +123,7 @@ final class UniversePackageCache private (
     updateMutex.acquireAndRun {
       // TODO: How often we check should be configurable
       if (lastModified.get().plusMinutes(1).isBefore(LocalDateTime.now())) {
-        updateUniverseCache(repository, universeDir)(_.openStream())
+        updateUniverseCache(repository, universeDir, universeClient)
           .onSuccess { _ => lastModified.set(LocalDateTime.now()) }
       } else {
         /* We don't need to fetch the latest package information; just return the current
@@ -128,19 +133,24 @@ final class UniversePackageCache private (
       }
     }
   }
-
 }
 
 object UniversePackageCache {
 
-  def apply(repository: PackageRepository, dataDir: Path): UniversePackageCache = {
-    new UniversePackageCache(repository, dataDir)
+  def apply(
+    repository: PackageRepository,
+    universeDir: Path,
+    universeClient: UniverseClient
+  ): UniversePackageCache = {
+    new UniversePackageCache(repository, universeDir, universeClient)
   }
 
-  private[cosmos] def updateUniverseCache(repository: PackageRepository, universeDir: Path)(
-    streamUrl: URL => InputStream
+  private[cosmos] def updateUniverseCache(
+    repository: PackageRepository,
+    universeDir: Path,
+    universeClient: UniverseClient
   ): Future[Path] = {
-    streamBundle(repository, streamUrl)
+    streamBundle(repository, universeClient)
       .map { bundleStream =>
         try {
           extractBundle(
@@ -156,18 +166,14 @@ object UniversePackageCache {
 
   private[cosmos] def streamBundle(
     repository: PackageRepository,
-    streamUrl: URL => InputStream
+    universeClient: UniverseClient
   ): Future[InputStream] = {
-    Future(Xor.Right(repository.uri.toURI.toURL))
-      .handle {
-        case t @ (_: IllegalArgumentException | _: MalformedURLException | _: URISyntaxException) =>
-          Xor.Left(RepositoryUriSyntax(repository, t))
-      }
-      .map(_.map(streamUrl))
-      .handle { case t: IOException =>
-        Xor.Left(RepositoryUriConnection(repository, t))
-      }
-      .map(_.valueOr(throw _))
+    universeClient(repository.uri).handle {
+      case t @ (_: IllegalArgumentException | _: MalformedURLException | _: URISyntaxException) =>
+        throw RepositoryUriSyntax(repository, t)
+      case t: IOException =>
+        throw RepositoryUriConnection(repository, t)
+    }
   }
 
   private[this] def extractBundle(
