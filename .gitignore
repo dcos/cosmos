@@ -54,6 +54,7 @@ crashlytics-build.properties
 .cache
 .history
 .lib/
+.sbtopts
 dist/*
 target/
 lib_managed/

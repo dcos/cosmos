@@ -2,28 +2,25 @@ package com.mesosphere.cosmos
 
 import java.nio.file.Path
 
+import com.mesosphere.cosmos.circe.Decoders._
+import com.mesosphere.cosmos.circe.Encoders._
+import com.mesosphere.cosmos.circe.{DispatchingMediaTypedEncoder, MediaTypedDecoder}
+import com.mesosphere.cosmos.handler._
+import com.mesosphere.cosmos.http.MediaTypes
+import com.mesosphere.cosmos.model._
+import com.mesosphere.cosmos.repository.{PackageSourcesStorage, UniverseClient, ZooKeeperStorage}
 import com.netaporter.uri.Uri
 import com.twitter.finagle.Service
 import com.twitter.finagle.http.{Request, Response, Status}
 import com.twitter.finagle.stats.{NullStatsReceiver, StatsReceiver}
-import com.twitter.util.Future
 import com.twitter.util.Try
 import io.circe.Json
-import io.circe.syntax.EncoderOps
 import io.finch._
 import io.finch.circe._
 import io.github.benwhitehead.finch.FinchServer
 import org.apache.curator.framework.CuratorFrameworkFactory
 import org.apache.curator.retry.ExponentialBackoffRetry
-
-import com.mesosphere.cosmos.circe.Decoders._
-import com.mesosphere.cosmos.circe.Encoders._
-import com.mesosphere.cosmos.handler._
-import com.mesosphere.cosmos.http.{MediaTypes, RequestSession}
-import com.mesosphere.cosmos.model._
-import com.mesosphere.cosmos.repository.PackageSourcesStorage
-import com.mesosphere.cosmos.repository.UniverseClient
-import com.mesosphere.cosmos.repository.ZooKeeperStorage
+import shapeless.HNil
 
 private[cosmos] final class Cosmos(
   uninstallHandler: EndpointHandler[UninstallRequest, UninstallResponse],
@@ -38,130 +35,53 @@ private[cosmos] final class Cosmos(
   deleteRepositoryHandler: EndpointHandler[PackageRepositoryDeleteRequest, PackageRepositoryDeleteResponse],
   capabilitiesHandler: CapabilitiesHandler
 )(implicit statsReceiver: StatsReceiver = NullStatsReceiver) {
+
+  import Cosmos._
+
   lazy val logger = org.slf4j.LoggerFactory.getLogger(classOf[Cosmos])
 
   val packageInstall: Endpoint[Json] = {
-
-    def respond(t: (RequestSession, InstallRequest)): Future[Output[Json]] = {
-      implicit val (session, request) = t
-      packageInstallHandler(request)
-        .map(res => Ok(res.asJson).withContentType(Some(packageInstallHandler.produces.show)))
-    }
-
-    post("package" / "install" ? packageInstallHandler.reader)(respond _)
+    route(post("package" / "install"), packageInstallHandler)(RequestReaders.standard)
   }
 
   val packageUninstall: Endpoint[Json] = {
-    def respond(t: (RequestSession, UninstallRequest)): Future[Output[Json]] = {
-      implicit val (session, request) = t
-      uninstallHandler(request).map {
-        case resp => Ok(resp.asJson).withContentType(Some(uninstallHandler.produces.show))
-      }
-    }
-
-    post("package" / "uninstall" ? uninstallHandler.reader)(respond _)
+    route(post("package" / "uninstall"), uninstallHandler)(RequestReaders.standard)
   }
 
   val packageDescribe: Endpoint[Json] = {
-
-    def respond(t: (RequestSession, DescribeRequest)): Future[Output[Json]] = {
-      implicit val (session, request) = t
-      packageDescribeHandler(request) map { resp =>
-        Ok(resp.asJson).withContentType(Some(packageDescribeHandler.produces.show))
-      }
-    }
-
-    post("package" / "describe" ? packageDescribeHandler.reader) (respond _)
+    route(post("package" / "describe"), packageDescribeHandler)(RequestReaders.standard)
   }
 
   val packageRender: Endpoint[Json] = {
-
-    def respond(t: (RequestSession, RenderRequest)): Future[Output[Json]] = {
-      implicit val (session, request) = t
-      packageRenderHandler(request)
-        .map(res => Ok(res.asJson).withContentType(Some(packageRenderHandler.produces.show)))
-    }
-
-    post("package" / "render" ? packageRenderHandler.reader)(respond _)
+    route(post("package" / "render"), packageRenderHandler)(RequestReaders.standard)
   }
 
   val packageListVersions: Endpoint[Json] = {
-    def respond(t: (RequestSession, ListVersionsRequest)): Future[Output[Json]] = {
-      implicit val (session, request) = t
-      packageListVersionsHandler(request) map { resp =>
-        Ok(resp.asJson).withContentType(Some(packageListVersionsHandler.produces.show))
-      }
-    }
-
-    post("package" / "list-versions" ? packageListVersionsHandler.reader) (respond _)
+    route(post("package" / "list-versions"), packageListVersionsHandler)(RequestReaders.standard)
   }
 
   val packageSearch: Endpoint[Json] = {
-
-    def respond(t: (RequestSession, SearchRequest)): Future[Output[Json]] = {
-      implicit val (session, request) = t
-      packageSearchHandler(request)
-        .map { searchResults =>
-          Ok(searchResults.asJson).withContentType(Some(packageSearchHandler.produces.show))
-        }
-    }
-
-    post("package" / "search" ? packageSearchHandler.reader) (respond _)
+    route(post("package" / "search"), packageSearchHandler)(RequestReaders.standard)
   }
 
   val packageList: Endpoint[Json] = {
-    def respond(t: (RequestSession, ListRequest)): Future[Output[Json]] = {
-      implicit val (session, request) = t
-      listHandler(request).map { resp =>
-        Ok(resp.asJson).withContentType(Some(listHandler.produces.show))
-      }
-    }
-
-    post("package" / "list" ? listHandler.reader)(respond _)
+    route(post("package" / "list"), listHandler)(RequestReaders.standard)
   }
 
   val capabilities: Endpoint[Json] = {
-    def respond(t: (RequestSession, Any)): Future[Output[Json]] = {
-      implicit val (session, _) = t
-      capabilitiesHandler(None).map { resp =>
-        Ok(resp.asJson).withContentType(Some(capabilitiesHandler.produces.show))
-      }
-    }
-
-    get("capabilities" ? capabilitiesHandler.reader)(respond _)
+    route(get("capabilities"), capabilitiesHandler)(RequestReaders.noBody)
   }
 
   val packageListSources: Endpoint[Json] = {
-    def respond(t: (RequestSession, PackageRepositoryListRequest)): Future[Output[Json]] = {
-      implicit val (session, request) = t
-      listRepositoryHandler(request).map { response =>
-        Ok(response.asJson).withContentType(Some(listRepositoryHandler.produces.show))
-      }
-    }
-
-    post("package" / "repository"/ "list" ? listRepositoryHandler.reader)(respond _)
+    route(post("package" / "repository" / "list"), listRepositoryHandler)(RequestReaders.standard)
   }
 
   val packageAddSource: Endpoint[Json] = {
-    def respond(t: (RequestSession, PackageRepositoryAddRequest)): Future[Output[Json]] = {
-      implicit val (session, request) = t
-      addRepositoryHandler(request).map { response =>
-        Ok(response.asJson).withContentType(Some(addRepositoryHandler.produces.show))
-      }
-    }
-
-    post("package" / "repository" / "add" ? addRepositoryHandler.reader)(respond _)
+    route(post("package" / "repository" / "add"), addRepositoryHandler)(RequestReaders.standard)
   }
 
   val packageDeleteSource: Endpoint[Json] = {
-    def respond(t: (RequestSession, PackageRepositoryDeleteRequest)): Future[Output[Json]] = {
-      implicit val (session, request) = t
-      deleteRepositoryHandler(request).map { response =>
-        Ok(response.asJson).withContentType(Some(deleteRepositoryHandler.produces.show))
-      }
-    }
-
-    post("package" / "repository" / "delete" ? deleteRepositoryHandler.reader)(respond _)
+    route(post("package" / "repository" / "delete"), deleteRepositoryHandler)(RequestReaders.standard)
   }
 
   val service: Service[Request, Response] = {
@@ -303,8 +223,77 @@ object Cosmos extends FinchServer {
       new PackageRepositoryListHandler(sourcesStorage),
       new PackageRepositoryAddHandler(sourcesStorage),
       new PackageRepositoryDeleteHandler(sourcesStorage),
-      CapabilitiesHandler()
+      new CapabilitiesHandler
     )(statsReceiver)
   }
+
+  private[cosmos] def route[Req, Res](base: Endpoint[HNil], handler: EndpointHandler[Req, Res])(
+    requestReader: RequestReader[EndpointContext[Req, Res]]
+  ): Endpoint[Json] = {
+    (base ? requestReader).apply((context: EndpointContext[Req, Res]) => handler(context))
+  }
+
+  implicit val packageListDecoder: MediaTypedDecoder[ListRequest] =
+    MediaTypedDecoder(MediaTypes.ListRequest)
+
+  implicit val packageListVersionsDecoder: MediaTypedDecoder[ListVersionsRequest] =
+    MediaTypedDecoder(MediaTypes.ListVersionsRequest)
+
+  implicit val packageDescribeDecoder: MediaTypedDecoder[DescribeRequest] =
+    MediaTypedDecoder(MediaTypes.DescribeRequest)
+
+  implicit val packageInstallDecoder: MediaTypedDecoder[InstallRequest] =
+    MediaTypedDecoder(MediaTypes.InstallRequest)
+
+  implicit val packageRenderDecoder: MediaTypedDecoder[RenderRequest] =
+    MediaTypedDecoder(MediaTypes.RenderRequest)
+
+  implicit val packageRepositoryAddDecoder: MediaTypedDecoder[PackageRepositoryAddRequest] =
+    MediaTypedDecoder(MediaTypes.PackageRepositoryAddRequest)
+
+  implicit val packageRepositoryDeleteDecoder: MediaTypedDecoder[PackageRepositoryDeleteRequest] =
+    MediaTypedDecoder(MediaTypes.PackageRepositoryDeleteRequest)
+
+  implicit val packageRepositoryListDecoder: MediaTypedDecoder[PackageRepositoryListRequest] =
+    MediaTypedDecoder(MediaTypes.PackageRepositoryListRequest)
+
+  implicit val packageSearchDecoder: MediaTypedDecoder[SearchRequest] =
+    MediaTypedDecoder(MediaTypes.SearchRequest)
+
+  implicit val packageUninstallDecoder: MediaTypedDecoder[UninstallRequest] =
+    MediaTypedDecoder(MediaTypes.UninstallRequest)
+
+  implicit val capabilitiesEncoder: DispatchingMediaTypedEncoder[CapabilitiesResponse] =
+    DispatchingMediaTypedEncoder(MediaTypes.CapabilitiesResponse)
+
+  implicit val packageListEncoder: DispatchingMediaTypedEncoder[ListResponse] =
+    DispatchingMediaTypedEncoder(MediaTypes.ListResponse)
+
+  implicit val packageListVersionsEncoder: DispatchingMediaTypedEncoder[ListVersionsResponse] =
+    DispatchingMediaTypedEncoder(MediaTypes.ListVersionsResponse)
+
+  implicit val packageDescribeEncoder: DispatchingMediaTypedEncoder[DescribeResponse] =
+    DispatchingMediaTypedEncoder(MediaTypes.DescribeResponse)
+
+  implicit val packageInstallEncoder: DispatchingMediaTypedEncoder[InstallResponse] =
+    DispatchingMediaTypedEncoder(MediaTypes.InstallResponse)
+
+  implicit val packageRenderEncoder: DispatchingMediaTypedEncoder[RenderResponse] =
+    DispatchingMediaTypedEncoder(MediaTypes.RenderResponse)
+
+  implicit val packageRepositoryAddEncoder: DispatchingMediaTypedEncoder[PackageRepositoryAddResponse] =
+    DispatchingMediaTypedEncoder(MediaTypes.PackageRepositoryAddResponse)
+
+  implicit val packageRepositoryDeleteEncoder: DispatchingMediaTypedEncoder[PackageRepositoryDeleteResponse] =
+    DispatchingMediaTypedEncoder(MediaTypes.PackageRepositoryDeleteResponse)
+
+  implicit val packageRepositoryListEncoder: DispatchingMediaTypedEncoder[PackageRepositoryListResponse] =
+    DispatchingMediaTypedEncoder(MediaTypes.PackageRepositoryListResponse)
+
+  implicit val packageSearchEncoder: DispatchingMediaTypedEncoder[SearchResponse] =
+    DispatchingMediaTypedEncoder(MediaTypes.SearchResponse)
+
+  implicit val packageUninstallEncoder: DispatchingMediaTypedEncoder[UninstallResponse] =
+    DispatchingMediaTypedEncoder(MediaTypes.UninstallResponse)
 
 }
