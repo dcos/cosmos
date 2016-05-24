@@ -89,7 +89,7 @@ final class UniversePackageCacheSpec extends FreeSpec with PrivateMethodTester {
     "Connection failure" in {
       val expectedRepo = PackageRepository(name = "BadRepo", uri = Uri.parse("http://example.com"))
       val errorMessage = "No one's home"
-      val universeClient = UniverseClient(_ => throw new IOException(errorMessage))
+      val universeClient = UniverseClient(_ => Future(throw new IOException(errorMessage)))
       val Throw(RepositoryUriConnection(actualRepo, causedBy)) =
         Await.result(UniversePackageCache.streamBundle(expectedRepo, universeClient).liftToTry)
       assertResult(expectedRepo)(actualRepo)
@@ -120,7 +120,7 @@ final class UniversePackageCacheSpec extends FreeSpec with PrivateMethodTester {
         val bundleDirFuture = UniversePackageCache.updateUniverseCache(
           repository,
           universeDir,
-          UniverseClient(_ => throw new IOException("No one's home"))
+          UniverseClient(_ => Future(throw new IOException("No one's home")))
         )
         val Throw(t) = Await.result(bundleDirFuture.liftToTry)
         assert(t.isInstanceOf[RepositoryUriConnection])
