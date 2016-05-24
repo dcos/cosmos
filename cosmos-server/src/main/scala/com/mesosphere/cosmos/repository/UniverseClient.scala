@@ -5,17 +5,19 @@ import java.io.InputStream
 import com.netaporter.uri.Uri
 import com.twitter.util.Future
 
-trait UniverseClient extends Function1[Uri, Future[InputStream]]
+trait UniverseClient extends (Uri => Future[InputStream])
 
 
 object UniverseClient {
-  def apply(): UniverseClient = new UniverseClient {
-    override def apply(universeUri: Uri): Future[InputStream] = {
-      Future(universeUri.toURI.toURL.openStream())
-    }
+  private[this] final class FnUniverseClient(function: Uri => Future[InputStream])
+  extends UniverseClient {
+    override def apply(uri: Uri) = function(uri)
   }
 
-  def apply(function: Uri => Future[InputStream]): UniverseClient = new UniverseClient {
-    override def apply(universeUri: Uri): Future[InputStream] = function(universeUri)
-  }
+  private[this] val defaultUniverseClient = new FnUniverseClient(
+    universeUri => Future(universeUri.toURI.toURL.openStream())
+  )
+
+  def apply(): UniverseClient = defaultUniverseClient
+  def apply(function: Uri => Future[InputStream]): UniverseClient = new FnUniverseClient(function)
 }

@@ -256,8 +256,6 @@ object Cosmos extends FinchServer {
 
       val marathonPackageRunner = new MarathonPackageRunner(adminRouter)
 
-      val universeClient = UniverseClient()
-
       val zkRetryPolicy = new ExponentialBackoffRetry(1000, 3)
       val zkClient = CuratorFrameworkFactory.builder()
         .namespace(zkUri.path.stripPrefix("/"))
@@ -273,7 +271,7 @@ object Cosmos extends FinchServer {
 
       val sourcesStorage = new ZooKeeperStorage(zkClient)()
 
-      val cosmos = Cosmos(adminRouter, marathonPackageRunner, sourcesStorage, universeClient, dd)
+      val cosmos = Cosmos(adminRouter, marathonPackageRunner, sourcesStorage, UniverseClient(), dd)
       cosmos.service
     }
     boot.get
