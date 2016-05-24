@@ -144,12 +144,7 @@ object Encoders {
   }
 
   implicit val encodeStatus: Encoder[Status] = Encoder.encodeInt.contramap(_.code)
-
-  implicit val encodeMediaTypeSubType: Encoder[MediaTypeSubType] = {
-    deriveFor[MediaTypeSubType].encoder
-  }
-
-  implicit val encodeMediaType: Encoder[MediaType] = deriveFor[MediaType].encoder
+  implicit val encodeMediaType: Encoder[MediaType] = Encoder.encodeString.contramap(_.show)
   implicit val encodeHttpMethod: Encoder[HttpMethod] = Encoder.encodeString.contramap(_.getName)
 
   implicit def encodeIor[A, B](implicit
