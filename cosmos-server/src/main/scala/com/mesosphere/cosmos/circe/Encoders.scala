@@ -12,11 +12,14 @@ import com.mesosphere.cosmos.model.thirdparty.mesos.master._
 import com.mesosphere.universe._
 import com.netaporter.uri.Uri
 import com.twitter.finagle.http.Status
+import io.circe.generic.encoding.DerivedObjectEncoder
 import io.circe.generic.semiauto._
 import io.circe.syntax._
 import io.circe.{Encoder, Json, JsonObject, ObjectEncoder}
 import io.finch.Error
 import org.jboss.netty.handler.codec.http.HttpMethod
+import shapeless._
+import shapeless.labelled.FieldType
 
 object Encoders {
   implicit val encodeLicense: Encoder[License] = deriveFor[License].encoder
@@ -140,9 +143,7 @@ object Encoders {
     Base64.getEncoder.encodeToString(ByteBuffers.getBytes(bb)).asJson
   }
 
-  implicit val encodeThrowable: Encoder[Throwable] = Encoder.instance(_.getMessage.asJson)
   implicit val encodeStatus: Encoder[Status] = Encoder.encodeInt.contramap(_.code)
-  implicit val encodeCirceError: Encoder[CirceError] = encodeThrowable.contramap(identity)
 
   implicit val encodeMediaTypeSubType: Encoder[MediaTypeSubType] = {
     deriveFor[MediaTypeSubType].encoder
@@ -155,6 +156,16 @@ object Encoders {
     encodeA: Encoder[A],
     encodeB: Encoder[B]
   ): Encoder[Ior[A, B]] = deriveFor[Ior[A, B]].encoder
+
+  implicit def dropThrowableFromEncodedObjects[K <: Symbol, H <: Throwable, T <: HList](implicit
+    key: Witness.Aux[K],
+    encodeTail: Lazy[DerivedObjectEncoder[T]]
+  ): DerivedObjectEncoder[FieldType[K, H] :: T] =
+    new DerivedObjectEncoder[FieldType[K, H] :: T] {
+      def encodeObject(a: FieldType[K, H] :: T): JsonObject = {
+        encodeTail.value.encodeObject(a.tail)
+      }
+    }
 
   implicit val encodeCosmosError: Encoder[CosmosError] = deriveFor[CosmosError].encoder
 
