@@ -19,6 +19,16 @@ sealed abstract class CosmosError(causedBy: Throwable = null /*java compatibilit
   def status: Status = Status.BadRequest
 
   def getData: Option[JsonObject] = {
+    /* Circe encodes sum types like CosmosError into JSON as follows:
+     * {
+     *   "PackageNotFound": {
+     *     "packageName": "cassandra"
+     *   }
+     * }
+     *
+     * For this method, we just want the field values, so the code below extracts the nested object
+     * from the JSON that Circe generates.
+     */
     this.asJson
       .asObject
       .flatMap(_.values.headOption)

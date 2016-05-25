@@ -152,8 +152,42 @@ object Encoders {
     encodeB: Encoder[B]
   ): Encoder[Ior[A, B]] = deriveFor[Ior[A, B]].encoder
 
-  implicit def dropThrowableFromEncodedObjects[K <: Symbol, H <: Throwable, T <: HList](implicit
-    key: Witness.Aux[K],
+  /* This method skips all fields of type Throwable when rendering an object as JSON.
+   *
+   * Here's a rough analogy of how it works. Let's say you have some way of converting any case
+   * class into a `List[(String, Any)]` of field names and values in order. You could pretty easily
+   * serialize that `List` into JSON, assuming you have some "magic" encoding function
+   * `encodeValue: Any => Json`:
+   *
+   * def encodeFields(fields: List[(String, Any)]): JsonObject = {
+   *   fields match {
+   *     case (key, value) :: xs => (key, encodeValue(value)) +: encodeFields(xs)
+   *     case Nil                => JsonObject.empty
+   *   }
+   * }
+   *
+   * If you don't want to include values of type `Throwable`, you could update your function:
+   *
+   * def encodeNonThrowableFields(fields: List[(String, Any)]): JsonObject = {
+   *   fields match {
+   *     case (key, value: Throwable) :: xs => encodeFields(xs)
+   *     case (key, value) :: xs            => (key, encodeValue(value)) +: encodeFields(xs)
+   *     case Nil                           => JsonObject.empty
+   *   }
+   * }
+   *
+   * You can think of the method below as defining the first clause of that pattern match. Circe
+   * uses the Shapeless library to convert a case class value into an HList, which corresponds to
+   * the `List[(String, Any)]` in the analogy, except that it's type-safe. More precisely,
+   * `FieldType[K, H] :: T` in the code is the equivalent of `case (key, value: Throwable) :: xs`.
+   * See the `encodeLabelledHList` and `encodeHNil` in Circe's `DerivedObjectEncoder` for the other
+   * two clauses of the "pattern match".
+   *
+   * Why would we want to skip `Throwable`s? Mostly because we don't control what is in the error
+   * message, which could contain information that we don't want to surface to users in ordinary
+   * error responses. It's better to make a conscious decision to include error data when needed.
+   */
+  implicit def dropThrowableFromEncodedObjects[K, H <: Throwable, T <: HList](implicit
     encodeTail: Lazy[DerivedObjectEncoder[T]]
   ): DerivedObjectEncoder[FieldType[K, H] :: T] =
     new DerivedObjectEncoder[FieldType[K, H] :: T] {

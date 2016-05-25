@@ -116,10 +116,13 @@ class EncodersDecodersSpec extends FreeSpec {
       assertThrowableDropped(error, "causedBy")
     }
 
-    def assertThrowableDropped[A <: CosmosError with Product](error: A, throwableFieldName: String): Unit = {
+    def assertThrowableDropped[A <: CosmosError with Product](
+      error: A,
+      throwableFieldNames: String*
+    ): Unit = {
       val encodedFields = error.getData.getOrElse(JsonObject.empty)
-      assert(!encodedFields.contains(throwableFieldName))
-      assertResult(error.productArity - 1)(encodedFields.size)
+      throwableFieldNames.foreach(name => assert(!encodedFields.contains(name), name))
+      assertResult(error.productArity - throwableFieldNames.size)(encodedFields.size)
     }
   }
 
