@@ -5,15 +5,19 @@ import java.net.{MalformedURLException, URL}
 import java.nio.file.{Files, Path, Paths}
 import java.util.zip.{ZipEntry, ZipInputStream, ZipOutputStream}
 
-import com.mesosphere.cosmos.circe.Encoders._
-import com.mesosphere.cosmos.model.{PackageRepository, SearchResult}
-import com.mesosphere.cosmos.test.TestUtil
-import com.mesosphere.universe._
 import com.netaporter.uri.Uri
 import com.twitter.io.{Charsets, StreamIO}
-import com.twitter.util.{Await, Throw}
+import com.twitter.util.Await
+import com.twitter.util.Future
+import com.twitter.util.Throw
 import io.circe.syntax._
 import org.scalatest.{FreeSpec, PrivateMethodTester}
+
+import com.mesosphere.cosmos.circe.Encoders._
+import com.mesosphere.cosmos.model.{PackageRepository, SearchResult}
+import com.mesosphere.cosmos.repository.UniverseClient
+import com.mesosphere.cosmos.test.TestUtil
+import com.mesosphere.universe._
 
 final class UniversePackageCacheSpec extends FreeSpec with PrivateMethodTester {
 
@@ -68,7 +72,7 @@ final class UniversePackageCacheSpec extends FreeSpec with PrivateMethodTester {
       "relative URI" in {
         val expectedRepo = PackageRepository(name = "FooBar", uri = Uri.parse("foo/bar"))
         val Throw(RepositoryUriSyntax(actualRepo, causedBy)) =
-          Await.result(UniversePackageCache.streamBundle(expectedRepo, _.openStream()).liftToTry)
+          Await.result(UniversePackageCache.streamBundle(expectedRepo, UniverseClient()).liftToTry)
         assertResult(expectedRepo)(actualRepo)
         assert(causedBy.isInstanceOf[IllegalArgumentException])
       }
@@ -76,7 +80,7 @@ final class UniversePackageCacheSpec extends FreeSpec with PrivateMethodTester {
       "unknown protocol" in {
         val expectedRepo = PackageRepository(name = "FooBar", uri = Uri.parse("foo://bar.com"))
         val Throw(RepositoryUriSyntax(actualRepo, causedBy)) =
-          Await.result(UniversePackageCache.streamBundle(expectedRepo, _.openStream()).liftToTry)
+          Await.result(UniversePackageCache.streamBundle(expectedRepo, UniverseClient()).liftToTry)
         assertResult(expectedRepo)(actualRepo)
         assert(causedBy.isInstanceOf[MalformedURLException])
       }
@@ -85,9 +89,9 @@ final class UniversePackageCacheSpec extends FreeSpec with PrivateMethodTester {
     "Connection failure" in {
       val expectedRepo = PackageRepository(name = "BadRepo", uri = Uri.parse("http://example.com"))
       val errorMessage = "No one's home"
-      val streamUrl: URL => InputStream = _ => throw new IOException(errorMessage)
+      val universeClient = UniverseClient(_ => Future(throw new IOException(errorMessage)))
       val Throw(RepositoryUriConnection(actualRepo, causedBy)) =
-        Await.result(UniversePackageCache.streamBundle(expectedRepo, streamUrl).liftToTry)
+        Await.result(UniversePackageCache.streamBundle(expectedRepo, universeClient).liftToTry)
       assertResult(expectedRepo)(actualRepo)
       assert(causedBy.isInstanceOf[IOException])
       assertResult(errorMessage)(causedBy.getMessage)
@@ -97,7 +101,10 @@ final class UniversePackageCacheSpec extends FreeSpec with PrivateMethodTester {
       val repository = PackageRepository(name = "GoodRepo", uri = Uri.parse("http://example.com"))
       val bundleContent = "Pretend this is a package repository zip file"
       val bundleStream = new ByteArrayInputStream(bundleContent.getBytes(Charsets.Utf8))
-      val streamFuture = UniversePackageCache.streamBundle(repository, _ => bundleStream)
+      val streamFuture = UniversePackageCache.streamBundle(
+        repository,
+        UniverseClient(_ => Future(bundleStream))
+      )
       val downloadStream = Await.result(streamFuture)
       val downloadContent = StreamIO.buffer(downloadStream).toString(Charsets.Utf8.name)
       assertResult(bundleContent)(downloadContent)
@@ -110,9 +117,11 @@ final class UniversePackageCacheSpec extends FreeSpec with PrivateMethodTester {
         val universeDir = Files.createTempDirectory(getClass.getSimpleName)
 
         val repository = PackageRepository(name = "BadRepo", uri = Uri.parse("http://example.com"))
-        val bundleDirFuture = UniversePackageCache.updateUniverseCache(repository, universeDir) {
-          _ => throw new IOException("No one's home")
-        }
+        val bundleDirFuture = UniversePackageCache.updateUniverseCache(
+          repository,
+          universeDir,
+          UniverseClient(_ => Future(throw new IOException("No one's home")))
+        )
         val Throw(t) = Await.result(bundleDirFuture.liftToTry)
         assert(t.isInstanceOf[RepositoryUriConnection])
 
@@ -125,8 +134,11 @@ final class UniversePackageCacheSpec extends FreeSpec with PrivateMethodTester {
         val repository = PackageRepository(name = "GoodRepo", uri = Uri.parse("http://example.com"))
         val bundleContent = "Not a zip file, but good enough to pass the test"
         val bundleStream = new ByteArrayInputStream(bundleContent.getBytes(Charsets.Utf8))
-        val bundleDirFuture =
-          UniversePackageCache.updateUniverseCache(repository, universeDir)(_ => bundleStream)
+        val bundleDirFuture = UniversePackageCache.updateUniverseCache(
+          repository,
+          universeDir,
+          UniverseClient(_ => Future(bundleStream))
+        )
         assert(Await.result(bundleDirFuture.liftToTry).isReturn)
 
         TestUtil.deleteRecursively(universeDir)
