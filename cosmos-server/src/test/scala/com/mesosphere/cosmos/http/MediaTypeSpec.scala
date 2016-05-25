@@ -1,6 +1,9 @@
 package com.mesosphere.cosmos.http
 
+import com.mesosphere.cosmos.circe.Encoders._
 import com.twitter.util.Return
+import io.circe.Json
+import io.circe.syntax._
 import org.scalatest.FreeSpec
 
 class MediaTypeSpec extends FreeSpec {
@@ -70,6 +73,12 @@ class MediaTypeSpec extends FreeSpec {
         MediaType("application", MediaTypeSubType("vnd.dcos.custom-request", Some("json"))).show
       )
     }
+  }
+
+  "A MediaType should use show for encoding" in {
+    val subType = MediaTypeSubType("vnd.dcos.custom-request", Some("json"))
+    val mediaType = MediaType("application", subType)
+    assertResult(Json.string("application/vnd.dcos.custom-request+json"))(mediaType.asJson)
   }
 
 }
