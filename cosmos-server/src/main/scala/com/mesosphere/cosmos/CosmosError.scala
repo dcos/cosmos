@@ -18,7 +18,22 @@ sealed abstract class CosmosError(causedBy: Throwable = null /*java compatibilit
 
   def status: Status = Status.BadRequest
 
-  def getData: Option[JsonObject] = None
+  def getData: Option[JsonObject] = {
+    /* Circe encodes sum types like CosmosError into JSON as follows:
+     * {
+     *   "PackageNotFound": {
+     *     "packageName": "cassandra"
+     *   }
+     * }
+     *
+     * For this method, we just want the field values, so the code below extracts the nested object
+     * from the JSON that Circe generates.
+     */
+    this.asJson
+      .asObject
+      .flatMap(_.values.headOption)
+      .flatMap(_.asObject)
+  }
 
   def getHeaders: Map[String, String] = Map.empty
 }
@@ -108,7 +123,16 @@ case class ConcurrentAccess(causedBy: Throwable) extends CosmosError(causedBy)
 
 final case class RepoNameOrUriMissing() extends CosmosError
 
-case class RepositoryAlreadyPresent(nameOrUri: Ior[String, Uri]) extends CosmosError
+case class RepositoryAlreadyPresent(nameOrUri: Ior[String, Uri]) extends CosmosError {
+  override def getData: Option[JsonObject] = {
+    val jsonMap = nameOrUri match {
+      case Ior.Both(n, u) => Map("name" -> n.asJson, "uri" -> u.asJson)
+      case Ior.Left(n) => Map("name" -> n.asJson)
+      case Ior.Right(u) => Map("uri" -> u.asJson)
+    }
+    Some(JsonObject.fromMap(jsonMap))
+  }
+}
 case class RepositoryAddIndexOutOfBounds(attempted: Int, max: Int) extends CosmosError
 
 case class UnsupportedRepositoryVersion(version: UniverseVersion) extends CosmosError
