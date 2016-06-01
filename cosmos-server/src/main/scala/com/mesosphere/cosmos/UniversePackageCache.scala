@@ -103,7 +103,7 @@ final class UniversePackageCache private (
       val repoIndex = parseJsonFile(indexFile)
         .toRightXor(new IndexNotFound(universeBundle))
         .flatMap { index =>
-          index.as[UniverseIndex].leftMap(PackageFileSchemaMismatch("index.json", _))
+          index.as[UniverseIndex].leftMap(failure => PackageFileSchemaMismatch("index.json", failure))
         }
         .valueOr(err => throw err)
 
@@ -327,7 +327,7 @@ object UniversePackageCache {
     fileName: String
   ): Xor[CosmosError, Option[A]] = {
     parseJsonFile(packageDir.resolve(fileName)).traverseU { json =>
-      json.as[A].leftMap(e => PackageFileSchemaMismatch(fileName, e))
+      json.as[A].leftMap(failure => PackageFileSchemaMismatch(fileName, failure))
     }
   }
 
@@ -439,7 +439,7 @@ object UniversePackageCache {
   ): ValidatedNel[CosmosError, A] = {
     json
       .as[A]
-      .leftMap(PackageFileSchemaMismatch(packageFileName, _))
+      .leftMap(failure => PackageFileSchemaMismatch(packageFileName, failure))
       .toValidated
       .toValidatedNel
   }
