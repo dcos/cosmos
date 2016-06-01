@@ -229,7 +229,7 @@ object Encoders {
       s"Package file [$fileName] not found"
     case PackageFileNotJson(fileName, parseError) =>
       s"Package file [$fileName] is not JSON: $parseError"
-    case PackageFileSchemaMismatch(fileName) =>
+    case PackageFileSchemaMismatch(fileName, _) =>
       s"Package file [$fileName] does not match schema"
     case PackageAlreadyInstalled() =>
       "Package is already installed"
