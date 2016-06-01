@@ -27,7 +27,7 @@ class MesosMasterClient(
   }
 
   def getMasterState(frameworkName: String)(implicit session: RequestSession): Future[MasterState] = {
-    val uri = "master" / "state.json"
+    val uri = "master" / "state"
     val request = get(uri)
     client(request).flatMap(decodeTo[MasterState](HttpMethod.GET, uri, _))
   }
