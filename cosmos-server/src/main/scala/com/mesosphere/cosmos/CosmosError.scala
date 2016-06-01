@@ -9,7 +9,7 @@ import com.mesosphere.universe.{PackageDetailsVersion, UniverseVersion}
 import com.netaporter.uri.Uri
 import com.twitter.finagle.http.Status
 import io.circe.syntax._
-import io.circe.{Json, JsonObject}
+import io.circe.{DecodingFailure, Json, JsonObject}
 import org.jboss.netty.handler.codec.http.HttpMethod
 
 import scala.util.control.NoStackTrace
@@ -43,7 +43,11 @@ case class VersionNotFound(packageName: String, packageVersion: PackageDetailsVe
 case class EmptyPackageImport() extends CosmosError
 case class PackageFileMissing(packageName: String, cause: Throwable = null) extends CosmosError(cause)
 case class PackageFileNotJson(fileName: String, parseError: String) extends CosmosError
-case class PackageFileSchemaMismatch(fileName: String) extends CosmosError
+case class PackageFileSchemaMismatch(fileName: String, decodingFailure: DecodingFailure) extends CosmosError {
+  override def getData: Option[JsonObject] = {
+    Some(JsonObject.singleton("errorMessage", decodingFailure.getMessage().asJson))
+  }
+}
 case class PackageAlreadyInstalled() extends CosmosError {
   override val status = Status.Conflict
 }

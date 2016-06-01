@@ -7,14 +7,12 @@ import java.time.LocalDateTime
 import java.util.Base64
 import java.util.concurrent.atomic.AtomicReference
 import java.util.zip.ZipInputStream
-
 import scala.util.matching.Regex
-
 import cats.data.Xor.{Left, Right}
 import cats.data._
-import cats.std.list._           // allows for traversU in verifySchema
+import cats.std.list._
 import cats.std.option._
-import cats.syntax.apply._       // provides |@|
+import cats.syntax.apply._
 import cats.syntax.option._
 import cats.syntax.traverse._
 import com.netaporter.uri.Uri
@@ -22,8 +20,7 @@ import com.twitter.concurrent.AsyncMutex
 import com.twitter.io.{Charsets, Files => TwitterFiles}
 import com.twitter.util.{Future, Try}
 import io.circe.parse._
-import io.circe.{Decoder, Json}
-
+import io.circe.{parse => _, _}
 import com.mesosphere.cosmos.circe.Decoders._
 import com.mesosphere.cosmos.model.{PackageRepository, SearchResult}
 import com.mesosphere.cosmos.repository.Repository
@@ -106,7 +103,7 @@ final class UniversePackageCache private (
       val repoIndex = parseJsonFile(indexFile)
         .toRightXor(new IndexNotFound(universeBundle))
         .flatMap { index =>
-          index.as[UniverseIndex].leftMap(_ => PackageFileSchemaMismatch("index.json"))
+          index.as[UniverseIndex].leftMap(PackageFileSchemaMismatch("index.json", _))
         }
         .valueOr(err => throw err)
 
@@ -330,7 +327,7 @@ object UniversePackageCache {
     fileName: String
   ): Xor[CosmosError, Option[A]] = {
     parseJsonFile(packageDir.resolve(fileName)).traverseU { json =>
-      json.as[A].leftMap(_ => PackageFileSchemaMismatch(fileName))
+      json.as[A].leftMap(e => PackageFileSchemaMismatch(fileName, e))
     }
   }
 
@@ -394,7 +391,7 @@ object UniversePackageCache {
       .traverseU { json =>
         json
           .asObject
-          .toValidNel[CosmosError](PackageFileSchemaMismatch("config.json"))
+          .toValidNel[CosmosError](PackageFileSchemaMismatch("config.json", DecodingFailure("Object", List())))
       }
 
     (packageDefValid |@| resourceDefValid |@| commandJsonValid |@| configJsonObject)
@@ -442,7 +439,7 @@ object UniversePackageCache {
   ): ValidatedNel[CosmosError, A] = {
     json
       .as[A]
-      .leftMap(_ => PackageFileSchemaMismatch(packageFileName))
+      .leftMap(PackageFileSchemaMismatch(packageFileName, _))
       .toValidated
       .toValidatedNel
   }
