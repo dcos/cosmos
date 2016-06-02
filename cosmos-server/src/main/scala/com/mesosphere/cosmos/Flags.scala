@@ -12,6 +12,11 @@ object dcosUri extends GlobalFlag[Uri](
     s"${mesosMasterUri.name} and ${marathonUri.name} will be ignored"
 )
 
+object adminRouterUri extends GlobalFlag[Uri](
+  Uri.parse("http://master.mesos"),
+  "The URI where AdminRouter can be found"
+)
+
 object marathonUri extends GlobalFlag[Uri](
   Uri.parse("http://master.mesos:8080"),
   "The URI where marathon can be found"

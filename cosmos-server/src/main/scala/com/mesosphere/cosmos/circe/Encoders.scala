@@ -2,14 +2,14 @@ package com.mesosphere.cosmos.circe
 
 import java.nio.ByteBuffer
 import java.util.Base64
-
 import cats.data.Ior
 import com.mesosphere.cosmos._
-import com.mesosphere.cosmos.http.{MediaType, MediaTypeSubType}
+import com.mesosphere.cosmos.http.MediaType
 import com.mesosphere.cosmos.model._
 import com.mesosphere.cosmos.model.thirdparty.marathon._
 import com.mesosphere.cosmos.model.thirdparty.mesos.master._
 import com.mesosphere.universe._
+import com.mesosphere.universe.v3.DcosReleaseVersion
 import com.netaporter.uri.Uri
 import com.twitter.finagle.http.Status
 import io.circe.generic.encoding.DerivedObjectEncoder
@@ -142,6 +142,8 @@ object Encoders {
   implicit val encodeByteBuffer: Encoder[ByteBuffer] = Encoder.instance { bb =>
     Base64.getEncoder.encodeToString(ByteBuffers.getBytes(bb)).asJson
   }
+
+  implicit val encodeDcosReleaseVersion: Encoder[DcosReleaseVersion] = Encoder.instance(_.show.asJson)
 
   implicit val encodeStatus: Encoder[Status] = Encoder.encodeInt.contramap(_.code)
   implicit val encodeMediaType: Encoder[MediaType] = Encoder.encodeString.contramap(_.show)

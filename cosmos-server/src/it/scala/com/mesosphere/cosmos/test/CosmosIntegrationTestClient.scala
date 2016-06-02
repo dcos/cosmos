@@ -29,18 +29,21 @@ object CosmosIntegrationTestClient extends Matchers {
     }
       .map { dh =>
         val dcosHost: String = Uris.stripTrailingSlash(dh)
+        val ar: Uri = dcosHost
         val mar: Uri = dcosHost / "marathon"
         val mesos: Uri = dcosHost / "mesos"
-        mar -> mesos
+        (ar, mar, mesos)
       }
-      .flatMap { case (marathon, mesosMaster) =>
+      .flatMap { case (adminRouterUri, marathonUri, mesosMasterUri) =>
         Trys.join(
-          Services.marathonClient(marathon).map { marathon -> _ },
-          Services.mesosClient(mesosMaster).map { mesosMaster -> _ }
+          Services.adminRouterClient(adminRouterUri).map { adminRouterUri -> _},
+          Services.marathonClient(marathonUri).map { marathonUri -> _ },
+          Services.mesosClient(mesosMasterUri).map { mesosMasterUri -> _ }
         )
       }
-      .map { case (marathon, mesosMaster) =>
+      .map { case (adminRouterClient, marathon, mesosMaster) =>
         new AdminRouter(
+          new AdminRouterClient(adminRouterClient._1, adminRouterClient._2),
           new MarathonClient(marathon._1, marathon._2),
           new MesosMasterClient(mesosMaster._1, mesosMaster._2)
         )

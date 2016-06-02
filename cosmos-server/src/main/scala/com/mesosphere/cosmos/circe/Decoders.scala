@@ -2,12 +2,13 @@ package com.mesosphere.cosmos.circe
 
 import java.nio.ByteBuffer
 import java.util.Base64
-
 import com.mesosphere.cosmos.ErrorResponse
 import com.mesosphere.cosmos.model._
+import com.mesosphere.cosmos.model.thirdparty.adminrouter.DcosVersion
 import com.mesosphere.cosmos.model.thirdparty.marathon._
 import com.mesosphere.cosmos.model.thirdparty.mesos.master._
 import com.mesosphere.universe._
+import com.mesosphere.universe.v3.{DcosReleaseVersion, DcosReleaseVersionParser}
 import com.netaporter.uri.Uri
 import io.circe.generic.semiauto._
 import io.circe.{Decoder, HCursor}
@@ -144,6 +145,18 @@ object Decoders {
 
   implicit val decodeByteBuffer: Decoder[ByteBuffer] = Decoder.decodeString.map { b64String =>
     ByteBuffer.wrap(Base64.getDecoder.decode(b64String))
+  }
+
+  implicit val decodeDcosReleaseVersion: Decoder[DcosReleaseVersion] = Decoder.decodeString.map { versionString =>
+    DcosReleaseVersionParser.parseUnsafe(versionString)
+  }
+
+  implicit val decodeDcosVersion: Decoder[DcosVersion] = Decoder.instance { (cursor: HCursor) =>
+    for {
+      v <- cursor.downField("version").as[DcosReleaseVersion]
+      dIC <- cursor.downField("dcos-image-commit").as[String]
+      bId <- cursor.downField("bootstrap-id").as[String]
+    } yield DcosVersion(v, dIC, bId)
   }
 
 }
