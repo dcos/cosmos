@@ -6,7 +6,9 @@ import com.mesosphere.cosmos.circe.Encoders._
 import com.mesosphere.cosmos.handler.PackageSearchHandler
 import com.mesosphere.cosmos.model.{SearchRequest, SearchResponse, SearchResult}
 import com.mesosphere.cosmos.repository.PackageCollection
-import com.mesosphere.universe._
+import com.mesosphere.universe.v2._
+import com.mesosphere.universe.v2.circe.Decoders._
+import com.mesosphere.universe.v2.circe.Encoders._
 import com.twitter.util.{Await, Future}
 import io.circe.parse._
 import io.circe.syntax._

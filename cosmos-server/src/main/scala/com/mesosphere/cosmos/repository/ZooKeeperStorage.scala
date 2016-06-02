@@ -2,15 +2,15 @@ package com.mesosphere.cosmos.repository
 
 import java.nio.ByteBuffer
 import java.nio.charset.StandardCharsets
-
 import cats.data.Ior
 import com.mesosphere.cosmos._
 import com.mesosphere.cosmos.circe.Decoders._
 import com.mesosphere.cosmos.circe.Encoders._
 import com.mesosphere.cosmos.http.{MediaType, MediaTypeOps, MediaTypeSubType}
 import com.mesosphere.cosmos.model.{PackageRepository, ZooKeeperStorageEnvelope}
-import com.mesosphere.cosmos.{ByteBuffers, CirceError, ZooKeeperStorageError}
+import com.mesosphere.cosmos.{CirceError, ZooKeeperStorageError}
 import com.mesosphere.cosmos.repository.DefaultRepositories._
+import com.mesosphere.universe.common.ByteBuffers
 import com.netaporter.uri.Uri
 import com.twitter.finagle.stats.{NullStatsReceiver, Stat, StatsReceiver}
 import com.twitter.util._

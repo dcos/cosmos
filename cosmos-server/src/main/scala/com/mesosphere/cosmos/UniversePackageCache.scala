@@ -21,11 +21,11 @@ import com.twitter.io.{Charsets, Files => TwitterFiles}
 import com.twitter.util.{Future, Try}
 import io.circe.parse._
 import io.circe.{parse => _, _}
-import com.mesosphere.cosmos.circe.Decoders._
 import com.mesosphere.cosmos.model.{PackageRepository, SearchResult}
 import com.mesosphere.cosmos.repository.Repository
 import com.mesosphere.cosmos.repository.UniverseClient
-import com.mesosphere.universe._
+import com.mesosphere.universe.v2._
+import com.mesosphere.universe.v2.circe.Decoders._
 
 
 /** Stores packages from the Universe GitHub repository in the local filesystem.

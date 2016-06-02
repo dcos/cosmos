@@ -1,53 +1,23 @@
 package com.mesosphere.cosmos.circe
 
-import java.nio.ByteBuffer
-import java.util.Base64
 import cats.data.Ior
 import com.mesosphere.cosmos._
 import com.mesosphere.cosmos.http.MediaType
 import com.mesosphere.cosmos.model._
-import com.mesosphere.cosmos.model.thirdparty.marathon._
-import com.mesosphere.cosmos.model.thirdparty.mesos.master._
-import com.mesosphere.universe._
-import com.mesosphere.universe.v3.DcosReleaseVersion
-import com.netaporter.uri.Uri
+import com.mesosphere.cosmos.thirdparty.marathon.circe.Encoders._
+import com.mesosphere.universe.common.circe.Encoders._
+import com.mesosphere.universe.v2.circe.Encoders._
 import com.twitter.finagle.http.Status
 import io.circe.generic.encoding.DerivedObjectEncoder
 import io.circe.generic.semiauto._
 import io.circe.syntax._
-import io.circe.{Encoder, Json, JsonObject, ObjectEncoder}
+import io.circe.{Encoder, JsonObject, ObjectEncoder}
 import io.finch.Error
 import org.jboss.netty.handler.codec.http.HttpMethod
 import shapeless._
 import shapeless.labelled.FieldType
 
 object Encoders {
-  implicit val encodeLicense: Encoder[License] = deriveFor[License].encoder
-  implicit val encodePackageDefinition: Encoder[PackageDetails] = deriveFor[PackageDetails].encoder
-  implicit val encodeContainer: Encoder[Container] = deriveFor[Container].encoder
-  implicit val encodeAssets: Encoder[Assets] = deriveFor[Assets].encoder
-  implicit val encodeImages: Encoder[Images] = Encoder.instance { (images: Images) =>
-    Json.obj(
-      "icon-small" -> images.iconSmall.asJson,
-      "icon-medium" -> images.iconMedium.asJson,
-      "icon-large" -> images.iconLarge.asJson,
-      "screenshots" -> images.screenshots.asJson
-    )
-  }
-  implicit val encodeResource: Encoder[Resource] = deriveFor[Resource].encoder
-
-  implicit val encodePackageIndex: Encoder[UniverseIndexEntry] = ObjectEncoder.instance { entry =>
-    val encodedFields = encodeIndexEntryFields(
-      entry.name,
-      entry.currentVersion,
-      entry.versions,
-      entry.description,
-      entry.framework,
-      entry.tags,
-      entry.selected
-    )
-    JsonObject.fromIndexedSeq(encodedFields)
-  }
 
   implicit val encodeSearchResult: Encoder[SearchResult] = ObjectEncoder.instance { searchResult =>
     val encodedFields = encodeIndexEntryFields(
@@ -62,18 +32,7 @@ object Encoders {
     JsonObject.fromIndexedSeq(encodedFields :+ ("images" -> searchResult.images.asJson))
   }
 
-  implicit val encodeUniverseIndex: Encoder[UniverseIndex] = deriveFor[UniverseIndex].encoder
-  implicit val encodeMasterState: Encoder[MasterState] = deriveFor[MasterState].encoder
-  implicit val encodeFramework: Encoder[Framework] = deriveFor[Framework].encoder
-  implicit val encodeMesosFrameworkTearDownResponse: Encoder[MesosFrameworkTearDownResponse] = deriveFor[MesosFrameworkTearDownResponse].encoder
-  implicit val encodeMarathonAppResponse: Encoder[MarathonAppResponse] = deriveFor[MarathonAppResponse].encoder
-  implicit val encodeMarathonAppsResponse: Encoder[MarathonAppsResponse] = deriveFor[MarathonAppsResponse].encoder
-  implicit val encoder: Encoder[AppId] = Encoder.instance(_.toString.asJson)
-  implicit val encodeMarathonAppContainer: Encoder[MarathonAppContainer] = deriveFor[MarathonAppContainer].encoder
-  implicit val encodeMarathonAppContainerDocker: Encoder[MarathonAppContainerDocker] = deriveFor[MarathonAppContainerDocker].encoder
-  implicit val encodeMarathonApp: Encoder[MarathonApp] = deriveFor[MarathonApp].encoder
   implicit val encodeDescribeRequest: Encoder[DescribeRequest] = deriveFor[DescribeRequest].encoder
-  implicit val encodePackageFiles: Encoder[PackageFiles] = deriveFor[PackageFiles].encoder
   implicit val encodeSearchRequest: Encoder[SearchRequest] = deriveFor[SearchRequest].encoder
   implicit val encodeSearchResponse: Encoder[SearchResponse] = deriveFor[SearchResponse].encoder
   implicit val encodeInstallRequest: Encoder[InstallRequest] = deriveFor[InstallRequest].encoder
@@ -85,27 +44,18 @@ object Encoders {
   implicit val encodeRenderRequest: Encoder[RenderRequest] = deriveFor[RenderRequest].encoder
   implicit val encodeRenderResponse: Encoder[RenderResponse] = deriveFor[RenderResponse].encoder
 
-  implicit val encodeCommandDefinition: Encoder[Command] = deriveFor[Command].encoder
   implicit val encodeDescribeResponse: Encoder[DescribeResponse] = deriveFor[DescribeResponse].encoder
   implicit val encodeListVersionsRequest: Encoder[ListVersionsRequest] = deriveFor[ListVersionsRequest].encoder
   implicit val encodeListVersionsResponse: Encoder[ListVersionsResponse] = ObjectEncoder.instance( response => {
-    JsonObject.singleton("results", encodeMap(response.results))
+    JsonObject.singleton("results", encodePackageDetailsVersionToReleaseVersionMap(response.results))
   })
 
   implicit val encodeErrorResponse: Encoder[ErrorResponse] = deriveFor[ErrorResponse].encoder
-  implicit val encodeMarathonError: Encoder[MarathonError] = deriveFor[MarathonError].encoder
-
-  implicit val encodeUri: Encoder[Uri] = Encoder.instance(_.toString.asJson)
 
   implicit val encodeListRequest: Encoder[ListRequest] = deriveFor[ListRequest].encoder
   implicit val encodeListResponse: Encoder[ListResponse] = deriveFor[ListResponse].encoder
   implicit val encodeInstallation: Encoder[Installation] = deriveFor[Installation].encoder
   implicit val encodePackageInformation: Encoder[InstalledPackageInformation] = deriveFor[InstalledPackageInformation].encoder
-
-  implicit val encodeUniverseVersion: Encoder[UniverseVersion] = Encoder.instance(_.toString.asJson)
-  implicit val encodePackagingVersion: Encoder[PackagingVersion] = Encoder.instance(_.toString.asJson)
-  implicit val encodePackageRevision: Encoder[ReleaseVersion] = Encoder.instance(_.toString.asJson)
-  implicit val encodePackageDetailsVersion: Encoder[PackageDetailsVersion] = Encoder.instance(_.toString.asJson)
 
   implicit val encodeCapabilitiesResponse: Encoder[CapabilitiesResponse] = deriveFor[CapabilitiesResponse].encoder
   implicit val encodeCapability: Encoder[Capability] = deriveFor[Capability].encoder
@@ -138,12 +88,6 @@ object Encoders {
   implicit val exceptionEncoder: Encoder[Exception] = {
     Encoder.instance { e => exceptionErrorResponse(e).asJson }
   }
-
-  implicit val encodeByteBuffer: Encoder[ByteBuffer] = Encoder.instance { bb =>
-    Base64.getEncoder.encodeToString(ByteBuffers.getBytes(bb)).asJson
-  }
-
-  implicit val encodeDcosReleaseVersion: Encoder[DcosReleaseVersion] = Encoder.instance(_.show.asJson)
 
   implicit val encodeStatus: Encoder[Status] = Encoder.encodeInt.contramap(_.code)
   implicit val encodeMediaType: Encoder[MediaType] = Encoder.encodeString.contramap(_.show)
@@ -223,7 +167,7 @@ object Encoders {
   private[this] def msgForCosmosError(err: CosmosError): String = err match {
     case PackageNotFound(packageName) =>
       s"Package [$packageName] not found"
-    case VersionNotFound(packageName, PackageDetailsVersion(packageVersion)) =>
+    case VersionNotFound(packageName, com.mesosphere.universe.v2.PackageDetailsVersion(packageVersion)) =>
       s"Version [$packageVersion] of package [$packageName] not found"
     case EmptyPackageImport() =>
       "Package is empty"
@@ -320,33 +264,6 @@ object Encoders {
         case Ior.Left(n) => s"Repository name [$n] is not present in the list"
         case Ior.Right(u) => s"Repository URI [$u] is not present in the list"
       }
-  }
-
-  private[this] def encodeMap(versions: Map[PackageDetailsVersion, ReleaseVersion]): Json = {
-    versions
-      .map {
-        case (PackageDetailsVersion(pdv), ReleaseVersion(rv)) => pdv -> rv
-      }.asJson
-  }
-
-  private[this] def encodeIndexEntryFields(
-    name: String,
-    currentVersion: PackageDetailsVersion,
-    versions: Map[PackageDetailsVersion, ReleaseVersion],
-    description: String,
-    framework: Boolean,
-    tags: List[String],
-    selected: Option[Boolean]
-  ): Vector[(String, Json)] = {
-    Vector(
-      "name" -> name.asJson,
-      "currentVersion" -> currentVersion.asJson,
-      "versions" -> encodeMap(versions),
-      "description" -> description.asJson,
-      "framework" -> framework.asJson,
-      "tags" -> tags.asJson,
-      "selected" -> selected.asJson
-    )
   }
 
 }

@@ -1,6 +1,6 @@
 package com.mesosphere.cosmos.model
 
-import com.mesosphere.universe.{Resource, PackageDetails, Command}
+import com.mesosphere.universe.v2.{Command, PackageDetails, Resource}
 import io.circe.JsonObject
 
 case class DescribeResponse(

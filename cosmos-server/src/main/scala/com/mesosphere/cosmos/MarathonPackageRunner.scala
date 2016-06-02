@@ -1,10 +1,10 @@
 package com.mesosphere.cosmos
 
 import cats.data.Xor
-import com.mesosphere.cosmos.model.thirdparty.marathon.{MarathonApp, MarathonError}
+import com.mesosphere.cosmos.thirdparty.marathon.model.{MarathonApp, MarathonError}
+import com.mesosphere.cosmos.thirdparty.marathon.circe.Decoders._
 import com.twitter.finagle.http.Status
 import com.twitter.util.Future
-import com.mesosphere.cosmos.circe.Decoders._
 import com.mesosphere.cosmos.http.RequestSession
 import io.circe.parse.decode
 import io.circe.Json

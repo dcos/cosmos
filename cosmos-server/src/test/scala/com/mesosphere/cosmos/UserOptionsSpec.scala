@@ -2,11 +2,11 @@ package com.mesosphere.cosmos
 
 import cats.data.Xor
 import com.mesosphere.cosmos.handler._
-import com.mesosphere.cosmos.circe.Decoders._
 import com.mesosphere.cosmos.http.{MediaTypes, RequestSession}
 import com.mesosphere.cosmos.model._
-import com.mesosphere.cosmos.model.thirdparty.marathon.MarathonApp
-import com.mesosphere.universe.{PackageDetails, PackageDetailsVersion, PackageFiles, PackagingVersion}
+import com.mesosphere.cosmos.thirdparty.marathon.model._
+import com.mesosphere.cosmos.thirdparty.marathon.circe.Decoders._
+import com.mesosphere.universe.v2.{PackageDetails, PackageDetailsVersion, PackageFiles, PackagingVersion}
 import com.netaporter.uri.Uri
 import com.twitter.finagle.http.RequestBuilder
 import com.twitter.io.Buf
