@@ -2,8 +2,11 @@ package com.mesosphere.cosmos.circe
 
 import cats.data.Xor
 import com.mesosphere.cosmos._
+import com.mesosphere.cosmos.model.thirdparty.adminrouter.DcosVersion
 import com.mesosphere.cosmos.model.{AppId, PackageRepository}
 import com.mesosphere.universe.Images
+import com.mesosphere.universe.v3.DcosReleaseVersion
+import com.mesosphere.universe.v3.DcosReleaseVersion.{Suffix, Version}
 import com.netaporter.uri.Uri
 import io.circe.parse._
 import io.circe.syntax._
@@ -123,6 +126,35 @@ class EncodersDecodersSpec extends FreeSpec {
       val encodedFields = error.getData.getOrElse(JsonObject.empty)
       throwableFieldNames.foreach(name => assert(!encodedFields.contains(name), name))
       assertResult(error.productArity - throwableFieldNames.size)(encodedFields.size)
+    }
+  }
+
+  "DcosVersion" - {
+    "decode" in {
+      val json = Json.obj(
+        "version" -> "1.7.1".asJson,
+        "dcos-image-commit" -> "0defde84e7a71ebeb5dfeca0936c75671963df48".asJson,
+        "bootstrap-id" -> "f12bff891be7108962c7c98e530e1f2cd8d4e56b".asJson
+      )
+
+      val expected = DcosVersion(
+        DcosReleaseVersion(Version(1), List(Version(7), Version(1))),
+        "0defde84e7a71ebeb5dfeca0936c75671963df48",
+        "f12bff891be7108962c7c98e530e1f2cd8d4e56b"
+      )
+
+      assertResult(expected)(decodeJson[DcosVersion](json))
+    }
+  }
+
+  "DcosReleaseVersion" - {
+    val str = "2.10.153-beta"
+    val obj = DcosReleaseVersion(Version(2), List(Version(10), Version(153)), Some(Suffix("beta")))
+    "decode"  in {
+      assertResult(obj)(decodeJson[DcosReleaseVersion](str.asJson))
+    }
+    "encode" in {
+      assertResult(Json.string(str))(obj.asJson)
     }
   }
 

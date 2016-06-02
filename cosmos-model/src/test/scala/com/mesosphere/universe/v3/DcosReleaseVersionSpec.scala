@@ -6,7 +6,7 @@ import org.scalatest.FreeSpec
 
 import scala.language.implicitConversions
 
-class DcosReleaseVersionTest extends FreeSpec {
+class DcosReleaseVersionSpec extends FreeSpec {
 
   private[this] implicit def stringToDcosReleaseVersion(s: String): DcosReleaseVersion = {
     DcosReleaseVersionParser.parseUnsafe(s)

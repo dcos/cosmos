@@ -222,26 +222,31 @@ object Cosmos extends FinchServer {
       .map { dh =>
         val dcosHost: String = Uris.stripTrailingSlash(dh)
         logger.info("Connecting to DCOS Cluster at: {}", dcosHost)
+        val adminRouter: Uri = dcosHost
         val mar: Uri = dcosHost / "marathon"
-        val mesos: Uri = dcosHost / "mesos"
-        mar -> mesos
+        val master: Uri = dcosHost / "mesos"
+        (adminRouter, mar, master)
       }
       .handle {
         case _: IllegalArgumentException =>
+          val adminRouter: Uri = adminRouterUri().toStringRaw
           val mar: Uri = marathonUri().toStringRaw
           val master: Uri = mesosMasterUri().toStringRaw
           logger.info("Connecting to Marathon at: {}", mar)
           logger.info("Connecting to Mesos master at: {}", master)
-          mar -> master
+          logger.info("Connection to AdminRouter at: {}", adminRouter)
+          (adminRouter, mar, master)
       }
-      .flatMap { case (marathon, mesosMaster) =>
+      .flatMap { case (adminRouterUri, marathonUri, mesosMasterUri) =>
         Trys.join(
-          Services.marathonClient(marathon).map { marathon -> _ },
-          Services.mesosClient(mesosMaster).map { mesosMaster -> _ }
+          Services.adminRouterClient(adminRouterUri).map { adminRouterUri -> _ },
+          Services.marathonClient(marathonUri).map { marathonUri -> _ },
+          Services.mesosClient(mesosMasterUri).map { mesosMasterUri -> _ }
         )
       }
-      .map { case (marathon, mesosMaster) =>
+      .map { case (adminRouter, marathon, mesosMaster) =>
         new AdminRouter(
+          new AdminRouterClient(adminRouter._1, adminRouter._2),
           new MarathonClient(marathon._1, marathon._2),
           new MesosMasterClient(mesosMaster._1, mesosMaster._2)
         )

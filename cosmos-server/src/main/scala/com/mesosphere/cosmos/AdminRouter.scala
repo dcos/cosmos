@@ -2,13 +2,18 @@ package com.mesosphere.cosmos
 
 import com.mesosphere.cosmos.http.RequestSession
 import com.mesosphere.cosmos.model.AppId
+import com.mesosphere.cosmos.model.thirdparty.adminrouter.DcosVersion
 import com.mesosphere.cosmos.model.thirdparty.marathon.{MarathonAppResponse, MarathonAppsResponse}
 import com.mesosphere.cosmos.model.thirdparty.mesos.master._
 import com.twitter.finagle.http._
 import com.twitter.util.Future
 import io.circe.Json
 
-class AdminRouter(marathon: MarathonClient, mesos: MesosMasterClient) {
+class AdminRouter(
+  adminRouterClient: AdminRouterClient,
+  marathon: MarathonClient,
+  mesos: MesosMasterClient
+) {
 
   def createApp(appJson: Json)(implicit session: RequestSession): Future[Response] = marathon.createApp(appJson)
 
@@ -23,5 +28,7 @@ class AdminRouter(marathon: MarathonClient, mesos: MesosMasterClient) {
   def tearDownFramework(frameworkId: String)(implicit session: RequestSession): Future[MesosFrameworkTearDownResponse] = mesos.tearDownFramework(frameworkId)
 
   def getMasterState(frameworkName: String)(implicit session: RequestSession): Future[MasterState] = mesos.getMasterState(frameworkName)
+
+  def getDcosVersion()(implicit session: RequestSession): Future[DcosVersion] = adminRouterClient.getDcosVersion()
 
 }

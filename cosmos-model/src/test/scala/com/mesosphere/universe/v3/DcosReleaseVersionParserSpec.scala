@@ -4,7 +4,7 @@ import com.mesosphere.universe.v3.DcosReleaseVersion.{Suffix, Version}
 import com.twitter.util.{Return, Throw, Try}
 import org.scalatest.FreeSpec
 
-class DcosReleaseVersionParserTest extends FreeSpec {
+class DcosReleaseVersionParserSpec extends FreeSpec {
   private[this] val regex = "^(?:0|[1-9][0-9]*)(?:\\.(?:0|[1-9][0-9]*))*(?:-[A-Za-z0-9]+)?$"
 
   "DcosReleaseVersionParser should" - {
