@@ -69,7 +69,7 @@ private[cosmos] final class ZooKeeperStorage(
           Future(decodeData(bytes))
         case None =>
           readCacheStats.counter("miss").incr
-          create(DefaultRepos)
+          read()
       }
     }
   }

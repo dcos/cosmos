@@ -1,6 +1,7 @@
 package com.mesosphere.cosmos
 
 import java.nio.file.Path
+
 import com.netaporter.uri.Uri
 import com.twitter.finagle.Service
 import com.twitter.finagle.http.{Request, Response, Status}
@@ -14,12 +15,14 @@ import io.finch.circe._
 import io.github.benwhitehead.finch.FinchServer
 import org.apache.curator.framework.CuratorFrameworkFactory
 import org.apache.curator.retry.ExponentialBackoffRetry
+
 import com.mesosphere.cosmos.circe.Decoders._
 import com.mesosphere.cosmos.circe.Encoders._
 import com.mesosphere.cosmos.handler._
 import com.mesosphere.cosmos.http.{MediaTypes, RequestSession}
 import com.mesosphere.cosmos.model._
 import com.mesosphere.cosmos.repository.PackageSourcesStorage
+import com.mesosphere.cosmos.repository.UniverseClient
 import com.mesosphere.cosmos.repository.ZooKeeperStorage
 
 private[cosmos] final class Cosmos(
@@ -268,7 +271,7 @@ object Cosmos extends FinchServer {
 
       val sourcesStorage = new ZooKeeperStorage(zkClient)()
 
-      val cosmos = Cosmos(adminRouter, marathonPackageRunner, sourcesStorage, dd)
+      val cosmos = Cosmos(adminRouter, marathonPackageRunner, sourcesStorage, UniverseClient(), dd)
       cosmos.service
     }
     boot.get
@@ -278,10 +281,11 @@ object Cosmos extends FinchServer {
     adminRouter: AdminRouter,
     packageRunner: PackageRunner,
     sourcesStorage: PackageSourcesStorage,
+    universeClient: UniverseClient,
     dataDir: Path
   )(implicit statsReceiver: StatsReceiver = NullStatsReceiver): Cosmos = {
 
-    val repositories = new MultiRepository(sourcesStorage, dataDir)
+    val repositories = new MultiRepository(sourcesStorage, dataDir, universeClient)
 
     new Cosmos(
       new UninstallHandler(adminRouter, repositories),

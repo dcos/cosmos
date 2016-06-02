@@ -7,32 +7,33 @@ import java.time.LocalDateTime
 import java.util.Base64
 import java.util.concurrent.atomic.AtomicReference
 import java.util.zip.ZipInputStream
-
+import scala.util.matching.Regex
 import cats.data.Xor.{Left, Right}
 import cats.data._
-import cats.std.list._           // allows for traversU in verifySchema
+import cats.std.list._
 import cats.std.option._
-import cats.syntax.apply._       // provides |@|
+import cats.syntax.apply._
 import cats.syntax.option._
 import cats.syntax.traverse._
-import com.mesosphere.cosmos.circe.Decoders._
-import com.mesosphere.cosmos.model.{PackageRepository, SearchResult}
-import com.mesosphere.cosmos.repository.Repository
-import com.mesosphere.universe._
 import com.netaporter.uri.Uri
 import com.twitter.concurrent.AsyncMutex
 import com.twitter.io.{Charsets, Files => TwitterFiles}
 import com.twitter.util.{Future, Try}
 import io.circe.parse._
-import io.circe.{Decoder, Json}
+import io.circe.{parse => _, _}
+import com.mesosphere.cosmos.circe.Decoders._
+import com.mesosphere.cosmos.model.{PackageRepository, SearchResult}
+import com.mesosphere.cosmos.repository.Repository
+import com.mesosphere.cosmos.repository.UniverseClient
+import com.mesosphere.universe._
 
-import scala.util.matching.Regex
 
 /** Stores packages from the Universe GitHub repository in the local filesystem.
   */
 final class UniversePackageCache private (
   override val repository: PackageRepository,
-  universeDir: Path
+  universeDir: Path,
+  universeClient: UniverseClient
 ) extends Repository with AutoCloseable {
 
   import UniversePackageCache._
@@ -86,7 +87,8 @@ final class UniversePackageCache private (
     // Delete the bundle directory
     bundlePath.foreach { p =>
       //TODO: This needs to be more robust to handle potential lingering symlinks
-      Files.delete(symlinkBundlePath)  // work around until https://github.com/mesosphere/cosmos/issues/246 is fixed
+      // work around until https://github.com/mesosphere/cosmos/issues/246 is fixed
+      Files.delete(symlinkBundlePath)
       // Delete the symbolic link
       TwitterFiles.delete(p.toFile)
     }
@@ -101,7 +103,7 @@ final class UniversePackageCache private (
       val repoIndex = parseJsonFile(indexFile)
         .toRightXor(new IndexNotFound(universeBundle))
         .flatMap { index =>
-          index.as[UniverseIndex].leftMap(_ => PackageFileSchemaMismatch("index.json"))
+          index.as[UniverseIndex].leftMap(failure => PackageFileSchemaMismatch("index.json", failure))
         }
         .valueOr(err => throw err)
 
@@ -118,7 +120,7 @@ final class UniversePackageCache private (
     updateMutex.acquireAndRun {
       // TODO: How often we check should be configurable
       if (lastModified.get().plusMinutes(1).isBefore(LocalDateTime.now())) {
-        updateUniverseCache(repository, universeDir)(_.openStream())
+        updateUniverseCache(repository, universeDir, universeClient)
           .onSuccess { _ => lastModified.set(LocalDateTime.now()) }
       } else {
         /* We don't need to fetch the latest package information; just return the current
@@ -128,19 +130,24 @@ final class UniversePackageCache private (
       }
     }
   }
-
 }
 
 object UniversePackageCache {
 
-  def apply(repository: PackageRepository, dataDir: Path): UniversePackageCache = {
-    new UniversePackageCache(repository, dataDir)
+  def apply(
+    repository: PackageRepository,
+    universeDir: Path,
+    universeClient: UniverseClient
+  ): UniversePackageCache = {
+    new UniversePackageCache(repository, universeDir, universeClient)
   }
 
-  private[cosmos] def updateUniverseCache(repository: PackageRepository, universeDir: Path)(
-    streamUrl: URL => InputStream
+  private[cosmos] def updateUniverseCache(
+    repository: PackageRepository,
+    universeDir: Path,
+    universeClient: UniverseClient
   ): Future[Path] = {
-    streamBundle(repository, streamUrl)
+    streamBundle(repository, universeClient)
       .map { bundleStream =>
         try {
           extractBundle(
@@ -156,18 +163,14 @@ object UniversePackageCache {
 
   private[cosmos] def streamBundle(
     repository: PackageRepository,
-    streamUrl: URL => InputStream
+    universeClient: UniverseClient
   ): Future[InputStream] = {
-    Future(Xor.Right(repository.uri.toURI.toURL))
-      .handle {
-        case t @ (_: IllegalArgumentException | _: MalformedURLException | _: URISyntaxException) =>
-          Xor.Left(RepositoryUriSyntax(repository, t))
-      }
-      .map(_.map(streamUrl))
-      .handle { case t: IOException =>
-        Xor.Left(RepositoryUriConnection(repository, t))
-      }
-      .map(_.valueOr(throw _))
+    universeClient(repository.uri).handle {
+      case t @ (_: IllegalArgumentException | _: MalformedURLException | _: URISyntaxException) =>
+        throw RepositoryUriSyntax(repository, t)
+      case t: IOException =>
+        throw RepositoryUriConnection(repository, t)
+    }
   }
 
   private[this] def extractBundle(
@@ -176,30 +179,11 @@ object UniversePackageCache {
     universeDir: Path
   ): Path = {
 
-    val entries = Iterator.continually(Option(bundle.getNextEntry()))
-      .takeWhile(_.isDefined)
-      .flatten
-
     val tempDir = Files.createTempDirectory(universeDir, "repository")
     tempDir.toFile.deleteOnExit()
 
     try {
-      // Copy all of the entry to a temporary folder
-      entries.foreach { entry =>
-        val entryPath = Paths.get(entry.getName)
-
-        // Skip the root directory
-        if (entryPath.getNameCount > 1) {
-          val tempEntryPath = tempDir
-            .resolve(entryPath.subpath(1, entryPath.getNameCount))
-
-          if (entry.isDirectory) {
-            Files.createDirectory(tempEntryPath)
-          } else {
-            Files.copy(bundle, tempEntryPath)
-          }
-        }
-      }
+      extractBundleToDirectory(bundle, tempDir)
 
       // Move the symblic to the temp directory to the actual universe directory...
       val bundlePath = universeDir.resolve(base64(universeBundle))
@@ -228,6 +212,22 @@ object UniversePackageCache {
         // Only delete directory on failures because we want to keep it around on success.
         TwitterFiles.delete(tempDir.toFile)
         throw e
+    }
+  }
+
+  private[this] def extractBundleToDirectory(bundle: ZipInputStream, directory: Path): Unit = {
+    // getNextEntry() returns null when there are no more entries
+    Iterator.continually(Option(bundle.getNextEntry()))
+      .takeWhile(_.isDefined)
+      .flatten
+      .filter(!_.isDirectory)
+      .map(entry => Paths.get(entry.getName))
+      // Skip the root directory
+      .filter(entryPath => entryPath.getNameCount > 1)
+      .foreach { entryPath =>
+        val tempEntryPath = directory.resolve(entryPath.subpath(1, entryPath.getNameCount))
+        Option(tempEntryPath.getParent).foreach(Files.createDirectories(_))
+        Files.copy(bundle, tempEntryPath)
     }
   }
 
@@ -327,7 +327,7 @@ object UniversePackageCache {
     fileName: String
   ): Xor[CosmosError, Option[A]] = {
     parseJsonFile(packageDir.resolve(fileName)).traverseU { json =>
-      json.as[A].leftMap(_ => PackageFileSchemaMismatch(fileName))
+      json.as[A].leftMap(failure => PackageFileSchemaMismatch(fileName, failure))
     }
   }
 
@@ -391,7 +391,7 @@ object UniversePackageCache {
       .traverseU { json =>
         json
           .asObject
-          .toValidNel[CosmosError](PackageFileSchemaMismatch("config.json"))
+          .toValidNel[CosmosError](PackageFileSchemaMismatch("config.json", DecodingFailure("Object", List())))
       }
 
     (packageDefValid |@| resourceDefValid |@| commandJsonValid |@| configJsonObject)
@@ -439,7 +439,7 @@ object UniversePackageCache {
   ): ValidatedNel[CosmosError, A] = {
     json
       .as[A]
-      .leftMap(_ => PackageFileSchemaMismatch(packageFileName))
+      .leftMap(failure => PackageFileSchemaMismatch(packageFileName, failure))
       .toValidated
       .toValidatedNel
   }
