@@ -1,7 +1,7 @@
 package com.mesosphere.cosmos.repository
 
 import com.mesosphere.cosmos.model.PackageRepository
-import com.mesosphere.universe._
+import com.mesosphere.universe.v2.{PackageFiles, ReleaseVersion}
 import com.twitter.util.Future
 
 /** A repository of packages that can be installed on DCOS. */

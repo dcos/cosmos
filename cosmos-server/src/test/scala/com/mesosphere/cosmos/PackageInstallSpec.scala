@@ -2,8 +2,8 @@ package com.mesosphere.cosmos
 
 import cats.data.Xor
 import com.mesosphere.cosmos.handler.PackageInstallHandler
+import com.mesosphere.universe.v2.{PackageDetails, PackageDetailsVersion, PackageFiles, PackagingVersion}
 import com.netaporter.uri.dsl._
-import com.mesosphere.universe.{PackageDetails, PackageDetailsVersion, PackageFiles, PackagingVersion}
 import org.scalatest.prop.TableDrivenPropertyChecks
 import org.scalatest.{FreeSpec, Matchers}
 

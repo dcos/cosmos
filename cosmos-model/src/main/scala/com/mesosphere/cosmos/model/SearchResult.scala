@@ -1,6 +1,6 @@
 package com.mesosphere.cosmos.model
 
-import com.mesosphere.universe._
+import com.mesosphere.universe.v2.{Images, PackageDetailsVersion, ReleaseVersion}
 
 case class SearchResult(
   name: String,

@@ -6,9 +6,10 @@ import com.mesosphere.cosmos.circe.Decoders._
 import com.mesosphere.cosmos.circe.Encoders._
 import com.mesosphere.cosmos.http.MediaTypes
 import com.mesosphere.cosmos.model._
-import com.mesosphere.cosmos.model.thirdparty.marathon.{MarathonApp, MarathonAppContainer, MarathonAppContainerDocker}
+import com.mesosphere.cosmos.thirdparty.marathon.model.{AppId, MarathonApp, MarathonAppContainer, MarathonAppContainerDocker}
 import com.mesosphere.cosmos.test.CosmosIntegrationTestClient
-import com.mesosphere.universe._
+import com.mesosphere.universe.v2._
+import com.mesosphere.universe.v2.circe.Decoders._
 import com.twitter.finagle.http._
 import com.twitter.io.Buf
 import io.circe.Json

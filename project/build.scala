@@ -196,6 +196,16 @@ object CosmosBuild extends Build {
         ++ Deps.scalaTest
     )
 
+  lazy val json = Project("cosmos-json", file("cosmos-json"))
+    .settings(sharedSettings)
+    .settings(
+      libraryDependencies ++=
+        Deps.scalaUri
+        ++ Deps.circe
+        ++ Deps.scalaTest
+    )
+    .dependsOn(model)
+
   lazy val server = Project("cosmos-server", file("cosmos-server"))
     .configs(IntegrationTest extend Test)
     .settings(itSettings)
@@ -215,7 +225,7 @@ object CosmosBuild extends Build {
           ++ Deps.scalaTest
           ++ Deps.scalaUri
     )
-    .dependsOn(model)
+    .dependsOn(json)
 
   //////////////////////////////////////////////////////////////////////////////
   // BUILD TASKS

@@ -14,10 +14,11 @@ import io.finch.DecodeRequest
 import com.mesosphere.cosmos.http.{MediaTypes, RequestSession}
 import com.mesosphere.cosmos.jsonschema.JsonSchemaValidation
 import com.mesosphere.cosmos.model._
-import com.mesosphere.cosmos.model.thirdparty.marathon.MarathonApp
+import com.mesosphere.cosmos.thirdparty.marathon.model.{AppId, MarathonApp}
 import com.mesosphere.cosmos.repository.PackageCollection
 import com.mesosphere.cosmos.{CirceError, JsonSchemaMismatch, PackageFileNotJson, PackageRunner}
-import com.mesosphere.universe.{PackageFiles, Resource}
+import com.mesosphere.universe.v2.{PackageFiles, Resource}
+import com.mesosphere.universe.v2.circe.Encoders._
 
 private[cosmos] final class PackageInstallHandler(
   packageCache: PackageCollection,
@@ -51,7 +52,6 @@ private[cosmos] final class PackageInstallHandler(
 
 private[cosmos] object PackageInstallHandler {
 
-  import com.mesosphere.cosmos.circe.Encoders._  //TODO: Not crazy about this being here
   private[this] val MustacheFactory = new DefaultMustacheFactory()
 
   private[cosmos] def preparePackageConfig(
@@ -63,6 +63,7 @@ private[cosmos] object PackageInstallHandler {
     val marathonJson = renderMustacheTemplate(packageFiles, mergedOptions)
     val marathonJsonWithLabels = addLabels(marathonJson, packageFiles, mergedOptions)
 
+    import com.mesosphere.cosmos.thirdparty.marathon.circe.Encoders.encodeAppId
     appId match {
       case Some(id) => marathonJsonWithLabels.mapObject(_ + ("id", id.asJson))
       case _ => marathonJsonWithLabels

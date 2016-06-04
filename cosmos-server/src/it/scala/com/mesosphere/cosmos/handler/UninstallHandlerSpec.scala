@@ -5,7 +5,8 @@ import cats.data.Xor
 import com.mesosphere.cosmos.ErrorResponse
 import com.mesosphere.cosmos.circe.Decoders._
 import com.mesosphere.cosmos.http.MediaTypes
-import com.mesosphere.cosmos.model.{AppId, UninstallResponse}
+import com.mesosphere.cosmos.model.UninstallResponse
+import com.mesosphere.cosmos.thirdparty.marathon.model.AppId
 import com.mesosphere.cosmos.test.CosmosIntegrationTestClient
 import com.netaporter.uri.dsl._
 import com.twitter.finagle.http.Status

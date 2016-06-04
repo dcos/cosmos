@@ -6,10 +6,10 @@ import io.circe.Encoder
 import io.finch.DecodeRequest
 import com.mesosphere.cosmos._
 import com.mesosphere.cosmos.http.{MediaTypes, RequestSession}
-import com.mesosphere.cosmos.model.thirdparty.marathon.MarathonApp
-import com.mesosphere.cosmos.model.{AppId, UninstallRequest, UninstallResponse, UninstallResult}
+import com.mesosphere.cosmos.thirdparty.marathon.model.{AppId, MarathonApp}
+import com.mesosphere.cosmos.model.{UninstallRequest, UninstallResponse, UninstallResult}
 import com.mesosphere.cosmos.repository.PackageCollection
-import com.mesosphere.universe.PackageDetailsVersion
+import com.mesosphere.universe.v2.PackageDetailsVersion
 
 private[cosmos] final class UninstallHandler(
   adminRouter: AdminRouter,

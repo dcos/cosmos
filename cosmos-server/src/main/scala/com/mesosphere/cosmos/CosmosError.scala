@@ -3,9 +3,10 @@ package com.mesosphere.cosmos
 import cats.data.{Ior, NonEmptyList}
 import com.mesosphere.cosmos.circe.Encoders._
 import com.mesosphere.cosmos.http.MediaType
-import com.mesosphere.cosmos.model.thirdparty.marathon.MarathonError
-import com.mesosphere.cosmos.model.{AppId, PackageRepository}
-import com.mesosphere.universe.{PackageDetailsVersion, UniverseVersion}
+import com.mesosphere.cosmos.thirdparty.marathon.model.{AppId, MarathonError}
+import com.mesosphere.cosmos.model.PackageRepository
+import com.mesosphere.universe.v2.{PackageDetailsVersion, UniverseVersion}
+import com.mesosphere.universe.common.circe.Encoders._
 import com.netaporter.uri.Uri
 import com.twitter.finagle.http.Status
 import io.circe.syntax._

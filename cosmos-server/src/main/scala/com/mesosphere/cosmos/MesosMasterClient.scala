@@ -1,8 +1,8 @@
 package com.mesosphere.cosmos
 
-import com.mesosphere.cosmos.circe.Decoders._
 import com.mesosphere.cosmos.http.RequestSession
-import com.mesosphere.cosmos.model.thirdparty.mesos.master.{MasterState, MesosFrameworkTearDownResponse}
+import com.mesosphere.cosmos.thirdparty.mesos.master.model.{MasterState, MesosFrameworkTearDownResponse}
+import com.mesosphere.cosmos.thirdparty.mesos.master.circe.Decoders._
 import com.netaporter.uri.Uri
 import com.netaporter.uri.dsl._
 import com.twitter.finagle.Service
