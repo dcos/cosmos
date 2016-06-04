@@ -1,10 +1,9 @@
 package com.mesosphere.cosmos
 
 import com.mesosphere.cosmos.http.RequestSession
-import com.mesosphere.cosmos.model.AppId
-import com.mesosphere.cosmos.model.thirdparty.adminrouter.DcosVersion
-import com.mesosphere.cosmos.model.thirdparty.marathon.{MarathonAppResponse, MarathonAppsResponse}
-import com.mesosphere.cosmos.model.thirdparty.mesos.master._
+import com.mesosphere.cosmos.thirdparty.adminrouter.model.DcosVersion
+import com.mesosphere.cosmos.thirdparty.marathon.model.{AppId, MarathonAppResponse, MarathonAppsResponse}
+import com.mesosphere.cosmos.thirdparty.mesos.master.model._
 import com.twitter.finagle.http._
 import com.twitter.util.Future
 import io.circe.Json

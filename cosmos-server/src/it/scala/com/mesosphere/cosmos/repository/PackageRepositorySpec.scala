@@ -7,6 +7,7 @@ import com.mesosphere.cosmos.http.MediaTypes
 import com.mesosphere.cosmos.model._
 import com.mesosphere.cosmos.test.CosmosIntegrationTestClient._
 import com.mesosphere.cosmos.{UnitSpec, _}
+import com.mesosphere.universe.common.circe.Encoders._
 import com.netaporter.uri.Uri
 import com.twitter.finagle.http._
 import io.circe.parse._

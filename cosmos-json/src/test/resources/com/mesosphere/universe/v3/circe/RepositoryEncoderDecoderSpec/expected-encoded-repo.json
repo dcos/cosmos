@@ -1,0 +1,57 @@
+{
+  "packages" : [
+    {
+      "packagingVersion" : "2.0",
+      "name" : "cool-package",
+      "version" : "1.2.3",
+      "releaseVersion" : 1,
+      "maintainer" : "bill@cool.co",
+      "description" : "some awesome package",
+      "tags" : [
+        "abc",
+        "def"
+      ],
+      "selected" : false,
+      "scm" : null,
+      "website" : null,
+      "framework" : null,
+      "preInstallNotes" : null,
+      "postInstallNotes" : null,
+      "postUninstallNotes" : null,
+      "licenses" : null,
+      "marathon" : {
+        "v2AppMustacheTemplate" : "dGVzdGluZw=="
+      },
+      "resource" : null,
+      "config" : null,
+      "pip" : null
+    },
+    {
+      "packagingVersion" : "3.0",
+      "name" : "cool-package",
+      "version" : "3.2.1",
+      "releaseVersion" : 2,
+      "maintainer" : "bill@cool.co",
+      "description" : "some awesome package",
+      "tags" : [
+        "abc",
+        "def"
+      ],
+      "selected" : false,
+      "scm" : null,
+      "website" : null,
+      "framework" : null,
+      "preInstallNotes" : null,
+      "postInstallNotes" : null,
+      "postUninstallNotes" : null,
+      "licenses" : null,
+      "minDcosReleaseVersion" : "1.8",
+      "marathon" : {
+        "v2AppMustacheTemplate" : "dGVzdGluZw=="
+      },
+      "resource" : null,
+      "config" : null,
+      "pip" : null
+    }
+  ]
+}

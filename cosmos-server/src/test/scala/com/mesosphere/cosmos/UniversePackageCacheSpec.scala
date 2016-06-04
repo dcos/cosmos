@@ -1,10 +1,9 @@
 package com.mesosphere.cosmos
 
-import java.io.{ByteArrayInputStream, ByteArrayOutputStream, IOException, InputStream}
-import java.net.{MalformedURLException, URL}
+import java.io.{ByteArrayInputStream, ByteArrayOutputStream, IOException}
+import java.net.MalformedURLException
 import java.nio.file.{Files, Path, Paths}
 import java.util.zip.{ZipEntry, ZipInputStream, ZipOutputStream}
-
 import com.netaporter.uri.Uri
 import com.twitter.io.{Charsets, StreamIO}
 import com.twitter.util.Await
@@ -12,12 +11,11 @@ import com.twitter.util.Future
 import com.twitter.util.Throw
 import io.circe.syntax._
 import org.scalatest.{FreeSpec, PrivateMethodTester}
-
-import com.mesosphere.cosmos.circe.Encoders._
 import com.mesosphere.cosmos.model.{PackageRepository, SearchResult}
 import com.mesosphere.cosmos.repository.UniverseClient
 import com.mesosphere.cosmos.test.TestUtil
-import com.mesosphere.universe._
+import com.mesosphere.universe.v2._
+import com.mesosphere.universe.v2.circe.Encoders._
 
 final class UniversePackageCacheSpec extends FreeSpec with PrivateMethodTester {
 

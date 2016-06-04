@@ -1,6 +1,7 @@
 package com.mesosphere.cosmos.model
 
-import com.mesosphere.universe.PackageDetailsVersion
+import com.mesosphere.cosmos.thirdparty.marathon.model.AppId
+import com.mesosphere.universe.v2.PackageDetailsVersion
 import io.circe.JsonObject
 
 case class RenderRequest(

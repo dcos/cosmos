@@ -1,9 +1,8 @@
 package com.mesosphere.cosmos
 
-import com.mesosphere.cosmos.circe.Decoders._
 import com.mesosphere.cosmos.http.RequestSession
-import com.mesosphere.cosmos.model.AppId
-import com.mesosphere.cosmos.model.thirdparty.marathon.{MarathonAppResponse, MarathonAppsResponse}
+import com.mesosphere.cosmos.thirdparty.marathon.model.{AppId, MarathonAppResponse, MarathonAppsResponse}
+import com.mesosphere.cosmos.thirdparty.marathon.circe.Decoders._
 import com.netaporter.uri.Uri
 import com.netaporter.uri.dsl._
 import com.twitter.finagle.Service

@@ -1,6 +1,6 @@
 package com.mesosphere.cosmos.model
 
-import com.mesosphere.universe.{PackageDetails, Resource}
+import com.mesosphere.universe.v2.{PackageDetails, Resource}
 
 case class InstalledPackageInformation(
   packageDefinition: PackageDetails,
