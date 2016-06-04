@@ -77,7 +77,7 @@ class CosmosIntegrationTestServer(javaHome: Option[String], itResourceDirs: Seq[
 
     val run = Process(cmd).run(new ProcessLogger() {
       override def buffer[T](f: => T): T = logger.buffer(f)
-      override def error(s: => String): Unit = logger.error("<<cosmos-server>> " + s)
+      override def error(s: => String): Unit = logger.info("<<cosmos-server>> " + s)
       override def info(s: => String): Unit = logger.info("<<cosmos-server>> " + s)
     })
     val fExitValue = Future(run.exitValue())
