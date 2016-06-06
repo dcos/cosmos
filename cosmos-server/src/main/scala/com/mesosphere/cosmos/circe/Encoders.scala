@@ -201,9 +201,17 @@ object Encoders {
       val acceptMsg = supported.map(_.show).mkString("[", ", ", "]")
       actual match {
         case Some(mt) =>
-          s"Unsupported Content-Type: ${mt.show} Accept: $acceptMsg"
+          s"Unsupported Content-Type: $mt Accept: $acceptMsg"
         case None =>
           s"Unspecified Content-Type Accept: $acceptMsg"
+      }
+    case UnsupportedContentEncoding(supported, actual) =>
+      val acceptMsg = supported.mkString("[", ", ", "]")
+      actual match {
+        case Some(mt) =>
+          s"Unsupported Content-Encoding: $mt Accept-Encoding: $acceptMsg"
+        case None =>
+          s"Unspecified Content-Encoding Accept-Encoding: $acceptMsg"
       }
     case GenericHttpError(method, uri, status) =>
       s"Unexpected down stream http error: ${method.getName} ${uri.toString} ${status.code}"

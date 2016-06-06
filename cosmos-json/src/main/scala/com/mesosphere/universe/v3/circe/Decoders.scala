@@ -41,7 +41,7 @@ object Decoders {
     }
   implicit val decodePackageDefinitionReleaseVersion: Decoder[PackageDefinition.ReleaseVersion] =
     Decoder.instance[PackageDefinition.ReleaseVersion] { (c: HCursor) =>
-      Try { c.as[Int].map(PackageDefinition.ReleaseVersion) } match {
+      Try { c.as[Int].map(PackageDefinition.ReleaseVersion(_)) } match {
         case Return(r) => r
         case Throw(ex) =>
           val msg = ex.getMessage.replaceAllLiterally("assertion failed: ", "")

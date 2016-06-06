@@ -10,6 +10,7 @@ object MediaTypes {
 
   val any = MediaType("*", MediaTypeSubType("*"))
   val applicationJson = MediaType("application", MediaTypeSubType("json"), Map("charset" -> "utf-8"))
+  val applicationZip = MediaType("application", MediaTypeSubType("zip"))
 
   val UninstallRequest = vnd("uninstall-request")
   val UninstallResponse = vnd("uninstall-response")
@@ -43,5 +44,11 @@ object MediaTypes {
   val PackageRepositoryAddResponse = vnd("repository.add-response")
   val PackageRepositoryDeleteRequest = vnd("repository.delete-request")
   val PackageRepositoryDeleteResponse = vnd("repository.delete-response")
+
+  val UniverseV3Repository = MediaType(
+    "application",
+    MediaTypeSubType("vnd.dcos.universe.repo", Some("json")),
+    Map("charset" -> "utf-8", "version" -> "v3")
+  )
 
 }

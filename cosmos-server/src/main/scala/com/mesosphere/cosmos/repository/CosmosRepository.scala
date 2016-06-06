@@ -5,7 +5,7 @@ import com.mesosphere.universe.v2.model.{PackageFiles, ReleaseVersion}
 import com.twitter.util.Future
 
 /** A repository of packages that can be installed on DCOS. */
-trait Repository extends PackageCollection {
+trait CosmosRepository extends PackageCollection {
 
   def repository: PackageRepository
 
