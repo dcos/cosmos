@@ -1,4 +1,4 @@
-package com.mesosphere.universe.v3
+package com.mesosphere.universe.v3.model
 
 case class DcosReleaseVersion(
   version: DcosReleaseVersion.Version,
@@ -25,8 +25,8 @@ case class DcosReleaseVersion(
 
 
 object DcosReleaseVersion {
-  import scala.language.implicitConversions
   import Ordering.Int
+  import scala.language.implicitConversions
 
   case class Version(value: Int) {
     assert(value >= 0, s"Value $value is not >= 0")

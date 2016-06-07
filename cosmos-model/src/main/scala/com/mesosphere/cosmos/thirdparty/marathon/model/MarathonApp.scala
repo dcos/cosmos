@@ -1,6 +1,6 @@
 package com.mesosphere.cosmos.thirdparty.marathon.model
 
-import com.mesosphere.universe.v2.{PackageDetailsVersion, ReleaseVersion}
+import com.mesosphere.universe.v2.model.{PackageDetailsVersion, ReleaseVersion}
 
 case class MarathonApp(
   id: AppId,

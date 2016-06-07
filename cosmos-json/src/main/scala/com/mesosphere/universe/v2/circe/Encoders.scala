@@ -1,7 +1,7 @@
 package com.mesosphere.universe.v2.circe
 
 import com.mesosphere.universe.common.circe.Encoders._
-import com.mesosphere.universe.v2._
+import com.mesosphere.universe.v2.model._
 import io.circe.{Encoder, Json, JsonObject, ObjectEncoder}
 import io.circe.generic.semiauto._
 import io.circe.syntax._

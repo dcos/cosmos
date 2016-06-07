@@ -17,8 +17,8 @@ import com.mesosphere.cosmos.model._
 import com.mesosphere.cosmos.thirdparty.marathon.model.{AppId, MarathonApp}
 import com.mesosphere.cosmos.repository.PackageCollection
 import com.mesosphere.cosmos.{CirceError, JsonSchemaMismatch, PackageFileNotJson, PackageRunner}
-import com.mesosphere.universe.v2.{PackageFiles, Resource}
 import com.mesosphere.universe.v2.circe.Encoders._
+import com.mesosphere.universe.v2.model.{PackageFiles, Resource}
 
 private[cosmos] final class PackageInstallHandler(
   packageCache: PackageCollection,

@@ -1,10 +1,10 @@
 package com.mesosphere.universe.v3.circe
 
 import cats.data.Xor
-import com.mesosphere.universe.v3._
-import com.mesosphere.universe.v3.PackageDefinition.{ReleaseVersion, Tag, Version}
 import com.mesosphere.universe.v3.circe.Decoders._
 import com.mesosphere.universe.v3.circe.Encoders._
+import com.mesosphere.universe.v3.model.PackageDefinition.{ReleaseVersion, Tag, Version}
+import com.mesosphere.universe.v3.model._
 import io.circe.Json
 import io.circe.parse._
 import io.circe.syntax._

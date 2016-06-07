@@ -11,7 +11,7 @@ import com.mesosphere.cosmos.thirdparty.marathon.model._
 import com.mesosphere.cosmos.thirdparty.marathon.circe.Encoders._
 import com.mesosphere.cosmos.repository.DefaultRepositories
 import com.mesosphere.cosmos.test.CosmosIntegrationTestClient
-import com.mesosphere.universe.v2.{PackageDetails, PackageDetailsVersion, PackageFiles, PackagingVersion}
+import com.mesosphere.universe.v2.model.{PackageDetails, PackageDetailsVersion, PackageFiles, PackagingVersion}
 import com.netaporter.uri.Uri
 import com.twitter.finagle.http._
 import com.twitter.io.{Buf, Charsets}

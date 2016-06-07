@@ -1,7 +1,7 @@
 package com.mesosphere.cosmos.repository
 
 import com.mesosphere.cosmos.model.SearchResult
-import com.mesosphere.universe.v2.{PackageDetailsVersion, PackageFiles, UniverseIndexEntry}
+import com.mesosphere.universe.v2.model.{PackageDetailsVersion, PackageFiles, UniverseIndexEntry}
 import com.twitter.util.Future
 
 /** An aggregation of packages, possibly from multiple repositories.

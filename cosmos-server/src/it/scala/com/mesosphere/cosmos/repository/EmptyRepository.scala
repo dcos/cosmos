@@ -2,7 +2,7 @@ package com.mesosphere.cosmos.repository
 
 import com.mesosphere.cosmos.model.{PackageRepository, SearchResult}
 import com.mesosphere.cosmos.{PackageNotFound, RepositoryNotFound}
-import com.mesosphere.universe.v2.{PackageDetailsVersion, PackageFiles, ReleaseVersion, UniverseIndexEntry}
+import com.mesosphere.universe.v2.model.{PackageDetailsVersion, PackageFiles, ReleaseVersion, UniverseIndexEntry}
 import com.netaporter.uri.Uri
 import com.twitter.util.Future
 

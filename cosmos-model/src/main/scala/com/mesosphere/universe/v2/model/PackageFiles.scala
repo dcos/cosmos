@@ -1,4 +1,4 @@
-package com.mesosphere.universe.v2
+package com.mesosphere.universe.v2.model
 
 import com.netaporter.uri.Uri
 import io.circe.JsonObject

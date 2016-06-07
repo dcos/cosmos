@@ -6,6 +6,7 @@ import com.mesosphere.cosmos.thirdparty.marathon.circe.Decoders._
 import com.mesosphere.universe._
 import com.mesosphere.universe.common.circe.Decoders._
 import com.mesosphere.universe.v2.circe.Decoders._
+import com.mesosphere.universe.v2.model.{Images, PackageDetailsVersion, ReleaseVersion}
 import io.circe.generic.semiauto._
 import io.circe.{Decoder, HCursor}
 
@@ -14,7 +15,7 @@ object Decoders {
   implicit val decodeSearchResult: Decoder[SearchResult] = Decoder.instance { cursor =>
     for {
       indexEntry <- v2.circe.Decoders.decodePackageIndex(cursor)
-      images <- cursor.downField("images").as[Option[v2.Images]]
+      images <- cursor.downField("images").as[Option[Images]]
     } yield {
       SearchResult(
         name = indexEntry.name,
@@ -48,7 +49,7 @@ object Decoders {
       r <- cursor.downField("results").as[Map[String, String]]
     } yield {
       val results = r.map { case (s1, s2) =>
-        v2.PackageDetailsVersion(s1) -> v2.ReleaseVersion(s2)
+        PackageDetailsVersion(s1) -> ReleaseVersion(s2)
       }
       ListVersionsResponse(results)
     }

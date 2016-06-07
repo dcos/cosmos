@@ -8,7 +8,7 @@ import com.mesosphere.cosmos.repository.PackageCollection
 import com.mesosphere.cosmos.repository.PackageSourcesStorage
 import com.mesosphere.cosmos.repository.Repository
 import com.mesosphere.cosmos.repository.UniverseClient
-import com.mesosphere.universe.v2.{PackageDetailsVersion, PackageFiles, UniverseIndexEntry}
+import com.mesosphere.universe.v2.model.{PackageDetailsVersion, PackageFiles, UniverseIndexEntry}
 
 final class MultiRepository (
   packageRepositoryStorage: PackageSourcesStorage,
