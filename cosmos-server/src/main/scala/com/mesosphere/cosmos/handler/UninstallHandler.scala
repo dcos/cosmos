@@ -1,26 +1,18 @@
 package com.mesosphere.cosmos.handler
 
-import com.twitter.finagle.http.Status
-import com.twitter.util.Future
-import io.circe.Encoder
-import io.finch.DecodeRequest
 import com.mesosphere.cosmos._
-import com.mesosphere.cosmos.http.{MediaTypes, RequestSession}
+import com.mesosphere.cosmos.http.RequestSession
 import com.mesosphere.cosmos.thirdparty.marathon.model.{AppId, MarathonApp}
 import com.mesosphere.cosmos.model.{UninstallRequest, UninstallResponse, UninstallResult}
 import com.mesosphere.cosmos.repository.PackageCollection
 import com.mesosphere.universe.v2.model.PackageDetailsVersion
+import com.twitter.finagle.http.Status
+import com.twitter.util.Future
 
 private[cosmos] final class UninstallHandler(
   adminRouter: AdminRouter,
   packageCache: PackageCollection
-)(implicit
-  bodyDecoder: DecodeRequest[UninstallRequest],
-  encoder: Encoder[UninstallResponse]
 ) extends EndpointHandler[UninstallRequest, UninstallResponse] {
-
-  val accepts = MediaTypes.UninstallRequest
-  val produces = MediaTypes.UninstallResponse
 
   private type FwIds = List[String]
 
@@ -72,7 +64,9 @@ private[cosmos] final class UninstallHandler(
     }
   }
 
-  override def apply(req: UninstallRequest)(implicit session: RequestSession): Future[UninstallResponse] = {
+  override def apply(req: UninstallRequest)(implicit
+    session: RequestSession
+  ): Future[UninstallResponse] = {
     // the following implementation is based on what the current CLI implementation does.
     // I've decided to follow it as close as possible so that we reduce any possible behavioral
     // changes that could have unforeseen consequences.
@@ -173,4 +167,3 @@ private[cosmos] final class UninstallHandler(
     }
   }
 }
-

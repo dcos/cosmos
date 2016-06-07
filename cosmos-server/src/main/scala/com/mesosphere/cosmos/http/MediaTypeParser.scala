@@ -18,16 +18,13 @@ object MediaTypeParser {
     }
       .map { mediaType =>
         val parameters = mediaType.parameters()
-        val params = if (parameters.isEmpty) {
-          None
-        } else {
-          Some(
-            Multimaps.asMap(parameters).toMap
-              .map { case (key: String, v: util.List[String]) =>
-                key.toLowerCase -> v.toList.head
-              }
-          )
-        }
+        val params = Multimaps
+          .asMap(parameters)
+          .toMap
+          .map { case (key: String, v: util.List[String]) =>
+            key.toLowerCase -> v.toList.head
+          }
+
         MediaType(
           `type` = mediaType.`type`().toLowerCase,
           subType = MediaTypeSubType.parse(mediaType.subtype()),

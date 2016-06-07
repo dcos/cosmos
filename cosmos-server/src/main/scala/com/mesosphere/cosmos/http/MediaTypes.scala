@@ -5,11 +5,11 @@ object MediaTypes {
     MediaType(
       "application",
       MediaTypeSubType(s"vnd.dcos.package.$kind", Some("json")),
-      Some(Map("charset" -> "utf-8", "version" -> "v1"))
+      Map("charset" -> "utf-8", "version" -> "v1")
     )
 
   val any = MediaType("*", MediaTypeSubType("*"))
-  val applicationJson = MediaType("application", MediaTypeSubType("json"), Some(Map("charset" -> "utf-8")))
+  val applicationJson = MediaType("application", MediaTypeSubType("json"), Map("charset" -> "utf-8"))
 
   val UninstallRequest = vnd("uninstall-request")
   val UninstallResponse = vnd("uninstall-response")
@@ -31,7 +31,7 @@ object MediaTypes {
   val CapabilitiesResponse = MediaType(
     "application",
     MediaTypeSubType("vnd.dcos.capabilities", Some("json")),
-    Some(Map("charset" -> "utf-8", "version" -> "v1"))
+    Map("charset" -> "utf-8", "version" -> "v1")
   )
 
   /* TODO(jsancio): Hack to get the correct vendor type to show. Should separate

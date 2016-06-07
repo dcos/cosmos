@@ -26,10 +26,10 @@ class MediaTypeSpec extends FreeSpec {
       val Return(t) = MediaType.parse("""text/html; charset=utf-8; foo=bar""")
       assertResult("text")(t.`type`)
       assertResult("html")(t.subType.value)
-      assertResult(Some(Map(
+      assertResult(Map(
         "charset" -> "utf-8",
         "foo" -> "bar"
-      )))(t.parameters)
+      ))(t.parameters)
     }
 
     "lower-case type" in  {
@@ -41,9 +41,9 @@ class MediaTypeSpec extends FreeSpec {
       val Return(t) = MediaType.parse("""text/html; Charset=utf-8""")
       assertResult("text")(t.`type`)
       assertResult("html")(t.subType.value)
-      assertResult(Some(Map(
+      assertResult(Map(
         "charset" -> "utf-8"
-      )))(t.parameters)
+      ))(t.parameters)
     }
 
     "parse a vendor type" in {
@@ -55,9 +55,9 @@ class MediaTypeSpec extends FreeSpec {
       val Return(t) = MediaType.parse("""text/html; charset="utf-8"""")
       assertResult("text")(t.`type`)
       assertResult("html")(t.subType.value)
-      assertResult(Some(Map(
+      assertResult(Map(
         "charset" -> "utf-8"
-      )))(t.parameters)
+      ))(t.parameters)
     }
   }
 

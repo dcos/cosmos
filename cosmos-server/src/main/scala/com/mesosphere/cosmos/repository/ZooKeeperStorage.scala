@@ -41,10 +41,10 @@ private[cosmos] final class ZooKeeperStorage(
   private[this] val envelopeMediaType = MediaType(
     "application",
     MediaTypeSubType("vnd.dcos.package.repository.repo-list", Some("json")),
-    Some(Map(
+    Map(
       "charset" -> "utf-8",
       "version" -> "v1"
-    ))
+    )
   )
 
   private[this] val DefaultRepos: List[PackageRepository] = DefaultRepositories().getOrElse(Nil)

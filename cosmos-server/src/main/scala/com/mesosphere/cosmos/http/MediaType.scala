@@ -21,7 +21,7 @@ object MediaTypeSubType {
 case class MediaType(
   `type`: String,
   subType: MediaTypeSubType,
-  parameters: Option[Map[String, String]] = None
+  parameters: Map[String, String] = Map.empty
 ) {
 
   def show: String = {
@@ -31,12 +31,9 @@ case class MediaType(
       case MediaTypeSubType(st, None) =>
         s"${`type`}/$st"
     }
-    val p = parameters match {
-      case Some(ps) =>
-        ps.toVector.map { case (key, value) => s"$key=$value" } mkString(start = ";", sep = ";", end = "")
-      case None =>
-        ""
-    }
+    val p = parameters.toVector
+      .map { case (key, value) => s";$key=$value" }
+      .mkString
 
     t + p
   }

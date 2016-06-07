@@ -12,8 +12,10 @@ import com.twitter.finagle.http.RequestBuilder
 import com.twitter.io.Buf
 import com.twitter.util.{Await, Future}
 import io.circe.syntax._
-import io.circe.{Json, JsonObject}
-import io.finch.Input
+import io.circe.{Encoder, Json, JsonObject}
+import io.finch.{DecodeRequest, Input}
+
+import scala.reflect.ClassTag
 
 final class UserOptionsSpec extends UnitSpec {
 
@@ -53,22 +55,21 @@ final class UserOptionsSpec extends UnitSpec {
         // these two imports provide the implicit DecodeRequest instances needed to instantiate Cosmos
         import com.mesosphere.cosmos.circe.Decoders._
         import com.mesosphere.cosmos.circe.Encoders._
-        import com.mesosphere.cosmos.test.TestUtil.Anonymous
         import io.finch.circe._
         val cosmos = new Cosmos(
-          EndpointHandler.const(UninstallResponse(Nil)),
+          constHandler(UninstallResponse(Nil)),
           new PackageInstallHandler(packageCache, packageRunner),
           new PackageRenderHandler(packageCache),
-          EndpointHandler.const(SearchResponse(List.empty)),
-          EndpointHandler.const(
+          constHandler(SearchResponse(List.empty)),
+          constHandler(
             DescribeResponse(packageFiles.packageJson, packageFiles.marathonJsonMustache)
           ),
-          EndpointHandler.const(ListVersionsResponse(Map.empty)),
-          EndpointHandler.const(ListResponse(Nil)),
-          EndpointHandler.const(PackageRepositoryListResponse(Nil)),
-          EndpointHandler.const(PackageRepositoryAddResponse(Nil)),
-          EndpointHandler.const(PackageRepositoryDeleteResponse(Nil)),
-          CapabilitiesHandler()
+          constHandler(ListVersionsResponse(Map.empty)),
+          constHandler(ListResponse(Nil)),
+          constHandler(PackageRepositoryListResponse(Nil)),
+          constHandler(PackageRepositoryAddResponse(Nil)),
+          constHandler(PackageRepositoryDeleteResponse(Nil)),
+          new CapabilitiesHandler
         )
         val request = RequestBuilder()
           .url("http://dummy.cosmos.host/package/install")
@@ -182,6 +183,18 @@ final class UserOptionsSpec extends UnitSpec {
     (parameters + (("id", "\"options-test\"")))
       .map { case (name, value) => s""""$name":$value""" }
       .mkString("{", ",", "}")
+  }
+
+  private[this] def constHandler[Request, Response](resp: Response)(implicit
+    decoder: DecodeRequest[Request],
+    encoder: Encoder[Response],
+    requestClassTag: ClassTag[Request]
+  ): EndpointHandler[Request, Response] = {
+    new EndpointHandler[Request, Response] {
+      override def apply(v1: Request)(implicit session: RequestSession): Future[Response] = {
+        Future.value(resp)
+      }
+    }
   }
 
 }

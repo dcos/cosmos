@@ -1,13 +1,10 @@
 package com.mesosphere.cosmos
 
-import com.mesosphere.cosmos.circe.Decoders._
-import com.mesosphere.cosmos.circe.Encoders._
 import com.mesosphere.cosmos.handler.PackageSearchHandler
 import com.mesosphere.cosmos.model.{SearchRequest, SearchResponse, SearchResult}
 import com.mesosphere.cosmos.repository.PackageCollection
 import com.mesosphere.universe.v2.model.{PackageDetailsVersion, ReleaseVersion}
 import com.twitter.util.{Await, Future}
-import io.finch.circe._
 import org.mockito.Mockito._
 
 final class PackageSearchHandlerSpec extends UnitSpec {
