@@ -1,7 +1,7 @@
 package com.mesosphere.cosmos
 
 import com.mesosphere.cosmos.test.CosmosIntegrationTestClient._
-import com.mesosphere.universe.v3.DcosReleaseVersionParser
+import com.mesosphere.universe.v3.model.DcosReleaseVersionParser
 import com.twitter.util.Await
 import org.scalatest.FreeSpec
 

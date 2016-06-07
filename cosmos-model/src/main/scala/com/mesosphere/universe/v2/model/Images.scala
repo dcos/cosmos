@@ -1,4 +1,4 @@
-package com.mesosphere.universe.v2
+package com.mesosphere.universe.v2.model
 
 case class Images(
   iconSmall: String,

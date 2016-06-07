@@ -167,7 +167,7 @@ object Encoders {
   private[this] def msgForCosmosError(err: CosmosError): String = err match {
     case PackageNotFound(packageName) =>
       s"Package [$packageName] not found"
-    case VersionNotFound(packageName, com.mesosphere.universe.v2.PackageDetailsVersion(packageVersion)) =>
+    case VersionNotFound(packageName, com.mesosphere.universe.v2.model.PackageDetailsVersion(packageVersion)) =>
       s"Version [$packageVersion] of package [$packageName] not found"
     case EmptyPackageImport() =>
       "Package is empty"

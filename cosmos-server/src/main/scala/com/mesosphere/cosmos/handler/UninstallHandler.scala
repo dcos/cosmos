@@ -9,7 +9,7 @@ import com.mesosphere.cosmos.http.{MediaTypes, RequestSession}
 import com.mesosphere.cosmos.thirdparty.marathon.model.{AppId, MarathonApp}
 import com.mesosphere.cosmos.model.{UninstallRequest, UninstallResponse, UninstallResult}
 import com.mesosphere.cosmos.repository.PackageCollection
-import com.mesosphere.universe.v2.PackageDetailsVersion
+import com.mesosphere.universe.v2.model.PackageDetailsVersion
 
 private[cosmos] final class UninstallHandler(
   adminRouter: AdminRouter,

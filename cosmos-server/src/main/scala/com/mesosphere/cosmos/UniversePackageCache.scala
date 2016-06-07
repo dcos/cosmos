@@ -24,8 +24,8 @@ import io.circe.{parse => _, _}
 import com.mesosphere.cosmos.model.{PackageRepository, SearchResult}
 import com.mesosphere.cosmos.repository.Repository
 import com.mesosphere.cosmos.repository.UniverseClient
-import com.mesosphere.universe.v2._
 import com.mesosphere.universe.v2.circe.Decoders._
+import com.mesosphere.universe.v2.model._
 
 
 /** Stores packages from the Universe GitHub repository in the local filesystem.

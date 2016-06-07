@@ -1,6 +1,7 @@
 package com.mesosphere.universe.v2.circe
 
 import com.mesosphere.universe.v2._
+import com.mesosphere.universe.v2.model.Images
 import io.circe.syntax._
 import io.circe.{Decoder, Json}
 import org.scalatest.FreeSpec

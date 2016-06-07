@@ -2,7 +2,7 @@ package com.mesosphere.universe.v3.circe
 
 import cats.data.Xor
 import com.mesosphere.universe.common.circe.Decoders._
-import com.mesosphere.universe.v3._
+import com.mesosphere.universe.v3.model._
 import com.twitter.util.{Return, Throw, Try}
 import io.circe.generic.semiauto._
 import io.circe.{Decoder, DecodingFailure, HCursor}

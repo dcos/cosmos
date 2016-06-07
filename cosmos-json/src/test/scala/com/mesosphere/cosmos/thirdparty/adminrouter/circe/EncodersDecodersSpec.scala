@@ -3,8 +3,8 @@ package com.mesosphere.cosmos.thirdparty.adminrouter.circe
 import cats.data.Xor
 import com.mesosphere.cosmos.thirdparty.adminrouter.model.DcosVersion
 import com.mesosphere.cosmos.thirdparty.adminrouter.circe.Decoders._
-import com.mesosphere.universe.v3.DcosReleaseVersion
-import com.mesosphere.universe.v3.DcosReleaseVersion.Version
+import com.mesosphere.universe.v3.model.DcosReleaseVersion
+import com.mesosphere.universe.v3.model.DcosReleaseVersion._
 import io.circe.Json
 import io.circe.syntax._
 import org.scalatest.FreeSpec

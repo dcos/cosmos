@@ -1,4 +1,4 @@
-package com.mesosphere.universe.v2
+package com.mesosphere.universe.v2.model
 
 /**
   * Conforms to: https://github.com/mesosphere/universe/blob/version-2.x/repo/meta/schema/resource-schema.json

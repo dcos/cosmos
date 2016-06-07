@@ -14,8 +14,8 @@ import org.scalatest.{FreeSpec, PrivateMethodTester}
 import com.mesosphere.cosmos.model.{PackageRepository, SearchResult}
 import com.mesosphere.cosmos.repository.UniverseClient
 import com.mesosphere.cosmos.test.TestUtil
-import com.mesosphere.universe.v2._
 import com.mesosphere.universe.v2.circe.Encoders._
+import com.mesosphere.universe.v2.model._
 
 final class UniversePackageCacheSpec extends FreeSpec with PrivateMethodTester {
 
