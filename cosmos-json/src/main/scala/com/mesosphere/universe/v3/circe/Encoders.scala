@@ -9,6 +9,7 @@ import io.circe.syntax._
 object Encoders {
 
   implicit val encodeAssets: Encoder[Assets] = deriveFor[Assets].encoder
+  implicit val encodeCommand: Encoder[Command] = deriveFor[Command].encoder
   implicit val encodeContainer: Encoder[Container] = deriveFor[Container].encoder
   implicit val encodeDcosReleaseVersion: Encoder[DcosReleaseVersion] = Encoder.instance(_.show.asJson)
   implicit val encodeImages: Encoder[Images] = Encoder.instance { (images: Images) =>
