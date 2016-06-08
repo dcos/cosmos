@@ -48,7 +48,7 @@ case class V2Package(
   marathon: Option[Marathon] = None,
   resource: Option[Resource] = None,
   config: Option[JsonObject] = None,
-  pip: Option[List[String]] = None
+  command: Option[Command] = None
 ) extends PackageDefinition
 
 /**
@@ -74,5 +74,5 @@ case class V3Package(
   marathon: Option[Marathon] = None,
   resource: Option[Resource] = None,
   config: Option[JsonObject] = None,
-  pip: Option[List[String]] = None
+  command: Option[Command] = None
 ) extends PackageDefinition

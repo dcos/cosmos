@@ -10,6 +10,7 @@ import io.circe.{Decoder, DecodingFailure, HCursor}
 object Decoders {
 
   implicit val decodeAssets: Decoder[Assets] = deriveFor[Assets].decoder
+  implicit val decodeCommand: Decoder[Command] = deriveFor[Command].decoder
   implicit val decodeContainer: Decoder[Container] = deriveFor[Container].decoder
   implicit val decodeDcosReleaseVersion: Decoder[DcosReleaseVersion] = Decoder.decodeString.map { versionString =>
     DcosReleaseVersionParser.parseUnsafe(versionString)
