@@ -3,7 +3,7 @@ package com.mesosphere.universe.v3.circe
 import cats.data.Xor
 import com.mesosphere.universe.v3.circe.Decoders._
 import com.mesosphere.universe.v3.circe.Encoders._
-import com.mesosphere.universe.v3.model.PackageDefinition.{ReleaseVersion, Tag, Version}
+import com.mesosphere.universe.v3.model.PackageDefinition._
 import com.mesosphere.universe.v3.model._
 import io.circe.Json
 import io.circe.parse._
@@ -26,9 +26,9 @@ class RepositoryEncoderDecoderSpec extends FreeSpec {
           ReleaseVersion(1),
           "bill@cool.co",
           "some awesome package",
+          Marathon(ByteBuffer.wrap("testing".getBytes(StandardCharsets.UTF_8))),
           List(Tag("abc"), Tag("def")),
-          selected = Some(false),
-          marathon = Some(Marathon(ByteBuffer.wrap("testing".getBytes(StandardCharsets.UTF_8))))
+          selected = Some(false)
         ),
         V3Package(
           V3PackagingVersion.instance,

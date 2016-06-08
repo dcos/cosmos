@@ -22,7 +22,7 @@ import com.twitter.util.{Future, Try}
 import io.circe.parse._
 import io.circe.{parse => _, _}
 import com.mesosphere.cosmos.model.{PackageRepository, SearchResult}
-import com.mesosphere.cosmos.repository.Repository
+import com.mesosphere.cosmos.repository.CosmosRepository
 import com.mesosphere.cosmos.repository.UniverseClient
 import com.mesosphere.universe.v2.circe.Decoders._
 import com.mesosphere.universe.v2.model._
@@ -34,7 +34,7 @@ final class UniversePackageCache private (
   override val repository: PackageRepository,
   universeDir: Path,
   universeClient: UniverseClient
-) extends Repository with AutoCloseable {
+) extends CosmosRepository with AutoCloseable {
 
   import UniversePackageCache._
 

@@ -213,7 +213,8 @@
         "version",
         "maintainer",
         "description",
-        "tags"
+        "tags",
+        "marathon"
       ],
       "additionalProperties": false
     },

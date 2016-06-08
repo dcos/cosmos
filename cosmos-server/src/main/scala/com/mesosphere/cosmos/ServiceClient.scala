@@ -57,7 +57,7 @@ abstract class ServiceClient(baseUri: Uri) {
           // Marathon and Mesos don't specify 'charset=utf-8' on it's json, so we are lax in our comparison here.
           MediaTypeOps.compatibleIgnoringParameters(MediaTypes.applicationJson, mediaType) match {
             case false =>
-              throw UnsupportedContentType(List(MediaTypes.applicationJson), Some(mediaType))
+              throw UnsupportedContentType.forMediaType(List(MediaTypes.applicationJson), Some(mediaType))
             case true =>
               decode[A](response.contentString) match {
                 case Left(err) => throw CirceError(err)

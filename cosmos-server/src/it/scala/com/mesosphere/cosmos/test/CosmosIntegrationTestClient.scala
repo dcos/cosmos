@@ -25,7 +25,7 @@ object CosmosIntegrationTestClient extends Matchers {
     val property = dcosUri.name
     val ar = Try {
       Option(System.getProperty(property))
-        .getOrElse(throw new AssertionError(s"Missing system property '$property "))
+        .getOrElse(throw new AssertionError(s"Missing system property '$property'"))
     }
       .map { dh =>
         val dcosHost: String = Uris.stripTrailingSlash(dh)
