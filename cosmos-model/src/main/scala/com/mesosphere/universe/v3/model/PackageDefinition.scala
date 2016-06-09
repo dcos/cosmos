@@ -50,7 +50,7 @@ case class V2Package(
   postInstallNotes: Option[String] = None,
   postUninstallNotes: Option[String] = None,
   licenses: Option[List[License]] = None,
-  resource: Option[Resource] = None,
+  resource: Option[V2Resource] = None,
   config: Option[JsonObject] = None,
   command: Option[Command] = None
 ) extends PackageDefinition
@@ -76,7 +76,7 @@ case class V3Package(
   licenses: Option[List[License]] = None,
   minDcosReleaseVersion: Option[DcosReleaseVersion] = None,
   marathon: Option[Marathon] = None,
-  resource: Option[Resource] = None,
+  resource: Option[V3Resource] = None,
   config: Option[JsonObject] = None,
   command: Option[Command] = None
 ) extends PackageDefinition
