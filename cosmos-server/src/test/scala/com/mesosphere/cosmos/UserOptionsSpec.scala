@@ -4,6 +4,7 @@ import cats.data.Xor
 import com.mesosphere.cosmos.handler._
 import com.mesosphere.cosmos.http.{MediaTypes, RequestSession}
 import com.mesosphere.cosmos.model._
+import com.mesosphere.cosmos.model.v1.DescribeResponse
 import com.mesosphere.cosmos.thirdparty.marathon.model._
 import com.mesosphere.cosmos.thirdparty.marathon.circe.Decoders._
 import com.mesosphere.universe.v2.model.{PackageDetails, PackageDetailsVersion, PackageFiles, PackagingVersion}
