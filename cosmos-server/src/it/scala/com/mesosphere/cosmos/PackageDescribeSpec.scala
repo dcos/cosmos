@@ -100,7 +100,7 @@ final class PackageDescribeSpec extends FreeSpec with TableDrivenPropertyChecks 
   ): Response = {
     val request = apiClient.requestBuilder(DescribeEndpoint)
       .addHeader("Content-Type", MediaTypes.DescribeRequest.show)
-      .addHeader("Accept", MediaTypes.DescribeResponse.show)
+      .addHeader("Accept", MediaTypes.V1DescribeResponse.show)
       .buildPost(Buf.Utf8(describeRequest.asJson.noSpaces))
     apiClient(request)
   }

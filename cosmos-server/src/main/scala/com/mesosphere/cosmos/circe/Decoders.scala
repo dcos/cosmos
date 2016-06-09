@@ -2,6 +2,7 @@ package com.mesosphere.cosmos.circe
 
 import com.mesosphere.cosmos.ErrorResponse
 import com.mesosphere.cosmos.model._
+import com.mesosphere.cosmos.model.v1.DescribeResponse
 import com.mesosphere.cosmos.thirdparty.marathon.circe.Decoders._
 import com.mesosphere.universe._
 import com.mesosphere.universe.common.circe.Decoders._

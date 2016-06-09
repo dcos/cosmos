@@ -1,11 +1,11 @@
 package com.mesosphere.cosmos.http
 
 object MediaTypes {
-  private[this] def vnd(kind: String): MediaType =
+  private[this] def vnd(kind: String, version: Int = 1): MediaType =
     MediaType(
       "application",
       MediaTypeSubType(s"vnd.dcos.package.$kind", Some("json")),
-      Map("charset" -> "utf-8", "version" -> "v1")
+      Map("charset" -> "utf-8", "version" -> ("v" + version))
     )
 
   val any = MediaType("*", MediaTypeSubType("*"))
@@ -26,7 +26,6 @@ object MediaTypes {
   val SearchRequest = vnd("search-request")
   val SearchResponse = vnd("search-response")
   val DescribeRequest = vnd("describe-request")
-  val DescribeResponse = vnd("describe-response")
   val ListVersionsRequest = vnd("list-versions-request")
   val ListVersionsResponse = vnd("list-versions-response")
   val CapabilitiesResponse = MediaType(
@@ -50,5 +49,8 @@ object MediaTypes {
     MediaTypeSubType("vnd.dcos.universe.repo", Some("json")),
     Map("charset" -> "utf-8", "version" -> "v3")
   )
+
+  val V1DescribeResponse = vnd("describe-response", 1)
+  val V2DescribeResponse = vnd("describe-response", 2)
 
 }

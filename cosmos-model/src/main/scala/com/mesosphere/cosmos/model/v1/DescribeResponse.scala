@@ -1,4 +1,4 @@
-package com.mesosphere.cosmos.model
+package com.mesosphere.cosmos.model.v1
 
 import com.mesosphere.universe.v2.model.{Command, PackageDetails, Resource}
 import io.circe.JsonObject

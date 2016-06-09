@@ -4,6 +4,7 @@ import cats.data.Ior
 import com.mesosphere.cosmos._
 import com.mesosphere.cosmos.http.MediaType
 import com.mesosphere.cosmos.model._
+import com.mesosphere.cosmos.model.v1.DescribeResponse
 import com.mesosphere.cosmos.thirdparty.marathon.circe.Encoders._
 import com.mesosphere.universe.common.circe.Encoders._
 import com.mesosphere.universe.v2.circe.Encoders._
