@@ -1,8 +1,5 @@
 package com.mesosphere.cosmos
 
-import scala.annotation.tailrec
-import scala.collection.JavaConverters._
-import java.nio.charset.StandardCharsets
 import java.nio.file.Path
 
 import com.mesosphere.cosmos.circe.Decoders._
@@ -21,11 +18,6 @@ import io.circe.Json
 import io.finch._
 import io.finch.circe._
 import io.github.benwhitehead.finch.FinchServer
-import org.apache.curator.framework.api.ACLProvider
-import org.apache.curator.framework.{CuratorFramework, CuratorFrameworkFactory}
-import org.apache.curator.retry.ExponentialBackoffRetry
-import org.apache.zookeeper.ZooDefs
-import org.apache.zookeeper.data.{ACL, Id}
 import shapeless.HNil
 
 private[cosmos] final class Cosmos(
@@ -182,41 +174,11 @@ object Cosmos extends FinchServer {
       val dd = dataDir()
       logger.info("Using {} for data directory", dd)
 
-      val zkUri = zookeeperUri()
-      logger.info("Using {} for the zookeeper connection", zkUri)
-
       val marathonPackageRunner = new MarathonPackageRunner(adminRouter)
 
-      val zkRetryPolicy = new ExponentialBackoffRetry(1000, 3)
-      val zkClientBuilder = CuratorFrameworkFactory.builder()
-        .namespace(zkUri.path.stripPrefix("/"))
-        .connectString(zkUri.connectString)
-        .retryPolicy(zkRetryPolicy)
-
-      val userOpt = zookeeperAclUser.get
-      val secretOpt = zookeeperAclSecret.get
-      val aclCreds = (userOpt zip secretOpt).headOption
-      val aclProvider = DigestACLProvider(aclCreds)
-
-      val zkClient = if (aclCreds.isDefined) {
-        val user = userOpt.get
-        val secret = secretOpt.get
-        val authBytes = s"$user:$secret".getBytes(StandardCharsets.UTF_8)
-        zkClientBuilder.authorization("digest", authBytes)
-                       .aclProvider(aclProvider)
-                       .build
-      } else {
-        zkClientBuilder.build
-      }
-
-      // Start the client and close it on exit
-      zkClient.start()
+      val zkClient = zookeeper.Clients.createAndInitialize()
       onExit {
         zkClient.close()
-      }
-
-      if (aclCreds.isDefined) {
-        updateAcls(zkClient, aclProvider, List(dd.toString))
       }
 
       val sourcesStorage = new ZooKeeperStorage(zkClient)()
@@ -320,61 +282,4 @@ object Cosmos extends FinchServer {
 
   implicit val packageUninstallEncoder: DispatchingMediaTypedEncoder[UninstallResponse] =
     DispatchingMediaTypedEncoder(MediaTypes.UninstallResponse)
-
-  @tailrec
-  private[cosmos] def updateAcls(
-    zkClient: CuratorFramework,
-    aclProvider: ACLProvider,
-    paths: List[String]
-  ): Unit = paths match {
-    case child :: otherChildren => {
-      if (zkClient.checkExists().forPath(child) != null) {
-        val acls = aclProvider.getAclForPath(child)
-
-        zkClient.setACL()
-          .withACL(acls)
-          .forPath(child)
-
-        val newChildren = zkClient.getChildren.forPath(child).asScala.toList
-
-        updateAcls(zkClient, aclProvider, newChildren ++ otherChildren)
-      } else {
-        updateAcls(zkClient, aclProvider, otherChildren)
-      }
-    }
-    case _ => {}
-  }
-}
-
-private[cosmos] final case class DigestACLProvider(
-  acls: java.util.List[ACL]
-) extends ACLProvider {
-  def getAclForPath(path: String): java.util.List[ACL] = {
-    acls
-  }
-  def getDefaultAcl(): java.util.List[ACL] = {
-    acls
-  }
-}
-
-private[cosmos] object DigestACLProvider {
-  def apply(userSecret: Option[(String, String)]): DigestACLProvider = {
-    userSecret match {
-      case Some((user, secret)) => {
-        val userId = new Id("auth", s"$user:$secret")
-        val userAllAcl = new ACL(ZooDefs.Perms.ALL, userId)
-
-        val worldId = new Id("world", "anyone")
-        val worldReadAcl = new ACL(ZooDefs.Perms.READ, worldId)
-
-        new DigestACLProvider(java.util.Arrays.asList(userAllAcl, worldReadAcl))
-      }
-      case None => {
-        val worldId = new Id("world", "anyone")
-        val worldAllAcl = new ACL(ZooDefs.Perms.ALL, worldId)
-
-        new DigestACLProvider(java.util.Arrays.asList(worldAllAcl))
-      }
-    }
-  }
 }
