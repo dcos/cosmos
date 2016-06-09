@@ -1,6 +1,7 @@
 package com.mesosphere.cosmos
 
 import com.github.retronym.SbtOneJar._
+import sbtfilter.Plugin._
 import sbt.Keys._
 import sbt._
 
@@ -212,6 +213,7 @@ object CosmosBuild extends Build {
     .settings(sharedSettings)
     .settings(oneJarSettings)
     .settings(mainClass in oneJar := Some("com.mesosphere.cosmos.Cosmos"))
+    .settings(filterSettings)
     .settings(
       libraryDependencies ++=
         Deps.circe

@@ -74,7 +74,28 @@ case class MarathonAppNotFound(appId: AppId) extends CosmosError
 case class MesosRequestError(note: String) extends CosmosError
 case class CirceError(cerr: io.circe.Error) extends CosmosError
 
-case class UnsupportedContentType(supported: List[MediaType], actual: Option[MediaType] = None) extends CosmosError
+case class UnsupportedContentType(supported: List[MediaType], actual: Option[String] = None) extends CosmosError {
+  override def getData: Option[JsonObject] = {
+    Some(JsonObject.fromMap(Map(
+      "supported" -> supported.asJson,
+      "actual" -> actual.asJson
+    )))
+  }
+}
+object UnsupportedContentType {
+  def forMediaType(supported: List[MediaType], actual: Option[MediaType]): UnsupportedContentType = {
+    new UnsupportedContentType(supported, actual.map(_.show))
+  }
+}
+
+case class UnsupportedContentEncoding(supported: List[String], actual: Option[String] = None) extends CosmosError {
+  override def getData: Option[JsonObject] = {
+    Some(JsonObject.fromMap(Map(
+      "supported" -> supported.asJson,
+      "actual" -> actual.asJson
+    )))
+  }
+}
 
 case class GenericHttpError(method: HttpMethod, uri: Uri, override val status: Status) extends CosmosError
 

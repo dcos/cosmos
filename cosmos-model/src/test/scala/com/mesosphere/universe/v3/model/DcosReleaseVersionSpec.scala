@@ -1,7 +1,6 @@
-package com.mesosphere.universe.v3
+package com.mesosphere.universe.v3.model
 
 import com.mesosphere.universe.v3.model.DcosReleaseVersion.{Suffix, Version}
-import com.mesosphere.universe.v3.model.{DcosReleaseVersion, DcosReleaseVersionParser}
 import com.twitter.util.{Return, Throw, Try}
 import org.scalatest.FreeSpec
 

@@ -23,6 +23,10 @@ object PackageDefinition {
   case class ReleaseVersion(value: Int) {
     assert(value >= 0, s"Value $value is not >= 0")
   }
+  object ReleaseVersion {
+    import Ordering.Int
+    implicit val packageDefinitionReleaseVersionOrdering: Ordering[ReleaseVersion] = Ordering.by(_.value)
+  }
 
 }
 
@@ -36,6 +40,7 @@ case class V2Package(
   releaseVersion: PackageDefinition.ReleaseVersion,
   maintainer: String,
   description: String,
+  marathon: Marathon,
   tags: List[PackageDefinition.Tag] = Nil,
   selected: Option[Boolean] = None,
   scm: Option[String] = None,
@@ -45,10 +50,9 @@ case class V2Package(
   postInstallNotes: Option[String] = None,
   postUninstallNotes: Option[String] = None,
   licenses: Option[List[License]] = None,
-  marathon: Option[Marathon] = None,
-  resource: Option[Resource] = None,
+  resource: Option[V2Resource] = None,
   config: Option[JsonObject] = None,
-  pip: Option[List[String]] = None
+  command: Option[Command] = None
 ) extends PackageDefinition
 
 /**
@@ -72,7 +76,11 @@ case class V3Package(
   licenses: Option[List[License]] = None,
   minDcosReleaseVersion: Option[DcosReleaseVersion] = None,
   marathon: Option[Marathon] = None,
-  resource: Option[Resource] = None,
+  resource: Option[V3Resource] = None,
   config: Option[JsonObject] = None,
-  pip: Option[List[String]] = None
+  command: Option[Command] = None
 ) extends PackageDefinition
+
+object V3Package {
+  implicit val v3PackageOrdering: Ordering[V3Package] = Ordering.by(p => p.name -> p.releaseVersion)
+}

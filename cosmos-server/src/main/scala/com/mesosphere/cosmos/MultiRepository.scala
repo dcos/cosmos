@@ -6,7 +6,7 @@ import com.twitter.util.Future
 import com.mesosphere.cosmos.model.SearchResult
 import com.mesosphere.cosmos.repository.PackageCollection
 import com.mesosphere.cosmos.repository.PackageSourcesStorage
-import com.mesosphere.cosmos.repository.Repository
+import com.mesosphere.cosmos.repository.CosmosRepository
 import com.mesosphere.cosmos.repository.UniverseClient
 import com.mesosphere.universe.v2.model.{PackageDetailsVersion, PackageFiles, UniverseIndexEntry}
 
@@ -82,7 +82,7 @@ final class MultiRepository (
     }
   }
 
-  def getRepository(uri: Uri): Future[Option[Repository]] = {
+  def getRepository(uri: Uri): Future[Option[CosmosRepository]] = {
    repositories().map { repositories =>
       repositories.find(_.universeBundle == uri)
     }
