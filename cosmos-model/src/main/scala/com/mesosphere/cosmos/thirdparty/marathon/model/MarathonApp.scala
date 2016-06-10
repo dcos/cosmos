@@ -19,6 +19,8 @@ case class MarathonApp(
   def packageVersion: Option[PackageDetailsVersion] = labels.get(MarathonApp.versionLabel).map(PackageDetailsVersion)
 
   def packageRepository: Option[String] = labels.get(MarathonApp.repositoryLabel)
+
+  def packageMetadata: Option[String] = labels.get(MarathonApp.metadataLabel)
 }
 
 object MarathonApp {
