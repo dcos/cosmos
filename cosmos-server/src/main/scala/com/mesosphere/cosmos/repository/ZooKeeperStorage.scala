@@ -4,13 +4,15 @@ import java.nio.ByteBuffer
 import java.nio.charset.StandardCharsets
 
 import cats.data.Ior
+import com.mesosphere.cosmos._
 import com.mesosphere.cosmos.circe.Decoders._
 import com.mesosphere.cosmos.circe.Encoders._
 import com.mesosphere.cosmos.http.{MediaType, MediaTypeOps, MediaTypeSubType}
 import com.mesosphere.cosmos.model.ZooKeeperStorageEnvelope
 import com.mesosphere.cosmos.repository.DefaultRepositories._
+import com.mesosphere.cosmos.rpc.v1.circe.Decoders._
+import com.mesosphere.cosmos.rpc.v1.circe.Encoders._
 import com.mesosphere.cosmos.rpc.v1.model.PackageRepository
-import com.mesosphere.cosmos._
 import com.mesosphere.universe.common.ByteBuffers
 import com.netaporter.uri.Uri
 import com.twitter.finagle.stats.{NullStatsReceiver, Stat, StatsReceiver}

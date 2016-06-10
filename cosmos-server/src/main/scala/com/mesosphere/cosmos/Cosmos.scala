@@ -2,14 +2,13 @@ package com.mesosphere.cosmos
 
 import java.nio.file.Path
 
-import com.mesosphere.cosmos.circe.Decoders._
 import com.mesosphere.cosmos.circe.Encoders._
-import com.mesosphere.cosmos.circe.{DispatchingMediaTypedEncoder, MediaTypedDecoder, MediaTypedEncoder}
 import com.mesosphere.cosmos.handler._
 import com.mesosphere.cosmos.http.MediaTypes
 import com.mesosphere.cosmos.repository.{PackageSourcesStorage, UniverseClient, ZooKeeperStorage}
+import com.mesosphere.cosmos.rpc.v1.circe.MediaTypedDecoders._
+import com.mesosphere.cosmos.rpc.v1.circe.MediaTypedEncoders._
 import com.mesosphere.cosmos.rpc.v1.model._
-import com.mesosphere.universe.v3.circe.{Encoders => V3Encoders}
 import com.netaporter.uri.Uri
 import com.twitter.finagle.Service
 import com.twitter.finagle.http.{Request, Response, Status}
@@ -227,79 +226,4 @@ object Cosmos extends FinchServer {
     (base ? requestReader).apply((context: EndpointContext[Req, Res]) => handler(context))
   }
 
-  implicit val packageListDecoder: MediaTypedDecoder[ListRequest] =
-    MediaTypedDecoder(MediaTypes.ListRequest)
-
-  implicit val packageListVersionsDecoder: MediaTypedDecoder[ListVersionsRequest] =
-    MediaTypedDecoder(MediaTypes.ListVersionsRequest)
-
-  implicit val packageDescribeDecoder: MediaTypedDecoder[DescribeRequest] =
-    MediaTypedDecoder(MediaTypes.DescribeRequest)
-
-  implicit val packageInstallDecoder: MediaTypedDecoder[InstallRequest] =
-    MediaTypedDecoder(MediaTypes.InstallRequest)
-
-  implicit val packageRenderDecoder: MediaTypedDecoder[RenderRequest] =
-    MediaTypedDecoder(MediaTypes.RenderRequest)
-
-  implicit val packageRepositoryAddDecoder: MediaTypedDecoder[PackageRepositoryAddRequest] =
-    MediaTypedDecoder(MediaTypes.PackageRepositoryAddRequest)
-
-  implicit val packageRepositoryDeleteDecoder: MediaTypedDecoder[PackageRepositoryDeleteRequest] =
-    MediaTypedDecoder(MediaTypes.PackageRepositoryDeleteRequest)
-
-  implicit val packageRepositoryListDecoder: MediaTypedDecoder[PackageRepositoryListRequest] =
-    MediaTypedDecoder(MediaTypes.PackageRepositoryListRequest)
-
-  implicit val packageSearchDecoder: MediaTypedDecoder[SearchRequest] =
-    MediaTypedDecoder(MediaTypes.SearchRequest)
-
-  implicit val packageUninstallDecoder: MediaTypedDecoder[UninstallRequest] =
-    MediaTypedDecoder(MediaTypes.UninstallRequest)
-
-  implicit val capabilitiesEncoder: DispatchingMediaTypedEncoder[CapabilitiesResponse] =
-    DispatchingMediaTypedEncoder(MediaTypes.CapabilitiesResponse)
-
-  implicit val packageListEncoder: DispatchingMediaTypedEncoder[ListResponse] =
-    DispatchingMediaTypedEncoder(MediaTypes.ListResponse)
-
-  implicit val packageListVersionsEncoder: DispatchingMediaTypedEncoder[ListVersionsResponse] =
-    DispatchingMediaTypedEncoder(MediaTypes.ListVersionsResponse)
-
-  implicit val packageDescribeV1Encoder: DispatchingMediaTypedEncoder[DescribeResponse] =
-    DispatchingMediaTypedEncoder(MediaTypes.V1DescribeResponse)
-
-  implicit val packageDescribeEncoder: DispatchingMediaTypedEncoder[rpc.v2.model.DescribeResponse] = {
-    DispatchingMediaTypedEncoder(Seq(
-      MediaTypedEncoder(
-        encoder = V3Encoders.encodeV3Package,
-        mediaType = MediaTypes.V2DescribeResponse
-      ),
-      MediaTypedEncoder(
-        encoder = encodeDescribeResponse.contramap(converter.Response.v3PackageToDescribeResponse),
-        mediaType = MediaTypes.V1DescribeResponse
-      )
-    ))
-  }
-
-  implicit val packageInstallEncoder: DispatchingMediaTypedEncoder[InstallResponse] =
-    DispatchingMediaTypedEncoder(MediaTypes.InstallResponse)
-
-  implicit val packageRenderEncoder: DispatchingMediaTypedEncoder[RenderResponse] =
-    DispatchingMediaTypedEncoder(MediaTypes.RenderResponse)
-
-  implicit val packageRepositoryAddEncoder: DispatchingMediaTypedEncoder[PackageRepositoryAddResponse] =
-    DispatchingMediaTypedEncoder(MediaTypes.PackageRepositoryAddResponse)
-
-  implicit val packageRepositoryDeleteEncoder: DispatchingMediaTypedEncoder[PackageRepositoryDeleteResponse] =
-    DispatchingMediaTypedEncoder(MediaTypes.PackageRepositoryDeleteResponse)
-
-  implicit val packageRepositoryListEncoder: DispatchingMediaTypedEncoder[PackageRepositoryListResponse] =
-    DispatchingMediaTypedEncoder(MediaTypes.PackageRepositoryListResponse)
-
-  implicit val packageSearchEncoder: DispatchingMediaTypedEncoder[SearchResponse] =
-    DispatchingMediaTypedEncoder(MediaTypes.SearchResponse)
-
-  implicit val packageUninstallEncoder: DispatchingMediaTypedEncoder[UninstallResponse] =
-    DispatchingMediaTypedEncoder(MediaTypes.UninstallResponse)
 }
