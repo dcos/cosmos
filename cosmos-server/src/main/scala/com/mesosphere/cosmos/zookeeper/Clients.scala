@@ -13,21 +13,22 @@ import org.apache.zookeeper.data.ACL
 import org.apache.zookeeper.data.Id
 
 import com.mesosphere.cosmos.zookeeperUri
+import com.mesosphere.cosmos.model.ZooKeeperUri
 
 object Clients {
   val logger = org.slf4j.LoggerFactory.getLogger(getClass)
 
-  def createAndInitialize(): CuratorFramework = {
-    val zkUri = zookeeperUri()
-    logger.info("Using {} for the zookeeper connection", zkUri)
-
+  def createAndInitialize(
+    zkUri: ZooKeeperUri,
+    zkCredentials: Option[(String, String)]
+  ): CuratorFramework = {
     val zkClientBuilder = CuratorFrameworkFactory
       .builder()
       .namespace(zkUri.path.stripPrefix("/"))
       .connectString(zkUri.connectString)
       .retryPolicy(new ExponentialBackoffRetry(1000, 3))
 
-    val authInfo = sys.env.get("ZOOKEEPER_USER").zip(sys.env.get("ZOOKEEPER_SECRET")).map {
+    val authInfo = zkCredentials.map {
       case (user, secret) =>
         (
           s"$user:$secret".getBytes(StandardCharsets.UTF_8),
@@ -37,7 +38,7 @@ object Clients {
 
     authInfo.foreach {
       case (authBytes, aclProvider) =>
-        logger.info("Enabling authorization and ACL provider for ZookKeeper client")
+        logger.info("Enabling authorization and ACL provider for ZooKeeper client")
         zkClientBuilder
           .authorization("digest", authBytes)
           .aclProvider(aclProvider)

@@ -176,9 +176,15 @@ object Cosmos extends FinchServer {
       val dd = dataDir()
       logger.info("Using {} for data directory", dd)
 
+      val zkUri = zookeeperUri()
+      logger.info("Using {} for the ZooKeeper connection", zkUri)
+
       val marathonPackageRunner = new MarathonPackageRunner(adminRouter)
 
-      val zkClient = zookeeper.Clients.createAndInitialize()
+      val zkClient = zookeeper.Clients.createAndInitialize(
+        zkUri,
+        sys.env.get("ZOOKEEPER_USER").zip(sys.env.get("ZOOKEEPER_SECRET")).headOption
+      )
       onExit {
         zkClient.close()
       }
