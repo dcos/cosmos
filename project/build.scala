@@ -11,6 +11,7 @@ object CosmosBuild extends Build {
   lazy val projectVersion = "0.2.0-SNAPSHOT"
 
   object V {
+    val bijection = "0.9.2"
     val circe = "0.2.1"
     val curator = "2.9.1"
     val finch = "0.9.3"
@@ -27,6 +28,10 @@ object CosmosBuild extends Build {
   }
 
   object Deps {
+
+    val bijection = Seq(
+      "com.twitter" %% "bijection-core" % V.bijection
+    )
 
     val circeCore = Seq(
       "io.circe" %% "circe-core" % V.circe
@@ -195,6 +200,7 @@ object CosmosBuild extends Build {
         ++ Deps.circeCore
         ++ Deps.twitterUtilCore
         ++ Deps.scalaTest
+        ++ Deps.bijection
     )
 
   lazy val json = Project("cosmos-json", file("cosmos-json"))

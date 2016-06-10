@@ -4,11 +4,13 @@ import java.nio.file.Path
 
 import com.mesosphere.cosmos.circe.Decoders._
 import com.mesosphere.cosmos.circe.Encoders._
-import com.mesosphere.cosmos.circe.{DispatchingMediaTypedEncoder, MediaTypedDecoder}
+import com.mesosphere.cosmos.circe.{DispatchingMediaTypedEncoder, MediaTypedDecoder, MediaTypedEncoder}
 import com.mesosphere.cosmos.handler._
 import com.mesosphere.cosmos.http.MediaTypes
 import com.mesosphere.cosmos.model._
 import com.mesosphere.cosmos.repository.{PackageSourcesStorage, UniverseClient, ZooKeeperStorage}
+import com.mesosphere.universe.v3.circe.{Encoders => V3Encoders}
+import com.mesosphere.universe.v3.model.V3Package
 import com.netaporter.uri.Uri
 import com.twitter.finagle.Service
 import com.twitter.finagle.http.{Request, Response, Status}
@@ -25,7 +27,7 @@ private[cosmos] final class Cosmos(
   packageInstallHandler: EndpointHandler[InstallRequest, InstallResponse],
   packageRenderHandler: EndpointHandler[RenderRequest, RenderResponse],
   packageSearchHandler: EndpointHandler[SearchRequest, SearchResponse],
-  packageDescribeHandler: EndpointHandler[DescribeRequest, DescribeResponse],
+  packageDescribeHandler: EndpointHandler[DescribeRequest, model.v1.DescribeResponse],
   packageListVersionsHandler: EndpointHandler[ListVersionsRequest, ListVersionsResponse],
   listHandler: EndpointHandler[ListRequest, ListResponse],
   listRepositoryHandler: EndpointHandler[PackageRepositoryListRequest, PackageRepositoryListResponse],
@@ -259,8 +261,21 @@ object Cosmos extends FinchServer {
   implicit val packageListVersionsEncoder: DispatchingMediaTypedEncoder[ListVersionsResponse] =
     DispatchingMediaTypedEncoder(MediaTypes.ListVersionsResponse)
 
-  implicit val packageDescribeEncoder: DispatchingMediaTypedEncoder[DescribeResponse] =
-    DispatchingMediaTypedEncoder(MediaTypes.DescribeResponse)
+  implicit val packageDescribeV1Encoder: DispatchingMediaTypedEncoder[model.v1.DescribeResponse] =
+    DispatchingMediaTypedEncoder(MediaTypes.V1DescribeResponse)
+
+  implicit val packageDescribeEncoder: DispatchingMediaTypedEncoder[model.DescribeResponse] = {
+    DispatchingMediaTypedEncoder(Seq(
+      MediaTypedEncoder(
+        encoder = V3Encoders.encodeV3Package,
+        mediaType = MediaTypes.V2DescribeResponse
+      ),
+      MediaTypedEncoder(
+        encoder = encodeDescribeResponse.contramap(converter.Response.v3PackageToDescribeResponse),
+        mediaType = MediaTypes.V1DescribeResponse
+      )
+    ))
+  }
 
   implicit val packageInstallEncoder: DispatchingMediaTypedEncoder[InstallResponse] =
     DispatchingMediaTypedEncoder(MediaTypes.InstallResponse)
