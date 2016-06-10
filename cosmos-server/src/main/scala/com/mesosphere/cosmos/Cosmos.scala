@@ -225,5 +225,4 @@ object Cosmos extends FinchServer {
   ): Endpoint[Json] = {
     (base ? requestReader).apply((context: EndpointContext[Req, Res]) => handler(context))
   }
-
 }

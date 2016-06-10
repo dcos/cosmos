@@ -67,7 +67,7 @@ object Decoders {
   implicit val decodeV2PackagingVersion: Decoder[V2PackagingVersion] = {
     Decoder.decodeString.map(V2PackagingVersion(_))
   }
-  implicit val decodeV2Resource: Decoder[V2Resource] = deriveFor[V2Resource].decoder
+  implicit val decodeV3V2Resource: Decoder[V2Resource] = deriveFor[V2Resource].decoder
 
   implicit val decodeV3Package: Decoder[V3Package] = deriveFor[V3Package].decoder
   implicit val decodeV3PackagingVersion: Decoder[V3PackagingVersion] = {
