@@ -3,7 +3,8 @@ package com.mesosphere.cosmos
 import cats.data.Xor
 import com.mesosphere.cosmos.handler._
 import com.mesosphere.cosmos.http.{MediaTypes, RequestSession}
-import com.mesosphere.cosmos.model._
+import com.mesosphere.cosmos.rpc.v1.circe.Decoders._
+import com.mesosphere.cosmos.rpc.v1.circe.Encoders._
 import com.mesosphere.cosmos.rpc.v1.model._
 import com.mesosphere.cosmos.thirdparty.marathon.model._
 import com.mesosphere.cosmos.thirdparty.marathon.circe.Decoders._
@@ -53,9 +54,6 @@ final class UserOptionsSpec extends UnitSpec {
         val packageCache = MemoryPackageCache(packages)
         val packageRunner = new RecordingPackageRunner
 
-        // these two imports provide the implicit DecodeRequest instances needed to instantiate Cosmos
-        import com.mesosphere.cosmos.circe.Decoders._
-        import com.mesosphere.cosmos.circe.Encoders._
         import io.finch.circe._
         val cosmos = new Cosmos(
           constHandler(UninstallResponse(Nil)),

@@ -4,7 +4,7 @@ import java.io.InputStreamReader
 
 import cats.data.Xor
 import com.google.common.io.CharStreams
-import com.mesosphere.cosmos.circe.Decoders._
+import com.mesosphere.cosmos.rpc.v1.circe.Decoders._
 import com.mesosphere.cosmos.rpc.v1.model.PackageRepository
 import com.twitter.util.Try
 import io.circe.parse._

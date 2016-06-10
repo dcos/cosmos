@@ -2,11 +2,12 @@ package com.mesosphere.cosmos.repository
 
 import cats.data.Xor
 import com.mesosphere.cosmos.circe.Decoders._
-import com.mesosphere.cosmos.circe.Encoders._
 import com.mesosphere.cosmos.http.MediaTypes
+import com.mesosphere.cosmos.rpc.v1.circe.Decoders._
+import com.mesosphere.cosmos.rpc.v1.circe.Encoders._
 import com.mesosphere.cosmos.rpc.v1.model._
 import com.mesosphere.cosmos.test.CosmosIntegrationTestClient._
-import com.mesosphere.cosmos.{UnitSpec, _}
+import com.mesosphere.cosmos._
 import com.mesosphere.universe.common.circe.Encoders._
 import com.netaporter.uri.Uri
 import com.twitter.finagle.http._
