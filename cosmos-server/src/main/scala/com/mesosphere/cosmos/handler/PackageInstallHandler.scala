@@ -7,9 +7,9 @@ import cats.data.Xor
 import com.github.mustachejava.DefaultMustacheFactory
 import com.mesosphere.cosmos.http.RequestSession
 import com.mesosphere.cosmos.jsonschema.JsonSchemaValidation
-import com.mesosphere.cosmos.model._
 import com.mesosphere.cosmos.thirdparty.marathon.model.{AppId, MarathonApp}
 import com.mesosphere.cosmos.repository.PackageCollection
+import com.mesosphere.cosmos.rpc.v1.model.{InstallRequest, InstallResponse}
 import com.mesosphere.cosmos.{CirceError, JsonSchemaMismatch, PackageFileNotJson, PackageRunner}
 import com.mesosphere.universe.v2.circe.Encoders._
 import com.mesosphere.universe.v2.model.{PackageFiles, Resource}

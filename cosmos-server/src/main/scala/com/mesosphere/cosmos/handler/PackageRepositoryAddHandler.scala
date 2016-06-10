@@ -2,10 +2,8 @@ package com.mesosphere.cosmos.handler
 
 import com.mesosphere.cosmos.UnsupportedRepositoryUri
 import com.mesosphere.cosmos.http.RequestSession
-import com.mesosphere.cosmos.model.PackageRepository
-import com.mesosphere.cosmos.model.PackageRepositoryAddRequest
-import com.mesosphere.cosmos.model.PackageRepositoryAddResponse
 import com.mesosphere.cosmos.repository.PackageSourcesStorage
+import com.mesosphere.cosmos.rpc.v1.model.{PackageRepository, PackageRepositoryAddRequest, PackageRepositoryAddResponse}
 import com.twitter.util.Future
 
 private[cosmos] final class PackageRepositoryAddHandler(

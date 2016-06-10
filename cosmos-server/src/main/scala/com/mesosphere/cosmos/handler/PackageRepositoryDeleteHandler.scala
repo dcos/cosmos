@@ -3,8 +3,8 @@ package com.mesosphere.cosmos.handler
 import cats.data.Ior
 import com.mesosphere.cosmos.RepoNameOrUriMissing
 import com.mesosphere.cosmos.http.RequestSession
-import com.mesosphere.cosmos.model.{PackageRepositoryDeleteRequest, PackageRepositoryDeleteResponse}
 import com.mesosphere.cosmos.repository.PackageSourcesStorage
+import com.mesosphere.cosmos.rpc.v1.model.{PackageRepositoryDeleteRequest, PackageRepositoryDeleteResponse}
 import com.twitter.util.Future
 
 private[cosmos] final class PackageRepositoryDeleteHandler(

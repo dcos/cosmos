@@ -1,7 +1,7 @@
 package com.mesosphere.cosmos.repository
 
-import com.mesosphere.cosmos.model.PackageRepository
 import com.mesosphere.cosmos.repository.DefaultRepositories._
+import com.mesosphere.cosmos.rpc.v1.model.PackageRepository
 import com.netaporter.uri.dsl._
 import com.twitter.util.Return
 import io.circe.ParsingFailure

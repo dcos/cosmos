@@ -1,8 +1,8 @@
 package com.mesosphere.cosmos.handler
 
 import com.mesosphere.cosmos.http.RequestSession
-import com.mesosphere.cosmos.model._
 import com.mesosphere.cosmos.repository.PackageCollection
+import com.mesosphere.cosmos.rpc.v1.model.{RenderRequest, RenderResponse}
 import com.twitter.util.Future
 
 private[cosmos] final class PackageRenderHandler(

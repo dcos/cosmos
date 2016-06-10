@@ -1,9 +1,8 @@
 package com.mesosphere.cosmos.handler
 
 import com.mesosphere.cosmos.http.RequestSession
-import com.mesosphere.cosmos.model.DescribeRequest
-import com.mesosphere.cosmos.model.v1.DescribeResponse
 import com.mesosphere.cosmos.repository.PackageCollection
+import com.mesosphere.cosmos.rpc.v1.model.{DescribeRequest, DescribeResponse}
 import com.twitter.util.Future
 
 private[cosmos] class PackageDescribeHandler(

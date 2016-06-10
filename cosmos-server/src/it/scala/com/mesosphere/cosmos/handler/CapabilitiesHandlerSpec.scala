@@ -3,7 +3,7 @@ package com.mesosphere.cosmos.handler
 import cats.data.Xor
 import com.mesosphere.cosmos.circe.Decoders._
 import com.mesosphere.cosmos.http.MediaTypes
-import com.mesosphere.cosmos.model.{CapabilitiesResponse, Capability}
+import com.mesosphere.cosmos.rpc.v1.model.{CapabilitiesResponse, Capability}
 import com.mesosphere.cosmos.test.CosmosIntegrationTestClient._
 import com.twitter.finagle.http.Status
 import io.circe.parse._

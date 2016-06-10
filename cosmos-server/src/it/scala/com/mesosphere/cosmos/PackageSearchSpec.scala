@@ -5,6 +5,7 @@ import com.mesosphere.cosmos.circe.Decoders._
 import com.mesosphere.cosmos.circe.Encoders._
 import com.mesosphere.cosmos.http.MediaTypes
 import com.mesosphere.cosmos.model._
+import com.mesosphere.cosmos.rpc.v1.model.{SearchRequest, SearchResponse, SearchResult}
 import com.mesosphere.cosmos.test.CosmosIntegrationTestClient.CosmosClient
 import com.mesosphere.universe.v2.model.{Images, PackageDetailsVersion, ReleaseVersion}
 import com.twitter.finagle.http._

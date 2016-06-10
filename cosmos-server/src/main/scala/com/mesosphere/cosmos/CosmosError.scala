@@ -3,8 +3,8 @@ package com.mesosphere.cosmos
 import cats.data.{Ior, NonEmptyList}
 import com.mesosphere.cosmos.circe.Encoders._
 import com.mesosphere.cosmos.http.MediaType
+import com.mesosphere.cosmos.rpc.v1.model.PackageRepository
 import com.mesosphere.cosmos.thirdparty.marathon.model.{AppId, MarathonError}
-import com.mesosphere.cosmos.model.PackageRepository
 import com.mesosphere.universe.common.circe.Encoders._
 import com.mesosphere.universe.v2.model.{PackageDetailsVersion, UniverseVersion}
 import com.netaporter.uri.Uri

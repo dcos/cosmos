@@ -1,4 +1,4 @@
-package com.mesosphere.cosmos.model
+package com.mesosphere.cosmos.rpc.v1.model
 
 import com.mesosphere.universe.v2.model.{Images, PackageDetailsVersion, ReleaseVersion}
 
@@ -8,7 +8,7 @@ case class SearchResult(
   versions: Map[PackageDetailsVersion, ReleaseVersion],
   description: String,
   framework: Boolean = false,
-  tags: List[String],    //TODO: pattern: "^[^\\s]+$",
+  tags: List[String],
   selected: Option[Boolean] = None,
   images: Option[Images] = None
 )

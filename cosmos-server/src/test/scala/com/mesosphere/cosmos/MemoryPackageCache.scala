@@ -1,7 +1,7 @@
 package com.mesosphere.cosmos
 
-import com.mesosphere.cosmos.model.{PackageRepository, SearchResult}
 import com.mesosphere.cosmos.repository.CosmosRepository
+import com.mesosphere.cosmos.rpc.v1.model.{PackageRepository, SearchResult}
 import com.mesosphere.universe.v2.model.{PackageDetailsVersion, PackageFiles, ReleaseVersion, UniverseIndexEntry}
 import com.netaporter.uri.dsl.stringToUri
 import com.twitter.util.Future

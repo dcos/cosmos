@@ -6,6 +6,7 @@ import com.mesosphere.cosmos.circe.Decoders._
 import com.mesosphere.cosmos.circe.Encoders._
 import com.mesosphere.cosmos.http.MediaTypes
 import com.mesosphere.cosmos.model._
+import com.mesosphere.cosmos.rpc.v1.model.{DescribeRequest, ListVersionsRequest}
 import com.mesosphere.cosmos.thirdparty.marathon.model.{AppId, MarathonApp, MarathonAppContainer, MarathonAppContainerDocker}
 import com.mesosphere.cosmos.test.CosmosIntegrationTestClient
 import com.mesosphere.universe.v2.circe.Decoders._

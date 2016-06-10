@@ -2,7 +2,7 @@ package com.mesosphere.cosmos.circe
 
 import cats.data.Xor
 import com.mesosphere.cosmos._
-import com.mesosphere.cosmos.model.PackageRepository
+import com.mesosphere.cosmos.rpc.v1.model.PackageRepository
 import com.netaporter.uri.Uri
 import io.circe.syntax._
 import io.circe.{JsonObject, ParsingFailure}
