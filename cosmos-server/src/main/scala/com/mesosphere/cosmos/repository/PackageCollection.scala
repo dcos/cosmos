@@ -1,6 +1,6 @@
 package com.mesosphere.cosmos.repository
 
-import com.mesosphere.cosmos.model.SearchResult
+import com.mesosphere.cosmos.rpc.v1.model.SearchResult
 import com.mesosphere.universe.v2.model.{PackageDetailsVersion, PackageFiles, UniverseIndexEntry}
 import com.twitter.util.Future
 

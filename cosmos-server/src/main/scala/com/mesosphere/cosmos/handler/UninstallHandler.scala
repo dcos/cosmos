@@ -3,8 +3,8 @@ package com.mesosphere.cosmos.handler
 import com.mesosphere.cosmos._
 import com.mesosphere.cosmos.http.RequestSession
 import com.mesosphere.cosmos.thirdparty.marathon.model.{AppId, MarathonApp}
-import com.mesosphere.cosmos.model.{UninstallRequest, UninstallResponse, UninstallResult}
 import com.mesosphere.cosmos.repository.PackageCollection
+import com.mesosphere.cosmos.rpc.v1.model.{UninstallRequest, UninstallResponse, UninstallResult}
 import com.mesosphere.universe.v2.model.PackageDetailsVersion
 import com.twitter.finagle.http.Status
 import com.twitter.util.Future

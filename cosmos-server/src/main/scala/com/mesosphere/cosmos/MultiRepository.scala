@@ -1,14 +1,12 @@
 package com.mesosphere.cosmos
 
 import java.nio.file.Path
+
+import com.mesosphere.cosmos.repository.{CosmosRepository, PackageCollection, PackageSourcesStorage, UniverseClient}
+import com.mesosphere.cosmos.rpc.v1.model.SearchResult
+import com.mesosphere.universe.v2.model.{PackageDetailsVersion, PackageFiles, UniverseIndexEntry}
 import com.netaporter.uri.Uri
 import com.twitter.util.Future
-import com.mesosphere.cosmos.model.SearchResult
-import com.mesosphere.cosmos.repository.PackageCollection
-import com.mesosphere.cosmos.repository.PackageSourcesStorage
-import com.mesosphere.cosmos.repository.CosmosRepository
-import com.mesosphere.cosmos.repository.UniverseClient
-import com.mesosphere.universe.v2.model.{PackageDetailsVersion, PackageFiles, UniverseIndexEntry}
 
 final class MultiRepository (
   packageRepositoryStorage: PackageSourcesStorage,

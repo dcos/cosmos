@@ -4,10 +4,9 @@ import cats.data.Xor
 import com.mesosphere.cosmos.circe.Decoders._
 import com.mesosphere.cosmos.circe.Encoders._
 import com.mesosphere.cosmos.http.MediaTypes
-import com.mesosphere.cosmos.model._
 import com.mesosphere.cosmos.repository.{DefaultRepositories, PackageRepositorySpec}
+import com.mesosphere.cosmos.rpc.v1.model._
 import com.mesosphere.cosmos.test.CosmosIntegrationTestClient.CosmosClient
-import com.netaporter.uri.Uri
 import com.netaporter.uri.dsl._
 import com.twitter.finagle.http._
 import com.twitter.io.Buf

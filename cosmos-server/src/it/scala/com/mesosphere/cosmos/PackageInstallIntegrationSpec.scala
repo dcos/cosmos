@@ -1,16 +1,17 @@
 package com.mesosphere.cosmos
 
 import java.util.{Base64, UUID}
+
 import cats.data.Xor
 import cats.data.Xor.Right
 import com.mesosphere.cosmos.circe.Decoders._
 import com.mesosphere.cosmos.circe.Encoders._
 import com.mesosphere.cosmos.http.{MediaTypes, RequestSession}
-import com.mesosphere.cosmos.model._
-import com.mesosphere.cosmos.thirdparty.marathon.model._
-import com.mesosphere.cosmos.thirdparty.marathon.circe.Encoders._
 import com.mesosphere.cosmos.repository.DefaultRepositories
+import com.mesosphere.cosmos.rpc.v1.model.{InstallRequest, InstallResponse}
 import com.mesosphere.cosmos.test.CosmosIntegrationTestClient
+import com.mesosphere.cosmos.thirdparty.marathon.circe.Encoders._
+import com.mesosphere.cosmos.thirdparty.marathon.model._
 import com.mesosphere.universe.v2.model.{PackageDetails, PackageDetailsVersion, PackageFiles, PackagingVersion}
 import com.netaporter.uri.Uri
 import com.twitter.finagle.http._
@@ -24,8 +25,8 @@ import org.scalatest.{BeforeAndAfterAll, FreeSpec, Matchers}
 
 final class PackageInstallIntegrationSpec extends FreeSpec with BeforeAndAfterAll {
 
-  import PackageInstallIntegrationSpec._
   import CosmosIntegrationTestClient._
+  import PackageInstallIntegrationSpec._
 
   "The package install endpoint" - {
 

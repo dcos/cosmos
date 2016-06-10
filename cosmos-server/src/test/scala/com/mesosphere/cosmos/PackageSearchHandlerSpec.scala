@@ -1,8 +1,8 @@
 package com.mesosphere.cosmos
 
 import com.mesosphere.cosmos.handler.PackageSearchHandler
-import com.mesosphere.cosmos.model.{SearchRequest, SearchResponse, SearchResult}
 import com.mesosphere.cosmos.repository.PackageCollection
+import com.mesosphere.cosmos.rpc.v1.model.{SearchRequest, SearchResponse, SearchResult}
 import com.mesosphere.universe.v2.model.{PackageDetailsVersion, ReleaseVersion}
 import com.twitter.util.{Await, Future}
 import org.mockito.Mockito._

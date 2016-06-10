@@ -1,13 +1,13 @@
 package com.mesosphere.cosmos
 
 import java.io.{IOException, InputStream}
-import java.net.{MalformedURLException, URISyntaxException, URL}
+import java.net.{MalformedURLException, URISyntaxException}
 import java.nio.file._
 import java.time.LocalDateTime
 import java.util.Base64
 import java.util.concurrent.atomic.AtomicReference
 import java.util.zip.ZipInputStream
-import scala.util.matching.Regex
+
 import cats.data.Xor.{Left, Right}
 import cats.data._
 import cats.std.list._
@@ -15,18 +15,18 @@ import cats.std.option._
 import cats.syntax.apply._
 import cats.syntax.option._
 import cats.syntax.traverse._
+import com.mesosphere.cosmos.repository.{CosmosRepository, UniverseClient}
+import com.mesosphere.cosmos.rpc.v1.model.{PackageRepository, SearchResult}
+import com.mesosphere.universe.v2.circe.Decoders._
+import com.mesosphere.universe.v2.model._
 import com.netaporter.uri.Uri
 import com.twitter.concurrent.AsyncMutex
 import com.twitter.io.{Charsets, Files => TwitterFiles}
 import com.twitter.util.{Future, Try}
 import io.circe.parse._
 import io.circe.{parse => _, _}
-import com.mesosphere.cosmos.model.{PackageRepository, SearchResult}
-import com.mesosphere.cosmos.repository.CosmosRepository
-import com.mesosphere.cosmos.repository.UniverseClient
-import com.mesosphere.universe.v2.circe.Decoders._
-import com.mesosphere.universe.v2.model._
 
+import scala.util.matching.Regex
 
 /** Stores packages from the Universe GitHub repository in the local filesystem.
   */

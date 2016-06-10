@@ -7,8 +7,8 @@ import cats.data.Xor
 import com.mesosphere.cosmos.{AdminRouter, CirceError}
 import com.mesosphere.cosmos.http.RequestSession
 import com.mesosphere.cosmos.thirdparty.marathon.model.MarathonApp
-import com.mesosphere.cosmos.model.{Installation, InstalledPackageInformation, ListRequest, ListResponse}
 import com.mesosphere.cosmos.repository.CosmosRepository
+import com.mesosphere.cosmos.rpc.v1.model.{Installation, InstalledPackageInformation, ListRequest, ListResponse}
 import com.mesosphere.universe.v2.model.{PackageDetails, ReleaseVersion}
 import com.mesosphere.universe.v2.circe.Decoders._
 import com.netaporter.uri.Uri

@@ -1,7 +1,7 @@
 package com.mesosphere.cosmos.handler
 
 import com.mesosphere.cosmos.http.RequestSession
-import com.mesosphere.cosmos.model.{CapabilitiesResponse, Capability}
+import com.mesosphere.cosmos.rpc.v1.model.{CapabilitiesResponse, Capability}
 import com.twitter.util.Future
 
 private[cosmos] final class CapabilitiesHandler

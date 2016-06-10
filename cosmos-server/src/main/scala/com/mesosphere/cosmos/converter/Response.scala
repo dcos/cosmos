@@ -1,7 +1,7 @@
 package com.mesosphere.cosmos.converter
 
 import com.mesosphere.cosmos.converter.Universe._
-import com.mesosphere.cosmos.model.v1.DescribeResponse
+import com.mesosphere.cosmos.rpc.v1.model.DescribeResponse
 import com.mesosphere.universe.common.ByteBuffers
 import com.mesosphere.universe.v2.model.PackageDetails
 import com.mesosphere.universe.v2.{model => v2}

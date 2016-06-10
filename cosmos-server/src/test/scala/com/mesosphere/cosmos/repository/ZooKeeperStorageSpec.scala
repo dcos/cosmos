@@ -1,7 +1,7 @@
 package com.mesosphere.cosmos.repository
 
 import cats.data.Ior
-import com.mesosphere.cosmos.model.PackageRepository
+import com.mesosphere.cosmos.rpc.v1.model.PackageRepository
 import com.netaporter.uri.dsl._
 import org.scalatest.FreeSpec
 

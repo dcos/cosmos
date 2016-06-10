@@ -4,7 +4,7 @@ import cats.data.Xor
 import com.mesosphere.cosmos.circe.Decoders._
 import com.mesosphere.cosmos.circe.Encoders._
 import com.mesosphere.cosmos.http.MediaTypes
-import com.mesosphere.cosmos.model._
+import com.mesosphere.cosmos.rpc.v1.model._
 import com.mesosphere.cosmos.test.CosmosIntegrationTestClient._
 import com.mesosphere.cosmos.{UnitSpec, _}
 import com.mesosphere.universe.common.circe.Encoders._
