@@ -16,15 +16,17 @@ There is a suite of integration tests that can be ran by running `sbt clean it:t
 
 #### Running the tests
 
-The test runner will automatically start an in process zk cluster, create a temporary directory for repo caches, and
-start the Cosmos server.
+The test runner will automatically start an in process zk cluster, create a temporary directory
+for repo caches, and start the Cosmos server.
 
-The test suite will then be configured to interact with this cluster by setting the following system property:
+The test suite will then be configured to interact with this cluster by setting the following
+system property:
 ```
 -Dcom.mesosphere.cosmos.test.CosmosIntegrationTestClient.CosmosClient.uri
 ```
 
-Any system properties that are passed to sbt will be inherited by the test suite, but not the Cosmos server.
+Any system properties that are passed to sbt will be inherited by the test suite, but not the
+Cosmos server.
 
 ## Running Cosmos
 
@@ -34,9 +36,21 @@ To run the Cosmos process we need to first create a One-JAR:
 sbt one-jar
 ```
 
-The jar will be created in the `cosmos-server/target/scala-2.11/` directory. This can be executed with:
+The jar will be created in the `cosmos-server/target/scala-2.11/` directory. This can be executed
+with:
 
 ```bash
+mkdir /tmp/cosmos
 java -jar cosmos-server/target/scala-2.11/cosmos-server_2.11-<version>-SNAPSHOT-one-jar.jar  \
-     -com.mesosphere.cosmos.dcosUri=<dcos-host-url>
+     -com.mesosphere.cosmos.dcosUri=<dcos-host-url> -com.mesosphere.cosmos.dataDir=/tmp/cosmos
+```
+
+It can also be exectued with ZooKeeper authentication with:
+
+```bash
+mkdir /tmp/cosmos
+export ZOOKEEPER_USER <user>
+export ZOOKEEPER_SECRET <secret>
+java -jar cosmos-server/target/scala-2.11/cosmos-server_2.11-<version>-SNAPSHOT-one-jar.jar  \
+     -com.mesosphere.cosmos.dcosUri=<dcos-host-url> -com.mesosphere.cosmos.dataDir=/tmp/cosmos
 ```

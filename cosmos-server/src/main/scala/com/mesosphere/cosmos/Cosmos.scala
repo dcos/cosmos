@@ -20,8 +20,6 @@ import io.circe.Json
 import io.finch._
 import io.finch.circe._
 import io.github.benwhitehead.finch.FinchServer
-import org.apache.curator.framework.CuratorFrameworkFactory
-import org.apache.curator.retry.ExponentialBackoffRetry
 import shapeless.HNil
 
 private[cosmos] final class Cosmos(
@@ -179,19 +177,14 @@ object Cosmos extends FinchServer {
       logger.info("Using {} for data directory", dd)
 
       val zkUri = zookeeperUri()
-      logger.info("Using {} for the zookeeper connection", zkUri)
+      logger.info("Using {} for the ZooKeeper connection", zkUri)
 
       val marathonPackageRunner = new MarathonPackageRunner(adminRouter)
 
-      val zkRetryPolicy = new ExponentialBackoffRetry(1000, 3)
-      val zkClient = CuratorFrameworkFactory.builder()
-        .namespace(zkUri.path.stripPrefix("/"))
-        .connectString(zkUri.connectString)
-        .retryPolicy(zkRetryPolicy)
-        .build
-
-      // Start the client and close it on exit
-      zkClient.start()
+      val zkClient = zookeeper.Clients.createAndInitialize(
+        zkUri,
+        sys.env.get("ZOOKEEPER_USER").zip(sys.env.get("ZOOKEEPER_SECRET")).headOption
+      )
       onExit {
         zkClient.close()
       }
@@ -310,5 +303,4 @@ object Cosmos extends FinchServer {
 
   implicit val packageUninstallEncoder: DispatchingMediaTypedEncoder[UninstallResponse] =
     DispatchingMediaTypedEncoder(MediaTypes.UninstallResponse)
-
 }
