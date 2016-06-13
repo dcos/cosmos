@@ -2,6 +2,7 @@ package com.mesosphere.cosmos.repository
 
 import com.mesosphere.cosmos.rpc
 import com.mesosphere.universe
+import com.netaporter.uri.Uri
 import com.twitter.util.Future
 
 /** An aggregation of packages, possibly from multiple repositories.
@@ -30,6 +31,6 @@ trait V3PackageCollection {
   def getPackageByPackageVersion(
     packageName: String,
     packageVersion: Option[universe.v3.model.PackageDefinition.Version]
-  ): Future[universe.v3.model.V3Package]
+  ): Future[(universe.v3.model.V3Package, Uri)]
 
 }
