@@ -19,8 +19,8 @@ object MediaTypedEncoders {
   implicit val packageDescribeV1Encoder: DispatchingMediaTypedEncoder[DescribeResponse] =
     DispatchingMediaTypedEncoder(MediaTypes.V1DescribeResponse)
 
-  implicit val packageInstallEncoder: DispatchingMediaTypedEncoder[InstallResponse] =
-    DispatchingMediaTypedEncoder(MediaTypes.InstallResponse)
+  implicit val packageInstallV1Encoder: DispatchingMediaTypedEncoder[InstallResponse] =
+    DispatchingMediaTypedEncoder(MediaTypes.V1InstallResponse)
 
   implicit val packageRenderEncoder: DispatchingMediaTypedEncoder[RenderResponse] =
     DispatchingMediaTypedEncoder(MediaTypes.RenderResponse)

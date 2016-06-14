@@ -38,10 +38,12 @@ private[cosmos] final class V3PackageDescribeHandler(
   override def apply(request: rpc.v1.model.DescribeRequest)(implicit
     session: RequestSession
   ): Future[universe.v3.model.V3Package] = {
-    packageCollection.getPackageByPackageVersion(
+    val packageInfo = packageCollection.getPackageByPackageVersion(
       request.packageName,
       request.packageVersion.as[Option[universe.v3.model.PackageDefinition.Version]]
     )
+
+    packageInfo.map { case (v3Package, _) => v3Package }
   }
 
 }

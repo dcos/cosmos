@@ -1,18 +1,19 @@
 package com.mesosphere.cosmos.handler
 
 import java.io.{StringReader, StringWriter}
-import java.util.Base64
 
 import cats.data.Xor
 import com.github.mustachejava.DefaultMustacheFactory
+import com.mesosphere.cosmos._
+import com.mesosphere.cosmos.converter.Universe._
 import com.mesosphere.cosmos.http.RequestSession
 import com.mesosphere.cosmos.jsonschema.JsonSchemaValidation
-import com.mesosphere.cosmos.thirdparty.marathon.model.{AppId, MarathonApp}
-import com.mesosphere.cosmos.repository.PackageCollection
-import com.mesosphere.cosmos.rpc.v1.model.{InstallRequest, InstallResponse}
-import com.mesosphere.cosmos.{CirceError, JsonSchemaMismatch, PackageFileNotJson, PackageRunner}
-import com.mesosphere.universe.v2.circe.Encoders._
-import com.mesosphere.universe.v2.model.{PackageFiles, Resource}
+import com.mesosphere.cosmos.repository.{PackageCollection, V3PackageCollection}
+import com.mesosphere.cosmos.thirdparty.marathon.model.AppId
+import com.mesosphere.universe
+import com.mesosphere.universe.common.ByteBuffers
+import com.netaporter.uri.Uri
+import com.twitter.bijection.Conversion.asMethod
 import com.twitter.io.Charsets
 import com.twitter.util.Future
 import io.circe.parse.parse
@@ -24,13 +25,13 @@ import scala.collection.JavaConverters._
 private[cosmos] final class PackageInstallHandler(
   packageCache: PackageCollection,
   packageRunner: PackageRunner
-) extends EndpointHandler[InstallRequest, InstallResponse] {
+) extends EndpointHandler[rpc.v1.model.InstallRequest, rpc.v1.model.InstallResponse] {
 
   import PackageInstallHandler._
 
-  override def apply(request: InstallRequest)(implicit
+  override def apply(request: rpc.v1.model.InstallRequest)(implicit
     session: RequestSession
-  ): Future[InstallResponse] = {
+  ): Future[rpc.v1.model.InstallResponse] = {
     packageCache
       .getPackageByPackageVersion(request.packageName, request.packageVersion)
       .flatMap { packageFiles =>
@@ -41,47 +42,150 @@ private[cosmos] final class PackageInstallHandler(
             val packageName = packageFiles.packageJson.name
             val packageVersion = packageFiles.packageJson.version
             val appId = runnerResponse.id
-            InstallResponse(packageName, packageVersion, appId)
+            rpc.v1.model.InstallResponse(packageName, packageVersion, appId)
           }
       }
   }
 
 }
 
-private[cosmos] object PackageInstallHandler {
-
-  private[this] val MustacheFactory = new DefaultMustacheFactory()
+private[cosmos] object PackageInstallHandler extends PackageInstallCommonMethods {
 
   private[cosmos] def preparePackageConfig(
     appId: Option[AppId],
     options: Option[JsonObject],
-    packageFiles: PackageFiles
+    packageFiles: universe.v2.model.PackageFiles
   ): Json = {
-    val mergedOptions = mergeOptions(packageFiles, options)
-    val marathonJson = renderMustacheTemplate(packageFiles, mergedOptions)
-    val marathonJsonWithLabels = addLabels(marathonJson, packageFiles, mergedOptions)
+    val packageConfig = packageFiles.configJson
+    val assetsJson = packageFiles.resourceJson
+      .flatMap(_.assets)
+      .map(_.asJson(universe.v2.circe.Encoders.encodeAssets))
+    val mergedOptions = mergeOptions(packageConfig, assetsJson, options)
 
-    import com.mesosphere.cosmos.thirdparty.marathon.circe.Encoders.encodeAppId
-    appId match {
-      case Some(id) => marathonJsonWithLabels.mapObject(_ + ("id", id.asJson))
-      case _ => marathonJsonWithLabels
+    val marathonJson = renderMustacheTemplate(packageFiles.marathonJsonMustache, mergedOptions)
+
+    val marathonLabels = new MarathonLabels {
+      override def commandJson: Option[Json] = packageFiles.commandJson
+        .map(_.asJson(universe.v2.circe.Encoders.encodeCommandDefinition))
+      override def packageMetadataJson: Json = getPackageMetadataJson(packageFiles)
+      override def sourceUri: Uri = packageFiles.sourceUri
+      override def packagingVersion: String = packageFiles.packageJson.packagingVersion.toString
+      override def packageName: String = packageFiles.packageJson.name
+      override def packageReleaseVersion: String = packageFiles.revision
+      override def packageVersion: String = packageFiles.packageJson.version.toString
+      override def isFramework: Option[Boolean] = packageFiles.packageJson.framework
+    }
+    val marathonJsonWithLabels = addLabels(marathonJson, marathonLabels, mergedOptions)
+
+    addAppId(marathonJsonWithLabels, appId)
+  }
+
+  private[this] def getPackageMetadataJson(packageFiles: universe.v2.model.PackageFiles): Json = {
+    val packageJson =
+      packageFiles.packageJson.asJson(universe.v2.circe.Encoders.encodePackageDefinition)
+
+    // add images to package.json metadata for backwards compatability in the UI
+    val imagesJson = packageFiles.resourceJson
+      .flatMap(_.images)
+      .map(_.asJson(universe.v2.circe.Encoders.encodeImages))
+
+    imagesJson match {
+      case Some(images) => packageJson.mapObject(_ + ("images", images))
+      case None => packageJson
     }
   }
 
-  private[this] def validConfig(options: JsonObject, config: JsonObject): JsonObject = {
-    val validationErrors = JsonSchemaValidation.matchesSchema(options, config)
-    if (validationErrors.nonEmpty) {
-      throw JsonSchemaMismatch(validationErrors)
-    }
-    options
+}
+
+// TODO (version): Rename to PackageInstallHandler
+private[cosmos] final class V3PackageInstallHandler(
+  packageCollection: V3PackageCollection,
+  packageRunner: PackageRunner
+) extends EndpointHandler[rpc.v1.model.InstallRequest, rpc.v2.model.InstallResponse] {
+
+  import V3PackageInstallHandler._
+
+  override def apply(request: rpc.v1.model.InstallRequest)(implicit
+    session: RequestSession
+  ): Future[rpc.v2.model.InstallResponse] = {
+    packageCollection
+      .getPackageByPackageVersion(
+        request.packageName,
+        request.packageVersion.as[Option[universe.v3.model.PackageDefinition.Version]]
+      )
+      .flatMap { case (v3Package, sourceUri) =>
+        val packageConfig =
+          preparePackageConfig(request.appId, request.options, v3Package, sourceUri)
+
+        packageRunner.launch(packageConfig)
+          .map { runnerResponse =>
+            rpc.v2.model.InstallResponse(
+              packageName = v3Package.name,
+              packageVersion = v3Package.version,
+              appId = runnerResponse.id,
+              postInstallNotes = v3Package.postInstallNotes,
+              cli = v3Package.resource.flatMap(_.cli)
+            )
+          }
+      }
   }
 
-  private[this] def mergeOptions(
-    packageFiles: PackageFiles,
+}
+
+// TODO (version): Rename to PackageInstallHandler
+object V3PackageInstallHandler extends PackageInstallCommonMethods {
+
+  private def preparePackageConfig(
+    appId: Option[AppId],
+    options: Option[JsonObject],
+    v3Package: universe.v3.model.V3Package,
+    sourceRepoUri: Uri
+  ): Json = {
+    val packageConfig = v3Package.config
+    val assetsJson = v3Package.resource
+      .flatMap(_.assets)
+      .map(_.asJson(universe.v3.circe.Encoders.encodeAssets))
+    val mergedOptions = mergeOptions(packageConfig, assetsJson, options)
+
+    val marathonTemplate = v3Package.marathon match {
+      case Some(marathon) =>
+        val bytes = ByteBuffers.getBytes(marathon.v2AppMustacheTemplate)
+        new String(bytes, Charsets.Utf8)
+      case _ => ""
+    }
+    val marathonJson = renderMustacheTemplate(marathonTemplate, mergedOptions)
+
+    val marathonLabels = new MarathonLabels {
+      override def commandJson: Option[Json] =
+        v3Package.command.map(_.asJson(universe.v3.circe.Encoders.encodeCommand))
+      override def packageMetadataJson: Json =
+        v3Package.asJson(universe.v3.circe.Encoders.encodeV3Package)
+      override def sourceUri: Uri = sourceRepoUri
+      override def packagingVersion: String = v3Package.packagingVersion.v
+      override def packageName: String = v3Package.name
+      override def packageReleaseVersion: String = v3Package.releaseVersion.value.toString
+      override def packageVersion: String = v3Package.version.toString
+      override def isFramework: Option[Boolean] = v3Package.framework
+    }
+    val marathonJsonWithLabels = addLabels(marathonJson, marathonLabels, mergedOptions)
+
+    addAppId(marathonJsonWithLabels, appId)
+  }
+
+}
+
+// TODO (version): Merge into PackageInstallHandler companion object
+trait PackageInstallCommonMethods {
+
+  protected[this] final val MustacheFactory = new DefaultMustacheFactory()
+
+  protected[this] final def mergeOptions(
+    packageConfig: Option[JsonObject],
+    assetsJson: Option[Json],
     options: Option[JsonObject]
   ): Json = {
-    val defaults = extractDefaultsFromConfig(packageFiles.configJson)
-    val merged: JsonObject = (packageFiles.configJson, options) match {
+    val defaults = extractDefaultsFromConfig(packageConfig)
+    val merged: JsonObject = (packageConfig, options) match {
       case (None, None) => JsonObject.empty
       case (Some(config), None) => validConfig(defaults, config)
       case (None, Some(_)) =>
@@ -92,16 +196,15 @@ private[cosmos] object PackageInstallHandler {
         validConfig(m, config)
     }
 
-    val resource = extractAssetsAsJson(packageFiles.resourceJson)
-    val complete = merged + ("resource", Json.fromJsonObject(resource))
+    val complete = merged + ("resource", Json.obj("assets" -> assetsJson.getOrElse(Json.obj())))
     Json.fromJsonObject(complete)
   }
 
-  private[this] def renderMustacheTemplate(
-    packageFiles: PackageFiles,
+  protected[this] final def renderMustacheTemplate(
+    template: String,
     mergedOptions: Json
   ): Json = {
-    val strReader = new StringReader(packageFiles.marathonJsonMustache)
+    val strReader = new StringReader(template)
     val mustache = MustacheFactory.compile(strReader, "marathon.json.mustache")
     val params = jsonToJava(mergedOptions)
 
@@ -113,13 +216,33 @@ private[cosmos] object PackageInstallHandler {
     }
   }
 
-  private[this] def extractAssetsAsJson(resource: Option[Resource]): JsonObject = {
-    val assets = resource.map(_.assets) match {
-      case Some(a) => a.asJson
-      case _ => Json.obj()
+  protected[this] final def addLabels(
+    marathonJson: Json,
+    marathonLabels: MarathonLabels,
+    mergedOptions: Json
+  ): Json = {
+    val hasLabels = marathonJson.cursor.fieldSet.exists(_.contains("labels"))
+    val existingLabels = if (hasLabels) {
+      marathonJson.cursor.get[Map[String, String]]("labels") match {
+        case Xor.Left(df) => throw CirceError(df)
+        case Xor.Right(labels) => labels
+      }
+    } else {
+      Map.empty[String, String]
     }
 
-    JsonObject.singleton("assets", assets)
+    val packageLabels =
+      marathonLabels.requiredLabels ++ existingLabels ++ marathonLabels.nonOverridableLabels
+
+    marathonJson.mapObject(_ + ("labels", packageLabels.asJson))
+  }
+
+  protected[this] final def addAppId(marathonJson: Json, appId: Option[AppId]): Json = {
+    import com.mesosphere.cosmos.thirdparty.marathon.circe.Encoders.encodeAppId
+    appId match {
+      case Some(id) => marathonJson.mapObject(_ + ("id", id.asJson))
+      case _ => marathonJson
+    }
   }
 
   private[this] def extractDefaultsFromConfig(configJson: Option[JsonObject]): JsonObject = {
@@ -154,88 +277,12 @@ private[cosmos] object PackageInstallHandler {
     Json.fromJsonObject(JsonObject.fromMap(defaults))
   }
 
-  private[this] def jsonToJava(json: Json): Any = {
-    json.fold(
-      jsonNull = null,
-      jsonBoolean = identity,
-      jsonNumber = n => n.toInt.getOrElse(n.toDouble),
-      jsonString = identity,
-      jsonArray = _.map(jsonToJava).asJava,
-      jsonObject = _.toMap.mapValues(jsonToJava).asJava
-    )
-  }
-
-  private[this] def addLabels(
-    marathonJson: Json,
-    packageFiles: PackageFiles,
-    mergedOptions: Json
-  ): Json = {
-
-    val packageMetadataJson = getPackageMetadataJson(packageFiles)
-
-    val packageMetadata = encodeForLabel(packageMetadataJson)
-
-    val commandMetadata = packageFiles.commandJson.map { commandJson =>
-      val bytes = commandJson.asJson.noSpaces.getBytes(Charsets.Utf8)
-      Base64.getEncoder.encodeToString(bytes)
+  private[this] def validConfig(options: JsonObject, config: JsonObject): JsonObject = {
+    val validationErrors = JsonSchemaValidation.matchesSchema(options, config)
+    if (validationErrors.nonEmpty) {
+      throw JsonSchemaMismatch(validationErrors)
     }
-
-    val isFramework = packageFiles.packageJson.framework.getOrElse(true)
-
-    val requiredLabels: Map[String, String] = Map(
-      (MarathonApp.metadataLabel, packageMetadata),
-      (MarathonApp.registryVersionLabel, packageFiles.packageJson.packagingVersion.toString),
-      (MarathonApp.nameLabel, packageFiles.packageJson.name),
-      (MarathonApp.versionLabel, packageFiles.packageJson.version.toString),
-      (MarathonApp.repositoryLabel, packageFiles.sourceUri.toString),
-      (MarathonApp.releaseLabel, packageFiles.revision),
-      (MarathonApp.isFrameworkLabel, isFramework.toString)
-    )
-
-    val nonOverridableLabels: Map[String, String] = Seq(
-      commandMetadata.map(MarathonApp.commandLabel -> _)
-    ).flatten.toMap
-
-    val hasLabels = marathonJson.cursor.fieldSet.exists(_.contains("labels"))
-    val existingLabels = if (hasLabels) {
-        marathonJson.cursor.get[Map[String, String]]("labels") match {
-          case Xor.Left(df) => throw CirceError(df)
-          case Xor.Right(labels) => labels
-        }
-    } else {
-      Map.empty[String, String]
-    }
-
-    val packageLabels = requiredLabels ++ existingLabels ++ nonOverridableLabels
-
-    marathonJson.mapObject(_ + ("labels", packageLabels.asJson))
-  }
-
-  private[this] def getPackageMetadataJson(packageFiles: PackageFiles): Json = {
-    val packageJson = packageFiles.packageJson.asJson
-
-    // add images to package.json metadata for backwards compatability in the UI
-    val imagesJson = packageFiles.resourceJson.map(_.images.asJson)
-    val packageWithImages = imagesJson match {
-      case Some(images) =>
-        packageJson.mapObject(_ + ("images", images))
-      case None =>
-        packageJson
-    }
-
-    removeNulls(packageWithImages)
-  }
-
-  /** Circe populates omitted fields with null values; remove them (see GitHub issue #56) */
-  private[this] def removeNulls(json: Json): Json = {
-    json.mapObject { obj =>
-      JsonObject.fromMap(obj.toMap.filterNot { case (k, v) => v.isNull })
-    }
-  }
-
-  private[this] def encodeForLabel(json: Json): String = {
-    val bytes = json.noSpaces.getBytes(Charsets.Utf8)
-    Base64.getEncoder.encodeToString(bytes)
+    options
   }
 
   private[cosmos] def merge(target: JsonObject, fragment: JsonObject): JsonObject = {
@@ -251,6 +298,17 @@ private[cosmos] object PackageInstallHandler {
 
       updatedTarget + (fragmentKey, mergedValue)
     }
+  }
+
+  private[this] def jsonToJava(json: Json): Any = {
+    json.fold(
+      jsonNull = null,
+      jsonBoolean = identity,
+      jsonNumber = n => n.toInt.getOrElse(n.toDouble),
+      jsonString = identity,
+      jsonArray = _.map(jsonToJava).asJava,
+      jsonObject = _.toMap.mapValues(jsonToJava).asJava
+    )
   }
 
 }

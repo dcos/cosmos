@@ -64,7 +64,7 @@ final class PackageListIntegrationSpec
       "package/install",
       InstallRequest(packageName, appId = Some(AppId(UUID.randomUUID().toString))),
       MediaTypes.InstallRequest,
-      MediaTypes.InstallResponse
+      MediaTypes.V1InstallResponse
     ) withClue "when installing package"
 
     try {
