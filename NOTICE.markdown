@@ -10,3 +10,4 @@
 * finch-server: APLv2.0
 * curator: APLv2.0
 * twitter-util: APLv2.0
+* twitter-bijection: APLv2.0
