@@ -7,7 +7,7 @@ import io.circe.{Decoder, HCursor}
 
 object Decoders {
   implicit val decodeLicense: Decoder[License] = deriveFor[License].decoder
-  implicit val decodePackageDefinition: Decoder[PackageDetails] = deriveFor[PackageDetails].decoder
+  implicit val decodePackageDetails: Decoder[PackageDetails] = deriveFor[PackageDetails].decoder
   implicit val decodeContainer: Decoder[Container] = deriveFor[Container].decoder
   implicit val decodeAssets: Decoder[Assets] = deriveFor[Assets].decoder
   implicit val decodeImages: Decoder[Images] = Decoder.instance { (cursor: HCursor) =>
