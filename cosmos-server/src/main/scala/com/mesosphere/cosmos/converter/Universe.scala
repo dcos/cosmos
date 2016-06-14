@@ -373,6 +373,7 @@ object Universe {
 
     val rev = (x: universe.v2.model.ReleaseVersion) =>
       Try {
+        // TODO(version): This throws a generic parsing NumberFormatException
         val parsedVersion = x.toString.toInt
         universe.v3.model.PackageDefinition.ReleaseVersion(parsedVersion)
       }

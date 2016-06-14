@@ -25,7 +25,7 @@ trait V3CosmosRepository extends V3PackageCollection {
 
   def getPackageByReleaseVersion(
       packageName: String,
-      releaseVersion: universe.v2.model.ReleaseVersion
+      releaseVersion: universe.v3.model.PackageDefinition.ReleaseVersion
   ): Future[internal.model.PackageDefinition]
 }
 
@@ -44,7 +44,7 @@ final class DefaultCosmosRepository(
 
   override def getPackageByReleaseVersion(
       packageName: String,
-      releaseVersion: universe.v2.model.ReleaseVersion
+      releaseVersion: universe.v3.model.PackageDefinition.ReleaseVersion
   ): Future[internal.model.PackageDefinition] = ???
 
   override def getPackageByPackageVersion(
