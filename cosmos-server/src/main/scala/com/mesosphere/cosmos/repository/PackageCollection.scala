@@ -33,4 +33,5 @@ trait V3PackageCollection {
     packageVersion: Option[universe.v3.model.PackageDefinition.Version]
   ): Future[(universe.v3.model.V3Package, Uri)]
 
+  def search(query: Option[String]): Future[List[rpc.v1.model.SearchResult]]
 }
