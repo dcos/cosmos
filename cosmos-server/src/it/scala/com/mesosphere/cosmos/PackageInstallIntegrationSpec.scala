@@ -212,7 +212,7 @@ final class PackageInstallIntegrationSpec extends FreeSpec with BeforeAndAfterAl
   ): Response = {
     val request = CosmosClient.requestBuilder("package/install")
       .addHeader("Content-Type", MediaTypes.InstallRequest.show)
-      .addHeader("Accept", MediaTypes.InstallResponse.show)
+      .addHeader("Accept", MediaTypes.V1InstallResponse.show)
       .buildPost(Buf.Utf8(installRequest.asJson.noSpaces))
     CosmosClient(request)
   }

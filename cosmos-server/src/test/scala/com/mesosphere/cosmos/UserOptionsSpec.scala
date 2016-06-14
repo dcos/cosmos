@@ -73,7 +73,7 @@ final class UserOptionsSpec extends UnitSpec {
         val request = RequestBuilder()
           .url("http://dummy.cosmos.host/package/install")
           .addHeader("Content-Type", MediaTypes.InstallRequest.show)
-          .addHeader("Accept", MediaTypes.InstallResponse.show)
+          .addHeader("Accept", MediaTypes.V1InstallResponse.show)
           .buildPost(Buf.Utf8(reqBody.asJson.noSpaces))
 
         val Some((_, eval)) = cosmos.packageInstall(Input(request))

@@ -16,7 +16,7 @@ class ErrorResponseSpec extends FreeSpec {
     val requestString = Map("invalid" -> true).asJson.noSpaces
     val post = CosmosClient.requestBuilder("package/install")
       .addHeader("Content-Type", MediaTypes.InstallRequest.show)
-      .addHeader("Accept", MediaTypes.InstallResponse.show)
+      .addHeader("Accept", MediaTypes.V1InstallResponse.show)
       .buildPost(Buf.Utf8(requestString))
     val response = CosmosClient(post)
 
