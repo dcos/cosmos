@@ -118,7 +118,6 @@ final class UniversePackageCache private (
 
   private[this] def synchronizedUpdate(): Future[Path] = {
     updateMutex.acquireAndRun {
-      // TODO: How often we check should be configurable
       if (lastModified.get().plusMinutes(1).isBefore(LocalDateTime.now())) {
         updateUniverseCache(repository, universeDir, universeClient)
           .onSuccess { _ => lastModified.set(LocalDateTime.now()) }

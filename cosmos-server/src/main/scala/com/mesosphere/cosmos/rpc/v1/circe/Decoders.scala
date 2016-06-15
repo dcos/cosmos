@@ -13,7 +13,7 @@ object Decoders {
 
   implicit val decodeSearchResult: Decoder[SearchResult] = Decoder.instance { cursor =>
     for {
-      indexEntry <- universe.v2.circe.Decoders.decodePackageIndex(cursor)
+      indexEntry <- universe.v2.circe.Decoders.decodeV2PackageIndex(cursor)
       images <- cursor.downField("images").as[Option[Images]]
     } yield {
       SearchResult(
