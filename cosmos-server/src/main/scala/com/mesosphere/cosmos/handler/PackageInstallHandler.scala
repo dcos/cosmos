@@ -21,6 +21,7 @@ import io.circe.syntax._
 import io.circe.{Json, JsonObject}
 
 import scala.collection.JavaConverters._
+import scala.util.Try
 
 private[cosmos] final class PackageInstallHandler(
   packageCache: PackageCollection,
@@ -113,18 +114,18 @@ private[cosmos] final class V3PackageInstallHandler(
         request.packageName,
         request.packageVersion.as[Option[universe.v3.model.PackageDefinition.Version]]
       )
-      .flatMap { case (v3Package, sourceUri) =>
+      .flatMap { case (pkg, sourceUri) =>
         val packageConfig =
-          preparePackageConfig(request.appId, request.options, v3Package, sourceUri)
+          preparePackageConfig(request.appId, request.options, pkg, sourceUri)
 
         packageRunner.launch(packageConfig)
           .map { runnerResponse =>
             rpc.v2.model.InstallResponse(
-              packageName = v3Package.name,
-              packageVersion = v3Package.version,
+              packageName = pkg.name,
+              packageVersion = pkg.version,
               appId = runnerResponse.id,
-              postInstallNotes = v3Package.postInstallNotes,
-              cli = v3Package.resource.flatMap(_.cli)
+              postInstallNotes = pkg.postInstallNotes,
+              cli = pkg.resource.flatMap(_.cli)
             )
           }
       }
@@ -138,16 +139,16 @@ object V3PackageInstallHandler extends PackageInstallCommonMethods {
   private[cosmos] def preparePackageConfig(
     appId: Option[AppId],
     options: Option[JsonObject],
-    v3Package: universe.v3.model.V3Package,
+    pkg: internal.model.PackageDefinition,
     sourceRepoUri: Uri
   ): Json = {
-    val packageConfig = v3Package.config
-    val assetsJson = v3Package.resource
+    val packageConfig = pkg.config
+    val assetsJson = pkg.resource
       .flatMap(_.assets)
       .map(_.asJson(universe.v3.circe.Encoders.encodeAssets))
     val mergedOptions = mergeOptions(packageConfig, assetsJson, options)
 
-    val marathonTemplate = v3Package.marathon match {
+    val marathonTemplate = pkg.marathon match {
       case Some(marathon) =>
         val bytes = ByteBuffers.getBytes(marathon.v2AppMustacheTemplate)
         new String(bytes, Charsets.Utf8)
@@ -157,15 +158,25 @@ object V3PackageInstallHandler extends PackageInstallCommonMethods {
 
     val marathonLabels = new MarathonLabels {
       override def commandJson: Option[Json] =
-        v3Package.command.map(_.asJson(universe.v3.circe.Encoders.encodeCommand))
-      override def packageMetadataJson: Json =
-        v3Package.asJson(universe.v3.circe.Encoders.encodeV3Package)
+        pkg.command.map(_.asJson(universe.v3.circe.Encoders.encodeCommand))
+
+      // TODO(version): This can throw
+      override def packageMetadataJson: Json = pkg
+        .as[Try[universe.v3.model.V3Package]]
+        .get
+        .asJson(universe.v3.circe.Encoders.encodeV3Package)
+
       override def sourceUri: Uri = sourceRepoUri
-      override def packagingVersion: String = v3Package.packagingVersion.v
-      override def packageName: String = v3Package.name
-      override def packageReleaseVersion: String = v3Package.releaseVersion.value.toString
-      override def packageVersion: String = v3Package.version.toString
-      override def isFramework: Option[Boolean] = v3Package.framework
+
+      override def packagingVersion: String = pkg.packagingVersion match {
+        case universe.v3.model.V2PackagingVersion(v) => v
+        case universe.v3.model.V3PackagingVersion(v) => v
+      }
+
+      override def packageName: String = pkg.name
+      override def packageReleaseVersion: String = pkg.releaseVersion.value.toString
+      override def packageVersion: String = pkg.version.toString
+      override def isFramework: Option[Boolean] = pkg.framework
     }
     val marathonJsonWithLabels = addLabels(marathonJson, marathonLabels, mergedOptions)
 
