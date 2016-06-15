@@ -12,4 +12,11 @@ object Encoders {
     deriveFor[rpc.v2.model.InstallResponse].encoder
   }
 
+  implicit val encodeV2ListResponse: Encoder[rpc.v2.model.ListResponse] = {
+    deriveFor[rpc.v2.model.ListResponse].encoder
+  }
+
+  implicit val encodeV2Installation: Encoder[rpc.v2.model.Installation] = {
+    deriveFor[rpc.v2.model.Installation].encoder
+  }
 }

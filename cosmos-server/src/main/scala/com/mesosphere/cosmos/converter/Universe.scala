@@ -22,6 +22,57 @@ object Universe {
     }
   }
 
+  implicit val v3V2PackageDetailsToPackageDefinition: Bijection[
+      universe.v2.model.PackagingVersion,
+      universe.v3.model.V3PackagingVersion] = {
+
+    Bijection.build { (_: universe.v2.model.PackagingVersion) =>
+      universe.v3.model.V3PackagingVersion.instance
+    } { (x: universe.v3.model.V3PackagingVersion) =>
+      universe.v2.model.PackagingVersion(x.v)
+    }
+  }
+
+  implicit val v3V2PackagingVersionToPackageDefinition: Injection[
+      universe.v3.model.PackageDefinition, universe.v2.model.PackageDetails] = {
+    Injection.build { (value: universe.v3.model.PackageDefinition) =>
+      value match {
+        case v2Package: universe.v3.model.V2Package =>
+          v2Package.as[universe.v2.model.PackageDetails]
+        case v3Package: universe.v3.model.V3Package =>
+          v3Package.as[universe.v2.model.PackageDetails]
+      }
+      } { _ =>
+      Try(throw new IllegalArgumentException("Cannot convert version 3 package definition to version 2"))
+    }
+  }
+
+  implicit val v3V3PackageToV2PackageDetails: Injection[
+      universe.v3.model.V3Package, universe.v2.model.PackageDetails] = {
+    Injection.build { (value: universe.v3.model.V3Package) =>
+      universe.v2.model.PackageDetails(
+          packagingVersion =
+            value.packagingVersion.as[universe.v2.model.PackagingVersion],
+          name = value.name,
+          version = value.version.as[universe.v2.model.PackageDetailsVersion],
+          maintainer = value.maintainer,
+          description = value.description,
+          tags = value.tags.as[List[String]],
+          selected = value.selected,
+          scm = value.scm,
+          website = value.website,
+          framework = value.framework,
+          preInstallNotes = value.preInstallNotes,
+          postInstallNotes = value.postInstallNotes,
+          postUninstallNotes = value.postUninstallNotes,
+          licenses = value.licenses.as[Option[List[universe.v2.model.License]]]
+      )
+    } { _ =>
+      Try(throw new IllegalArgumentException(
+              "Cannot convert version 2 package details to version 3 package"))
+    }
+  }
+
   implicit val v3V2PackageToV2PackageDetails: Injection[
       universe.v3.model.V2Package, universe.v2.model.PackageDetails] = {
     Injection.build { (value: universe.v3.model.V2Package) =>
@@ -226,13 +277,17 @@ object Universe {
     }
   }
 
-  // TODO(version): Make this an Injection
-  def v3V3ResourceToV2Resource(
-      x: universe.v3.model.V3Resource): universe.v2.model.Resource = {
-    universe.v2.model.Resource(
-        assets = x.assets.as[Option[universe.v2.model.Assets]],
-        images = x.images.as[Option[universe.v2.model.Images]]
-    )
+  implicit val v3V3ResourceToV2Resource: Injection[
+      universe.v3.model.V3Resource, universe.v2.model.Resource] = {
+    Injection.build { (value: universe.v3.model.V3Resource) =>
+      universe.v2.model.Resource(
+        value.assets.as[Option[universe.v2.model.Assets]],
+        value.images.as[Option[universe.v2.model.Images]]
+      )
+    } { _ =>
+      Try(throw new IllegalArgumentException(
+              "Cannot convert version 3 resource to v2 resource"))
+    }
   }
 
   implicit val v3V2ResourceToV3V3Resource: Injection[

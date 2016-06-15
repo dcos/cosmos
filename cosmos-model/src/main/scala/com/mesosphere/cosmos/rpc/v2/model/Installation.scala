@@ -5,5 +5,5 @@ import com.mesosphere.universe.v3.model.PackageDefinition
 
 case class Installation(
   appId: AppId,
-  packageDefinition: PackageDefinition
+  packageInformation: PackageDefinition
 )
