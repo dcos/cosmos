@@ -135,7 +135,7 @@ private[cosmos] final class V3PackageInstallHandler(
 // TODO (version): Rename to PackageInstallHandler
 object V3PackageInstallHandler extends PackageInstallCommonMethods {
 
-  private def preparePackageConfig(
+  private[cosmos] def preparePackageConfig(
     appId: Option[AppId],
     options: Option[JsonObject],
     v3Package: universe.v3.model.V3Package,
