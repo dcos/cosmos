@@ -8,6 +8,8 @@ import com.mesosphere.universe
 import com.twitter.bijection.Conversion.asMethod
 import com.twitter.util.Future
 
+import scala.util.Try
+
 private[cosmos] class PackageDescribeHandler(
   packageCache: PackageCollection
 ) extends EndpointHandler[rpc.v1.model.DescribeRequest, rpc.v1.model.DescribeResponse] {
@@ -43,7 +45,8 @@ private[cosmos] final class V3PackageDescribeHandler(
       request.packageVersion.as[Option[universe.v3.model.PackageDefinition.Version]]
     )
 
-    packageInfo.map { case (v3Package, _) => v3Package }
+    // TODO(version): This can throw
+    packageInfo.map { case (pkg, _) => pkg.as[Try[universe.v3.model.V3Package]].get }
   }
 
 }

@@ -2,12 +2,12 @@ package com.mesosphere.cosmos
 
 import java.nio.file.Path
 
-import com.mesosphere.cosmos.repository.{CosmosRepository, PackageCollection, PackageSourcesStorage, UniverseClient}
-import com.mesosphere.cosmos.rpc.v1.model.SearchResult
-import com.mesosphere.universe.v2.model.{PackageDetailsVersion, PackageFiles, UniverseIndexEntry}
+import com.mesosphere.cosmos.repository._
+import com.mesosphere.universe
 import com.netaporter.uri.Uri
 import com.twitter.util.Future
 
+// TODO (version): Update this to match the signature of V3MultiRepository
 final class MultiRepository (
   packageRepositoryStorage: PackageSourcesStorage,
   universeDir: Path,
@@ -17,8 +17,8 @@ final class MultiRepository (
 
   override def getPackageByPackageVersion(
     packageName: String,
-    packageVersion: Option[PackageDetailsVersion]
-  ): Future[PackageFiles] = {
+    packageVersion: Option[universe.v2.model.PackageDetailsVersion]
+  ): Future[universe.v2.model.PackageFiles] = {
     /* Fold over all the results in order and ignore PackageNotFound and VersionNotFound errors.
      * We have found our answer when we find a PackageFile or a generic exception.
      */
@@ -43,7 +43,7 @@ final class MultiRepository (
     }
   }
 
-  override def getPackageIndex(packageName: String): Future[UniverseIndexEntry] = {
+  override def getPackageIndex(packageName: String): Future[universe.v2.model.UniverseIndexEntry] = {
     /* Fold over all the results in order and ignore PackageNotFound errors.
      * We have found our answer when we find a UniverseIndexEntry or a generic exception.
      */
@@ -62,7 +62,7 @@ final class MultiRepository (
     }
   }
 
-  override def search(query: Option[String]): Future[List[SearchResult]] = {
+  override def search(query: Option[String]): Future[List[rpc.v1.model.SearchResult]] = {
     repositories().flatMap { repositories =>
       val searches = repositories.zipWithIndex.map { case (repository, repositoryIndex) =>
         repository.search(query)
@@ -112,4 +112,19 @@ final class MultiRepository (
       result
     }
   }
+}
+
+// TODO (version): Delete this
+final class V3MultiRepository(
+  packageRepositoryStorage: PackageSourcesStorage,
+  universeClient: UniverseClient
+) extends V3PackageCollection {
+
+  override def getPackageByPackageVersion(
+    packageName: String,
+    packageVersion: Option[universe.v3.model.PackageDefinition.Version]
+  ): Future[(internal.model.PackageDefinition, Uri)] = ???
+
+  override def search(query: Option[String]): Future[List[rpc.v1.model.SearchResult]] = ???
+
 }

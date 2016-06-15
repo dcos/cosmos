@@ -1,5 +1,6 @@
 package com.mesosphere.cosmos.repository
 
+import com.mesosphere.cosmos.internal
 import com.mesosphere.cosmos.rpc
 import com.mesosphere.universe
 import com.netaporter.uri.Uri
@@ -31,7 +32,7 @@ trait V3PackageCollection {
   def getPackageByPackageVersion(
     packageName: String,
     packageVersion: Option[universe.v3.model.PackageDefinition.Version]
-  ): Future[(universe.v3.model.V3Package, Uri)]
+  ): Future[(internal.model.PackageDefinition, Uri)]
 
   def search(query: Option[String]): Future[List[rpc.v1.model.SearchResult]]
 }

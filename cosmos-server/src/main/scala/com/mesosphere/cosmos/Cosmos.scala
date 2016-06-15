@@ -8,7 +8,6 @@ import com.mesosphere.cosmos.http.MediaTypes
 import com.mesosphere.cosmos.repository.{PackageSourcesStorage, UniverseClient, ZooKeeperStorage}
 import com.mesosphere.cosmos.rpc.v1.circe.MediaTypedDecoders._
 import com.mesosphere.cosmos.rpc.v1.circe.MediaTypedEncoders._
-import com.mesosphere.cosmos.rpc.v1.model._
 import com.netaporter.uri.Uri
 import com.twitter.finagle.Service
 import com.twitter.finagle.http.{Request, Response, Status}
@@ -21,16 +20,16 @@ import io.github.benwhitehead.finch.FinchServer
 import shapeless.HNil
 
 private[cosmos] final class Cosmos(
-  uninstallHandler: EndpointHandler[UninstallRequest, UninstallResponse],
-  packageInstallHandler: EndpointHandler[InstallRequest, InstallResponse],
-  packageRenderHandler: EndpointHandler[RenderRequest, RenderResponse],
-  packageSearchHandler: EndpointHandler[SearchRequest, SearchResponse],
-  packageDescribeHandler: EndpointHandler[DescribeRequest, DescribeResponse],
-  packageListVersionsHandler: EndpointHandler[ListVersionsRequest, ListVersionsResponse],
-  listHandler: EndpointHandler[ListRequest, ListResponse],
-  listRepositoryHandler: EndpointHandler[PackageRepositoryListRequest, PackageRepositoryListResponse],
-  addRepositoryHandler: EndpointHandler[PackageRepositoryAddRequest, PackageRepositoryAddResponse],
-  deleteRepositoryHandler: EndpointHandler[PackageRepositoryDeleteRequest, PackageRepositoryDeleteResponse],
+  uninstallHandler: EndpointHandler[rpc.v1.model.UninstallRequest, rpc.v1.model.UninstallResponse],
+  packageInstallHandler: EndpointHandler[rpc.v1.model.InstallRequest, rpc.v1.model.InstallResponse],
+  packageRenderHandler: EndpointHandler[rpc.v1.model.RenderRequest, rpc.v1.model.RenderResponse],
+  packageSearchHandler: EndpointHandler[rpc.v1.model.SearchRequest, rpc.v1.model.SearchResponse],
+  packageDescribeHandler: EndpointHandler[rpc.v1.model.DescribeRequest, rpc.v1.model.DescribeResponse],
+  packageListVersionsHandler: EndpointHandler[rpc.v1.model.ListVersionsRequest, rpc.v1.model.ListVersionsResponse],
+  listHandler: EndpointHandler[rpc.v1.model.ListRequest, rpc.v1.model.ListResponse],
+  listRepositoryHandler: EndpointHandler[rpc.v1.model.PackageRepositoryListRequest, rpc.v1.model.PackageRepositoryListResponse],
+  addRepositoryHandler: EndpointHandler[rpc.v1.model.PackageRepositoryAddRequest, rpc.v1.model.PackageRepositoryAddResponse],
+  deleteRepositoryHandler: EndpointHandler[rpc.v1.model.PackageRepositoryDeleteRequest, rpc.v1.model.PackageRepositoryDeleteResponse],
   capabilitiesHandler: CapabilitiesHandler
 )(implicit statsReceiver: StatsReceiver = NullStatsReceiver) {
 
@@ -129,6 +128,21 @@ private[cosmos] final class Cosmos(
 
 }
 
+// TODO (version): Replace Cosmos signature above with this
+private[cosmos] final class V3Cosmos(
+  uninstallHandler: EndpointHandler[rpc.v1.model.UninstallRequest, rpc.v1.model.UninstallResponse],
+  packageInstallHandler: EndpointHandler[rpc.v1.model.InstallRequest, rpc.v2.model.InstallResponse],
+  packageRenderHandler: EndpointHandler[rpc.v1.model.RenderRequest, rpc.v1.model.RenderResponse],
+  packageSearchHandler: EndpointHandler[rpc.v1.model.SearchRequest, rpc.v1.model.SearchResponse],
+  packageDescribeHandler: EndpointHandler[rpc.v1.model.DescribeRequest, rpc.v2.model.DescribeResponse],
+  packageListVersionsHandler: EndpointHandler[rpc.v1.model.ListVersionsRequest, rpc.v1.model.ListVersionsResponse],
+  listHandler: EndpointHandler[rpc.v1.model.ListRequest, rpc.v1.model.ListResponse],
+  listRepositoryHandler: EndpointHandler[rpc.v1.model.PackageRepositoryListRequest, rpc.v1.model.PackageRepositoryListResponse],
+  addRepositoryHandler: EndpointHandler[rpc.v1.model.PackageRepositoryAddRequest, rpc.v1.model.PackageRepositoryAddResponse],
+  deleteRepositoryHandler: EndpointHandler[rpc.v1.model.PackageRepositoryDeleteRequest, rpc.v1.model.PackageRepositoryDeleteResponse],
+  capabilitiesHandler: CapabilitiesHandler
+)(implicit statsReceiver: StatsReceiver = NullStatsReceiver)
+
 object Cosmos extends FinchServer {
   def service = {
     implicit val stats = statsReceiver.scope("cosmos")
@@ -211,6 +225,35 @@ object Cosmos extends FinchServer {
       new PackageRenderHandler(repositories),
       new PackageSearchHandler(repositories),
       new PackageDescribeHandler(repositories),
+      new ListVersionsHandler(repositories),
+      new ListHandler(adminRouter, uri => repositories.getRepository(uri)),
+      new PackageRepositoryListHandler(sourcesStorage),
+      new PackageRepositoryAddHandler(sourcesStorage),
+      new PackageRepositoryDeleteHandler(sourcesStorage),
+      new CapabilitiesHandler
+    )(statsReceiver)
+  }
+
+  // TODO (version): Rename this to `apply`
+  private[cosmos] def v3Apply(
+    adminRouter: AdminRouter,
+    packageRunner: PackageRunner,
+    sourcesStorage: PackageSourcesStorage,
+    universeClient: UniverseClient,
+    // TODO (version): Remove this?
+    dataDir: Path
+  )(implicit statsReceiver: StatsReceiver = NullStatsReceiver): V3Cosmos = {
+
+    // TOOD (version): Combine these
+    val repositories = new MultiRepository(sourcesStorage, dataDir, universeClient)
+    val v3Repositories = new V3MultiRepository(sourcesStorage, universeClient)
+
+    new V3Cosmos(
+      new UninstallHandler(adminRouter, repositories),
+      new V3PackageInstallHandler(v3Repositories, packageRunner),
+      new PackageRenderHandler(repositories),
+      new PackageSearchHandler(repositories),
+      new V3PackageDescribeHandler(v3Repositories),
       new ListVersionsHandler(repositories),
       new ListHandler(adminRouter, uri => repositories.getRepository(uri)),
       new PackageRepositoryListHandler(sourcesStorage),
