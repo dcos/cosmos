@@ -29,10 +29,13 @@ trait PackageCollection {
 // TODO (version): Rename to PackageCollection
 trait V3PackageCollection {
 
+  def getPackagesByPackageName(packageName: String): Future[List[internal.model.PackageDefinition]]
+
   def getPackageByPackageVersion(
     packageName: String,
     packageVersion: Option[universe.v3.model.PackageDefinition.Version]
   ): Future[(internal.model.PackageDefinition, Uri)]
 
   def search(query: Option[String]): Future[List[rpc.v1.model.SearchResult]]
+
 }

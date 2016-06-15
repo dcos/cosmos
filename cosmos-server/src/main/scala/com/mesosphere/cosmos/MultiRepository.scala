@@ -120,6 +120,10 @@ final class V3MultiRepository(
   universeClient: UniverseClient
 ) extends V3PackageCollection {
 
+  override def getPackagesByPackageName(
+    packageName: String
+  ): Future[List[internal.model.PackageDefinition]] = ???
+
   override def getPackageByPackageVersion(
     packageName: String,
     packageVersion: Option[universe.v3.model.PackageDefinition.Version]

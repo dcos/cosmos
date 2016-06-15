@@ -244,17 +244,17 @@ object Cosmos extends FinchServer {
     dataDir: Path
   )(implicit statsReceiver: StatsReceiver = NullStatsReceiver): V3Cosmos = {
 
-    // TOOD (version): Combine these
+    // TODO (version): Combine these
     val repositories = new MultiRepository(sourcesStorage, dataDir, universeClient)
     val v3Repositories = new V3MultiRepository(sourcesStorage, universeClient)
 
     new V3Cosmos(
       new UninstallHandler(adminRouter, repositories),
       new V3PackageInstallHandler(v3Repositories, packageRunner),
-      new PackageRenderHandler(repositories),
-      new PackageSearchHandler(repositories),
+      new V3PackageRenderHandler(v3Repositories),
+      new V3PackageSearchHandler(v3Repositories),
       new V3PackageDescribeHandler(v3Repositories),
-      new ListVersionsHandler(repositories),
+      new V3ListVersionsHandler(v3Repositories),
       new ListHandler(adminRouter, uri => repositories.getRepository(uri)),
       new PackageRepositoryListHandler(sourcesStorage),
       new PackageRepositoryAddHandler(sourcesStorage),
