@@ -307,4 +307,20 @@ object Universe {
       )
     }
   }
+
+  implicit val v3ReleaseVersionToV2ReleaseVersion: Injection[
+    universe.v3.model.PackageDefinition.ReleaseVersion, universe.v2.model.ReleaseVersion] = {
+
+    val fwd = (x: universe.v3.model.PackageDefinition.ReleaseVersion) =>
+      universe.v2.model.ReleaseVersion(x.value.toString)
+
+    val rev = (x: universe.v2.model.ReleaseVersion) =>
+      Try {
+        val parsedVersion = x.toString.toInt
+        universe.v3.model.PackageDefinition.ReleaseVersion(parsedVersion)
+      }
+
+    Injection.build(fwd)(rev)
+  }
+
 }
