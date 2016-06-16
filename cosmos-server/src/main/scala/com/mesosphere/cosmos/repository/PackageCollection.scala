@@ -15,20 +15,6 @@ import com.twitter.util.Future
   */
 trait PackageCollection {
 
-  def getPackageByPackageVersion(
-    packageName: String,
-    packageVersion: Option[universe.v2.model.PackageDetailsVersion])
-  : Future[universe.v2.model.PackageFiles]
-
-  def getPackageIndex(packageName: String): Future[universe.v2.model.UniverseIndexEntry]
-
-  def search(query: Option[String]): Future[List[rpc.v1.model.SearchResult]]
-
-}
-
-// TODO (version): Rename to PackageCollection
-trait V3PackageCollection {
-
   def getPackagesByPackageName(packageName: String): Future[List[internal.model.PackageDefinition]]
 
   def getPackageByPackageVersion(
@@ -36,5 +22,5 @@ trait V3PackageCollection {
     packageVersion: Option[universe.v3.model.PackageDefinition.Version]
   ): Future[(internal.model.PackageDefinition, Uri)]
 
-  def search(query: Option[String]): Future[List[rpc.v1.model.V3SearchResult]]
+  def search(query: Option[String]): Future[List[rpc.v1.model.SearchResult]]
 }

@@ -1,21 +1,17 @@
 package com.mesosphere.cosmos.repository
 
+import java.io.InputStream
+import java.nio.ByteBuffer
+import java.nio.file.{Path, Paths}
+import java.util.Properties
+import java.util.zip.{GZIPInputStream, ZipInputStream}
+
 import cats.data.Xor
-import cats.data.Xor.Left
-import cats.data.Xor.Right
-import com.mesosphere.cosmos.CirceError
-import com.mesosphere.cosmos.PackageFileMissing
-import com.mesosphere.cosmos.PackageFileNotJson
-import com.mesosphere.cosmos.PackageFileSchemaMismatch
-import com.mesosphere.cosmos.UnsupportedContentEncoding
-import com.mesosphere.cosmos.UnsupportedContentType
+import cats.data.Xor.{Left, Right}
 import com.mesosphere.cosmos.converter.Universe._
 import com.mesosphere.cosmos.http.MediaTypeOps._
-import com.mesosphere.cosmos.http.MediaTypeParseError
-import com.mesosphere.cosmos.http.MediaTypeParser
-import com.mesosphere.cosmos.http.MediaTypes
-import com.mesosphere.cosmos.http.RequestSession
-import com.mesosphere.cosmos.internal
+import com.mesosphere.cosmos.http.{MediaTypeParseError, MediaTypeParser, MediaTypes}
+import com.mesosphere.cosmos._
 import com.mesosphere.universe
 import com.mesosphere.universe.v2.circe.Decoders._
 import com.mesosphere.universe.v3.circe.Decoders._
@@ -24,66 +20,32 @@ import com.twitter.bijection.Conversion.asMethod
 import com.twitter.finagle.stats.{NullStatsReceiver, Stat, StatsReceiver}
 import com.twitter.io.StreamIO
 import com.twitter.util.Future
-import io.circe.Decoder
-import io.circe.DecodingFailure
-import io.circe.Json
-import io.circe.JsonObject
+import io.circe.{Decoder, DecodingFailure, Json, JsonObject}
 import io.circe.parse._
-import java.io.InputStream
-import java.nio.ByteBuffer
-import java.nio.file.Path
-import java.nio.file.Paths
-import java.util.Properties
-import java.util.zip.GZIPInputStream
-import java.util.zip.ZipInputStream
-import org.slf4j.LoggerFactory
+
 import scala.io.Source
-import scala.util.Failure
-import scala.util.Success
+import scala.util.{Failure, Success}
 
-// TODO(version): use the V3UniverseClient trait instead
-trait UniverseClient extends (Uri => Future[InputStream])
+trait UniverseClient extends ((Uri, universe.v3.model.DcosReleaseVersion) => Future[internal.model.CosmosInternalRepository])
 
-// TODO(version): use the V3UniverseClient implementation
 object UniverseClient {
   private[this] final class FnUniverseClient(
-      function: Uri => Future[InputStream])
-      extends UniverseClient {
-    override def apply(uri: Uri) = function(uri)
-  }
-
-  private[this] val defaultUniverseClient = new FnUniverseClient(
-      universeUri => Future(universeUri.toURI.toURL.openStream())
-  )
-
-  def apply(): UniverseClient = defaultUniverseClient
-  def apply(function: Uri => Future[InputStream]): UniverseClient = {
-    new FnUniverseClient(function)
-  }
-}
-
-// TODO(version): Rename this trait to UniverseClient
-trait V3UniverseClient extends ((Uri, universe.v3.model.DcosReleaseVersion) => Future[internal.model.CosmosInternalRepository])
-
-// TODO(version): Rename this object to UniverseClient
-object V3UniverseClient {
-  private[this] final class FnUniverseClient(
       function: (Uri, universe.v3.model.DcosReleaseVersion) => Future[internal.model.CosmosInternalRepository])
-      extends V3UniverseClient {
+      extends UniverseClient {
     override def apply(uri: Uri, dcosReleaseVersion: universe.v3.model.DcosReleaseVersion) = function(uri, dcosReleaseVersion)
   }
 
-  def apply()(implicit statsReceiver: StatsReceiver = NullStatsReceiver): V3UniverseClient = {
+  def apply()(implicit statsReceiver: StatsReceiver = NullStatsReceiver): UniverseClient = {
     new DefaultUniverseClient
   }
 
-  def apply(function: (Uri, universe.v3.model.DcosReleaseVersion) => Future[internal.model.CosmosInternalRepository]): V3UniverseClient = {
+  def apply(function: (Uri, universe.v3.model.DcosReleaseVersion) => Future[internal.model.CosmosInternalRepository]): UniverseClient = {
     new FnUniverseClient(function)
   }
 }
 
 final class DefaultUniverseClient(
-    implicit statsReceiver: StatsReceiver = NullStatsReceiver) extends V3UniverseClient {
+    implicit statsReceiver: StatsReceiver = NullStatsReceiver) extends UniverseClient {
 
   private[this] val stats = statsReceiver.scope("repositoryFetcher")
 

@@ -3,7 +3,7 @@ package com.mesosphere.cosmos
 import com.mesosphere.cosmos.handler.PackageSearchHandler
 import com.mesosphere.cosmos.repository.PackageCollection
 import com.mesosphere.cosmos.rpc.v1.model.{SearchRequest, SearchResponse, SearchResult}
-import com.mesosphere.universe.v2.model.{PackageDetailsVersion, ReleaseVersion}
+import com.mesosphere.universe
 import com.twitter.util.{Await, Future}
 import org.mockito.Mockito._
 
@@ -35,10 +35,14 @@ object PackageSearchHandlerSpec {
   def searchResult(name: String): SearchResult = {
     SearchResult(
       name = name,
-      currentVersion = PackageDetailsVersion("1.2.3"),
-      versions = Map(PackageDetailsVersion("1.2.3") -> ReleaseVersion("0")),
+      currentVersion = universe.v3.model.PackageDefinition.Version("1.2.3"),
+      versions = Map(
+        universe.v3.model.PackageDefinition.Version("1.2.3") ->
+          universe.v3.model.PackageDefinition.ReleaseVersion(0)
+      ),
       description = "a package",
-      tags = Nil
+      tags = Nil,
+      framework = false
     )
   }
 

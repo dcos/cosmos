@@ -2,26 +2,26 @@ package com.mesosphere.cosmos.rpc.v1.circe
 
 import com.mesosphere.cosmos.rpc.v1.model._
 import com.mesosphere.cosmos.thirdparty.marathon.circe.Encoders._
+import com.mesosphere.universe
 import com.mesosphere.universe.common.circe.Encoders._
 import com.mesosphere.universe.v2.circe.Encoders._
+import com.mesosphere.universe.v3.circe.Encoders.{encodeImages => encodeV3Images}
+import com.mesosphere.universe.v3.circe.Encoders.{encodeLicense => encodeV3License}
+import com.mesosphere.universe.v3.circe.Encoders._
 import io.circe.generic.semiauto._
-import io.circe.syntax._
 import io.circe.{Encoder, JsonObject, ObjectEncoder}
 
 object Encoders {
 
-  implicit val encodeSearchResult: Encoder[SearchResult] = ObjectEncoder.instance { searchResult =>
-    val encodedFields = encodeIndexEntryFields(
-      searchResult.name,
-      searchResult.currentVersion,
-      searchResult.versions,
-      searchResult.description,
-      searchResult.framework,
-      searchResult.tags,
-      searchResult.selected
-    )
-    JsonObject.fromIndexedSeq(encodedFields :+ ("images" -> searchResult.images.asJson))
+  implicit val encodeVersionsMap: Encoder[Map[universe.v3.model.PackageDefinition.Version, universe.v3.model.PackageDefinition.ReleaseVersion]] = {
+    Encoder.encodeMapLike[Map, universe.v3.model.PackageDefinition.ReleaseVersion].contramap { versions =>
+      versions.map { case (packageVersion, releaseVersion) =>
+          packageVersion.toString -> releaseVersion
+      }
+    }
   }
+
+  implicit val encodeSearchResult: Encoder[SearchResult] = deriveFor[SearchResult].encoder
 
   implicit val encodeDescribeRequest: Encoder[DescribeRequest] = deriveFor[DescribeRequest].encoder
   implicit val encodeSearchRequest: Encoder[SearchRequest] = deriveFor[SearchRequest].encoder

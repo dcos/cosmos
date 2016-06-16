@@ -10,7 +10,7 @@ import org.scalatest.FreeSpec
 
 class UniverseRepositoryFetcherSpec extends FreeSpec {
 
-  val fetcher = V3UniverseClient()
+  val fetcher = UniverseClient()
 
   import CosmosIntegrationTestClient.Session
 

@@ -1,18 +1,19 @@
 package com.mesosphere.cosmos.handler
 
-import com.mesosphere.cosmos._
+import com.mesosphere.cosmos.converter.Universe._
 import com.mesosphere.cosmos.http.RequestSession
-import com.mesosphere.cosmos.thirdparty.marathon.model.{AppId, MarathonApp}
 import com.mesosphere.cosmos.repository.PackageCollection
-import com.mesosphere.cosmos.rpc.v1.model.{UninstallRequest, UninstallResponse, UninstallResult}
-import com.mesosphere.universe.v2.model.PackageDetailsVersion
+import com.mesosphere.cosmos.{rpc, _}
+import com.mesosphere.cosmos.thirdparty.marathon.model.{AppId, MarathonApp}
+import com.mesosphere.universe
+import com.twitter.bijection.Conversion.asMethod
 import com.twitter.finagle.http.Status
 import com.twitter.util.Future
 
 private[cosmos] final class UninstallHandler(
   adminRouter: AdminRouter,
   packageCache: PackageCollection
-) extends EndpointHandler[UninstallRequest, UninstallResponse] {
+) extends EndpointHandler[rpc.v1.model.UninstallRequest, rpc.v1.model.UninstallResponse] {
 
   private type FwIds = List[String]
 
@@ -64,9 +65,9 @@ private[cosmos] final class UninstallHandler(
     }
   }
 
-  override def apply(req: UninstallRequest)(implicit
+  override def apply(req: rpc.v1.model.UninstallRequest)(implicit
     session: RequestSession
-  ): Future[UninstallResponse] = {
+  ): Future[rpc.v1.model.UninstallResponse] = {
     // the following implementation is based on what the current CLI implementation does.
     // I've decided to follow it as close as possible so that we reduce any possible behavioral
     // changes that could have unforeseen consequences.
@@ -102,22 +103,23 @@ private[cosmos] final class UninstallHandler(
       .flatMap { uninstallDetails =>
         Future.collect(
           uninstallDetails.map { detail =>
-            packageCache.getPackageByPackageVersion(detail.packageName, None).map { packageFiles =>
-              detail -> packageFiles
-            }
+            packageCache.getPackageByPackageVersion(detail.packageName, None)
+              .map { case (pkg, _) =>
+                detail -> pkg.postUninstallNotes
+              }
           }
         )
       }
-      .map { detailsAndPackageFiles =>
-        val results = detailsAndPackageFiles.map { case (detail, packageFiles) =>
-          UninstallResult(
+      .map { detailsAndNotes =>
+        val results = detailsAndNotes.map { case (detail, postUninstallNotes) =>
+          rpc.v1.model.UninstallResult(
             detail.packageName,
             detail.appId,
             detail.packageVersion,
-            packageFiles.packageJson.postUninstallNotes
+            postUninstallNotes
           )
         }
-        UninstallResponse(results.toList)
+        rpc.v1.model.UninstallResponse(results.toList)
       }
   }
 
@@ -131,7 +133,7 @@ private[cosmos] final class UninstallHandler(
       UninstallOperation(
         appId = app.id,
         packageName = packageName,
-        packageVersion = app.packageVersion,
+        packageVersion = app.packageVersion.as[Option[universe.v2.model.PackageDetailsVersion]],
         frameworkName = labels.get("DCOS_PACKAGE_FRAMEWORK_NAME")
       )
     }
@@ -146,13 +148,13 @@ private[cosmos] final class UninstallHandler(
   private case class UninstallOperation(
     appId: AppId,
     packageName: String,
-    packageVersion: Option[PackageDetailsVersion],
+    packageVersion: Option[universe.v2.model.PackageDetailsVersion],
     frameworkName: Option[String]
   )
   private case class UninstallDetails(
     appId: AppId,
     packageName: String,
-    packageVersion: Option[PackageDetailsVersion],
+    packageVersion: Option[universe.v2.model.PackageDetailsVersion],
     frameworkName: Option[String] = None,
     frameworkId: Option[String] = None
   )

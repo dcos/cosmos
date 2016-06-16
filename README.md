@@ -41,8 +41,7 @@ with:
 
 ```bash
 mkdir /tmp/cosmos
-java -jar cosmos-server/target/scala-2.11/cosmos-server_2.11-<version>-SNAPSHOT-one-jar.jar  \
-     -com.mesosphere.cosmos.dcosUri=<dcos-host-url> -com.mesosphere.cosmos.dataDir=/tmp/cosmos
+java -jar cosmos-server/target/scala-2.11/cosmos-server_2.11-<version>-SNAPSHOT-one-jar.jar
 ```
 
 It can also be exectued with ZooKeeper authentication with:
@@ -51,6 +50,5 @@ It can also be exectued with ZooKeeper authentication with:
 mkdir /tmp/cosmos
 export ZOOKEEPER_USER <user>
 export ZOOKEEPER_SECRET <secret>
-java -jar cosmos-server/target/scala-2.11/cosmos-server_2.11-<version>-SNAPSHOT-one-jar.jar  \
-     -com.mesosphere.cosmos.dcosUri=<dcos-host-url> -com.mesosphere.cosmos.dataDir=/tmp/cosmos
+java -jar cosmos-server/target/scala-2.11/cosmos-server_2.11-<version>-SNAPSHOT-one-jar.jar
 ```

@@ -5,8 +5,8 @@ import com.mesosphere.cosmos.circe.Encoders._
 import com.mesosphere.cosmos.http.MediaType
 import com.mesosphere.cosmos.rpc.v1.model.PackageRepository
 import com.mesosphere.cosmos.thirdparty.marathon.model.{AppId, MarathonError}
+import com.mesosphere.universe
 import com.mesosphere.universe.common.circe.Encoders._
-import com.mesosphere.universe.v2.model.{PackageDetailsVersion, UniverseVersion}
 import com.netaporter.uri.Uri
 import com.twitter.finagle.http.Status
 import io.circe.syntax._
@@ -40,7 +40,12 @@ sealed abstract class CosmosError(causedBy: Throwable = null /*java compatibilit
 }
 
 case class PackageNotFound(packageName: String) extends CosmosError
-case class VersionNotFound(packageName: String, packageVersion: PackageDetailsVersion) extends CosmosError
+
+case class VersionNotFound(
+  packageName: String,
+  packageVersion: universe.v3.model.PackageDefinition.Version
+) extends CosmosError
+
 case class EmptyPackageImport() extends CosmosError
 case class PackageFileMissing(packageName: String, cause: Throwable = null) extends CosmosError(cause)
 case class PackageFileNotJson(fileName: String, parseError: String) extends CosmosError
@@ -102,7 +107,7 @@ case class GenericHttpError(method: HttpMethod, uri: Uri, override val status: S
 case class AmbiguousAppId(packageName: String, appIds: List[AppId]) extends CosmosError
 case class MultipleFrameworkIds(
   packageName: String,
-  packageVersion: Option[PackageDetailsVersion],
+  packageVersion: Option[universe.v2.model.PackageDetailsVersion],
   frameworkName: String,
   ids: List[String]
 ) extends CosmosError
@@ -161,7 +166,7 @@ case class RepositoryAlreadyPresent(nameOrUri: Ior[String, Uri]) extends CosmosE
 }
 case class RepositoryAddIndexOutOfBounds(attempted: Int, max: Int) extends CosmosError
 
-case class UnsupportedRepositoryVersion(version: UniverseVersion) extends CosmosError
+case class UnsupportedRepositoryVersion(version: universe.v2.model.UniverseVersion) extends CosmosError
 case class UnsupportedRepositoryUri(uri: Uri) extends CosmosError
 
 case class RepositoryUriSyntax(

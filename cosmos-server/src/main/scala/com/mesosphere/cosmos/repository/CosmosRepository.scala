@@ -16,38 +16,27 @@ trait CosmosRepository extends PackageCollection {
   def repository: rpc.v1.model.PackageRepository
 
   def getPackageByReleaseVersion(
-      packageName: String,
-      releaseVersion: universe.v2.model.ReleaseVersion
-  ): Future[universe.v2.model.PackageFiles]
-}
-
-// TODO (version): Rename to CosmosRepository
-/** A repository of packages that can be installed on DCOS. */
-trait V3CosmosRepository extends V3PackageCollection {
-
-  def repository: rpc.v1.model.PackageRepository
-
-  def getPackageByReleaseVersion(
-      packageName: String,
-      releaseVersion: universe.v3.model.PackageDefinition.ReleaseVersion
+    packageName: String,
+    releaseVersion: universe.v3.model.PackageDefinition.ReleaseVersion
   ): Future[internal.model.PackageDefinition]
+
 }
 
-object V3CosmosRepository {
+object CosmosRepository {
   def apply(repository: rpc.v1.model.PackageRepository,
-            universeClient: V3UniverseClient,
+            universeClient: UniverseClient,
             releaseVersion: universe.v3.model.DcosReleaseVersion)
-    : V3CosmosRepository = {
+    : CosmosRepository = {
     new DefaultCosmosRepository(repository, universeClient, releaseVersion)
   }
 }
 
 final class DefaultCosmosRepository(
     override val repository: rpc.v1.model.PackageRepository,
-    universeClient: V3UniverseClient,
+    universeClient: UniverseClient,
     releaseVersion: universe.v3.model.DcosReleaseVersion
 )
-    extends V3CosmosRepository {
+  extends CosmosRepository {
 
   private[this] val lastRepository = new AtomicReference(
       Option.empty[(internal.model.CosmosInternalRepository, LocalDateTime)])
@@ -89,7 +78,7 @@ final class DefaultCosmosRepository(
   }
 
   override def search(
-      query: Option[String]): Future[List[rpc.v1.model.V3SearchResult]] = {
+      query: Option[String]): Future[List[rpc.v1.model.SearchResult]] = {
     val predicate =
       query.map { value =>
         if (value.contains("*")) {
@@ -97,17 +86,17 @@ final class DefaultCosmosRepository(
         } else {
           searchString(value.toLowerCase())
         }
-      } getOrElse { (_: rpc.v1.model.V3SearchResult) =>
+      } getOrElse { (_: rpc.v1.model.SearchResult) =>
         true
       }
 
     synchronizedUpdate().map { internalRepository =>
       internalRepository.packages
-        .foldLeft(Map.empty[String, rpc.v1.model.V3SearchResult]) {
+        .foldLeft(Map.empty[String, rpc.v1.model.SearchResult]) {
           (state, pkg) =>
             val searchResult = state
               .get(pkg.name)
-              .getOrElse(rpc.v1.model.V3SearchResult(
+              .getOrElse(rpc.v1.model.SearchResult(
                       pkg.name,
                       pkg.version,
                       Map((pkg.version, pkg.releaseVersion)),
@@ -161,14 +150,14 @@ final class DefaultCosmosRepository(
   }
 
   private[this] def searchRegex(
-      regex: Regex): rpc.v1.model.V3SearchResult => Boolean = { pkg =>
+      regex: Regex): rpc.v1.model.SearchResult => Boolean = { pkg =>
     regex.findFirstIn(pkg.name).isDefined ||
     regex.findFirstIn(pkg.description).isDefined ||
     pkg.tags.exists(tag => regex.findFirstIn(tag.value).isDefined)
   }
 
   private[this] def searchString(
-      query: String): rpc.v1.model.V3SearchResult => Boolean = { pkg =>
+      query: String): rpc.v1.model.SearchResult => Boolean = { pkg =>
     pkg.name.toLowerCase().contains(query) ||
     pkg.description.toLowerCase().contains(query) ||
     pkg.tags.exists(tag => tag.value.toLowerCase().contains(query))

@@ -1,9 +1,12 @@
 package com.mesosphere.cosmos
 
+import java.nio.ByteBuffer
+
 import cats.data.Xor
 import com.mesosphere.cosmos.handler.PackageInstallHandler
-import com.mesosphere.universe.v2.model.{PackageDetails, PackageDetailsVersion, PackageFiles, PackagingVersion}
+import com.mesosphere.universe
 import com.netaporter.uri.dsl._
+import com.twitter.io.Charsets
 import org.scalatest.prop.TableDrivenPropertyChecks
 import org.scalatest.{FreeSpec, Matchers}
 
@@ -78,6 +81,18 @@ class PackageInstallSpec extends FreeSpec with Matchers with TableDrivenProperty
     }
   }
 
+  def packageDefinition(mustache: String) = {
+    internal.model.PackageDefinition(
+      packagingVersion = universe.v3.model.V3PackagingVersion.instance,
+      name = "testing",
+      version = universe.v3.model.PackageDefinition.Version("a.b.c"),
+      maintainer = "foo@bar.baz",
+      description = "blah",
+      releaseVersion = universe.v3.model.PackageDefinition.ReleaseVersion(0),
+      marathon = Some(universe.v3.model.Marathon(ByteBuffer.wrap(mustache.getBytes(Charsets.Utf8))))
+    )
+  }
+
   "if the labels object from marathon.json.mustache isn't Map[String, String] an error is returned" in {
     val mustache =
       """
@@ -89,21 +104,10 @@ class PackageInstallSpec extends FreeSpec with Matchers with TableDrivenProperty
         |}
       """.stripMargin
 
-    val pf = PackageFiles(
-      revision = "0",
-      sourceUri = "http://someplace",
-      packageJson = PackageDetails(
-        packagingVersion = PackagingVersion("2.0"),
-        name = "testing",
-        version = PackageDetailsVersion("a.b.c"),
-        maintainer = "foo@bar.baz",
-        description = "blah"
-      ),
-      marathonJsonMustache = mustache
-    )
+    val pd = packageDefinition(mustache)
 
     try {
-      val json = PackageInstallHandler.preparePackageConfig(None, None, pf)
+      val json = PackageInstallHandler.preparePackageConfig(None, None, pd, "http://someplace")
 
       val _ = for {
         i <- json.hcursor.downField("labels").downField("idx").as[Int]
@@ -128,20 +132,9 @@ class PackageInstallSpec extends FreeSpec with Matchers with TableDrivenProperty
         |}
       """.stripMargin
 
-    val pf = PackageFiles(
-      revision = "0",
-      sourceUri = "http://someplace",
-      packageJson = PackageDetails(
-        packagingVersion = PackagingVersion("2.0"),
-        name = "testing",
-        version = PackageDetailsVersion("a.b.c"),
-        maintainer = "foo@bar.baz",
-        description = "blah"
-      ),
-      marathonJsonMustache = mustache
-    )
+    val pd = packageDefinition(mustache)
 
-    val json = PackageInstallHandler.preparePackageConfig(None, None, pf)
+    val json = PackageInstallHandler.preparePackageConfig(None, None, pd, "http://someplace")
 
     val Xor.Right(some) = for {
       i <- json.hcursor.downField("env").downField("some").as[String]

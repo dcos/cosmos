@@ -8,6 +8,7 @@ import com.mesosphere.cosmos.thirdparty.marathon.circe.Encoders._
 import com.mesosphere.cosmos.rpc.v1.circe.Encoders._
 import com.mesosphere.universe.common.circe.Encoders._
 import com.mesosphere.universe.v2.circe.Encoders._
+import com.mesosphere.universe.v3.circe.Encoders._
 import com.twitter.finagle.http.Status
 import io.circe.generic.encoding.DerivedObjectEncoder
 import io.circe.generic.semiauto._
@@ -107,7 +108,7 @@ object Encoders {
   private[this] def msgForCosmosError(err: CosmosError): String = err match {
     case PackageNotFound(packageName) =>
       s"Package [$packageName] not found"
-    case VersionNotFound(packageName, com.mesosphere.universe.v2.model.PackageDetailsVersion(packageVersion)) =>
+    case VersionNotFound(packageName, com.mesosphere.universe.v3.model.PackageDefinition.Version(packageVersion)) =>
       s"Version [$packageVersion] of package [$packageName] not found"
     case EmptyPackageImport() =>
       "Package is empty"
