@@ -15,7 +15,8 @@ import cats.std.option._
 import cats.syntax.apply._
 import cats.syntax.option._
 import cats.syntax.traverse._
-import com.mesosphere.cosmos.repository.{CosmosRepository, UniverseClient}
+import com.mesosphere.cosmos.repository.CosmosRepository
+import com.mesosphere.cosmos.repository.UniverseClient
 import com.mesosphere.cosmos.rpc.v1.model.{PackageRepository, SearchResult}
 import com.mesosphere.universe.v2.circe.Decoders._
 import com.mesosphere.universe.v2.model._

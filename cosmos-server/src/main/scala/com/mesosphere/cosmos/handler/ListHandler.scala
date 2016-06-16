@@ -1,21 +1,23 @@
 package com.mesosphere.cosmos.handler
 
-import java.nio.charset.StandardCharsets
-import java.util.Base64
-
 import cats.data.Xor
-import com.mesosphere.cosmos.{AdminRouter, CirceError}
+import com.mesosphere.cosmos.converter.Universe._
 import com.mesosphere.cosmos.http.RequestSession
-import com.mesosphere.cosmos.thirdparty.marathon.model.MarathonApp
 import com.mesosphere.cosmos.repository.{CosmosRepository, V3CosmosRepository}
 import com.mesosphere.cosmos.rpc
+import com.mesosphere.cosmos.thirdparty.marathon.model.MarathonApp
+import com.mesosphere.cosmos.{AdminRouter, CirceError}
 import com.mesosphere.universe
 import com.mesosphere.universe.v2.circe.Decoders._
 import com.mesosphere.universe.v3.circe.Decoders._
 import com.netaporter.uri.Uri
 import com.netaporter.uri.dsl.stringToUri
+import com.twitter.bijection.Conversion.asMethod
 import com.twitter.util.Future
 import io.circe.parse._
+import java.nio.charset.StandardCharsets
+import java.util.Base64
+import scala.util.Try
 
 private[cosmos] final class ListHandler(
   adminRouter: AdminRouter,
@@ -131,8 +133,10 @@ private[cosmos] final class V3ListHandler(
     repositories(repositoryUri)
       .flatMap {
         case Some(repository) =>
-          repository.getPackageByReleaseVersion(packageName, releaseVersion)
-            .map(Some(_))
+          repository.getPackageByReleaseVersion(packageName, releaseVersion).map { pkg =>
+            // TODO(version): I am sure this is not the right exception: IllegalArgumentException
+            Some(pkg.as[Try[universe.v3.model.PackageDefinition]].get)
+          }
         case _ => Future.value(None)
       }
   }
