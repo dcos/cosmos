@@ -175,6 +175,7 @@ object CosmosBuild extends Build {
 
   val itSettings = Defaults.itSettings ++ Seq(
     test in IntegrationTest <<= (test in IntegrationTest).dependsOn(oneJar),
+    testOnly in IntegrationTest <<= (testOnly in IntegrationTest).dependsOn(oneJar),
     cosmosIntegrationTestServer in IntegrationTest := new CosmosIntegrationTestServer(
       (javaHome in run).value.map(_.getCanonicalPath),
       (resourceDirectories in IntegrationTest).value,
