@@ -136,7 +136,7 @@ private[cosmos] final class V3Cosmos(
   uninstallHandler: EndpointHandler[rpc.v1.model.UninstallRequest, rpc.v1.model.UninstallResponse],
   packageInstallHandler: EndpointHandler[rpc.v1.model.InstallRequest, rpc.v2.model.InstallResponse],
   packageRenderHandler: EndpointHandler[rpc.v1.model.RenderRequest, rpc.v1.model.RenderResponse],
-  packageSearchHandler: EndpointHandler[rpc.v1.model.SearchRequest, rpc.v1.model.SearchResponse],
+  packageSearchHandler: EndpointHandler[rpc.v1.model.SearchRequest, rpc.v1.model.V3SearchResponse],
   packageDescribeHandler: EndpointHandler[rpc.v1.model.DescribeRequest, rpc.v2.model.DescribeResponse],
   packageListVersionsHandler: EndpointHandler[rpc.v1.model.ListVersionsRequest, rpc.v1.model.ListVersionsResponse],
   listHandler: EndpointHandler[rpc.v1.model.ListRequest, rpc.v1.model.ListResponse],
@@ -250,7 +250,12 @@ object Cosmos extends FinchServer {
 
     // TODO (version): Combine these
     val repositories = new MultiRepository(sourcesStorage, dataDir, universeClient)
-    val v3Repositories = new V3MultiRepository(sourcesStorage, v3UniverseClient)
+    // TODO(version): How are we going to get the DC/OS release version??
+    val v3Repositories = new V3MultiRepository(
+      sourcesStorage,
+      v3UniverseClient,
+      com.mesosphere.universe.v3.model.DcosReleaseVersionParser.parseUnsafe("1.8")
+    )
 
     new V3Cosmos(
       new UninstallHandler(adminRouter, repositories),
