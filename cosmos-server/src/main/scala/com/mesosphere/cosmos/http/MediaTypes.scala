@@ -53,5 +53,7 @@ object MediaTypes {
   val V2DescribeResponse = vnd("describe-response", 2)
   val V1InstallResponse = vnd("install-response", 1)
   val V2InstallResponse = vnd("install-response", 2)
+  val V1ListResponse = vnd("list-response", 1)
+  val V2ListResponse = vnd("list-response", 2)
 
 }
