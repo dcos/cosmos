@@ -5,7 +5,10 @@ import java.nio.file.Path
 import com.mesosphere.cosmos.circe.Encoders._
 import com.mesosphere.cosmos.handler._
 import com.mesosphere.cosmos.http.MediaTypes
-import com.mesosphere.cosmos.repository.{PackageSourcesStorage, UniverseClient, ZooKeeperStorage}
+import com.mesosphere.cosmos.repository.PackageSourcesStorage
+import com.mesosphere.cosmos.repository.UniverseClient
+import com.mesosphere.cosmos.repository.V3UniverseClient
+import com.mesosphere.cosmos.repository.ZooKeeperStorage
 import com.mesosphere.cosmos.rpc.v1.circe.MediaTypedDecoders._
 import com.mesosphere.cosmos.rpc.v1.circe.MediaTypedEncoders._
 import com.netaporter.uri.Uri
@@ -240,13 +243,14 @@ object Cosmos extends FinchServer {
     packageRunner: PackageRunner,
     sourcesStorage: PackageSourcesStorage,
     universeClient: UniverseClient,
+    v3UniverseClient: V3UniverseClient, // TODO(version): rename this parameter
     // TODO (version): Remove this?
     dataDir: Path
   )(implicit statsReceiver: StatsReceiver = NullStatsReceiver): V3Cosmos = {
 
     // TODO (version): Combine these
     val repositories = new MultiRepository(sourcesStorage, dataDir, universeClient)
-    val v3Repositories = new V3MultiRepository(sourcesStorage, universeClient)
+    val v3Repositories = new V3MultiRepository(sourcesStorage, v3UniverseClient)
 
     new V3Cosmos(
       new UninstallHandler(adminRouter, repositories),

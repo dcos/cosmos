@@ -41,8 +41,10 @@ import scala.io.Source
 import scala.util.Failure
 import scala.util.Success
 
+// TODO(version): use the V3UniverseClient trait instead
 trait UniverseClient extends (Uri => Future[InputStream])
 
+// TODO(version): use the V3UniverseClient implementation
 object UniverseClient {
   private[this] final class FnUniverseClient(
       function: Uri => Future[InputStream])
@@ -60,8 +62,28 @@ object UniverseClient {
   }
 }
 
-class UniverseRepositoryFetcher(
-    implicit statsReceiver: StatsReceiver = NullStatsReceiver) {
+// TODO(version): Rename this trait to UniverseClient
+trait V3UniverseClient extends ((Uri, universe.v3.model.DcosReleaseVersion) => Future[internal.model.CosmosInternalRepository])
+
+// TODO(version): Rename this object to UniverseClient
+object V3UniverseClient {
+  private[this] final class FnUniverseClient(
+      function: (Uri, universe.v3.model.DcosReleaseVersion) => Future[internal.model.CosmosInternalRepository])
+      extends V3UniverseClient {
+    override def apply(uri: Uri, dcosReleaseVersion: universe.v3.model.DcosReleaseVersion) = function(uri, dcosReleaseVersion)
+  }
+
+  def apply()(implicit statsReceiver: StatsReceiver = NullStatsReceiver): V3UniverseClient = {
+    new DefaultUniverseClient
+  }
+
+  def apply(function: (Uri, universe.v3.model.DcosReleaseVersion) => Future[internal.model.CosmosInternalRepository]): V3UniverseClient = {
+    new FnUniverseClient(function)
+  }
+}
+
+final class DefaultUniverseClient(
+    implicit statsReceiver: StatsReceiver = NullStatsReceiver) extends V3UniverseClient {
 
   private[this] val stats = statsReceiver.scope("repositoryFetcher")
 
@@ -75,11 +97,10 @@ class UniverseRepositoryFetcher(
     Option(props.getProperty("cosmos.version")).getOrElse("unknown-version")
   }
 
-  def apply(
+  override def apply(
       uri: Uri,
       dcosReleaseVersion: universe.v3.model.DcosReleaseVersion
-  )(implicit session: RequestSession)
-    : Future[internal.model.CosmosInternalRepository] = {
+  ): Future[internal.model.CosmosInternalRepository] = {
     Stat.timeFuture(stats.stat("fetch")) {
       Future { uri.toURI.toURL.openConnection() } flatMap { conn =>
         // Set headers on request
@@ -89,9 +110,6 @@ class UniverseRepositoryFetcher(
             "User-Agent",
             s"cosmos/$cosmosVersion dcos/${dcosReleaseVersion.show}"
         )
-        session.authorization.foreach { auth =>
-          conn.setRequestProperty("Authorization", auth.headerValue)
-        }
 
         // Handle the response
         Future {
