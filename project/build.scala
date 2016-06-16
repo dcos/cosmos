@@ -113,11 +113,31 @@ object CosmosBuild extends Build {
 
     exportJars := true,
 
-    resolvers ++= Seq(
-      "Clojars Repository" at "http://clojars.org/repo",
-      "Conjars Repository" at "http://conjars.org/repo",
-      "Twitter Maven" at "http://maven.twttr.com",
-      "finch-server" at "http://storage.googleapis.com/benwhitehead_me/maven/public"
+    externalResolvers := Seq(
+      Resolver.mavenLocal,
+      DefaultMavenRepository,
+      "finch-server" at "https://storage.googleapis.com/benwhitehead_me/maven/public",
+      "Twitter Maven" at "https://maven.twttr.com"
+      // Twitter maven has stability issues make sure it's LAST, it's needed for two transitive dependencies
+      // [warn]  ::::::::::::::::::::::::::::::::::::::::::::::
+      // [warn]  ::          UNRESOLVED DEPENDENCIES         ::
+      // [warn]  ::::::::::::::::::::::::::::::::::::::::::::::
+      // [warn]  :: com.twitter.common#metrics;0.0.37: not found
+      // [warn]  :: org.apache.thrift#libthrift;0.5.0: not found
+      // [warn]  ::::::::::::::::::::::::::::::::::::::::::::::
+      // [warn]
+      // [warn]  Note: Unresolved dependencies path:
+      // [warn]          com.twitter.common:metrics:0.0.37
+      // [warn]            +- com.twitter:finagle-stats_2.11:6.31.0
+      // [warn]            +- io.github.benwhitehead.finch:finch-server_2.11:0.9.0
+      // [warn]            +- com.mesosphere.cosmos:cosmos-server_2.11:0.2.0-SNAPSHOT
+      // [warn]          org.apache.thrift:libthrift:0.5.0
+      // [warn]            +- com.twitter:finagle-thrift_2.11:6.31.0
+      // [warn]            +- com.twitter:finagle-zipkin_2.11:6.31.0
+      // [warn]            +- com.twitter:twitter-server_2.11:1.16.0
+      // [warn]            +- io.github.benwhitehead.finch:finch-server_2.11:0.9.0
+      // [warn]            +- com.mesosphere.cosmos:cosmos-server_2.11:0.2.0-SNAPSHOT
+      //
     ),
 
     libraryDependencies ++= Deps.mockito ++ Deps.scalaTest,
@@ -190,7 +210,7 @@ object CosmosBuild extends Build {
 
   lazy val cosmos = Project("cosmos", file("."))
     .settings(sharedSettings)
-    .aggregate(model, server)
+    .aggregate(model, json, server)
 
   lazy val model = Project("cosmos-model", file("cosmos-model"))
     .settings(sharedSettings)
