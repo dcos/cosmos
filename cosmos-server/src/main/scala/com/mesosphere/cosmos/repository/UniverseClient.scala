@@ -159,7 +159,7 @@ final class DefaultUniverseClient(
         }
       } map { repo =>
         internal.model.CosmosInternalRepository(
-            repo.packages.map(_.as[internal.model.PackageDefinition])
+            repo.packages.map(_.as[internal.model.PackageDefinition]).sorted
         )
       }
     }

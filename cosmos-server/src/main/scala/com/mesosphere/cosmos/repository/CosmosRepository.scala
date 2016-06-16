@@ -56,7 +56,6 @@ final class DefaultCosmosRepository(
       packageName: String,
       releaseVersion: universe.v3.model.PackageDefinition.ReleaseVersion
   ): Future[internal.model.PackageDefinition] = {
-    // TODO(version): Need to make sure that the packages are sorted correctly.
     synchronizedUpdate().map { internalRepository =>
       internalRepository.packages.find { pkg =>
         pkg.name == packageName && pkg.releaseVersion == releaseVersion
@@ -118,7 +117,17 @@ final class DefaultCosmosRepository(
                       pkg.selected,
                       pkg.resource.flatMap(_.images)))
 
-            state + ((pkg.name, searchResult))
+            val releaseVersion = searchResult.versions.get(pkg.version).map { releaseVersion =>
+              releaseVersion max pkg.releaseVersion
+            } getOrElse {
+              pkg.releaseVersion
+            }
+
+            val newSearchResult = searchResult.copy(
+              versions=searchResult.versions + ((pkg.version, releaseVersion))
+            )
+
+            state + ((pkg.name, newSearchResult))
         }
         .toList
         .map { case (_, searchResult) => searchResult }
@@ -126,7 +135,6 @@ final class DefaultCosmosRepository(
     }
   }
 
-  // TODO(version): make sure that the list in packages is sorted
   private[this] def synchronizedUpdate(
       ): Future[internal.model.CosmosInternalRepository] = {
     lastRepository.get() match {
