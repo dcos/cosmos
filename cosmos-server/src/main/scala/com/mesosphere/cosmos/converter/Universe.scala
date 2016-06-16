@@ -226,7 +226,9 @@ object Universe {
           v3Package.as[internal.model.PackageDefinition]
       }
     } { (value: internal.model.PackageDefinition) =>
-      Try(throw new IllegalArgumentException("TODO(version): FIX ME???"))
+      value.as[Try[universe.v3.model.V3Package]].orElse {
+        value.as[Try[universe.v3.model.V2Package]]
+      }
     }
   }
 
@@ -371,6 +373,7 @@ object Universe {
 
     val rev = (x: universe.v2.model.ReleaseVersion) =>
       Try {
+        // TODO(version): This throws a generic parsing NumberFormatException
         val parsedVersion = x.toString.toInt
         universe.v3.model.PackageDefinition.ReleaseVersion(parsedVersion)
       }
