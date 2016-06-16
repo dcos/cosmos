@@ -182,7 +182,9 @@ object LocalUniverseSpec extends Matchers with TableDrivenPropertyChecks  {
   )
 
   private def assertSuccessJson(expectedMessage: String)(actualContent: String): Unit = {
-    assertResult(Xor.Right(Map("message" -> expectedMessage).asJson))(parse(actualContent))
+    val expected = Map("message" -> expectedMessage).asJson
+    val Xor.Right(actual) = parse(actualContent)
+    assertResult(expected)(actual)
   }
 
 }

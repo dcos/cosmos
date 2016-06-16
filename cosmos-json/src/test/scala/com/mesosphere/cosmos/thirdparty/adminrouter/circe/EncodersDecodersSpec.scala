@@ -25,7 +25,8 @@ class EncodersDecodersSpec extends FreeSpec {
         "f12bff891be7108962c7c98e530e1f2cd8d4e56b"
       )
 
-      assertResult(Xor.Right(expected))(json.as[DcosVersion])
+      val Xor.Right(actual) = json.as[DcosVersion]
+      assertResult(expected)(actual)
     }
   }
 

@@ -18,7 +18,9 @@ class EncodersDecodersSpec extends FreeSpec {
       assertResult(Json.string(absolute))(AppId(relative).asJson)
     }
     "decode" in {
-      assertResult(Xor.Right(AppId(absolute)))(decode[AppId](relative.asJson.noSpaces))
+      val id = AppId(absolute)
+      val Xor.Right(decoded) = decode[AppId](relative.asJson.noSpaces)
+      assertResult(id)(decoded)
     }
   }
 

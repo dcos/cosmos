@@ -24,7 +24,7 @@
       },
       "resource" : null,
       "config" : null,
-      "pip" : null
+      "command" : null
     },
     {
       "packagingVersion" : "3.0",
@@ -51,7 +51,7 @@
       },
       "resource" : null,
       "config" : null,
-      "pip" : null
+      "command" : null
     }
   ]
 }
