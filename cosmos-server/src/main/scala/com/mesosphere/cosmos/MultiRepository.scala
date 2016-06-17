@@ -30,7 +30,9 @@ final class MultiRepository(
         }
       } map (_.flatten)
     } map { packages =>
-      packages.headOption.getOrElse(throw PackageNotFound(packageName))
+      packages
+        .find(!_.isEmpty)
+        .getOrElse(throw PackageNotFound(packageName))
     }
   }
 
