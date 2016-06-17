@@ -29,6 +29,7 @@ import io.circe.{parse => _, _}
 
 import scala.util.matching.Regex
 
+// TODO(version): delete me!!!!
 /** Stores packages from the Universe GitHub repository in the local filesystem.
   */
 final class UniversePackageCache private (

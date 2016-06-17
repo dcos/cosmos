@@ -22,6 +22,11 @@ object PackageDefinition {
 
   case class ReleaseVersion(value: Int) {
     assert(value >= 0, s"Value $value is not >= 0")
+
+    def max(that: ReleaseVersion): ReleaseVersion = {
+      if (value >= that.value) this
+      else that
+    }
   }
   object ReleaseVersion {
     import Ordering.Int
