@@ -237,22 +237,52 @@ private object PackageInstallIntegrationSpec extends Matchers with TableDrivenPr
     ("cassandra", PackageDetailsVersion("foobar"))
   )
 
+  private val HelloWorldCommand: Json = Map(
+    "pip" -> List(
+      "dcos<1.0".asJson,
+      "git+https://github.com/mesosphere/dcos-helloworld.git#dcos-helloworld=0.1.0".asJson
+    ).asJson
+  ).asJson
+
   private val HelloWorldLabels = StandardLabels(
-    Map(
-      ("DCOS_PACKAGE_METADATA", "eyJ3ZWJzaXRlIjoiaHR0cHM6Ly9naXRodWIuY29tL21lc29zcGhlcmUvZGNvcy1" +
-        "oZWxsb3dvcmxkIiwibmFtZSI6ImhlbGxvd29ybGQiLCJwb3N0SW5zdGFsbE5vdGVzIjoiQSBzYW1wbGUgcG9zdC" +
-        "1pbnN0YWxsYXRpb24gbWVzc2FnZSIsImRlc2NyaXB0aW9uIjoiRXhhbXBsZSBEQ09TIGFwcGxpY2F0aW9uIHBhY" +
-        "2thZ2UiLCJwYWNrYWdpbmdWZXJzaW9uIjoiMi4wIiwidGFncyI6WyJtZXNvc3BoZXJlIiwiZXhhbXBsZSIsInN1" +
-        "YmNvbW1hbmQiXSwibWFpbnRhaW5lciI6InN1cHBvcnRAbWVzb3NwaGVyZS5pbyIsInZlcnNpb24iOiIwLjEuMCI" +
-        "sInByZUluc3RhbGxOb3RlcyI6IkEgc2FtcGxlIHByZS1pbnN0YWxsYXRpb24gbWVzc2FnZSJ9"),
-      ("DCOS_PACKAGE_COMMAND", "eyJwaXAiOlsiZGNvczwxLjAiLCJnaXQraHR0cHM6Ly9naXRodWIuY29tL21lc29z" +
-        "cGhlcmUvZGNvcy1oZWxsb3dvcmxkLmdpdCNkY29zLWhlbGxvd29ybGQ9MC4xLjAiXX0="),
-      "DCOS_PACKAGE_REGISTRY_VERSION" -> "2.0",
-      "DCOS_PACKAGE_NAME" -> "helloworld",
-      "DCOS_PACKAGE_VERSION" -> "0.1.0",
-      "DCOS_PACKAGE_SOURCE" -> DefaultRepositories().getOrThrow(1).uri.toString,
-      "DCOS_PACKAGE_RELEASE" -> "0"
-    )
+    packageMetadata = Map(
+      "website" -> "https://github.com/mesosphere/dcos-helloworld".asJson,
+      "name" -> "helloworld".asJson,
+      "postInstallNotes" -> "A sample post-installation message".asJson,
+      "marathon" -> Map(
+        "v2AppMustacheTemplate" -> (
+          "ewogICJpZCI6ICJoZWxsb3dvcmxkIiwKICAiY3B1cyI6IDEuMCwKICAibWVtIjogNTEyLAogICJpbnN0YW5jZ" +
+            "XMiOiAxLAogICJjbWQiOiAicHl0aG9uMyAtbSBodHRwLnNlcnZlciB7e3BvcnR9fSIsCiAgImNvbnRhaW5l" +
+            "ciI6IHsKICAgICJ0eXBlIjogIkRPQ0tFUiIsCiAgICAiZG9ja2VyIjogewogICAgICAiaW1hZ2UiOiAicHl" +
+            "0aG9uOjMiLAogICAgICAibmV0d29yayI6ICJIT1NUIgogICAgfQogIH0KfQo="
+          ).asJson
+      ).asJson,
+      "description" -> "Example DCOS application package".asJson,
+      "packagingVersion" -> "2.0".asJson,
+      "tags" -> List("mesosphere".asJson, "example".asJson, "subcommand".asJson).asJson,
+      "maintainer" -> "support@mesosphere.io".asJson,
+      "config" -> Map(
+        "$schema" -> "http://json-schema.org/schema#".asJson,
+        "type" -> "object".asJson,
+        "properties" -> Map(
+          "port" -> Map(
+            "type" -> "integer".asJson,
+            "default" -> 8080.asJson
+          ).asJson
+        ).asJson,
+        "additionalProperties" -> false.asJson
+      ).asJson,
+      "command" -> HelloWorldCommand,
+      "version" -> "0.1.0".asJson,
+      "preInstallNotes" -> "A sample pre-installation message".asJson,
+      "releaseVersion" -> 0.asJson
+    ).asJson,
+    packageCommand = HelloWorldCommand,
+    packageRegistryVersion = "2.0",
+    packageName = "helloworld",
+    packageVersion = "0.1.0",
+    packageSource = DefaultRepositories().getOrThrow(1).uri.toString,
+    packageRelease = "0"
   )
 
   private val CassandraUris = Set(
