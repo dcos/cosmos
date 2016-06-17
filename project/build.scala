@@ -191,7 +191,7 @@ object CosmosBuild extends Build {
 
   lazy val cosmos = Project("cosmos", file("."))
     .settings(sharedSettings)
-    .aggregate(model, server)
+    .aggregate(model, json, server)
 
   lazy val model = Project("cosmos-model", file("cosmos-model"))
     .settings(sharedSettings)

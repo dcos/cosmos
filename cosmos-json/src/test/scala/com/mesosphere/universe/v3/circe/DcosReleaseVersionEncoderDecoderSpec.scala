@@ -16,7 +16,9 @@ class DcosReleaseVersionEncoderDecoderSpec extends FreeSpec {
     val str = "2.10.153-beta"
     val obj = DcosReleaseVersion(Version(2), List(Version(10), Version(153)), Some(Suffix("beta")))
     "decode"  in {
-      assertResult(Xor.Right(obj))(decode[DcosReleaseVersion](str))
+      val stringToDecode = s""""$str""""
+      val Xor.Right(decoded) = decode[DcosReleaseVersion](stringToDecode)
+      assertResult(obj)(decoded)
     }
     "encode" in {
       assertResult(Json.string(str))(obj.asJson)
