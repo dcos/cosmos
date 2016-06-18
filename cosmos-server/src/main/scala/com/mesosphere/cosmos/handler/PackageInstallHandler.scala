@@ -12,6 +12,7 @@ import com.mesosphere.cosmos.repository.PackageCollection
 import com.mesosphere.cosmos.thirdparty.marathon.model.AppId
 import com.mesosphere.universe
 import com.mesosphere.universe.common.ByteBuffers
+import com.mesosphere.universe.v3.circe.Encoders._
 import com.netaporter.uri.Uri
 import com.twitter.bijection.Conversion.asMethod
 import com.twitter.io.Charsets
@@ -87,9 +88,9 @@ object PackageInstallHandler {
 
       // TODO(version): This can throw
       override def packageMetadataJson: Json = pkg
-        .as[Try[universe.v3.model.V3Package]]
+        .as[Try[universe.v3.model.PackageDefinition]]
         .get
-        .asJson(universe.v3.circe.Encoders.encodeV3Package)
+        .asJson
 
       override def sourceUri: Uri = sourceRepoUri
 
