@@ -135,80 +135,41 @@ final class DefaultUniverseClient(
       resource: Option[universe.v2.model.Resource] = None
   )
 
+  private[this] case class V2ZipState(
+    version: Option[universe.v2.model.UniverseVersion],
+    packages: Map[(String, Int), Map[String, (Path, Array[Byte])]]
+  )
+
   private[this] def processUniverseV2(
       sourceUri: Uri,
       inputStream: InputStream
   ): universe.v3.model.Repository = {
     val bundle = new ZipInputStream(inputStream)
     // getNextEntry() returns null when there are no more entries
-    val universeRepository = Iterator.continually {
+    val universeRepository: V2ZipState = Iterator.continually {
       // Note: this closure is not technically pure. The variable bundle is mutated here.
       Option(bundle.getNextEntry())
     }.takeWhile(_.isDefined)
       .flatten
       .filter(!_.isDirectory)
       .map(entry => Paths.get(entry.getName))
-      .filter(entryPath => entryPath.getNameCount == 7) // Only keep leaf nodes
-      .foldLeft(Map.empty[(String, Int), V2PackageInformation]) {
-        (state, entryPath) =>
-          val packageName = entryPath.getName(4).toString
-          val releaseVersion = Integer.parseInt(entryPath.getName(5).toString)
-
-          val oldV2Package = state.getOrElse(
-              (packageName, releaseVersion),
-              V2PackageInformation()
-          )
-
-          // Note: this closure is not technically pure. The variable bundle is muted here.
-          val buffer = StreamIO.buffer(bundle).toByteArray()
-
-          val newV2Package = {
-            if (entryPath.getFileName() == Paths.get("package.json")) {
-              oldV2Package.copy(
-                  packageDetails = Some(
-                      parseAndVerify[universe.v2.model.PackageDetails](
-                          entryPath, new String(buffer))
-                  )
-              )
-            } else if (entryPath.getFileName() == Paths.get(
-                           "marathon.json.mustache")) {
-              oldV2Package.copy(
-                  marathonMustache = Some(ByteBuffer.wrap(buffer)))
-            } else if (entryPath.getFileName() == Paths.get("config.json")) {
-              oldV2Package.copy(
-                  config = Some(
-                      parseJson(entryPath, new String(buffer)).asObject
-                        .getOrElse(
-                          throw PackageFileSchemaMismatch(
-                              "config.json", DecodingFailure("Object", List()))
-                      )
-                  )
-              )
-            } else if (entryPath.getFileName() == Paths.get("resource.json")) {
-              oldV2Package.copy(
-                  resource = Some(
-                      parseAndVerify[universe.v2.model.Resource](
-                          entryPath, new String(buffer))
-                  )
-              )
-            } else if (entryPath.getFileName() == Paths.get("command.json")) {
-              oldV2Package.copy(
-                  command = Some(
-                      parseAndVerify[universe.v2.model.Command](
-                          entryPath, new String(buffer))
-                  )
-              )
-            } else {
-              // We have an extra file for some reason. Just ignore it.
-              oldV2Package
-            }
-          }
-
-          state + (((packageName, releaseVersion), newV2Package))
+      .filter(entryPath => entryPath.getNameCount > 2)
+      .foldLeft(V2ZipState(None, Map.empty)) { (state, entryPath) =>
+        // Note: this closure is not technically pure. The variable bundle is muted here.
+        val buffer = StreamIO.buffer(bundle).toByteArray()
+        processZipEntry(state, entryPath, buffer)
       }
 
+    universeRepository.version match {
+      case Some(version) if version.toString.startsWith("2.") => // Valid
+      case Some(version) => throw new UnsupportedRepositoryVersion(version)
+      case _ => throw IndexNotFound(sourceUri)
+    }
+
+    val packages = universeRepository.packages.mapValues(processPackageFiles)
+
     universe.v3.model.Repository(
-        universeRepository.toList.map {
+        packages.toList.map {
           case ((packageName, releaseVersion), packageInfo) =>
             val details = packageInfo.packageDetails.getOrElse(
                 throw PackageFileMissing("package.json"))
@@ -255,6 +216,71 @@ final class DefaultUniverseClient(
             )
         }
     )
+  }
+
+  private[this] def processZipEntry(
+    state: V2ZipState,
+    entryPath: Path,
+    buffer: Array[Byte]
+  ): V2ZipState = {
+    val repoSubdir = entryPath.getName(2).toString
+
+    if (repoSubdir == "meta" && entryPath.getName(3).toString == "index.json") {
+      val version = processIndex(entryPath, buffer)
+      state.copy(version = state.version.orElse(Some(version)))
+    } else if (repoSubdir == "packages") {
+      val packageName = entryPath.getName(4).toString
+      val releaseVersion = Integer.parseInt(entryPath.getName(5).toString)
+      val packageKey = (packageName, releaseVersion)
+
+      val packageFiles =
+        state.packages.getOrElse(packageKey, Map.empty) +
+          (entryPath.getFileName.toString -> ((entryPath, buffer)))
+
+      state.copy(packages = state.packages + ((packageKey, packageFiles)))
+    } else {
+      state
+    }
+  }
+
+  private[this] def processPackageFiles(
+    packageFiles: Map[String, (Path, Array[Byte])]
+  ): V2PackageInformation = {
+    V2PackageInformation(
+      packageDetails = packageFiles.get("package.json").map { case (entryPath, buffer) =>
+        parseAndVerify[universe.v2.model.PackageDetails](entryPath, new String(buffer))
+      },
+      marathonMustache = packageFiles.get("marathon.json.mustache").map { case (_, buffer) =>
+        ByteBuffer.wrap(buffer)
+      },
+      command = packageFiles.get("command.json").map { case (entryPath, buffer) =>
+        parseAndVerify[universe.v2.model.Command](entryPath, new String(buffer))
+      },
+      config = packageFiles.get("config.json").map { case (entryPath, buffer) =>
+        parseJson(entryPath, new String(buffer))
+          .asObject
+          .getOrElse {
+            throw PackageFileSchemaMismatch("config.json", DecodingFailure("Object", List()))
+          }
+      },
+      resource = packageFiles.get("resource.json").map { case (entryPath, buffer) =>
+        parseAndVerify[universe.v2.model.Resource](entryPath, new String(buffer))
+      }
+    )
+  }
+
+  private[this] def processIndex(
+    entryPath: Path,
+    buffer: Array[Byte]
+  ): universe.v2.model.UniverseVersion = {
+    val decodedVersion = parseJson(entryPath, new String(buffer))
+      .cursor
+      .get[universe.v2.model.UniverseVersion]("version")
+
+    decodedVersion match {
+      case Xor.Right(version) => version
+      case Xor.Left(failure) => throw PackageFileSchemaMismatch("index.json", failure)
+    }
   }
 
   private[this] def parseAndVerify[A: Decoder](
