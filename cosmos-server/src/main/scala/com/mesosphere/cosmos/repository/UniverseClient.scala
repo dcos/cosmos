@@ -232,7 +232,7 @@ final class DefaultUniverseClient(
                      */
                     universe.v3.model.PackageDefinition.Tag(tag)
                 },
-                details.selected,
+                details.selected.orElse(Some(false)),
                 details.scm,
                 details.website,
                 details.framework,
