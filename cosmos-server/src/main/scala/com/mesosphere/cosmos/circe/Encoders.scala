@@ -213,6 +213,14 @@ object Encoders {
         case Ior.Left(n) => s"Repository name [$n] is not present in the list"
         case Ior.Right(u) => s"Repository URI [$u] is not present in the list"
       }
+    case UnsupportedRedirect(supported, actual) =>
+      val supportedMsg = supported.mkString("[", ", ", "]")
+      actual match {
+        case Some(act) =>
+          s"Unsupported redirect scheme - supported: $supportedMsg actual: $act"
+        case None =>
+          s"Unsupported redirect scheme supported: $supportedMsg"
+      }
   }
 
 }

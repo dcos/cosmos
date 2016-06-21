@@ -1,11 +1,11 @@
 package com.mesosphere.cosmos.repository
 
 import java.io.InputStream
+import java.net.HttpURLConnection
 import java.nio.ByteBuffer
 import java.nio.file.{Path, Paths}
 import java.util.Properties
 import java.util.zip.{GZIPInputStream, ZipInputStream}
-
 import cats.data.Xor
 import cats.data.Xor.{Left, Right}
 import com.mesosphere.cosmos.converter.Universe._
@@ -48,6 +48,7 @@ final class DefaultUniverseClient(
     implicit statsReceiver: StatsReceiver = NullStatsReceiver) extends UniverseClient {
 
   private[this] val stats = statsReceiver.scope("repositoryFetcher")
+  private[this] val fetchScope = stats.scope("fetch")
 
   private[this] val cosmosVersion = {
     val props = new Properties()
@@ -63,8 +64,9 @@ final class DefaultUniverseClient(
       uri: Uri,
       dcosReleaseVersion: universe.v3.model.DcosReleaseVersion
   ): Future[internal.model.CosmosInternalRepository] = {
-    Stat.timeFuture(stats.stat("fetch")) {
-      Future { uri.toURI.toURL.openConnection() } flatMap { conn =>
+    fetchScope.counter("requestCount").incr()
+    Stat.timeFuture(fetchScope.stat("histogram")) {
+      Future { uri.toURI.toURL.openConnection() } flatMap { case conn: HttpURLConnection =>
         // Set headers on request
         conn.setRequestProperty("Accept", MediaTypes.UniverseV3Repository.show)
         conn.setRequestProperty("Accept-Encoding", "gzip")
@@ -75,42 +77,69 @@ final class DefaultUniverseClient(
 
         // Handle the response
         Future {
-          val contentType =
-            Option(conn.getHeaderField("Content-Type")).getOrElse(
-                throw UnsupportedContentType(
+
+          conn.getResponseCode match {
+            case 200 =>
+              fetchScope.scope("status").counter("200").incr()
+              val contentType =
+                Option(conn.getHeaderField("Content-Type")).getOrElse(
+                  throw UnsupportedContentType(
                     List(MediaTypes.UniverseV3Repository,
-                         MediaTypes.applicationZip)
+                      MediaTypes.applicationZip)
+                  )
                 )
-            )
-          val parsedContentType = MediaTypeParser
-            .parse(contentType)
-            .handle {
-              case MediaTypeParseError(msg, cause) =>
-                throw UnsupportedContentType(
-                    List(MediaTypes.UniverseV3Repository,
-                         MediaTypes.applicationZip)
-                )
-            }
-            .get
-          val contentEncoding = Option(conn.getHeaderField("Content-Encoding"))
-          (parsedContentType, contentEncoding)
+              val parsedContentType = MediaTypeParser
+                .parse(contentType)
+                .handle {
+                  case MediaTypeParseError(msg, cause) =>
+                    throw UnsupportedContentType(
+                      List(MediaTypes.UniverseV3Repository,
+                        MediaTypes.applicationZip)
+                    )
+                }
+                .get
+              val contentEncoding = Option(conn.getHeaderField("Content-Encoding"))
+              (parsedContentType, contentEncoding)
+            case x @ (301 | 302 | 303 | 307 | 308) =>
+              fetchScope.scope("status").counter(x.toString).incr()
+              // Different forms of redirect, HttpURLConnection won't follow a redirect across schemes
+              val loc = Option(conn.getHeaderField("Location")).map(Uri.parse).flatMap(_.scheme)
+              throw UnsupportedRedirect(List(uri.scheme.get), loc)
+            case x =>
+              fetchScope.scope("status").counter(x.toString).incr()
+              throw GenericHttpError("GET", uri, x)
+          }
         } map {
           case (contentType, contentEncoding) =>
             val in = contentEncoding match {
-              case Some("gzip") => new GZIPInputStream(conn.getInputStream)
+              case Some("gzip") =>
+                fetchScope.scope("contentEncoding").counter("gzip").incr()
+                new GZIPInputStream(conn.getInputStream)
               case ce @ Some(_) =>
                 throw UnsupportedContentEncoding(List("gzip"), ce)
-              case _ => conn.getInputStream
+              case _ =>
+                fetchScope.scope("contentEncoding").counter("plain").incr()
+                conn.getInputStream
             }
 
+            val decodeScope = fetchScope.scope("decode")
             if (contentType.isCompatibleWith(MediaTypes.UniverseV3Repository)) {
-              decode[universe.v3.model.Repository](
-                  Source.fromInputStream(in).mkString) match {
-                case Xor.Left(err) => throw CirceError(err)
-                case Xor.Right(repo) => repo
+              val v3Scope = decodeScope.scope("v3")
+              v3Scope.counter("count").incr()
+              Stat.time(v3Scope.stat("histogram")) {
+                decode[universe.v3.model.Repository](
+                  Source.fromInputStream(in).mkString
+                ) match {
+                  case Xor.Left(err)   => throw CirceError(err)
+                  case Xor.Right(repo) => repo
+                }
               }
             } else if (contentType.isCompatibleWith(MediaTypes.applicationZip)) {
-              processUniverseV2(uri, in)
+              val v2Scope = decodeScope.scope("v2")
+              v2Scope.counter("count").incr()
+              Stat.time(v2Scope.stat("histogram")) {
+                processUniverseV2(uri, in)
+              }
             } else {
               throw UnsupportedContentType.forMediaType(
                   List(MediaTypes.UniverseV3Repository,

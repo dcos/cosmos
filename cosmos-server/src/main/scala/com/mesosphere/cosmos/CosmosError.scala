@@ -102,7 +102,21 @@ case class UnsupportedContentEncoding(supported: List[String], actual: Option[St
   }
 }
 
+case class UnsupportedRedirect(supported: List[String], actual: Option[String] = None) extends CosmosError {
+  override def getData: Option[JsonObject] = {
+    Some(JsonObject.fromMap(Map(
+      "supported" -> supported.asJson,
+      "actual" -> actual.asJson
+    )))
+  }
+}
+
 case class GenericHttpError(method: HttpMethod, uri: Uri, override val status: Status) extends CosmosError
+object GenericHttpError {
+  def apply(method: String, uri: Uri, status: Int): GenericHttpError = {
+    new GenericHttpError(HttpMethod.valueOf(method.toUpperCase), uri, Status.fromCode(status))
+  }
+}
 
 case class AmbiguousAppId(packageName: String, appIds: List[AppId]) extends CosmosError
 case class MultipleFrameworkIds(
