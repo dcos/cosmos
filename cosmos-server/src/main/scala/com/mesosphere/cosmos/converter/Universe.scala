@@ -1,13 +1,13 @@
 package com.mesosphere.cosmos.converter
 
-import com.mesosphere.cosmos.PackageFileMissing
+import com.mesosphere.cosmos.{ConversionFailure, PackageFileMissing}
 import com.mesosphere.cosmos.internal
 import com.mesosphere.universe
+import com.mesosphere.universe.v3.model.{V2PackagingVersion, V3PackagingVersion}
 import com.twitter.bijection.Conversion.asMethod
 import com.twitter.bijection.{Bijection, Injection}
-import java.nio.ByteBuffer
-import scala.util.Failure
-import scala.util.Try
+
+import scala.util.{Failure, Success, Try}
 
 object Universe {
 
@@ -31,6 +31,22 @@ object Universe {
     } { (x: universe.v3.model.V3PackagingVersion) =>
       universe.v2.model.PackagingVersion(x.v)
     }
+  }
+
+  implicit val v3PackagingVersionToV2PackagingVersion: Injection[
+    universe.v3.model.PackagingVersion, universe.v2.model.PackagingVersion] = {
+    val fwd = (x: universe.v3.model.PackagingVersion) => x match {
+      case V2PackagingVersion(v) => universe.v2.model.PackagingVersion(v)
+      case V3PackagingVersion(v) => universe.v2.model.PackagingVersion(v)
+    }
+
+    val rev = (x: universe.v2.model.PackagingVersion) => x.toString match {
+      case "2.0" => Success(V2PackagingVersion.instance)
+      case "3.0" => Success(V3PackagingVersion.instance)
+      case v => Failure(ConversionFailure(s"Supported packagingVersion: [2.0, 3.0] but was: '$v'"))
+    }
+
+    Injection.build(fwd)(rev)
   }
 
   implicit val v3V2PackagingVersionToPackageDefinition: Injection[

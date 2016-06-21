@@ -221,6 +221,7 @@ object Encoders {
         case None =>
           s"Unsupported redirect scheme - supported: $supportedMsg"
       }
+    case ConversionFailure(message) => message
   }
 
 }

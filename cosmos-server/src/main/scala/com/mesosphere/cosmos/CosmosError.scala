@@ -211,3 +211,5 @@ case class RepositoryNotPresent(nameOrUri: Ior[String, Uri]) extends CosmosError
     Some(JsonObject.fromMap(jsonMap))
   }
 }
+
+case class ConversionFailure(message: String) extends CosmosError
