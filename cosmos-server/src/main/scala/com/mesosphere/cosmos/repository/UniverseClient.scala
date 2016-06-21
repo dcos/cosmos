@@ -1,17 +1,19 @@
 package com.mesosphere.cosmos.repository
 
-import java.io.InputStream
-import java.net.HttpURLConnection
+import java.io.{IOException, InputStream}
+import java.net.{HttpURLConnection, MalformedURLException, URISyntaxException}
 import java.nio.ByteBuffer
 import java.nio.file.{Path, Paths}
 import java.util.Properties
 import java.util.zip.{GZIPInputStream, ZipInputStream}
+
 import cats.data.Xor
 import cats.data.Xor.{Left, Right}
+import com.mesosphere.cosmos._
 import com.mesosphere.cosmos.converter.Universe._
 import com.mesosphere.cosmos.http.MediaTypeOps._
 import com.mesosphere.cosmos.http.{MediaTypeParseError, MediaTypeParser, MediaTypes}
-import com.mesosphere.cosmos._
+import com.mesosphere.cosmos.rpc.v1.model.PackageRepository
 import com.mesosphere.universe
 import com.mesosphere.universe.v2.circe.Decoders._
 import com.mesosphere.universe.v3.circe.Decoders._
@@ -20,32 +22,14 @@ import com.twitter.bijection.Conversion.asMethod
 import com.twitter.finagle.stats.{NullStatsReceiver, Stat, StatsReceiver}
 import com.twitter.io.StreamIO
 import com.twitter.util.Future
-import io.circe.{Decoder, DecodingFailure, Json, JsonObject}
 import io.circe.parse._
+import io.circe.{Decoder, DecodingFailure, Json, JsonObject}
 
 import scala.io.Source
 import scala.util.{Failure, Success}
 
-trait UniverseClient extends ((Uri, universe.v3.model.DcosReleaseVersion) => Future[internal.model.CosmosInternalRepository])
-
-object UniverseClient {
-  private[this] final class FnUniverseClient(
-      function: (Uri, universe.v3.model.DcosReleaseVersion) => Future[internal.model.CosmosInternalRepository])
-      extends UniverseClient {
-    override def apply(uri: Uri, dcosReleaseVersion: universe.v3.model.DcosReleaseVersion) = function(uri, dcosReleaseVersion)
-  }
-
-  def apply()(implicit statsReceiver: StatsReceiver = NullStatsReceiver): UniverseClient = {
-    new DefaultUniverseClient
-  }
-
-  def apply(function: (Uri, universe.v3.model.DcosReleaseVersion) => Future[internal.model.CosmosInternalRepository]): UniverseClient = {
-    new FnUniverseClient(function)
-  }
-}
-
-final class DefaultUniverseClient(
-    implicit statsReceiver: StatsReceiver = NullStatsReceiver) extends UniverseClient {
+final class UniverseClient(implicit statsReceiver: StatsReceiver = NullStatsReceiver)
+  extends ((PackageRepository, universe.v3.model.DcosReleaseVersion) => Future[internal.model.CosmosInternalRepository]) {
 
   private[this] val stats = statsReceiver.scope("repositoryFetcher")
   private[this] val fetchScope = stats.scope("fetch")
@@ -61,12 +45,15 @@ final class DefaultUniverseClient(
   }
 
   override def apply(
-      uri: Uri,
+      repository: PackageRepository,
       dcosReleaseVersion: universe.v3.model.DcosReleaseVersion
   ): Future[internal.model.CosmosInternalRepository] = {
     fetchScope.counter("requestCount").incr()
     Stat.timeFuture(fetchScope.stat("histogram")) {
-      Future { uri.toURI.toURL.openConnection() } flatMap { case conn: HttpURLConnection =>
+      Future { repository.uri.toURI.toURL.openConnection() } handle {
+        case t @ (_: IllegalArgumentException | _: MalformedURLException | _: URISyntaxException) =>
+          throw RepositoryUriSyntax(repository, t)
+      } flatMap { case conn: HttpURLConnection =>
         // Set headers on request
         conn.setRequestProperty("Accept", MediaTypes.UniverseV3Repository.show)
         conn.setRequestProperty("Accept-Encoding", "gzip")
@@ -104,11 +91,13 @@ final class DefaultUniverseClient(
               fetchScope.scope("status").counter(x.toString).incr()
               // Different forms of redirect, HttpURLConnection won't follow a redirect across schemes
               val loc = Option(conn.getHeaderField("Location")).map(Uri.parse).flatMap(_.scheme)
-              throw UnsupportedRedirect(List(uri.scheme.get), loc)
+              throw UnsupportedRedirect(List(repository.uri.scheme.get), loc)
             case x =>
               fetchScope.scope("status").counter(x.toString).incr()
-              throw GenericHttpError("GET", uri, x)
+              throw GenericHttpError("GET", repository.uri, x)
           }
+        } handle {
+          case t: IOException => throw RepositoryUriConnection(repository, t)
         } map {
           case (contentType, contentEncoding) =>
             val in = contentEncoding match {
@@ -138,7 +127,7 @@ final class DefaultUniverseClient(
               val v2Scope = decodeScope.scope("v2")
               v2Scope.counter("count").incr()
               Stat.time(v2Scope.stat("histogram")) {
-                processUniverseV2(uri, in)
+                processUniverseV2(repository.uri, in)
               }
             } else {
               throw UnsupportedContentType.forMediaType(
@@ -330,5 +319,11 @@ final class DefaultUniverseClient(
       case Left(err) => throw PackageFileNotJson(path.toString, err.message)
       case Right(right) => right
     }
+  }
+}
+
+object UniverseClient {
+  def apply()(implicit statsReceiver: StatsReceiver = NullStatsReceiver): UniverseClient = {
+    new UniverseClient
   }
 }

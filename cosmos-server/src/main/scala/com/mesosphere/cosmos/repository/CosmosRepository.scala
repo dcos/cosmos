@@ -129,7 +129,7 @@ final class DefaultCosmosRepository(
     lastRepository.get() match {
       case Some((internalRepository, lastModified)) =>
         if (lastModified.plusMinutes(1).isBefore(LocalDateTime.now())) {
-          universeClient(repository.uri, releaseVersion).onSuccess {
+          universeClient(repository, releaseVersion).onSuccess {
             newRepository =>
               lastRepository.set(Some((newRepository, LocalDateTime.now())))
           }
@@ -138,7 +138,7 @@ final class DefaultCosmosRepository(
         }
 
       case None =>
-        universeClient(repository.uri, releaseVersion).onSuccess {
+        universeClient(repository, releaseVersion).onSuccess {
           newRepository =>
             lastRepository.set(Some((newRepository, LocalDateTime.now())))
         }
