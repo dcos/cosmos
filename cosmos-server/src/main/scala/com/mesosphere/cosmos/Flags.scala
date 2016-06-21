@@ -1,5 +1,7 @@
 package com.mesosphere.cosmos
 
+import java.nio.file
+
 import com.mesosphere.cosmos.Flaggables._
 import com.mesosphere.cosmos.model.ZooKeeperUri
 import com.netaporter.uri.Uri
@@ -28,4 +30,9 @@ object mesosMasterUri extends GlobalFlag[Uri](
 object zookeeperUri extends GlobalFlag[ZooKeeperUri](
   ZooKeeperUri.parse("zk://localhost:2181/cosmos").get(),
   "The ZooKeeper connection string"
+)
+
+object dataDir extends GlobalFlag[file.Path](
+  file.Paths.get("/var/lib/cosmos"),
+  help = "Root directory for all cosmos runtime "
 )

@@ -1,6 +1,7 @@
 package com.mesosphere.cosmos
 
 import java.nio.ByteBuffer
+import java.nio.charset.StandardCharsets
 
 import cats.data.Xor
 import com.mesosphere.cosmos.handler._
@@ -11,7 +12,7 @@ import com.mesosphere.cosmos.thirdparty.marathon.model._
 import com.mesosphere.universe
 import com.netaporter.uri.Uri
 import com.twitter.finagle.http.RequestBuilder
-import com.twitter.io.{Buf, Charsets}
+import com.twitter.io.Buf
 import com.twitter.util.{Await, Future}
 import io.circe.syntax._
 import io.circe.{Json, JsonObject}
@@ -34,7 +35,7 @@ final class UserOptionsSpec extends UnitSpec {
         val packageName = "options-test"
         val reqBody = rpc.v1.model.InstallRequest(packageName, None, Some(optionsJson))
         val mustacheTemplate = buildMustacheTemplate(mergedJson)
-        val mustacheBytes = ByteBuffer.wrap(mustacheTemplate.getBytes(Charsets.Utf8))
+        val mustacheBytes = ByteBuffer.wrap(mustacheTemplate.getBytes(StandardCharsets.UTF_8))
 
         val packageDefinition = internal.model.PackageDefinition(
           packagingVersion = universe.v3.model.V3PackagingVersion.instance,

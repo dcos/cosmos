@@ -1,7 +1,9 @@
 package com.mesosphere.cosmos
 
-import java.io.{OutputStream, PrintStream}
+import java.io.{IOException, OutputStream, PrintStream}
 import java.net.URL
+import java.nio.file._
+import java.nio.file.attribute.BasicFileAttributes
 import java.util.Properties
 import javassist.CannotCompileException
 
@@ -16,9 +18,13 @@ import scala.util.Random
 class CosmosIntegrationTestServer(javaHome: Option[String], itResourceDirs: Seq[File], oneJarPath: File) {
   private val originalProperties: Properties = System.getProperties
   private var process: Option[Process] = None
+  private var dataDir: Option[String] = None
   private var zkCluster: Option[TestingCluster] = None
 
   def setup(logger: Logger): Unit = {
+    val temporaryDirectory = Files.createTempDirectory("cosmos-it-")
+    dataDir = Some(temporaryDirectory.toFile.getAbsolutePath)
+
     try {
       initCuratorTestJavassist()
       val cluster = new TestingCluster(1)
@@ -48,6 +54,10 @@ class CosmosIntegrationTestServer(javaHome: Option[String], itResourceDirs: Seq[
       "http://localhost:7070"
     )
 
+    val args = Seq(
+      dataDir.map(s => s"-com.mesosphere.cosmos.dataDir=$s")
+    ).flatten
+
     val pathSeparator = System.getProperty("path.separator")
     val classpath =
       s"${itResourceDirs.map(_.getCanonicalPath).mkString("", pathSeparator, pathSeparator)}" +
@@ -61,7 +71,7 @@ class CosmosIntegrationTestServer(javaHome: Option[String], itResourceDirs: Seq[
       "com.simontuffs.onejar.Boot",
       s"-com.mesosphere.cosmos.zookeeperUri=$zkUri",
       s"-com.mesosphere.cosmos.dcosUri=$dcosUri"
-    )
+    ) ++ args
 
     logger.info("Starting cosmos with command: " + cmd.mkString(" "))
 
@@ -90,6 +100,25 @@ class CosmosIntegrationTestServer(javaHome: Option[String], itResourceDirs: Seq[
     System.setProperties(originalProperties)
     process.foreach(_.destroy())
     zkCluster.foreach(_.close())
+    dataDir.foreach { dir =>
+      val visitor = new SimpleFileVisitor[Path] {
+        override def visitFile(file: Path, attrs: BasicFileAttributes): FileVisitResult = {
+          Files.delete(file)
+          FileVisitResult.CONTINUE
+        }
+
+        override def postVisitDirectory(dir: Path, e: IOException): FileVisitResult = {
+          Option(e) match {
+            case Some(failure) => throw failure
+            case _ =>
+              Files.delete(dir)
+              FileVisitResult.CONTINUE
+          }
+        }
+      }
+
+      val _ = Files.walkFileTree(Paths.get(dir), visitor)
+    }
   }
 
   private[this] def systemProperty(key: String): Option[String] = {

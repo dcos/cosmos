@@ -219,7 +219,7 @@ object Encoders {
         case Some(act) =>
           s"Unsupported redirect scheme - supported: $supportedMsg actual: $act"
         case None =>
-          s"Unsupported redirect scheme supported: $supportedMsg"
+          s"Unsupported redirect scheme - supported: $supportedMsg"
       }
   }
 

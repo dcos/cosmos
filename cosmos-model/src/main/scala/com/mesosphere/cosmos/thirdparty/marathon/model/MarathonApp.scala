@@ -18,7 +18,7 @@ case class MarathonApp(
     // TODO(version): This can throw
     labels.get(MarathonApp.releaseLabel)
       .map(_.toInt)
-      .map(universe.v3.model.PackageDefinition.ReleaseVersion(_))
+      .map(version => universe.v3.model.PackageDefinition.ReleaseVersion(version))
   }
 
   def packageVersion: Option[universe.v3.model.PackageDefinition.Version] = {
