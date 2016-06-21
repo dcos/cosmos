@@ -260,6 +260,7 @@ private object PackageInstallIntegrationSpec extends Matchers with TableDrivenPr
       "description" -> "Example DCOS application package".asJson,
       "packagingVersion" -> "2.0".asJson,
       "tags" -> List("mesosphere".asJson, "example".asJson, "subcommand".asJson).asJson,
+      "selected" -> false.asJson,
       "maintainer" -> "support@mesosphere.io".asJson,
       "config" -> Map(
         "$schema" -> "http://json-schema.org/schema#".asJson,
