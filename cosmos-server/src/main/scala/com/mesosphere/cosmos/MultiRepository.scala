@@ -1,5 +1,6 @@
 package com.mesosphere.cosmos
 
+import com.mesosphere.cosmos.http.RequestSession
 import com.mesosphere.cosmos.repository._
 import com.mesosphere.universe
 import com.netaporter.uri.Uri
@@ -7,8 +8,7 @@ import com.twitter.util.Future
 
 final class MultiRepository(
     packageRepositoryStorage: PackageSourcesStorage,
-    universeClient: UniverseClient,
-    releaseVersion: universe.v3.model.DcosReleaseVersion
+    universeClient: UniverseClient
 )
     extends PackageCollection {
 
@@ -17,7 +17,7 @@ final class MultiRepository(
 
   override def getPackagesByPackageName(
       packageName: String
-  ): Future[List[internal.model.PackageDefinition]] = {
+  )(implicit session: RequestSession): Future[List[internal.model.PackageDefinition]] = {
     /* Fold over all the results in order and ignore PackageNotFound errors.
      * We have found our answer when we find a PackageDefinition or a generic exception.
      */
@@ -39,7 +39,7 @@ final class MultiRepository(
   override def getPackageByPackageVersion(
       packageName: String,
       packageVersion: Option[universe.v3.model.PackageDefinition.Version]
-  ): Future[(internal.model.PackageDefinition, Uri)] = {
+  )(implicit session: RequestSession): Future[(internal.model.PackageDefinition, Uri)] = {
     /* Fold over all the results in order and ignore PackageNotFound and VersionNotFound errors.
      * We have found our answer when we find a PackageDefinition or a generic exception.
      */
@@ -66,7 +66,8 @@ final class MultiRepository(
   }
 
   override def search(
-      query: Option[String]): Future[List[rpc.v1.model.SearchResult]] = {
+      query: Option[String]
+  )(implicit session: RequestSession): Future[List[rpc.v1.model.SearchResult]] = {
     repositories().flatMap { repositories =>
       val searches = repositories.zipWithIndex.map {
         case (repository, repositoryIndex) =>
@@ -105,7 +106,7 @@ final class MultiRepository(
       val result = repositories.map { repository =>
         oldRepositories.getOrElse(
             repository.uri,
-            CosmosRepository(repository, universeClient, releaseVersion))
+            CosmosRepository(repository, universeClient))
       }
 
       val newRepositories: Map[Uri, CosmosRepository] =
