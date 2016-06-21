@@ -145,7 +145,7 @@ final class PackageRepositorySpec
       assertAddFailure(unsupportedUriMsg(uri), bogusRepository)
     }
     def unsupportedUriMsg(uri: Uri): String = {
-      s"Repository URI [${uri}] uses an unsupported scheme. Only http and https are supported"
+      s"Repository URI [$uri] uses an unsupported scheme. Only http and https are supported"
     }
   }
 
@@ -171,18 +171,22 @@ final class PackageRepositorySpec
 
     "bad file layout" in {
       // TODO: Use a more reliable URI
-      assertInvalidRepo("https://github.com/mesosphere/dcos-cli/archive/master.zip")
+      val uriText = "https://github.com/mesosphere/dcos-cli/archive/master.zip"
+      val expectedMsg = s"Index file missing for repo [$uriText]"
+      assertInvalidRepo(uriText, expectedMsg)
     }
 
     "non-Zip-encoded repo bundle" in {
       // TODO: Use a more reliable URI
-      assertInvalidRepo("https://github.com/mesosphere/dcos-cli")
+      val uriText = "https://mesosphere.com/"
+      val contentTypes =
+        "application/vnd.dcos.universe.repo+json;charset=utf-8;version=v3, application/zip"
+      val expectedMsg = s"Unsupported Content-Type: text/html;charset=utf-8 Accept: [$contentTypes]"
+      assertInvalidRepo(uriText, expectedMsg)
     }
 
-    def assertInvalidRepo(uriText: String): Unit = {
-      val expectedMsg = s"Index file missing for repo [$uriText]"
-
-      def assertIndexNotFound(): Unit = {
+    def assertInvalidRepo(uriText: String, expectedMsg: String): Unit = {
+      def assertBadRequest(): Unit = {
         val response = searchPackages(SearchRequest(None))
         assertResult(Status.BadRequest)(response.status)
         val Xor.Right(err) = decode[ErrorResponse](response.contentString)
@@ -192,9 +196,9 @@ final class PackageRepositorySpec
       val invalidRepo = PackageRepository("invalid", Uri.parse(uriText))
       assertAdd(defaultRepos :+ invalidRepo, invalidRepo)
 
-      eventually { assertIndexNotFound() }
+      eventually { assertBadRequest() }
 
-      assertIndexNotFound()
+      assertBadRequest()
     }
 
   }
