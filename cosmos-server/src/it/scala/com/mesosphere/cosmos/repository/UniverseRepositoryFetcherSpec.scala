@@ -1,6 +1,7 @@
 package com.mesosphere.cosmos.repository
 
 import com.mesosphere.cosmos.rpc.v1.model.PackageRepository
+import com.mesosphere.cosmos.test.CosmosIntegrationTestClient
 import com.mesosphere.universe.v3.model.DcosReleaseVersionParser
 import com.mesosphere.universe.v3.model.PackageDefinition.Version
 import com.netaporter.uri.Uri
@@ -10,7 +11,8 @@ import org.scalatest.FreeSpec
 
 class UniverseRepositoryFetcherSpec extends FreeSpec {
 
-  val fetcher = UniverseClient()
+  val fetcher = UniverseClient(CosmosIntegrationTestClient.adminRouter)
+
   val baseRepoUri: Uri = "https://downloads.mesosphere.com/universe/dce867e9af73b85172d5a36bf8114c69b3be024e"
 
   def repository(repoFilename: String): PackageRepository = {

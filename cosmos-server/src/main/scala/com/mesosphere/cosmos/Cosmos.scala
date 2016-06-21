@@ -186,7 +186,7 @@ object Cosmos extends FinchServer {
 
       val sourcesStorage = new ZooKeeperStorage(zkClient)()
 
-      val cosmos = Cosmos(adminRouter, marathonPackageRunner, sourcesStorage, UniverseClient())
+      val cosmos = Cosmos(adminRouter, marathonPackageRunner, sourcesStorage, UniverseClient(adminRouter))
       cosmos.service
     }
     boot.get
@@ -199,11 +199,9 @@ object Cosmos extends FinchServer {
     universeClient: UniverseClient
   )(implicit statsReceiver: StatsReceiver = NullStatsReceiver): Cosmos = {
 
-    // TODO(version): How are we going to get the DC/OS release version??
     val repositories = new MultiRepository(
       sourcesStorage,
-      universeClient,
-      com.mesosphere.universe.v3.model.DcosReleaseVersionParser.parseUnsafe("1.8")
+      universeClient
     )
 
     new Cosmos(

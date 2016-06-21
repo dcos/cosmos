@@ -6,14 +6,13 @@ import java.nio.ByteBuffer
 import java.nio.file.{Path, Paths}
 import java.util.Properties
 import java.util.zip.{GZIPInputStream, ZipInputStream}
-
 import cats.data.Xor
 import cats.data.Xor.{Left, Right}
-import com.mesosphere.cosmos._
 import com.mesosphere.cosmos.converter.Universe._
 import com.mesosphere.cosmos.http.MediaTypeOps._
-import com.mesosphere.cosmos.http.{MediaTypeParseError, MediaTypeParser, MediaTypes}
+import com.mesosphere.cosmos.http.{MediaTypeParseError, MediaTypeParser, MediaTypes, RequestSession}
 import com.mesosphere.cosmos.rpc.v1.model.PackageRepository
+import com.mesosphere.cosmos._
 import com.mesosphere.universe
 import com.mesosphere.universe.v2.circe.Decoders._
 import com.mesosphere.universe.v3.circe.Decoders._
@@ -22,14 +21,13 @@ import com.twitter.bijection.Conversion.asMethod
 import com.twitter.finagle.stats.{NullStatsReceiver, Stat, StatsReceiver}
 import com.twitter.io.StreamIO
 import com.twitter.util.Future
-import io.circe.parse._
 import io.circe.{Decoder, DecodingFailure, Json, JsonObject}
+import io.circe.parse._
 
 import scala.io.Source
 import scala.util.{Failure, Success}
 
-final class UniverseClient(implicit statsReceiver: StatsReceiver = NullStatsReceiver)
-  extends ((PackageRepository, universe.v3.model.DcosReleaseVersion) => Future[internal.model.CosmosInternalRepository]) {
+final class UniverseClient(adminRouter: AdminRouter)(implicit statsReceiver: StatsReceiver = NullStatsReceiver) {
 
   private[this] val stats = statsReceiver.scope("repositoryFetcher")
   private[this] val fetchScope = stats.scope("fetch")
@@ -44,7 +42,13 @@ final class UniverseClient(implicit statsReceiver: StatsReceiver = NullStatsRece
     Option(props.getProperty("cosmos.version")).getOrElse("unknown-version")
   }
 
-  override def apply(
+  def apply(repository: PackageRepository)(implicit session: RequestSession): Future[internal.model.CosmosInternalRepository] = {
+    adminRouter.getDcosVersion().flatMap { dcosVersion =>
+      apply(repository, dcosVersion.version)
+    }
+  }
+
+  private[repository] def apply(
       repository: PackageRepository,
       dcosReleaseVersion: universe.v3.model.DcosReleaseVersion
   ): Future[internal.model.CosmosInternalRepository] = {
@@ -323,7 +327,7 @@ final class UniverseClient(implicit statsReceiver: StatsReceiver = NullStatsRece
 }
 
 object UniverseClient {
-  def apply()(implicit statsReceiver: StatsReceiver = NullStatsReceiver): UniverseClient = {
-    new UniverseClient
+  def apply(adminRouter: AdminRouter)(implicit statsReceiver: StatsReceiver = NullStatsReceiver): UniverseClient = {
+    new UniverseClient(adminRouter)
   }
 }

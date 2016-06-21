@@ -1,11 +1,13 @@
 package com.mesosphere.cosmos.repository
 
 import com.mesosphere.cosmos.PackageNotFound
+import com.mesosphere.cosmos.http.RequestSession
 import com.mesosphere.cosmos.internal
 import com.mesosphere.cosmos.rpc
 import com.mesosphere.universe
 import com.netaporter.uri.Uri
 import com.twitter.util.Future
+
 import java.time.LocalDateTime
 import java.util.concurrent.atomic.AtomicReference
 import scala.util.matching.Regex
@@ -18,23 +20,21 @@ trait CosmosRepository extends PackageCollection {
   def getPackageByReleaseVersion(
     packageName: String,
     releaseVersion: universe.v3.model.PackageDefinition.ReleaseVersion
-  ): Future[internal.model.PackageDefinition]
+  )(implicit session: RequestSession): Future[internal.model.PackageDefinition]
 
 }
 
 object CosmosRepository {
   def apply(repository: rpc.v1.model.PackageRepository,
-            universeClient: UniverseClient,
-            releaseVersion: universe.v3.model.DcosReleaseVersion)
+            universeClient: UniverseClient)
     : CosmosRepository = {
-    new DefaultCosmosRepository(repository, universeClient, releaseVersion)
+    new DefaultCosmosRepository(repository, universeClient)
   }
 }
 
 final class DefaultCosmosRepository(
     override val repository: rpc.v1.model.PackageRepository,
-    universeClient: UniverseClient,
-    releaseVersion: universe.v3.model.DcosReleaseVersion
+    universeClient: UniverseClient
 )
   extends CosmosRepository {
 
@@ -44,7 +44,7 @@ final class DefaultCosmosRepository(
   override def getPackageByReleaseVersion(
       packageName: String,
       releaseVersion: universe.v3.model.PackageDefinition.ReleaseVersion
-  ): Future[internal.model.PackageDefinition] = {
+  )(implicit session: RequestSession): Future[internal.model.PackageDefinition] = {
     synchronizedUpdate().map { internalRepository =>
       internalRepository.packages.find { pkg =>
         pkg.name == packageName && pkg.releaseVersion == releaseVersion
@@ -56,8 +56,8 @@ final class DefaultCosmosRepository(
 
   override def getPackageByPackageVersion(
       packageName: String,
-      packageVersion: Option[universe.v3.model.PackageDefinition.Version])
-    : Future[(internal.model.PackageDefinition, Uri)] = {
+      packageVersion: Option[universe.v3.model.PackageDefinition.Version]
+  )(implicit session: RequestSession): Future[(internal.model.PackageDefinition, Uri)] = {
     synchronizedUpdate().map { internalRepository =>
       internalRepository.packages.find { pkg =>
         pkg.name == packageName &&
@@ -71,14 +71,16 @@ final class DefaultCosmosRepository(
   }
 
   override def getPackagesByPackageName(
-      packageName: String): Future[List[internal.model.PackageDefinition]] = {
+      packageName: String
+  )(implicit session: RequestSession): Future[List[internal.model.PackageDefinition]] = {
     synchronizedUpdate().map { internalRepository =>
       internalRepository.packages.filter(_.name == packageName)
     }
   }
 
   override def search(
-      query: Option[String]): Future[List[rpc.v1.model.SearchResult]] = {
+      query: Option[String]
+  )(implicit session: RequestSession): Future[List[rpc.v1.model.SearchResult]] = {
     val predicate =
       query.map { value =>
         if (value.contains("*")) {
@@ -124,12 +126,13 @@ final class DefaultCosmosRepository(
     }
   }
 
-  private[this] def synchronizedUpdate(
-      ): Future[internal.model.CosmosInternalRepository] = {
+  private[this] def synchronizedUpdate()(
+    implicit session: RequestSession
+  ): Future[internal.model.CosmosInternalRepository] = {
     lastRepository.get() match {
       case Some((internalRepository, lastModified)) =>
         if (lastModified.plusMinutes(1).isBefore(LocalDateTime.now())) {
-          universeClient(repository, releaseVersion).onSuccess {
+          universeClient(repository).onSuccess {
             newRepository =>
               lastRepository.set(Some((newRepository, LocalDateTime.now())))
           }
@@ -138,7 +141,7 @@ final class DefaultCosmosRepository(
         }
 
       case None =>
-        universeClient(repository, releaseVersion).onSuccess {
+        universeClient(repository).onSuccess {
           newRepository =>
             lastRepository.set(Some((newRepository, LocalDateTime.now())))
         }
