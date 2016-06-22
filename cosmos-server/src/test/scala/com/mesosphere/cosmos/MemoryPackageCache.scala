@@ -1,5 +1,6 @@
 package com.mesosphere.cosmos
 
+import com.mesosphere.cosmos.http.RequestSession
 import com.mesosphere.cosmos.repository.CosmosRepository
 import com.mesosphere.universe
 import com.netaporter.uri.Uri
@@ -22,7 +23,7 @@ final case class MemoryPackageCache(
   override def getPackageByPackageVersion(
     packageName: String,
     packageVersion: Option[universe.v3.model.PackageDefinition.Version]
-  ): Future[(internal.model.PackageDefinition, Uri)] = {
+  )(implicit session: RequestSession): Future[(internal.model.PackageDefinition, Uri)] = {
     Future.value {
       packages.get(packageName) match {
         case None => throw PackageNotFound(packageName)
@@ -34,7 +35,7 @@ final case class MemoryPackageCache(
   override def getPackageByReleaseVersion(
     packageName: String,
     releaseVersion: universe.v3.model.PackageDefinition.ReleaseVersion
-  ): Future[internal.model.PackageDefinition] = {
+  )(implicit session: RequestSession): Future[internal.model.PackageDefinition] = {
     Future.value {
       packages.get(packageName) match {
         case None => throw PackageNotFound(packageName)
@@ -43,13 +44,13 @@ final case class MemoryPackageCache(
     }
   }
 
-  override def search(query: Option[String]): Future[List[rpc.v1.model.SearchResult]] = {
+  override def search(query: Option[String])(implicit session: RequestSession): Future[List[rpc.v1.model.SearchResult]] = {
     Future.exception(RepositoryNotFound("http://example.com/universe.zip"))
   }
 
   override def getPackagesByPackageName(
     packageName: String
-  ): Future[List[internal.model.PackageDefinition]] = {
+  )(implicit session: RequestSession): Future[List[internal.model.PackageDefinition]] = {
     Future.exception(PackageNotFound(packageName))
   }
 

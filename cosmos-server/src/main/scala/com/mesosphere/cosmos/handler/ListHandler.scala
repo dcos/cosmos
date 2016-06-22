@@ -76,7 +76,7 @@ private[cosmos] final class ListHandler(
       packageName: String,
       releaseVersion: universe.v3.model.PackageDefinition.ReleaseVersion,
       repositoryUri: Uri
-  ): Future[Option[internal.model.PackageDefinition]] = {
+  )(implicit session: RequestSession): Future[Option[internal.model.PackageDefinition]] = {
     repositories(repositoryUri).flatMap {
       case Some(repository) =>
         repository
