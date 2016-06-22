@@ -212,4 +212,5 @@ case class RepositoryNotPresent(nameOrUri: Ior[String, Uri]) extends CosmosError
   }
 }
 
+// TODO(version): Can this be given more structure (e.g. name and type of field that failed, package, etc.)?
 case class ConversionFailure(message: String) extends CosmosError
