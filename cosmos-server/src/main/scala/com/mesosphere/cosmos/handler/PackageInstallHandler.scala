@@ -12,7 +12,6 @@ import com.mesosphere.cosmos.repository.PackageCollection
 import com.mesosphere.cosmos.thirdparty.marathon.model.AppId
 import com.mesosphere.universe
 import com.mesosphere.universe.common.ByteBuffers
-import com.mesosphere.universe.v3.circe.Encoders._
 import com.netaporter.uri.Uri
 import com.twitter.bijection.Conversion.asMethod
 import com.twitter.io.Charsets
@@ -22,7 +21,6 @@ import io.circe.syntax._
 import io.circe.{Json, JsonObject}
 
 import scala.collection.JavaConverters._
-import scala.util.Try
 
 private[cosmos] final class PackageInstallHandler(
   packageCollection: PackageCollection,
@@ -82,28 +80,7 @@ object PackageInstallHandler {
     }
     val marathonJson = renderMustacheTemplate(marathonTemplate, mergedOptions)
 
-    val marathonLabels = new MarathonLabels {
-      override def commandJson: Option[Json] =
-        pkg.command.map(_.asJson(universe.v3.circe.Encoders.encodeCommand))
-
-      // TODO(version): This can throw
-      override def packageMetadataJson: Json = pkg
-        .as[Try[universe.v3.model.PackageDefinition]]
-        .get
-        .asJson
-
-      override def sourceUri: Uri = sourceRepoUri
-
-      override def packagingVersion: String = pkg.packagingVersion match {
-        case universe.v3.model.V2PackagingVersion(v) => v
-        case universe.v3.model.V3PackagingVersion(v) => v
-      }
-
-      override def packageName: String = pkg.name
-      override def packageReleaseVersion: String = pkg.releaseVersion.value.toString
-      override def packageVersion: String = pkg.version.toString
-      override def isFramework: Boolean = pkg.framework
-    }
+    val marathonLabels = MarathonLabels(pkg, sourceRepoUri)
     val marathonJsonWithLabels = addLabels(marathonJson, marathonLabels, mergedOptions)
 
     addAppId(marathonJsonWithLabels, appId)

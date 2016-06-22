@@ -1,26 +1,31 @@
 package com.mesosphere.cosmos
 
+import java.nio.charset.StandardCharsets
 import java.util.Base64
 
+import com.mesosphere.cosmos.converter.Label._
+import com.mesosphere.cosmos.label.v1.circe.Encoders._
 import com.mesosphere.cosmos.thirdparty.marathon.model.MarathonApp
+import com.mesosphere.universe
 import com.netaporter.uri.Uri
-import com.twitter.io.Charsets
+import com.twitter.bijection.Conversion.asMethod
 import io.circe.{Json, JsonObject}
+import io.circe.syntax._
 
-private[cosmos] abstract class MarathonLabels {
+final class MarathonLabels(
+  commandJson: Option[Json],
+  isFramework: Boolean,
+  packageMetadata: label.v1.model.PackageMetadata,
+  packageName: String,
+  packageReleaseVersion: String,
+  packageVersion: String,
+  packagingVersion: String,
+  sourceUri: Uri
+) {
 
-  protected[this] def packageMetadataJson: Json
-  protected[this] def commandJson: Option[Json]
-  protected[this] def packagingVersion: String
-  protected[this] def packageName: String
-  protected[this] def packageVersion: String
-  protected[this] def sourceUri: Uri
-  protected[this] def packageReleaseVersion: String
-  protected[this] def isFramework: Boolean
-
-  final def requiredLabels: Map[String, String] = {
+  def requiredLabels: Map[String, String] = {
     Map(
-      (MarathonApp.metadataLabel, packageMetadata),
+      (MarathonApp.metadataLabel, metadataLabel),
       (MarathonApp.registryVersionLabel, packagingVersion),
       (MarathonApp.nameLabel, packageName),
       (MarathonApp.versionLabel, packageVersion),
@@ -30,26 +35,46 @@ private[cosmos] abstract class MarathonLabels {
     )
   }
 
-  final def nonOverridableLabels: Map[String, String] = {
+  def nonOverridableLabels: Map[String, String] = {
     Seq(
       commandJson.map(command => MarathonApp.commandLabel -> encodeForLabel(command))
     ).flatten.toMap
   }
 
-  private[this] final def packageMetadata: String = {
-    encodeForLabel(removeNulls(packageMetadataJson))
+  private[this] def metadataLabel: String = {
+    encodeForLabel(removeNulls(packageMetadata.asJson))
   }
 
-  private[this] final def encodeForLabel(json: Json): String = {
-    val bytes = json.noSpaces.getBytes(Charsets.Utf8)
+  private[this] def encodeForLabel(json: Json): String = {
+    val bytes = json.noSpaces.getBytes(StandardCharsets.UTF_8)
     Base64.getEncoder.encodeToString(bytes)
   }
 
   /** Circe populates omitted fields with null values; remove them (see GitHub issue #56) */
-  private[this] final def removeNulls(json: Json): Json = {
+  private[this] def removeNulls(json: Json): Json = {
     json.mapObject { obj =>
       JsonObject.fromMap(obj.toMap.filterNot { case (k, v) => v.isNull })
     }
+  }
+
+}
+
+object MarathonLabels {
+
+  def apply(pkg: internal.model.PackageDefinition, sourceUri: Uri): MarathonLabels = {
+    new MarathonLabels(
+      commandJson = pkg.command.map(_.asJson(universe.v3.circe.Encoders.encodeCommand)),
+      isFramework = pkg.framework,
+      packageMetadata = pkg.as[label.v1.model.PackageMetadata],
+      packageName = pkg.name,
+      packageReleaseVersion = pkg.releaseVersion.value.toString,
+      packageVersion = pkg.version.toString,
+      packagingVersion = pkg.packagingVersion match {
+        case universe.v3.model.V2PackagingVersion(v) => v
+        case universe.v3.model.V3PackagingVersion(v) => v
+      },
+      sourceUri = sourceUri
+    )
   }
 
 }

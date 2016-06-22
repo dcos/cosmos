@@ -59,7 +59,7 @@ final class UserOptionsSpec extends UnitSpec {
           constHandler(rpc.v1.model.SearchResponse(List.empty)),
           constHandler(packageDefinition),
           constHandler(rpc.v1.model.ListVersionsResponse(Map.empty)),
-          constHandler(rpc.v2.model.ListResponse(Nil)),
+          constHandler(rpc.v1.model.ListResponse(Nil)),
           constHandler(rpc.v1.model.PackageRepositoryListResponse(Nil)),
           constHandler(rpc.v1.model.PackageRepositoryAddResponse(Nil)),
           constHandler(rpc.v1.model.PackageRepositoryDeleteResponse(Nil)),

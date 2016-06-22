@@ -4,12 +4,15 @@ import java.nio.charset.StandardCharsets
 import java.util.Base64
 
 import cats.data.Xor
+import com.mesosphere.cosmos.{AdminRouter, CirceError}
+import com.mesosphere.cosmos.converter.Label._
 import com.mesosphere.cosmos.converter.Universe._
 import com.mesosphere.cosmos.http.RequestSession
+import com.mesosphere.cosmos.label
+import com.mesosphere.cosmos.label.v1.circe.Decoders._
 import com.mesosphere.cosmos.repository.CosmosRepository
-import com.mesosphere.cosmos.{AdminRouter, CirceError, internal, rpc}
+import com.mesosphere.cosmos.rpc
 import com.mesosphere.universe
-import com.mesosphere.universe.v3.circe.Decoders._
 import com.netaporter.uri.Uri
 import com.netaporter.uri.dsl.stringToUri
 import com.twitter.bijection.Conversion.asMethod
@@ -23,10 +26,10 @@ private[cosmos] final class ListHandler(
     repositories: (Uri) => Future[Option[CosmosRepository]]
 )
     extends EndpointHandler[
-      rpc.v1.model.ListRequest, rpc.v2.model.ListResponse] {
+        rpc.v1.model.ListRequest, rpc.v1.model.ListResponse] {
 
   override def apply(request: rpc.v1.model.ListRequest)(
-      implicit session: RequestSession): Future[rpc.v2.model.ListResponse] = {
+      implicit session: RequestSession): Future[rpc.v1.model.ListResponse] = {
     adminRouter.listApps().flatMap { applications =>
       Future.collect {
         applications.apps.map { app =>
@@ -39,36 +42,35 @@ private[cosmos] final class ListHandler(
                   releaseVersion
                     .as[Try[universe.v3.model.PackageDefinition.ReleaseVersion]]
                     .get,
-                  repositoryUri).map {
-                case Some(resolvedFromRepo) =>
-                  // TODO(version): This can throw
-                  resolvedFromRepo.as[Try[universe.v3.model.PackageDefinition]].get
-                case None =>
+                  repositoryUri
+              ).map { packageInfo =>
+                val packageInformation = packageInfo.getOrElse {
                   val b64PkgInfo = app.packageMetadata.getOrElse("")
                   val pkgInfoBytes = Base64.getDecoder.decode(b64PkgInfo)
                   val pkgInfoString =
                     new String(pkgInfoBytes, StandardCharsets.UTF_8)
                   decodePackageFromMarathon(pkgInfoString)
-              }.map(packageInformation =>
-                    Some(
-                        rpc.v2.model.Installation(app.id, packageInformation)))
+                }
+
+                Some(rpc.v1.model.Installation(app.id, packageInformation))
+              }
             case _ =>
               // TODO: log debug message when one of them is Some.
               Future.value(None)
           }
         }
       } map { installation =>
-        rpc.v2.model.ListResponse(installation.flatten)
+        rpc.v1.model.ListResponse(installation.flatten)
       }
     }
   }
 
   private[this] def decodePackageFromMarathon(
       pkgInfoString: String
-  ): universe.v3.model.PackageDefinition = {
-    decode[universe.v3.model.PackageDefinition](pkgInfoString) match {
+  ): rpc.v1.model.InstalledPackageInformation = {
+    decode[label.v1.model.PackageMetadata](pkgInfoString) match {
       case Xor.Left(err) => throw new CirceError(err)
-      case Xor.Right(pkgDetails) => pkgDetails
+      case Xor.Right(pkg) => pkg.as[rpc.v1.model.InstalledPackageInformation]
     }
   }
 
@@ -76,12 +78,24 @@ private[cosmos] final class ListHandler(
       packageName: String,
       releaseVersion: universe.v3.model.PackageDefinition.ReleaseVersion,
       repositoryUri: Uri
-  )(implicit session: RequestSession): Future[Option[internal.model.PackageDefinition]] = {
+  )(implicit session: RequestSession)
+    : Future[Option[rpc.v1.model.InstalledPackageInformation]] = {
     repositories(repositoryUri).flatMap {
       case Some(repository) =>
         repository
           .getPackageByReleaseVersion(packageName, releaseVersion)
-          .map(Some(_))
+          .map { pkg =>
+            // TODO(version): The package definition conversion can throw: IllegalArgumentException
+            Some(
+                rpc.v1.model.InstalledPackageInformation(
+                    packageDefinition = pkg
+                      .as[Try[universe.v3.model.PackageDefinition]]
+                      .map(_.as[universe.v2.model.PackageDetails])
+                      .get,
+                    resourceDefinition =
+                      pkg.resource.as[Option[universe.v2.model.Resource]]
+                ))
+          }
       case _ => Future.value(None)
     }
   }
