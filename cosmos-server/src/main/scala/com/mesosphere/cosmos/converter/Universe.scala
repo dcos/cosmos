@@ -2,10 +2,12 @@ package com.mesosphere.cosmos.converter
 
 import com.mesosphere.cosmos.{ConversionFailure, PackageFileMissing}
 import com.mesosphere.cosmos.internal
+import com.mesosphere.cosmos.rpc
 import com.mesosphere.universe
 import com.mesosphere.universe.v3.model.{V2PackagingVersion, V3PackagingVersion}
 import com.twitter.bijection.Conversion.asMethod
-import com.twitter.bijection.{Bijection, Injection}
+import com.twitter.bijection.Conversion.fromFunction
+import com.twitter.bijection.{Bijection, Conversion, Injection}
 
 import scala.util.{Failure, Success, Try}
 
@@ -229,6 +231,34 @@ object Universe {
       }
     }
   }
+
+  implicit val internalPackageDefinitionToV2DescribeResponse: Conversion[
+    internal.model.PackageDefinition,
+    rpc.v2.model.DescribeResponse
+    ] = Conversion.fromFunction((pkgDef: internal.model.PackageDefinition) => {
+    rpc.v2.model.DescribeResponse(
+      pkgDef.packagingVersion,
+      pkgDef.name,
+      pkgDef.version,
+      pkgDef.releaseVersion,
+      pkgDef.maintainer,
+      pkgDef.description,
+      pkgDef.tags,
+      pkgDef.selected,
+      pkgDef.scm,
+      pkgDef.website,
+      pkgDef.framework,
+      pkgDef.preInstallNotes,
+      pkgDef.postInstallNotes,
+      pkgDef.postUninstallNotes,
+      pkgDef.licenses,
+      pkgDef.minDcosReleaseVersion,
+      pkgDef.marathon,
+      pkgDef.resource,
+      pkgDef.config,
+      pkgDef.command
+    )
+  })
 
   // TODO(version): Can we write this as an Bijection?
   implicit val v3PackageDefinitionToInternalPackageDefinition: Injection[
