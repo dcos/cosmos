@@ -8,6 +8,7 @@ import com.mesosphere.cosmos.thirdparty.marathon.circe.Encoders._
 import com.mesosphere.cosmos.rpc.v1.circe.Encoders._
 import com.mesosphere.universe.common.circe.Encoders._
 import com.mesosphere.universe.v2.circe.Encoders._
+import com.mesosphere.universe.v3.circe.Encoders._
 import com.twitter.finagle.http.Status
 import io.circe.generic.encoding.DerivedObjectEncoder
 import io.circe.generic.semiauto._
@@ -107,7 +108,7 @@ object Encoders {
   private[this] def msgForCosmosError(err: CosmosError): String = err match {
     case PackageNotFound(packageName) =>
       s"Package [$packageName] not found"
-    case VersionNotFound(packageName, com.mesosphere.universe.v2.model.PackageDetailsVersion(packageVersion)) =>
+    case VersionNotFound(packageName, com.mesosphere.universe.v3.model.PackageDefinition.Version(packageVersion)) =>
       s"Version [$packageVersion] of package [$packageName] not found"
     case EmptyPackageImport() =>
       "Package is empty"
@@ -212,6 +213,15 @@ object Encoders {
         case Ior.Left(n) => s"Repository name [$n] is not present in the list"
         case Ior.Right(u) => s"Repository URI [$u] is not present in the list"
       }
+    case UnsupportedRedirect(supported, actual) =>
+      val supportedMsg = supported.mkString("[", ", ", "]")
+      actual match {
+        case Some(act) =>
+          s"Unsupported redirect scheme - supported: $supportedMsg actual: $act"
+        case None =>
+          s"Unsupported redirect scheme - supported: $supportedMsg"
+      }
+    case ConversionFailure(message) => message
   }
 
 }

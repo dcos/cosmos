@@ -1,16 +1,14 @@
 package com.mesosphere.cosmos
 
-import java.nio.file.Path
-
 import com.mesosphere.cosmos.circe.Encoders._
 import com.mesosphere.cosmos.handler._
 import com.mesosphere.cosmos.http.MediaTypes
 import com.mesosphere.cosmos.repository.PackageSourcesStorage
 import com.mesosphere.cosmos.repository.UniverseClient
-import com.mesosphere.cosmos.repository.V3UniverseClient
 import com.mesosphere.cosmos.repository.ZooKeeperStorage
 import com.mesosphere.cosmos.rpc.v1.circe.MediaTypedDecoders._
 import com.mesosphere.cosmos.rpc.v1.circe.MediaTypedEncoders._
+import com.mesosphere.cosmos.rpc.v2.circe.MediaTypedEncoders._
 import com.netaporter.uri.Uri
 import com.twitter.finagle.Service
 import com.twitter.finagle.http.{Request, Response, Status}
@@ -24,12 +22,12 @@ import shapeless.HNil
 
 private[cosmos] final class Cosmos(
   uninstallHandler: EndpointHandler[rpc.v1.model.UninstallRequest, rpc.v1.model.UninstallResponse],
-  packageInstallHandler: EndpointHandler[rpc.v1.model.InstallRequest, rpc.v1.model.InstallResponse],
+  packageInstallHandler: EndpointHandler[rpc.v1.model.InstallRequest, rpc.v2.model.InstallResponse],
   packageRenderHandler: EndpointHandler[rpc.v1.model.RenderRequest, rpc.v1.model.RenderResponse],
   packageSearchHandler: EndpointHandler[rpc.v1.model.SearchRequest, rpc.v1.model.SearchResponse],
-  packageDescribeHandler: EndpointHandler[rpc.v1.model.DescribeRequest, rpc.v1.model.DescribeResponse],
+  packageDescribeHandler: EndpointHandler[rpc.v1.model.DescribeRequest, internal.model.PackageDefinition],
   packageListVersionsHandler: EndpointHandler[rpc.v1.model.ListVersionsRequest, rpc.v1.model.ListVersionsResponse],
-  listHandler: EndpointHandler[rpc.v1.model.ListRequest, rpc.v1.model.ListResponse],
+  listHandler: EndpointHandler[rpc.v1.model.ListRequest, rpc.v2.model.ListResponse],
   listRepositoryHandler: EndpointHandler[rpc.v1.model.PackageRepositoryListRequest, rpc.v1.model.PackageRepositoryListResponse],
   addRepositoryHandler: EndpointHandler[rpc.v1.model.PackageRepositoryAddRequest, rpc.v1.model.PackageRepositoryAddResponse],
   deleteRepositoryHandler: EndpointHandler[rpc.v1.model.PackageRepositoryDeleteRequest, rpc.v1.model.PackageRepositoryDeleteResponse],
@@ -131,21 +129,6 @@ private[cosmos] final class Cosmos(
 
 }
 
-// TODO (version): Replace Cosmos signature above with this
-private[cosmos] final class V3Cosmos(
-  uninstallHandler: EndpointHandler[rpc.v1.model.UninstallRequest, rpc.v1.model.UninstallResponse],
-  packageInstallHandler: EndpointHandler[rpc.v1.model.InstallRequest, rpc.v2.model.InstallResponse],
-  packageRenderHandler: EndpointHandler[rpc.v1.model.RenderRequest, rpc.v1.model.RenderResponse],
-  packageSearchHandler: EndpointHandler[rpc.v1.model.SearchRequest, rpc.v1.model.V3SearchResponse],
-  packageDescribeHandler: EndpointHandler[rpc.v1.model.DescribeRequest, rpc.v2.model.DescribeResponse],
-  packageListVersionsHandler: EndpointHandler[rpc.v1.model.ListVersionsRequest, rpc.v1.model.ListVersionsResponse],
-  listHandler: EndpointHandler[rpc.v1.model.ListRequest, rpc.v1.model.ListResponse],
-  listRepositoryHandler: EndpointHandler[rpc.v1.model.PackageRepositoryListRequest, rpc.v1.model.PackageRepositoryListResponse],
-  addRepositoryHandler: EndpointHandler[rpc.v1.model.PackageRepositoryAddRequest, rpc.v1.model.PackageRepositoryAddResponse],
-  deleteRepositoryHandler: EndpointHandler[rpc.v1.model.PackageRepositoryDeleteRequest, rpc.v1.model.PackageRepositoryDeleteResponse],
-  capabilitiesHandler: CapabilitiesHandler
-)(implicit statsReceiver: StatsReceiver = NullStatsReceiver)
-
 object Cosmos extends FinchServer {
   def service = {
     implicit val stats = statsReceiver.scope("cosmos")
@@ -188,9 +171,6 @@ object Cosmos extends FinchServer {
       }
 
     val boot = ar map { adminRouter =>
-      val dd = dataDir()
-      logger.info("Using {} for data directory", dd)
-
       val zkUri = zookeeperUri()
       logger.info("Using {} for the ZooKeeper connection", zkUri)
 
@@ -206,7 +186,7 @@ object Cosmos extends FinchServer {
 
       val sourcesStorage = new ZooKeeperStorage(zkClient)()
 
-      val cosmos = Cosmos(adminRouter, marathonPackageRunner, sourcesStorage, UniverseClient(), dd)
+      val cosmos = Cosmos(adminRouter, marathonPackageRunner, sourcesStorage, UniverseClient())
       cosmos.service
     }
     boot.get
@@ -216,11 +196,15 @@ object Cosmos extends FinchServer {
     adminRouter: AdminRouter,
     packageRunner: PackageRunner,
     sourcesStorage: PackageSourcesStorage,
-    universeClient: UniverseClient,
-    dataDir: Path
+    universeClient: UniverseClient
   )(implicit statsReceiver: StatsReceiver = NullStatsReceiver): Cosmos = {
 
-    val repositories = new MultiRepository(sourcesStorage, dataDir, universeClient)
+    // TODO(version): How are we going to get the DC/OS release version??
+    val repositories = new MultiRepository(
+      sourcesStorage,
+      universeClient,
+      com.mesosphere.universe.v3.model.DcosReleaseVersionParser.parseUnsafe("1.8")
+    )
 
     new Cosmos(
       new UninstallHandler(adminRouter, repositories),
@@ -229,41 +213,6 @@ object Cosmos extends FinchServer {
       new PackageSearchHandler(repositories),
       new PackageDescribeHandler(repositories),
       new ListVersionsHandler(repositories),
-      new ListHandler(adminRouter, uri => repositories.getRepository(uri)),
-      new PackageRepositoryListHandler(sourcesStorage),
-      new PackageRepositoryAddHandler(sourcesStorage),
-      new PackageRepositoryDeleteHandler(sourcesStorage),
-      new CapabilitiesHandler
-    )(statsReceiver)
-  }
-
-  // TODO (version): Rename this to `apply`
-  private[cosmos] def v3Apply(
-    adminRouter: AdminRouter,
-    packageRunner: PackageRunner,
-    sourcesStorage: PackageSourcesStorage,
-    universeClient: UniverseClient,
-    v3UniverseClient: V3UniverseClient, // TODO(version): rename this parameter
-    // TODO (version): Remove this?
-    dataDir: Path
-  )(implicit statsReceiver: StatsReceiver = NullStatsReceiver): V3Cosmos = {
-
-    // TODO (version): Combine these
-    val repositories = new MultiRepository(sourcesStorage, dataDir, universeClient)
-    // TODO(version): How are we going to get the DC/OS release version??
-    val v3Repositories = new V3MultiRepository(
-      sourcesStorage,
-      v3UniverseClient,
-      com.mesosphere.universe.v3.model.DcosReleaseVersionParser.parseUnsafe("1.8")
-    )
-
-    new V3Cosmos(
-      new UninstallHandler(adminRouter, repositories),
-      new V3PackageInstallHandler(v3Repositories, packageRunner),
-      new V3PackageRenderHandler(v3Repositories),
-      new V3PackageSearchHandler(v3Repositories),
-      new V3PackageDescribeHandler(v3Repositories),
-      new V3ListVersionsHandler(v3Repositories),
       new ListHandler(adminRouter, uri => repositories.getRepository(uri)),
       new PackageRepositoryListHandler(sourcesStorage),
       new PackageRepositoryAddHandler(sourcesStorage),

@@ -1,6 +1,6 @@
 package com.mesosphere.cosmos.thirdparty.marathon.model
 
-import com.mesosphere.universe.v2.model.{PackageDetailsVersion, ReleaseVersion}
+import com.mesosphere.universe
 
 case class MarathonApp(
   id: AppId,
@@ -14,9 +14,16 @@ case class MarathonApp(
 ) {
   def packageName: Option[String] = labels.get(MarathonApp.nameLabel)
 
-  def packageReleaseVersion: Option[ReleaseVersion] = labels.get(MarathonApp.releaseLabel).map(ReleaseVersion)
+  def packageReleaseVersion: Option[universe.v3.model.PackageDefinition.ReleaseVersion] = {
+    // TODO(version): This can throw
+    labels.get(MarathonApp.releaseLabel)
+      .map(_.toInt)
+      .map(version => universe.v3.model.PackageDefinition.ReleaseVersion(version))
+  }
 
-  def packageVersion: Option[PackageDetailsVersion] = labels.get(MarathonApp.versionLabel).map(PackageDetailsVersion)
+  def packageVersion: Option[universe.v3.model.PackageDefinition.Version] = {
+    labels.get(MarathonApp.versionLabel).map(universe.v3.model.PackageDefinition.Version)
+  }
 
   def packageRepository: Option[String] = labels.get(MarathonApp.repositoryLabel)
 

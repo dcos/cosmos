@@ -1,8 +1,8 @@
 package com.mesosphere.cosmos
 
 import com.mesosphere.cosmos.repository.CosmosRepository
-import com.mesosphere.cosmos.rpc.v1.model.{PackageRepository, SearchResult}
-import com.mesosphere.universe.v2.model.{PackageDetailsVersion, PackageFiles, ReleaseVersion, UniverseIndexEntry}
+import com.mesosphere.universe
+import com.netaporter.uri.Uri
 import com.netaporter.uri.dsl.stringToUri
 import com.twitter.util.Future
 
@@ -10,26 +10,31 @@ import com.twitter.util.Future
   *
   * @param packages the contents of the cache: package data indexed by package name
   */
-final case class MemoryPackageCache(packages: Map[String, PackageFiles]) extends CosmosRepository {
+final case class MemoryPackageCache(
+  packages: Map[String, internal.model.PackageDefinition],
+  sourceUri: Uri
+) extends CosmosRepository {
 
-  override def repository: PackageRepository = throw new UnsupportedOperationException()
+  override def repository: rpc.v1.model.PackageRepository = {
+    throw new UnsupportedOperationException()
+  }
 
   override def getPackageByPackageVersion(
     packageName: String,
-    packageVersion: Option[PackageDetailsVersion]
-  ): Future[PackageFiles] = {
+    packageVersion: Option[universe.v3.model.PackageDefinition.Version]
+  ): Future[(internal.model.PackageDefinition, Uri)] = {
     Future.value {
       packages.get(packageName) match {
         case None => throw PackageNotFound(packageName)
-        case Some(a) => a
+        case Some(a) => (a, sourceUri)
       }
     }
   }
 
   override def getPackageByReleaseVersion(
     packageName: String,
-    releaseVersion: ReleaseVersion
-  ): Future[PackageFiles] = {
+    releaseVersion: universe.v3.model.PackageDefinition.ReleaseVersion
+  ): Future[internal.model.PackageDefinition] = {
     Future.value {
       packages.get(packageName) match {
         case None => throw PackageNotFound(packageName)
@@ -38,13 +43,14 @@ final case class MemoryPackageCache(packages: Map[String, PackageFiles]) extends
     }
   }
 
-  override def search(query: Option[String]): Future[List[SearchResult]] = {
+  override def search(query: Option[String]): Future[List[rpc.v1.model.SearchResult]] = {
     Future.exception(RepositoryNotFound("http://example.com/universe.zip"))
   }
 
-  override def getPackageIndex(
+  override def getPackagesByPackageName(
     packageName: String
-  ): Future[UniverseIndexEntry] = {
+  ): Future[List[internal.model.PackageDefinition]] = {
     Future.exception(PackageNotFound(packageName))
   }
+
 }

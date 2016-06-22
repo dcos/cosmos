@@ -4,8 +4,8 @@ import java.nio.file
 
 import com.mesosphere.cosmos.Flaggables._
 import com.mesosphere.cosmos.model.ZooKeeperUri
-import com.twitter.app.GlobalFlag
 import com.netaporter.uri.Uri
+import com.twitter.app.GlobalFlag
 
 object dcosUri extends GlobalFlag[Uri](
   s"The URI where the DCOS Admin Router is located. If this flag is set, " +

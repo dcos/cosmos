@@ -20,26 +20,13 @@ object Encoders {
     )
   }
   implicit val encodeLicense: Encoder[License] = deriveFor[License].encoder
-  implicit val encodePackageDefinition: Encoder[PackageDetails] = deriveFor[PackageDetails].encoder
+  implicit val encodePackageDetails: Encoder[PackageDetails] = deriveFor[PackageDetails].encoder
   implicit val encodePackageDetailsVersion: Encoder[PackageDetailsVersion] = Encoder.instance(_.toString.asJson)
   implicit val encodePackageFiles: Encoder[PackageFiles] = deriveFor[PackageFiles].encoder
   implicit val encodePackagingVersion: Encoder[PackagingVersion] = Encoder.instance(_.toString.asJson)
   implicit val encodePackageRevision: Encoder[ReleaseVersion] = Encoder.instance(_.toString.asJson)
   implicit val encodeResource: Encoder[Resource] = deriveFor[Resource].encoder
 
-  implicit val encodeUniverseIndex: Encoder[UniverseIndex] = deriveFor[UniverseIndex].encoder
-  implicit val encodePackageIndex: Encoder[UniverseIndexEntry] = ObjectEncoder.instance { entry =>
-    val encodedFields = encodeIndexEntryFields(
-      entry.name,
-      entry.currentVersion,
-      entry.versions,
-      entry.description,
-      entry.framework,
-      entry.tags,
-      entry.selected
-    )
-    JsonObject.fromIndexedSeq(encodedFields)
-  }
   implicit val encodeUniverseVersion: Encoder[UniverseVersion] = Encoder.instance(_.toString.asJson)
 
   def encodeIndexEntryFields(

@@ -6,7 +6,7 @@ import com.mesosphere.cosmos.rpc.v1.circe.Decoders._
 import com.mesosphere.cosmos.rpc.v1.circe.Encoders._
 import com.mesosphere.cosmos.rpc.v1.model.{SearchRequest, SearchResponse, SearchResult}
 import com.mesosphere.cosmos.test.CosmosIntegrationTestClient.CosmosClient
-import com.mesosphere.universe.v2.model.{Images, PackageDetailsVersion, ReleaseVersion}
+import com.mesosphere.universe
 import com.twitter.finagle.http._
 import com.twitter.io.Buf
 import io.circe.parse._
@@ -60,14 +60,17 @@ private object PackageSearchSpec extends TableDrivenPropertyChecks {
 
   val ArangodbSearchResult = SearchResult(
     name = "arangodb",
-    currentVersion = PackageDetailsVersion("0.3.0"),
-    versions = Map(PackageDetailsVersion("0.2.1") -> ReleaseVersion("0"), PackageDetailsVersion("0.3.0") -> ReleaseVersion("1")),
+    currentVersion = universe.v3.model.PackageDefinition.Version("0.3.0"),
+    versions = Map(
+      universe.v3.model.PackageDefinition.Version("0.2.1") -> universe.v3.model.PackageDefinition.ReleaseVersion(0),
+      universe.v3.model.PackageDefinition.Version("0.3.0") -> universe.v3.model.PackageDefinition.ReleaseVersion(1)),
     description = "A distributed free and open-source database with a flexible data model for documents, graphs, and key-values. " +
       "Build high performance applications using a convenient SQL-like query language or JavaScript extensions.",
     framework = true,
-    tags = List("arangodb", "NoSQL", "database", "framework"),
+    tags = List("arangodb", "NoSQL", "database", "framework")
+      .map(universe.v3.model.PackageDefinition.Tag(_)),
     selected = Some(true),
-    images = Some(Images(
+    images = Some(universe.v3.model.Images(
       iconSmall = "https://raw.githubusercontent.com/arangodb/arangodb-dcos/master/icons/arangodb_small.png",
       iconMedium = "https://raw.githubusercontent.com/arangodb/arangodb-dcos/master/icons/arangodb_medium.png",
       iconLarge = "https://raw.githubusercontent.com/arangodb/arangodb-dcos/master/icons/arangodb_large.png",
@@ -77,16 +80,16 @@ private object PackageSearchSpec extends TableDrivenPropertyChecks {
 
   val CassandraSearchResult = SearchResult(
     name = "cassandra",
-    currentVersion = PackageDetailsVersion("0.2.0-2"),
+    currentVersion = universe.v3.model.PackageDefinition.Version("0.2.0-2"),
     versions = Map(
-      PackageDetailsVersion("0.2.0-1") -> ReleaseVersion("0"),
-      PackageDetailsVersion("0.2.0-2") -> ReleaseVersion("1")
+      universe.v3.model.PackageDefinition.Version("0.2.0-1") -> universe.v3.model.PackageDefinition.ReleaseVersion(0),
+      universe.v3.model.PackageDefinition.Version("0.2.0-2") -> universe.v3.model.PackageDefinition.ReleaseVersion(1)
     ),
     description = "Apache Cassandra running on Apache Mesos",
     framework = true,
-    tags = List("data", "database", "nosql"),
+    tags = List("data", "database", "nosql").map(universe.v3.model.PackageDefinition.Tag(_)),
     selected = Some(true),
-    images = Some(Images(
+    images = Some(universe.v3.model.Images(
       iconSmall = "https://downloads.mesosphere.com/cassandra-mesos/assets/cassandra-small.png",
       iconMedium = "https://downloads.mesosphere.com/cassandra-mesos/assets/cassandra-medium.png",
       iconLarge = "https://downloads.mesosphere.com/cassandra-mesos/assets/cassandra-large.png",
@@ -96,17 +99,17 @@ private object PackageSearchSpec extends TableDrivenPropertyChecks {
 
   val CrateSearchResult = SearchResult(
     name = "crate",
-    currentVersion = PackageDetailsVersion("0.1.0"),
-    versions = Map(PackageDetailsVersion("0.1.0") -> ReleaseVersion("0")),
+    currentVersion = universe.v3.model.PackageDefinition.Version("0.1.0"),
+    versions = Map(universe.v3.model.PackageDefinition.Version("0.1.0") -> universe.v3.model.PackageDefinition.ReleaseVersion(0)),
     description = "A Mesos Framework that allows running and resizing one or multiple Crate database clusters.",
     framework = true,
     tags = List(
       "database",
       "distributed",
       "nosql"
-    ),
+    ).map(universe.v3.model.PackageDefinition.Tag(_)),
     selected = Some(false),
-    images = Some(Images(
+    images = Some(universe.v3.model.Images(
       "https://cdn.crate.io/web/2.0/img/crate-mesos/crate-small.png",
       "https://cdn.crate.io/web/2.0/img/crate-mesos/crate-medium.png",
       "https://cdn.crate.io/web/2.0/img/crate-mesos/crate-large.png",
@@ -116,19 +119,19 @@ private object PackageSearchSpec extends TableDrivenPropertyChecks {
 
   val MemsqlSearchResult = SearchResult(
     name = "memsql",
-    currentVersion = PackageDetailsVersion("0.0.1"),
-    versions = Map(PackageDetailsVersion("0.0.1") -> ReleaseVersion("0")),
+    currentVersion = universe.v3.model.PackageDefinition.Version("0.0.1"),
+    versions = Map(universe.v3.model.PackageDefinition.Version("0.0.1") -> universe.v3.model.PackageDefinition.ReleaseVersion(0)),
     description = "MemSQL running on Apache Mesos. This framework provides the ability to create and manage a set of MemSQL clusters, each running with the MemSQL Ops management tool.",
     framework = true,
-    tags = List("mysql", "database", "rdbms"),
+    tags = List("mysql", "database", "rdbms").map(universe.v3.model.PackageDefinition.Tag(_)),
     selected = Some(false),
     images = None
   )
 
   val RiakSearchResult = SearchResult(
     name = "riak",
-    currentVersion = PackageDetailsVersion("0.1.1"),
-    versions = Map(PackageDetailsVersion("0.1.1") -> ReleaseVersion("0")),
+    currentVersion = universe.v3.model.PackageDefinition.Version("0.1.1"),
+    versions = Map(universe.v3.model.PackageDefinition.Version("0.1.1") -> universe.v3.model.PackageDefinition.ReleaseVersion(0)),
     description = "A distributed NoSQL key-value data store that offers high availability, fault tolerance, operational simplicity, and scalability.",
     framework = true,
     tags = List(
@@ -136,9 +139,9 @@ private object PackageSearchSpec extends TableDrivenPropertyChecks {
       "framework",
       "database",
       "riak"
-    ),
+    ).map(universe.v3.model.PackageDefinition.Tag(_)),
     selected = Some(false),
-    images = Some(Images(
+    images = Some(universe.v3.model.Images(
       "http://riak-tools.s3.amazonaws.com/riak-mesos/riak-mesos-small.png",
       "http://riak-tools.s3.amazonaws.com/riak-mesos/riak-mesos-medium.png",
       "http://riak-tools.s3.amazonaws.com/riak-mesos/riak-mesos-large.png",

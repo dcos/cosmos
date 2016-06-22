@@ -8,10 +8,11 @@ import com.mesosphere.cosmos._
 import com.mesosphere.cosmos.converter.Universe._
 import com.mesosphere.cosmos.http.RequestSession
 import com.mesosphere.cosmos.jsonschema.JsonSchemaValidation
-import com.mesosphere.cosmos.repository.{PackageCollection, V3PackageCollection}
+import com.mesosphere.cosmos.repository.PackageCollection
 import com.mesosphere.cosmos.thirdparty.marathon.model.AppId
 import com.mesosphere.universe
 import com.mesosphere.universe.common.ByteBuffers
+import com.mesosphere.universe.v3.circe.Encoders._
 import com.netaporter.uri.Uri
 import com.twitter.bijection.Conversion.asMethod
 import com.twitter.io.Charsets
@@ -24,87 +25,11 @@ import scala.collection.JavaConverters._
 import scala.util.Try
 
 private[cosmos] final class PackageInstallHandler(
-  packageCache: PackageCollection,
-  packageRunner: PackageRunner
-) extends EndpointHandler[rpc.v1.model.InstallRequest, rpc.v1.model.InstallResponse] {
-
-  import PackageInstallHandler._
-
-  override def apply(request: rpc.v1.model.InstallRequest)(implicit
-    session: RequestSession
-  ): Future[rpc.v1.model.InstallResponse] = {
-    packageCache
-      .getPackageByPackageVersion(request.packageName, request.packageVersion)
-      .flatMap { packageFiles =>
-        val packageConfig = preparePackageConfig(request.appId, request.options, packageFiles)
-        packageRunner
-          .launch(packageConfig)
-          .map { runnerResponse =>
-            val packageName = packageFiles.packageJson.name
-            val packageVersion = packageFiles.packageJson.version
-            val appId = runnerResponse.id
-            rpc.v1.model.InstallResponse(packageName, packageVersion, appId)
-          }
-      }
-  }
-
-}
-
-private[cosmos] object PackageInstallHandler extends PackageInstallCommonMethods {
-
-  private[cosmos] def preparePackageConfig(
-    appId: Option[AppId],
-    options: Option[JsonObject],
-    packageFiles: universe.v2.model.PackageFiles
-  ): Json = {
-    val packageConfig = packageFiles.configJson
-    val assetsJson = packageFiles.resourceJson
-      .flatMap(_.assets)
-      .map(_.asJson(universe.v2.circe.Encoders.encodeAssets))
-    val mergedOptions = mergeOptions(packageConfig, assetsJson, options)
-
-    val marathonJson = renderMustacheTemplate(packageFiles.marathonJsonMustache, mergedOptions)
-
-    val marathonLabels = new MarathonLabels {
-      override def commandJson: Option[Json] = packageFiles.commandJson
-        .map(_.asJson(universe.v2.circe.Encoders.encodeCommandDefinition))
-      override def packageMetadataJson: Json = getPackageMetadataJson(packageFiles)
-      override def sourceUri: Uri = packageFiles.sourceUri
-      override def packagingVersion: String = packageFiles.packageJson.packagingVersion.toString
-      override def packageName: String = packageFiles.packageJson.name
-      override def packageReleaseVersion: String = packageFiles.revision
-      override def packageVersion: String = packageFiles.packageJson.version.toString
-      override def isFramework: Option[Boolean] = packageFiles.packageJson.framework
-    }
-    val marathonJsonWithLabels = addLabels(marathonJson, marathonLabels, mergedOptions)
-
-    addAppId(marathonJsonWithLabels, appId)
-  }
-
-  private[this] def getPackageMetadataJson(packageFiles: universe.v2.model.PackageFiles): Json = {
-    val packageJson =
-      packageFiles.packageJson.asJson(universe.v2.circe.Encoders.encodePackageDefinition)
-
-    // add images to package.json metadata for backwards compatability in the UI
-    val imagesJson = packageFiles.resourceJson
-      .flatMap(_.images)
-      .map(_.asJson(universe.v2.circe.Encoders.encodeImages))
-
-    imagesJson match {
-      case Some(images) => packageJson.mapObject(_ + ("images", images))
-      case None => packageJson
-    }
-  }
-
-}
-
-// TODO (version): Rename to PackageInstallHandler
-private[cosmos] final class V3PackageInstallHandler(
-  packageCollection: V3PackageCollection,
+  packageCollection: PackageCollection,
   packageRunner: PackageRunner
 ) extends EndpointHandler[rpc.v1.model.InstallRequest, rpc.v2.model.InstallResponse] {
 
-  import V3PackageInstallHandler._
+  import PackageInstallHandler._
 
   override def apply(request: rpc.v1.model.InstallRequest)(implicit
     session: RequestSession
@@ -133,8 +58,9 @@ private[cosmos] final class V3PackageInstallHandler(
 
 }
 
-// TODO (version): Rename to PackageInstallHandler
-object V3PackageInstallHandler extends PackageInstallCommonMethods {
+object PackageInstallHandler {
+
+  private final val MustacheFactory = new DefaultMustacheFactory()
 
   private[cosmos] def preparePackageConfig(
     appId: Option[AppId],
@@ -162,9 +88,9 @@ object V3PackageInstallHandler extends PackageInstallCommonMethods {
 
       // TODO(version): This can throw
       override def packageMetadataJson: Json = pkg
-        .as[Try[universe.v3.model.V3Package]]
+        .as[Try[universe.v3.model.PackageDefinition]]
         .get
-        .asJson(universe.v3.circe.Encoders.encodeV3Package)
+        .asJson
 
       override def sourceUri: Uri = sourceRepoUri
 
@@ -183,14 +109,7 @@ object V3PackageInstallHandler extends PackageInstallCommonMethods {
     addAppId(marathonJsonWithLabels, appId)
   }
 
-}
-
-// TODO (version): Merge into PackageInstallHandler companion object
-trait PackageInstallCommonMethods {
-
-  protected[this] final val MustacheFactory = new DefaultMustacheFactory()
-
-  protected[this] final def mergeOptions(
+  private final def mergeOptions(
     packageConfig: Option[JsonObject],
     assetsJson: Option[Json],
     options: Option[JsonObject]
@@ -211,7 +130,7 @@ trait PackageInstallCommonMethods {
     Json.fromJsonObject(complete)
   }
 
-  protected[this] final def renderMustacheTemplate(
+  private final def renderMustacheTemplate(
     template: String,
     mergedOptions: Json
   ): Json = {
@@ -227,7 +146,7 @@ trait PackageInstallCommonMethods {
     }
   }
 
-  protected[this] final def addLabels(
+  private final def addLabels(
     marathonJson: Json,
     marathonLabels: MarathonLabels,
     mergedOptions: Json
@@ -248,7 +167,7 @@ trait PackageInstallCommonMethods {
     marathonJson.mapObject(_ + ("labels", packageLabels.asJson))
   }
 
-  protected[this] final def addAppId(marathonJson: Json, appId: Option[AppId]): Json = {
+  private final def addAppId(marathonJson: Json, appId: Option[AppId]): Json = {
     import com.mesosphere.cosmos.thirdparty.marathon.circe.Encoders.encodeAppId
     appId match {
       case Some(id) => marathonJson.mapObject(_ + ("id", id.asJson))

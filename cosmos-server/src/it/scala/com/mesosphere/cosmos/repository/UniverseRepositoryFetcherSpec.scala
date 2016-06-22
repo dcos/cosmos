@@ -1,6 +1,6 @@
 package com.mesosphere.cosmos.repository
 
-import com.mesosphere.cosmos.test.CosmosIntegrationTestClient
+import com.mesosphere.cosmos.rpc.v1.model.PackageRepository
 import com.mesosphere.universe.v3.model.DcosReleaseVersionParser
 import com.mesosphere.universe.v3.model.PackageDefinition.Version
 import com.netaporter.uri.Uri
@@ -10,17 +10,18 @@ import org.scalatest.FreeSpec
 
 class UniverseRepositoryFetcherSpec extends FreeSpec {
 
-  val fetcher = V3UniverseClient()
-
-  import CosmosIntegrationTestClient.Session
-
+  val fetcher = UniverseClient()
   val baseRepoUri: Uri = "https://downloads.mesosphere.com/universe/dce867e9af73b85172d5a36bf8114c69b3be024e"
+
+  def repository(repoFilename: String): PackageRepository = {
+    PackageRepository("repo", baseRepoUri / repoFilename)
+  }
 
   "UniverseRepositoryFetcher should" - {
     "be able to fetch" - {
       "1.8 json" in {
         val version = DcosReleaseVersionParser.parseUnsafe("1.8-dev")
-        val repo = Await.result(fetcher(baseRepoUri / "repo-up-to-1.8.json", version))
+        val repo = Await.result(fetcher(repository("repo-up-to-1.8.json"), version))
         val cassVersions = repo.packages
           .filter(_.name == "cassandra")
           .sorted
@@ -33,12 +34,12 @@ class UniverseRepositoryFetcherSpec extends FreeSpec {
       }
       "1.7 json" in {
         val version = DcosReleaseVersionParser.parseUnsafe("1.7")
-        val repo = Await.result(fetcher(baseRepoUri / "repo-empty-v3.json", version))
+        val repo = Await.result(fetcher(repository("repo-empty-v3.json"), version))
         assert(repo.packages.isEmpty)
       }
       "1.6.1 zip" in {
         val version = DcosReleaseVersionParser.parseUnsafe("1.6.1")
-        val repo = Await.result(fetcher(baseRepoUri / "repo-up-to-1.6.1.zip", version))
+        val repo = Await.result(fetcher(repository("repo-up-to-1.6.1.zip"), version))
         assert(repo.packages.nonEmpty)
       }
     }

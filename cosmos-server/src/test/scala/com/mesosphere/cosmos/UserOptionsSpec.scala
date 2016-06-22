@@ -1,23 +1,22 @@
 package com.mesosphere.cosmos
 
+import java.nio.ByteBuffer
+import java.nio.charset.StandardCharsets
+
 import cats.data.Xor
 import com.mesosphere.cosmos.handler._
 import com.mesosphere.cosmos.http.{MediaTypes, RequestSession}
-import com.mesosphere.cosmos.rpc.v1.circe.Decoders._
 import com.mesosphere.cosmos.rpc.v1.circe.Encoders._
-import com.mesosphere.cosmos.rpc.v1.model._
-import com.mesosphere.cosmos.thirdparty.marathon.model._
 import com.mesosphere.cosmos.thirdparty.marathon.circe.Decoders._
-import com.mesosphere.universe.v2.model.{PackageDetails, PackageDetailsVersion, PackageFiles, PackagingVersion}
+import com.mesosphere.cosmos.thirdparty.marathon.model._
+import com.mesosphere.universe
 import com.netaporter.uri.Uri
 import com.twitter.finagle.http.RequestBuilder
 import com.twitter.io.Buf
 import com.twitter.util.{Await, Future}
 import io.circe.syntax._
-import io.circe.{Encoder, Json, JsonObject}
-import io.finch.{DecodeRequest, Input}
-
-import scala.reflect.ClassTag
+import io.circe.{Json, JsonObject}
+import io.finch.Input
 
 final class UserOptionsSpec extends UnitSpec {
 
@@ -34,40 +33,36 @@ final class UserOptionsSpec extends UnitSpec {
     "should happen as part of package install" in {
       forAll (Examples) { (defaultsJson, optionsJson, mergedJson) =>
         val packageName = "options-test"
-        val reqBody = InstallRequest(packageName, None, Some(optionsJson))
+        val reqBody = rpc.v1.model.InstallRequest(packageName, None, Some(optionsJson))
         val mustacheTemplate = buildMustacheTemplate(mergedJson)
+        val mustacheBytes = ByteBuffer.wrap(mustacheTemplate.getBytes(StandardCharsets.UTF_8))
 
-        val packageFiles = PackageFiles(
-          revision = "0",
-          sourceUri = Uri.parse("in/memory/source"),
-          packageJson = PackageDetails(
-            packagingVersion = PackagingVersion("2.0"),
-            name = packageName,
-            version = PackageDetailsVersion("1.2.3"),
-            maintainer = "Mesosphere",
-            description = "Testing user options"
-          ),
-          marathonJsonMustache = mustacheTemplate,
-          configJson = Some(buildConfig(Json.fromJsonObject(defaultsJson)))
+        val packageDefinition = internal.model.PackageDefinition(
+          packagingVersion = universe.v3.model.V3PackagingVersion.instance,
+          name = packageName,
+          version = universe.v3.model.PackageDefinition.Version("1.2.3"),
+          maintainer = "Mesosphere",
+          description = "Testing user options",
+          releaseVersion = universe.v3.model.PackageDefinition.ReleaseVersion(0),
+          marathon = Some(universe.v3.model.Marathon(mustacheBytes)),
+          config = Some(buildConfig(Json.fromJsonObject(defaultsJson)))
         )
-        val packages = Map(packageName -> packageFiles)
-        val packageCache = MemoryPackageCache(packages)
+
+        val packages = Map(packageName -> packageDefinition)
+        val packageCache = MemoryPackageCache(packages, Uri.parse("in/memory/source"))
         val packageRunner = new RecordingPackageRunner
 
-        import io.finch.circe._
         val cosmos = new Cosmos(
-          constHandler(UninstallResponse(Nil)),
+          constHandler(rpc.v1.model.UninstallResponse(Nil)),
           new PackageInstallHandler(packageCache, packageRunner),
           new PackageRenderHandler(packageCache),
-          constHandler(SearchResponse(List.empty)),
-          constHandler(
-            DescribeResponse(packageFiles.packageJson, packageFiles.marathonJsonMustache)
-          ),
-          constHandler(ListVersionsResponse(Map.empty)),
-          constHandler(ListResponse(Nil)),
-          constHandler(PackageRepositoryListResponse(Nil)),
-          constHandler(PackageRepositoryAddResponse(Nil)),
-          constHandler(PackageRepositoryDeleteResponse(Nil)),
+          constHandler(rpc.v1.model.SearchResponse(List.empty)),
+          constHandler(packageDefinition),
+          constHandler(rpc.v1.model.ListVersionsResponse(Map.empty)),
+          constHandler(rpc.v2.model.ListResponse(Nil)),
+          constHandler(rpc.v1.model.PackageRepositoryListResponse(Nil)),
+          constHandler(rpc.v1.model.PackageRepositoryAddResponse(Nil)),
+          constHandler(rpc.v1.model.PackageRepositoryDeleteResponse(Nil)),
           new CapabilitiesHandler
         )
         val request = RequestBuilder()
@@ -184,10 +179,8 @@ final class UserOptionsSpec extends UnitSpec {
       .mkString("{", ",", "}")
   }
 
-  private[this] def constHandler[Request, Response](resp: Response)(implicit
-    decoder: DecodeRequest[Request],
-    encoder: Encoder[Response],
-    requestClassTag: ClassTag[Request]
+  private[this] def constHandler[Request, Response](
+    resp: Response
   ): EndpointHandler[Request, Response] = {
     new EndpointHandler[Request, Response] {
       override def apply(v1: Request)(implicit session: RequestSession): Future[Response] = {

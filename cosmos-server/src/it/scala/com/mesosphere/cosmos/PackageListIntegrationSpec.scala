@@ -46,7 +46,8 @@ final class PackageListIntegrationSpec
         description = "Example DCOS application package",
         preInstallNotes = Some("A sample pre-installation message"),
         postInstallNotes = Some("A sample post-installation message"),
-        tags = List("mesosphere", "example", "subcommand")
+        tags = List("mesosphere", "example", "subcommand"),
+        selected = Some(false)
       )
     )
     withInstalledPackage("helloworld") { installResponse =>

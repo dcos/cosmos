@@ -6,28 +6,21 @@ import com.mesosphere.universe
 import com.mesosphere.universe.common.circe.Decoders._
 import com.mesosphere.universe.v2.circe.Decoders._
 import com.mesosphere.universe.v2.model.{Images, PackageDetailsVersion, ReleaseVersion}
+import com.mesosphere.universe.v3.circe.Decoders._
 import io.circe.generic.semiauto._
 import io.circe.{Decoder, HCursor}
 
 object Decoders {
 
-  implicit val decodeSearchResult: Decoder[SearchResult] = Decoder.instance { cursor =>
-    for {
-      indexEntry <- universe.v2.circe.Decoders.decodeV2PackageIndex(cursor)
-      images <- cursor.downField("images").as[Option[Images]]
-    } yield {
-      SearchResult(
-        name = indexEntry.name,
-        currentVersion = indexEntry.currentVersion,
-        versions = indexEntry.versions,
-        description = indexEntry.description,
-        framework = indexEntry.framework,
-        tags = indexEntry.tags,
-        selected = indexEntry.selected,
-        images = images
-      )
+  implicit val decodeVersionsMap: Decoder[Map[universe.v3.model.PackageDefinition.Version, universe.v3.model.PackageDefinition.ReleaseVersion]] = {
+    Decoder.decodeMap[Map, universe.v3.model.PackageDefinition.ReleaseVersion].map { stringKeys =>
+      stringKeys.map { case (versionString, releaseVersion) =>
+        universe.v3.model.PackageDefinition.Version(versionString) -> releaseVersion
+      }
     }
   }
+
+  implicit val decodeSearchResult: Decoder[SearchResult] = deriveFor[SearchResult].decoder
 
   implicit val decodeDescribeRequest: Decoder[DescribeRequest] = deriveFor[DescribeRequest].decoder
   implicit val decodeSearchRequest: Decoder[SearchRequest] = deriveFor[SearchRequest].decoder
