@@ -276,7 +276,8 @@ private object PackageInstallIntegrationSpec extends Matchers with TableDrivenPr
       "command" -> HelloWorldCommand,
       "version" -> "0.1.0".asJson,
       "preInstallNotes" -> "A sample pre-installation message".asJson,
-      "releaseVersion" -> 0.asJson
+      "releaseVersion" -> 0.asJson,
+      "framework" -> false.asJson
     ).asJson,
     packageCommand = HelloWorldCommand,
     packageRegistryVersion = "2.0",

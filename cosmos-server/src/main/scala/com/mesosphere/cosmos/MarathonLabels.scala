@@ -16,7 +16,7 @@ private[cosmos] abstract class MarathonLabels {
   protected[this] def packageVersion: String
   protected[this] def sourceUri: Uri
   protected[this] def packageReleaseVersion: String
-  protected[this] def isFramework: Option[Boolean]
+  protected[this] def isFramework: Boolean
 
   final def requiredLabels: Map[String, String] = {
     Map(
@@ -26,7 +26,7 @@ private[cosmos] abstract class MarathonLabels {
       (MarathonApp.versionLabel, packageVersion),
       (MarathonApp.repositoryLabel, sourceUri.toString),
       (MarathonApp.releaseLabel, packageReleaseVersion),
-      (MarathonApp.isFrameworkLabel, isFramework.getOrElse(true).toString)
+      (MarathonApp.isFrameworkLabel, isFramework.toString)
     )
   }
 
