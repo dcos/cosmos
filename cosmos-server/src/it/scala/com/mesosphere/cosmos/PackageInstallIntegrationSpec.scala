@@ -249,34 +249,13 @@ private object PackageInstallIntegrationSpec extends Matchers with TableDrivenPr
       "website" -> "https://github.com/mesosphere/dcos-helloworld".asJson,
       "name" -> "helloworld".asJson,
       "postInstallNotes" -> "A sample post-installation message".asJson,
-      "marathon" -> Map(
-        "v2AppMustacheTemplate" -> (
-          "ewogICJpZCI6ICJoZWxsb3dvcmxkIiwKICAiY3B1cyI6IDEuMCwKICAibWVtIjogNTEyLAogICJpbnN0YW5jZ" +
-            "XMiOiAxLAogICJjbWQiOiAicHl0aG9uMyAtbSBodHRwLnNlcnZlciB7e3BvcnR9fSIsCiAgImNvbnRhaW5l" +
-            "ciI6IHsKICAgICJ0eXBlIjogIkRPQ0tFUiIsCiAgICAiZG9ja2VyIjogewogICAgICAiaW1hZ2UiOiAicHl" +
-            "0aG9uOjMiLAogICAgICAibmV0d29yayI6ICJIT1NUIgogICAgfQogIH0KfQo="
-          ).asJson
-      ).asJson,
       "description" -> "Example DCOS application package".asJson,
       "packagingVersion" -> "2.0".asJson,
       "tags" -> List("mesosphere".asJson, "example".asJson, "subcommand".asJson).asJson,
       "selected" -> false.asJson,
       "maintainer" -> "support@mesosphere.io".asJson,
-      "config" -> Map(
-        "$schema" -> "http://json-schema.org/schema#".asJson,
-        "type" -> "object".asJson,
-        "properties" -> Map(
-          "port" -> Map(
-            "type" -> "integer".asJson,
-            "default" -> 8080.asJson
-          ).asJson
-        ).asJson,
-        "additionalProperties" -> false.asJson
-      ).asJson,
-      "command" -> HelloWorldCommand,
       "version" -> "0.1.0".asJson,
       "preInstallNotes" -> "A sample pre-installation message".asJson,
-      "releaseVersion" -> 0.asJson,
       "framework" -> false.asJson
     ).asJson,
     packageCommand = HelloWorldCommand,

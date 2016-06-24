@@ -59,29 +59,4 @@ object Response {
     }
   }
 
-   private[this] def getV2ResourceFromPackageDefinition(
-     packageDef: universe.v3.model.PackageDefinition
-   ): Option[universe.v2.model.Resource] = {
-      packageDef match {
-        case v2Package: universe.v3.model.V2Package =>
-          v2Package.resource.as[Option[universe.v2.model.Resource]]
-        case v3Package: universe.v3.model.V3Package =>
-          v3Package.resource.as[Option[universe.v2.model.Resource]]
-    }
-  }
-
-  def v2ListResponseToV1ListResponse(x: rpc.v2.model.ListResponse): rpc.v1.model.ListResponse = {
-    rpc.v1.model.ListResponse(
-      packages = x.packages.map { y =>
-        rpc.v1.model.Installation(
-          appId = y.appId,
-          packageInformation = rpc.v1.model.InstalledPackageInformation(
-              packageDefinition = y.packageInformation.as[universe.v2.model.PackageDetails],
-              resourceDefinition = getV2ResourceFromPackageDefinition(y.packageInformation)
-          )
-        )
-      }
-    )
-  }
-
 }

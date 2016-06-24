@@ -27,7 +27,7 @@ private[cosmos] final class Cosmos(
   packageSearchHandler: EndpointHandler[rpc.v1.model.SearchRequest, rpc.v1.model.SearchResponse],
   packageDescribeHandler: EndpointHandler[rpc.v1.model.DescribeRequest, internal.model.PackageDefinition],
   packageListVersionsHandler: EndpointHandler[rpc.v1.model.ListVersionsRequest, rpc.v1.model.ListVersionsResponse],
-  listHandler: EndpointHandler[rpc.v1.model.ListRequest, rpc.v2.model.ListResponse],
+  listHandler: EndpointHandler[rpc.v1.model.ListRequest, rpc.v1.model.ListResponse],
   listRepositoryHandler: EndpointHandler[rpc.v1.model.PackageRepositoryListRequest, rpc.v1.model.PackageRepositoryListResponse],
   addRepositoryHandler: EndpointHandler[rpc.v1.model.PackageRepositoryAddRequest, rpc.v1.model.PackageRepositoryAddResponse],
   deleteRepositoryHandler: EndpointHandler[rpc.v1.model.PackageRepositoryDeleteRequest, rpc.v1.model.PackageRepositoryDeleteResponse],

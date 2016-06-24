@@ -40,18 +40,4 @@ object MediaTypedEncoders {
     ))
   }
 
-  implicit val packageListResponseEncoder: DispatchingMediaTypedEncoder[rpc.v2.model.ListResponse] = {
-    DispatchingMediaTypedEncoder(Seq(
-      MediaTypedEncoder(
-        encoder = rpc.v2.circe.Encoders.encodeV2ListResponse,
-        mediaType = MediaTypes.V2ListResponse
-      ),
-      MediaTypedEncoder(
-        encoder = rpc.v1.circe.Encoders.encodeListResponse.contramap(
-          converter.Response.v2ListResponseToV1ListResponse
-        ),
-        mediaType = MediaTypes.V1ListResponse
-      )
-    ))
-  }
 }
