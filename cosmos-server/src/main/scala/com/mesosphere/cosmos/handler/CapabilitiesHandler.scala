@@ -7,7 +7,8 @@ import com.twitter.util.Future
 private[cosmos] final class CapabilitiesHandler
   extends EndpointHandler[Unit, CapabilitiesResponse] {
 
-  private[this] val response = CapabilitiesResponse(List(Capability("PACKAGE_MANAGEMENT")))
+  private[this] val response = CapabilitiesResponse(
+    List(Capability("PACKAGE_MANAGEMENT"), Capability("SUPPORT_CLUSTER_REPORT")))
 
   override def apply(v1: Unit)(implicit
     session: RequestSession
