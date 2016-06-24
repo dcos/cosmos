@@ -9,7 +9,7 @@ case class PackageDetails(
   version: PackageDetailsVersion,
   maintainer: String,
   description: String,
-  tags: List[String] = Nil,         //TODO: pattern: "^[^\\s]+$"
+  tags: List[String] = Nil,
   selected: Option[Boolean] = None,
   scm: Option[String] = None,
   website: Option[String] = None,

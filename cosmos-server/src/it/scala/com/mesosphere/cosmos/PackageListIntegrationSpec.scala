@@ -1,16 +1,16 @@
 package com.mesosphere.cosmos
 
 import java.util.UUID
-
 import cats.data.Xor
 import com.mesosphere.cosmos.http.MediaTypes
+import com.mesosphere.cosmos.label.v1.model.PackageMetadata
 import com.mesosphere.cosmos.repository.DefaultRepositories
 import com.mesosphere.cosmos.rpc.v1.circe.Decoders._
 import com.mesosphere.cosmos.rpc.v1.circe.Encoders._
 import com.mesosphere.cosmos.rpc.v1.model._
 import com.mesosphere.cosmos.test.CosmosIntegrationTestClient
 import com.mesosphere.cosmos.thirdparty.marathon.model.AppId
-import com.mesosphere.universe.v2.model.{PackageDetails, PackageDetailsVersion, PackagingVersion}
+import com.mesosphere.universe.v2.model.{PackageDetailsVersion, PackagingVersion}
 import org.scalatest.concurrent.Eventually
 import org.scalatest.{AppendedClues, FreeSpec, Inside}
 
@@ -37,7 +37,7 @@ final class PackageListIntegrationSpec
 
   "Issue #251: Package list should include packages whose repositories have been removed" in {
     val expectedPackageInformation = InstalledPackageInformation(
-      PackageDetails(
+      PackageMetadata(
         packagingVersion = PackagingVersion("2.0"),
         name = "helloworld",
         version = PackageDetailsVersion("0.1.0"),
