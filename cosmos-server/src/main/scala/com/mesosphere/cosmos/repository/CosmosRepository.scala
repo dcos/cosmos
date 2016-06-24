@@ -103,9 +103,9 @@ final class DefaultCosmosRepository(
                       pkg.version,
                       Map((pkg.version, pkg.releaseVersion)),
                       pkg.description,
-                      pkg.framework.getOrElse(false),
+                      pkg.framework,
                       pkg.tags,
-                      pkg.selected,
+                      Some(pkg.selected),
                       pkg.resource.flatMap(_.images)))
 
             val releaseVersion = searchResult.versions.get(pkg.version).map { releaseVersion =>

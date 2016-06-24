@@ -102,7 +102,7 @@ object PackageInstallHandler {
       override def packageName: String = pkg.name
       override def packageReleaseVersion: String = pkg.releaseVersion.value.toString
       override def packageVersion: String = pkg.version.toString
-      override def isFramework: Option[Boolean] = pkg.framework
+      override def isFramework: Boolean = pkg.framework
     }
     val marathonJsonWithLabels = addLabels(marathonJson, marathonLabels, mergedOptions)
 
