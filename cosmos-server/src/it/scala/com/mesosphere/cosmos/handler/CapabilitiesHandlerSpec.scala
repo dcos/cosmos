@@ -20,6 +20,10 @@ final class CapabilitiesHandlerSpec extends FreeSpec {
     assertResult(Status.Ok)(response.status)
     assertResult(MediaTypes.CapabilitiesResponse.show)(response.headerMap("Content-Type"))
     val Xor.Right(body) = decode[CapabilitiesResponse](responseBody)
-    assertResult(CapabilitiesResponse(List(Capability("PACKAGE_MANAGEMENT"))))(body)
+    val expected = CapabilitiesResponse(List(
+      Capability("PACKAGE_MANAGEMENT"),
+      Capability("SUPPORT_CLUSTER_REPORT")
+    ))
+    assertResult(expected)(body)
   }
 }
