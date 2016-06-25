@@ -7,5 +7,7 @@
     "kind": "url",
     "url": "$URL",
     "sha1": "$SAH1"
-  }
+  },
+  "username": "dcos_cosmos",
+  "state_directory": true
 }
