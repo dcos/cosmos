@@ -108,7 +108,11 @@ final class PackageInstallIntegrationSpec extends FreeSpec with BeforeAndAfterAl
       val expectedResponse = InstallResponse("cassandra", PackageDetailsVersion("0.2.0-2"), AppId("custom-app-id"))
 
       installPackageAndAssert(
-        InstallRequest(expectedResponse.packageName, appId = Some(expectedResponse.appId)),
+        InstallRequest(
+          packageName = expectedResponse.packageName,
+          packageVersion = Some(PackageDetailsVersion("0.2.0-2")),
+          appId = Some(expectedResponse.appId)
+        ),
         expectedResult = Success(expectedResponse),
         preInstallState = NotInstalled,
         postInstallState = Installed
