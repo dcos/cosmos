@@ -1,23 +1,23 @@
 package com.mesosphere.cosmos.converter
 
 import java.nio.charset.StandardCharsets
-
 import com.mesosphere.cosmos.converter.Universe._
-import com.mesosphere.cosmos.ConversionFailure
-import com.mesosphere.cosmos.internal
-import com.mesosphere.cosmos.rpc
+import com.mesosphere.cosmos.{ConversionFailure, ServiceMarathonTemplateNotFound, internal, rpc}
 import com.mesosphere.universe
 import com.mesosphere.universe.common.ByteBuffers
 import com.twitter.bijection.Conversion.asMethod
+import com.twitter.util.Try
 
 object Response {
 
-  def v2InstallResponseToV1InstallResponse(x: rpc.v2.model.InstallResponse): rpc.v1.model.InstallResponse = {
-    rpc.v1.model.InstallResponse(
-      packageName = x.packageName,
-      packageVersion = x.packageVersion.as[universe.v2.model.PackageDetailsVersion],
-      appId = x.appId
-    )
+  def v2InstallResponseToV1InstallResponse(x: rpc.v2.model.InstallResponse): Try[rpc.v1.model.InstallResponse] = {
+    Try(x.appId.getOrElse(throw ServiceMarathonTemplateNotFound(x.packageName, x.packageVersion))).map { appId =>
+      rpc.v1.model.InstallResponse(
+        packageName = x.packageName,
+        packageVersion = x.packageVersion.as[universe.v2.model.PackageDetailsVersion],
+        appId = appId
+      )
+    }
   }
 
   def packageDefinitionToDescribeResponse(

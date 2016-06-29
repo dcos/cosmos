@@ -1,5 +1,6 @@
 package com.mesosphere.cosmos.handler
 
+import com.mesosphere.cosmos.ServiceMarathonTemplateNotFound
 import com.mesosphere.cosmos.converter.Universe._
 import com.mesosphere.cosmos.http.RequestSession
 import com.mesosphere.cosmos.repository.PackageCollection
@@ -23,9 +24,10 @@ private[cosmos] final class PackageRenderHandler(
         request.packageVersion.as[Option[universe.v3.model.PackageDefinition.Version]]
       )
       .map { case (v3Package, uri) =>
-        RenderResponse(
-          preparePackageConfig(request.appId, request.options, v3Package, uri)
-        )
+        preparePackageConfig(request.appId, request.options, v3Package, uri) match {
+          case Some(json) => RenderResponse(json)
+          case None => throw ServiceMarathonTemplateNotFound(v3Package.name, v3Package.version)
+        }
       }
   }
 

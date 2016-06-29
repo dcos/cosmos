@@ -10,9 +10,11 @@ import com.mesosphere.cosmos.repository.DefaultRepositories
 import com.mesosphere.cosmos.rpc.v1.circe.Decoders._
 import com.mesosphere.cosmos.rpc.v1.circe.Encoders._
 import com.mesosphere.cosmos.rpc.v1.model.{InstallRequest, InstallResponse}
+import com.mesosphere.cosmos.rpc.v2.circe.Decoders._
 import com.mesosphere.cosmos.test.CosmosIntegrationTestClient
 import com.mesosphere.cosmos.thirdparty.marathon.circe.Encoders._
 import com.mesosphere.cosmos.thirdparty.marathon.model._
+import com.mesosphere.universe
 import com.mesosphere.universe.v2.model.{PackageDetails, PackageDetailsVersion, PackageFiles, PackagingVersion}
 import com.netaporter.uri.Uri
 import com.twitter.finagle.http._
@@ -150,6 +152,60 @@ final class PackageInstallIntegrationSpec extends FreeSpec with BeforeAndAfterAl
         preInstallState = Anything,
         postInstallState = Unchanged
       )
+    }
+
+    "will error if attempting to install a service for a v1 response with no marathon template" in {
+      val errorResponse = ErrorResponse(
+        "ServiceMarathonTemplateNotFound",
+        s"Package: [enterprise-security-cli] version: [0.8.0] does not have a " +
+          "Marathon template defined and can not be rendered",
+        Some(JsonObject.fromMap(Map(
+          "packageName" -> "enterprise-security-cli".asJson,
+          "packageVersion" -> "0.8.0".asJson
+        )))
+      )
+
+      installPackageAndAssert(
+        InstallRequest("enterprise-security-cli"),
+        expectedResult = Failure(Status.BadRequest, errorResponse),
+        preInstallState = Anything,
+        postInstallState = Unchanged
+      )
+    }
+
+    "will succeed if attempting to install a service for a v2 response with no marathon template" in {
+      import com.mesosphere.universe.v3.model._
+      val expectedBody = rpc.v2.model.InstallResponse(
+        "enterprise-security-cli",
+        universe.v3.model.PackageDefinition.Version("0.8.0"),
+        cli = Some(Cli(Some(Platforms(
+          None,
+          Some(Architectures(Binary(
+            "zip",
+            "https://downloads.dcos.io/cli/binaries/linux/x86-64/0.8.0/dcos-security",
+            List(HashInfo("sha256","6e745248badc4741048a52a9d0ee6eabd4ddda239dfe345f7ba8397535ce3f3d"))
+          ))),
+          Some(Architectures(Binary(
+            "zip",
+            "https://downloads.dcos.io/cli/binaries/darwin/x86-64/0.8.0/dcos-security",
+            List(HashInfo("sha256","8f486a771e4db8c72725742102f384274cc028fee9d58fe92268e38f1c1adbeb"))
+          )))
+        ))))
+      )
+
+      val installRequest = InstallRequest("enterprise-security-cli")
+
+      val request = CosmosClient.requestBuilder("package/install")
+        .addHeader("Content-Type", MediaTypes.InstallRequest.show)
+        .addHeader("Accept", MediaTypes.V2InstallResponse.show)
+        .buildPost(Buf.Utf8(installRequest.asJson.noSpaces))
+
+      val response = CosmosClient(request)
+
+      assertResult(Status.Ok)(response.status)
+      assertResult(MediaTypes.V2InstallResponse.show)(response.contentType.get)
+      val Xor.Right(actualBody) = decode[rpc.v2.model.InstallResponse](response.contentString)
+      assertResult(expectedBody)(actualBody)
     }
 
   }

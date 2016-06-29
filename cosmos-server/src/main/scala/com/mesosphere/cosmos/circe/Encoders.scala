@@ -9,6 +9,7 @@ import com.mesosphere.cosmos.rpc.v1.circe.Encoders._
 import com.mesosphere.universe.common.circe.Encoders._
 import com.mesosphere.universe.v2.circe.Encoders._
 import com.mesosphere.universe.v3.circe.Encoders._
+import com.mesosphere.universe.v3.model._
 import com.twitter.finagle.http.Status
 import io.circe.generic.encoding.DerivedObjectEncoder
 import io.circe.generic.semiauto._
@@ -222,6 +223,8 @@ object Encoders {
           s"Unsupported redirect scheme - supported: $supportedMsg"
       }
     case ConversionFailure(message) => message
+    case ServiceMarathonTemplateNotFound(name, PackageDefinition.Version(version)) =>
+      s"Package: [$name] version: [$version] does not have a Marathon template defined and can not be rendered"
   }
 
 }

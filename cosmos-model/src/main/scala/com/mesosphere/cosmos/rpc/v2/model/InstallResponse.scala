@@ -6,7 +6,7 @@ import com.mesosphere.universe
 case class InstallResponse(
   packageName: String,
   packageVersion: universe.v3.model.PackageDefinition.Version,
-  appId: AppId,
+  appId: Option[AppId] = None,
   postInstallNotes: Option[String] = None,
   cli: Option[universe.v3.model.Cli] = None
 )

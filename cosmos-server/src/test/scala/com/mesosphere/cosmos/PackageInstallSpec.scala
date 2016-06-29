@@ -107,7 +107,7 @@ class PackageInstallSpec extends FreeSpec with Matchers with TableDrivenProperty
     val pd = packageDefinition(mustache)
 
     try {
-      val json = PackageInstallHandler.preparePackageConfig(None, None, pd, "http://someplace")
+      val Some(json) = PackageInstallHandler.preparePackageConfig(None, None, pd, "http://someplace")
 
       val _ = for {
         i <- json.hcursor.downField("labels").downField("idx").as[Int]
@@ -134,7 +134,7 @@ class PackageInstallSpec extends FreeSpec with Matchers with TableDrivenProperty
 
     val pd = packageDefinition(mustache)
 
-    val json = PackageInstallHandler.preparePackageConfig(None, None, pd, "http://someplace")
+    val Some(json) = PackageInstallHandler.preparePackageConfig(None, None, pd, "http://someplace")
 
     val Xor.Right(some) = for {
       i <- json.hcursor.downField("env").downField("some").as[String]

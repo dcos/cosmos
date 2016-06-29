@@ -32,9 +32,9 @@ object MediaTypedEncoders {
         mediaType = MediaTypes.V2InstallResponse
       ),
       MediaTypedEncoder(
-        encoder = rpc.v1.circe.Encoders.encodeInstallResponse.contramap(
-          converter.Response.v2InstallResponseToV1InstallResponse
-        ),
+        encoder = rpc.v1.circe.Encoders.encodeInstallResponse.contramap { (x: rpc.v2.model.InstallResponse) =>
+          converter.Response.v2InstallResponseToV1InstallResponse(x).get()
+        },
         mediaType = MediaTypes.V1InstallResponse
       )
     ))
