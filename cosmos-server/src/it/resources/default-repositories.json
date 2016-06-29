@@ -1,10 +1,10 @@
 [
   {
     "name": "Universe",
-    "uri": "https://downloads.mesosphere.io/universe/335ede3dc36032e06af4ac5a49fa6992a0197485.zip"
+    "uri": "https://downloads.mesosphere.com/universe/02493e40f8564a39446d06c002f8dcc8e7f6d61f/repo-up-to-1.8.json"
   },
   {
     "name": "Hello World",
-    "uri": "https://downloads.mesosphere.io/universe/helloworld.zip"
+    "uri": "https://downloads.mesosphere.com/universe/helloworld.zip"
   }
 ]

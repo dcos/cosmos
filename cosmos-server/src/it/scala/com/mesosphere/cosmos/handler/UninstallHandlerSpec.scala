@@ -23,14 +23,14 @@ final class UninstallHandlerSpec extends FreeSpec {
 
   "The uninstall handler should" - {
     "be able to uninstall a service" in {
+      val appId = AppId("cassandra" / "uninstall-test")
       val installRequest = CosmosClient.requestBuilder("package/install")
         .addHeader("Content-Type", MediaTypes.InstallRequest.show)
         .addHeader("Accept", MediaTypes.V1InstallResponse.show)
-        .buildPost(Buf.Utf8("""{"packageName":"cassandra","options":{}}"""))
+        .buildPost(Buf.Utf8(s"""{"packageName":"cassandra", "appId":"${appId.toString}"}"""))
       val installResponse = CosmosClient(installRequest)
       assertResult(Status.Ok)(installResponse.status)
 
-      val appId = AppId("cassandra" / "dcos")
       val marathonApp = Await.result(adminRouter.getApp(appId))
       assertResult(appId)(marathonApp.app.id)
 
@@ -105,6 +105,13 @@ final class UninstallHandlerSpec extends FreeSpec {
       assertResult(MediaTypes.ErrorResponse.show)(uninstallResponse.headerMap("Content-Type"))
       val Xor.Right(err) = decode[ErrorResponse](uninstallResponseBody)
       assertResult(s"Multiple apps named [helloworld] are installed: [/$appId1, /$appId2]")(err.message)
+
+      val cleanupRequest = CosmosClient.requestBuilder("package/uninstall")
+        .setHeader("Accept", MediaTypes.UninstallResponse.show)
+        .setHeader("Content-Type", MediaTypes.UninstallRequest.show)
+        .buildPost(Buf.Utf8("""{"packageName":"helloworld", "all":true}"""))
+      val cleanupResponse = CosmosClient(cleanupRequest)
+      assertResult(Status.Ok)(cleanupResponse.status)
     }
   }
 

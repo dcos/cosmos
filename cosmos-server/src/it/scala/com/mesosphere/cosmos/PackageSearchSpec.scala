@@ -18,23 +18,23 @@ final class PackageSearchSpec extends FreeSpec {
 
   import PackageSearchSpec._
 
-  "The package search endpoint" - {
-    "can successfully find packages" in {
+  "The package search endpoint can successfully find packages" - {
+    "by term" in {
       forAll (PackageSearchTable) { (query, expectedResponse) =>
         searchAndAssert(
           query=query,
           status=Status.Ok,
-          expectedResponse=SearchResponse(expectedResponse)
+          expectedResponse=expectedResponse
         )
       }
     }
 
-    "can successfully find packages by regex match" in {
+    "by regex match" in {
       forAll (PackageSearchRegexTable) { (query, expectedResponse) =>
         searchAndAssert(
           query=query,
           status=Status.Ok,
-          expectedResponse=SearchResponse(expectedResponse)
+          expectedResponse=expectedResponse
         )
       }
     }
@@ -67,7 +67,7 @@ private object PackageSearchSpec extends TableDrivenPropertyChecks {
     description = "A distributed free and open-source database with a flexible data model for documents, graphs, and key-values. " +
       "Build high performance applications using a convenient SQL-like query language or JavaScript extensions.",
     framework = true,
-    tags = List("arangodb", "NoSQL", "database", "framework")
+    tags = List("arangodb", "NoSQL", "database")
       .map(universe.v3.model.PackageDefinition.Tag(_)),
     selected = Some(true),
     images = Some(universe.v3.model.Images(
@@ -80,12 +80,17 @@ private object PackageSearchSpec extends TableDrivenPropertyChecks {
 
   val CassandraSearchResult = SearchResult(
     name = "cassandra",
-    currentVersion = universe.v3.model.PackageDefinition.Version("0.2.0-2"),
+    currentVersion = universe.v3.model.PackageDefinition.Version("1.0.6-2.2.5"),
     versions = Map(
       universe.v3.model.PackageDefinition.Version("0.2.0-1") -> universe.v3.model.PackageDefinition.ReleaseVersion(0),
-      universe.v3.model.PackageDefinition.Version("0.2.0-2") -> universe.v3.model.PackageDefinition.ReleaseVersion(1)
+      universe.v3.model.PackageDefinition.Version("0.2.0-2") -> universe.v3.model.PackageDefinition.ReleaseVersion(1),
+      universe.v3.model.PackageDefinition.Version("1.0.5-2.2.5") -> universe.v3.model.PackageDefinition.ReleaseVersion(7),
+      universe.v3.model.PackageDefinition.Version("1.0.2-2.2.5") -> universe.v3.model.PackageDefinition.ReleaseVersion(4),
+      universe.v3.model.PackageDefinition.Version("2.2.5-0.2.0") -> universe.v3.model.PackageDefinition.ReleaseVersion(3),
+      universe.v3.model.PackageDefinition.Version("1.0.6-2.2.5") -> universe.v3.model.PackageDefinition.ReleaseVersion(8),
+      universe.v3.model.PackageDefinition.Version("1.0.4-2.2.5") -> universe.v3.model.PackageDefinition.ReleaseVersion(5)
     ),
-    description = "Apache Cassandra running on Apache Mesos",
+    description = "Apache Cassandra running on DC/OS",
     framework = true,
     tags = List("data", "database", "nosql").map(universe.v3.model.PackageDefinition.Tag(_)),
     selected = Some(true),
@@ -105,14 +110,13 @@ private object PackageSearchSpec extends TableDrivenPropertyChecks {
     framework = true,
     tags = List(
       "database",
-      "distributed",
       "nosql"
     ).map(universe.v3.model.PackageDefinition.Tag(_)),
     selected = Some(false),
     images = Some(universe.v3.model.Images(
-      "https://cdn.crate.io/web/2.0/img/crate-mesos/crate-small.png",
-      "https://cdn.crate.io/web/2.0/img/crate-mesos/crate-medium.png",
-      "https://cdn.crate.io/web/2.0/img/crate-mesos/crate-large.png",
+      "https://downloads.mesosphere.com/universe/assets/icon-service-crate-small.png",
+      "https://downloads.mesosphere.com/universe/assets/icon-service-crate-medium.png",
+      "https://downloads.mesosphere.com/universe/assets/icon-service-crate-large.png",
       None
     ))
   )
@@ -125,6 +129,22 @@ private object PackageSearchSpec extends TableDrivenPropertyChecks {
     framework = true,
     tags = List("mysql", "database", "rdbms").map(universe.v3.model.PackageDefinition.Tag(_)),
     selected = Some(false),
+    images = Some(universe.v3.model.Images(
+      "https://downloads.mesosphere.com/universe/assets/icon-service-memsql-small.png",
+      "https://downloads.mesosphere.com/universe/assets/icon-service-memsql-medium.png",
+      "https://downloads.mesosphere.com/universe/assets/icon-service-memsql-large.png",
+      None
+    ))
+  )
+
+  val MysqlSearchResult = SearchResult(
+    name = "mysql",
+    currentVersion = universe.v3.model.PackageDefinition.Version("5.7.12"),
+    versions = Map(universe.v3.model.PackageDefinition.Version("5.7.12") -> universe.v3.model.PackageDefinition.ReleaseVersion(1)),
+    description = "MySQL is the world's most popular open source database. With its proven performance, reliability and ease-of-use, MySQL has become the leading database choice for web-based applications, covering the entire range from personal projects and websites, via e-commerce and information services, all the way to high profile web properties including Facebook, Twitter, YouTube, Yahoo! and many more.",
+    framework = false,
+    tags = List("database", "mysql", "sql").map(universe.v3.model.PackageDefinition.Tag(_)),
+    selected = Some(false),
     images = None
   )
 
@@ -135,16 +155,15 @@ private object PackageSearchSpec extends TableDrivenPropertyChecks {
     description = "A distributed NoSQL key-value data store that offers high availability, fault tolerance, operational simplicity, and scalability.",
     framework = true,
     tags = List(
-      "mesosphere",
-      "framework",
       "database",
-      "riak"
+      "riak",
+      "NoSql"
     ).map(universe.v3.model.PackageDefinition.Tag(_)),
     selected = Some(false),
     images = Some(universe.v3.model.Images(
-      "http://riak-tools.s3.amazonaws.com/riak-mesos/riak-mesos-small.png",
-      "http://riak-tools.s3.amazonaws.com/riak-mesos/riak-mesos-medium.png",
-      "http://riak-tools.s3.amazonaws.com/riak-mesos/riak-mesos-large.png",
+      "https://downloads.mesosphere.com/universe/assets/icon-service-riak-small.png",
+      "https://downloads.mesosphere.com/universe/assets/icon-service-riak-medium.png",
+      "https://downloads.mesosphere.com/universe/assets/icon-service-riak-large.png",
       Some(List(
         "http://riak-tools.s3.amazonaws.com/riak-mesos/riak-mesos-screenshot.png"
       ))
@@ -154,17 +173,17 @@ private object PackageSearchSpec extends TableDrivenPropertyChecks {
 
   private val PackageSearchTable = Table(
     ("query", "response"),
-    ("aran", List(ArangodbSearchResult)),
-    ("cass", List(CassandraSearchResult)),
-    ("cassan", List(CassandraSearchResult)),
-    ("databas", List(ArangodbSearchResult, CassandraSearchResult, CrateSearchResult, MemsqlSearchResult, RiakSearchResult))
+    ("aran",    SearchResponse(List(ArangodbSearchResult))),
+    ("cass",    SearchResponse(List(CassandraSearchResult))),
+    ("cassan",  SearchResponse(List(CassandraSearchResult))),
+    ("databas", SearchResponse(List(ArangodbSearchResult, CassandraSearchResult, CrateSearchResult, MemsqlSearchResult, MysqlSearchResult, RiakSearchResult)))
   )
 
   private val PackageSearchRegexTable = Table(
     ("query", "response"),
-    ("cassan*a", List(CassandraSearchResult)),
-    ("c*a", List(CassandraSearchResult)),
-    ("cass*", List(CassandraSearchResult)),
-    ("data*e", List(ArangodbSearchResult, CassandraSearchResult, CrateSearchResult, MemsqlSearchResult, RiakSearchResult))
+    ("cassan*a",  SearchResponse(List(CassandraSearchResult))),
+    ("c*a",       SearchResponse(List(CassandraSearchResult))),
+    ("cass*",     SearchResponse(List(CassandraSearchResult))),
+    ("data*e",    SearchResponse(List(ArangodbSearchResult, CassandraSearchResult, CrateSearchResult, MemsqlSearchResult, MysqlSearchResult, RiakSearchResult)))
   )
 }
