@@ -41,16 +41,29 @@ private[cosmos] final class PackageInstallHandler(
         val packageConfig =
           preparePackageConfig(request.appId, request.options, pkg, sourceUri)
 
-        packageRunner.launch(packageConfig)
-          .map { runnerResponse =>
-            rpc.v2.model.InstallResponse(
-              packageName = pkg.name,
-              packageVersion = pkg.version,
-              appId = runnerResponse.id,
-              postInstallNotes = pkg.postInstallNotes,
-              cli = pkg.resource.flatMap(_.cli)
-            )
-          }
+        packageConfig match {
+          case Some(pkgConfig) =>
+            packageRunner.launch(pkgConfig)
+              .map { runnerResponse =>
+                rpc.v2.model.InstallResponse(
+                  packageName = pkg.name,
+                  packageVersion = pkg.version,
+                  appId = Some(runnerResponse.id),
+                  postInstallNotes = pkg.postInstallNotes,
+                  cli = pkg.resource.flatMap(_.cli)
+                )
+              }
+          case None =>
+            Future {
+              rpc.v2.model.InstallResponse(
+                packageName = pkg.name,
+                packageVersion = pkg.version,
+                appId = None,
+                postInstallNotes = pkg.postInstallNotes,
+                cli = pkg.resource.flatMap(_.cli)
+              )
+            }
+        }
       }
   }
 
@@ -65,25 +78,22 @@ object PackageInstallHandler {
     options: Option[JsonObject],
     pkg: internal.model.PackageDefinition,
     sourceRepoUri: Uri
-  ): Json = {
-    val packageConfig = pkg.config
-    val assetsJson = pkg.resource
-      .flatMap(_.assets)
-      .map(_.asJson(universe.v3.circe.Encoders.encodeAssets))
-    val mergedOptions = mergeOptions(packageConfig, assetsJson, options)
+  ): Option[Json] = {
+    pkg.marathon.map { marathon =>
+      val packageConfig = pkg.config
+      val assetsJson = pkg.resource
+        .flatMap(_.assets)
+        .map(_.asJson(universe.v3.circe.Encoders.encodeAssets))
+      val mergedOptions = mergeOptions(packageConfig, assetsJson, options)
+      val bytes = ByteBuffers.getBytes(marathon.v2AppMustacheTemplate)
+      val marathonTemplate = new String(bytes, Charsets.Utf8)
+      val marathonJson = renderMustacheTemplate(marathonTemplate, mergedOptions)
 
-    val marathonTemplate = pkg.marathon match {
-      case Some(marathon) =>
-        val bytes = ByteBuffers.getBytes(marathon.v2AppMustacheTemplate)
-        new String(bytes, Charsets.Utf8)
-      case _ => ""
+      val marathonLabels = MarathonLabels(pkg, sourceRepoUri)
+      val marathonJsonWithLabels = addLabels(marathonJson, marathonLabels, mergedOptions)
+
+      addAppId(marathonJsonWithLabels, appId)
     }
-    val marathonJson = renderMustacheTemplate(marathonTemplate, mergedOptions)
-
-    val marathonLabels = MarathonLabels(pkg, sourceRepoUri)
-    val marathonJsonWithLabels = addLabels(marathonJson, marathonLabels, mergedOptions)
-
-    addAppId(marathonJsonWithLabels, appId)
   }
 
   private final def mergeOptions(
