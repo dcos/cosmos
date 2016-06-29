@@ -1,5 +1,6 @@
 package com.mesosphere.cosmos.rpc.v1.circe
 
+import com.mesosphere.cosmos.label.v1.circe.Decoders._
 import com.mesosphere.cosmos.rpc.v1.model._
 import com.mesosphere.cosmos.thirdparty.marathon.circe.Decoders._
 import com.mesosphere.universe

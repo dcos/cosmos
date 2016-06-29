@@ -7,6 +7,6 @@ case class UniverseIndexEntry(
   versions: Map[PackageDetailsVersion, ReleaseVersion],
   description: String,
   framework: Boolean = false,
-  tags: List[String],    //TODO: pattern: "^[^\\s]+$"
+  tags: List[String],
   selected: Option[Boolean] = None
 )

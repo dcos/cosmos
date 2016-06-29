@@ -44,7 +44,7 @@ object Response {
         internalPackageDefinitionMarathonToRpcV1DescribeResponseMarathon(packageDefinition.marathon),
       command = packageDefinition.command.as[Option[universe.v2.model.Command]],
       config = packageDefinition.config,
-      resource = packageDefinition.resource.as[Option[universe.v2.model.Resource]]
+      resource = packageDefinition.resource.map(_.as[universe.v2.model.Resource])
     )
   }
 

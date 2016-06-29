@@ -54,8 +54,12 @@ object CosmosIntegrationTestClient extends Matchers {
 
   implicit val Session = RequestSession(
     sys.env.get("COSMOS_AUTHORIZATION_HEADER").map { token =>
-      // Start as 7 to trim the leading 'token=', then take the first 10 characters
-      val tokenDisplay = token.substring(7, 17)
+      // Start as 6 to trim the leading 'token=', then take the first 10 characters
+      val length = token.length
+      val offset = Math.min(length, 6)
+      val start = Math.max(0, offset)
+      val end = offset + Math.min(10, length - offset)
+      val tokenDisplay = token.substring(start, end)
       CosmosClient.logger.info(s"Loaded authorization token '$tokenDisplay...' from environment")
       Authorization(token)
     }
