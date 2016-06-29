@@ -164,7 +164,6 @@ object Universe {
         pkgDef.packagingVersion,
         pkgDef.name,
         pkgDef.version,
-        pkgDef.releaseVersion,
         pkgDef.maintainer,
         pkgDef.description,
         pkgDef.tags,

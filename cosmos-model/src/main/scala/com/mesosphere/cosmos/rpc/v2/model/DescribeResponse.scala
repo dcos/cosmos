@@ -7,7 +7,6 @@ case class DescribeResponse(
   packagingVersion: universe.v3.model.PackagingVersion,
   name: String,
   version: universe.v3.model.PackageDefinition.Version,
-  releaseVersion: universe.v3.model.PackageDefinition.ReleaseVersion,
   maintainer: String,
   description: String,
   tags: List[universe.v3.model.PackageDefinition.Tag] = Nil,
