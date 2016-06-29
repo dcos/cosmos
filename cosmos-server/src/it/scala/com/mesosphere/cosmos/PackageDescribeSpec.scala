@@ -50,6 +50,14 @@ final class PackageDescribeSpec extends FreeSpec with TableDrivenPropertyChecks 
         )
       }
     }
+
+    "should return an error if Describe is called on a v3 package without a marathon template" in {
+      describeAndAssertError(
+        "enterprise-security-cli",
+        Status.BadRequest,
+        "Package: [enterprise-security-cli] version: [0.8.0] does not have a Marathon template defined and can not be rendered"
+      )
+    }
   }
 
   val DescribeEndpoint = "package/describe"
