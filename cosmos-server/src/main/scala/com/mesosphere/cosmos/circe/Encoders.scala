@@ -111,8 +111,6 @@ object Encoders {
       s"Package [$packageName] not found"
     case VersionNotFound(packageName, com.mesosphere.universe.v3.model.PackageDefinition.Version(packageVersion)) =>
       s"Version [$packageVersion] of package [$packageName] not found"
-    case EmptyPackageImport() =>
-      "Package is empty"
     case PackageFileMissing(fileName, _) =>
       s"Package file [$fileName] not found"
     case PackageFileNotJson(fileName, parseError) =>
@@ -128,15 +126,11 @@ object Encoders {
       s"Received response status code ${marathonStatus.code} from Marathon"
     case IndexNotFound(repoUri) =>
       s"Index file missing for repo [$repoUri]"
-    case RepositoryNotFound(repoUri) =>
-      s"No repository found [$repoUri]"
-    case MarathonAppMetadataError(note) => note
     case MarathonAppDeleteError(appId) =>
       s"Error while deleting marathon app '$appId'"
     case MarathonAppNotFound(appId) =>
       s"Unable to locate service with marathon appId: '$appId'"
     case CirceError(cerr) => cerr.getMessage
-    case MesosRequestError(note) => note
     case JsonSchemaMismatch(_) =>
       "Options JSON failed validation"
     case UnsupportedContentType(supported, actual) =>
@@ -170,8 +164,6 @@ object Encoders {
             s"Unable to shutdown [$pkgName] service framework with name [$fwName] because there are multiple framework " +
             s"ids matching this name: [${ids.mkString(", ")}]"
       }
-    case NelErrors(nelE) => nelE.toString
-    case FileUploadError(msg) => msg
     case PackageNotInstalled(pkgName) =>
       s"Package [$pkgName] is not installed"
     case UninstallNonExistentAppForPackage(pkgName, appId) =>

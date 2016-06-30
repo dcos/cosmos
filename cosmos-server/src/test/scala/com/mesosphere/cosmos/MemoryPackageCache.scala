@@ -45,7 +45,7 @@ final case class MemoryPackageCache(
   }
 
   override def search(query: Option[String])(implicit session: RequestSession): Future[List[rpc.v1.model.SearchResult]] = {
-    Future.exception(RepositoryNotFound("http://example.com/universe.zip"))
+    Future.value(Nil)
   }
 
   override def getPackagesByPackageName(

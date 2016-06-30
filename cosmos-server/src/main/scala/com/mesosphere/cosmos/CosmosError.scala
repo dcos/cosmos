@@ -1,6 +1,6 @@
 package com.mesosphere.cosmos
 
-import cats.data.{Ior, NonEmptyList}
+import cats.data.Ior
 import com.mesosphere.cosmos.circe.Encoders._
 import com.mesosphere.cosmos.http.MediaType
 import com.mesosphere.cosmos.rpc.v1.model.PackageRepository
@@ -47,7 +47,6 @@ case class VersionNotFound(
   packageVersion: universe.v3.model.PackageDefinition.Version
 ) extends CosmosError
 
-case class EmptyPackageImport() extends CosmosError
 case class PackageFileMissing(packageName: String, cause: Throwable = null) extends CosmosError(cause)
 case class PackageFileNotJson(fileName: String, parseError: String) extends CosmosError
 case class PackageFileSchemaMismatch(fileName: String, decodingFailure: DecodingFailure) extends CosmosError {
@@ -58,13 +57,13 @@ case class PackageFileSchemaMismatch(fileName: String, decodingFailure: Decoding
 case class PackageAlreadyInstalled() extends CosmosError {
   override val status = Status.Conflict
 }
+
 case class MarathonBadResponse(marathonError: MarathonError) extends CosmosError {
-  val details = marathonError.details match {
-    case Some(details) => Some(JsonObject.singleton("errors", details.asJson))
-    case None => None
+  override def getData: Option[JsonObject] = {
+    marathonError.details.map(details => JsonObject.singleton("errors", details.asJson))
   }
-  override def getData: Option[JsonObject] = details
 }
+
 case class MarathonGenericError(marathonStatus: Status) extends CosmosError {
   override val status = Status.InternalServerError
 }
@@ -72,12 +71,9 @@ case class MarathonBadGateway(marathonStatus: Status) extends CosmosError {
   override val status = Status.BadGateway
 }
 case class IndexNotFound(repoUri: Uri) extends CosmosError
-case class RepositoryNotFound(repoUri: Uri) extends CosmosError
 
-case class MarathonAppMetadataError(note: String) extends CosmosError
 case class MarathonAppDeleteError(appId: AppId) extends CosmosError
 case class MarathonAppNotFound(appId: AppId) extends CosmosError
-case class MesosRequestError(note: String) extends CosmosError
 case class CirceError(cerr: io.circe.Error) extends CosmosError
 
 case class UnsupportedContentType(supported: List[MediaType], actual: Option[String] = None) extends CosmosError {
@@ -128,13 +124,9 @@ case class MultipleFrameworkIds(
 ) extends CosmosError
 case class PackageNotInstalled(packageName: String) extends CosmosError
 
-case class NelErrors(errs: NonEmptyList[CosmosError]) extends CosmosError //TODO: Cleanup
-
 case class JsonSchemaMismatch(errors: Iterable[Json]) extends CosmosError {
   override def getData: Option[JsonObject] = Some(JsonObject.singleton("errors", errors.asJson))
 }
-
-case class FileUploadError(message: String) extends CosmosError { override val status = Status.NotImplemented }
 
 case class UninstallNonExistentAppForPackage(packageName: String, appId: AppId) extends CosmosError
 
