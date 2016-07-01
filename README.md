@@ -1,6 +1,6 @@
 # Cosmos [![In Progress](https://badge.waffle.io/dcos/cosmos.png?label=in+progress&title=In+Progress)](https://waffle.io/dcos/cosmos)
 
-An [orderly, harmonius, complete](http://www.thefreedictionary.com/cosmos) API for DCOS services.
+An [orderly, harmonius, complete](http://www.thefreedictionary.com/cosmos) API for DC/OS services.
 
 ## Running tests
 
@@ -12,7 +12,7 @@ There is a suite of integration tests that can be ran by running `sbt clean it:t
 
 #### Requirements
 
-- A running DCOS cluster
+- A running DC/OS cluster
 
 #### Running the tests
 
@@ -30,7 +30,11 @@ Cosmos server.
 
 ## Running Cosmos
 
-To run the Cosmos process we need to first create a One-JAR:
+Cosmos requires a ZooKeeper instance to be available. It looks for one at
+`zk://localhost:2181/cosmos` by default; to override with an alternate `<zk-uri>`, specify the flag
+`-com.mesosphere.cosmos.zookeeperUri=<zk-uri>` on the command line when starting Cosmos (see below).
+
+We also need a One-JAR to run Cosmos:
 
 ```bash
 sbt one-jar
