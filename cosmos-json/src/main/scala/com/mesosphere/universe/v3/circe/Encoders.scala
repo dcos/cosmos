@@ -44,18 +44,13 @@ object Encoders {
   }
   implicit val encodeRepository: Encoder[Repository] = deriveFor[Repository].encoder
   implicit val encodeV2Package: Encoder[V2Package] = deriveFor[V2Package].encoder
-  implicit val encodePackagingVersion: Encoder[PackagingVersion] = Encoder.instance {
-    case V3PackagingVersion(v) => v.asJson
-    case V2PackagingVersion(v) => v.asJson
+
+  implicit def encodePackagingVersion[A <: PackagingVersion]: Encoder[A] = {
+    Encoder[String].contramap(version => version.show)
   }
-  implicit val encodeV2PackagingVersion: Encoder[V2PackagingVersion] = {
-    Encoder.instance(_.v.asJson)
-  }
+
   implicit val encodeV2Resource: Encoder[V2Resource] = deriveFor[V2Resource].encoder
   implicit val encodeV3Package: Encoder[V3Package] = deriveFor[V3Package].encoder
-  implicit val encodeV3PackagingVersion: Encoder[V3PackagingVersion] = {
-    Encoder.instance(_.v.asJson)
-  }
   implicit val encodeV3Resource: Encoder[V3Resource] = deriveFor[V3Resource].encoder
 
 }

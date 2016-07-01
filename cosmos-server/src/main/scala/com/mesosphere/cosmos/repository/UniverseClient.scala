@@ -199,7 +199,7 @@ final class UniverseClient(adminRouter: AdminRouter)(implicit statsReceiver: Sta
                 throw PackageFileMissing("marathon.json.mustache"))
 
             universe.v3.model.V2Package(
-                universe.v3.model.V2PackagingVersion.instance,
+                universe.v3.model.V2PackagingVersion,
                 details.name,
                 universe.v3.model.PackageDefinition
                   .Version(details.version.toString),

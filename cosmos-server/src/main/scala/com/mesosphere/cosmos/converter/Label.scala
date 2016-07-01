@@ -1,5 +1,6 @@
 package com.mesosphere.cosmos.converter
 
+import com.mesosphere.cosmos.converter.Common._
 import com.mesosphere.cosmos.converter.Universe._
 import com.mesosphere.cosmos.internal
 import com.mesosphere.cosmos.label

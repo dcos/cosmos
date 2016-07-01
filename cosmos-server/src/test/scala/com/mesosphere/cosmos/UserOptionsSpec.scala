@@ -40,7 +40,7 @@ final class UserOptionsSpec extends FreeSpec with TableDrivenPropertyChecks {
         val mustacheBytes = ByteBuffer.wrap(mustacheTemplate.getBytes(StandardCharsets.UTF_8))
 
         val packageDefinition = internal.model.PackageDefinition(
-          packagingVersion = universe.v3.model.V3PackagingVersion.instance,
+          packagingVersion = universe.v3.model.V3PackagingVersion,
           name = packageName,
           version = universe.v3.model.PackageDefinition.Version("1.2.3"),
           maintainer = "Mesosphere",
