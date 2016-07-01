@@ -16,10 +16,11 @@ import com.twitter.util.{Await, Future}
 import io.circe.parse._
 import io.circe.syntax._
 import io.circe.{Decoder, Encoder, Printer}
-import io.finch.circe._
 import org.mockito.Mockito._
+import org.scalatest.FreeSpec
+import org.scalatest.mock.MockitoSugar
 
-final class SelectedPackageSpec extends UnitSpec {
+final class SelectedPackageSpec extends FreeSpec with MockitoSugar {
 
   import SelectedPackageSpec._
   import com.mesosphere.cosmos.test.TestUtil.Anonymous

@@ -17,8 +17,10 @@ import com.twitter.util.{Await, Future}
 import io.circe.syntax._
 import io.circe.{Json, JsonObject}
 import io.finch.Input
+import org.scalatest.FreeSpec
+import org.scalatest.prop.TableDrivenPropertyChecks
 
-final class UserOptionsSpec extends UnitSpec {
+final class UserOptionsSpec extends FreeSpec with TableDrivenPropertyChecks {
 
   "Merging JSON objects" - {
 
