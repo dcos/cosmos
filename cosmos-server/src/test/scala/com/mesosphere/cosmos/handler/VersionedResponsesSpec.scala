@@ -1,9 +1,9 @@
 package com.mesosphere.cosmos.handler
 
 import cats.Eval
+import com.mesosphere.cosmos.Cosmos
 import com.mesosphere.cosmos.circe.{DispatchingMediaTypedEncoder, MediaTypedDecoder, MediaTypedEncoder}
 import com.mesosphere.cosmos.http.{MediaType, MediaTypes, RequestSession}
-import com.mesosphere.cosmos.{Cosmos, UnitSpec}
 import com.twitter.finagle.http.RequestBuilder
 import com.twitter.io.Buf
 import com.twitter.util.{Await, Future, Try}
@@ -11,8 +11,9 @@ import io.circe.Json
 import io.circe.generic.semiauto
 import io.circe.syntax._
 import io.finch.{/, Endpoint, Input, Output, post}
+import org.scalatest.FreeSpec
 
-final class VersionedResponsesSpec extends UnitSpec {
+final class VersionedResponsesSpec extends FreeSpec {
 
   import VersionedResponsesSpec._
 
