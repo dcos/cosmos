@@ -1,11 +1,11 @@
 package com.mesosphere.cosmos.circe
 
-import com.mesosphere.cosmos.UnitSpec
 import com.mesosphere.cosmos.http.{MediaType, MediaTypes}
-import io.circe.{Encoder, Json}
 import io.circe.syntax._
+import io.circe.{Encoder, Json}
+import org.scalatest.FreeSpec
 
-final class DispatchingMediaTypedEncoderSpec extends UnitSpec {
+final class DispatchingMediaTypedEncoderSpec extends FreeSpec {
 
   import DispatchingMediaTypedEncoderSpec._
 

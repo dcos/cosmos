@@ -1,13 +1,13 @@
 package com.mesosphere.cosmos.repository
 
 import cats.data.Xor
+import com.mesosphere.cosmos._
 import com.mesosphere.cosmos.circe.Decoders._
 import com.mesosphere.cosmos.http.MediaTypes
 import com.mesosphere.cosmos.rpc.v1.circe.Decoders._
 import com.mesosphere.cosmos.rpc.v1.circe.Encoders._
 import com.mesosphere.cosmos.rpc.v1.model._
 import com.mesosphere.cosmos.test.CosmosIntegrationTestClient._
-import com.mesosphere.cosmos._
 import com.mesosphere.universe.common.circe.Encoders._
 import com.netaporter.uri.Uri
 import com.twitter.finagle.http._
@@ -15,10 +15,11 @@ import io.circe.parse._
 import io.circe.syntax._
 import io.circe.{Encoder, Json, JsonObject}
 import org.scalatest.concurrent.Eventually
-import org.scalatest.{AppendedClues, BeforeAndAfter}
+import org.scalatest.prop.TableDrivenPropertyChecks
+import org.scalatest.{AppendedClues, BeforeAndAfter, FreeSpec}
 
 final class PackageRepositorySpec
-  extends UnitSpec with BeforeAndAfter with Eventually with AppendedClues {
+  extends FreeSpec with BeforeAndAfter with Eventually with AppendedClues {
 
   lazy val logger = org.slf4j.LoggerFactory.getLogger(classOf[PackageRepositorySpec])
 
@@ -260,7 +261,7 @@ final class PackageRepositorySpec
 
 }
 
-private[cosmos] object PackageRepositorySpec extends UnitSpec {
+object PackageRepositorySpec extends FreeSpec with TableDrivenPropertyChecks {
 
   private val defaultRepos = DefaultRepositories().getOrThrow
   private[cosmos] val UniverseRepository = defaultRepos.head
