@@ -1,6 +1,5 @@
 package com.mesosphere.cosmos.handler
 
-import com.mesosphere.cosmos.UnitSpec
 import com.mesosphere.cosmos.circe.{DispatchingMediaTypedEncoder, MediaTypedDecoder, MediaTypedEncoder}
 import com.mesosphere.cosmos.http.{Authorization, MediaType, MediaTypes, RequestSession}
 import com.twitter.finagle.http.RequestBuilder
@@ -9,8 +8,9 @@ import com.twitter.util.{Await, Return, Try}
 import io.circe.syntax._
 import io.circe.{Encoder, Json}
 import io.finch.RequestReader
+import org.scalatest.FreeSpec
 
-final class RequestReadersSpec extends UnitSpec {
+final class RequestReadersSpec extends FreeSpec {
 
   import RequestReadersSpec._
 

@@ -1,15 +1,15 @@
 package com.mesosphere.cosmos.http
 
 import cats.data.Xor
-import com.mesosphere.cosmos.UnitSpec
 import com.mesosphere.cosmos.http.FinchExtensions.RequestReaderOps
 import com.twitter.finagle.http.Request
 import com.twitter.util.{Await, Future, Return, Throw}
 import io.finch.Error.NotValid
-import io.finch.{RequestReader, items}
 import io.finch.items.RequestItem
+import io.finch.{RequestReader, items}
+import org.scalatest.FreeSpec
 
-final class RequestReaderOpsSpec extends UnitSpec {
+final class RequestReaderOpsSpec extends FreeSpec {
 
   import RequestReaderOpsSpec._
 

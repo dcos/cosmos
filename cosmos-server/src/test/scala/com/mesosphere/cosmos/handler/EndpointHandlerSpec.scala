@@ -1,7 +1,6 @@
 package com.mesosphere.cosmos.handler
 
 import cats.data.Xor
-import com.mesosphere.cosmos.UnitSpec
 import com.mesosphere.cosmos.circe.MediaTypedEncoder
 import com.mesosphere.cosmos.http.{Authorization, MediaType, MediaTypes, RequestSession}
 import com.twitter.finagle.http.Status
@@ -9,8 +8,9 @@ import com.twitter.util.{Await, Future}
 import io.circe.syntax._
 import io.circe.{Decoder, Encoder, Json}
 import io.finch._
+import org.scalatest.FreeSpec
 
-final class EndpointHandlerSpec extends UnitSpec {
+final class EndpointHandlerSpec extends FreeSpec {
 
   import EndpointHandlerSpec._
 

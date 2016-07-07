@@ -6,8 +6,10 @@ import com.mesosphere.cosmos.rpc.v1.model.{SearchRequest, SearchResponse, Search
 import com.mesosphere.universe
 import com.twitter.util.{Await, Future}
 import org.mockito.Mockito._
+import org.scalatest.FreeSpec
+import org.scalatest.mock.MockitoSugar
 
-final class PackageSearchHandlerSpec extends UnitSpec {
+final class PackageSearchHandlerSpec extends FreeSpec with MockitoSugar {
 
   import PackageSearchHandlerSpec._
   import com.mesosphere.cosmos.test.TestUtil.Anonymous
