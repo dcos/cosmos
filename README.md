@@ -16,6 +16,8 @@ There is a suite of integration tests that can be ran by running `sbt clean it:t
 
 #### Running the tests
 
+
+
 The test runner will automatically start an in process zk cluster, create a temporary directory
 for repo caches, and start the Cosmos server.
 
