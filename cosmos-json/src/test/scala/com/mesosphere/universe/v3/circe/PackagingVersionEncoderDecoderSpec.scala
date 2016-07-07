@@ -1,6 +1,7 @@
 package com.mesosphere.universe.v3.circe
 
 import cats.data.Xor
+import com.mesosphere.cosmos.converter.Common._
 import com.mesosphere.universe.v3.circe.Decoders._
 import com.mesosphere.universe.v3.circe.Encoders._
 import com.mesosphere.universe.v3.model.{PackagingVersion, V2PackagingVersion, V3PackagingVersion}

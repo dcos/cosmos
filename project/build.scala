@@ -22,7 +22,7 @@ object CosmosBuild extends Build {
     val mustache = "0.9.1"
     val scalaUri = "0.4.11"
     val scalaTest = "2.2.4"
-    val scalaCheck = "1.10.0"
+    val scalaCheck = "1.12.5"
     val twitterUtilCore = "6.30.0"
     val zookeeper = "3.4.6"
   }
@@ -90,12 +90,16 @@ object CosmosBuild extends Build {
       "com.github.spullara.mustache.java" % "compiler" % V.mustache
     )
 
-    val scalaUri = Seq(
-      "com.netaporter" %% "scala-uri" % V.scalaUri
+    val scalaCheck = Seq(
+      "org.scalacheck" %% "scalacheck" % V.scalaCheck % "test"
     )
 
     val scalaTest = Seq(
       "org.scalatest"       %% "scalatest"        % V.scalaTest     % "test"
+    )
+
+    val scalaUri = Seq(
+      "com.netaporter" %% "scala-uri" % V.scalaUri
     )
 
     val twitterUtilCore = Seq(
@@ -140,7 +144,7 @@ object CosmosBuild extends Build {
       //
     ),
 
-    libraryDependencies ++= Deps.mockito ++ Deps.scalaTest,
+    libraryDependencies ++= Deps.mockito ++ Deps.scalaTest ++ Deps.scalaCheck,
 
     javacOptions in Compile ++= Seq(
       "-source", "1.8",
@@ -232,7 +236,7 @@ object CosmosBuild extends Build {
         ++ Deps.circe
         ++ Deps.scalaTest
     )
-    .dependsOn(model)
+    .dependsOn(model % "compile;test->test")
 
   lazy val server = Project("cosmos-server", file("cosmos-server"))
     .configs(IntegrationTest extend Test)
@@ -254,7 +258,7 @@ object CosmosBuild extends Build {
           ++ Deps.scalaTest
           ++ Deps.scalaUri
     )
-    .dependsOn(json)
+    .dependsOn(json % "compile;test->test")
 
   //////////////////////////////////////////////////////////////////////////////
   // BUILD TASKS

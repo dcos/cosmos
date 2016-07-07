@@ -300,23 +300,6 @@ object Universe {
     universe.v2.model.Images
     ] = v2ImagesToV3Images.inverse
 
-
-  implicit val v3ReleaseVersionToV2ReleaseVersion: Injection[
-    universe.v3.model.PackageDefinition.ReleaseVersion, universe.v2.model.ReleaseVersion] = {
-
-    val fwd = (x: universe.v3.model.PackageDefinition.ReleaseVersion) =>
-      universe.v2.model.ReleaseVersion(x.value.toString)
-
-    val rev = (x: universe.v2.model.ReleaseVersion) =>
-       {
-        // TODO(version): This throws a generic parsing NumberFormatException
-        val parsedVersion = x.toString.toInt
-        universe.v3.model.PackageDefinition.ReleaseVersion(parsedVersion)
-      }
-
-    Injection.buildCatchInvert(fwd)(rev)
-  }
-
   implicit val internalPackageDefinitionToInstalledPackageInformation: Conversion[
     internal.model.PackageDefinition,
     rpc.v1.model.InstalledPackageInformation

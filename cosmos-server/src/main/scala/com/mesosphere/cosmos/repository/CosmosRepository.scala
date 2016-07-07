@@ -109,7 +109,8 @@ final class DefaultCosmosRepository(
                       pkg.resource.flatMap(_.images)))
 
             val releaseVersion = searchResult.versions.get(pkg.version).map { releaseVersion =>
-              releaseVersion max pkg.releaseVersion
+              import universe.v3.model.PackageDefinition.ReleaseVersion
+              implicitly[Ordering[ReleaseVersion]].max(releaseVersion, pkg.releaseVersion)
             } getOrElse {
               pkg.releaseVersion
             }
