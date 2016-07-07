@@ -93,9 +93,6 @@ final class PackageDescribeSpec extends FreeSpec with TableDrivenPropertyChecks 
     val Right(packageJson) = packageInfo.cursor.get[PackageDetails]("package")
     assertResult(HelloworldPackageDef)(packageJson)
 
-    val Right(resourceJson) = packageInfo.cursor.get[Resource]("resource")
-    assertResult(HelloworldResource)(resourceJson)
-
     val Right(configJson) = packageInfo.cursor.get[Json]("config")
     assertResult(HelloworldConfigDef)(configJson)
 
@@ -150,8 +147,6 @@ private object PackageDescribeSpec extends TableDrivenPropertyChecks {
     selected = Some(false),
     framework = Some(false)
   )
-
-  val HelloworldResource = Resource()
 
   val HelloworldConfigDef = Json.obj(
     "$schema" -> "http://json-schema.org/schema#".asJson,
