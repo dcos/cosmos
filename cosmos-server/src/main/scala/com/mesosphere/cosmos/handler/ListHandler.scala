@@ -10,8 +10,8 @@ import com.mesosphere.cosmos.label
 import com.mesosphere.cosmos.label.v1.circe.Decoders._
 import com.mesosphere.cosmos.repository.CosmosRepository
 import com.mesosphere.cosmos.rpc
-import com.mesosphere.cosmos.rpc.v1.model.InstalledPackageInformation
 import com.mesosphere.universe
+import com.mesosphere.cosmos.converter.Universe.internalPackageDefinitionToInstalledPackageInformation
 import com.netaporter.uri.Uri
 import com.netaporter.uri.dsl.stringToUri
 import com.twitter.bijection.Conversion.asMethod
@@ -46,15 +46,15 @@ private[cosmos] final class ListHandler(
             packageName,
             releaseVersion.as[Try[universe.v3.model.PackageDefinition.ReleaseVersion]].get,
             repositoryUri
-          ).map { packageMetadata =>
-            packageMetadata.getOrElse {
+          ).map { installPackageInfo =>
+            installPackageInfo.getOrElse {
               val b64PkgInfo = pkgMetadata.getOrElse("")
               val pkgInfoBytes = Base64.getDecoder.decode(b64PkgInfo)
               val pkgInfoString = new String(pkgInfoBytes, StandardCharsets.UTF_8)
-              decodePackageFromMarathon(pkgInfoString)
+              decodePackageFromMarathon(pkgInfoString).as[rpc.v1.model.InstalledPackageInformation]
             }
-          } map { pkgMetadata =>
-            rpc.v1.model.Installation(appId, InstalledPackageInformation(pkgMetadata))
+          } map { installedPackageInfo =>
+            rpc.v1.model.Installation(appId, installedPackageInfo)
           }
       }
 
@@ -78,13 +78,13 @@ private[cosmos] final class ListHandler(
       releaseVersion: universe.v3.model.PackageDefinition.ReleaseVersion,
       repositoryUri: Uri
   )(implicit session: RequestSession)
-    : Future[Option[label.v1.model.PackageMetadata]] = {
+    : Future[Option[rpc.v1.model.InstalledPackageInformation]] = {
     repositories(repositoryUri).flatMap {
       case Some(repository) =>
         repository
           .getPackageByReleaseVersion(packageName, releaseVersion)
           .map { pkg =>
-            Some(pkg.as[label.v1.model.PackageMetadata])
+            Some(pkg.as[rpc.v1.model.InstalledPackageInformation])
           }
       case _ => Future.value(None)
     }
