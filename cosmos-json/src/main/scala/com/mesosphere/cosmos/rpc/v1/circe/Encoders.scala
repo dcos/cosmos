@@ -1,6 +1,5 @@
 package com.mesosphere.cosmos.rpc.v1.circe
 
-import com.mesosphere.cosmos.label.v1.circe.Encoders._
 import com.mesosphere.cosmos.rpc.v1.model._
 import com.mesosphere.cosmos.thirdparty.marathon.circe.Encoders._
 import com.mesosphere.universe
@@ -45,6 +44,10 @@ object Encoders {
   implicit val encodeListRequest: Encoder[ListRequest] = deriveFor[ListRequest].encoder
   implicit val encodeListResponse: Encoder[ListResponse] = deriveFor[ListResponse].encoder
   implicit val encodeInstallation: Encoder[Installation] = deriveFor[Installation].encoder
+  implicit val encodeInstalledPackageInformationPackageDetails: Encoder[InstalledPackageInformationPackageDetails] = {
+    import com.mesosphere.universe.v2.circe.Encoders._ // import implicits at as narrow a scope as possible
+    deriveFor[InstalledPackageInformationPackageDetails].encoder
+  }
   implicit val encodePackageInformation: Encoder[InstalledPackageInformation] = deriveFor[InstalledPackageInformation].encoder
 
   implicit val encodeCapabilitiesResponse: Encoder[CapabilitiesResponse] = deriveFor[CapabilitiesResponse].encoder

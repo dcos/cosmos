@@ -2,6 +2,7 @@ package com.mesosphere.cosmos
 
 import cats.data.Ior
 import com.mesosphere.cosmos.circe.Encoders._
+import com.mesosphere.cosmos.converter.ConversionFailure
 import com.mesosphere.cosmos.http.MediaType
 import com.mesosphere.cosmos.rpc.v1.model.PackageRepository
 import com.mesosphere.cosmos.thirdparty.marathon.model.{AppId, MarathonError}
@@ -205,6 +206,5 @@ case class RepositoryNotPresent(nameOrUri: Ior[String, Uri]) extends CosmosError
   }
 }
 
-// TODO(version): Can this be given more structure (e.g. name and type of field that failed, package, etc.)?
-case class ConversionFailure(message: String) extends CosmosError
+case class ConversionError(failure: ConversionFailure) extends CosmosError
 case class ServiceMarathonTemplateNotFound(packageName: String, packageVersion: PackageDefinition.Version) extends CosmosError

@@ -69,10 +69,7 @@ object MarathonLabels {
       packageName = pkg.name,
       packageReleaseVersion = pkg.releaseVersion.value.toString,
       packageVersion = pkg.version.toString,
-      packagingVersion = pkg.packagingVersion match {
-        case universe.v3.model.V2PackagingVersion(v) => v
-        case universe.v3.model.V3PackagingVersion(v) => v
-      },
+      packagingVersion = pkg.packagingVersion.show,
       sourceUri = sourceUri
     )
   }

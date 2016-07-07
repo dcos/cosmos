@@ -37,7 +37,7 @@ final class PackageListIntegrationSpec
 
   "Issue #251: Package list should include packages whose repositories have been removed" in {
     val expectedPackageInformation = InstalledPackageInformation(
-      PackageMetadata(
+      InstalledPackageInformationPackageDetails(
         packagingVersion = PackagingVersion("2.0"),
         name = "helloworld",
         version = PackageDetailsVersion("0.1.0"),

@@ -20,7 +20,7 @@ class RepositoryEncoderDecoderSpec extends FreeSpec {
     "encode" in {
       val repo = Repository(List(
         V2Package(
-          V2PackagingVersion.instance,
+          V2PackagingVersion,
           "cool-package",
           Version("1.2.3"),
           ReleaseVersion(1),
@@ -31,7 +31,7 @@ class RepositoryEncoderDecoderSpec extends FreeSpec {
           selected = Some(false)
         ),
         V3Package(
-          V3PackagingVersion.instance,
+          V3PackagingVersion,
           "cool-package",
           Version("3.2.1"),
           ReleaseVersion(2),
@@ -100,7 +100,7 @@ class RepositoryEncoderDecoderSpec extends FreeSpec {
         )
       )
 
-      val expectedErrorMessage = "Supported packagingVersion: [2.0, 3.0] but was: '3.1': El(DownField(packagingVersion),true),El(DownArray,true),El(DownField(packages),true)"
+      val expectedErrorMessage = "Expected one of [2.0, 3.0] for packaging version, but found [3.1]: El(DownField(packagingVersion),true),El(DownArray,true),El(DownField(packages),true)"
       val Xor.Left(decodingFailure) = decodeRepository.decodeJson(json)
 
       assertResult(expectedErrorMessage)(decodingFailure.getMessage())
