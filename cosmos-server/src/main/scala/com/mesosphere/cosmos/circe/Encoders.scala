@@ -214,7 +214,7 @@ object Encoders {
         case None =>
           s"Unsupported redirect scheme - supported: $supportedMsg"
       }
-    case ConversionFailure(message) => message
+    case ConversionError(failure) => failure.message
     case ServiceMarathonTemplateNotFound(name, PackageDefinition.Version(version)) =>
       s"Package: [$name] version: [$version] does not have a Marathon template defined and can not be rendered"
   }

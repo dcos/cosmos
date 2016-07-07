@@ -5,6 +5,7 @@ import java.nio.charset.StandardCharsets
 import java.util.Base64
 
 import cats.data.Xor
+import com.mesosphere.cosmos.converter.Common._
 import com.mesosphere.cosmos.converter.Universe._
 import com.mesosphere.cosmos.label.v1.circe.Decoders._
 import com.mesosphere.cosmos.thirdparty.marathon.model.MarathonApp
@@ -15,6 +16,8 @@ import io.circe.parse._
 import io.circe.syntax._
 import io.circe.{Decoder, JsonObject}
 import org.scalatest.FreeSpec
+
+import scala.util.{Success, Try}
 
 final class MarathonLabelsSpec extends FreeSpec {
 
@@ -55,10 +58,9 @@ final class MarathonLabelsSpec extends FreeSpec {
     result: label.v1.model.PackageMetadata
   ): Unit = {
     // To test that `original` was accurately turned into `result`, reverse the transformation
-    val resultPackagingVersion = result.packagingVersion.toString match {
-      case "2.0" => universe.v3.model.V2PackagingVersion.instance
-      case "3.0" => universe.v3.model.V3PackagingVersion.instance
-    }
+    val Success(resultPackagingVersion) =
+      result.packagingVersion.as[Try[universe.v3.model.PackagingVersion]]
+
     val resultTags = result.tags.map(tag => universe.v3.model.PackageDefinition.Tag(tag))
     val resultLicenses = result.licenses.map { licenses =>
       licenses.map { case universe.v2.model.License(name, url) =>
@@ -90,7 +92,7 @@ object MarathonLabelsSpec {
   val RepoUri = Uri.parse("some/repo/uri")
 
   val MinimalPackageDefinition = internal.model.PackageDefinition(
-    packagingVersion = universe.v3.model.V2PackagingVersion.instance,
+    packagingVersion = universe.v3.model.V2PackagingVersion,
     name = "minimal",
     version = universe.v3.model.PackageDefinition.Version("1.2.3"),
     releaseVersion = universe.v3.model.PackageDefinition.ReleaseVersion(0),
@@ -99,7 +101,7 @@ object MarathonLabelsSpec {
   )
 
   val MaximalPackageDefinition = internal.model.PackageDefinition(
-    packagingVersion = universe.v3.model.V3PackagingVersion.instance,
+    packagingVersion = universe.v3.model.V3PackagingVersion,
     name = "MAXIMAL",
     version = universe.v3.model.PackageDefinition.Version("9.87.654.3210"),
     releaseVersion = universe.v3.model.PackageDefinition.ReleaseVersion(Int.MaxValue),

@@ -83,7 +83,7 @@ class PackageInstallSpec extends FreeSpec with Matchers with TableDrivenProperty
 
   def packageDefinition(mustache: String) = {
     internal.model.PackageDefinition(
-      packagingVersion = universe.v3.model.V3PackagingVersion.instance,
+      packagingVersion = universe.v3.model.V3PackagingVersion,
       name = "testing",
       version = universe.v3.model.PackageDefinition.Version("a.b.c"),
       maintainer = "foo@bar.baz",

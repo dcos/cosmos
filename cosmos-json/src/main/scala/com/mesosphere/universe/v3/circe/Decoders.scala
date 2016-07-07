@@ -1,11 +1,15 @@
 package com.mesosphere.universe.v3.circe
 
 import cats.data.Xor
+import com.mesosphere.cosmos.converter.Common._
 import com.mesosphere.universe.common.circe.Decoders._
 import com.mesosphere.universe.v3.model._
+import com.twitter.bijection.Conversion.asMethod
 import com.twitter.util.{Return, Throw, Try}
 import io.circe.generic.semiauto._
 import io.circe.{Decoder, DecodingFailure, HCursor}
+
+import scala.util.{Failure, Success}
 
 object Decoders {
 
@@ -52,27 +56,54 @@ object Decoders {
           Xor.Left(new DecodingFailure(msg, c.history))
       }
     }
-  implicit val decodePackageDefinition: Decoder[PackageDefinition] = Decoder.instance[PackageDefinition] { (hc: HCursor) =>
-    val packagingVersionCursor = hc.downField("packagingVersion")
-    packagingVersionCursor.as[String].flatMap {
-      case "2.0" => hc.as[V2Package]
-      case "3.0" => hc.as[V3Package]
-      case s => Xor.Left(new DecodingFailure(s"Supported packagingVersion: [2.0, 3.0] but was: '$s'", packagingVersionCursor.history))
+  implicit val decodePackageDefinition: Decoder[PackageDefinition] = {
+    Decoder.instance[PackageDefinition] { (hc: HCursor) =>
+      hc.downField("packagingVersion").as[PackagingVersion].flatMap {
+        case V2PackagingVersion => hc.as[V2Package]
+        case V3PackagingVersion => hc.as[V3Package]
+      }
     }
   }
 
   implicit val decodeRepository: Decoder[Repository] = deriveFor[Repository].decoder
 
   implicit val decodeV3V2Package: Decoder[V2Package] = deriveFor[V2Package].decoder
-  implicit val decodeV3V2PackagingVersion: Decoder[V2PackagingVersion] = {
-    Decoder.decodeString.map(V2PackagingVersion(_))
+
+  implicit val decodeString: Decoder[String] = {
+    Decoder.decodeString.withErrorMessage("String value expected")
   }
+
+  implicit val decodeV3V2PackagingVersion: Decoder[V2PackagingVersion.type] = {
+    Decoder[String].flatMapConversion(version => version.as[scala.util.Try[V2PackagingVersion.type]])
+  }
+
+  implicit val decodeV3V3PackagingVersion: Decoder[V3PackagingVersion.type] = {
+    Decoder[String].flatMapConversion(version => version.as[scala.util.Try[V3PackagingVersion.type]])
+  }
+
+  implicit val decodeV3PackagingVersion: Decoder[PackagingVersion] = {
+    Decoder[String].flatMapConversion(version => version.as[scala.util.Try[PackagingVersion]])
+  }
+
   implicit val decodeV3V2Resource: Decoder[V2Resource] = deriveFor[V2Resource].decoder
 
   implicit val decodeV3V3Package: Decoder[V3Package] = deriveFor[V3Package].decoder
-  implicit val decodeV3V3PackagingVersion: Decoder[V3PackagingVersion] = {
-    Decoder.decodeString.map(V3PackagingVersion(_))
-  }
+
   implicit val decodeV3V3Resource: Decoder[V3Resource] = deriveFor[V3Resource].decoder
+
+  implicit final class DecoderOps[A](val decoder: Decoder[A]) extends AnyVal {
+
+    def flatMapConversion[B](f: A => scala.util.Try[B]): Decoder[B] = {
+      decoder.flatMap { value =>
+        Decoder.instance { cursor =>
+          f(value) match {
+            case Success(b) => Xor.Right(b)
+            case Failure(e) => Xor.Left(DecodingFailure(e.getMessage, cursor.history))
+          }
+        }
+      }
+    }
+
+  }
 
 }
