@@ -16,7 +16,7 @@ import com.twitter.finagle.stats.{NullStatsReceiver, StatsReceiver}
 import com.twitter.util.Try
 import io.circe.Json
 import io.finch._
-import io.finch.circe._
+import io.finch.circe.dropNullKeys._
 import io.github.benwhitehead.finch.FinchServer
 import shapeless.HNil
 
