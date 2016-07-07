@@ -350,4 +350,31 @@ object Universe {
     Injection.buildCatchInvert(fwd)(rev)
   }
 
+  implicit val internalPackageDefinitionToInstalledPackageInformation: Conversion[
+    internal.model.PackageDefinition,
+    rpc.v1.model.InstalledPackageInformation
+    ] =
+    Conversion.fromFunction { (x: internal.model.PackageDefinition) =>
+      rpc.v1.model.InstalledPackageInformation(
+        packageDefinition = rpc.v1.model.InstalledPackageInformationPackageDetails(
+          packagingVersion = x.packagingVersion.as[universe.v2.model.PackagingVersion],
+          name = x.name,
+          version = x.version.as[universe.v2.model.PackageDetailsVersion],
+          maintainer = x.maintainer,
+          description = x.description,
+          tags = x.tags.as[List[String]],
+          selected = Some(x.selected),
+          scm = x.scm,
+          website = x.website,
+          framework = Some(x.framework),
+          preInstallNotes = x.preInstallNotes,
+          postInstallNotes = x.postInstallNotes,
+          postUninstallNotes = x.postUninstallNotes,
+          licenses = x.licenses.as[Option[List[universe.v2.model.License]]]
+        ),
+        resourceDefinition = x.resource.map(_.as[universe.v2.model.Resource])
+      )
+
+    }
+
 }
