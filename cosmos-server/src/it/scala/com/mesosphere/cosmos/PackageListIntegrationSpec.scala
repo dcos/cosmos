@@ -134,6 +134,47 @@ final class PackageListIntegrationSpec
     }
   }
 
+  "Issue #124: Package list endpoint responds with packages sorted " in {
+    val (c, d, b, a) = ("linkerd", "zeppelin", "jenkins", "cassandra")
+
+    withInstalledPackages(List(b, a, c, d)) { _ =>
+      withAllInstalledPackagesListResponse { packages =>
+        assert(packages.size === 4)
+        assert(packages(0).packageInformation.packageDefinition.name === a)
+        assert(packages(1).packageInformation.packageDefinition.name === b)
+        assert(packages(2).packageInformation.packageDefinition.name === c)
+        assert(packages(3).packageInformation.packageDefinition.name === d)
+      }
+    }
+  }
+
+  private[this] def withInstalledPackages(packageNames: List[String])(f: List[InstallResponse] => Unit): Unit = {
+
+    def nestWithInstalledPackage(packageNames: List[String],
+                                 installResponses: List[InstallResponse]): Unit = {
+      packageNames match {
+        case List() => f(installResponses)
+        case name::rest => withInstalledPackage(name) { response =>
+          nestWithInstalledPackage(rest, installResponses :+ response)
+        }
+      }
+    }
+
+    nestWithInstalledPackage(packageNames, List())
+  }
+
+  private[this] def withAllInstalledPackagesListResponse(cont: Seq[Installation] => Unit): Unit = {
+    val actualList = apiClient.callEndpoint[ListRequest, ListResponse](
+      "package/list",
+      ListRequest(),
+      MediaTypes.ListRequest,
+      MediaTypes.ListResponse
+    ) withClue "when listing installed packages"
+
+    inside (actualList) { case Xor.Right(ListResponse(packages)) =>
+      cont(packages)
+    }
+  }
 }
 
 object PackageListIntegrationSpec {
