@@ -60,7 +60,8 @@ private[cosmos] final class ListHandler(
 
       Future.collect(installations)
     } map { installations =>
-      rpc.v1.model.ListResponse(installations.sortBy(i => (i.packageInformation.packageDefinition.name ,i.appId.toString)))
+      rpc.v1.model.ListResponse(installations.sortBy(i =>
+        (i.packageInformation.packageDefinition.name ,i.appId)))
     }
   }
 

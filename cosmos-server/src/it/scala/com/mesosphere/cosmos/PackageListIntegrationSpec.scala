@@ -134,47 +134,70 @@ final class PackageListIntegrationSpec
     }
   }
 
+
+
   "Issue #124: Package list endpoint responds with packages sorted " in {
     val (c, d, b, a) = ("linkerd", "zeppelin", "jenkins", "cassandra")
+    val installResponses = packageInstallMany(List(c, d, b, a))
+    val packages = packageList().packages
 
-    withInstalledPackages(List(b, a, c, d)) { _ =>
-      withAllInstalledPackagesListResponse { packages =>
-        assert(packages.size === 4)
-        assert(packages(0).packageInformation.packageDefinition.name === a)
-        assert(packages(1).packageInformation.packageDefinition.name === b)
-        assert(packages(2).packageInformation.packageDefinition.name === c)
-        assert(packages(3).packageInformation.packageDefinition.name === d)
-      }
-    }
+    assert(packages.size === 4)
+    assert(packages(0).packageInformation.packageDefinition.name === a)
+    assert(packages(1).packageInformation.packageDefinition.name === b)
+    assert(packages(2).packageInformation.packageDefinition.name === c)
+    assert(packages(3).packageInformation.packageDefinition.name === d)
+
+    val _ = packageUninstallMany(installResponses)
   }
 
-  private[this] def withInstalledPackages(packageNames: List[String])(f: List[InstallResponse] => Unit): Unit = {
-
-    def nestWithInstalledPackage(packageNames: List[String],
-                                 installResponses: List[InstallResponse]): Unit = {
-      packageNames match {
-        case List() => f(installResponses)
-        case name::rest => withInstalledPackage(name) { response =>
-          nestWithInstalledPackage(rest, installResponses :+ response)
-        }
-      }
-    }
-
-    nestWithInstalledPackage(packageNames, List())
-  }
-
-  private[this] def withAllInstalledPackagesListResponse(cont: Seq[Installation] => Unit): Unit = {
-    val actualList = apiClient.callEndpoint[ListRequest, ListResponse](
+  private[this] def packageList(): ListResponse = {
+    val Xor.Right(listResponse) = apiClient.callEndpoint[ListRequest, ListResponse](
       "package/list",
       ListRequest(),
       MediaTypes.ListRequest,
       MediaTypes.ListResponse
     ) withClue "when listing installed packages"
 
-    inside (actualList) { case Xor.Right(ListResponse(packages)) =>
-      cont(packages)
-    }
+    listResponse
   }
+
+  private[this] def packageInstall(packageName: String): InstallResponse = {
+    val Xor.Right(installResponse: InstallResponse) = apiClient.callEndpoint[InstallRequest, InstallResponse](
+      "package/install",
+      InstallRequest(packageName, appId = Some(AppId(UUID.randomUUID().toString))),
+      MediaTypes.InstallRequest,
+      MediaTypes.V1InstallResponse
+    ) withClue "when installing package"
+
+    assertResult(packageName)(installResponse.packageName)
+
+    installResponse
+  }
+
+  private[this] def packageUninstall(installResponse: InstallResponse): UninstallResponse = {
+    val Xor.Right(uninstallResponse: UninstallResponse) = apiClient.callEndpoint[UninstallRequest, UninstallResponse](
+      "package/uninstall",
+      UninstallRequest(installResponse.packageName, appId = Some(installResponse.appId), all = None),
+      MediaTypes.UninstallRequest,
+      MediaTypes.UninstallResponse
+    ) withClue "when uninstalling package"
+
+    val UninstallResponse(List(UninstallResult(uninstalledPackageName, appId, Some(packageVersion), _))) =
+      uninstallResponse
+
+    assertResult(installResponse.appId)(appId)
+    assertResult(installResponse.packageName)(uninstalledPackageName)
+    assertResult(installResponse.packageVersion)(packageVersion)
+
+    uninstallResponse
+  }
+
+  private[this] def packageInstallMany(packageName: List[String]): List[InstallResponse] =
+    packageName map packageInstall
+
+  private[this] def packageUninstallMany(installResponses: List[InstallResponse]): List[UninstallResponse] =
+    installResponses map packageUninstall
+
 }
 
 object PackageListIntegrationSpec {

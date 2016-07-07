@@ -19,4 +19,6 @@ object AppId {
 
   def apply(s: String): AppId = new AppId(if (s.startsWith("/")) s else "/" + s)
 
+  implicit val ordering: Ordering[AppId] = Ordering.by[AppId, String](_.toString)
+
 }
