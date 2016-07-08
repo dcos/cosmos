@@ -1,6 +1,6 @@
 package com.mesosphere.cosmos.converter
 
-import com.mesosphere.cosmos.ConversionFailure
+import com.mesosphere.cosmos.converter.Common._
 import com.mesosphere.cosmos.internal
 import com.mesosphere.cosmos.rpc
 import com.mesosphere.universe
@@ -8,39 +8,6 @@ import com.twitter.bijection.Conversion.asMethod
 import com.twitter.bijection.{Bijection, Conversion, Injection}
 
 object Universe {
-
-  implicit val v3V2PackagingVersionToV2PackagingVersion: Injection[
-    universe.v3.model.V2PackagingVersion,
-    universe.v2.model.PackagingVersion
-    ] =
-    Injection.buildCatchInvert {
-      v: universe.v3.model.V2PackagingVersion => universe.v2.model.PackagingVersion(v.v)
-    } {
-      v: universe.v2.model.PackagingVersion => universe.v3.model.V2PackagingVersion(v.toString)
-    }
-
-  implicit val v3V3PackagingVersionToV2PackagingVersion: Injection[
-    universe.v3.model.V3PackagingVersion,
-    universe.v2.model.PackagingVersion
-    ] =
-    Injection.buildCatchInvert {
-      v: universe.v3.model.V3PackagingVersion => universe.v2.model.PackagingVersion(v.v)
-    } {
-      v: universe.v2.model.PackagingVersion => universe.v3.model.V3PackagingVersion(v.toString)
-    }
-
-  implicit val v3PackagingVersionToV2PackagingVersion: Injection[
-    universe.v3.model.PackagingVersion,
-    universe.v2.model.PackagingVersion
-    ] =
-    Injection.buildCatchInvert { (x: universe.v3.model.PackagingVersion) => x match {
-      case universe.v3.model.V2PackagingVersion(v) => universe.v2.model.PackagingVersion(v)
-      case universe.v3.model.V3PackagingVersion(v) => universe.v2.model.PackagingVersion(v)
-    }} {
-      case universe.v2.model.PackagingVersion("2.0") => universe.v3.model.V2PackagingVersion.instance
-      case universe.v2.model.PackagingVersion("3.0") => universe.v3.model.V3PackagingVersion.instance
-      case v     => throw ConversionFailure(s"Supported packagingVersion: [2.0, 3.0] but was: '$v'")
-    }
 
   implicit val v3PackageDefinitionToV2PackageDetails: Conversion[
     universe.v3.model.PackageDefinition,
@@ -349,5 +316,32 @@ object Universe {
 
     Injection.buildCatchInvert(fwd)(rev)
   }
+
+  implicit val internalPackageDefinitionToInstalledPackageInformation: Conversion[
+    internal.model.PackageDefinition,
+    rpc.v1.model.InstalledPackageInformation
+    ] =
+    Conversion.fromFunction { (x: internal.model.PackageDefinition) =>
+      rpc.v1.model.InstalledPackageInformation(
+        packageDefinition = rpc.v1.model.InstalledPackageInformationPackageDetails(
+          packagingVersion = x.packagingVersion.as[universe.v2.model.PackagingVersion],
+          name = x.name,
+          version = x.version.as[universe.v2.model.PackageDetailsVersion],
+          maintainer = x.maintainer,
+          description = x.description,
+          tags = x.tags.as[List[String]],
+          selected = Some(x.selected),
+          scm = x.scm,
+          website = x.website,
+          framework = Some(x.framework),
+          preInstallNotes = x.preInstallNotes,
+          postInstallNotes = x.postInstallNotes,
+          postUninstallNotes = x.postUninstallNotes,
+          licenses = x.licenses.as[Option[List[universe.v2.model.License]]]
+        ),
+        resourceDefinition = x.resource.map(_.as[universe.v2.model.Resource])
+      )
+
+    }
 
 }

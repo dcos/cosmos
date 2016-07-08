@@ -1,6 +1,7 @@
 package com.mesosphere.cosmos.converter
 
 import java.nio.charset.StandardCharsets
+import com.mesosphere.cosmos.converter.Common._
 import com.mesosphere.cosmos.converter.Universe._
 import com.mesosphere.cosmos.{ServiceMarathonTemplateNotFound, internal, rpc}
 import com.mesosphere.universe

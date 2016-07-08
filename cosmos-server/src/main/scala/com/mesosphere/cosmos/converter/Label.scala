@@ -1,5 +1,6 @@
 package com.mesosphere.cosmos.converter
 
+import com.mesosphere.cosmos.converter.Common._
 import com.mesosphere.cosmos.converter.Universe._
 import com.mesosphere.cosmos.internal
 import com.mesosphere.cosmos.label
@@ -40,10 +41,23 @@ object Label {
 
   private[this] def fwd(x: label.v1.model.PackageMetadata) = {
     rpc.v1.model.InstalledPackageInformation(
-      packageDefinition = x,
-      resourceDefinition = x.images.map { images =>
-        universe.v2.model.Resource(images = Some(images))
-      }
+      rpc.v1.model.InstalledPackageInformationPackageDetails(
+        packagingVersion = x.packagingVersion,
+        name = x.name,
+        version = x.version,
+        maintainer = x.maintainer,
+        description = x.description,
+        tags = x.tags,
+        selected = x.selected,
+        scm = x.scm,
+        website = x.website,
+        framework = x.framework,
+        preInstallNotes = x.preInstallNotes,
+        postInstallNotes = x.postInstallNotes,
+        postUninstallNotes = x.postUninstallNotes,
+        licenses = x.licenses
+      ),
+      resourceDefinition = x.images.map(i => universe.v2.model.Resource(images = Some(i)))
     )
   }
 

@@ -39,7 +39,7 @@ object PackageDefinition {
   * Conforms to: https://github.com/mesosphere/universe/blob/version-3.x/repo/meta/schema/v3-repo-schema.json#/definitions/v20Package
   */
 case class V2Package(
-  packagingVersion: V2PackagingVersion,
+  packagingVersion: V2PackagingVersion.type = V2PackagingVersion,
   name: String,
   version: PackageDefinition.Version,
   releaseVersion: PackageDefinition.ReleaseVersion,
@@ -64,7 +64,7 @@ case class V2Package(
   * Conforms to: https://github.com/mesosphere/universe/blob/version-3.x/repo/meta/schema/v3-repo-schema.json#/definitions/v30Package
   */
 case class V3Package(
-  packagingVersion: V3PackagingVersion,
+  packagingVersion: V3PackagingVersion.type = V3PackagingVersion,
   name: String,
   version: PackageDefinition.Version,
   releaseVersion: PackageDefinition.ReleaseVersion,

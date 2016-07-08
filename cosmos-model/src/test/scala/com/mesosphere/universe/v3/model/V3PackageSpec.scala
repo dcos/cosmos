@@ -41,7 +41,7 @@ class V3PackageSpec extends FreeSpec {
 
   def v3Package(name: String, version: Version, relVer: ReleaseVersion): V3Package = {
     V3Package(
-      V3PackagingVersion.instance,
+      V3PackagingVersion,
       name,
       version,
       relVer,
