@@ -138,7 +138,7 @@ final class PackageListIntegrationSpec
 
   "Issue #124: Package list endpoint responds with packages sorted " in {
     val (c, d, b, a) = ("linkerd", "zeppelin", "jenkins", "cassandra")
-    val installResponses = packageInstallMany(List(c, d, b, a))
+    val installResponses = List(c, d, b, a).map(packageInstall)
     val packages = packageList().packages
 
     assert(packages.size === 4)
@@ -147,7 +147,7 @@ final class PackageListIntegrationSpec
     assert(packages(2).packageInformation.packageDefinition.name === c)
     assert(packages(3).packageInformation.packageDefinition.name === d)
 
-    val _ = packageUninstallMany(installResponses)
+    installResponses foreach packageUninstall
   }
 
   private[this] def packageList(): ListResponse = {
@@ -174,7 +174,7 @@ final class PackageListIntegrationSpec
     installResponse
   }
 
-  private[this] def packageUninstall(installResponse: InstallResponse): UninstallResponse = {
+  private[this] def packageUninstall(installResponse: InstallResponse): Unit = {
     val Xor.Right(uninstallResponse: UninstallResponse) = apiClient.callEndpoint[UninstallRequest, UninstallResponse](
       "package/uninstall",
       UninstallRequest(installResponse.packageName, appId = Some(installResponse.appId), all = None),
@@ -188,15 +188,7 @@ final class PackageListIntegrationSpec
     assertResult(installResponse.appId)(appId)
     assertResult(installResponse.packageName)(uninstalledPackageName)
     assertResult(installResponse.packageVersion)(packageVersion)
-
-    uninstallResponse
   }
-
-  private[this] def packageInstallMany(packageName: List[String]): List[InstallResponse] =
-    packageName map packageInstall
-
-  private[this] def packageUninstallMany(installResponses: List[InstallResponse]): List[UninstallResponse] =
-    installResponses map packageUninstall
 
 }
 
