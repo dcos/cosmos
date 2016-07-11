@@ -81,13 +81,8 @@ The below table is a compatibility matrix between Cosmos and Universe repository
 
 |       | application/zip (version-2.x) | application/vnd.dcos.universe.repo+json;charset=utf-8;version=v3 |
 | ----- | ----------------------------- | ---------------------------------------------------------------- |
-| 0.1.0 | Not Supported                 | Not Supported                                                    |
-| 0.1.1 | Not Supported                 | Not Supported                                                    |
-| 0.1.2 | Not Supported                 | Not Supported                                                    |
-| 0.1.3 | Not Supported                 | Not Supported                                                    |
-| 0.1.4 | Not Supported                 | Not Supported                                                    |
-| 0.1.5 | Not Supported                 | Not Supported                                                    |
-| 0.2.0 | Not Supported                 | Supported                                                        |
+| 0.1.x | Supported                     | Not Supported                                                    |
+| 0.2.0 | Supported                     | Supported                                                        |
 
 
 #### Packaging Version
@@ -98,23 +93,18 @@ The below table is a compatibility matrix between Cosmos and Universe packaging 
 
 |       |    2.0    |      3.0      |
 | ----- | --------- | ------------- |
-| 0.1.0 | Supported | Not Supported |
-| 0.1.1 | Supported | Not Supported |
-| 0.1.2 | Supported | Not Supported |
-| 0.1.3 | Supported | Not Supported |
-| 0.1.4 | Supported | Not Supported |
-| 0.1.5 | Supported | Not Supported |
+| 0.1.x | Supported | Not Supported |
 | 0.2.0 | Supported | Supported     |
 
 ### API Method Version Compatibility
 
-The following requests have constraints based on the version of the package from universe
+The following requests have constraints based on the version of the package from universe, here we outline the circumstances where the request should succeed.
 
 #### `/package/describe`
 
 ```
-Conent-Type: application/vnd.dcos.package.describe-request+json;charset=utf-8;version=v1
-Accept:      application/vnd.dcos.package.describe-response+json;charset=utf-8;version=v1
+Content-Type: application/vnd.dcos.package.describe-request+json;charset=utf-8;version=v1
+Accept:       application/vnd.dcos.package.describe-response+json;charset=utf-8;version=v1
 ```
 A v1 describe can succeed in the following scenarios:
 
@@ -122,8 +112,8 @@ A v1 describe can succeed in the following scenarios:
 2. The package being described was published as a Universe package with `packagingVersion` 3.0 and the package has a marathon template defined
 
 ```
-Conent-Type: application/vnd.dcos.package.describe-request+json;charset=utf-8;version=v1
-Accept:      application/vnd.dcos.package.describe-response+json;charset=utf-8;version=v2
+Content-Type: application/vnd.dcos.package.describe-request+json;charset=utf-8;version=v1
+Accept:       application/vnd.dcos.package.describe-response+json;charset=utf-8;version=v2
 ```
 A v2 describe can succeed in the following scenarios:
 
@@ -133,8 +123,8 @@ A v2 describe can succeed in the following scenarios:
 #### `/package/render`
 
 ```
-Conent-Type: application/vnd.dcos.package.render-request+json;charset=utf-8;version=v1
-Accept:      application/vnd.dcos.package.render-response+json;charset=utf-8;version=v1
+Content-Type: application/vnd.dcos.package.render-request+json;charset=utf-8;version=v1
+Accept:       application/vnd.dcos.package.render-response+json;charset=utf-8;version=v1
 ```
 A v1 render can succeed in the following scenarios:
 
@@ -144,8 +134,8 @@ A v1 render can succeed in the following scenarios:
 #### `/package/install`
 
 ```
-Conent-Type: application/vnd.dcos.package.install-request+json;charset=utf-8;version=v1
-Accept:      application/vnd.dcos.package.install-response+json;charset=utf-8;version=v1
+Content-Type: application/vnd.dcos.package.install-request+json;charset=utf-8;version=v1
+Accept:       application/vnd.dcos.package.install-response+json;charset=utf-8;version=v1
 ```
 A v1 install can succeed in the following scenarios:
 
@@ -153,8 +143,8 @@ A v1 install can succeed in the following scenarios:
 2. The package being installed was published as a Universe package with `packagingVersion` 3.0 and the package has a marathon template defined
 
 ```
-Conent-Type: application/vnd.dcos.package.install-request+json;charset=utf-8;version=v1
-Accept:      application/vnd.dcos.package.install-response+json;charset=utf-8;version=v1
+Content-Type: application/vnd.dcos.package.install-request+json;charset=utf-8;version=v1
+Accept:       application/vnd.dcos.package.install-response+json;charset=utf-8;version=v2
 ```
 A v2 install can succeed in the following scenarios:
 
