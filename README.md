@@ -58,3 +58,97 @@ export ZOOKEEPER_SECRET <secret>
 java -jar cosmos-server/target/scala-2.11/cosmos-server_2.11-<version>-SNAPSHOT-one-jar.jar \
      -com.mesosphere.cosmos.dcosUri=<dcos-host-url>
 ```
+
+## Versions & Compatibility
+
+### DC/OS
+
+The following table outlines which version of Cosmos is bundled with each version of DC/OS
+
+| DC/OS Release Version | Cosmos Version |
+|-----------------------|----------------|
+| 1.6.1                 | 0.1.2          |
+| 1.7.x                 | 0.1.5          |
+| 1.8.x                 | 0.2.0          |
+
+### Universe
+
+#### Repository Format
+
+The below table is a compatibility matrix between Cosmos and Universe repository consumption format.
+
+*Rows represent Cosmos versions, columns represent repository formats.*
+
+|       | application/zip (version-2.x) | application/vnd.dcos.universe.repo+json;charset=utf-8;version=v3 |
+| ----- | ----------------------------- | ---------------------------------------------------------------- |
+| 0.1.x | Supported                     | Not Supported                                                    |
+| 0.2.0 | Supported                     | Supported                                                        |
+
+
+#### Packaging Version
+
+The below table is a compatibility matrix between Cosmos and Universe packaging versions.
+
+*Rows represent Cosmos versions, columns represent packaging versions.*
+
+|       |    2.0    |      3.0      |
+| ----- | --------- | ------------- |
+| 0.1.x | Supported | Not Supported |
+| 0.2.0 | Supported | Supported     |
+
+### API Method Version Compatibility
+
+The following requests have constraints based on the version of the package from universe, here we outline the circumstances where the request should succeed.
+
+#### `/package/describe`
+
+```
+Content-Type: application/vnd.dcos.package.describe-request+json;charset=utf-8;version=v1
+Accept:       application/vnd.dcos.package.describe-response+json;charset=utf-8;version=v1
+```
+A v1 describe can succeed in the following scenarios:
+
+1. The package being described was published as a Universe package with `packagingVersion` 2.0
+2. The package being described was published as a Universe package with `packagingVersion` 3.0 and the package has a marathon template defined
+
+```
+Content-Type: application/vnd.dcos.package.describe-request+json;charset=utf-8;version=v1
+Accept:       application/vnd.dcos.package.describe-response+json;charset=utf-8;version=v2
+```
+A v2 describe can succeed in the following scenarios:
+
+1. The package being described was published as a Universe package with `packagingVersion` 2.0
+2. The package being described was published as a Universe package with `packagingVersion` 3.0
+
+#### `/package/render`
+
+```
+Content-Type: application/vnd.dcos.package.render-request+json;charset=utf-8;version=v1
+Accept:       application/vnd.dcos.package.render-response+json;charset=utf-8;version=v1
+```
+A v1 render can succeed in the following scenarios:
+
+1. The package being rendered was published as a Universe package with `packagingVersion` 2.0
+2. The package being rendered was published as a Universe package with `packagingVersion` 3.0 and the package has a marathon template defined
+
+#### `/package/install`
+
+```
+Content-Type: application/vnd.dcos.package.install-request+json;charset=utf-8;version=v1
+Accept:       application/vnd.dcos.package.install-response+json;charset=utf-8;version=v1
+```
+A v1 install can succeed in the following scenarios:
+
+1. The package being installed was published as a Universe package with `packagingVersion` 2.0
+2. The package being installed was published as a Universe package with `packagingVersion` 3.0 and the package has a marathon template defined
+
+```
+Content-Type: application/vnd.dcos.package.install-request+json;charset=utf-8;version=v1
+Accept:       application/vnd.dcos.package.install-response+json;charset=utf-8;version=v2
+```
+A v2 install can succeed in the following scenarios:
+
+1. The package being installed was published as a Universe package with `packagingVersion` 2.0
+2. The package being installed was published as a Universe package with `packagingVersion` 3.0 and the package has a marathon template defined
+3. The package being installed was published as a Universe package with `packagingVersion` 3.0 and the package has a `.cli` object defined in it's resource set
+
