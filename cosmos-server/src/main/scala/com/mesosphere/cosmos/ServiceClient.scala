@@ -14,6 +14,7 @@ import org.jboss.netty.handler.codec.http.HttpMethod
 abstract class ServiceClient(baseUri: Uri) {
 
   private[this] val cleanedBaseUri: String = Uris.stripTrailingSlash(baseUri)
+  private[this] val cosmosVersion: String = BuildProperties().cosmosVersion
 
   protected def get(uri: Uri)(implicit session: RequestSession): Request = {
     baseRequestBuilder(uri)
@@ -78,6 +79,7 @@ abstract class ServiceClient(baseUri: Uri) {
   private[cosmos] final def baseRequestBuilder(uri: Uri)(implicit session: RequestSession): RequestBuilder[Yes, Nothing] = {
     val builder = RequestBuilder()
       .url(s"$cleanedBaseUri${uri.toString}")
+      .setHeader("User-Agent", s"cosmos/$cosmosVersion")
 
     session.authorization match {
       case Some(auth) => builder.setHeader("Authorization", auth.headerValue)
