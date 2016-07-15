@@ -6,13 +6,15 @@ import java.nio.ByteBuffer
 import java.nio.file.{Path, Paths}
 import java.util.Properties
 import java.util.zip.{GZIPInputStream, ZipInputStream}
+
 import cats.data.Xor
 import cats.data.Xor.{Left, Right}
+import com.mesosphere.cosmos._
+import com.mesosphere.cosmos.converter.Common._
 import com.mesosphere.cosmos.converter.Universe._
 import com.mesosphere.cosmos.http.MediaTypeOps._
 import com.mesosphere.cosmos.http.{MediaTypeParseError, MediaTypeParser, MediaTypes, RequestSession}
 import com.mesosphere.cosmos.rpc.v1.model.PackageRepository
-import com.mesosphere.cosmos._
 import com.mesosphere.universe
 import com.mesosphere.universe.v2.circe.Decoders._
 import com.mesosphere.universe.v3.circe.Decoders._
@@ -21,11 +23,11 @@ import com.twitter.bijection.Conversion.asMethod
 import com.twitter.finagle.stats.{NullStatsReceiver, Stat, StatsReceiver}
 import com.twitter.io.StreamIO
 import com.twitter.util.Future
-import io.circe.{Decoder, DecodingFailure, Json, JsonObject}
 import io.circe.parse._
+import io.circe.{Decoder, DecodingFailure, Json, JsonObject}
 
 import scala.io.Source
-import scala.util.{Failure, Success}
+import scala.util.{Failure, Success, Try}
 
 final class UniverseClient(adminRouter: AdminRouter)(implicit statsReceiver: StatsReceiver = NullStatsReceiver) {
 
@@ -184,7 +186,7 @@ final class UniverseClient(adminRouter: AdminRouter)(implicit statsReceiver: Sta
 
     universeRepository.version match {
       case Some(version) if version.toString.startsWith("2.") => // Valid
-      case Some(version) => throw new UnsupportedRepositoryVersion(version)
+      case Some(version) => throw UnsupportedRepositoryVersion(version)
       case _ => throw IndexNotFound(sourceUri)
     }
 
@@ -203,8 +205,7 @@ final class UniverseClient(adminRouter: AdminRouter)(implicit statsReceiver: Sta
                 details.name,
                 universe.v3.model.PackageDefinition
                   .Version(details.version.toString),
-                universe.v3.model.PackageDefinition
-                  .ReleaseVersion(releaseVersion),
+                releaseVersion.as[Try[universe.v3.model.PackageDefinition.ReleaseVersion]].get,
                 details.maintainer,
                 details.description,
                 universe.v3.model.Marathon(marathon),

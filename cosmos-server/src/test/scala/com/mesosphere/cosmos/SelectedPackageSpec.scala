@@ -151,7 +151,7 @@ object SelectedPackageSpec {
       currentVersion = universe.v3.model.PackageDefinition.Version("1.2.3"),
       versions = Map(
         universe.v3.model.PackageDefinition.Version("1.2.3") ->
-          universe.v3.model.PackageDefinition.ReleaseVersion(0)
+          universe.v3.model.PackageDefinition.ReleaseVersion(0).get
       ),
       description = "An arbitrary package",
       tags = Nil,

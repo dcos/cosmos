@@ -1,6 +1,10 @@
 package com.mesosphere.cosmos.thirdparty.marathon.model
 
+import com.mesosphere.cosmos.converter.Common._
 import com.mesosphere.universe
+import com.twitter.bijection.Conversion.asMethod
+
+import scala.util.Try
 
 case class MarathonApp(
   id: AppId,
@@ -15,10 +19,10 @@ case class MarathonApp(
   def packageName: Option[String] = labels.get(MarathonApp.nameLabel)
 
   def packageReleaseVersion: Option[universe.v3.model.PackageDefinition.ReleaseVersion] = {
-    // TODO(version): This can throw
-    labels.get(MarathonApp.releaseLabel)
-      .map(_.toInt)
-      .map(version => universe.v3.model.PackageDefinition.ReleaseVersion(version))
+    labels.get(MarathonApp.releaseLabel).map { label =>
+      // TODO(version): This can throw
+      label.as[Try[universe.v3.model.PackageDefinition.ReleaseVersion]].get
+    }
   }
 
   def packageVersion: Option[universe.v3.model.PackageDefinition.Version] = {

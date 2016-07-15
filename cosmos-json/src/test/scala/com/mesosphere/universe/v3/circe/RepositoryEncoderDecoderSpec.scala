@@ -23,7 +23,7 @@ class RepositoryEncoderDecoderSpec extends FreeSpec {
           V2PackagingVersion,
           "cool-package",
           Version("1.2.3"),
-          ReleaseVersion(1),
+          ReleaseVersion(1).get,
           "bill@cool.co",
           "some awesome package",
           Marathon(ByteBuffer.wrap("testing".getBytes(StandardCharsets.UTF_8))),
@@ -34,7 +34,7 @@ class RepositoryEncoderDecoderSpec extends FreeSpec {
           V3PackagingVersion,
           "cool-package",
           Version("3.2.1"),
-          ReleaseVersion(2),
+          ReleaseVersion(2).get,
           "bill@cool.co",
           "some awesome package",
           List(Tag("abc"), Tag("def")),
@@ -143,7 +143,7 @@ class RepositoryEncoderDecoderSpec extends FreeSpec {
         )
       )
 
-      val expectedErrorMessage = "Value -1 is not >= 0: El(DownField(releaseVersion),true),El(DownArray,true),El(DownField(packages),true)"
+      val expectedErrorMessage = "Expected integer value >= 0 for release version, but found [-1]: El(DownField(releaseVersion),true),El(DownArray,true),El(DownField(packages),true)"
       val Xor.Left(decodingFailure) = decodeRepository.decodeJson(json)
 
       assertResult(expectedErrorMessage)(decodingFailure.getMessage())

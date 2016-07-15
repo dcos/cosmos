@@ -1,8 +1,9 @@
 package com.mesosphere.universe.v3.model
 
 import io.circe.JsonObject
-
 import java.util.regex.Pattern
+
+import scala.util.{Failure, Success, Try}
 
 sealed abstract class PackageDefinition
 object PackageDefinition {
@@ -20,17 +21,17 @@ object PackageDefinition {
     val packageDetailsTagPattern = Pattern.compile(packageDetailsTagRegex)
   }
 
-  case class ReleaseVersion(value: Int) {
-    assert(value >= 0, s"Value $value is not >= 0")
+  final class ReleaseVersion private(val value: Int) extends AnyVal
 
-    def max(that: ReleaseVersion): ReleaseVersion = {
-      if (value >= that.value) this
-      else that
-    }
-  }
   object ReleaseVersion {
-    import Ordering.Int
+
+    def apply(value: Int): Try[ReleaseVersion] = {
+      if (value >= 0) Success(new ReleaseVersion(value))
+      else Failure(new IllegalArgumentException("negative value"))
+    }
+
     implicit val packageDefinitionReleaseVersionOrdering: Ordering[ReleaseVersion] = Ordering.by(_.value)
+
   }
 
 }

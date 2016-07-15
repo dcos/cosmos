@@ -95,7 +95,7 @@ object MarathonLabelsSpec {
     packagingVersion = universe.v3.model.V2PackagingVersion,
     name = "minimal",
     version = universe.v3.model.PackageDefinition.Version("1.2.3"),
-    releaseVersion = universe.v3.model.PackageDefinition.ReleaseVersion(0),
+    releaseVersion = universe.v3.model.PackageDefinition.ReleaseVersion(0).get,
     maintainer = "minimal@mesosphere.io",
     description = "A minimal package definition"
   )
@@ -104,7 +104,7 @@ object MarathonLabelsSpec {
     packagingVersion = universe.v3.model.V3PackagingVersion,
     name = "MAXIMAL",
     version = universe.v3.model.PackageDefinition.Version("9.87.654.3210"),
-    releaseVersion = universe.v3.model.PackageDefinition.ReleaseVersion(Int.MaxValue),
+    releaseVersion = universe.v3.model.PackageDefinition.ReleaseVersion(Int.MaxValue).get,
     maintainer = "max@mesosphere.io",
     description = "A complete package definition",
     tags = List("all", "the", "things").map(s => universe.v3.model.PackageDefinition.Tag(s)),

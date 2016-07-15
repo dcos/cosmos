@@ -88,7 +88,7 @@ class PackageInstallSpec extends FreeSpec with Matchers with TableDrivenProperty
       version = universe.v3.model.PackageDefinition.Version("a.b.c"),
       maintainer = "foo@bar.baz",
       description = "blah",
-      releaseVersion = universe.v3.model.PackageDefinition.ReleaseVersion(0),
+      releaseVersion = universe.v3.model.PackageDefinition.ReleaseVersion(0).get,
       marathon = Some(universe.v3.model.Marathon(ByteBuffer.wrap(mustache.getBytes(Charsets.Utf8))))
     )
   }

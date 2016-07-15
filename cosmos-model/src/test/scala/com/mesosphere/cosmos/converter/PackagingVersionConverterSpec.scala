@@ -8,7 +8,7 @@ import org.scalatest.FreeSpec
 
 import scala.util.{Failure, Success, Try}
 
-final class CommonSpec extends FreeSpec {
+final class PackagingVersionConverterSpec extends FreeSpec {
 
   "v2PackagingVersionToString should" - {
 

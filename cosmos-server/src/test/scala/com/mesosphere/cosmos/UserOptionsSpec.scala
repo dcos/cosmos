@@ -45,7 +45,7 @@ final class UserOptionsSpec extends FreeSpec with TableDrivenPropertyChecks {
           version = universe.v3.model.PackageDefinition.Version("1.2.3"),
           maintainer = "Mesosphere",
           description = "Testing user options",
-          releaseVersion = universe.v3.model.PackageDefinition.ReleaseVersion(0),
+          releaseVersion = universe.v3.model.PackageDefinition.ReleaseVersion(0).get,
           marathon = Some(universe.v3.model.Marathon(mustacheBytes)),
           config = Some(buildConfig(Json.fromJsonObject(defaultsJson)))
         )
