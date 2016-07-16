@@ -4,7 +4,6 @@ import java.io.{IOException, InputStream}
 import java.net.{HttpURLConnection, MalformedURLException, URISyntaxException}
 import java.nio.ByteBuffer
 import java.nio.file.{Path, Paths}
-import java.util.Properties
 import java.util.zip.{GZIPInputStream, ZipInputStream}
 
 import cats.data.Xor
@@ -34,15 +33,7 @@ final class UniverseClient(adminRouter: AdminRouter)(implicit statsReceiver: Sta
   private[this] val stats = statsReceiver.scope("repositoryFetcher")
   private[this] val fetchScope = stats.scope("fetch")
 
-  private[this] val cosmosVersion = {
-    val props = new Properties()
-    val is = this.getClass.getResourceAsStream("/build.properties")
-    if (is != null) {
-      props.load(is)
-      is.close()
-    }
-    Option(props.getProperty("cosmos.version")).getOrElse("unknown-version")
-  }
+  private[this] val cosmosVersion = BuildProperties().cosmosVersion
 
   def apply(repository: PackageRepository)(implicit session: RequestSession): Future[internal.model.CosmosInternalRepository] = {
     adminRouter.getDcosVersion().flatMap { dcosVersion =>
