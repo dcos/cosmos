@@ -7,11 +7,14 @@ import com.mesosphere.cosmos.{ServiceMarathonTemplateNotFound, internal, rpc}
 import com.mesosphere.universe
 import com.mesosphere.universe.common.ByteBuffers
 import com.twitter.bijection.Conversion.asMethod
+import com.twitter.bijection.{Conversion}
 import com.twitter.util.Try
 
 object Response {
-
-  def v2InstallResponseToV1InstallResponse(x: rpc.v2.model.InstallResponse): Try[rpc.v1.model.InstallResponse] = {
+  implicit val internalV2ResponseToV1Response: Conversion[
+    rpc.v2.model.InstallResponse,
+    Try[rpc.v1.model.InstallResponse]
+  ] = Conversion.fromFunction { (x: rpc.v2.model.InstallResponse) =>
     Try(x.appId.getOrElse(throw ServiceMarathonTemplateNotFound(x.packageName, x.packageVersion))).map { appId =>
       rpc.v1.model.InstallResponse(
         packageName = x.packageName,
