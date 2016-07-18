@@ -115,6 +115,11 @@ object Encoders {
       s"Package file [$fileName] not found"
     case PackageFileNotJson(fileName, parseError) =>
       s"Package file [$fileName] is not JSON: $parseError"
+    case UnableToParseMarathonAsJson(parseError) =>
+      "Unable to parse filled-in Marathon template as JSON; there " +
+        "may be an error in the package's Marathon template or default " +
+        "configuration options, or in the installation request's options. " +
+        s"Parsing error was: $parseError"
     case PackageFileSchemaMismatch(fileName, _) =>
       s"Package file [$fileName] does not match schema"
     case PackageAlreadyInstalled() =>
