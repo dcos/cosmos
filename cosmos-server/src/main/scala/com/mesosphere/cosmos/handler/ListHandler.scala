@@ -29,6 +29,7 @@ private[cosmos] final class ListHandler(
     adminRouter.listApps().flatMap { applications =>
 
       val appData = applications.apps.map { app =>
+        // corner case: packageReleaseVersion will be None if parsing the label fails
         (app.id, app.packageReleaseVersion, app.packageName, app.packageRepository, app.packageMetadata)
       }
 

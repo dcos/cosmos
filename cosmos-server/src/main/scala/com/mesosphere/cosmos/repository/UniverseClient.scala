@@ -202,9 +202,10 @@ final class UniverseClient(adminRouter: AdminRouter)(implicit statsReceiver: Sta
                 universe.v3.model.Marathon(marathon),
                 details.tags.map {
                   tag =>
-                    /* TODO(version): This method throws an AssertionError. This
-                     * probably turns into a 500 in the RPC. We need to fix this.
-                     */
+                    // The format of the tag is enforced by the json schema for universe packagingVersion 2.0 and 3.0
+                    // unfortunately com.mesosphere.universe.v2.model.PackageDetails#tags is a list string due to the
+                    // more formal type not being defined. The likely of this failing is remove, especially when the
+                    // source is universe-server.
                     universe.v3.model.PackageDefinition.Tag(tag)
                 },
                 details.selected.orElse(Some(false)),

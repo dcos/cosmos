@@ -63,33 +63,6 @@ final class SelectedPackageSpec extends FreeSpec with MockitoSugar {
     }
   }
 
-  "The selected fields from the index are carried through to search results" - {
-    "UniversePackageCache.searchResult" - {
-      "selected=true" in {
-        assertSelectedPropagated(Some(true))
-      }
-
-      "selected=false" in {
-        assertSelectedPropagated(Some(false))
-      }
-
-      "selected=None" in {
-        assertSelectedPropagated(None)
-      }
-
-      // TODO(version): Rewrite test for v3 Universe?
-      def assertSelectedPropagated(selected: Option[Boolean]): Unit = {
-        //val searchResult = makeSearchResult(selected)
-        //val indexEntry = makeIndexEntry(searchResult)
-
-        //assertResult(searchResult)(UniversePackageCache.searchResult(indexEntry, images = None))
-      }
-    }
-
-    // TODO: Test to confirm UniversePackageCache.search() is correct, once PR #283 is merged
-
-  }
-
   "selected field is preserved by encoders/decoders" - {
     "SearchResult" - {
       "selected=true" in {
