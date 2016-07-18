@@ -9,7 +9,7 @@ import scala.util.Try
 case class MarathonApp(
   id: AppId,
   labels: Map[String, String],
-  uris: List[String], /*TODO: uri type*/
+  uris: List[String],
   cpus: Double,
   mem: Double,
   instances: Int,
@@ -19,9 +19,8 @@ case class MarathonApp(
   def packageName: Option[String] = labels.get(MarathonApp.nameLabel)
 
   def packageReleaseVersion: Option[universe.v3.model.PackageDefinition.ReleaseVersion] = {
-    labels.get(MarathonApp.releaseLabel).map { label =>
-      // TODO(version): This can throw
-      label.as[Try[universe.v3.model.PackageDefinition.ReleaseVersion]].get
+    labels.get(MarathonApp.releaseLabel).flatMap { label =>
+      label.as[Try[universe.v3.model.PackageDefinition.ReleaseVersion]].toOption
     }
   }
 
