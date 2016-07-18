@@ -128,7 +128,8 @@ object PackageInstallHandler {
     val output = new StringWriter()
     mustache.execute(output, params)
     parse(output.toString) match {
-      case Xor.Left(err) => throw PackageFileNotJson("marathon.json", err.message)
+      case Xor.Left(err) =>
+        throw UnableToParseMarathonAsJson(err.message)
       case Xor.Right(rendered) => rendered
     }
   }
