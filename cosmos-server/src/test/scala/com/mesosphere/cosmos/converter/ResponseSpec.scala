@@ -36,11 +36,11 @@ final class ResponseSpec extends FreeSpec {
     "success" in {
       val v1 = rpc.v1.model.InstallResponse(name, ver.as[universe.v2.model.PackageDetailsVersion], appid)
 
-      forAll(validV2s) { x => assertResult(x.as[Try[rpc.v1.model.InstallResponse]])(Return(v1)) }
+      forAll(validV2s) { x => assertResult(Return(v1))(x.as[Try[rpc.v1.model.InstallResponse]]) }
     }
 
     "failure" in {
-      forAll(invalidV2s) { x => assertResult(x.as[Try[rpc.v1.model.InstallResponse]])(Throw(ServiceMarathonTemplateNotFound(name, ver))) }
+      forAll(invalidV2s) { x => assertResult(Throw(ServiceMarathonTemplateNotFound(name, ver)))(x.as[Try[rpc.v1.model.InstallResponse]]) }
     }
   }
   "Conversion[internal.model.PackageDefinition,Try[rpc.v1.model.DescribeResponse]]" - {
@@ -61,7 +61,7 @@ final class ResponseSpec extends FreeSpec {
                                                selected = Some(false),
                                                framework = Some(false))
       val r = rpc.v1.model.DescribeResponse(d,marathon)
-      assertResult(p.as[Try[rpc.v1.model.DescribeResponse]].toString)(Return(r).toString)
+      assertResult(Return(r))(p.as[Try[rpc.v1.model.DescribeResponse]])
     }
 
     "failure" in {
@@ -71,7 +71,7 @@ final class ResponseSpec extends FreeSpec {
                                                 universe.v3.model.PackageDefinition.ReleaseVersion(3).get,
                                                 "maintainer",
                                                 "description")
-      assertResult(p.as[Try[rpc.v1.model.DescribeResponse]])(Throw(ServiceMarathonTemplateNotFound(name, ver))) 
+      assertResult(Throw(ServiceMarathonTemplateNotFound(name, ver)))(p.as[Try[rpc.v1.model.DescribeResponse]])
     }
   }
 
