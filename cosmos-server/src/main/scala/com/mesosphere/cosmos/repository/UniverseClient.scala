@@ -4,7 +4,6 @@ import java.io.{IOException, InputStream}
 import java.net.{HttpURLConnection, MalformedURLException, URISyntaxException}
 import java.nio.ByteBuffer
 import java.nio.file.{Path, Paths}
-import java.util.Properties
 import java.util.zip.{GZIPInputStream, ZipInputStream}
 
 import cats.data.Xor
@@ -34,15 +33,7 @@ final class UniverseClient(adminRouter: AdminRouter)(implicit statsReceiver: Sta
   private[this] val stats = statsReceiver.scope("repositoryFetcher")
   private[this] val fetchScope = stats.scope("fetch")
 
-  private[this] val cosmosVersion = {
-    val props = new Properties()
-    val is = this.getClass.getResourceAsStream("/build.properties")
-    if (is != null) {
-      props.load(is)
-      is.close()
-    }
-    Option(props.getProperty("cosmos.version")).getOrElse("unknown-version")
-  }
+  private[this] val cosmosVersion = BuildProperties().cosmosVersion
 
   def apply(repository: PackageRepository)(implicit session: RequestSession): Future[internal.model.CosmosInternalRepository] = {
     adminRouter.getDcosVersion().flatMap { dcosVersion =>
@@ -211,9 +202,10 @@ final class UniverseClient(adminRouter: AdminRouter)(implicit statsReceiver: Sta
                 universe.v3.model.Marathon(marathon),
                 details.tags.map {
                   tag =>
-                    /* TODO(version): This method throws an AssertionError. This
-                     * probably turns into a 500 in the RPC. We need to fix this.
-                     */
+                    // The format of the tag is enforced by the json schema for universe packagingVersion 2.0 and 3.0
+                    // unfortunately com.mesosphere.universe.v2.model.PackageDetails#tags is a list string due to the
+                    // more formal type not being defined. The likely of this failing is remove, especially when the
+                    // source is universe-server.
                     universe.v3.model.PackageDefinition.Tag(tag)
                 },
                 details.selected.orElse(Some(false)),

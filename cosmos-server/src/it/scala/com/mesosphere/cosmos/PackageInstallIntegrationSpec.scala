@@ -43,7 +43,7 @@ final class PackageInstallIntegrationSpec extends FreeSpec with BeforeAndAfterAl
 
         installPackageAndAssert(
           InstallRequest(packageName),
-          expectedResult = Failure(Status.BadRequest, errorResponse),
+          expectedResult = InstallFailure(Status.BadRequest, errorResponse),
           preInstallState = Anything,
           postInstallState = Unchanged
         )
@@ -66,7 +66,7 @@ final class PackageInstallIntegrationSpec extends FreeSpec with BeforeAndAfterAl
         // Update it to explicitly install a package twice
         installPackageAndAssert(
           InstallRequest(packageName, packageVersion = Some(packageVersion)),
-          expectedResult = Failure(Status.BadRequest, errorResponse),
+          expectedResult = InstallFailure(Status.BadRequest, errorResponse),
           preInstallState = NotInstalled,
           postInstallState = Unchanged
         )
@@ -79,7 +79,7 @@ final class PackageInstallIntegrationSpec extends FreeSpec with BeforeAndAfterAl
 
         installPackageAndAssert(
           InstallRequest(expectedResponse.packageName, packageVersion = versionOption),
-          expectedResult = Success(expectedResponse),
+          expectedResult = InstallSuccess(expectedResponse),
           preInstallState = NotInstalled,
           postInstallState = Installed
         )
@@ -91,7 +91,7 @@ final class PackageInstallIntegrationSpec extends FreeSpec with BeforeAndAfterAl
         // Assert that installing twice gives us a package already installed error
         installPackageAndAssert(
           InstallRequest(expectedResponse.packageName, packageVersion = versionOption),
-          expectedResult = Failure(
+          expectedResult = InstallFailure(
             Status.Conflict,
             ErrorResponse(
               "PackageAlreadyInstalled",
@@ -115,7 +115,7 @@ final class PackageInstallIntegrationSpec extends FreeSpec with BeforeAndAfterAl
           packageVersion = Some(PackageDetailsVersion("0.2.0-2")),
           appId = Some(expectedResponse.appId)
         ),
-        expectedResult = Success(expectedResponse),
+        expectedResult = InstallSuccess(expectedResponse),
         preInstallState = NotInstalled,
         postInstallState = Installed
       )
@@ -148,7 +148,7 @@ final class PackageInstallIntegrationSpec extends FreeSpec with BeforeAndAfterAl
 
       installPackageAndAssert(
         InstallRequest("chronos", options = Some(badOptions), appId = Some(appId)),
-        expectedResult = Failure(Status.BadRequest, errorResponse),
+        expectedResult = InstallFailure(Status.BadRequest, errorResponse),
         preInstallState = Anything,
         postInstallState = Unchanged
       )
@@ -167,7 +167,7 @@ final class PackageInstallIntegrationSpec extends FreeSpec with BeforeAndAfterAl
 
       installPackageAndAssert(
         InstallRequest("enterprise-security-cli"),
-        expectedResult = Failure(Status.BadRequest, errorResponse),
+        expectedResult = InstallFailure(Status.BadRequest, errorResponse),
         preInstallState = Anything,
         postInstallState = Unchanged
       )
@@ -244,10 +244,10 @@ final class PackageInstallIntegrationSpec extends FreeSpec with BeforeAndAfterAl
 
     assertResult(expectedResult.status)(response.status)
     expectedResult match {
-      case Success(expectedBody) =>
+      case InstallSuccess(expectedBody) =>
         val Xor.Right(actualBody) = decode[InstallResponse](response.contentString)
         assertResult(expectedBody)(actualBody)
-      case Failure(_, expectedBody, _) =>
+      case InstallFailure(_, expectedBody, _) =>
         val Xor.Right(actualBody) = decode[ErrorResponse](response.contentString)
         assertResult(expectedBody)(actualBody)
     }
@@ -394,10 +394,10 @@ private object PackageInstallIntegrationSpec extends Matchers with TableDrivenPr
 
 private sealed abstract class ExpectedResult(val status: Status, val appId: Option[AppId])
 
-private case class Success(body: InstallResponse)
+private case class InstallSuccess(body: InstallResponse)
   extends ExpectedResult(Status.Ok, Some(body.appId))
 
-private case class Failure(
+private case class InstallFailure(
   override val status: Status,
   body: ErrorResponse,
   override val appId: Option[AppId] = None

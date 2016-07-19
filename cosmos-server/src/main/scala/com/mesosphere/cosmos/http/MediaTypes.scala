@@ -33,9 +33,6 @@ object MediaTypes {
     Map("charset" -> "utf-8", "version" -> "v1")
   )
 
-  /* TODO(jsancio): Hack to get the correct vendor type to show. Should separate
-   * the vendoer type into a (namespace, type) tuple. Issue #190.
-   */
   val PackageRepositoryListRequest = vnd("repository.list-request")
   val PackageRepositoryListResponse = vnd("repository.list-response")
   val PackageRepositoryAddRequest = vnd("repository.add-request")

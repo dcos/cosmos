@@ -50,6 +50,7 @@ case class VersionNotFound(
 
 case class PackageFileMissing(packageName: String, cause: Throwable = null) extends CosmosError(cause)
 case class PackageFileNotJson(fileName: String, parseError: String) extends CosmosError
+case class UnableToParseMarathonAsJson(parseError: String) extends  CosmosError
 case class PackageFileSchemaMismatch(fileName: String, decodingFailure: DecodingFailure) extends CosmosError {
   override def getData: Option[JsonObject] = {
     Some(JsonObject.singleton("errorMessage", decodingFailure.getMessage().asJson))
