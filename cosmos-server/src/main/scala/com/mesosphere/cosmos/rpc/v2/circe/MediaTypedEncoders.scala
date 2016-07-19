@@ -7,6 +7,7 @@ import com.mesosphere.cosmos.http.MediaTypes
 import com.mesosphere.cosmos.rpc
 import com.mesosphere.cosmos.internal
 import com.twitter.bijection.Conversion.asMethod
+import com.twitter.util.Try
 
 object MediaTypedEncoders {
 
@@ -35,7 +36,7 @@ object MediaTypedEncoders {
       ),
       MediaTypedEncoder(
         encoder = rpc.v1.circe.Encoders.encodeInstallResponse.contramap { (x: rpc.v2.model.InstallResponse) =>
-          x.as.get()
+          x.as[Try[rpc.v1.model.InstallResponse]].get()
         },
         mediaType = MediaTypes.V1InstallResponse
       )
