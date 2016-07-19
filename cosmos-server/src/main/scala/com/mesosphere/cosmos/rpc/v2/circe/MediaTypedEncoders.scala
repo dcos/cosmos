@@ -21,7 +21,7 @@ object MediaTypedEncoders {
       ),
       MediaTypedEncoder(
         encoder = rpc.v1.circe.Encoders.encodeDescribeResponse.contramap[internal.model.PackageDefinition] { pkg =>
-          converter.Response.packageDefinitionToDescribeResponse(pkg).get()
+          pkg.as[Try[rpc.v1.model.DescribeResponse]].get()
         },
         mediaType = MediaTypes.V1DescribeResponse
       )
