@@ -24,9 +24,10 @@ object Response {
     }
   }
 
-  def packageDefinitionToDescribeResponse(
-    packageDefinition: internal.model.PackageDefinition
-  ): Try[rpc.v1.model.DescribeResponse] = {
+  implicit val internalPackageDefinitionToDescribeResponse: Conversion[
+    internal.model.PackageDefinition,
+    Try[rpc.v1.model.DescribeResponse]
+  ] = Conversion.fromFunction { (packageDefinition: internal.model.PackageDefinition) =>
     Try(packageDefinition.marathon.map(_.v2AppMustacheTemplate).getOrElse(
       throw ServiceMarathonTemplateNotFound(packageDefinition.name, packageDefinition.version)
     )).map { b64MarathonTemplate =>
@@ -54,5 +55,4 @@ object Response {
       )
     }
   }
-
 }
