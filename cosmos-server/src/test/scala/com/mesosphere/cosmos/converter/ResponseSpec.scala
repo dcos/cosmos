@@ -45,20 +45,23 @@ final class ResponseSpec extends FreeSpec {
   }
   "Conversion[internal.model.PackageDefinition,Try[rpc.v1.model.DescribeResponse]]" - {
     "success" in {
+      val marathon = "dGVzdGluZw=="
       val p =  internal.model.PackageDefinition(universe.v3.model.V3PackagingVersion,
                                                 name,
                                                 ver.as[universe.v3.model.PackageDefinition.Version],
                                                 universe.v3.model.PackageDefinition.ReleaseVersion(3).get,
                                                 "maintainer",
                                                 "description",
-                                                 marathon = Some(universe.v3.model.Marathon(java.nio.ByteBuffer.allocate(32).put("dGVzdGluZw==".getBytes))))
-      val d = universe.v2.model.PackageDetails(universe.v2.model.PackagingVersion(vstring),
+                                                 marathon = Some(universe.v3.model.Marathon(java.nio.ByteBuffer.allocate(marathon.length).put(marathon.getBytes))))
+      val d = universe.v2.model.PackageDetails(universe.v2.model.PackagingVersion("3.0"),
                                                name,
                                                ver.as[universe.v2.model.PackageDetailsVersion],
                                                "maintainer",
-                                               "description")
-      val r = rpc.v1.model.DescribeResponse(d,"dGVzdGluZw==")
-      assertResult(p.as[Try[rpc.v1.model.DescribeResponse]])(Return(r))
+                                               "description",
+                                               selected = Some(false),
+                                               framework = Some(false))
+      val r = rpc.v1.model.DescribeResponse(d,marathon)
+      assertResult(p.as[Try[rpc.v1.model.DescribeResponse]].toString)(Return(r).toString)
     }
 
     "failure" in {
