@@ -198,6 +198,14 @@ object TestUtil {
     config = MaximalPackageDefinition.config,
     command = MaximalPackageDefinition.command
   )
+  val MinimalV3ModelV3PackageDefinition = universe.v3.model.V3Package(
+    packagingVersion = universe.v3.model.V3PackagingVersion,
+    name = MaximalPackageDefinition.name,
+    version = MaximalPackageDefinition.version,
+    releaseVersion = MaximalPackageDefinition.releaseVersion,
+    maintainer = MaximalPackageDefinition.maintainer,
+    description = MaximalPackageDefinition.description
+  )
   val MaximalV2ModelPackageDetails = universe.v2.model.PackageDetails(
    packagingVersion = universe.v2.model.PackagingVersion("3.0"),
    name = MaximalPackageDefinition.name,
@@ -217,4 +225,12 @@ object TestUtil {
       universe.v2.model.License(name = "XYZ", url = "http://foobar/x/y/z")
     ))
   )
+  val MinimalV2ModelPackageDetails = universe.v2.model.PackageDetails(
+   packagingVersion = universe.v2.model.PackagingVersion("3.0"),
+   name = MaximalPackageDefinition.name,
+   version = universe.v2.model.PackageDetailsVersion("9.87.654.3210"),
+   maintainer = MaximalPackageDefinition.maintainer,
+   description = MaximalPackageDefinition.description
+  )
+
 }
