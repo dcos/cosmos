@@ -3,9 +3,12 @@ package com.mesosphere.cosmos.converter
 import com.mesosphere.cosmos.converter.Universe._
 import com.mesosphere.cosmos.thirdparty.marathon.model.AppId
 import com.mesosphere.cosmos.{label,ServiceMarathonTemplateNotFound, internal, rpc}
+import com.mesosphere.cosmos.converter.Response._
+import com.mesosphere.cosmos.PackageDefinitionTestObjects.{MinimalPackageDefinition,MaximalPackageDefinition}
+
 import com.mesosphere.universe
 import com.mesosphere.universe.v3.model.Cli
-import com.mesosphere.cosmos.converter.Response._
+import com.mesosphere.universe.v3.circe.Decoders._
 
 import com.twitter.bijection.Conversion
 import com.twitter.bijection.Conversion.asMethod
@@ -14,6 +17,11 @@ import com.twitter.util.{Try,Return,Throw}
 import org.scalatest.FreeSpec
 import org.scalatest.prop.GeneratorDrivenPropertyChecks.forAll
 import org.scalacheck.Gen
+
+import io.circe.parse._
+
+import cats.data.Xor
+import scala.io.Source
 
 final class ResponseSpec extends FreeSpec {
   val vstring = "9.87.654.3210"
@@ -45,7 +53,9 @@ final class ResponseSpec extends FreeSpec {
   }
   "Conversion[internal.model.PackageDefinition,Try[rpc.v1.model.DescribeResponse]]" - {
     "success" in {
+
       val marathon = "dGVzdGluZw=="
+      /*
       val p =  internal.model.PackageDefinition(universe.v3.model.V3PackagingVersion,
                                                 name,
                                                 ver.as[universe.v3.model.PackageDefinition.Version],
@@ -53,6 +63,8 @@ final class ResponseSpec extends FreeSpec {
                                                 "maintainer",
                                                 "description",
                                                  marathon = Some(universe.v3.model.Marathon(java.nio.ByteBuffer.allocate(marathon.length).put(marathon.getBytes))))
+      */
+
       val d = universe.v2.model.PackageDetails(universe.v2.model.PackagingVersion("3.0"),
                                                name,
                                                ver.as[universe.v2.model.PackageDetailsVersion],
@@ -61,7 +73,10 @@ final class ResponseSpec extends FreeSpec {
                                                selected = Some(false),
                                                framework = Some(false))
       val r = rpc.v1.model.DescribeResponse(d,marathon)
-      assertResult(Return(r))(p.as[Try[rpc.v1.model.DescribeResponse]])
+      forAll(Gen.oneOf(repo.packages)) { p => 
+        val i = p.as[internal.model.PackageDefinition]
+        assertResult(Return(r))(i.as[Try[rpc.v1.model.DescribeResponse]])
+      }
     }
 
     "failure" in {
