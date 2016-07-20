@@ -8,12 +8,12 @@ import cats.data.Xor
 import com.mesosphere.cosmos.converter.Common._
 import com.mesosphere.cosmos.converter.Universe._
 import com.mesosphere.cosmos.thirdparty.marathon.model.MarathonApp
-import com.mesosphere.cosmos.PackageDefinitionTestObjects.{MinimalPackageDefinition,MaximalPackageDefinition}
+import com.mesosphere.cosmos.PackageDefinitionTestObjects.{MinimalPackageDefinition,MaximalPackageDefinition,RepoUri}
 import com.mesosphere.universe
 import com.netaporter.uri.Uri
 import com.twitter.bijection.Conversion.asMethod
 import io.circe.parse._
-import io.circe.syntax._
+//import io.circe.syntax._
 import io.circe.{Decoder, JsonObject}
 import org.scalatest.FreeSpec
 

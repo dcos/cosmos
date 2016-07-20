@@ -3,15 +3,15 @@ package com.mesosphere.cosmos
 import java.nio.ByteBuffer
 import java.nio.charset.StandardCharsets
 import java.util.Base64
-import com.mesosphere.cosmos.label.v1.circe.Decoders._
+//import com.mesosphere.cosmos.label.v1.circe.Decoders._
 import cats.data.Xor
-import com.mesosphere.cosmos.converter.Common._
-import com.mesosphere.cosmos.converter.Universe._
+//import com.mesosphere.cosmos.converter.Common._
+//import com.mesosphere.cosmos.converter.Universe._
 import com.mesosphere.cosmos.thirdparty.marathon.model.MarathonApp
 import com.mesosphere.universe
 import com.netaporter.uri.Uri
 import com.twitter.bijection.Conversion.asMethod
-import io.circe.parse._
+//import io.circe.parse._
 import io.circe.syntax._
 import io.circe.{Decoder, JsonObject}
 import org.scalatest.FreeSpec

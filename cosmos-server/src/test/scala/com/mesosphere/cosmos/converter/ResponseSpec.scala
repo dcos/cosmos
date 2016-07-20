@@ -1,14 +1,17 @@
 package com.mesosphere.cosmos.converter
 
 import com.mesosphere.cosmos.converter.Universe._
+import com.mesosphere.cosmos.converter.Common._
 import com.mesosphere.cosmos.thirdparty.marathon.model.AppId
 import com.mesosphere.cosmos.{label,ServiceMarathonTemplateNotFound, internal, rpc}
 import com.mesosphere.cosmos.converter.Response._
 import com.mesosphere.cosmos.PackageDefinitionTestObjects.{MinimalPackageDefinition,MaximalPackageDefinition}
 
+import java.nio.charset.StandardCharsets
+
 import com.mesosphere.universe
 import com.mesosphere.universe.v3.model.Cli
-import com.mesosphere.universe.v3.circe.Decoders._
+import com.mesosphere.universe.common.ByteBuffers
 
 import com.twitter.bijection.Conversion
 import com.twitter.bijection.Conversion.asMethod
@@ -18,16 +21,14 @@ import org.scalatest.FreeSpec
 import org.scalatest.prop.GeneratorDrivenPropertyChecks.forAll
 import org.scalacheck.Gen
 
-import io.circe.parse._
-
 import cats.data.Xor
 import scala.io.Source
 
 final class ResponseSpec extends FreeSpec {
-  val vstring = "9.87.654.3210"
-  val ver = universe.v3.model.PackageDefinition.Version(vstring)
-  val name = "ResponseSpec"
   "Conversion[rpc.v2.model.InstallResponse,Try[rpc.v1.model.InstallResponse]]" - {
+    val vstring = "9.87.654.3210"
+    val ver = universe.v3.model.PackageDefinition.Version(vstring)
+    val name = "ResponseSpec"
     val appid = AppId("foobar")
     val clis = List(None, Some("post install notes"))
     val notes = List(None, Some(Cli(None)))
@@ -53,40 +54,35 @@ final class ResponseSpec extends FreeSpec {
   }
   "Conversion[internal.model.PackageDefinition,Try[rpc.v1.model.DescribeResponse]]" - {
     "success" in {
+      val d = universe.v2.model.PackageDetails(packagingVersion = MaximalPackageDefinition.packagingVersion.as[universe.v2.model.PackagingVersion],
+                                               name = MaximalPackageDefinition.name,
+                                               version = MaximalPackageDefinition.version.as[universe.v2.model.PackageDetailsVersion],
+                                               maintainer = MaximalPackageDefinition.maintainer,
+                                               description = MaximalPackageDefinition.description,
+                                               tags = MaximalPackageDefinition.tags.as[List[String]],
+                                               selected = Some(MaximalPackageDefinition.selected),
+                                               scm = MaximalPackageDefinition.scm,
+                                               website = MaximalPackageDefinition.website,
+                                               framework = Some(MaximalPackageDefinition.framework),
+                                               preInstallNotes = MaximalPackageDefinition.preInstallNotes,
+                                               postInstallNotes = MaximalPackageDefinition.postInstallNotes,
+                                               postUninstallNotes = MaximalPackageDefinition.postUninstallNotes,
+                                               licenses = MaximalPackageDefinition.licenses.as[Option[List[universe.v2.model.License]]])
 
-      val marathon = "dGVzdGluZw=="
-      /*
-      val p =  internal.model.PackageDefinition(universe.v3.model.V3PackagingVersion,
-                                                name,
-                                                ver.as[universe.v3.model.PackageDefinition.Version],
-                                                universe.v3.model.PackageDefinition.ReleaseVersion(3).get,
-                                                "maintainer",
-                                                "description",
-                                                 marathon = Some(universe.v3.model.Marathon(java.nio.ByteBuffer.allocate(marathon.length).put(marathon.getBytes))))
-      */
-
-      val d = universe.v2.model.PackageDetails(universe.v2.model.PackagingVersion("3.0"),
-                                               name,
-                                               ver.as[universe.v2.model.PackageDetailsVersion],
-                                               "maintainer",
-                                               "description",
-                                               selected = Some(false),
-                                               framework = Some(false))
-      val r = rpc.v1.model.DescribeResponse(d,marathon)
-      forAll(Gen.oneOf(repo.packages)) { p => 
-        val i = p.as[internal.model.PackageDefinition]
-        assertResult(Return(r))(i.as[Try[rpc.v1.model.DescribeResponse]])
-      }
+      val m = MaximalPackageDefinition.marathon.get.v2AppMustacheTemplate
+      val s = new String(ByteBuffers.getBytes(m), StandardCharsets.UTF_8)
+      val r = rpc.v1.model.DescribeResponse(`package` = d,
+                                            marathonMustache = s,
+                                            command = MaximalPackageDefinition.command.as[Option[universe.v2.model.Command]],
+                                            config = MaximalPackageDefinition.config,
+                                            resource = MaximalPackageDefinition.resource.map(_.as[universe.v2.model.Resource]))
+      assertResult(Return(r))(MaximalPackageDefinition.as[Try[rpc.v1.model.DescribeResponse]])
     }
 
     "failure" in {
-      val p =  internal.model.PackageDefinition(universe.v3.model.V3PackagingVersion,
-                                                name,
-                                                ver.as[universe.v3.model.PackageDefinition.Version],
-                                                universe.v3.model.PackageDefinition.ReleaseVersion(3).get,
-                                                "maintainer",
-                                                "description")
-      assertResult(Throw(ServiceMarathonTemplateNotFound(name, ver)))(p.as[Try[rpc.v1.model.DescribeResponse]])
+      //expecting failure due to missing marathon mustache
+      val e = ServiceMarathonTemplateNotFound(MinimalPackageDefinition.name, MinimalPackageDefinition.version)
+      assertResult(Throw(e))(MinimalPackageDefinition.as[Try[rpc.v1.model.DescribeResponse]])
     }
   }
 
