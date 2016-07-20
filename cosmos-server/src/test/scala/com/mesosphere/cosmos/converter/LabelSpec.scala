@@ -1,6 +1,6 @@
 package com.mesosphere.cosmos.converter
 
-import com.mesosphere.cosmos.PackageDefinitionTestObjects
+import com.mesosphere.cosmos.test.TestUtil.{MinimalPackageDefinition,MaximalPackageDefinition}
 import com.mesosphere.cosmos.converter.Label._
 import com.mesosphere.cosmos.label
 import com.mesosphere.cosmos.rpc
@@ -13,7 +13,7 @@ final class LabelSpec extends FreeSpec {
   "label.v1.model.PackageMetadata <=> rpc.v1.model.InstalledPackageInformation" - {
 
     "minimal" in {
-      val packageDefinition = PackageDefinitionTestObjects.MinimalPackageDefinition
+      val packageDefinition = MinimalPackageDefinition
       val packageMetadata = packageDefinition.as[label.v1.model.PackageMetadata]
 
       val result = roundTrip[label.v1.model.PackageMetadata, rpc.v1.model.InstalledPackageInformation](
@@ -24,7 +24,7 @@ final class LabelSpec extends FreeSpec {
     }
 
     "maximal" in {
-      val packageDefinition = PackageDefinitionTestObjects.MaximalPackageDefinition
+      val packageDefinition = MaximalPackageDefinition
       val packageMetadata = packageDefinition.as[label.v1.model.PackageMetadata]
 
       val result = roundTrip[label.v1.model.PackageMetadata, rpc.v1.model.InstalledPackageInformation](
