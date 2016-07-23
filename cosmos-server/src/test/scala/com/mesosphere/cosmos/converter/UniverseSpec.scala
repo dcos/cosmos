@@ -23,10 +23,20 @@ import cats.data.Xor
 import scala.io.Source
 
 final class UniverseSpec extends FreeSpec {
+  def v3Version(v2model: universe.v2.model.PackageDetails): universe.v2.model.PackageDetails = v2model.copy(
+    packagingVersion = universe.v2.model.PackagingVersion("3.0")
+  )
   "Conversion[universe.v3.model.PackageDefinition,universe.v2.model.PackageDetails]" - {
-    "success" in {
-      assertResult(TestUtil.MaximalV2ModelPackageDetails)(TestUtil.MaximalV3ModelV3PackageDefinition.as[universe.v2.model.PackageDetails])
-      assertResult(TestUtil.MinimalV2ModelPackageDetails)(TestUtil.MinimalV3ModelV3PackageDefinition.as[universe.v2.model.PackageDetails])
-    }
+    assertResult(v3Version(TestUtil.MaximalV2ModelPackageDetails))(TestUtil.MaximalV3ModelPackageDefinition.as[universe.v2.model.PackageDetails])
+    assertResult(v3Version(TestUtil.MinimalV2ModelPackageDetails))(TestUtil.MinimalV3ModelPackageDefinition.as[universe.v2.model.PackageDetails])
   }
+  "Conversion[universe.v3.model.V3Package,universe.v2.model.PackageDetails]" - {
+    assertResult(v3Version(TestUtil.MinimalV2ModelPackageDetails))(TestUtil.MinimalV3ModelV3PackageDefinition.as[universe.v2.model.PackageDetails])
+    assertResult(v3Version(TestUtil.MaximalV2ModelPackageDetails))(TestUtil.MaximalV3ModelV3PackageDefinition.as[universe.v2.model.PackageDetails])
+  }
+   "Conversion[universe.v3.model.V2Package,universe.v2.model.PackageDetails]" - {
+    assertResult(TestUtil.MaximalV2ModelPackageDetails)(TestUtil.MaximalV3ModelV2PackageDefinition.as[universe.v2.model.PackageDetails])
+    assertResult(TestUtil.MinimalV2ModelPackageDetails)(TestUtil.MinimalV3ModelV2PackageDefinition.as[universe.v2.model.PackageDetails])
+  }
+    
 }
