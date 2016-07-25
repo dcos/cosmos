@@ -70,4 +70,11 @@ final class UniverseSpec extends FreeSpec {
     assertResult(excpectV2Min(TestUtil.MinimalPackageDefinition))(TestUtil.MinimalV3ModelV2PackageDefinition.as[internal.model.PackageDefinition])
     assertResult(excpectV2Max(TestUtil.MaximalPackageDefinition))(TestUtil.MaximalV3ModelV2PackageDefinition.as[internal.model.PackageDefinition])
   }
+  "Conversion[universe.v3.model.V3Package,internal.model.PackageDefinition]" - {
+    def excpectV2Min(p: internal.model.PackageDefinition): internal.model.PackageDefinition = p.copy(
+      packagingVersion = universe.v3.model.V3PackagingVersion
+    )
+    assertResult(excpectV2Min(TestUtil.MinimalPackageDefinition))(TestUtil.MinimalV3ModelV3PackageDefinition.as[internal.model.PackageDefinition])
+    assertResult(excpectV2Min(TestUtil.MaximalPackageDefinition))(TestUtil.MaximalV3ModelV3PackageDefinition.as[internal.model.PackageDefinition])
+  }
 }
