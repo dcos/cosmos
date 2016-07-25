@@ -179,11 +179,11 @@ object TestUtil {
   )
   val MinimalV3ModelV2PackageDefinition: universe.v3.model.V2Package = universe.v3.model.V2Package(
     packagingVersion = universe.v3.model.V2PackagingVersion,
-    name = MaximalPackageDefinition.name,
-    version = MaximalPackageDefinition.version,
-    releaseVersion = MaximalPackageDefinition.releaseVersion,
-    maintainer = MaximalPackageDefinition.maintainer,
-    description = MaximalPackageDefinition.description,
+    name = MinimalPackageDefinition.name,
+    version = MinimalPackageDefinition.version,
+    releaseVersion = MinimalPackageDefinition.releaseVersion,
+    maintainer = MinimalPackageDefinition.maintainer,
+    description = MinimalPackageDefinition.description,
     marathon = MaximalPackageDefinition.marathon.get
   )
 
@@ -211,11 +211,11 @@ object TestUtil {
   val MaximalV3ModelPackageDefinition: universe.v3.model.PackageDefinition = MaximalV3ModelV3PackageDefinition 
   val MinimalV3ModelV3PackageDefinition: universe.v3.model.V3Package = universe.v3.model.V3Package(
     packagingVersion = universe.v3.model.V3PackagingVersion,
-    name = MaximalPackageDefinition.name,
-    version = MaximalPackageDefinition.version,
-    releaseVersion = MaximalPackageDefinition.releaseVersion,
-    maintainer = MaximalPackageDefinition.maintainer,
-    description = MaximalPackageDefinition.description
+    name = MinimalPackageDefinition.name,
+    version = MinimalPackageDefinition.version,
+    releaseVersion = MinimalPackageDefinition.releaseVersion,
+    maintainer = MinimalPackageDefinition.maintainer,
+    description = MinimalPackageDefinition.description
   )
   val MinimalV3ModelPackageDefinition:universe.v3.model.PackageDefinition = MinimalV3ModelV3PackageDefinition 
 
@@ -240,10 +240,10 @@ object TestUtil {
   )
   val MinimalV2ModelPackageDetails = universe.v2.model.PackageDetails(
    packagingVersion = universe.v2.model.PackagingVersion("2.0"),
-   name = MaximalPackageDefinition.name,
-   version = universe.v2.model.PackageDetailsVersion("9.87.654.3210"),
-   maintainer = MaximalPackageDefinition.maintainer,
-   description = MaximalPackageDefinition.description
+   name = MinimalPackageDefinition.name,
+   version = universe.v2.model.PackageDetailsVersion("1.2.3"),
+   maintainer = MinimalPackageDefinition.maintainer,
+   description = MinimalPackageDefinition.description
   )
 
 }
