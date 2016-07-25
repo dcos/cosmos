@@ -7,8 +7,28 @@ An [orderly, harmonius, complete](http://www.thefreedictionary.com/cosmos) API f
 ### Unit Tests
 There is a suite of unit tests that can be ran by running `sbt clean test`
 
+#### Scoverage
+
+To generate an [scoverage](https://github.com/scoverage/scalac-scoverage-plugin) report for unit tests
+run the following command:
+
+```bash
+sbt clean coverage test coverageReport coverageAggregate
+```
+
+The generated report can then be found at `target/scala-2.11/scoverage-report/index.html`
+
+_NOTE_: You should never run coverage at the same time as one-jar because the produced one-jar will 
+contains scoverage instrumented class files and will fail to run.
+
 ### Integration Tests
 There is a suite of integration tests that can be ran by running `sbt clean it:test`
+
+#### Scoverage
+
+At this time it is not possible to easily generate an scoverage report for the integration suite
+in `cosmos-server`. This is due to some classpath scoping issues related to the cosmos server
+being forked before the integration suite is ran.
 
 #### Requirements
 
