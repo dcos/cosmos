@@ -177,6 +177,7 @@ object TestUtil {
     config = MaximalPackageDefinition.config,
     command = MaximalPackageDefinition.command
   )
+  val MaximalV3ModelPackageDefinitionV2: universe.v3.model.PackageDefinition = MaximalV3ModelV2PackageDefinition
   val MinimalV3ModelV2PackageDefinition: universe.v3.model.V2Package = universe.v3.model.V2Package(
     packagingVersion = universe.v3.model.V2PackagingVersion,
     name = MinimalPackageDefinition.name,

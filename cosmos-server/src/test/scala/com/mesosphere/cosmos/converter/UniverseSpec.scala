@@ -68,29 +68,33 @@ final class UniverseSpec extends FreeSpec {
       ))
     )
     assertResult(excpectV2Min(TestUtil.MinimalPackageDefinition))(TestUtil.MinimalV3ModelV2PackageDefinition.as[internal.model.PackageDefinition])
+    assertResult(excpectV2Min(TestUtil.MinimalPackageDefinition))(TestUtil.MinimalV3ModelPackageDefinitionV2.as[internal.model.PackageDefinition])
+    //to internal.model.PackageDefinition
     assertResult(excpectV2Max(TestUtil.MaximalPackageDefinition))(TestUtil.MaximalV3ModelV2PackageDefinition.as[internal.model.PackageDefinition])
+    assertResult(excpectV2Max(TestUtil.MaximalPackageDefinition))(TestUtil.MaximalV3ModelPackageDefinitionV2.as[internal.model.PackageDefinition])
   }
   "Conversion[universe.v3.model.V3Package,internal.model.PackageDefinition]" - {
-    def excpectV2Min(p: internal.model.PackageDefinition): internal.model.PackageDefinition = p.copy(
+    def excpectV2Ver(p: internal.model.PackageDefinition): internal.model.PackageDefinition = p.copy(
       packagingVersion = universe.v3.model.V3PackagingVersion
     )
-    assertResult(excpectV2Min(TestUtil.MinimalPackageDefinition))(TestUtil.MinimalV3ModelV3PackageDefinition.as[internal.model.PackageDefinition])
-    assertResult(excpectV2Min(TestUtil.MaximalPackageDefinition))(TestUtil.MaximalV3ModelV3PackageDefinition.as[internal.model.PackageDefinition])
+    assertResult(excpectV2Ver(TestUtil.MinimalPackageDefinition))(TestUtil.MinimalV3ModelV3PackageDefinition.as[internal.model.PackageDefinition])
+    assertResult(excpectV2Ver(TestUtil.MaximalPackageDefinition))(TestUtil.MaximalV3ModelV3PackageDefinition.as[internal.model.PackageDefinition])
+
+    //to internal.model.PackageDefinition
+    assertResult(excpectV2Ver(TestUtil.MinimalPackageDefinition))(TestUtil.MinimalV3ModelPackageDefinitionV3.as[internal.model.PackageDefinition])
+    assertResult(excpectV2Ver(TestUtil.MaximalPackageDefinition))(TestUtil.MaximalV3ModelPackageDefinitionV3.as[internal.model.PackageDefinition])
   }
   "Conversion[internal.model.PackageDefinition,rpc.v2.model.DescribeResponse]" - {
     assertResult(TestUtil.MinimalV2ModelDescribeResponse)(TestUtil.MinimalPackageDefinition.as[rpc.v2.model.DescribeResponse])
     assertResult(TestUtil.MaximalV2ModelDescribeResponse)(TestUtil.MaximalPackageDefinition.as[rpc.v2.model.DescribeResponse])
   }
-  "Conversion[universe.v3.model.PackageDefinition,internal.model.PackageDefinition]" - {
-    def excpectV3Min(p: internal.model.PackageDefinition): internal.model.PackageDefinition = p.copy(
-      packagingVersion = universe.v3.model.V3PackagingVersion
-    )
-    assertResult(excpectV3Min(TestUtil.MinimalPackageDefinition))(TestUtil.MinimalV3ModelPackageDefinitionV3.as[internal.model.PackageDefinition])
+  "Bijection[universe.v2.model.PackageDetailsVersion,universe.v3.model.PackageDefinition.Version]" - {
+    val v2: universe.v2.model.PackageDetailsVersion  = universe.v2.model.PackageDetailsVersion("2.0")
+    val v3FromV2 = v2.as[universe.v3.model.PackageDefinition.Version]
+    assertResult(v2)(v3FromV2.as[universe.v2.model.PackageDetailsVersion])
 
-    def excpectV2Min(p: internal.model.PackageDefinition): internal.model.PackageDefinition = p.copy(
-      packagingVersion = universe.v3.model.V2PackagingVersion,
-      marathon = Some(TestUtil.MinimalV3ModelV2PackageDefinition.marathon)
-    )
-    assertResult(excpectV2Min(TestUtil.MinimalPackageDefinition))(TestUtil.MinimalV3ModelPackageDefinitionV2.as[internal.model.PackageDefinition])
+    val v3: universe.v3.model.PackageDefinition.Version = universe.v3.model.PackageDefinition.Version("3.0")
+    val v2FromV3 = v3.as[universe.v2.model.PackageDetailsVersion]
+    assertResult(v3)(v2FromV3.as[universe.v3.model.PackageDefinition.Version])
   }
 }
