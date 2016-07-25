@@ -27,8 +27,8 @@ final class UniverseSpec extends FreeSpec {
     packagingVersion = universe.v2.model.PackagingVersion("3.0")
   )
   "Conversion[universe.v3.model.PackageDefinition,universe.v2.model.PackageDetails]" - {
-    assertResult(expectV3(TestUtil.MaximalV2ModelPackageDetails))(TestUtil.MaximalV3ModelPackageDefinition.as[universe.v2.model.PackageDetails])
-    assertResult(expectV3(TestUtil.MinimalV2ModelPackageDetails))(TestUtil.MinimalV3ModelPackageDefinition.as[universe.v2.model.PackageDetails])
+    assertResult(expectV3(TestUtil.MaximalV2ModelPackageDetails))(TestUtil.MaximalV3ModelPackageDefinitionV3.as[universe.v2.model.PackageDetails])
+    assertResult(expectV3(TestUtil.MinimalV2ModelPackageDetails))(TestUtil.MinimalV3ModelPackageDefinitionV3.as[universe.v2.model.PackageDetails])
   }
   "Conversion[universe.v3.model.V3Package,universe.v2.model.PackageDetails]" - {
     assertResult(expectV3(TestUtil.MinimalV2ModelPackageDetails))(TestUtil.MinimalV3ModelV3PackageDefinition.as[universe.v2.model.PackageDetails])
@@ -80,5 +80,17 @@ final class UniverseSpec extends FreeSpec {
   "Conversion[internal.model.PackageDefinition,rpc.v2.model.DescribeResponse]" - {
     assertResult(TestUtil.MinimalV2ModelDescribeResponse)(TestUtil.MinimalPackageDefinition.as[rpc.v2.model.DescribeResponse])
     assertResult(TestUtil.MaximalV2ModelDescribeResponse)(TestUtil.MaximalPackageDefinition.as[rpc.v2.model.DescribeResponse])
+  }
+  "Conversion[universe.v3.model.PackageDefinition,internal.model.PackageDefinition]" - {
+    def excpectV3Min(p: internal.model.PackageDefinition): internal.model.PackageDefinition = p.copy(
+      packagingVersion = universe.v3.model.V3PackagingVersion
+    )
+    assertResult(excpectV3Min(TestUtil.MinimalPackageDefinition))(TestUtil.MinimalV3ModelPackageDefinitionV3.as[internal.model.PackageDefinition])
+
+    def excpectV2Min(p: internal.model.PackageDefinition): internal.model.PackageDefinition = p.copy(
+      packagingVersion = universe.v3.model.V2PackagingVersion,
+      marathon = Some(TestUtil.MinimalV3ModelV2PackageDefinition.marathon)
+    )
+    assertResult(excpectV2Min(TestUtil.MinimalPackageDefinition))(TestUtil.MinimalV3ModelPackageDefinitionV2.as[internal.model.PackageDefinition])
   }
 }

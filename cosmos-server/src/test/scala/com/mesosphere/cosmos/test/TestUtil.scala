@@ -186,6 +186,7 @@ object TestUtil {
     description = MinimalPackageDefinition.description,
     marathon = MaximalPackageDefinition.marathon.get
   )
+  val MinimalV3ModelPackageDefinitionV2: universe.v3.model.PackageDefinition = MinimalV3ModelV2PackageDefinition
 
   val MaximalV3ModelV3PackageDefinition: universe.v3.model.V3Package = universe.v3.model.V3Package(
     packagingVersion = universe.v3.model.V3PackagingVersion,
@@ -209,7 +210,7 @@ object TestUtil {
     config = MaximalPackageDefinition.config,
     command = MaximalPackageDefinition.command
   )
-  val MaximalV3ModelPackageDefinition: universe.v3.model.PackageDefinition = MaximalV3ModelV3PackageDefinition 
+  val MaximalV3ModelPackageDefinitionV3: universe.v3.model.PackageDefinition = MaximalV3ModelV3PackageDefinition 
   val MinimalV3ModelV3PackageDefinition: universe.v3.model.V3Package = universe.v3.model.V3Package(
     packagingVersion = universe.v3.model.V3PackagingVersion,
     name = MinimalPackageDefinition.name,
@@ -218,7 +219,7 @@ object TestUtil {
     maintainer = MinimalPackageDefinition.maintainer,
     description = MinimalPackageDefinition.description
   )
-  val MinimalV3ModelPackageDefinition:universe.v3.model.PackageDefinition = MinimalV3ModelV3PackageDefinition 
+  val MinimalV3ModelPackageDefinitionV3:universe.v3.model.PackageDefinition = MinimalV3ModelV3PackageDefinition 
 
   val MaximalV2ModelPackageDetails = universe.v2.model.PackageDetails(
    packagingVersion = universe.v2.model.PackagingVersion("2.0"),
