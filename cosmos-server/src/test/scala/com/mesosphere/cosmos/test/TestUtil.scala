@@ -253,5 +253,25 @@ object TestUtil {
     maintainer = MinimalPackageDefinition.maintainer,
     description = MinimalPackageDefinition.description
   )
-
+  val MaximalV2ModelDescribeResponse = rpc.v2.model.DescribeResponse(
+    packagingVersion = MaximalPackageDefinition.packagingVersion,
+    name = MaximalPackageDefinition.name,
+    version = MaximalPackageDefinition.version,
+    maintainer = MaximalPackageDefinition.maintainer,
+    description = MaximalPackageDefinition.description,
+    tags = MaximalPackageDefinition.tags,
+    selected = MaximalPackageDefinition.selected,
+    scm = MaximalPackageDefinition.scm,
+    website = MaximalPackageDefinition.website,
+    framework = MaximalPackageDefinition.framework,
+    preInstallNotes = MaximalPackageDefinition.preInstallNotes,
+    postInstallNotes = MaximalPackageDefinition.postInstallNotes,
+    postUninstallNotes = MaximalPackageDefinition.postUninstallNotes,
+    licenses = MaximalPackageDefinition.licenses,
+    minDcosReleaseVersion = MaximalPackageDefinition.minDcosReleaseVersion,
+    marathon = MaximalPackageDefinition.marathon,
+    resource = MaximalPackageDefinition.resource,
+    config = MaximalPackageDefinition.config,
+    command = MaximalPackageDefinition.command
+  )
 }
