@@ -276,4 +276,44 @@ object TestUtil {
     config = MaximalPackageDefinition.config,
     command = MaximalPackageDefinition.command
   )
+  val MaximalInstalledPackageInformation  = rpc.v1.model.InstalledPackageInformation(
+    packageDefinition = rpc.v1.model.InstalledPackageInformationPackageDetails(
+      packagingVersion = universe.v2.model.PackagingVersion("3.0"),
+      name = MaximalPackageDefinition.name,
+      version = universe.v2.model.PackageDetailsVersion("9.87.654.3210"),
+      maintainer = MaximalPackageDefinition.maintainer,
+      description = MaximalPackageDefinition.description,
+      tags = List("all", "the", "things"),
+      selected = Some(MaximalPackageDefinition.selected),
+      scm = MaximalPackageDefinition.scm,
+      website = MaximalPackageDefinition.website,
+      framework = Some(MaximalPackageDefinition.framework),
+      preInstallNotes = MaximalPackageDefinition.preInstallNotes,
+      postInstallNotes = MaximalPackageDefinition.postInstallNotes,
+      postUninstallNotes = MaximalPackageDefinition.postUninstallNotes,
+      licenses = Some(List(
+         universe.v2.model.License(name = "ABC", url = "http://foobar/a/b/c"),
+         universe.v2.model.License(name = "XYZ", url = "http://foobar/x/y/z")
+       ))
+
+    ),
+    resourceDefinition = Some(universe.v2.model.Resource(
+      assets = Some(universe.v2.model.Assets(
+        uris = Some(Map(
+          "foo.tar.gz" -> "http://mesosphere.com/foo.tar.gz",
+          "bar.jar"    -> "https://mesosphere.com/bar.jar"
+        )),
+        container = Some(universe.v2.model.Container(Map(
+          "image1" -> "docker/image:1",
+          "image2" -> "docker/image:2"
+        )))
+      )),
+      images = Some(universe.v2.model.Images(
+        iconSmall = "small.png",
+        iconMedium = "medium.png",
+        iconLarge = "large.png",
+        screenshots = Some(List("ooh.png", "aah.png"))
+      ))
+    ))
+  )
 }

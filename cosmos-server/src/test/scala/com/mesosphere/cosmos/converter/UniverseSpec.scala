@@ -97,4 +97,7 @@ final class UniverseSpec extends FreeSpec {
     val v2FromV3 = v3.as[universe.v2.model.PackageDetailsVersion]
     assertResult(v3)(v2FromV3.as[universe.v3.model.PackageDefinition.Version])
   }
+  "Conversion[internal.model.PackageDefinition,rpc.v1.model.InstalledPackageInformation]" - {
+    assertResult(TestUtil.MaximalInstalledPackageInformation)(TestUtil.MaximalPackageDefinition.as[rpc.v1.model.InstalledPackageInformation])
+  }
 }
