@@ -77,4 +77,7 @@ final class UniverseSpec extends FreeSpec {
     assertResult(excpectV2Min(TestUtil.MinimalPackageDefinition))(TestUtil.MinimalV3ModelV3PackageDefinition.as[internal.model.PackageDefinition])
     assertResult(excpectV2Min(TestUtil.MaximalPackageDefinition))(TestUtil.MaximalV3ModelV3PackageDefinition.as[internal.model.PackageDefinition])
   }
+  "Conversion[internal.model.PackageDefinition,rpc.v2.model.DescribeResponse]" - {
+    assertResult(TestUtil.MinimalV2ModelDescribeResponse)(TestUtil.MinimalPackageDefinition.as[rpc.v2.model.DescribeResponse])
+  }
 }

@@ -246,5 +246,12 @@ object TestUtil {
    maintainer = MinimalPackageDefinition.maintainer,
    description = MinimalPackageDefinition.description
   )
+  val MinimalV2ModelDescribeResponse = rpc.v2.model.DescribeResponse(
+    packagingVersion = MinimalPackageDefinition.packagingVersion,
+    name = MinimalPackageDefinition.name,
+    version = MinimalPackageDefinition.version,
+    maintainer = MinimalPackageDefinition.maintainer,
+    description = MinimalPackageDefinition.description
+  )
 
 }
