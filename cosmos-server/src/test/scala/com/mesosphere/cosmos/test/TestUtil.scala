@@ -204,6 +204,7 @@ object TestUtil {
     postInstallNotes = MaximalPackageDefinition.postInstallNotes,
     postUninstallNotes = MaximalPackageDefinition.postUninstallNotes,
     licenses = MaximalPackageDefinition.licenses,
+    minDcosReleaseVersion = MaximalPackageDefinition.minDcosReleaseVersion,
     resource = MaximalPackageDefinition.resource,
     config = MaximalPackageDefinition.config,
     command = MaximalPackageDefinition.command
