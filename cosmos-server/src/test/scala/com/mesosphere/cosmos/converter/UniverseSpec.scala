@@ -116,30 +116,16 @@ final class UniverseSpec extends FreeSpec {
     assertResult(v3)(v2FromV3.as[universe.v3.model.Command])
   }
   "Injection[universe.v3.model.V2Resource,universe.v3.model.V3Resource]" in {
-      val v2 = universe.v3.model.V2Resource(
-        assets = Some(universe.v3.model.Assets(
-          uris = Some(Map(
-            "foo.tar.gz" -> "http://mesosphere.com/foo.tar.gz",
-            "bar.jar"    -> "https://mesosphere.com/bar.jar"
-          )),
-          container = Some(universe.v3.model.Container(Map(
-            "image1" -> "docker/image:1",
-            "image2" -> "docker/image:2"
-          )))
-        )),
-        images = Some(universe.v3.model.Images(
-          iconSmall = "small.png",
-          iconMedium = "medium.png",
-          iconLarge = "large.png",
-          screenshots = Some(List("ooh.png", "aah.png"))
-        ))
-    )
-
+    val v2 = TestUtil.MaximalV3ModelV2PackageDefinition.resource.get
     val v3FromV2 = v2.as[universe.v3.model.V3Resource]
     assertResult(Success(v2))(Injection.invert[universe.v3.model.V2Resource, universe.v3.model.V3Resource](v3FromV2))
     val v3 = TestUtil.MaximalPackageDefinition.resource.get
     assertResult(true)(Injection.invert[universe.v3.model.V2Resource, universe.v3.model.V3Resource](v3).isFailure)
-
+  }
+  "Bijection[universe.v2.model.Resource,universe.v3.model.V2Resource]" in {
+    val v2:universe.v2.model.Resource = TestUtil.MaximalInstalledPackageInformation.resourceDefinition.get
+    val v3FromV2 = v2.as[universe.v3.model.V2Resource]
+    assertResult(v2)(v3FromV2.as[universe.v2.model.Resource])
   }
   "Bijection[universe.v2.model.PackageDetailsVersion,universe.v3.model.PackageDefinition.Version]" in {
     val v2: universe.v2.model.PackageDetailsVersion  = universe.v2.model.PackageDetailsVersion("2.0")
