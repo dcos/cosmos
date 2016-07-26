@@ -1,6 +1,7 @@
 package com.mesosphere.cosmos
 
 import com.github.retronym.SbtOneJar._
+import scoverage.ScoverageKeys._
 import sbtfilter.Plugin._
 import sbt.Keys._
 import sbt._
@@ -108,6 +109,8 @@ object CosmosBuild extends Build {
 
   }
 
+  val teamcityVersion = sys.env.get("TEAMCITY_VERSION")
+
   val extraSettings = Defaults.coreDefaultSettings
 
   val sharedSettings = extraSettings ++ Seq(
@@ -192,7 +195,9 @@ object CosmosBuild extends Build {
 
     fork := false,
 
-    cancelable in Global := true
+    cancelable in Global := true,
+
+    coverageOutputTeamCity := teamcityVersion.isDefined
   )
 
   private lazy val cosmosIntegrationTestServer = settingKey[CosmosIntegrationTestServer]("cosmos-it-server")
@@ -264,9 +269,7 @@ object CosmosBuild extends Build {
   // BUILD TASKS
   //////////////////////////////////////////////////////////////////////////////
 
-  sys.env.get("TEAMCITY_VERSION") match {
-    case None => // no-op
-    case Some(teamcityVersion) =>
+  teamcityVersion.foreach { _ =>
       // add some info into the teamcity build context so that they can be used
       // by later steps
       reportParameter("SCALA_VERSION", projectScalaVersion)
