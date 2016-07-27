@@ -22,7 +22,8 @@ final class CapabilitiesHandlerSpec extends FreeSpec {
     val Xor.Right(body) = decode[CapabilitiesResponse](responseBody)
     val expected = CapabilitiesResponse(List(
       Capability("PACKAGE_MANAGEMENT"),
-      Capability("SUPPORT_CLUSTER_REPORT")
+      Capability("SUPPORT_CLUSTER_REPORT"),
+      Capability("METRONOME")
     ))
     assertResult(expected)(body)
   }
