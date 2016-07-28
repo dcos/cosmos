@@ -23,7 +23,7 @@ final class CosmosRepositorySpec extends FreeSpec {
     }
   }
   "getPackageByReleaseVersion" - {
-    "notFound" in {
+    "not found" in {
       val rep = C.rpc.v1.model.PackageRepository("test", Uri.parse("uri"))
       val c = CosmosRepository(rep, client(Nil))
       val ver = TestUtil.MinimalPackageDefinition.releaseVersion
@@ -33,7 +33,17 @@ final class CosmosRepositorySpec extends FreeSpec {
       val rep = C.rpc.v1.model.PackageRepository("test", Uri.parse("uri"))
       val c = CosmosRepository(rep, client(List(TestUtil.MinimalPackageDefinition)))
       val ver = TestUtil.MinimalPackageDefinition.releaseVersion
+      assertResult(Throw(new PackageNotFound("test")))(Try(Await.result(c.getPackageByReleaseVersion("test", ver))))
       assertResult(Return(TestUtil.MinimalPackageDefinition))(Try(Await.result(c.getPackageByReleaseVersion("minimal", ver))))
+    }
+    "found MAXIMAL" in {
+      val rep = C.rpc.v1.model.PackageRepository("test", Uri.parse("uri"))
+      val c = CosmosRepository(rep, client(List(TestUtil.MinimalPackageDefinition, TestUtil.MaximalPackageDefinition)))
+      val ver = TestUtil.MaximalPackageDefinition.releaseVersion
+      assertResult(Throw(new PackageNotFound("test")))(Try(Await.result(c.getPackageByReleaseVersion("test", ver))))
+
+      assertResult(Throw(new PackageNotFound("minimal")))(Try(Await.result(c.getPackageByReleaseVersion("minimal", ver))))
+      assertResult(Return(TestUtil.MaximalPackageDefinition))(Try(Await.result(c.getPackageByReleaseVersion("MAXIMAL", ver))))
     }
   }
 }
