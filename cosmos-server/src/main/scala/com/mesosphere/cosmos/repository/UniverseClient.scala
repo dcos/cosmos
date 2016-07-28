@@ -28,7 +28,11 @@ import io.circe.{Decoder, DecodingFailure, Json, JsonObject}
 import scala.io.Source
 import scala.util.{Failure, Success, Try}
 
-final class UniverseClient(adminRouter: AdminRouter)(implicit statsReceiver: StatsReceiver = NullStatsReceiver) {
+trait UniverseClient {
+  def apply(repository: PackageRepository)(implicit session: RequestSession): Future[internal.model.CosmosInternalRepository];
+}
+
+final class DefaultUniverseClient(adminRouter: AdminRouter)(implicit statsReceiver: StatsReceiver = NullStatsReceiver) extends UniverseClient {
 
   private[this] val stats = statsReceiver.scope("repositoryFetcher")
   private[this] val fetchScope = stats.scope("fetch")
@@ -321,6 +325,6 @@ final class UniverseClient(adminRouter: AdminRouter)(implicit statsReceiver: Sta
 
 object UniverseClient {
   def apply(adminRouter: AdminRouter)(implicit statsReceiver: StatsReceiver = NullStatsReceiver): UniverseClient = {
-    new UniverseClient(adminRouter)
+    new DefaultUniverseClient(adminRouter)
   }
 }
