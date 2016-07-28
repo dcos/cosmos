@@ -46,4 +46,33 @@ final class CosmosRepositorySpec extends FreeSpec {
       assertResult(Return(TestUtil.MaximalPackageDefinition))(Try(Await.result(c.getPackageByReleaseVersion("MAXIMAL", ver))))
     }
   }
+  "getPackageByPackageVersion" - {
+    "not found" in {
+      val rep = C.rpc.v1.model.PackageRepository("test", Uri.parse("uri"))
+      val c = CosmosRepository(rep, client(Nil))
+      val ver = TestUtil.MinimalPackageDefinition.version
+      assertResult(Throw(new PackageNotFound("test")))(Try(Await.result(c.getPackageByPackageVersion("test", Some(ver)))))
+      assertResult(Throw(new PackageNotFound("test")))(Try(Await.result(c.getPackageByPackageVersion("test", None))))
+    }
+    "found minimal" in {
+      val u = Uri.parse("/uri")
+      val rep = C.rpc.v1.model.PackageRepository("test", u)
+      val c = CosmosRepository(rep, client(List(TestUtil.MinimalPackageDefinition)))
+      val ver = TestUtil.MinimalPackageDefinition.version
+      assertResult(Return((TestUtil.MinimalPackageDefinition,u)))(Try(Await.result(c.getPackageByPackageVersion("minimal", Some(ver)))))
+      assertResult(Return((TestUtil.MinimalPackageDefinition,u)))(Try(Await.result(c.getPackageByPackageVersion("minimal", None))))
+      val bad = TestUtil.MaximalPackageDefinition.version
+      assertResult(Throw(new PackageNotFound("minimal")))(Try(Await.result(c.getPackageByPackageVersion("minimal", Some(bad)))))
+      assertResult(Throw(new PackageNotFound("test")))(Try(Await.result(c.getPackageByPackageVersion("test", Some(ver)))))
+    }
+    "found MAXIMAL" in {
+      val u = Uri.parse("/uri")
+      val rep = C.rpc.v1.model.PackageRepository("test", u)
+      val c = CosmosRepository(rep, client(List(TestUtil.MinimalPackageDefinition, TestUtil.MaximalPackageDefinition)))
+      val ver = TestUtil.MaximalPackageDefinition.version
+      assertResult(Return((TestUtil.MaximalPackageDefinition,u)))(Try(Await.result(c.getPackageByPackageVersion("MAXIMAL", Some(ver)))))
+      val bad = TestUtil.MinimalPackageDefinition.version
+      assertResult(Throw(new PackageNotFound("MAXIMAL")))(Try(Await.result(c.getPackageByPackageVersion("MAXIMAL", Some(bad)))))
+    }
+  }
 }
