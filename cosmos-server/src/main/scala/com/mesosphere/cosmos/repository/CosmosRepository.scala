@@ -10,6 +10,7 @@ import com.twitter.util.Future
 
 import java.time.LocalDateTime
 import java.util.concurrent.atomic.AtomicReference
+import java.util.regex.Pattern
 import scala.util.matching.Regex
 
 /** A repository of packages that can be installed on DCOS. */
@@ -150,7 +151,7 @@ final class DefaultCosmosRepository(
   }
 
   private[this] def createRegex(query: String): Regex = {
-    s"""^${query.replaceAll("\\*", ".*")}$$""".r
+    s"""^${query.split("\\*").map(Pattern.quote(_)).mkString(".*")}$$""".r
   }
 
   private[this] def searchRegex(
