@@ -75,4 +75,28 @@ final class CosmosRepositorySpec extends FreeSpec {
       assertResult(Throw(new PackageNotFound("MAXIMAL")))(Try(Await.result(c.getPackageByPackageVersion("MAXIMAL", Some(bad)))))
     }
   }
+
+  "getPackagesByPackageName" - {
+    "not found" in {
+      val rep = C.rpc.v1.model.PackageRepository("test", Uri.parse("uri"))
+      val c = CosmosRepository(rep, client(Nil))
+      assertResult(Return(Nil))(Try(Await.result(c.getPackagesByPackageName("test"))))
+    }
+    "found minimal" in {
+      val u = Uri.parse("/uri")
+      val rep = C.rpc.v1.model.PackageRepository("test", u)
+      val c = CosmosRepository(rep, client(List(TestUtil.MinimalPackageDefinition)))
+      assertResult(Return(List(TestUtil.MinimalPackageDefinition)))(Try(Await.result(c.getPackagesByPackageName("minimal"))))
+      assertResult(Return(Nil))(Try(Await.result(c.getPackagesByPackageName("test"))))
+    }
+    "found MAXIMAL" in {
+      val u = Uri.parse("/uri")
+      val rep = C.rpc.v1.model.PackageRepository("test", u)
+      val c = CosmosRepository(rep, client(List(TestUtil.MinimalPackageDefinition, TestUtil.MinimalPackageDefinition, TestUtil.MaximalPackageDefinition)))
+
+      assertResult(Return(List(TestUtil.MinimalPackageDefinition, TestUtil.MinimalPackageDefinition)))(Try(Await.result(c.getPackagesByPackageName("minimal"))))
+      assertResult(Return(List(TestUtil.MaximalPackageDefinition)))(Try(Await.result(c.getPackagesByPackageName("MAXIMAL"))))
+      assertResult(Return(Nil))(Try(Await.result(c.getPackagesByPackageName("test"))))
+    }
+  }
 }
