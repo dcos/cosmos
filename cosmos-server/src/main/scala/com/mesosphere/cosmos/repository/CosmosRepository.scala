@@ -150,8 +150,14 @@ final class DefaultCosmosRepository(
     }
   }
 
+  private[this] def safePattern(query: String): String = {
+      query.split("\\*", -1).map{
+        case "" => ""
+        case v => Pattern.quote(v)
+      }.mkString(".*")
+  }
   private[this] def createRegex(query: String): Regex = {
-    s"""^${query.split("\\*").map(Pattern.quote(_)).mkString(".*")}$$""".r
+    s"""^${safePattern(query)}$$""".r
   }
 
   private[this] def searchRegex(

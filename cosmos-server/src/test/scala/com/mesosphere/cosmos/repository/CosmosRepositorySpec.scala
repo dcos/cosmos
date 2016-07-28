@@ -109,14 +109,34 @@ final class CosmosRepositorySpec extends FreeSpec {
       assertResult("^\\Qminimal\\E$")((c invokePrivate createRegex("minimal")).toString)
       assertResult("^\\Qmin\\E.*\\Qmal\\E$")((c invokePrivate createRegex("min*mal")).toString)
       assertResult("^\\Qmini\\E.*\\Q.+\\E$")((c invokePrivate createRegex("mini*.+")).toString)
+      assertResult("^\\Qminimal\\E.*$")((c invokePrivate createRegex("minimal*")).toString)
+      assertResult("^\\Qminimal\\E.*.*$")((c invokePrivate createRegex("minimal**")).toString)
   }
-  //"search" - {
-  //  "not found" in {
-  //    val u = Uri.parse("/uri")
-  //    val rep = C.rpc.v1.model.PackageRepository("test", u)
-  //    val c = CosmosRepository(rep, client(List(TestUtil.MinimalPackageDefinition)))
-  //    assertResult(Return(Nil))(Try(Await.result(c.search(Some("test")))))
-  //    assertResult(Return(Nil))(Try(Await.result(c.search(Some("mini*.+")))))
-  //  }
-  //}
+  "search" - {
+    "not found" in {
+      val u = Uri.parse("/uri")
+      val rep = C.rpc.v1.model.PackageRepository("test", u)
+      val c = CosmosRepository(rep, client(List(TestUtil.MinimalPackageDefinition)))
+      assertResult(Return(Nil))(Try(Await.result(c.search(Some("test")))))
+      assertResult(Return(Nil))(Try(Await.result(c.search(Some("mini*.+")))))
+    }
+    "found" in {
+      val u = Uri.parse("/uri")
+      val rep = C.rpc.v1.model.PackageRepository("test", u)
+      val l = List(TestUtil.MinimalPackageDefinition)
+      val c = CosmosRepository(rep, client(l))
+      assertResult("minimal")(Try(Await.result(c.search(Some("minimal")))).get.head.name)
+      assertResult("minimal")(Try(Await.result(c.search(Some("mini*mal")))).get.head.name)
+      assertResult("minimal")(Try(Await.result(c.search(Some("min*mal")))).get.head.name)
+      assertResult("minimal")(Try(Await.result(c.search(Some("minimal*")))).get.head.name)
+      assertResult("minimal")(Try(Await.result(c.search(Some("*minimal")))).get.head.name)
+      assertResult("minimal")(Try(Await.result(c.search(Some("*minimal*")))).get.head.name)
+      assertResult("minimal")(Try(Await.result(c.search(Some("*inimal")))).get.head.name)
+      assertResult("minimal")(Try(Await.result(c.search(Some("minima*")))).get.head.name)
+      assertResult("minimal")(Try(Await.result(c.search(Some("minima**")))).get.head.name)
+      assertResult("minimal")(Try(Await.result(c.search(Some("**minimal")))).get.head.name)
+      assertResult("minimal")(Try(Await.result(c.search(Some("**minimal**")))).get.head.name)
+      assertResult("minimal")(Try(Await.result(c.search(Some("**mi**mal**")))).get.head.name)
+    }
+  }
 }
