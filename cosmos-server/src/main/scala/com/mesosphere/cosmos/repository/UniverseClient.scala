@@ -41,11 +41,11 @@ final class DefaultUniverseClient(adminRouter: AdminRouter)(implicit statsReceiv
 
   def apply(repository: PackageRepository)(implicit session: RequestSession): Future[internal.model.CosmosInternalRepository] = {
     adminRouter.getDcosVersion().flatMap { dcosVersion =>
-      _apply(repository, dcosVersion.version)
+      apply(repository, dcosVersion.version)
     }
   }
 
-  private[this] def _apply(
+  private[repository] def apply(
       repository: PackageRepository,
       dcosReleaseVersion: universe.v3.model.DcosReleaseVersion
   ): Future[internal.model.CosmosInternalRepository] = {

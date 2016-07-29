@@ -188,6 +188,7 @@ final class CosmosRepositorySpec extends FreeSpec {
       def waitFor(x:Long): Unit = sys.error("unexpected")
     }
     val c = CosmosRepository(rep, client(b, a), clock)
+    assertResult("minimal")(Try(Await.result(c.search(Some("minimal")))).get.head.name)
     assertResult(Return(Nil))(Try(Await.result(c.search(Some("MAXIMAL")))))
 
     millis = millis + 60*1000*1000
