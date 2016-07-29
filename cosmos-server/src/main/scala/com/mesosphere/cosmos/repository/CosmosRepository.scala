@@ -41,7 +41,7 @@ object CosmosRepository {
 final class DefaultCosmosRepository(
     override val repository: rpc.v1.model.PackageRepository,
     universeClient: UniverseClient,
-    clock: Clock
+    clock: Clock = new LowResClock(Amount.of(1L, Time.SECONDS))
 )
   extends CosmosRepository {
   private[this] val lastRepository = new AtomicReference(
@@ -164,7 +164,7 @@ final class DefaultCosmosRepository(
         case v => Pattern.quote(v)
       }.mkString(".*")
   }
-  private[this] def createRegex(query: String): Regex = {
+  private[repository] def createRegex(query: String): Regex = {
     s"""^${safePattern(query)}$$""".r
   }
 

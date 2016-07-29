@@ -7,7 +7,6 @@ import com.mesosphere.cosmos.http.RequestSession
 import com.mesosphere.universe.v3.model.DcosReleaseVersion
 import com.netaporter.uri.Uri
 import org.scalatest.FreeSpec
-import org.scalatest.PrivateMethodTester._
 import com.twitter.util.Future
 import com.twitter.util.Await
 import com.twitter.util.{Throw,Try,Return}
@@ -108,13 +107,12 @@ final class CosmosRepositorySpec extends FreeSpec {
   "createRegex" in {
       val u = Uri.parse("/uri")
       val rep = C.rpc.v1.model.PackageRepository("test", u)
-      val c = CosmosRepository(rep, client(List(TestUtil.MinimalPackageDefinition)))
-      val createRegex = PrivateMethod[Regex]('createRegex)
-      assertResult("^\\Qminimal\\E$")((c invokePrivate createRegex("minimal")).toString)
-      assertResult("^\\Qmin\\E.*\\Qmal\\E$")((c invokePrivate createRegex("min*mal")).toString)
-      assertResult("^\\Qmini\\E.*\\Q.+\\E$")((c invokePrivate createRegex("mini*.+")).toString)
-      assertResult("^\\Qminimal\\E.*$")((c invokePrivate createRegex("minimal*")).toString)
-      assertResult("^\\Qminimal\\E.*.*$")((c invokePrivate createRegex("minimal**")).toString)
+      val c = new DefaultCosmosRepository(rep, client(List(TestUtil.MinimalPackageDefinition)))
+      assertResult("^\\Qminimal\\E$")(c.createRegex("minimal").toString)
+      assertResult("^\\Qmin\\E.*\\Qmal\\E$")(c.createRegex("min*mal").toString)
+      assertResult("^\\Qmini\\E.*\\Q.+\\E$")(c.createRegex("mini*.+").toString)
+      assertResult("^\\Qminimal\\E.*$")(c.createRegex("minimal*").toString)
+      assertResult("^\\Qminimal\\E.*.*$")(c.createRegex("minimal**").toString)
   }
   "search" - {
     "not found" in {
