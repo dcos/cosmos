@@ -122,6 +122,14 @@ final class CosmosRepositorySpec extends FreeSpec {
       assertResult(Return(Nil))(Try(Await.result(c.search(Some("test")))))
       assertResult(Return(Nil))(Try(Await.result(c.search(Some("mini*.+")))))
     }
+
+    "all" in {
+      val u = Uri.parse("/uri")
+      val rep = C.rpc.v1.model.PackageRepository("test", u)
+      val all = List(TestUtil.MaximalPackageDefinition,TestUtil.MinimalPackageDefinition)
+      val c = CosmosRepository(rep, client(all))
+      assertResult(2)(Try(Await.result(c.search(None))).get.length)
+    }
     "found" in {
       val u = Uri.parse("/uri")
       val rep = C.rpc.v1.model.PackageRepository("test", u)
