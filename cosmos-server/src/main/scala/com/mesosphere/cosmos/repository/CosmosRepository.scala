@@ -7,9 +7,13 @@ import com.mesosphere.cosmos.rpc
 import com.mesosphere.universe
 import com.netaporter.uri.Uri
 import com.twitter.util.Future
+import com.twitter.common.util.{LowResClock, Clock}
+import com.twitter.common.quantity.Amount
+import com.twitter.common.quantity.Time
 
-import java.time.LocalDateTime
 import java.util.concurrent.atomic.AtomicReference
+import java.util.concurrent.TimeUnit
+import java.util.regex.Pattern
 import scala.util.matching.Regex
 
 /** A repository of packages that can be installed on DCOS. */
@@ -26,20 +30,22 @@ trait CosmosRepository extends PackageCollection {
 
 object CosmosRepository {
   def apply(repository: rpc.v1.model.PackageRepository,
-            universeClient: UniverseClient)
+            universeClient: UniverseClient,
+            clock: Clock = new LowResClock(Amount.of(1L, Time.SECONDS))
+            )
     : CosmosRepository = {
-    new DefaultCosmosRepository(repository, universeClient)
+    new DefaultCosmosRepository(repository, universeClient, clock)
   }
 }
 
 final class DefaultCosmosRepository(
     override val repository: rpc.v1.model.PackageRepository,
-    universeClient: UniverseClient
+    universeClient: UniverseClient,
+    clock: Clock = new LowResClock(Amount.of(1L, Time.SECONDS))
 )
   extends CosmosRepository {
-
   private[this] val lastRepository = new AtomicReference(
-      Option.empty[(internal.model.CosmosInternalRepository, LocalDateTime)])
+      Option.empty[(internal.model.CosmosInternalRepository, Long)])
 
   override def getPackageByReleaseVersion(
       packageName: String,
@@ -132,10 +138,13 @@ final class DefaultCosmosRepository(
   ): Future[internal.model.CosmosInternalRepository] = {
     lastRepository.get() match {
       case Some((internalRepository, lastModified)) =>
-        if (lastModified.plusMinutes(1).isBefore(LocalDateTime.now())) {
+        val now = TimeUnit.MILLISECONDS.toSeconds(clock.nowMillis)
+        val lastSec = TimeUnit.MILLISECONDS.toSeconds(lastModified)
+        val refetch = lastSec + TimeUnit.MINUTES.toSeconds(1)
+        if (refetch < now || lastSec > now) {
           universeClient(repository).onSuccess {
             newRepository =>
-              lastRepository.set(Some((newRepository, LocalDateTime.now())))
+              lastRepository.set(Some((newRepository, clock.nowMillis)))
           }
         } else {
           Future(internalRepository)
@@ -144,13 +153,19 @@ final class DefaultCosmosRepository(
       case None =>
         universeClient(repository).onSuccess {
           newRepository =>
-            lastRepository.set(Some((newRepository, LocalDateTime.now())))
+            lastRepository.set(Some((newRepository, clock.nowMillis)))
         }
     }
   }
 
-  private[this] def createRegex(query: String): Regex = {
-    s"""^${query.replaceAll("\\*", ".*")}$$""".r
+  private[this] def safePattern(query: String): String = {
+      query.split("\\*", -1).map{
+        case "" => ""
+        case v => Pattern.quote(v)
+      }.mkString(".*")
+  }
+  private[repository] def createRegex(query: String): Regex = {
+    s"""^${safePattern(query)}$$""".r
   }
 
   private[this] def searchRegex(

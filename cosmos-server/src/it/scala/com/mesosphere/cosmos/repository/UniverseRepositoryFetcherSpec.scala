@@ -11,7 +11,7 @@ import org.scalatest.FreeSpec
 
 class UniverseRepositoryFetcherSpec extends FreeSpec {
 
-  val fetcher = UniverseClient(CosmosIntegrationTestClient.adminRouter)
+  val fetcher = new DefaultUniverseClient(CosmosIntegrationTestClient.adminRouter)
 
   val baseRepoUri: Uri = "https://downloads.mesosphere.com/universe/dce867e9af73b85172d5a36bf8114c69b3be024e"
 

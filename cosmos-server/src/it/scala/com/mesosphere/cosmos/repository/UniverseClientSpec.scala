@@ -21,7 +21,7 @@ final class UniverseClientSpec extends FreeSpec {
       "URI/URL syntax" - {
         "relative URI" in {
           val expectedRepo = PackageRepository(name = "FooBar", uri = Uri.parse("foo/bar"))
-          val universeClient = UniverseClient(CosmosIntegrationTestClient.adminRouter)
+          val universeClient = new DefaultUniverseClient(CosmosIntegrationTestClient.adminRouter)
           val Throw(RepositoryUriSyntax(actualRepo, causedBy)) =
             Await.result(universeClient(expectedRepo, version1Dot8).liftToTry)
           assertResult(expectedRepo)(actualRepo)
@@ -30,7 +30,7 @@ final class UniverseClientSpec extends FreeSpec {
 
         "unknown protocol" in {
           val expectedRepo = PackageRepository(name = "FooBar", uri = Uri.parse("foo://bar.com"))
-          val universeClient = UniverseClient(CosmosIntegrationTestClient.adminRouter)
+          val universeClient = new DefaultUniverseClient(CosmosIntegrationTestClient.adminRouter)
           val Throw(RepositoryUriSyntax(actualRepo, causedBy)) =
             Await.result(universeClient(expectedRepo, version1Dot8).liftToTry)
           assertResult(expectedRepo)(actualRepo)
@@ -40,7 +40,7 @@ final class UniverseClientSpec extends FreeSpec {
 
       "Connection failure" in {
         val expectedRepo = PackageRepository(name = "BadRepo", uri = Uri.parse("http://foobar"))
-        val universeClient = UniverseClient(CosmosIntegrationTestClient.adminRouter)
+        val universeClient = new DefaultUniverseClient(CosmosIntegrationTestClient.adminRouter)
         val Throw(RepositoryUriConnection(actualRepo, causedBy)) =
           Await.result(universeClient(expectedRepo, version1Dot8).liftToTry)
         assertResult(expectedRepo)(actualRepo)
