@@ -141,7 +141,7 @@ final class DefaultCosmosRepository(
         val now = TimeUnit.MILLISECONDS.toSeconds(clock.nowMillis)
         val lastSec = TimeUnit.MILLISECONDS.toSeconds(lastModified)
         val refetch = lastSec + TimeUnit.MINUTES.toSeconds(1)
-        if (refetch < now || lastSec < now) {
+        if (refetch < now || lastSec > now) {
           universeClient(repository).onSuccess {
             newRepository =>
               lastRepository.set(Some((newRepository, clock.nowMillis)))
