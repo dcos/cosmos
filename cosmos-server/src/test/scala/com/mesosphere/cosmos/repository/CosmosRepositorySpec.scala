@@ -181,16 +181,16 @@ final class CosmosRepositorySpec extends FreeSpec {
     val rep = C.rpc.v1.model.PackageRepository("test", u)
     val a = List(TestUtil.MaximalPackageDefinition)
     val b = List(TestUtil.MinimalPackageDefinition)
-		var millis: Long = 0
-		val clock = new Clock {
-			def nowMillis(): Long = millis
-			def nowNanos(): Long = millis * 1000
-			def waitFor(x:Long): Unit = sys.error("unexpected")
-		}
+    var millis: Long = 0
+    val clock = new Clock {
+      def nowMillis(): Long = millis
+      def nowNanos(): Long = millis * 1000
+      def waitFor(x:Long): Unit = sys.error("unexpected")
+    }
     val c = CosmosRepository(rep, client(b, a), clock)
     assertResult(Return(Nil))(Try(Await.result(c.search(Some("MAXIMAL")))))
 
-		millis = millis + 60*1000*1000
+    millis = millis + 60*1000*1000
 
     assertResult("MAXIMAL")(Try(Await.result(c.search(Some("MAXIMAL")))).get.head.name)
   }

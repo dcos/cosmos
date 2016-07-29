@@ -138,9 +138,9 @@ final class DefaultCosmosRepository(
   ): Future[internal.model.CosmosInternalRepository] = {
     lastRepository.get() match {
       case Some((internalRepository, lastModified)) =>
-				val now = TimeUnit.MILLISECONDS.toSeconds(clock.nowMillis)
-				val lastSec = TimeUnit.MILLISECONDS.toSeconds(lastModified)
-				val refetch = lastSec + TimeUnit.MINUTES.toSeconds(1)
+        val now = TimeUnit.MILLISECONDS.toSeconds(clock.nowMillis)
+        val lastSec = TimeUnit.MILLISECONDS.toSeconds(lastModified)
+        val refetch = lastSec + TimeUnit.MINUTES.toSeconds(1)
         if (refetch < now || lastSec < now) {
           universeClient(repository).onSuccess {
             newRepository =>
