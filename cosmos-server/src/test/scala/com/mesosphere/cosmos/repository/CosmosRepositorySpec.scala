@@ -1,10 +1,10 @@
 package com.mesosphere.cosmos.repository
 
 import com.mesosphere.{cosmos => C}
-import com.mesosphere.cosmos
-import com.mesosphere.{universe => U}
+import com.mesosphere.cosmos.internal.model.CosmosInternalRepository
 import com.mesosphere.cosmos.rpc.v1.model.PackageRepository
 import com.mesosphere.cosmos.http.RequestSession
+import com.mesosphere.universe.v3.model.DcosReleaseVersion
 import com.netaporter.uri.Uri
 import org.scalatest.FreeSpec
 import org.scalatest.PrivateMethodTester._
@@ -12,7 +12,7 @@ import com.twitter.util.Future
 import com.twitter.util.Await
 import com.twitter.util.{Throw,Try,Return}
 import com.mesosphere.cosmos.test.TestUtil
-import com.mesosphere.cosmos.test.TestUtil._ //RequestSession implicit
+import com.mesosphere.cosmos.test.TestUtil.Anonymous //RequestSession implicit
 import com.mesosphere.cosmos.PackageNotFound
 import scala.util.matching.Regex
 import java.util.concurrent.atomic.AtomicReference
@@ -21,8 +21,8 @@ import java.time.LocalDateTime
 final class CosmosRepositorySpec extends FreeSpec {
   def client(ls: List[C.internal.model.PackageDefinition]): C.repository.UniverseClient = {
     new C.repository.UniverseClient {
-      def apply(repository: PackageRepository)(implicit session: RequestSession): Future[C.internal.model.CosmosInternalRepository] = Future { 
-        C.internal.model.CosmosInternalRepository(ls)
+      def apply(repository: PackageRepository)(implicit session: RequestSession): Future[CosmosInternalRepository] = Future { 
+        CosmosInternalRepository(ls)
       }
     }
   }
@@ -160,14 +160,17 @@ final class CosmosRepositorySpec extends FreeSpec {
   "timeout repository" in {
     var count = 0
     def client(before: List[C.internal.model.PackageDefinition],
-               after: List[C.internal.model.PackageDefinition]): C.repository.UniverseClient = {
+               after: List[C.internal.model.PackageDefinition]
+               ): C.repository.UniverseClient = {
       new C.repository.UniverseClient {
-        def apply(repository: PackageRepository)(implicit session: RequestSession): Future[C.internal.model.CosmosInternalRepository] = Future { 
+        def apply(repository: PackageRepository)
+                 (implicit session: RequestSession)
+                 :Future[CosmosInternalRepository] = Future { 
           if (count == 0) {
             count = count + 1
-            C.internal.model.CosmosInternalRepository(before)
+            CosmosInternalRepository(before)
           } else {
-            C.internal.model.CosmosInternalRepository(after)
+            CosmosInternalRepository(after)
           }
         }
       }
@@ -179,9 +182,9 @@ final class CosmosRepositorySpec extends FreeSpec {
     val c = CosmosRepository(rep, client(b, a))
     assertResult(Return(Nil))(Try(Await.result(c.search(Some("MAXIMAL")))))
 
-    val getrep = PrivateMethod[AtomicReference[Option[(C.internal.model.CosmosInternalRepository, LocalDateTime)]]]('lastRepository)
+    val getrep = PrivateMethod[AtomicReference[Option[(CosmosInternalRepository, LocalDateTime)]]]('lastRepository)
     (c invokePrivate getrep()).set(
-      Some((C.internal.model.CosmosInternalRepository(b), LocalDateTime.now().plusMinutes(-2)))
+      Some((CosmosInternalRepository(b), LocalDateTime.now().plusMinutes(-2)))
     )
     assertResult("MAXIMAL")(Try(Await.result(c.search(Some("MAXIMAL")))).get.head.name)
   }
