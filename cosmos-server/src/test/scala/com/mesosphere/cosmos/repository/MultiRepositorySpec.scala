@@ -18,7 +18,11 @@ final class MultiRepositorySpec extends FreeSpec {
 
   case class TestClient(repos: List[PackageRepository] = Nil, ls: List[PackageDefinition] = Nil) extends UniverseClient {
     def apply(repo: PackageRepository)(implicit session: RequestSession): Future[CosmosInternalRepository] = Future { 
-      CosmosInternalRepository(repos.filter( _ == repo).flatMap(_ => ls))
+      val rv = repos.filter( _ == repo).flatMap(_ => ls)
+      rv match {
+        case Nil => throw PackageNotFound("foobar")
+        case ls => CosmosInternalRepository(ls)
+      }
     }
   }
   case class TestStorage(initial:List[PackageRepository] = Nil) extends PackageSourcesStorage {
