@@ -17,6 +17,8 @@ import com.mesosphere.cosmos.PackageNotFound
 import scala.util.matching.Regex
 import java.util.concurrent.atomic.AtomicReference
 import java.time.LocalDateTime
+import com.twitter.common.util.Clock
+
 
 final class CosmosRepositorySpec extends FreeSpec {
   def client(ls: List[C.internal.model.PackageDefinition]): C.repository.UniverseClient = {
@@ -179,13 +181,17 @@ final class CosmosRepositorySpec extends FreeSpec {
     val rep = C.rpc.v1.model.PackageRepository("test", u)
     val a = List(TestUtil.MaximalPackageDefinition)
     val b = List(TestUtil.MinimalPackageDefinition)
-    val c = CosmosRepository(rep, client(b, a))
+		var millis: Long = 0
+		val clock = new Clock {
+			def nowMillis(): Long = millis
+			def nowNanos(): Long = millis * 1000
+			def waitFor(x:Long): Unit = sys.error("unexpected")
+		}
+    val c = CosmosRepository(rep, client(b, a), clock)
     assertResult(Return(Nil))(Try(Await.result(c.search(Some("MAXIMAL")))))
 
-    val getrep = PrivateMethod[AtomicReference[Option[(CosmosInternalRepository, LocalDateTime)]]]('lastRepository)
-    (c invokePrivate getrep()).set(
-      Some((CosmosInternalRepository(b), LocalDateTime.now().plusMinutes(-2)))
-    )
+		millis = millis + 60*1000*1000
+
     assertResult("MAXIMAL")(Try(Await.result(c.search(Some("MAXIMAL")))).get.head.name)
   }
 }
