@@ -44,5 +44,31 @@ final class MultiRepositorySpec extends FreeSpec {
       val c = new MultiRepository(storage, client)
       assertResult(Return(cls))(Try(Await.result(c.getPackagesByPackageName("minimal"))))
     }
+    "not in repo" in {
+      val invalid = List(PackageRepository("invalid", Uri.parse("/invalid")))
+      val repos = List(PackageRepository("minimal", Uri.parse("/test")))
+      val storage = TestStorage(repos)
+      val cls = List(TestUtil.MinimalPackageDefinition)
+      val client = TestClient(invalid, cls)
+      val c = new MultiRepository(storage, client)
+      assertResult(Throw(new PackageNotFound("minimal")))(Try(Await.result(c.getPackagesByPackageName("minimal"))))
+    }
+    "wrong name" in {
+      val repos = List(PackageRepository("valid", Uri.parse("/valid")))
+      val storage = TestStorage(repos)
+      val cls = List(TestUtil.MaximalPackageDefinition)
+      val client = TestClient(repos, cls)
+      val c = new MultiRepository(storage, client)
+      assertResult(Throw(new PackageNotFound("minimal")))(Try(Await.result(c.getPackagesByPackageName("minimal"))))
+    }
+    "from many" in {
+      val repos = List(PackageRepository("valid", Uri.parse("/valid")))
+      val storage = TestStorage(repos)
+      val cls = List(TestUtil.MaximalPackageDefinition, TestUtil.MinimalPackageDefinition)
+      val client = TestClient(repos, cls)
+      val c = new MultiRepository(storage, client)
+      val expect = List(TestUtil.MinimalPackageDefinition)
+      assertResult(Return(expect))(Try(Await.result(c.getPackagesByPackageName("minimal"))))
+    }
   }
 }
