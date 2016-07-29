@@ -7,15 +7,11 @@ import com.mesosphere.cosmos.http.RequestSession
 import com.mesosphere.universe.v3.model.DcosReleaseVersion
 import com.netaporter.uri.Uri
 import org.scalatest.FreeSpec
-import com.twitter.util.Future
-import com.twitter.util.Await
-import com.twitter.util.{Throw,Try,Return}
+import com.twitter.util.{Future,Await,Throw,Try,Return}
 import com.mesosphere.cosmos.test.TestUtil
 import com.mesosphere.cosmos.test.TestUtil.Anonymous //RequestSession implicit
 import com.mesosphere.cosmos.PackageNotFound
 import scala.util.matching.Regex
-import java.util.concurrent.atomic.AtomicReference
-import java.time.LocalDateTime
 import com.twitter.common.util.Clock
 
 
