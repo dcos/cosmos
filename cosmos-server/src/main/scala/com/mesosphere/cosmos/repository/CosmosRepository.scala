@@ -39,8 +39,11 @@ final class DefaultCosmosRepository(
 )
   extends CosmosRepository {
 
-  private[this] val lastRepository = new AtomicReference(
+  private[this] val lastRepo = new AtomicReference(
       Option.empty[(internal.model.CosmosInternalRepository, LocalDateTime)])
+
+  //getter method so tests can override behavior
+  private[this] def lastRepository: AtomicReference[Option[(internal.model.CosmosInternalRepository, LocalDateTime)]] = this.lastRepo
 
   override def getPackageByReleaseVersion(
       packageName: String,

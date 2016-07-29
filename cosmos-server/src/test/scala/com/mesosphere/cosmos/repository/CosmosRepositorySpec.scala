@@ -15,6 +15,8 @@ import com.mesosphere.cosmos.test.TestUtil
 import com.mesosphere.cosmos.test.TestUtil._ //RequestSession implicit
 import com.mesosphere.cosmos.PackageNotFound
 import scala.util.matching.Regex
+import java.util.concurrent.atomic.AtomicReference
+import java.time.LocalDateTime
 
 final class CosmosRepositorySpec extends FreeSpec {
   def client(ls: List[C.internal.model.PackageDefinition]): C.repository.UniverseClient = {
@@ -138,5 +140,41 @@ final class CosmosRepositorySpec extends FreeSpec {
       assertResult("minimal")(Try(Await.result(c.search(Some("**minimal**")))).get.head.name)
       assertResult("minimal")(Try(Await.result(c.search(Some("**mi**mal**")))).get.head.name)
     }
+    "by tag" in {
+      val u = Uri.parse("/uri")
+      val rep = C.rpc.v1.model.PackageRepository("test", u)
+      val l = List(TestUtil.MaximalPackageDefinition)
+      val c = CosmosRepository(rep, client(l))
+      assertResult("MAXIMAL")(Try(Await.result(c.search(Some("all")))).get.head.name)
+      assertResult("MAXIMAL")(Try(Await.result(c.search(Some("thing*")))).get.head.name)
+    }
+  }
+  "timeout repository" in {
+    var count = 0
+    def client(before: List[C.internal.model.PackageDefinition],
+               after: List[C.internal.model.PackageDefinition]): C.repository.UniverseClient = {
+      new C.repository.UniverseClient {
+        def apply(repository: PackageRepository)(implicit session: RequestSession): Future[C.internal.model.CosmosInternalRepository] = Future { 
+          if (count == 0) {
+            count = count + 1
+            C.internal.model.CosmosInternalRepository(before)
+          } else {
+            C.internal.model.CosmosInternalRepository(after)
+          }
+        }
+      }
+    }
+    val u = Uri.parse("/uri")
+    val rep = C.rpc.v1.model.PackageRepository("test", u)
+    val a = List(TestUtil.MaximalPackageDefinition)
+    val b = List(TestUtil.MinimalPackageDefinition)
+    val c = CosmosRepository(rep, client(b, a))
+    assertResult(Return(Nil))(Try(Await.result(c.search(Some("MAXIMAL")))))
+
+    val getrep = PrivateMethod[AtomicReference[Option[(C.internal.model.CosmosInternalRepository, LocalDateTime)]]]('lastRepository)
+    (c invokePrivate getrep()).set(
+      Some((C.internal.model.CosmosInternalRepository(b), LocalDateTime.now().plusMinutes(-2)))
+    )
+    assertResult("MAXIMAL")(Try(Await.result(c.search(Some("MAXIMAL")))).get.head.name)
   }
 }
