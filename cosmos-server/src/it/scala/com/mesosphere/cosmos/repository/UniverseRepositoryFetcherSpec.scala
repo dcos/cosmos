@@ -2,12 +2,11 @@ package com.mesosphere.cosmos.repository
 
 import com.mesosphere.cosmos.rpc.v1.model.PackageRepository
 import com.mesosphere.cosmos.test.CosmosIntegrationTestClient
-import com.mesosphere.cosmos.internal.model.CosmosInternalRepository
 import com.mesosphere.universe.v3.model.DcosReleaseVersionParser
 import com.mesosphere.universe.v3.model.PackageDefinition.Version
 import com.netaporter.uri.Uri
 import com.netaporter.uri.dsl._
-import com.twitter.util.{Await, Future}
+import com.twitter.util.{Await}
 import org.scalatest.FreeSpec
 
 class UniverseRepositoryFetcherSpec extends FreeSpec {

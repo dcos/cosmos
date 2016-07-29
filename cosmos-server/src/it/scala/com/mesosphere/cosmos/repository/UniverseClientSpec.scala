@@ -4,11 +4,10 @@ import java.io.IOException
 import java.net.MalformedURLException
 import com.mesosphere.cosmos.rpc.v1.model.PackageRepository
 import com.mesosphere.cosmos.test.CosmosIntegrationTestClient
-import com.mesosphere.cosmos.internal.model.CosmosInternalRepository
 import com.mesosphere.cosmos.{RepositoryUriConnection, RepositoryUriSyntax}
 import com.mesosphere.universe.v3.model.DcosReleaseVersion
 import com.netaporter.uri.Uri
-import com.twitter.util.{Await, Throw, Future}
+import com.twitter.util.{Await, Throw}
 import org.scalatest.FreeSpec
 
 final class UniverseClientSpec extends FreeSpec {
