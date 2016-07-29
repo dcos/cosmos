@@ -191,7 +191,12 @@ final class CosmosRepositorySpec extends FreeSpec {
     assertResult(Return(Nil))(Try(Await.result(c.search(Some("MAXIMAL")))))
 
     millis = millis + 60*1000*1000
-
     assertResult("MAXIMAL")(Try(Await.result(c.search(Some("MAXIMAL")))).get.head.name)
+
+    //timer wrap-around
+    count = 0
+    assertResult(Return(Nil))(Try(Await.result(c.search(Some("minimal")))))
+    millis = 0
+    assertResult("minimal")(Try(Await.result(c.search(Some("minimal")))).get.head.name)
   }
 }
