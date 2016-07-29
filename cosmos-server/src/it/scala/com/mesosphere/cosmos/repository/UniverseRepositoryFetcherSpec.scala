@@ -6,7 +6,7 @@ import com.mesosphere.universe.v3.model.DcosReleaseVersionParser
 import com.mesosphere.universe.v3.model.PackageDefinition.Version
 import com.netaporter.uri.Uri
 import com.netaporter.uri.dsl._
-import com.twitter.util.{Await}
+import com.twitter.util.Await
 import org.scalatest.FreeSpec
 
 class UniverseRepositoryFetcherSpec extends FreeSpec {

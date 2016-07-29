@@ -29,7 +29,7 @@ import scala.io.Source
 import scala.util.{Failure, Success, Try}
 
 trait UniverseClient {
-  def apply(repository: PackageRepository)(implicit session: RequestSession): Future[internal.model.CosmosInternalRepository];
+  def apply(repository: PackageRepository)(implicit session: RequestSession): Future[internal.model.CosmosInternalRepository]
 }
 
 final class DefaultUniverseClient(adminRouter: AdminRouter)(implicit statsReceiver: StatsReceiver = NullStatsReceiver) extends UniverseClient {
