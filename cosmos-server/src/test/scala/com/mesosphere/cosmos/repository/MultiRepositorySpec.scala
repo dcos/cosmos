@@ -61,6 +61,9 @@ final class MultiRepositorySpec extends FreeSpec {
 
       assertResult(Return((cls.head, u)))(Try(Await.result(c.getPackageByPackageVersion("minimal", None))))
       assertResult(Return((cls.head, u)))(Try(Await.result(c.getPackageByPackageVersion("minimal", Some(ver)))))
+
+      assertResult(Return("minimal"))(Try(Await.result(c.search(None)).head.name))
+      assertResult(Return("minimal"))(Try(Await.result(c.search(Some("minimal"))).head.name))
     }
     "invalid repo" in {
       val invalid = List(PackageRepository("invalid", Uri.parse("/invalid")))
@@ -113,6 +116,10 @@ final class MultiRepositorySpec extends FreeSpec {
       assertResult(Return(maxexp))(Try(Await.result(c.getPackageByPackageVersion("MAXIMAL", None))))
       assertResult(Return(maxexp))(Try(Await.result(c.getPackageByPackageVersion("MAXIMAL", Some(maxver)))))
       assertResult(Throw(new VersionNotFound("MAXIMAL", minver)))(Try(Await.result(c.getPackageByPackageVersion("MAXIMAL", Some(minver)))))
+
+      assertResult(Return(2))(Try(Await.result(c.search(None)).length))
+      assertResult(Return(1))(Try(Await.result(c.search(Some("minimal"))).length))
+      assertResult(Return(1))(Try(Await.result(c.search(Some("MAXIMAL"))).length))
 
     }
   }
