@@ -35,6 +35,20 @@ final class MultiRepositorySpec extends FreeSpec {
 
     def delete(nameOrUri: Ior[String, Uri]): Future[List[PackageRepository]] =  sys.error("delete")
   }
+  "getRepository" - {
+    "empty" in {
+      val c = new MultiRepository(TestStorage(), TestClient())
+      assertResult(None)(Await.result(c.getRepository(Uri.parse("/test"))))
+    }
+    "many" in {
+      val one = PackageRepository("one", Uri.parse("/one"))
+      val two = PackageRepository("two", Uri.parse("/two"))
+      val c = new MultiRepository(TestStorage(List(one,two)), TestClient())
+      assertResult(None)(Await.result(c.getRepository(Uri.parse("/zero"))))
+      assertResult(one)(Await.result(c.getRepository(Uri.parse("/one"))).get.repository)
+      assertResult(two)(Await.result(c.getRepository(Uri.parse("/two"))).get.repository)
+    }
+  }
   "queries" - {
     "not found" in {
       val c = new MultiRepository(TestStorage(), TestClient())
@@ -120,7 +134,6 @@ final class MultiRepositorySpec extends FreeSpec {
       assertResult(Return(2))(Try(Await.result(c.search(None)).length))
       assertResult(Return(1))(Try(Await.result(c.search(Some("minimal"))).length))
       assertResult(Return(1))(Try(Await.result(c.search(Some("MAXIMAL"))).length))
-
     }
   }
 }
