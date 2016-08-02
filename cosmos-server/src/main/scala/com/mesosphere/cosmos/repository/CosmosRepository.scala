@@ -69,8 +69,9 @@ final class DefaultCosmosRepository(
       val ns = internalRepository.packages.filter { pkg =>
         pkg.name == packageName
       }
-      val vs = ns find { pkg =>
-        packageVersion.map(_ == pkg.version).getOrElse(true)
+      val vs = packageVersion match {
+        case Some(ver) => ns.find(_.version == ver)
+        case _ => ns.headOption
       }
       (packageVersion, ns, vs) match {
         case (Some(ver), _ :: _ , None) => throw VersionNotFound(packageName, ver)
