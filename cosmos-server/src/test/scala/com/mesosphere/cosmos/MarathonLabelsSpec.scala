@@ -10,6 +10,8 @@ import com.mesosphere.cosmos.converter.Universe._
 import com.mesosphere.cosmos.thirdparty.marathon.model.MarathonApp
 import com.mesosphere.cosmos.test.TestUtil.{MinimalPackageDefinition,MaximalPackageDefinition,RepoUri}
 import com.mesosphere.universe
+import com.mesosphere.universe.v3.circe.Decoders._
+import com.mesosphere.universe.v3.model.Command
 import com.netaporter.uri.Uri
 import com.twitter.bijection.Conversion.asMethod
 import io.circe.parse._
@@ -42,13 +44,18 @@ final class MarathonLabelsSpec extends FreeSpec {
     }
 
   }
+  "nonOverridableLabels" - {
+    assertResult(Map())(MarathonLabels(MinimalPackageDefinition, RepoUri).nonOverridableLabels)
+    assertResult(List(MaximalPackageDefinition.command.get))(MarathonLabels(MaximalPackageDefinition, RepoUri).nonOverridableLabels.values.map(decode64[Command](_)))
+  }
 
+  private[this] def decode64[A: Decoder](str: String): A = {
+    val Xor.Right(rv) = decode[A](new String(Base64.getDecoder.decode(str),StandardCharsets.UTF_8))
+    rv
+  }
   private[this] def decodeRequiredLabel[A: Decoder](labels: MarathonLabels, label: String): A = {
     val base64Json = labels.requiredLabels(MarathonApp.metadataLabel)
-    val jsonBytes = Base64.getDecoder.decode(base64Json)
-    val jsonText = new String(jsonBytes, StandardCharsets.UTF_8)
-    val Xor.Right(data) = decode[A](jsonText)
-    data
+    decode64[A](base64Json)
   }
 
   private[this] def assertCompatible(
