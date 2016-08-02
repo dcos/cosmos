@@ -31,6 +31,11 @@ final class MultiRepositorySpec extends FreeSpec {
     def delete(nameOrUri: Ior[String, Uri]): Future[List[PackageRepository]] =  ???
   }
 
+  case class TestMultiClient(repos: List[(PackageRepository,List[PackageDefinition])] = Nil) extends UniverseClient {
+    def apply(repo: PackageRepository)(implicit session: RequestSession): Future[CosmosInternalRepository] = Future {
+      CosmosInternalRepository(repos.filter( _._1 == repo).flatMap(_._2))
+    }
+  }
   "getRepository" - {
     "empty" in {
       val c = new MultiRepository(TestStorage(), TestClient())
@@ -49,8 +54,7 @@ final class MultiRepositorySpec extends FreeSpec {
       val two = PackageRepository("two", Uri.parse("/same"))
       val c = new MultiRepository(TestStorage(List(one,two)), TestClient())
       assertResult(None)(Await.result(c.getRepository(Uri.parse("/zero"))))
-      //get last one added
-      assertResult(two)(Await.result(c.getRepository(Uri.parse("/same"))).get.repository)
+      assertResult(two.uri)(Await.result(c.getRepository(Uri.parse("/same"))).get.repository.uri)
     }
   }
 
@@ -147,11 +151,6 @@ final class MultiRepositorySpec extends FreeSpec {
     }
 
     "multi repo multi same packages" in {
-      case class TestMultiClient(repos: List[(PackageRepository,List[PackageDefinition])] = Nil) extends UniverseClient {
-        def apply(repo: PackageRepository)(implicit session: RequestSession): Future[CosmosInternalRepository] = Future {
-          CosmosInternalRepository(repos.filter( _._1 == repo).flatMap(_._2))
-        }
-      }
       val rmax = PackageRepository("max", Uri.parse("/MAXIMAL"))
       val rmin = PackageRepository("min", Uri.parse("/minimal"))
       val min2 = TestUtil.MinimalPackageDefinition.copy(version = Version("1.2.4"))
@@ -188,11 +187,6 @@ final class MultiRepositorySpec extends FreeSpec {
       assertResult(Return(List(Set(maxver, max2ver))))(Try(Await.result(c.search(Some("MAXIMAL"))).map(_.versions.keys)))
     }
     "multi repo multi different packages" in {
-      case class TestMultiClient(repos: List[(PackageRepository,List[PackageDefinition])] = Nil) extends UniverseClient {
-        def apply(repo: PackageRepository)(implicit session: RequestSession): Future[CosmosInternalRepository] = Future {
-          CosmosInternalRepository(repos.filter( _._1 == repo).flatMap(_._2))
-        }
-      }
       val rmax = PackageRepository("max", Uri.parse("/MAXIMAL"))
       val rmin = PackageRepository("min", Uri.parse("/minimal"))
       val min2 = TestUtil.MinimalPackageDefinition.copy(version = Version("1.2.4"))
