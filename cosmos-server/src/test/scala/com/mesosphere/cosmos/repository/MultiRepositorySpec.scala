@@ -4,6 +4,7 @@ import com.mesosphere.cosmos.internal.model.PackageDefinition
 import com.mesosphere.cosmos.internal.model.CosmosInternalRepository
 import com.mesosphere.cosmos.repository.PackageSourcesStorage
 import com.mesosphere.cosmos.repository.UniverseClient
+import com.mesosphere.universe.v3.model.PackageDefinition.Version
 import com.mesosphere.cosmos.rpc.v1.model.PackageRepository
 import org.scalatest.FreeSpec
 import com.mesosphere.cosmos.http.RequestSession
@@ -139,13 +140,35 @@ final class MultiRepositorySpec extends FreeSpec {
       }
       val rmax = PackageRepository("max", Uri.parse("/MAXIMAL"))
       val rmin = PackageRepository("min", Uri.parse("/minimal"))
-      val clientdata = List((rmax, List(TestUtil.MaximalPackageDefinition,TestUtil.MaximalPackageDefinition)),
-                            (rmin, List(TestUtil.MinimalPackageDefinition,TestUtil.MinimalPackageDefinition)))
+      val min2 = TestUtil.MinimalPackageDefinition.copy(version = Version("1.2.4"))
+      val max2 = TestUtil.MaximalPackageDefinition.copy(version = Version("9.9.9"))
+      val clientdata = List((rmax, List(TestUtil.MaximalPackageDefinition,min2)),
+                            (rmin, List(TestUtil.MinimalPackageDefinition,max2)))
       val storage = TestStorage(List(rmax,rmin))
       val client = TestMultiClient(clientdata)
       val c = new MultiRepository(storage, client)
 
-      assertResult(Return(List(TestUtil.MinimalPackageDefinition,TestUtil.MinimalPackageDefinition)))(Try(Await.result(c.getPackagesByPackageName("minimal"))))
+      assertResult(Return(List(min2,TestUtil.MinimalPackageDefinition)))(Try(Await.result(c.getPackagesByPackageName("minimal"))))
+      assertResult(Return(List(max2,TestUtil.MaximalPackageDefinition)))(Try(Await.result(c.getPackagesByPackageName("MAXIMAL"))))
+      assertResult(Throw(new PackageNotFound("foobar")))(Try(Await.result(c.getPackagesByPackageName("foobar"))))
+
+      val minver = TestUtil.MinimalPackageDefinition.version
+      val minexp = (TestUtil.MinimalPackageDefinition, Uri.parse("/minimal"))
+
+      assertResult(Return(minexp))(Try(Await.result(c.getPackageByPackageVersion("minimal", None))))
+      assertResult(Return(minexp))(Try(Await.result(c.getPackageByPackageVersion("minimal", Some(minver)))))
+
+      val maxver = TestUtil.MaximalPackageDefinition.version
+      val maxexp = (TestUtil.MaximalPackageDefinition, Uri.parse("/MAXIMAL"))
+
+      assertResult(Return(maxexp))(Try(Await.result(c.getPackageByPackageVersion("MAXIMAL", None))))
+      assertResult(Return(maxexp))(Try(Await.result(c.getPackageByPackageVersion("MAXIMAL", Some(maxver)))))
+
+      assertResult(Return(List("MAXIMAL", "minimal")))(Try(Await.result(c.search(None)).map(_.name).sorted))
+      assertResult(Return(List("minimal")))(Try(Await.result(c.search(Some("minimal"))).map(_.name)))
+      assertResult(Return(List("minimal")))(Try(Await.result(c.search(Some("minimal"))).map(_.versions)))
+
+      assertResult(Return(List("MAXIMAL")))(Try(Await.result(c.search(Some("MAXIMAL"))).map(_.name)))
     }
   }
 }
