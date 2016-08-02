@@ -44,6 +44,14 @@ final class MultiRepositorySpec extends FreeSpec {
       assertResult(one)(Await.result(c.getRepository(Uri.parse("/one"))).get.repository)
       assertResult(two)(Await.result(c.getRepository(Uri.parse("/two"))).get.repository)
     }
+    "many same uri" in {
+      val one = PackageRepository("one", Uri.parse("/same"))
+      val two = PackageRepository("two", Uri.parse("/same"))
+      val c = new MultiRepository(TestStorage(List(one,two)), TestClient())
+      assertResult(None)(Await.result(c.getRepository(Uri.parse("/zero"))))
+      //get last one added
+      assertResult(two)(Await.result(c.getRepository(Uri.parse("/same"))).get.repository)
+    }
   }
 
   "queries" - {
