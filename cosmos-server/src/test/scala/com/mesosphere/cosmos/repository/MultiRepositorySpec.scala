@@ -78,6 +78,7 @@ final class MultiRepositorySpec extends FreeSpec {
       val ver = TestUtil.MinimalPackageDefinition.version
 
       assertResult(Return(cls))(Try(Await.result(c.getPackagesByPackageName("minimal"))))
+      assertResult(Throw(new PackageNotFound("MAXIMAL")))(Try(Await.result(c.getPackagesByPackageName("MAXIMAL"))))
 
       assertResult(Return((cls.head, u)))(Try(Await.result(c.getPackageByPackageVersion("minimal", None))))
       assertResult(Return((cls.head, u)))(Try(Await.result(c.getPackageByPackageVersion("minimal", Some(ver)))))

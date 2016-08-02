@@ -24,11 +24,9 @@ final class MultiRepository(
     repositories().flatMap { repositories =>
       Future.collect {
         repositories.map { repository =>
-          repository.getPackagesByPackageName(packageName).map(Some(_)).handle {
-            case PackageNotFound(_) => None
-          }
+          repository.getPackagesByPackageName(packageName)
         }
-      } map (_.flatten)
+      }
     } map { packages =>
       packages
         .find(!_.isEmpty)
