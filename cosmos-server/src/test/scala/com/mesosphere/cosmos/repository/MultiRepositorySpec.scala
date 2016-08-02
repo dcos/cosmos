@@ -26,12 +26,9 @@ final class MultiRepositorySpec extends FreeSpec {
   case class TestStorage(initial:List[PackageRepository] = Nil) extends PackageSourcesStorage {
     var cache: List[PackageRepository] = initial
     def read(): Future[List[PackageRepository]] =  Future { cache }
-
     def readCache(): Future[List[PackageRepository]] =  Future { cache }
-
-    def add(index: Option[Int], packageRepository: PackageRepository): Future[List[PackageRepository]] = sys.error("add")
-
-    def delete(nameOrUri: Ior[String, Uri]): Future[List[PackageRepository]] =  sys.error("delete")
+    def add(index: Option[Int], packageRepository: PackageRepository): Future[List[PackageRepository]] = ???
+    def delete(nameOrUri: Ior[String, Uri]): Future[List[PackageRepository]] =  ???
   }
 
   "getRepository" - {
