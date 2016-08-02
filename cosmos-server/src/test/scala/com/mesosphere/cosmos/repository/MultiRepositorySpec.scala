@@ -181,5 +181,46 @@ final class MultiRepositorySpec extends FreeSpec {
       val max2ver = max2.version
       assertResult(Return(List(Set(maxver, max2ver))))(Try(Await.result(c.search(Some("MAXIMAL"))).map(_.versions.keys)))
     }
+    "multi repo multi different packages" in {
+      case class TestMultiClient(repos: List[(PackageRepository,List[PackageDefinition])] = Nil) extends UniverseClient {
+        def apply(repo: PackageRepository)(implicit session: RequestSession): Future[CosmosInternalRepository] = Future {
+          CosmosInternalRepository(repos.filter( _._1 == repo).flatMap(_._2))
+        }
+      }
+      val rmax = PackageRepository("max", Uri.parse("/MAXIMAL"))
+      val rmin = PackageRepository("min", Uri.parse("/minimal"))
+      val min2 = TestUtil.MinimalPackageDefinition.copy(version = Version("1.2.4"))
+      val max2 = TestUtil.MaximalPackageDefinition.copy(version = Version("9.9.9"))
+      val clientdata = List((rmax, List(TestUtil.MaximalPackageDefinition,min2)),
+                            (rmin, List(TestUtil.MinimalPackageDefinition,max2)))
+      val storage = TestStorage(List(rmax,rmin))
+      val client = TestMultiClient(clientdata)
+      val c = new MultiRepository(storage, client)
+
+      assertResult(Return(1))(Try(Await.result(c.getPackagesByPackageName("minimal")).length))
+      //will return the first repo
+      assertResult(Return(List(min2)))(Try(Await.result(c.getPackagesByPackageName("minimal"))))
+      assertResult(Return(List(TestUtil.MaximalPackageDefinition)))(Try(Await.result(c.getPackagesByPackageName("MAXIMAL"))))
+      assertResult(Throw(new PackageNotFound("foobar")))(Try(Await.result(c.getPackagesByPackageName("foobar"))))
+
+      val minexp1 = (min2, Uri.parse("/MAXIMAL"))
+      assertResult(Return(minexp1))(Try(Await.result(c.getPackageByPackageVersion("minimal", None))))
+
+      val minver = TestUtil.MinimalPackageDefinition.version
+      val minexp2 = (TestUtil.MinimalPackageDefinition, Uri.parse("/minimal"))
+      assertResult(Return(minexp2))(Try(Await.result(c.getPackageByPackageVersion("minimal", Some(minver)))))
+
+      val maxver = TestUtil.MaximalPackageDefinition.version
+      val maxexp = (TestUtil.MaximalPackageDefinition, Uri.parse("/MAXIMAL"))
+
+      assertResult(Return(maxexp))(Try(Await.result(c.getPackageByPackageVersion("MAXIMAL", None))))
+      assertResult(Return(maxexp))(Try(Await.result(c.getPackageByPackageVersion("MAXIMAL", Some(maxver)))))
+
+      assertResult(Return(List("MAXIMAL", "minimal")))(Try(Await.result(c.search(None)).map(_.name).sorted))
+      assertResult(Return(List("minimal")))(Try(Await.result(c.search(Some("minimal"))).map(_.name)))
+      val min2ver = min2.version
+      assertResult(Return(List(Set(min2ver))))(Try(Await.result(c.search(Some("minimal"))).map(_.versions.keys)))
+      assertResult(Return(List(Set(maxver))))(Try(Await.result(c.search(Some("MAXIMAL"))).map(_.versions.keys)))
+    }
   }
 }
