@@ -22,6 +22,7 @@ final class MultiRepositorySpec extends FreeSpec {
       CosmosInternalRepository(repos.filter( _ == repo).flatMap(_ => ls))
     }
   }
+
   case class TestStorage(initial:List[PackageRepository] = Nil) extends PackageSourcesStorage {
     var cache: List[PackageRepository] = initial
     def read(): Future[List[PackageRepository]] =  Future { cache }
@@ -32,6 +33,7 @@ final class MultiRepositorySpec extends FreeSpec {
 
     def delete(nameOrUri: Ior[String, Uri]): Future[List[PackageRepository]] =  sys.error("delete")
   }
+
   "getRepository" - {
     "empty" in {
       val c = new MultiRepository(TestStorage(), TestClient())
@@ -46,6 +48,7 @@ final class MultiRepositorySpec extends FreeSpec {
       assertResult(two)(Await.result(c.getRepository(Uri.parse("/two"))).get.repository)
     }
   }
+
   "queries" - {
     "not found" in {
       val c = new MultiRepository(TestStorage(), TestClient())
@@ -59,6 +62,7 @@ final class MultiRepositorySpec extends FreeSpec {
       assertResult(Return(Nil))(Try(Await.result(c.search(Some("test")))))
       assertResult(Return(Nil))(Try(Await.result(c.search(None))))
     }
+
     "found minimal" in {
       val u = Uri.parse("/test")
       val repos = List(PackageRepository("minimal", u))
@@ -76,6 +80,7 @@ final class MultiRepositorySpec extends FreeSpec {
       assertResult(Return(List("minimal")))(Try(Await.result(c.search(None)).map(_.name)))
       assertResult(Return(List("minimal")))(Try(Await.result(c.search(Some("minimal"))).map(_.name)))
     }
+
     "invalid repo" in {
       val invalid = List(PackageRepository("invalid", Uri.parse("/invalid")))
       val repos = List(PackageRepository("minimal", Uri.parse("/test")))
@@ -90,6 +95,7 @@ final class MultiRepositorySpec extends FreeSpec {
       assertResult(Throw(new PackageNotFound("minimal")))(Try(Await.result(c.getPackageByPackageVersion("minimal", None))))
       assertResult(Throw(new VersionNotFound("minimal",ver)))(Try(Await.result(c.getPackageByPackageVersion("minimal", Some(ver)))))
     }
+
     "wrong query" in {
       val repos = List(PackageRepository("valid", Uri.parse("/valid")))
       val storage = TestStorage(repos)
@@ -105,6 +111,7 @@ final class MultiRepositorySpec extends FreeSpec {
       assertResult(Throw(new VersionNotFound("MAXIMAL", ver)))(Try(Await.result(c.getPackageByPackageVersion("MAXIMAL", Some(ver)))))
       assertResult(Throw(new VersionNotFound("minimal", badver)))(Try(Await.result(c.getPackageByPackageVersion("minimal", Some(badver)))))
     }
+
     "from many" in {
       val u = Uri.parse("/valid")
       val repos = List(PackageRepository("valid", u))
@@ -132,9 +139,10 @@ final class MultiRepositorySpec extends FreeSpec {
       assertResult(Return(List("minimal")))(Try(Await.result(c.search(Some("minimal"))).map(_.name)))
       assertResult(Return(List("MAXIMAL")))(Try(Await.result(c.search(Some("MAXIMAL"))).map(_.name)))
     }
-    "multi repo multi package" in {
+
+    "multi repo multi same packages" in {
       case class TestMultiClient(repos: List[(PackageRepository,List[PackageDefinition])] = Nil) extends UniverseClient {
-        def apply(repo: PackageRepository)(implicit session: RequestSession): Future[CosmosInternalRepository] = Future { 
+        def apply(repo: PackageRepository)(implicit session: RequestSession): Future[CosmosInternalRepository] = Future {
           CosmosInternalRepository(repos.filter( _._1 == repo).flatMap(_._2))
         }
       }
@@ -142,14 +150,15 @@ final class MultiRepositorySpec extends FreeSpec {
       val rmin = PackageRepository("min", Uri.parse("/minimal"))
       val min2 = TestUtil.MinimalPackageDefinition.copy(version = Version("1.2.4"))
       val max2 = TestUtil.MaximalPackageDefinition.copy(version = Version("9.9.9"))
-      val clientdata = List((rmax, List(TestUtil.MaximalPackageDefinition,min2)),
-                            (rmin, List(TestUtil.MinimalPackageDefinition,max2)))
+      val clientdata = List((rmax, List(TestUtil.MaximalPackageDefinition,max2)),
+                            (rmin, List(TestUtil.MinimalPackageDefinition,min2)))
       val storage = TestStorage(List(rmax,rmin))
       val client = TestMultiClient(clientdata)
       val c = new MultiRepository(storage, client)
 
-      assertResult(Return(List(min2,TestUtil.MinimalPackageDefinition)))(Try(Await.result(c.getPackagesByPackageName("minimal"))))
-      assertResult(Return(List(max2,TestUtil.MaximalPackageDefinition)))(Try(Await.result(c.getPackagesByPackageName("MAXIMAL"))))
+      assertResult(Return(2))(Try(Await.result(c.getPackagesByPackageName("minimal")).length))
+      assertResult(Return(List(TestUtil.MinimalPackageDefinition,min2)))(Try(Await.result(c.getPackagesByPackageName("minimal"))))
+      assertResult(Return(List(TestUtil.MaximalPackageDefinition,max2)))(Try(Await.result(c.getPackagesByPackageName("MAXIMAL"))))
       assertResult(Throw(new PackageNotFound("foobar")))(Try(Await.result(c.getPackagesByPackageName("foobar"))))
 
       val minver = TestUtil.MinimalPackageDefinition.version
@@ -166,9 +175,11 @@ final class MultiRepositorySpec extends FreeSpec {
 
       assertResult(Return(List("MAXIMAL", "minimal")))(Try(Await.result(c.search(None)).map(_.name).sorted))
       assertResult(Return(List("minimal")))(Try(Await.result(c.search(Some("minimal"))).map(_.name)))
-      assertResult(Return(List("minimal")))(Try(Await.result(c.search(Some("minimal"))).map(_.versions)))
+      val min2ver = min2.version
+      assertResult(Return(List(Set(minver, min2ver))))(Try(Await.result(c.search(Some("minimal"))).map(_.versions.keys)))
 
-      assertResult(Return(List("MAXIMAL")))(Try(Await.result(c.search(Some("MAXIMAL"))).map(_.name)))
+      val max2ver = max2.version
+      assertResult(Return(List(Set(maxver, max2ver))))(Try(Await.result(c.search(Some("MAXIMAL"))).map(_.versions.keys)))
     }
   }
 }
