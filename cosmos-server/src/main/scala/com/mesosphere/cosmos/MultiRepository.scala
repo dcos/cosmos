@@ -51,6 +51,7 @@ final class MultiRepository(
             .map(Some(_))
             .handle {
               case PackageNotFound(_) => None
+              case VersionNotFound(_, _) => None
             }
         }
       } map (_.flatten)
