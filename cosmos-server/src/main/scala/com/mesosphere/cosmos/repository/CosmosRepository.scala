@@ -66,18 +66,16 @@ final class DefaultCosmosRepository(
       packageVersion: Option[universe.v3.model.PackageDefinition.Version]
   )(implicit session: RequestSession): Future[(internal.model.PackageDefinition, Uri)] = {
     synchronizedUpdate().map { internalRepository =>
-      (internalRepository.packages.filter { pkg =>
+      val ns = internalRepository.packages.filter { pkg =>
         pkg.name == packageName
-      } match {
-        case Nil => throw PackageNotFound(packageName)
-        case ls => ls
-      }) find { pkg =>
+      }
+      val vs = ns find { pkg =>
         packageVersion.map(_ == pkg.version).getOrElse(true)
-      } map { pkg =>
-        (pkg, repository.uri)
-      } getOrElse {
-        //packageVersion cannot be None
-        throw VersionNotFound(packageName, packageVersion.get)
+      }
+      (packageVersion, ns, vs) match {
+        case (Some(ver), _ :: _ , None) => throw VersionNotFound(packageName, ver)
+        case (_, _ , None)              => throw PackageNotFound(packageName)
+        case (_,_, Some(pkg))           => (pkg, repository.uri)
       }
     }
   }
