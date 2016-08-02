@@ -18,11 +18,7 @@ final class MultiRepositorySpec extends FreeSpec {
 
   case class TestClient(repos: List[PackageRepository] = Nil, ls: List[PackageDefinition] = Nil) extends UniverseClient {
     def apply(repo: PackageRepository)(implicit session: RequestSession): Future[CosmosInternalRepository] = Future { 
-      val rv = repos.filter( _ == repo).flatMap(_ => ls)
-      rv match {
-        case Nil => throw PackageNotFound("foobar")
-        case ls => CosmosInternalRepository(ls)
-      }
+      CosmosInternalRepository(repos.filter( _ == repo).flatMap(_ => ls))
     }
   }
   case class TestStorage(initial:List[PackageRepository] = Nil) extends PackageSourcesStorage {
@@ -76,8 +72,8 @@ final class MultiRepositorySpec extends FreeSpec {
       assertResult(Return((cls.head, u)))(Try(Await.result(c.getPackageByPackageVersion("minimal", None))))
       assertResult(Return((cls.head, u)))(Try(Await.result(c.getPackageByPackageVersion("minimal", Some(ver)))))
 
-      assertResult(Return("minimal"))(Try(Await.result(c.search(None)).head.name))
-      assertResult(Return("minimal"))(Try(Await.result(c.search(Some("minimal"))).head.name))
+      assertResult(Return(List("minimal")))(Try(Await.result(c.search(None)).map(_.name)))
+      assertResult(Return(List("minimal")))(Try(Await.result(c.search(Some("minimal"))).map(_.name)))
     }
     "invalid repo" in {
       val invalid = List(PackageRepository("invalid", Uri.parse("/invalid")))
@@ -131,9 +127,25 @@ final class MultiRepositorySpec extends FreeSpec {
       assertResult(Return(maxexp))(Try(Await.result(c.getPackageByPackageVersion("MAXIMAL", Some(maxver)))))
       assertResult(Throw(new VersionNotFound("MAXIMAL", minver)))(Try(Await.result(c.getPackageByPackageVersion("MAXIMAL", Some(minver)))))
 
-      assertResult(Return(2))(Try(Await.result(c.search(None)).length))
-      assertResult(Return(1))(Try(Await.result(c.search(Some("minimal"))).length))
-      assertResult(Return(1))(Try(Await.result(c.search(Some("MAXIMAL"))).length))
+      assertResult(Return(List("MAXIMAL", "minimal")))(Try(Await.result(c.search(None)).map(_.name).sorted))
+      assertResult(Return(List("minimal")))(Try(Await.result(c.search(Some("minimal"))).map(_.name)))
+      assertResult(Return(List("MAXIMAL")))(Try(Await.result(c.search(Some("MAXIMAL"))).map(_.name)))
+    }
+    "multi repo multi package" in {
+      case class TestMultiClient(repos: List[(PackageRepository,List[PackageDefinition])] = Nil) extends UniverseClient {
+        def apply(repo: PackageRepository)(implicit session: RequestSession): Future[CosmosInternalRepository] = Future { 
+          CosmosInternalRepository(repos.filter( _._1 == repo).flatMap(_._2))
+        }
+      }
+      val rmax = PackageRepository("max", Uri.parse("/MAXIMAL"))
+      val rmin = PackageRepository("min", Uri.parse("/minimal"))
+      val clientdata = List((rmax, List(TestUtil.MaximalPackageDefinition,TestUtil.MaximalPackageDefinition)),
+                            (rmin, List(TestUtil.MinimalPackageDefinition,TestUtil.MinimalPackageDefinition)))
+      val storage = TestStorage(List(rmax,rmin))
+      val client = TestMultiClient(clientdata)
+      val c = new MultiRepository(storage, client)
+
+      assertResult(Return(List(TestUtil.MinimalPackageDefinition,TestUtil.MinimalPackageDefinition)))(Try(Await.result(c.getPackagesByPackageName("minimal"))))
     }
   }
 }
