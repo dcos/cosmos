@@ -1,6 +1,7 @@
 package com.mesosphere.cosmos.repository
 
 import com.mesosphere.cosmos.PackageNotFound
+import com.mesosphere.cosmos.VersionNotFound
 import com.mesosphere.cosmos.http.RequestSession
 import com.mesosphere.cosmos.internal
 import com.mesosphere.cosmos.rpc
@@ -65,13 +66,17 @@ final class DefaultCosmosRepository(
       packageVersion: Option[universe.v3.model.PackageDefinition.Version]
   )(implicit session: RequestSession): Future[(internal.model.PackageDefinition, Uri)] = {
     synchronizedUpdate().map { internalRepository =>
-      internalRepository.packages.find { pkg =>
-        pkg.name == packageName &&
-        packageVersion.map(_ == pkg.version).getOrElse(true)
-      } map { pkg =>
-        (pkg, repository.uri)
-      } getOrElse {
-        throw PackageNotFound(packageName)
+      val ns = internalRepository.packages.filter { pkg =>
+        pkg.name == packageName
+      }
+      val vs = packageVersion match {
+        case Some(ver) => ns.find(_.version == ver)
+        case _ => ns.headOption
+      }
+      (packageVersion, ns, vs) match {
+        case (Some(ver), _ :: _ , None) => throw VersionNotFound(packageName, ver)
+        case (_, _ , None)              => throw PackageNotFound(packageName)
+        case (_,_, Some(pkg))           => (pkg, repository.uri)
       }
     }
   }

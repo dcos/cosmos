@@ -11,6 +11,7 @@ import com.twitter.util.{Future,Await,Throw,Try,Return}
 import com.mesosphere.cosmos.test.TestUtil
 import com.mesosphere.cosmos.test.TestUtil.Anonymous //RequestSession implicit
 import com.mesosphere.cosmos.PackageNotFound
+import com.mesosphere.cosmos.VersionNotFound
 import scala.util.matching.Regex
 import com.twitter.common.util.Clock
 
@@ -63,7 +64,7 @@ final class CosmosRepositorySpec extends FreeSpec {
       assertResult(Return((TestUtil.MinimalPackageDefinition,u)))(Try(Await.result(c.getPackageByPackageVersion("minimal", Some(ver)))))
       assertResult(Return((TestUtil.MinimalPackageDefinition,u)))(Try(Await.result(c.getPackageByPackageVersion("minimal", None))))
       val bad = TestUtil.MaximalPackageDefinition.version
-      assertResult(Throw(new PackageNotFound("minimal")))(Try(Await.result(c.getPackageByPackageVersion("minimal", Some(bad)))))
+      assertResult(Throw(new VersionNotFound("minimal", bad)))(Try(Await.result(c.getPackageByPackageVersion("minimal", Some(bad)))))
       assertResult(Throw(new PackageNotFound("test")))(Try(Await.result(c.getPackageByPackageVersion("test", Some(ver)))))
     }
     "found MAXIMAL" in {
@@ -73,7 +74,7 @@ final class CosmosRepositorySpec extends FreeSpec {
       val ver = TestUtil.MaximalPackageDefinition.version
       assertResult(Return((TestUtil.MaximalPackageDefinition,u)))(Try(Await.result(c.getPackageByPackageVersion("MAXIMAL", Some(ver)))))
       val bad = TestUtil.MinimalPackageDefinition.version
-      assertResult(Throw(new PackageNotFound("MAXIMAL")))(Try(Await.result(c.getPackageByPackageVersion("MAXIMAL", Some(bad)))))
+      assertResult(Throw(new VersionNotFound("MAXIMAL", bad)))(Try(Await.result(c.getPackageByPackageVersion("MAXIMAL", Some(bad)))))
     }
   }
 
@@ -88,6 +89,14 @@ final class CosmosRepositorySpec extends FreeSpec {
       val rep = C.rpc.v1.model.PackageRepository("test", u)
       val c = CosmosRepository(rep, client(List(TestUtil.MinimalPackageDefinition)))
       assertResult(Return(List(TestUtil.MinimalPackageDefinition)))(Try(Await.result(c.getPackagesByPackageName("minimal"))))
+      assertResult(Return(Nil))(Try(Await.result(c.getPackagesByPackageName("test"))))
+    }
+
+    "found multiple" in {
+      val u = Uri.parse("/uri")
+      val rep = C.rpc.v1.model.PackageRepository("test", u)
+      val c = CosmosRepository(rep, client(List(TestUtil.MinimalPackageDefinition, TestUtil.MinimalPackageDefinition)))
+      assertResult(Return(List(TestUtil.MinimalPackageDefinition, TestUtil.MinimalPackageDefinition)))(Try(Await.result(c.getPackagesByPackageName("minimal"))))
       assertResult(Return(Nil))(Try(Await.result(c.getPackagesByPackageName("test"))))
     }
     "found MAXIMAL" in {
