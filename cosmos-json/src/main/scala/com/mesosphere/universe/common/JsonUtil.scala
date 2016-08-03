@@ -9,10 +9,10 @@ import io.circe.Error
 import io.circe.Printer
 import cats.data.Xor
 
-package object JsonUtil {
+object JsonUtil {
 
   def decode64[A: Decoder](str: String): Xor[Error,A] = {
     decode[A](new String(Base64.getDecoder.decode(str),StandardCharsets.UTF_8))
   }
-  val dropNullKeys: Printer = Printer.noSpaces.copy(dropNullKeys = true)
+  val dropNullKeysPrinter: Printer = Printer.noSpaces.copy(dropNullKeys = true)
 }

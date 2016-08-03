@@ -1,10 +1,6 @@
 package com.mesosphere.cosmos
 
-import java.nio.ByteBuffer
-import java.nio.charset.StandardCharsets
-import java.util.Base64
 import com.mesosphere.cosmos.label.v1.circe.Decoders._
-import cats.data.Xor
 import com.mesosphere.cosmos.converter.Common._
 import com.mesosphere.cosmos.converter.Universe._
 import com.mesosphere.cosmos.thirdparty.marathon.model.MarathonApp
@@ -14,9 +10,10 @@ import com.mesosphere.universe.v3.circe.Decoders._
 import com.mesosphere.universe.v3.model.Command
 import com.netaporter.uri.Uri
 import com.twitter.bijection.Conversion.asMethod
-import io.circe.{Decoder, JsonObject}
+import io.circe.Decoder
 import org.scalatest.FreeSpec
 import com.mesosphere.universe.common.JsonUtil
+import cats.data.Xor
 
 import scala.util.{Success, Try}
 
