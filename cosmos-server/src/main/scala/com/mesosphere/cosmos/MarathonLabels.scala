@@ -7,6 +7,7 @@ import com.mesosphere.cosmos.converter.Label._
 import com.mesosphere.cosmos.label.v1.circe.Encoders._
 import com.mesosphere.cosmos.thirdparty.marathon.model.MarathonApp
 import com.mesosphere.universe
+import com.mesosphere.universe.common.JsonUtil
 import com.netaporter.uri.Uri
 import com.twitter.bijection.Conversion.asMethod
 import io.circe.{Json, JsonObject, Printer}
@@ -46,7 +47,7 @@ final class MarathonLabels(
   }
 
   private[this] def encodeForLabel(json: Json): String = {
-    val bytes = Printer.noSpaces.copy(dropNullKeys = true).pretty(json).getBytes(StandardCharsets.UTF_8)
+    val bytes = JsonUtil.dropNullKeys.pretty(json).getBytes(StandardCharsets.UTF_8)
     Base64.getEncoder.encodeToString(bytes)
   }
 
