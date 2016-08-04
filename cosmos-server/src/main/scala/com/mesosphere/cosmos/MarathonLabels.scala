@@ -44,7 +44,6 @@ final class MarathonLabels(
   private[this] def metadataLabel: String = {
     MarathonLabels.encodeForLabel(packageMetadata.asJson)
   }
-
 }
 
 object MarathonLabels {
