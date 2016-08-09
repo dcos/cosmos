@@ -12,6 +12,14 @@ object MediaTypes {
   val applicationJson = MediaType("application", MediaTypeSubType("json"), Map("charset" -> "utf-8"))
   val applicationZip = MediaType("application", MediaTypeSubType("zip"))
 
+  val repositoryServeResponse = MediaType(
+    "application",
+    MediaTypeSubType("vnd.dcos.universe.repo", Some("json")),
+    Map("charset" -> "utf-8", "version" -> "v3")
+  )
+  val publishRequest = vnd("publish-request")
+  val publishResponse = vnd("publish-response")
+
   val UninstallRequest = vnd("uninstall-request")
   val UninstallResponse = vnd("uninstall-response")
 

@@ -8,6 +8,9 @@ import io.finch.circe._
 
 object MediaTypedDecoders {
 
+  implicit val packagePublishDecoder: MediaTypedDecoder[PublishRequest] =
+    MediaTypedDecoder(MediaTypes.publishRequest)
+
   implicit val packageListDecoder: MediaTypedDecoder[ListRequest] =
     MediaTypedDecoder(MediaTypes.ListRequest)
 
