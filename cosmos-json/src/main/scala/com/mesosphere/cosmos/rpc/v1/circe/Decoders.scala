@@ -2,6 +2,7 @@ package com.mesosphere.cosmos.rpc.v1.circe
 
 import com.mesosphere.cosmos.rpc.v1.model._
 import com.mesosphere.cosmos.thirdparty.marathon.circe.Decoders._
+import com.mesosphere.packagestore.v3.circe.Decoders._
 import com.mesosphere.universe
 import com.mesosphere.universe.common.circe.Decoders._
 import com.mesosphere.universe.v2.circe.Decoders._
@@ -19,6 +20,9 @@ object Decoders {
       }
     }
   }
+
+  implicit val publishResponse: Decoder[PublishResponse] = deriveFor[PublishResponse].decoder
+  implicit val publishRequest: Decoder[PublishRequest] = deriveFor[PublishRequest].decoder
 
   implicit val decodeSearchResult: Decoder[SearchResult] = deriveFor[SearchResult].decoder
 
