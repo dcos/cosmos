@@ -10,10 +10,10 @@ import com.mesosphere.universe.v3.model.Repository
 object MediaTypedEncoders {
 
   implicit val repositoryServeEncoder: DispatchingMediaTypedEncoder[Repository] =
-    DispatchingMediaTypedEncoder(MediaTypes.repositoryServeResponse)
+    DispatchingMediaTypedEncoder(MediaTypes.UniverseV3Repository)
 
   implicit val packagePublishEncoder: DispatchingMediaTypedEncoder[PublishResponse] =
-    DispatchingMediaTypedEncoder(MediaTypes.publishResponse)
+    DispatchingMediaTypedEncoder(MediaTypes.PublishResponse)
 
   implicit val capabilitiesEncoder: DispatchingMediaTypedEncoder[CapabilitiesResponse] =
     DispatchingMediaTypedEncoder(MediaTypes.CapabilitiesResponse)

@@ -1,11 +1,8 @@
-package com.mesosphere.packagestore.v3.model
+package com.mesosphere.universe.v3.model
 
-import com.mesosphere.universe.v3.model._
 import io.circe.JsonObject
 
-sealed abstract class PackageBundle {
-  def toPackageDefinition(releaseVersion: PackageDefinition.ReleaseVersion): PackageDefinition
-}
+sealed abstract class PackageBundle
 
 case class V2PackageBundle(
   packagingVersion: V2PackagingVersion.type = V2PackagingVersion,
@@ -26,30 +23,7 @@ case class V2PackageBundle(
   resource: Option[V2Resource] = None,
   config: Option[JsonObject] = None,
   command: Option[Command] = None
-) extends PackageBundle {
-  override def toPackageDefinition(releaseVersion: PackageDefinition.ReleaseVersion): PackageDefinition =
-    V2Package(
-      packagingVersion,
-      name,
-      version,
-      releaseVersion,
-      maintainer,
-      description,
-      marathon,
-      tags,
-      selected,
-      scm,
-      website,
-      framework,
-      preInstallNotes,
-      postInstallNotes,
-      postUninstallNotes,
-      licenses,
-      resource,
-      config,
-      command
-    )
-}
+) extends PackageBundle
 
 case class V3PackageBundle(
   packagingVersion: V3PackagingVersion.type = V3PackagingVersion,
@@ -71,28 +45,4 @@ case class V3PackageBundle(
   resource: Option[V3Resource] = None,
   config: Option[JsonObject] = None,
   command: Option[Command] = None
-) extends PackageBundle {
-  override def toPackageDefinition(releaseVersion: PackageDefinition.ReleaseVersion): PackageDefinition =
-    V3Package(
-      packagingVersion,
-      name,
-      version,
-      releaseVersion,
-      maintainer,
-      description,
-      tags,
-      selected,
-      scm,
-      website,
-      framework,
-      preInstallNotes,
-      postInstallNotes,
-      postUninstallNotes,
-      licenses,
-      minDcosReleaseVersion,
-      marathon,
-      resource,
-      config,
-      command
-    )
-}
+) extends PackageBundle
