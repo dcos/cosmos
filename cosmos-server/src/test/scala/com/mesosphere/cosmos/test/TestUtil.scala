@@ -93,9 +93,9 @@ object TestUtil {
         )))
       )),
       images = Some(universe.v3.model.Images(
-        iconSmall = "small.png",
-        iconMedium = "medium.png",
-        iconLarge = "large.png",
+        iconSmall = Some("small.png"),
+        iconMedium = Some("medium.png"),
+        iconLarge = Some("large.png"),
         screenshots = Some(List("ooh.png", "aah.png"))
       )),
       cli = Some(universe.v3.model.Cli(
@@ -167,9 +167,9 @@ object TestUtil {
         )))
       )),
       images = Some(universe.v3.model.Images(
-        iconSmall = "small.png",
-        iconMedium = "medium.png",
-        iconLarge = "large.png",
+        iconSmall = Some("small.png"),
+        iconMedium = Some("medium.png"),
+        iconLarge = Some("large.png"),
         screenshots = Some(List("ooh.png", "aah.png"))
       ))
     )),
@@ -309,9 +309,9 @@ object TestUtil {
         )))
       )),
       images = Some(universe.v2.model.Images(
-        iconSmall = "small.png",
-        iconMedium = "medium.png",
-        iconLarge = "large.png",
+        iconSmall = Some("small.png"),
+        iconMedium = Some("medium.png"),
+        iconLarge = Some("large.png"),
         screenshots = Some(List("ooh.png", "aah.png"))
       ))
     ))
