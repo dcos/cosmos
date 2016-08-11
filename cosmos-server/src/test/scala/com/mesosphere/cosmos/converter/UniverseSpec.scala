@@ -68,9 +68,9 @@ final class UniverseSpec extends FreeSpec {
           )))
         )),
         images = Some(universe.v3.model.Images(
-          iconSmall = "small.png",
-          iconMedium = "medium.png",
-          iconLarge = "large.png",
+          iconSmall = Some("small.png"),
+          iconMedium = Some("medium.png"),
+          iconLarge = Some("large.png"),
           screenshots = Some(List("ooh.png", "aah.png"))
         ))
       ))

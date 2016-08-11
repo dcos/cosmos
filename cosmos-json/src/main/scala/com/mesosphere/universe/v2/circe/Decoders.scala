@@ -12,9 +12,9 @@ object Decoders {
   implicit val decodeV2Assets: Decoder[Assets] = deriveFor[Assets].decoder
   implicit val decodeV2Images: Decoder[Images] = Decoder.instance { (cursor: HCursor) =>
     for {
-      iS <- cursor.downField("icon-small").as[String]
-      iM <- cursor.downField("icon-medium").as[String]
-      iL <- cursor.downField("icon-large").as[String]
+      iS <- cursor.downField("icon-small").as[Option[String]]
+      iM <- cursor.downField("icon-medium").as[Option[String]]
+      iL <- cursor.downField("icon-large").as[Option[String]]
       ss <- cursor.downField("screenshots").as[Option[List[String]]]
     } yield Images(iS, iM, iL, ss)
   }

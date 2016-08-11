@@ -21,9 +21,9 @@ class ImagesEncoderDecoderSpec extends FreeSpec {
       ).asJson
     )
     val images = Images(
-      iconSmall = "http://some.place/icon-small.png",
-      iconMedium = "http://some.place/icon-medium.png",
-      iconLarge = "http://some.place/icon-large.png",
+      iconSmall = Some("http://some.place/icon-small.png"),
+      iconMedium = Some("http://some.place/icon-medium.png"),
+      iconLarge = Some("http://some.place/icon-large.png"),
       screenshots = Some(List(
         "http://some.place/screenshot-1.png",
         "http://some.place/screenshot-2.png"
