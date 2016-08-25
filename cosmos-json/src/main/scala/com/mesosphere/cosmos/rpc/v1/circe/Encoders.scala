@@ -21,8 +21,8 @@ object Encoders {
     }
   }
 
-  implicit val publishResponse: Encoder[PublishResponse] = deriveFor[PublishResponse].encoder
-  implicit val publishRequest: Encoder[PublishRequest] = deriveFor[PublishRequest].encoder
+  implicit val encodePublishResponse: Encoder[PublishResponse] = deriveFor[PublishResponse].encoder
+  implicit val encodePublishRequest: Encoder[PublishRequest] = deriveFor[PublishRequest].encoder
 
   implicit val encodeSearchResult: Encoder[SearchResult] = deriveFor[SearchResult].encoder
 

@@ -2,9 +2,9 @@ package com.mesosphere.universe.v3.model
 
 import io.circe.JsonObject
 
-sealed abstract class PackageBundle
+sealed abstract class BundleDefinition
 
-case class V2PackageBundle(
+case class V2Bundle(
   packagingVersion: V2PackagingVersion.type = V2PackagingVersion,
   name: String,
   version: PackageDefinition.Version,
@@ -23,9 +23,9 @@ case class V2PackageBundle(
   resource: Option[V2Resource] = None,
   config: Option[JsonObject] = None,
   command: Option[Command] = None
-) extends PackageBundle
+) extends BundleDefinition
 
-case class V3PackageBundle(
+case class V3Bundle(
   packagingVersion: V3PackagingVersion.type = V3PackagingVersion,
   name: String,
   version: PackageDefinition.Version,
@@ -45,4 +45,4 @@ case class V3PackageBundle(
   resource: Option[V3Resource] = None,
   config: Option[JsonObject] = None,
   command: Option[Command] = None
-) extends PackageBundle
+) extends BundleDefinition

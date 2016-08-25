@@ -2,8 +2,7 @@ package com.mesosphere.cosmos.test
 
 import cats.data.Xor
 import com.mesosphere.cosmos._
-import com.mesosphere.cosmos.circe.Decoders._
-import com.mesosphere.cosmos.http.{Authorization, MediaType, RequestSession}
+import com.mesosphere.cosmos.http.{Authorization, MediaType, MediaTypes, RequestSession}
 import com.netaporter.uri.Uri
 import com.netaporter.uri.dsl._
 import com.twitter.finagle.{Service, SimpleFilter}
@@ -16,8 +15,13 @@ import io.circe.syntax._
 import io.circe.{Decoder, Encoder}
 import org.scalatest.Matchers
 import org.slf4j.LoggerFactory
-
 import java.util.concurrent.atomic.AtomicInteger
+import com.mesosphere.universe.v3.circe.Decoders._
+import com.mesosphere.cosmos.rpc.v1.model._
+import com.mesosphere.universe.v3.model.Repository
+import com.mesosphere.cosmos.circe.Decoders._
+import com.mesosphere.cosmos.rpc.v1.circe.Decoders._
+import com.mesosphere.cosmos.rpc.v1.circe.Encoders._
 
 object CosmosIntegrationTestClient extends Matchers {
 
@@ -88,6 +92,16 @@ object CosmosIntegrationTestClient extends Matchers {
           .url(s"http://localhost:7070/$endpointPath")
     }
 
+
+    def buildGet(
+      path: String,
+      accept: MediaType
+    ): Request = {
+      requestBuilder(path)
+        .addHeader("Accept", accept.show)
+        .buildGet()
+    }
+
     def buildPost[Req](
       path: String,
       requestBody: Req,
@@ -113,9 +127,14 @@ object CosmosIntegrationTestClient extends Matchers {
       requestBody: Req,
       requestMediaType: MediaType,
       responseMediaType: MediaType,
-      status: Status = Status.Ok
+      status: Status = Status.Ok,
+      method: String = "POST"
     )(implicit decoder: Decoder[Res], encoder: Encoder[Req]): Xor[ErrorResponse, Res] = {
-      val request = buildPost(path, requestBody, requestMediaType, responseMediaType)
+      require(method == "POST" || method == "GET")
+      val request =
+        if(method == "POST") buildPost(path, requestBody, requestMediaType, responseMediaType)
+        else buildGet(path, responseMediaType)
+
       val response = CosmosClient(request)
       assertResult(status)(response.status)
 
@@ -130,6 +149,95 @@ object CosmosIntegrationTestClient extends Matchers {
           case Xor.Right(errorResponse) => Xor.Left(errorResponse)
         }
       }
+    }
+
+    def packageList(request: ListRequest = ListRequest()): ListResponse = {
+      val Xor.Right(response) =
+        callEndpoint[ListRequest, ListResponse](
+          "package/list",
+          request,
+          MediaTypes.ListRequest,
+          MediaTypes.ListResponse
+        )
+      response
+    }
+
+    def packageSearch(request: SearchRequest): SearchResponse = {
+      val Xor.Right(response) =
+        callEndpoint[SearchRequest, SearchResponse](
+          "package/search",
+          request,
+          MediaTypes.SearchRequest,
+          MediaTypes.SearchResponse
+        )
+      response
+    }
+
+    def packageStorageRepository: Repository = {
+      val Xor.Right(response: Repository) =
+        callEndpoint[Unit, Repository](
+          "package/storage/repository",
+          (),
+          MediaTypes.any,
+          MediaTypes.UniverseV3Repository,
+          method = "GET"
+        )
+      response
+    }
+
+    def packagePublish(request: PublishRequest): PublishResponse = {
+      val Xor.Right(response: PublishResponse) =
+        callEndpoint[PublishRequest, PublishResponse](
+          "package/publish",
+          request,
+          MediaTypes.PublishRequest,
+          MediaTypes.PublishResponse
+        )
+      response
+    }
+
+    def packageRepositoryAdd(request: PackageRepositoryAddRequest): PackageRepositoryAddResponse = {
+      val Xor.Right(response: PackageRepositoryAddResponse) =
+        callEndpoint[PackageRepositoryAddRequest, PackageRepositoryAddResponse](
+          "package/repository/add",
+          request,
+          MediaTypes.PackageRepositoryAddRequest,
+          MediaTypes.PackageRepositoryAddResponse
+        )
+      response
+    }
+
+    def packageRepositoryDelete(request: PackageRepositoryDeleteRequest): PackageRepositoryDeleteResponse = {
+      val Xor.Right(response: PackageRepositoryDeleteResponse) =
+        callEndpoint[PackageRepositoryDeleteRequest, PackageRepositoryDeleteResponse](
+          "package/repository/delete",
+          request,
+          MediaTypes.PackageRepositoryDeleteRequest,
+          MediaTypes.PackageRepositoryDeleteResponse
+        )
+      response
+    }
+
+    def packageInstall(request: InstallRequest): InstallResponse = {
+      val Xor.Right(response: InstallResponse) =
+        callEndpoint[InstallRequest, InstallResponse](
+          "package/install",
+          request,
+          MediaTypes.InstallRequest,
+          MediaTypes.V1InstallResponse
+        )
+      response
+    }
+
+    def packageUninstall(requestuest: UninstallRequest): UninstallResponse = {
+      val Xor.Right(response: UninstallResponse) =
+        callEndpoint[UninstallRequest, UninstallResponse](
+          "package/uninstall",
+          requestuest,
+          MediaTypes.UninstallRequest,
+          MediaTypes.UninstallResponse
+        )
+      response
     }
 
     private[cosmos] object RequestLogging extends SimpleFilter[Request, Response] {

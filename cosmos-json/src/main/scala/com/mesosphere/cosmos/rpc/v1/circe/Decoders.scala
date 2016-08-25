@@ -22,19 +22,19 @@ object Decoders {
     }
   }
 
-  implicit val decodeV2PackageBundle = deriveFor[V2PackageBundle].decoder
-  implicit val decodeV3PackageBundle = deriveFor[V3PackageBundle].decoder
-  implicit val decodePackageBundle: Decoder[PackageBundle] = {
+  implicit val decodeV2PackageBundle = deriveFor[V2Bundle].decoder
+  implicit val decodeV3PackageBundle = deriveFor[V3Bundle].decoder
+  implicit val decodePackageBundle: Decoder[BundleDefinition] = {
     Decoder.instance { (hc: HCursor) =>
       hc.downField("packagingVersion").as[PackagingVersion].flatMap {
-        case V2PackagingVersion => hc.as[V2PackageBundle]
-        case V3PackagingVersion => hc.as[V3PackageBundle]
+        case V2PackagingVersion => hc.as[V2Bundle]
+        case V3PackagingVersion => hc.as[V3Bundle]
       }
     }
   }
 
-  implicit val publishResponse: Decoder[PublishResponse] = deriveFor[PublishResponse].decoder
-  implicit val publishRequest: Decoder[PublishRequest] = deriveFor[PublishRequest].decoder
+  implicit val decodePublishResponse: Decoder[PublishResponse] = deriveFor[PublishResponse].decoder
+  implicit val decodePublishRequest: Decoder[PublishRequest] = deriveFor[PublishRequest].decoder
 
   implicit val decodeSearchResult: Decoder[SearchResult] = deriveFor[SearchResult].decoder
 
