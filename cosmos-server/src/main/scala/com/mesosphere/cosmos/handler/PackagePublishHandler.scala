@@ -10,9 +10,8 @@ private[cosmos] final class PackagePublishHandler(
 ) extends EndpointHandler[PublishRequest, PublishResponse] {
   override def apply(publishRequest: PublishRequest)
                     (implicit session: RequestSession): Future[PublishResponse] = {
-    storage.putPackageBundle(publishRequest.packageBundle)
-    Future.value {
-      PublishResponse()
+    storage.putPackageBundle(publishRequest.packageBundle).map {
+      _ => PublishResponse()
     }
   }
 }

@@ -10,8 +10,6 @@ private[cosmos] final class RepositoryServeHandler(
 ) extends EndpointHandler[Unit, Repository] {
   override def apply(req: Unit)
                     (implicit session: RequestSession): Future[Repository] = {
-    Future.value {
-        storage.getRepository
-    }
+    storage.getRepository
   }
 }

@@ -41,7 +41,9 @@ sealed abstract class CosmosError(causedBy: Throwable = null /*java compatibilit
   def getHeaders: Map[String, String] = Map.empty
 }
 
-case class RepositoryChangedDuringPublish() extends CosmosError
+case class ConcurrentPackageUpdateDuringPublish() extends CosmosError {
+  override val status = Status.Conflict
+}
 
 case class PackageNotFound(packageName: String) extends CosmosError
 

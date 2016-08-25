@@ -2,24 +2,39 @@ package com.mesosphere.cosmos.storage
 
 import java.util.concurrent.atomic.AtomicReference
 
-import com.mesosphere.cosmos.RepositoryChangedDuringPublish
+import scala.collection.concurrent.TrieMap
+import com.mesosphere.cosmos.ConcurrentPackageUpdateDuringPublish
 import com.mesosphere.cosmos.converter.Common.BundleToPackageDefinition
-import com.mesosphere.universe.v3.model.{PackageBundle, PackageDefinition, Repository}
+import com.mesosphere.universe.v3.model._
 import com.twitter.bijection.Conversion.asMethod
+import com.twitter.util.Future
 
 final class InMemoryPackageStorage extends PackageStorage {
-  private[this] val packages = new AtomicReference[Vector[PackageDefinition]](Vector())
+  private[this] val packages = TrieMap[String, AtomicReference[Vector[PackageDefinition]]]()
 
-  override def getRepository: Repository =
-    Repository(
-      packages.get.toList
-    )
+  override def getRepository: Future[Repository] = Future.value {
+      Repository(
+        packages.toList.flatMap(_._2.get())
+      )
+  }
 
-  override def putPackageBundle(packageBundle: PackageBundle): Unit = {
-    val oldp = packages.get
+  override def putPackageBundle(packageBundle: PackageBundle): Future[Unit] = Future.value {
+    val empty = new AtomicReference[Vector[PackageDefinition]](Vector())
+    val named = packages.putIfAbsent(name(packageBundle), empty) match {
+      case Some(p) => p
+      case _ => empty
+    }
+    val oldp = named.get
     val newp = oldp :+ (packageBundle, PackageDefinition.ReleaseVersion(oldp.size).get).as[PackageDefinition]
 
-    if(packages.compareAndSet(oldp, newp))
-      throw RepositoryChangedDuringPublish()
+    if (named.compareAndSet(oldp, newp)) {
+      throw ConcurrentPackageUpdateDuringPublish()
+    }
   }
+
+  private[this] def name(pkg: PackageBundle): String =
+    pkg match {
+      case v2: V2PackageBundle => v2.name
+      case v3: V3PackageBundle => v3.name
+    }
 }
