@@ -1,6 +1,5 @@
 package com.mesosphere.cosmos.rpc.v1.circe
 
-import com.mesosphere.cosmos.converter.Common._
 import com.mesosphere.cosmos.rpc.v1.model._
 import com.mesosphere.cosmos.thirdparty.marathon.circe.Decoders._
 import com.mesosphere.universe
@@ -8,7 +7,6 @@ import com.mesosphere.universe.common.circe.Decoders._
 import com.mesosphere.universe.v2.circe.Decoders._
 import com.mesosphere.universe.v2.model.{PackageDetailsVersion, ReleaseVersion}
 import com.mesosphere.universe.v3.circe.Decoders._
-import com.mesosphere.universe.v3.model._
 import io.circe.generic.semiauto._
 import io.circe.{Decoder, HCursor}
 
@@ -18,17 +16,6 @@ object Decoders {
     Decoder.decodeMap[Map, universe.v3.model.PackageDefinition.ReleaseVersion].map { stringKeys =>
       stringKeys.map { case (versionString, releaseVersion) =>
         universe.v3.model.PackageDefinition.Version(versionString) -> releaseVersion
-      }
-    }
-  }
-
-  implicit val decodeV2PackageBundle = deriveFor[V2Bundle].decoder
-  implicit val decodeV3PackageBundle = deriveFor[V3Bundle].decoder
-  implicit val decodePackageBundle: Decoder[BundleDefinition] = {
-    Decoder.instance { (hc: HCursor) =>
-      hc.downField("packagingVersion").as[PackagingVersion].flatMap {
-        case V2PackagingVersion => hc.as[V2Bundle]
-        case V3PackagingVersion => hc.as[V3Bundle]
       }
     }
   }

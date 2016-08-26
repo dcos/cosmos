@@ -8,13 +8,13 @@ import io.circe.syntax._
 
 object Encoders {
 
-  implicit val encodePackageBundle: Encoder[BundleDefinition] =
+  implicit val encodeBundleDefinition: Encoder[BundleDefinition] =
     Encoder.instance {
       case v2: V2Bundle => v2.asJson
       case v3: V3Bundle => v3.asJson
     }
-  implicit val encodeV2PackageBundle: Encoder[V2Bundle] = deriveFor[V2Bundle].encoder
-  implicit val encodeV3PackageBundle: Encoder[V3Bundle] = deriveFor[V3Bundle].encoder
+  implicit val encodeV2Bundle: Encoder[V2Bundle] = deriveFor[V2Bundle].encoder
+  implicit val encodeV3Bundle: Encoder[V3Bundle] = deriveFor[V3Bundle].encoder
 
   implicit val encodeArchitectures: Encoder[Architectures] = deriveFor[Architectures].encoder
   implicit val encodeAssets: Encoder[Assets] = deriveFor[Assets].encoder
