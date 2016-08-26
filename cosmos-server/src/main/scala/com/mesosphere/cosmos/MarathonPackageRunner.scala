@@ -6,7 +6,7 @@ import com.mesosphere.cosmos.thirdparty.marathon.circe.Decoders._
 import com.twitter.finagle.http.Status
 import com.twitter.util.Future
 import com.mesosphere.cosmos.http.RequestSession
-import io.circe.parse.decode
+import io.circe.jawn.decode
 import io.circe.Json
 
 /** A [[com.mesosphere.cosmos.PackageRunner]] implementation for Marathon. */

@@ -6,7 +6,7 @@ import com.mesosphere.universe.v3.circe.Encoders._
 import com.mesosphere.universe.v3.model.DcosReleaseVersion
 import com.mesosphere.universe.v3.model.DcosReleaseVersion._
 import io.circe.Json
-import io.circe.parse._
+import io.circe.jawn.decode
 import io.circe.syntax._
 import org.scalatest.FreeSpec
 
@@ -21,7 +21,7 @@ class DcosReleaseVersionEncoderDecoderSpec extends FreeSpec {
       assertResult(obj)(decoded)
     }
     "encode" in {
-      assertResult(Json.string(str))(obj.asJson)
+      assertResult(Json.fromString(str))(obj.asJson)
     }
   }
 

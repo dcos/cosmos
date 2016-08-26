@@ -8,22 +8,14 @@ import io.circe.syntax._
 
 object Encoders {
 
-  implicit val encodeBundleDefinition: Encoder[BundleDefinition] =
-    Encoder.instance {
-      case v2: V2Bundle => v2.asJson
-      case v3: V3Bundle => v3.asJson
-    }
-  implicit val encodeV2Bundle: Encoder[V2Bundle] = deriveFor[V2Bundle].encoder
-  implicit val encodeV3Bundle: Encoder[V3Bundle] = deriveFor[V3Bundle].encoder
-
-  implicit val encodeArchitectures: Encoder[Architectures] = deriveFor[Architectures].encoder
-  implicit val encodeAssets: Encoder[Assets] = deriveFor[Assets].encoder
-  implicit val encodeBinary: Encoder[Binary] = deriveFor[Binary].encoder
-  implicit val encodeCli: Encoder[Cli] = deriveFor[Cli].encoder
-  implicit val encodeCommand: Encoder[Command] = deriveFor[Command].encoder
-  implicit val encodeContainer: Encoder[Container] = deriveFor[Container].encoder
+  implicit val encodeArchitectures: Encoder[Architectures] = deriveEncoder[Architectures]
+  implicit val encodeAssets: Encoder[Assets] = deriveEncoder[Assets]
+  implicit val encodeBinary: Encoder[Binary] = deriveEncoder[Binary]
+  implicit val encodeCli: Encoder[Cli] = deriveEncoder[Cli]
+  implicit val encodeCommand: Encoder[Command] = deriveEncoder[Command]
+  implicit val encodeContainer: Encoder[Container] = deriveEncoder[Container]
   implicit val encodeDcosReleaseVersion: Encoder[DcosReleaseVersion] = Encoder.instance(_.show.asJson)
-  implicit val encodeHashInfo: Encoder[HashInfo] = deriveFor[HashInfo].encoder
+  implicit val encodeHashInfo: Encoder[HashInfo] = deriveEncoder[HashInfo]
   implicit val encodeImages: Encoder[Images] = Encoder.instance { (images: Images) =>
     Json.obj(
       "icon-small" -> images.iconSmall.asJson,
@@ -32,14 +24,14 @@ object Encoders {
       "screenshots" -> images.screenshots.asJson
     )
   }
-  implicit val encodeLicense: Encoder[License] = deriveFor[License].encoder
-  implicit val encodeMarathon: Encoder[Marathon] = deriveFor[Marathon].encoder
+  implicit val encodeLicense: Encoder[License] = deriveEncoder[License]
+  implicit val encodeMarathon: Encoder[Marathon] = deriveEncoder[Marathon]
   implicit val encodePackageDefinition: Encoder[PackageDefinition] = Encoder.instance {
     case v2: V2Package => v2.asJson
     case v3: V3Package => v3.asJson
   }
 
-  implicit val encodePlatforms: Encoder[Platforms] = deriveFor[Platforms].encoder
+  implicit val encodePlatforms: Encoder[Platforms] = deriveEncoder[Platforms]
 
   implicit val encodePackageDefinitionVersion: Encoder[PackageDefinition.Version] = {
     Encoder.instance(_.toString.asJson)
@@ -50,15 +42,24 @@ object Encoders {
   implicit val encodePackageDefinitionReleaseVersion: Encoder[PackageDefinition.ReleaseVersion] = {
     Encoder.instance(_.value.asJson)
   }
-  implicit val encodeRepository: Encoder[Repository] = deriveFor[Repository].encoder
-  implicit val encodeV2Package: Encoder[V2Package] = deriveFor[V2Package].encoder
+  implicit val encodeRepository: Encoder[Repository] = deriveEncoder[Repository]
+  implicit val encodeV2Package: Encoder[V2Package] = deriveEncoder[V2Package]
 
   implicit def encodePackagingVersion[A <: PackagingVersion]: Encoder[A] = {
     Encoder[String].contramap(version => version.show)
   }
 
-  implicit val encodeV2Resource: Encoder[V2Resource] = deriveFor[V2Resource].encoder
-  implicit val encodeV3Package: Encoder[V3Package] = deriveFor[V3Package].encoder
-  implicit val encodeV3Resource: Encoder[V3Resource] = deriveFor[V3Resource].encoder
+  implicit val encodeV2Resource: Encoder[V2Resource] = deriveEncoder[V2Resource]
+  implicit val encodeV3Package: Encoder[V3Package] = deriveEncoder[V3Package]
+  implicit val encodeV3Resource: Encoder[V3Resource] = deriveEncoder[V3Resource]
+
+  implicit val encodeBundleDefinition: Encoder[BundleDefinition] =
+    Encoder.instance {
+      case v2: V2Bundle => v2.asJson
+      case v3: V3Bundle => v3.asJson
+    }
+  implicit val encodeV2Bundle: Encoder[V2Bundle] = deriveEncoder[V2Bundle]
+  implicit val encodeV3Bundle: Encoder[V3Bundle] = deriveEncoder[V3Bundle]
+
 
 }

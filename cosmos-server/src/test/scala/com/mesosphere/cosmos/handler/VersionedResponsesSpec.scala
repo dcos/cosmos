@@ -46,14 +46,14 @@ object VersionedResponsesSpec {
 
   object Foo {
     val encoder: MediaTypedEncoder[FoobarResponse] = MediaTypedEncoder(
-      encoder = semiauto.deriveFor[Foo].encoder.contramap(foobar => Foo(foobar.foo)),
+      encoder = semiauto.deriveEncoder[Foo].contramap(foobar => Foo(foobar.foo)),
       mediaType = versionedJson(1)
     )
   }
 
   object Bar {
     val encoder: MediaTypedEncoder[FoobarResponse] = MediaTypedEncoder(
-      encoder = semiauto.deriveFor[Bar].encoder.contramap(foobar => Bar(foobar.bar)),
+      encoder = semiauto.deriveEncoder[Bar].contramap(foobar => Bar(foobar.bar)),
       mediaType = versionedJson(2)
     )
   }
@@ -94,6 +94,6 @@ object VersionedResponsesSpec {
 
   }
 
-  val FoobarEndpoint: Endpoint[Json] = Cosmos.route(post(/), FoobarHandler)(RequestReaders.standard)
+  val FoobarEndpoint: Endpoint[Json] = Cosmos.route(post(/), FoobarHandler)(RequestValidators.standard)
 
 }

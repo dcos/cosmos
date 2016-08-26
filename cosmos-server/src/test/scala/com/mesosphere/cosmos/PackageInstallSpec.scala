@@ -118,7 +118,7 @@ class PackageInstallSpec extends FreeSpec with Matchers with TableDrivenProperty
       fail("expected a CirceError to be thrown")
     } catch {
       case e @ CirceError(err) =>
-        assertResult("String: El(DownField(idx),true),El(DownField(labels),true)")(err.getMessage)
+        assertResult("String: El(DownField(idx),true,false),El(DownField(labels),true,false)")(err.getMessage)
     }
   }
 

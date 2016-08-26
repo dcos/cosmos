@@ -4,6 +4,7 @@ import cats.data.Ior
 import com.mesosphere.cosmos._
 import com.mesosphere.cosmos.http.MediaType
 import com.mesosphere.cosmos.model._
+import com.mesosphere.cosmos.converter.ConversionFailure
 import com.mesosphere.cosmos.thirdparty.marathon.circe.Encoders._
 import com.mesosphere.cosmos.rpc.v1.circe.Encoders._
 import com.mesosphere.universe.common.circe.Encoders._
@@ -11,21 +12,48 @@ import com.mesosphere.universe.v2.circe.Encoders._
 import com.mesosphere.universe.v3.circe.Encoders._
 import com.mesosphere.universe.v3.model._
 import com.twitter.finagle.http.Status
+import io.circe.DecodingFailure
 import io.circe.generic.encoding.DerivedObjectEncoder
-import io.circe.generic.semiauto._
 import io.circe.syntax._
+import io.circe.generic.semiauto._
 import io.circe.{Encoder, JsonObject}
 import io.finch.Error
 import org.jboss.netty.handler.codec.http.HttpMethod
 import shapeless._
 import shapeless.labelled.FieldType
 
-object Encoders {
+/*
+  Copied from circe v0.3.0
+  This implicits contained in this trait are no longer present in circe v0.5.0 in favor of a macro.
+  However, we need these rather than the macro so that
+  `com.mesosphere.cosmos.circe.Encoders.dropThrowableFromEncodedObjects` works
+ */
+sealed trait LowPriorityImplicits {
+  // https://github.com/travisbrown/circe/blob/v0.3.0/generic/shared/src/main/scala/io/circe/generic/encoding/DerivedObjectEncoder.scala#L10-L13
+  implicit final val encodeHNil: DerivedObjectEncoder[HNil] = new DerivedObjectEncoder[HNil] {
+    final def encodeObject(a: HNil): JsonObject = JsonObject.empty
+  }
 
-  implicit val encodeErrorResponse: Encoder[ErrorResponse] = deriveFor[ErrorResponse].encoder
+  // https://github.com/travisbrown/circe/blob/v0.3.0/generic/shared/src/main/scala/io/circe/generic/encoding/DerivedObjectEncoder.scala#L36-L46
+  implicit final def encodeLabelledHList[K <: Symbol, H, T <: HList](implicit
+    key: Witness.Aux[K],
+    encodeHead: Lazy[Encoder[H]],
+    encodeTail: Lazy[DerivedObjectEncoder[T]]
+  ): DerivedObjectEncoder[FieldType[K, H] :: T] =
+  new DerivedObjectEncoder[FieldType[K, H] :: T] {
+    final def encodeObject(a: FieldType[K, H] :: T): JsonObject = a match {
+      case h :: t =>
+        (key.value.name -> encodeHead.value(h)) +: encodeTail.value.encodeObject(t)
+    }
+  }
+}
+
+object Encoders extends LowPriorityImplicits {
+
+  implicit val encodeErrorResponse: Encoder[ErrorResponse] = deriveEncoder[ErrorResponse]
 
   implicit val encodeZooKeeperStorageEnvelope: Encoder[ZooKeeperStorageEnvelope] =
-    deriveFor[ZooKeeperStorageEnvelope].encoder
+    deriveEncoder[ZooKeeperStorageEnvelope]
 
   implicit val exceptionEncoder: Encoder[Exception] = {
     Encoder.instance { e => exceptionErrorResponse(e).asJson }
@@ -38,7 +66,7 @@ object Encoders {
   implicit def encodeIor[A, B](implicit
     encodeA: Encoder[A],
     encodeB: Encoder[B]
-  ): Encoder[Ior[A, B]] = deriveFor[Ior[A, B]].encoder
+  ): Encoder[Ior[A, B]] = deriveEncoder[Ior[A, B]]
 
   /* This method skips all fields of type Throwable when rendering an object as JSON.
    *
@@ -75,7 +103,7 @@ object Encoders {
    * message, which could contain information that we don't want to surface to users in ordinary
    * error responses. It's better to make a conscious decision to include error data when needed.
    */
-  implicit def dropThrowableFromEncodedObjects[K, H <: Throwable, T <: HList](implicit
+  implicit def dropThrowableFromEncodedObjects[K <: Symbol, H <: Throwable, T <: HList](implicit
     encodeTail: Lazy[DerivedObjectEncoder[T]]
   ): DerivedObjectEncoder[FieldType[K, H] :: T] =
     new DerivedObjectEncoder[FieldType[K, H] :: T] {
@@ -84,7 +112,7 @@ object Encoders {
       }
     }
 
-  implicit val encodeCosmosError: Encoder[CosmosError] = deriveFor[CosmosError].encoder
+  implicit val encodeCosmosError: Encoder[CosmosError] = deriveEncoder[CosmosError]
 
   private[this] def exceptionErrorResponse(t: Throwable): ErrorResponse = t match {
     case Error.NotPresent(item) =>

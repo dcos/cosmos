@@ -78,7 +78,7 @@ private final class AuthorizationTestClient
   extends ServiceClient(Uri.parse("http://example.com")) {
 
   def testGet(implicit session: RequestSession): Request = get(ServiceClientSpec.PathUri)
-  def testPost(implicit session: RequestSession): Request = post(ServiceClientSpec.PathUri, Json.empty)
+  def testPost(implicit session: RequestSession): Request = post(ServiceClientSpec.PathUri, Json.Null)
   def testPostForm(implicit session: RequestSession): Request = postForm(ServiceClientSpec.PathUri, "")
   def testDelete(implicit session: RequestSession): Request = delete(ServiceClientSpec.PathUri)
 

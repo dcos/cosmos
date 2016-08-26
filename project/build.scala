@@ -13,9 +13,9 @@ object CosmosBuild extends Build {
 
   object V {
     val bijection = "0.9.2"
-    val circe = "0.2.1"
+    val circe = "0.5.0-M3"
     val curator = "2.9.1"
-    val finch = "0.9.3"
+    val finch = "0.10.0"
     val finchServer = "0.9.1"
     val jsonSchema = "2.2.6"
     val logback = "1.1.3"
@@ -40,7 +40,7 @@ object CosmosBuild extends Build {
 
     val circe = circeCore ++ Seq(
       "io.circe" %% "circe-generic" % V.circe,
-      "io.circe" %% "circe-parse" % V.circe
+      "io.circe" %% "circe-jawn" % V.circe
     )
 
     val curator = Seq(
@@ -61,7 +61,9 @@ object CosmosBuild extends Build {
     val finch = Seq(
       "com.github.finagle" %% "finch-core" % V.finch,
       "com.github.finagle" %% "finch-circe" % V.finch
-    )
+    ).map(_.excludeAll(
+      ExclusionRule("io.circe")
+    ))
 
     val finchServer = Seq(
       "io.github.benwhitehead.finch" %% "finch-server" % V.finchServer

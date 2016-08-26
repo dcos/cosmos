@@ -8,7 +8,7 @@ import io.circe.generic.semiauto._
 object Encoders {
 
   implicit val encodeLabelV1PackageMetadata: Encoder[label.v1.model.PackageMetadata] = {
-    deriveFor[label.v1.model.PackageMetadata].encoder
+    deriveEncoder[label.v1.model.PackageMetadata]
   }
 
 }

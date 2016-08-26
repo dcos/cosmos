@@ -12,7 +12,7 @@ import com.mesosphere.universe.v2.model.PackageDetailsVersion
 import com.twitter.finagle.http.Status
 import com.twitter.io.Buf
 import io.circe.{Json, JsonObject}
-import io.circe.parse._
+import io.circe.jawn._
 import io.circe.syntax._
 import org.scalatest.FreeSpec
 

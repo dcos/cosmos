@@ -13,7 +13,7 @@ class JsonUtilSpec extends FreeSpec {
   case class Foo(bar: Option[Int],far: Option[Int])
 
   implicit val encodeFoo: Encoder[Foo] = {
-    deriveFor[Foo].encoder
+    deriveEncoder[Foo]
   }
   "dropNullKeys" in {
     val ls = Foo(None,None)

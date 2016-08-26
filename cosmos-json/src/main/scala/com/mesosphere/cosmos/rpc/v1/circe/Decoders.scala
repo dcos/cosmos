@@ -7,78 +7,69 @@ import com.mesosphere.universe.common.circe.Decoders._
 import com.mesosphere.universe.v2.circe.Decoders._
 import com.mesosphere.universe.v2.model.{PackageDetailsVersion, ReleaseVersion}
 import com.mesosphere.universe.v3.circe.Decoders._
+import io.circe._
 import io.circe.generic.semiauto._
-import io.circe.{Decoder, HCursor}
 
 object Decoders {
 
-  implicit val decodeVersionsMap: Decoder[Map[universe.v3.model.PackageDefinition.Version, universe.v3.model.PackageDefinition.ReleaseVersion]] = {
-    Decoder.decodeMap[Map, universe.v3.model.PackageDefinition.ReleaseVersion].map { stringKeys =>
-      stringKeys.map { case (versionString, releaseVersion) =>
-        universe.v3.model.PackageDefinition.Version(versionString) -> releaseVersion
-      }
-    }
+  implicit val keyDecodePackageDefinitionVersion: KeyDecoder[universe.v3.model.PackageDefinition.Version] = {
+    KeyDecoder.instance { s => Some(universe.v3.model.PackageDefinition.Version(s)) }
+  }
+  implicit val decodePackageDefinitionReleaseVersion: Decoder[universe.v3.model.PackageDefinition.ReleaseVersion] = {
+    Decoder.decodeInt.emapTry { i => universe.v3.model.PackageDefinition.ReleaseVersion(i) }
   }
 
-  implicit val decodePublishResponse: Decoder[PublishResponse] = deriveFor[PublishResponse].decoder
-  implicit val decodePublishRequest: Decoder[PublishRequest] = deriveFor[PublishRequest].decoder
+  implicit val decodeSearchResult: Decoder[SearchResult] = deriveDecoder[SearchResult]
 
-  implicit val decodeSearchResult: Decoder[SearchResult] = deriveFor[SearchResult].decoder
+  implicit val decodeDescribeRequest: Decoder[DescribeRequest] = deriveDecoder[DescribeRequest]
+  implicit val decodeSearchRequest: Decoder[SearchRequest] = deriveDecoder[SearchRequest]
+  implicit val decodeSearchResponse: Decoder[SearchResponse] = deriveDecoder[SearchResponse]
+  implicit val decodeInstallRequest: Decoder[InstallRequest] = deriveDecoder[InstallRequest]
+  implicit val decodeInstallResponse: Decoder[InstallResponse] = deriveDecoder[InstallResponse]
+  implicit val decodeUninstallRequest: Decoder[UninstallRequest] = deriveDecoder[UninstallRequest]
+  implicit val decodeUninstallResponse: Decoder[UninstallResponse] = deriveDecoder[UninstallResponse]
+  implicit val decodeUninstallResult: Decoder[UninstallResult] = deriveDecoder[UninstallResult]
 
-  implicit val decodeDescribeRequest: Decoder[DescribeRequest] = deriveFor[DescribeRequest].decoder
-  implicit val decodeSearchRequest: Decoder[SearchRequest] = deriveFor[SearchRequest].decoder
-  implicit val decodeSearchResponse: Decoder[SearchResponse] = deriveFor[SearchResponse].decoder
-  implicit val decodeInstallRequest: Decoder[InstallRequest] = deriveFor[InstallRequest].decoder
-  implicit val decodeInstallResponse: Decoder[InstallResponse] = deriveFor[InstallResponse].decoder
-  implicit val decodeUninstallRequest: Decoder[UninstallRequest] = deriveFor[UninstallRequest].decoder
-  implicit val decodeUninstallResponse: Decoder[UninstallResponse] = deriveFor[UninstallResponse].decoder
-  implicit val decodeUninstallResult: Decoder[UninstallResult] = deriveFor[UninstallResult].decoder
+  implicit val decodeRenderRequest: Decoder[RenderRequest] = deriveDecoder[RenderRequest]
+  implicit val decodeRenderResponse: Decoder[RenderResponse] = deriveDecoder[RenderResponse]
 
-  implicit val decodeRenderRequest: Decoder[RenderRequest] = deriveFor[RenderRequest].decoder
-  implicit val decodeRenderResponse: Decoder[RenderResponse] = deriveFor[RenderResponse].decoder
+  implicit val decodeDescribeResponse: Decoder[DescribeResponse] = deriveDecoder[DescribeResponse]
+  implicit val decodeListVersionsRequest: Decoder[ListVersionsRequest] = deriveDecoder[ListVersionsRequest]
+  implicit val decodeListVersionsResponse: Decoder[ListVersionsResponse] = deriveDecoder[ListVersionsResponse]
 
-  implicit val decodeDescribeResponse: Decoder[DescribeResponse] = deriveFor[DescribeResponse].decoder
-  implicit val decodeListVersionsRequest: Decoder[ListVersionsRequest] = deriveFor[ListVersionsRequest].decoder
-  implicit val decodeListVersionsResponse: Decoder[ListVersionsResponse] = Decoder.instance { (cursor: HCursor) =>
-    for {
-      r <- cursor.downField("results").as[Map[String, String]]
-    } yield {
-      val results = r.map { case (s1, s2) =>
-        PackageDetailsVersion(s1) -> ReleaseVersion(s2)
-      }
-      ListVersionsResponse(results)
-    }
-  }
+  implicit val decodeListRequest: Decoder[ListRequest] = deriveDecoder[ListRequest]
+  implicit val decodeListResponse: Decoder[ListResponse] = deriveDecoder[ListResponse]
+  implicit val decodeInstallation: Decoder[Installation] = deriveDecoder[Installation]
+  implicit val decodeInstalledPackageInformationPackageDetails: Decoder[InstalledPackageInformationPackageDetails] = deriveDecoder[InstalledPackageInformationPackageDetails]
+  implicit val decodePackageInformation: Decoder[InstalledPackageInformation] = deriveDecoder[InstalledPackageInformation]
 
-  implicit val decodeListRequest: Decoder[ListRequest] = deriveFor[ListRequest].decoder
-  implicit val decodeListResponse: Decoder[ListResponse] = deriveFor[ListResponse].decoder
-  implicit val decodeInstallation: Decoder[Installation] = deriveFor[Installation].decoder
-  implicit val decodeInstalledPackageInformationPackageDetails: Decoder[InstalledPackageInformationPackageDetails] = deriveFor[InstalledPackageInformationPackageDetails].decoder
-  implicit val decodePackageInformation: Decoder[InstalledPackageInformation] = deriveFor[InstalledPackageInformation].decoder
-
-  implicit val decodeCapabilitiesResponse: Decoder[CapabilitiesResponse] = deriveFor[CapabilitiesResponse].decoder
-  implicit val decodeCapability: Decoder[Capability] = deriveFor[Capability].decoder
+  implicit val decodeCapabilitiesResponse: Decoder[CapabilitiesResponse] = deriveDecoder[CapabilitiesResponse]
+  implicit val decodeCapability: Decoder[Capability] = deriveDecoder[Capability]
 
   implicit val decodePackageRepositoryListRequest: Decoder[PackageRepositoryListRequest] = {
-    deriveFor[PackageRepositoryListRequest].decoder
+    deriveDecoder[PackageRepositoryListRequest]
   }
   implicit val decodePackageRepositoryListResponse: Decoder[PackageRepositoryListResponse] = {
-    deriveFor[PackageRepositoryListResponse].decoder
+    deriveDecoder[PackageRepositoryListResponse]
   }
   implicit val decodePackageRepository: Decoder[PackageRepository] = {
-    deriveFor[PackageRepository].decoder
+    deriveDecoder[PackageRepository]
   }
   implicit val decodePackageRepositoryAddRequest: Decoder[PackageRepositoryAddRequest] = {
-    deriveFor[PackageRepositoryAddRequest].decoder
+    deriveDecoder[PackageRepositoryAddRequest]
   }
   implicit val decodePackageRepositoryAddResponse: Decoder[PackageRepositoryAddResponse] = {
-    deriveFor[PackageRepositoryAddResponse].decoder
+    deriveDecoder[PackageRepositoryAddResponse]
   }
   implicit val decodePackageRepositoryDeleteRequest: Decoder[PackageRepositoryDeleteRequest] = {
-    deriveFor[PackageRepositoryDeleteRequest].decoder
+    deriveDecoder[PackageRepositoryDeleteRequest]
   }
   implicit val decodePackageRepositoryDeleteResponse: Decoder[PackageRepositoryDeleteResponse] = {
-    deriveFor[PackageRepositoryDeleteResponse].decoder
+    deriveDecoder[PackageRepositoryDeleteResponse]
   }
+
+  implicit val decodePublishResponse: Decoder[PublishResponse] = deriveDecoder[PublishResponse]
+  implicit val decodePublishRequest: Decoder[PublishRequest] = deriveDecoder[PublishRequest]
+
 
 }

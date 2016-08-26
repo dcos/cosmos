@@ -5,7 +5,7 @@ import io.circe.Encoder
 import io.circe.generic.semiauto._
 
 object Encoders {
-  implicit val encodeFramework: Encoder[Framework] = deriveFor[Framework].encoder
-  implicit val encodeMasterState: Encoder[MasterState] = deriveFor[MasterState].encoder
-  implicit val encodeMesosFrameworkTearDownResponse: Encoder[MesosFrameworkTearDownResponse] = deriveFor[MesosFrameworkTearDownResponse].encoder
+  implicit val encodeFramework: Encoder[Framework] = deriveEncoder[Framework]
+  implicit val encodeMasterState: Encoder[MasterState] = deriveEncoder[MasterState]
+  implicit val encodeMesosFrameworkTearDownResponse: Encoder[MesosFrameworkTearDownResponse] = deriveEncoder[MesosFrameworkTearDownResponse]
 }

@@ -20,7 +20,7 @@ import com.netaporter.uri.Uri
 import com.twitter.finagle.http._
 import com.twitter.io.{Buf, Charsets}
 import com.twitter.util.{Await, Future}
-import io.circe.parse._
+import io.circe.jawn._
 import io.circe.syntax._
 import io.circe.{Json, JsonObject}
 import org.scalatest.prop.TableDrivenPropertyChecks
@@ -124,7 +124,7 @@ final class PackageInstallIntegrationSpec extends FreeSpec with BeforeAndAfterAl
     "validates merged config template options JSON schema" in {
       val Some(badOptions) = Map("chronos" -> Map("zk-hosts" -> false)).asJson.asObject
 
-      val schemaError = JsonObject.fromIndexedSeq {
+      val schemaError = JsonObject.fromIterable {
         Vector(
           "level" -> "error".asJson,
           "schema" -> Map(

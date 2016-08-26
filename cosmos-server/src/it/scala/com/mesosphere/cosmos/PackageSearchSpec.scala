@@ -9,7 +9,7 @@ import com.mesosphere.cosmos.test.CosmosIntegrationTestClient.CosmosClient
 import com.mesosphere.universe
 import com.twitter.finagle.http._
 import com.twitter.io.Buf
-import io.circe.parse._
+import io.circe.jawn._
 import io.circe.syntax._
 import org.scalatest.FreeSpec
 import org.scalatest.prop.TableDrivenPropertyChecks

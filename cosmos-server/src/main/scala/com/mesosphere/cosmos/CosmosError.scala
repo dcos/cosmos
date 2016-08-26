@@ -213,3 +213,4 @@ case class RepositoryNotPresent(nameOrUri: Ior[String, Uri]) extends CosmosError
 
 case class ConversionError(failure: ConversionFailure) extends CosmosError
 case class ServiceMarathonTemplateNotFound(packageName: String, packageVersion: PackageDefinition.Version) extends CosmosError
+

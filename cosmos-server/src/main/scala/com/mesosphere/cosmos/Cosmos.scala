@@ -42,55 +42,55 @@ private[cosmos] final class Cosmos(
   lazy val logger = org.slf4j.LoggerFactory.getLogger(classOf[Cosmos])
 
   val packageInstall: Endpoint[Json] = {
-    route(post("package" / "install"), packageInstallHandler)(RequestReaders.standard)
+    route(post("package" / "install"), packageInstallHandler)(RequestValidators.standard)
   }
 
   val packageUninstall: Endpoint[Json] = {
-    route(post("package" / "uninstall"), uninstallHandler)(RequestReaders.standard)
+    route(post("package" / "uninstall"), uninstallHandler)(RequestValidators.standard)
   }
 
   val packageDescribe: Endpoint[Json] = {
-    route(post("package" / "describe"), packageDescribeHandler)(RequestReaders.standard)
+    route(post("package" / "describe"), packageDescribeHandler)(RequestValidators.standard)
   }
 
   val packageRender: Endpoint[Json] = {
-    route(post("package" / "render"), packageRenderHandler)(RequestReaders.standard)
+    route(post("package" / "render"), packageRenderHandler)(RequestValidators.standard)
   }
 
   val packageListVersions: Endpoint[Json] = {
-    route(post("package" / "list-versions"), packageListVersionsHandler)(RequestReaders.standard)
+    route(post("package" / "list-versions"), packageListVersionsHandler)(RequestValidators.standard)
   }
 
   val packageSearch: Endpoint[Json] = {
-    route(post("package" / "search"), packageSearchHandler)(RequestReaders.standard)
+    route(post("package" / "search"), packageSearchHandler)(RequestValidators.standard)
   }
 
   val packageList: Endpoint[Json] = {
-    route(post("package" / "list"), listHandler)(RequestReaders.standard)
+    route(post("package" / "list"), listHandler)(RequestValidators.standard)
   }
 
   val capabilities: Endpoint[Json] = {
-    route(get("capabilities"), capabilitiesHandler)(RequestReaders.noBody)
+    route(get("capabilities"), capabilitiesHandler)(RequestValidators.noBody)
   }
 
   val packageListSources: Endpoint[Json] = {
-    route(post("package" / "repository" / "list"), listRepositoryHandler)(RequestReaders.standard)
+    route(post("package" / "repository" / "list"), listRepositoryHandler)(RequestValidators.standard)
   }
 
   val packageAddSource: Endpoint[Json] = {
-    route(post("package" / "repository" / "add"), addRepositoryHandler)(RequestReaders.standard)
+    route(post("package" / "repository" / "add"), addRepositoryHandler)(RequestValidators.standard)
   }
 
   val packageDeleteSource: Endpoint[Json] = {
-    route(post("package" / "repository" / "delete"), deleteRepositoryHandler)(RequestReaders.standard)
+    route(post("package" / "repository" / "delete"), deleteRepositoryHandler)(RequestValidators.standard)
   }
 
   val packagePublish: Endpoint[Json] = {
-    route(post("package" / "publish"), packagePublishHandler)(RequestReaders.standard)
+    route(post("package" / "publish"), packagePublishHandler)(RequestValidators.standard)
   }
 
   val repositoryServe: Endpoint[Json] = {
-    route(get("package" / "storage" / "repository"), repositoryServeHandler)(RequestReaders.noBody)
+    route(get("package" / "storage" / "repository"), repositoryServeHandler)(RequestValidators.noBody)
   }
 
   val service: Service[Request, Response] = {
@@ -237,7 +237,7 @@ object Cosmos extends FinchServer {
   }
 
   private[cosmos] def route[Req, Res](base: Endpoint[HNil], handler: EndpointHandler[Req, Res])(
-    requestReader: RequestReader[EndpointContext[Req, Res]]
+    requestReader: Endpoint[EndpointContext[Req, Res]]
   ): Endpoint[Json] = {
     (base ? requestReader).apply((context: EndpointContext[Req, Res]) => handler(context))
   }
