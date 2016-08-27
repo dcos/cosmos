@@ -1,12 +1,145 @@
 package com.mesosphere.cosmos.converter
 
 import com.mesosphere.universe
+import com.mesosphere.universe.v3.model.PackageDefinition.ReleaseVersion
+import com.mesosphere.universe.v3.model._
 import com.netaporter.uri.Uri
 import com.twitter.bijection.{Bijection, Injection}
+import com.twitter.bijection.Conversion.asMethod
 
 import scala.util.{Failure, Success, Try}
 
 object Common {
+
+  implicit val V2BundleToV2Package
+  : Bijection[(V2Bundle, ReleaseVersion), V2Package] = {
+    def fwd(bundlePair: (V2Bundle, ReleaseVersion)): V2Package = {
+      val v2 = bundlePair._1
+      val releaseVersion = bundlePair._2
+      V2Package(
+        v2.packagingVersion,
+        v2.name,
+        v2.version,
+        releaseVersion,
+        v2.maintainer,
+        v2.description,
+        v2.marathon,
+        v2.tags,
+        v2.selected,
+        v2.scm,
+        v2.website,
+        v2.framework,
+        v2.preInstallNotes,
+        v2.postInstallNotes,
+        v2.postUninstallNotes,
+        v2.licenses,
+        v2.resource,
+        v2.config,
+        v2.command
+      )
+    }
+
+    def rev(v2: V2Package): (V2Bundle, ReleaseVersion) =
+      (V2Bundle(
+        v2.packagingVersion,
+        v2.name,
+        v2.version,
+        v2.maintainer,
+        v2.description,
+        v2.marathon,
+        v2.tags,
+        v2.selected,
+        v2.scm,
+        v2.website,
+        v2.framework,
+        v2.preInstallNotes,
+        v2.postInstallNotes,
+        v2.postUninstallNotes,
+        v2.licenses,
+        v2.resource,
+        v2.config,
+        v2.command
+      ),
+        v2.releaseVersion)
+
+    Bijection.build[(V2Bundle, ReleaseVersion), V2Package](fwd)(rev)
+  }
+
+  implicit val V3BundleToV3Package
+  : Bijection[(V3Bundle, ReleaseVersion), V3Package] = {
+    def fwd(bundlePair: (V3Bundle, ReleaseVersion)): V3Package = {
+      val v3 = bundlePair._1
+      val releaseVersion = bundlePair._2
+      V3Package(
+        v3.packagingVersion,
+        v3.name,
+        v3.version,
+        releaseVersion,
+        v3.maintainer,
+        v3.description,
+        v3.tags,
+        v3.selected,
+        v3.scm,
+        v3.website,
+        v3.framework,
+        v3.preInstallNotes,
+        v3.postInstallNotes,
+        v3.postUninstallNotes,
+        v3.licenses,
+        v3.minDcosReleaseVersion,
+        v3.marathon,
+        v3.resource,
+        v3.config,
+        v3.command
+      )
+    }
+
+    def rev(v3: V3Package): (V3Bundle, ReleaseVersion) =
+      (V3Bundle(
+        v3.packagingVersion,
+        v3.name,
+        v3.version,
+        v3.maintainer,
+        v3.description,
+        v3.tags,
+        v3.selected,
+        v3.scm,
+        v3.website,
+        v3.framework,
+        v3.preInstallNotes,
+        v3.postInstallNotes,
+        v3.postUninstallNotes,
+        v3.licenses,
+        v3.minDcosReleaseVersion,
+        v3.marathon,
+        v3.resource,
+        v3.config,
+        v3.command
+      ),
+        v3.releaseVersion)
+
+    Bijection.build[(V3Bundle, ReleaseVersion), V3Package](fwd)(rev)
+  }
+
+  implicit val BundleToPackage
+  : Bijection[(BundleDefinition, ReleaseVersion), PackageDefinition] = {
+    def fwd(bundlePair: (BundleDefinition, ReleaseVersion)): PackageDefinition = {
+      val (bundle, releaseVersion) = bundlePair
+      bundle match {
+        case v2: V2Bundle => (v2, releaseVersion).as[V2Package]
+        case v3: V3Bundle => (v3, releaseVersion).as[V3Package]
+      }
+    }
+
+    def rev(packageDefinition: PackageDefinition): (BundleDefinition, ReleaseVersion) = {
+      packageDefinition match {
+        case v2: V2Package => v2.as[(V2Bundle, ReleaseVersion)]
+        case v3: V3Package => v3.as[(V3Bundle, ReleaseVersion)]
+      }
+    }
+
+    Bijection.build[(BundleDefinition, PackageDefinition.ReleaseVersion), PackageDefinition](fwd)(rev)
+  }
 
   implicit val uriToString: Injection[Uri, String] = {
     Injection.build[Uri, String](_.toString)(s => Try(Uri.parse(s)))

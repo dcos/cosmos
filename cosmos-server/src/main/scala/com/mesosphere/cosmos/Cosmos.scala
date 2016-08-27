@@ -9,6 +9,7 @@ import com.mesosphere.cosmos.repository.ZooKeeperStorage
 import com.mesosphere.cosmos.rpc.v1.circe.MediaTypedDecoders._
 import com.mesosphere.cosmos.rpc.v1.circe.MediaTypedEncoders._
 import com.mesosphere.cosmos.rpc.v2.circe.MediaTypedEncoders._
+import com.mesosphere.cosmos.storage.{InMemoryPackageStorage, PackageStorage}
 import com.netaporter.uri.Uri
 import com.twitter.finagle.Service
 import com.twitter.finagle.http.{Request, Response, Status}
@@ -31,6 +32,8 @@ private[cosmos] final class Cosmos(
   listRepositoryHandler: EndpointHandler[rpc.v1.model.PackageRepositoryListRequest, rpc.v1.model.PackageRepositoryListResponse],
   addRepositoryHandler: EndpointHandler[rpc.v1.model.PackageRepositoryAddRequest, rpc.v1.model.PackageRepositoryAddResponse],
   deleteRepositoryHandler: EndpointHandler[rpc.v1.model.PackageRepositoryDeleteRequest, rpc.v1.model.PackageRepositoryDeleteResponse],
+  packagePublishHandler: EndpointHandler[rpc.v1.model.PublishRequest, rpc.v1.model.PublishResponse],
+  repositoryServeHandler: RepositoryServeHandler,
   capabilitiesHandler: CapabilitiesHandler
 )(implicit statsReceiver: StatsReceiver = NullStatsReceiver) {
 
@@ -82,6 +85,14 @@ private[cosmos] final class Cosmos(
     route(post("package" / "repository" / "delete"), deleteRepositoryHandler)(RequestReaders.standard)
   }
 
+  val packagePublish: Endpoint[Json] = {
+    route(post("package" / "publish"), packagePublishHandler)(RequestReaders.standard)
+  }
+
+  val repositoryServe: Endpoint[Json] = {
+    route(get("package" / "storage" / "repository"), repositoryServeHandler)(RequestReaders.noBody)
+  }
+
   val service: Service[Request, Response] = {
     val stats = statsReceiver.scope("errorFilter")
 
@@ -96,6 +107,8 @@ private[cosmos] final class Cosmos(
       :+: packageAddSource
       :+: packageDeleteSource
       :+: capabilities
+      :+: packagePublish
+      :+: repositoryServe
     )
       .handle {
         case ce: CosmosError =>
@@ -185,8 +198,9 @@ object Cosmos extends FinchServer {
       }
 
       val sourcesStorage = new ZooKeeperStorage(zkClient)()
+      val packageStorage = new InMemoryPackageStorage()
 
-      val cosmos = Cosmos(adminRouter, marathonPackageRunner, sourcesStorage, UniverseClient(adminRouter))
+      val cosmos = Cosmos(adminRouter, marathonPackageRunner, sourcesStorage, packageStorage, UniverseClient(adminRouter))
       cosmos.service
     }
     boot.get
@@ -196,6 +210,7 @@ object Cosmos extends FinchServer {
     adminRouter: AdminRouter,
     packageRunner: PackageRunner,
     sourcesStorage: PackageSourcesStorage,
+    packageStorage: PackageStorage,
     universeClient: UniverseClient
   )(implicit statsReceiver: StatsReceiver = NullStatsReceiver): Cosmos = {
 
@@ -215,6 +230,8 @@ object Cosmos extends FinchServer {
       new PackageRepositoryListHandler(sourcesStorage),
       new PackageRepositoryAddHandler(sourcesStorage),
       new PackageRepositoryDeleteHandler(sourcesStorage),
+      new PackagePublishHandler(packageStorage),
+      new RepositoryServeHandler(packageStorage),
       new CapabilitiesHandler
     )(statsReceiver)
   }

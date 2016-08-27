@@ -20,6 +20,9 @@ object Decoders {
     }
   }
 
+  implicit val decodePublishResponse: Decoder[PublishResponse] = deriveFor[PublishResponse].decoder
+  implicit val decodePublishRequest: Decoder[PublishRequest] = deriveFor[PublishRequest].decoder
+
   implicit val decodeSearchResult: Decoder[SearchResult] = deriveFor[SearchResult].decoder
 
   implicit val decodeDescribeRequest: Decoder[DescribeRequest] = deriveFor[DescribeRequest].decoder

@@ -1,26 +1,20 @@
 package com.mesosphere.cosmos.test
 
 import com.mesosphere.cosmos.http.RequestSession
-
 import java.io.IOException
 import java.nio.file._
 import java.nio.file.attribute.BasicFileAttributes
-
 import com.mesosphere.cosmos._
+import com.mesosphere.cosmos.converter.Common._
 import java.nio.ByteBuffer
 import java.nio.charset.StandardCharsets
-import java.util.Base64
-import cats.data.Xor
-import com.mesosphere.cosmos.thirdparty.marathon.model.MarathonApp
 import com.mesosphere.universe
+import com.mesosphere.universe.v3.model.PackageDefinition.ReleaseVersion
+import com.mesosphere.universe.v3.model._
 import com.netaporter.uri.Uri
 import com.twitter.bijection.Conversion.asMethod
 import io.circe.syntax._
-import io.circe.{Decoder, JsonObject}
-import org.scalatest.FreeSpec
-
-import scala.util.{Success, Try}
-
+import io.circe.JsonObject
 
 object TestUtil {
 
@@ -316,4 +310,16 @@ object TestUtil {
       ))
     ))
   )
+
+  val BundlePackagePairs: List[(BundleDefinition, PackageDefinition)] = (0 to 8).map { i =>
+    val (b, _) = TestUtil.MaximalV3ModelV2PackageDefinition.as[(V2Bundle, ReleaseVersion)]
+    val bundle = b.copy(name = "ThisIsAUniquelyNamedPackage" + (i / 3))
+    val pkg = (bundle, ReleaseVersion(i % 3).get).as[V2Package]
+    (bundle, pkg)
+  }.toList
+
+  def nameAndRelease(pkg: PackageDefinition): (String, ReleaseVersion) = pkg match {
+    case v2: V2Package => (v2.name, v2.releaseVersion)
+    case v3: V3Package => (v3.name, v3.releaseVersion)
+  }
 }

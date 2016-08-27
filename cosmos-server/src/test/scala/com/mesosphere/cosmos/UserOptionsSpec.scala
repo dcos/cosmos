@@ -7,6 +7,7 @@ import cats.data.Xor
 import com.mesosphere.cosmos.handler._
 import com.mesosphere.cosmos.http.{MediaTypes, RequestSession}
 import com.mesosphere.cosmos.rpc.v1.circe.Encoders._
+import com.mesosphere.cosmos.storage.InMemoryPackageStorage
 import com.mesosphere.cosmos.thirdparty.marathon.circe.Decoders._
 import com.mesosphere.cosmos.thirdparty.marathon.model._
 import com.mesosphere.universe
@@ -53,6 +54,7 @@ final class UserOptionsSpec extends FreeSpec with TableDrivenPropertyChecks {
         val packages = Map(packageName -> packageDefinition)
         val packageCache = MemoryPackageCache(packages, Uri.parse("in/memory/source"))
         val packageRunner = new RecordingPackageRunner
+        val packageStorage = new InMemoryPackageStorage
 
         val cosmos = new Cosmos(
           constHandler(rpc.v1.model.UninstallResponse(Nil)),
@@ -65,6 +67,8 @@ final class UserOptionsSpec extends FreeSpec with TableDrivenPropertyChecks {
           constHandler(rpc.v1.model.PackageRepositoryListResponse(Nil)),
           constHandler(rpc.v1.model.PackageRepositoryAddResponse(Nil)),
           constHandler(rpc.v1.model.PackageRepositoryDeleteResponse(Nil)),
+          new PackagePublishHandler(packageStorage),
+          new RepositoryServeHandler(packageStorage),
           new CapabilitiesHandler
         )
         val request = RequestBuilder()

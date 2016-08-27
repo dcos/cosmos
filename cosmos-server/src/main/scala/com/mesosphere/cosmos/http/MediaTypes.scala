@@ -12,6 +12,9 @@ object MediaTypes {
   val applicationJson = MediaType("application", MediaTypeSubType("json"), Map("charset" -> "utf-8"))
   val applicationZip = MediaType("application", MediaTypeSubType("zip"))
 
+  val PublishRequest = vnd("publish-request")
+  val PublishResponse = vnd("publish-response")
+
   val UninstallRequest = vnd("uninstall-request")
   val UninstallResponse = vnd("uninstall-response")
 
