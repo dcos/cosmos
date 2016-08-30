@@ -6,7 +6,7 @@ import com.mesosphere.cosmos.http.MediaTypes
 import com.mesosphere.cosmos.test.CosmosIntegrationTestClient._
 import com.twitter.finagle.http.Status
 import com.twitter.io.Buf
-import io.circe.parse._
+import io.circe.jawn._
 import io.circe.syntax._
 import org.scalatest.FreeSpec
 

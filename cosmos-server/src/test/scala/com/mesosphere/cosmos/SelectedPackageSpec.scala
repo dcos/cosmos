@@ -13,7 +13,7 @@ import com.mesosphere.universe.v2.circe.Encoders._
 import com.mesosphere.universe.v2.model._
 import com.twitter.bijection.Conversion.asMethod
 import com.twitter.util.{Await, Future}
-import io.circe.parse._
+import io.circe.jawn.decode
 import io.circe.syntax._
 import io.circe.{Decoder, Encoder, Printer}
 import org.mockito.Mockito._

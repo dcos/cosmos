@@ -11,7 +11,7 @@ import com.mesosphere.cosmos.test.CosmosIntegrationTestClient._
 import com.mesosphere.universe.common.circe.Encoders._
 import com.netaporter.uri.Uri
 import com.twitter.finagle.http._
-import io.circe.parse._
+import io.circe.jawn._
 import io.circe.syntax._
 import io.circe.{Encoder, Json, JsonObject}
 import org.scalatest.concurrent.Eventually

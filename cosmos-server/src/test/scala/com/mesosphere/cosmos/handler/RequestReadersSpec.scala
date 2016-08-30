@@ -4,11 +4,12 @@ import com.mesosphere.cosmos.circe.{DispatchingMediaTypedEncoder, MediaTypedDeco
 import com.mesosphere.cosmos.http.{Authorization, MediaType, MediaTypes, RequestSession}
 import com.twitter.finagle.http.RequestBuilder
 import com.twitter.io.Buf
-import com.twitter.util.{Await, Return, Try}
+import com.twitter.util.{Await, Return, Try, Future}
 import io.circe.syntax._
 import io.circe.{Encoder, Json}
-import io.finch.RequestReader
+import io.finch.{Endpoint,Output,Input}
 import org.scalatest.FreeSpec
+import cats.Eval
 
 final class RequestReadersSpec extends FreeSpec {
 
@@ -86,7 +87,7 @@ final class RequestReadersSpec extends FreeSpec {
             MediaTypedEncoder(Encoder.instance[Int](_ => 2.asJson), MediaTypes.applicationJson)
           ))
           val Return((_, responseEncoder)) = runReader(produces = produces)
-          assertResult(Json.int(1))(responseEncoder.encoder(42))
+          assertResult(Json.fromInt(1))(responseEncoder.encoder(42))
         }
       }
     }
@@ -95,7 +96,7 @@ final class RequestReadersSpec extends FreeSpec {
       accept: Option[String] = Some(MediaTypes.applicationJson.show),
       authorization: Option[String] = None,
       produces: DispatchingMediaTypedEncoder[Res] = DispatchingMediaTypedEncoder(Seq(
-        MediaTypedEncoder(Encoder.instance[Res](_ => Json.empty), MediaTypes.applicationJson)
+        MediaTypedEncoder(Encoder.instance[Res](_ => Json.Null), MediaTypes.applicationJson)
       ))
     ): Try[(RequestSession, MediaTypedEncoder[Res])] = {
       val request = RequestBuilder()
@@ -103,10 +104,11 @@ final class RequestReadersSpec extends FreeSpec {
         .setHeader("Accept", accept.toSeq)
         .setHeader("Authorization", authorization.toSeq)
         .setHeader("Content-Type", MediaTypes.applicationJson.show)
-        .buildPost(Buf.Utf8(Json.empty.noSpaces))
+        .buildPost(Buf.Utf8(Json.Null.noSpaces))
 
       val reader = factory(produces)
-      Await.result(reader(request).liftToTry).map { context =>
+      val res = reader(Input(request))
+      Try(unpack(res.get._2)).map { context => 
         (context.session, context.responseEncoder)
       }
     }
@@ -118,33 +120,38 @@ final class RequestReadersSpec extends FreeSpec {
 object RequestReadersSpec {
 
   /** This factory trait is needed because the `Req` type is different for each factory function in
-    * [[RequestReaders]], but the `Res` type can be different for each test case in `baseReader`.
+    * [[RequestValidators]], but the `Res` type can be different for each test case in `baseReader`.
     *
     * Thus, we cannot just use a factory method, because that would couple `Req` and `Res` together.
     */
   trait RequestReaderFactory[Req] {
     def apply[Res](
       produces: DispatchingMediaTypedEncoder[Res]
-    ): RequestReader[EndpointContext[Req, Res]]
+    ): Endpoint[EndpointContext[Req, Res]]
   }
 
   object NoBodyReaderFactory extends RequestReaderFactory[Unit] {
     override def apply[Res](
       produces: DispatchingMediaTypedEncoder[Res]
-    ): RequestReader[EndpointContext[Unit, Res]] = {
-      RequestReaders.noBody(produces)
+    ): Endpoint[EndpointContext[Unit, Res]] = {
+      RequestValidators.noBody(produces)
     }
   }
 
   object StandardReaderFactory extends RequestReaderFactory[String] {
     override def apply[Res](
       produces: DispatchingMediaTypedEncoder[Res]
-    ): RequestReader[EndpointContext[String, Res]] = {
-      RequestReaders.standard(
+    ): Endpoint[EndpointContext[String, Res]] = {
+      RequestValidators.standard(
         accepts = MediaTypedDecoder.apply(MediaTypes.applicationJson),
         produces = produces
       )
     }
   }
 
+  def unpack[A](result: Eval[Future[Output[A]]]): A = {
+    val future = result.value
+    val output = Await.result(future)
+    output.value
+  }
 }

@@ -3,7 +3,7 @@ package com.mesosphere.cosmos.jsonschema
 import cats.data.Xor
 import com.fasterxml.jackson.databind.JsonNode
 import com.fasterxml.jackson.databind.node.JsonNodeFactory
-import io.circe.parse.parse
+import io.circe.jawn.parse
 import io.circe.{Decoder, Encoder, Json}
 
 import scala.collection.JavaConverters._
@@ -27,9 +27,10 @@ private[jsonschema] object Jackson {
       jsonNull = JsonNodeFactory.instance.nullNode,
       jsonBoolean = JsonNodeFactory.instance.booleanNode,
       jsonNumber = { jsonNumber =>
-        jsonNumber.toBigInt match {
-          case Some(bigInt) => JsonNodeFactory.instance.numberNode(bigInt.underlying())
-          case _ => JsonNodeFactory.instance.numberNode(jsonNumber.toBigDecimal.underlying())
+        (jsonNumber.toBigInt, jsonNumber.toBigDecimal) match {
+          case (Some(bigInt), _) => JsonNodeFactory.instance.numberNode(bigInt.underlying())
+          case (_, Some(bigDec)) => JsonNodeFactory.instance.numberNode(bigDec.underlying())
+          case _ => throw new NumberFormatException
         }
       },
       jsonString = JsonNodeFactory.instance.textNode,

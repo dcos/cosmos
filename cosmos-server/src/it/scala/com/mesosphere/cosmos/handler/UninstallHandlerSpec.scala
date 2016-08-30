@@ -14,7 +14,7 @@ import com.netaporter.uri.dsl._
 import com.twitter.finagle.http.Status
 import com.twitter.io.Buf
 import com.twitter.util.Await
-import io.circe.parse._
+import io.circe.jawn._
 import org.scalatest.FreeSpec
 
 final class UninstallHandlerSpec extends FreeSpec {

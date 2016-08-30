@@ -18,7 +18,7 @@ import com.netaporter.uri.Uri
 import com.twitter.finagle.stats.{NullStatsReceiver, Stat, StatsReceiver}
 import com.twitter.util._
 import io.circe.Encoder
-import io.circe.parse._
+import io.circe.jawn.decode
 import io.circe.syntax._
 import org.apache.curator.framework.CuratorFramework
 import org.apache.curator.framework.api.{BackgroundCallback, CuratorEvent, CuratorEventType}

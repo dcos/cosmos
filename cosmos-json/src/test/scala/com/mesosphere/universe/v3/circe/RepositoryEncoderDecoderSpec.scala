@@ -6,7 +6,7 @@ import com.mesosphere.universe.v3.circe.Encoders._
 import com.mesosphere.universe.v3.model.PackageDefinition._
 import com.mesosphere.universe.v3.model._
 import io.circe.Json
-import io.circe.parse._
+import io.circe.jawn.parse
 import io.circe.syntax._
 import org.scalatest.FreeSpec
 
@@ -87,7 +87,7 @@ class RepositoryEncoderDecoderSpec extends FreeSpec {
 
     "decode error when package has unsupported packagingVersion" in {
       val json = Json.obj(
-        "packages" -> Json.array(
+        "packages" -> Json.arr(
           Json.obj(
             "packagingVersion" -> "3.1".asJson,
             "name" -> "bad-package".asJson,
@@ -100,7 +100,7 @@ class RepositoryEncoderDecoderSpec extends FreeSpec {
         )
       )
 
-      val expectedErrorMessage = "Expected one of [2.0, 3.0] for packaging version, but found [3.1]: El(DownField(packagingVersion),true),El(DownArray,true),El(DownField(packages),true)"
+      val expectedErrorMessage = "Expected one of [2.0, 3.0] for packaging version, but found [3.1]: El(DownField(packagingVersion),true,false),El(DownArray,true,false),El(DownField(packages),true,false)"
       val Xor.Left(decodingFailure) = decodeRepository.decodeJson(json)
 
       assertResult(expectedErrorMessage)(decodingFailure.getMessage())
@@ -108,7 +108,7 @@ class RepositoryEncoderDecoderSpec extends FreeSpec {
 
     "decode error when package has unsupported tag format" in {
       val json = Json.obj(
-        "packages" -> Json.array(
+        "packages" -> Json.arr(
           Json.obj(
             "packagingVersion" -> "3.0".asJson,
             "name" -> "bad-package".asJson,
@@ -121,7 +121,7 @@ class RepositoryEncoderDecoderSpec extends FreeSpec {
         )
       )
 
-      val expectedErrorMessage = "Value 'bad tag' does not conform to expected format ^[^\\s]+$: El(DownArray,true),El(DownField(tags),true),El(DownArray,true),El(DownField(packages),true)"
+      val expectedErrorMessage = "Value 'bad tag' does not conform to expected format ^[^\\s]+$: El(DownArray,true,false),El(DownField(tags),true,false),El(DownArray,true,false),El(DownField(packages),true,false)"
       val Xor.Left(decodingFailure) = decodeRepository.decodeJson(json)
 
       assertResult(expectedErrorMessage)(decodingFailure.getMessage())
@@ -130,7 +130,7 @@ class RepositoryEncoderDecoderSpec extends FreeSpec {
     "decode error when package has unsupported releaseVersion value" in {
       val releaseVersion = -1
       val json = Json.obj(
-        "packages" -> Json.array(
+        "packages" -> Json.arr(
           Json.obj(
             "packagingVersion" -> "3.0".asJson,
             "name" -> "bad-package".asJson,
@@ -143,7 +143,7 @@ class RepositoryEncoderDecoderSpec extends FreeSpec {
         )
       )
 
-      val expectedErrorMessage = "Expected integer value >= 0 for release version, but found [-1]: El(DownField(releaseVersion),true),El(DownArray,true),El(DownField(packages),true)"
+      val expectedErrorMessage = "Expected integer value >= 0 for release version, but found [-1]: El(DownField(releaseVersion),true,false),El(DownArray,true,false),El(DownField(packages),true,false)"
       val Xor.Left(decodingFailure) = decodeRepository.decodeJson(json)
 
       assertResult(expectedErrorMessage)(decodingFailure.getMessage())

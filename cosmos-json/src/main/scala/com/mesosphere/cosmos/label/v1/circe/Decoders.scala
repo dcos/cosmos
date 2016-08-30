@@ -8,7 +8,7 @@ import io.circe.generic.semiauto._
 object Decoders {
 
   implicit val decodeLabelV1PackageMetadata: Decoder[label.v1.model.PackageMetadata] = {
-    deriveFor[label.v1.model.PackageMetadata].decoder
+    deriveDecoder[label.v1.model.PackageMetadata]
   }
 
 }

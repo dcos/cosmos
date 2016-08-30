@@ -24,7 +24,7 @@ case class MediaType(
   parameters: Map[String, String] = Map.empty
 ) {
 
-  def show: String = {
+  val show: String = {
     val t = subType match {
       case MediaTypeSubType(st, Some(suf)) =>
         s"${`type`}/$st+$suf"

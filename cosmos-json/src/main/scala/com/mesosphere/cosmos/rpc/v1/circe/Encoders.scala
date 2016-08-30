@@ -8,74 +8,72 @@ import com.mesosphere.universe.v2.circe.Encoders._
 import com.mesosphere.universe.v3.circe.Encoders.{encodeImages => encodeV3Images}
 import com.mesosphere.universe.v3.circe.Encoders.{encodeLicense => encodeV3License}
 import com.mesosphere.universe.v3.circe.Encoders._
+import io.circe._
 import io.circe.generic.semiauto._
-import io.circe.{Encoder, JsonObject, ObjectEncoder}
+import io.circe.syntax._
 
 object Encoders {
 
-  implicit val encodeVersionsMap: Encoder[Map[universe.v3.model.PackageDefinition.Version, universe.v3.model.PackageDefinition.ReleaseVersion]] = {
-    Encoder.encodeMapLike[Map, universe.v3.model.PackageDefinition.ReleaseVersion].contramap { versions =>
-      versions.map { case (packageVersion, releaseVersion) =>
-          packageVersion.toString -> releaseVersion
-      }
-    }
+  implicit val keyEncodePackageDefinitionVersion: KeyEncoder[universe.v3.model.PackageDefinition.Version] = {
+    KeyEncoder.instance(_.toString)
+  }
+  implicit val encodePackageDefinitionReleaseVersion: Encoder[universe.v3.model.PackageDefinition.ReleaseVersion] = {
+    Encoder.instance { rv => rv.value.asJson }
   }
 
-  implicit val encodePublishResponse: Encoder[PublishResponse] = deriveFor[PublishResponse].encoder
-  implicit val encodePublishRequest: Encoder[PublishRequest] = deriveFor[PublishRequest].encoder
+  implicit val encodeSearchResult: Encoder[SearchResult] = deriveEncoder[SearchResult]
 
-  implicit val encodeSearchResult: Encoder[SearchResult] = deriveFor[SearchResult].encoder
+  implicit val encodeDescribeRequest: Encoder[DescribeRequest] = deriveEncoder[DescribeRequest]
+  implicit val encodeSearchRequest: Encoder[SearchRequest] = deriveEncoder[SearchRequest]
+  implicit val encodeSearchResponse: Encoder[SearchResponse] = deriveEncoder[SearchResponse]
+  implicit val encodeInstallRequest: Encoder[InstallRequest] = deriveEncoder[InstallRequest]
+  implicit val encodeInstallResponse: Encoder[InstallResponse] = deriveEncoder[InstallResponse]
+  implicit val encodeUninstallRequest: Encoder[UninstallRequest] = deriveEncoder[UninstallRequest]
+  implicit val encodeUninstallResponse: Encoder[UninstallResponse] = deriveEncoder[UninstallResponse]
+  implicit val encodeUninstallResult: Encoder[UninstallResult] = deriveEncoder[UninstallResult]
 
-  implicit val encodeDescribeRequest: Encoder[DescribeRequest] = deriveFor[DescribeRequest].encoder
-  implicit val encodeSearchRequest: Encoder[SearchRequest] = deriveFor[SearchRequest].encoder
-  implicit val encodeSearchResponse: Encoder[SearchResponse] = deriveFor[SearchResponse].encoder
-  implicit val encodeInstallRequest: Encoder[InstallRequest] = deriveFor[InstallRequest].encoder
-  implicit val encodeInstallResponse: Encoder[InstallResponse] = deriveFor[InstallResponse].encoder
-  implicit val encodeUninstallRequest: Encoder[UninstallRequest] = deriveFor[UninstallRequest].encoder
-  implicit val encodeUninstallResponse: Encoder[UninstallResponse] = deriveFor[UninstallResponse].encoder
-  implicit val encodeUninstallResult: Encoder[UninstallResult] = deriveFor[UninstallResult].encoder
+  implicit val encodeRenderRequest: Encoder[RenderRequest] = deriveEncoder[RenderRequest]
+  implicit val encodeRenderResponse: Encoder[RenderResponse] = deriveEncoder[RenderResponse]
 
-  implicit val encodeRenderRequest: Encoder[RenderRequest] = deriveFor[RenderRequest].encoder
-  implicit val encodeRenderResponse: Encoder[RenderResponse] = deriveFor[RenderResponse].encoder
+  implicit val encodeDescribeResponse: Encoder[DescribeResponse] = deriveEncoder[DescribeResponse]
+  implicit val encodeListVersionsRequest: Encoder[ListVersionsRequest] = deriveEncoder[ListVersionsRequest]
+  implicit val encodeListVersionsResponse: Encoder[ListVersionsResponse] = deriveEncoder[ListVersionsResponse]
 
-  implicit val encodeDescribeResponse: Encoder[DescribeResponse] = deriveFor[DescribeResponse].encoder
-  implicit val encodeListVersionsRequest: Encoder[ListVersionsRequest] = deriveFor[ListVersionsRequest].encoder
-  implicit val encodeListVersionsResponse: Encoder[ListVersionsResponse] = ObjectEncoder.instance( response => {
-    JsonObject.singleton("results", encodePackageDetailsVersionToReleaseVersionMap(response.results))
-  })
-
-  implicit val encodeListRequest: Encoder[ListRequest] = deriveFor[ListRequest].encoder
-  implicit val encodeListResponse: Encoder[ListResponse] = deriveFor[ListResponse].encoder
-  implicit val encodeInstallation: Encoder[Installation] = deriveFor[Installation].encoder
+  implicit val encodeListRequest: Encoder[ListRequest] = deriveEncoder[ListRequest]
+  implicit val encodeListResponse: Encoder[ListResponse] = deriveEncoder[ListResponse]
+  implicit val encodeInstallation: Encoder[Installation] = deriveEncoder[Installation]
   implicit val encodeInstalledPackageInformationPackageDetails: Encoder[InstalledPackageInformationPackageDetails] = {
     import com.mesosphere.universe.v2.circe.Encoders._ // import implicits at as narrow a scope as possible
-    deriveFor[InstalledPackageInformationPackageDetails].encoder
+    deriveEncoder[InstalledPackageInformationPackageDetails]
   }
-  implicit val encodePackageInformation: Encoder[InstalledPackageInformation] = deriveFor[InstalledPackageInformation].encoder
+  implicit val encodePackageInformation: Encoder[InstalledPackageInformation] = deriveEncoder[InstalledPackageInformation]
 
-  implicit val encodeCapabilitiesResponse: Encoder[CapabilitiesResponse] = deriveFor[CapabilitiesResponse].encoder
-  implicit val encodeCapability: Encoder[Capability] = deriveFor[Capability].encoder
+  implicit val encodeCapabilitiesResponse: Encoder[CapabilitiesResponse] = deriveEncoder[CapabilitiesResponse]
+  implicit val encodeCapability: Encoder[Capability] = deriveEncoder[Capability]
 
   implicit val encodePackageRepositoryListRequest: Encoder[PackageRepositoryListRequest] = {
-    deriveFor[PackageRepositoryListRequest].encoder
+    deriveEncoder[PackageRepositoryListRequest]
   }
   implicit val encodePackageRepositoryListResponse: Encoder[PackageRepositoryListResponse] = {
-    deriveFor[PackageRepositoryListResponse].encoder
+    deriveEncoder[PackageRepositoryListResponse]
   }
   implicit val encodePackageRepository: Encoder[PackageRepository] = {
-    deriveFor[PackageRepository].encoder
+    deriveEncoder[PackageRepository]
   }
   implicit val encodePackageRepositoryAddRequest: Encoder[PackageRepositoryAddRequest] = {
-    deriveFor[PackageRepositoryAddRequest].encoder
+    deriveEncoder[PackageRepositoryAddRequest]
   }
   implicit val encodePackageRepositoryAddResponse: Encoder[PackageRepositoryAddResponse] = {
-    deriveFor[PackageRepositoryAddResponse].encoder
+    deriveEncoder[PackageRepositoryAddResponse]
   }
   implicit val encodePackageRepositoryDeleteRequest: Encoder[PackageRepositoryDeleteRequest] = {
-    deriveFor[PackageRepositoryDeleteRequest].encoder
+    deriveEncoder[PackageRepositoryDeleteRequest]
   }
   implicit val encodePackageRepositoryDeleteResponse: Encoder[PackageRepositoryDeleteResponse] = {
-    deriveFor[PackageRepositoryDeleteResponse].encoder
+    deriveEncoder[PackageRepositoryDeleteResponse]
   }
+
+  implicit val encodePublishResponse: Encoder[PublishResponse] = deriveEncoder[PublishResponse]
+  implicit val encodePublishRequest: Encoder[PublishRequest] = deriveEncoder[PublishRequest]
 
 }

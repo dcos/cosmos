@@ -1,7 +1,7 @@
 package com.mesosphere.universe.common
 
 
-import io.circe.parse.decode
+import io.circe.jawn.decode
 import java.util.Base64
 import java.nio.charset.StandardCharsets
 import io.circe.Decoder

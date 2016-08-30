@@ -13,7 +13,7 @@ import com.mesosphere.universe.v2.model._
 import com.twitter.finagle.http._
 import com.twitter.io.Buf
 import io.circe.Json
-import io.circe.parse._
+import io.circe.jawn._
 import io.circe.syntax._
 import org.scalatest.FreeSpec
 import org.scalatest.prop.TableDrivenPropertyChecks

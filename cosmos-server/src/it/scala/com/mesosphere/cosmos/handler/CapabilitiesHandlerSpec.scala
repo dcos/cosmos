@@ -6,7 +6,7 @@ import com.mesosphere.cosmos.rpc.v1.circe.Decoders._
 import com.mesosphere.cosmos.rpc.v1.model.{CapabilitiesResponse, Capability}
 import com.mesosphere.cosmos.test.CosmosIntegrationTestClient._
 import com.twitter.finagle.http.Status
-import io.circe.parse._
+import io.circe.jawn._
 import org.scalatest.FreeSpec
 
 final class CapabilitiesHandlerSpec extends FreeSpec {

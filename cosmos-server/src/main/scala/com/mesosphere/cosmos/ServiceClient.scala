@@ -8,7 +8,7 @@ import com.twitter.finagle.http.{Request, RequestBuilder, Response, Status}
 import com.twitter.io.Buf
 import com.twitter.util.Future
 import io.circe.Json
-import io.circe.parse._
+import io.circe.jawn._
 import org.jboss.netty.handler.codec.http.HttpMethod
 
 abstract class ServiceClient(baseUri: Uri) {

@@ -7,10 +7,10 @@ import io.circe.syntax._
 
 object Encoders {
   implicit val encodeAppId: Encoder[AppId] = Encoder.instance(_.toString.asJson)
-  implicit val encodeMarathonApp: Encoder[MarathonApp] = deriveFor[MarathonApp].encoder
-  implicit val encodeMarathonAppContainer: Encoder[MarathonAppContainer] = deriveFor[MarathonAppContainer].encoder
-  implicit val encodeMarathonAppContainerDocker: Encoder[MarathonAppContainerDocker] = deriveFor[MarathonAppContainerDocker].encoder
-  implicit val encodeMarathonAppResponse: Encoder[MarathonAppResponse] = deriveFor[MarathonAppResponse].encoder
-  implicit val encodeMarathonAppsResponse: Encoder[MarathonAppsResponse] = deriveFor[MarathonAppsResponse].encoder
-  implicit val encodeMarathonError: Encoder[MarathonError] = deriveFor[MarathonError].encoder
+  implicit val encodeMarathonApp: Encoder[MarathonApp] = deriveEncoder[MarathonApp]
+  implicit val encodeMarathonAppContainer: Encoder[MarathonAppContainer] = deriveEncoder[MarathonAppContainer]
+  implicit val encodeMarathonAppContainerDocker: Encoder[MarathonAppContainerDocker] = deriveEncoder[MarathonAppContainerDocker]
+  implicit val encodeMarathonAppResponse: Encoder[MarathonAppResponse] = deriveEncoder[MarathonAppResponse]
+  implicit val encodeMarathonAppsResponse: Encoder[MarathonAppsResponse] = deriveEncoder[MarathonAppsResponse]
+  implicit val encodeMarathonError: Encoder[MarathonError] = deriveEncoder[MarathonError]
 }

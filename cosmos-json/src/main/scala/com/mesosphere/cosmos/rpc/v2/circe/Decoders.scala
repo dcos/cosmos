@@ -8,6 +8,6 @@ import io.circe.generic.semiauto._
 
 object Decoders {
 
-  implicit val decodeV2InstallResponse: Decoder[InstallResponse] = deriveFor[InstallResponse].decoder
+  implicit val decodeV2InstallResponse: Decoder[InstallResponse] = deriveDecoder[InstallResponse]
 
 }

@@ -7,7 +7,7 @@ import com.google.common.io.CharStreams
 import com.mesosphere.cosmos.rpc.v1.circe.Decoders._
 import com.mesosphere.cosmos.rpc.v1.model.PackageRepository
 import com.twitter.util.Try
-import io.circe.parse._
+import io.circe.jawn.decode
 
 private[repository] class DefaultRepositories private[repository](resourceName: String) {
   private val repos: Try[Xor[io.circe.Error, List[PackageRepository]]] = Try {

@@ -77,3 +77,4 @@ project/boot/
 .cache
 
 dcos-image/target/
+tmp/

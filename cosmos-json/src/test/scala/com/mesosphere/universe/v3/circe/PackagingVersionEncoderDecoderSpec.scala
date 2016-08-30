@@ -15,20 +15,20 @@ final class PackagingVersionEncoderDecoderSpec extends FreeSpec {
 
     "for V2PackagingVersion as PackagingVersion" in {
       val version: PackagingVersion = V2PackagingVersion
-      assertResult(Json.string("2.0"))(version.asJson)
+      assertResult(Json.fromString("2.0"))(version.asJson)
     }
 
     "for V3PackagingVersion as PackagingVersion" - {
       val version: PackagingVersion = V3PackagingVersion
-      assertResult(Json.string("3.0"))(version.asJson)
+      assertResult(Json.fromString("3.0"))(version.asJson)
     }
 
     "for V2PackagingVersion as V2PackagingVersion" - {
-      assertResult(Json.string("2.0"))(V2PackagingVersion.asJson)
+      assertResult(Json.fromString("2.0"))(V2PackagingVersion.asJson)
     }
 
     "for V3PackagingVersion as V3PackagingVersion" - {
-      assertResult(Json.string("3.0"))(V3PackagingVersion.asJson)
+      assertResult(Json.fromString("3.0"))(V3PackagingVersion.asJson)
     }
 
   }
@@ -37,18 +37,18 @@ final class PackagingVersionEncoderDecoderSpec extends FreeSpec {
 
     "successfully decode version 2.0" in {
       assertResult(Xor.Right(V2PackagingVersion)) {
-        Decoder[PackagingVersion].decodeJson(Json.string("2.0"))
+        Decoder[PackagingVersion].decodeJson(Json.fromString("2.0"))
       }
     }
 
     "successfully decode version 3.0" in {
       assertResult(Xor.Right(V3PackagingVersion)) {
-        Decoder[PackagingVersion].decodeJson(Json.string("3.0"))
+        Decoder[PackagingVersion].decodeJson(Json.fromString("3.0"))
       }
     }
 
     "fail to decode any other string value" in {
-      val Xor.Left(failure) = Decoder[PackagingVersion].decodeJson(Json.string("3.1"))
+      val Xor.Left(failure) = Decoder[PackagingVersion].decodeJson(Json.fromString("3.1"))
       assertResult("Expected one of [2.0, 3.0] for packaging version, but found [3.1]") {
         failure.message
       }
@@ -62,17 +62,17 @@ final class PackagingVersionEncoderDecoderSpec extends FreeSpec {
 
     "successfully decode version 2.0" in {
       assertResult(Xor.Right(V2PackagingVersion)) {
-        Decoder[V2PackagingVersion.type].decodeJson(Json.string("2.0"))
+        Decoder[V2PackagingVersion.type].decodeJson(Json.fromString("2.0"))
       }
     }
 
     "fail to decode version 3.0" in {
-      val Xor.Left(failure) = Decoder[V2PackagingVersion.type].decodeJson(Json.string("3.0"))
+      val Xor.Left(failure) = Decoder[V2PackagingVersion.type].decodeJson(Json.fromString("3.0"))
       assertResult("Expected value [2.0] for packaging version, but found [3.0]")(failure.message)
     }
 
     "fail to decode any other value" in {
-      val Xor.Left(failure) = Decoder[V2PackagingVersion.type].decodeJson(Json.string("2.1"))
+      val Xor.Left(failure) = Decoder[V2PackagingVersion.type].decodeJson(Json.fromString("2.1"))
       assertResult("Expected value [2.0] for packaging version, but found [2.1]")(failure.message)
     }
 
@@ -84,17 +84,17 @@ final class PackagingVersionEncoderDecoderSpec extends FreeSpec {
 
     "successfully decode version 3.0" in {
       assertResult(Xor.Right(V3PackagingVersion)) {
-        Decoder[V3PackagingVersion.type].decodeJson(Json.string("3.0"))
+        Decoder[V3PackagingVersion.type].decodeJson(Json.fromString("3.0"))
       }
     }
 
     "fail to decode version 2.0" in {
-      val Xor.Left(failure) = Decoder[V3PackagingVersion.type].decodeJson(Json.string("2.0"))
+      val Xor.Left(failure) = Decoder[V3PackagingVersion.type].decodeJson(Json.fromString("2.0"))
       assertResult("Expected value [3.0] for packaging version, but found [2.0]")(failure.message)
     }
 
     "fail to decode any other value" in {
-      val Xor.Left(failure) = Decoder[V3PackagingVersion.type].decodeJson(Json.string("4.0"))
+      val Xor.Left(failure) = Decoder[V3PackagingVersion.type].decodeJson(Json.fromString("4.0"))
       assertResult("Expected value [3.0] for packaging version, but found [4.0]")(failure.message)
     }
 
@@ -105,7 +105,7 @@ final class PackagingVersionEncoderDecoderSpec extends FreeSpec {
   private[this] def failedDecodeOnNonString[A](implicit decoder: Decoder[A]): Unit = {
 
     "fail to decode any non-string JSON value" in {
-      val Xor.Left(failure) = decoder.decodeJson(Json.numberOrNull(3.1))
+      val Xor.Left(failure) = decoder.decodeJson(Json.fromDoubleOrNull(3.1))
       assertResult("String value expected")(failure.message)
     }
 

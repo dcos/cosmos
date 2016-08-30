@@ -10,7 +10,7 @@ import com.twitter.finagle.http.RequestConfig.Yes
 import com.twitter.finagle.http._
 import com.twitter.io.Buf
 import com.twitter.util.{Await, Future, Try}
-import io.circe.parse._
+import io.circe.jawn._
 import io.circe.syntax._
 import io.circe.{Decoder, Encoder}
 import org.scalatest.Matchers
