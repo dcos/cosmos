@@ -1,44 +1,44 @@
 package com.mesosphere.cosmos.handler
 
 import com.mesosphere.cosmos.circe.{DispatchingMediaTypedEncoder, MediaTypedDecoder, MediaTypedEncoder}
-import com.mesosphere.cosmos.http.{Authorization, MediaType, MediaTypes, RequestSession}
+import com.mesosphere.cosmos.http._
 import com.twitter.finagle.http.RequestBuilder
 import com.twitter.io.Buf
-import com.twitter.util.{Await, Return, Try, Future}
+import com.twitter.util.{Await, Future, Return, Try}
 import io.circe.syntax._
 import io.circe.{Encoder, Json}
-import io.finch.{Endpoint,Output,Input}
+import io.finch.{Endpoint, Input, Output}
 import org.scalatest.FreeSpec
 import cats.Eval
 
-final class RequestReadersSpec extends FreeSpec {
+final class RequestValidatorsSpec extends FreeSpec {
 
-  import RequestReadersSpec._
+  import RequestValidatorsSpec._
 
-  "The RequestReader built by RequestReaders.noBody should" - {
+  "The RequestValidator built by RequestValidators.noBody should" - {
 
-    behave like baseReader(factory = NoBodyReaderFactory)
-
-  }
-
-  "The RequestReader built by RequestReaders.standard should" - {
-
-    behave like baseReader(factory = StandardReaderFactory)
+    behave like baseValidator(factory = NoBodyReaderFactory)
 
   }
 
-  def baseReader[Req](factory: RequestReaderFactory[Req]): Unit = {
+  "The RequestValidator built by RequestValidators.standard should" - {
+
+    behave like baseValidator(factory = StandardReaderFactory)
+
+  }
+
+  def baseValidator[Req](factory: RequestReaderFactory[Req]): Unit = {
 
     "include the Authorization header in the return value if it was included in the request" - {
       "to accurately forward the header's state to other services" in {
-        val Return((requestSession, _)) = runReader(authorization = Some("53cr37"))
+        val Return((requestSession, _)) = evaluateEndpoint(authorization = Some("53cr37"))
         assertResult(RequestSession(Some(Authorization("53cr37"))))(requestSession)
       }
     }
 
     "omit the Authorization header from the return value if it was omitted from the request" - {
       "to accurately forward the header's state to other services" in {
-        val Return((requestSession, _)) = runReader(authorization = None)
+        val Return((requestSession, _)) = evaluateEndpoint(authorization = None)
         assertResult(RequestSession(None))(requestSession)
       }
     }
@@ -46,22 +46,22 @@ final class RequestReadersSpec extends FreeSpec {
     "fail if the Accept header is not a value we support" - {
       "(because we can only encode the response to one of the supported formats)" - {
         "the Accept header is missing" in {
-          val result = runReader(accept = None)
+          val result = evaluateEndpoint(accept = None)
           assert(result.isThrow)
         }
 
         "the Accept header cannot be decoded as a MediaType" in {
-          val result = runReader(accept = Some("---not-a-media-type---"))
+          val result = evaluateEndpoint(accept = Some("---not-a-media-type---"))
           assert(result.isThrow)
         }
 
         "the Accept header is not compatible with a MediaType in `produces`" - {
           "where `produces` is empty" in {
-            val result = runReader(produces = DispatchingMediaTypedEncoder(Seq.empty))
+            val result = evaluateEndpoint(produces = DispatchingMediaTypedEncoder(Set.empty[MediaTypedEncoder[String]]))
             assert(result.isThrow)
           }
           "where `produces` contains only incompatible header values" in {
-            val result = runReader(accept = Some("text/plain"))
+            val result = evaluateEndpoint(accept = Some("text/plain"))
             assert(result.isThrow)
           }
         }
@@ -72,30 +72,47 @@ final class RequestReadersSpec extends FreeSpec {
       "include the corresponding Content-Type in the return value" - {
         "so that it can be included as a header in the response" in {
           val mediaType = MediaType("application", "json")
-          val encoders = Seq(MediaTypedEncoder(implicitly[Encoder[Unit]], mediaType))
+          val encoders = Set(MediaTypedEncoder(implicitly[Encoder[Unit]], mediaType))
           val produces = DispatchingMediaTypedEncoder(encoders)
-          val Return((_, responseEncoder)) = runReader(produces = produces)
+          val (_, responseEncoder) = evaluateEndpoint(accept = Some(mediaType.show), produces = produces).get
           assertResult(mediaType)(responseEncoder.mediaType)
         }
       }
 
       "include the first corresponding response encoder in the return value" - {
         "so that it can be used to correctly encode the response" in {
-          val produces = DispatchingMediaTypedEncoder(Seq(
+          val produces = DispatchingMediaTypedEncoder(Set(
             MediaTypedEncoder(Encoder.instance[Int](_ => 0.asJson), MediaType("text", "plain")),
-            MediaTypedEncoder(Encoder.instance[Int](_ => 1.asJson), MediaTypes.applicationJson),
-            MediaTypedEncoder(Encoder.instance[Int](_ => 2.asJson), MediaTypes.applicationJson)
+            MediaTypedEncoder(Encoder.instance[Int](_ => 1.asJson), MediaTypes.applicationJson)
           ))
-          val Return((_, responseEncoder)) = runReader(produces = produces)
+          val (_, responseEncoder) = evaluateEndpoint(produces = produces).get
           assertResult(Json.fromInt(1))(responseEncoder.encoder(42))
         }
       }
     }
 
-    def runReader[Res](
+    "if the Accept header has multiple values we support" - {
+      "include the highest quality Content-Type in the return value" in {
+        val v1String = MediaTypes.V1InstallResponse.show + ";q=0.8"
+        val v2String = MediaTypes.V2InstallResponse.show + ";q=0.9"
+        val expected = MediaTypes.V2InstallResponse
+
+        val accept = CompoundMediaTypeParser.parse(Seq(v1String, v2String).mkString(",")).get
+        val encoders = Set(
+          MediaTypedEncoder(implicitly[Encoder[Unit]], MediaTypes.V1InstallResponse),
+          MediaTypedEncoder(implicitly[Encoder[Unit]], MediaTypes.V2InstallResponse)
+        )
+        val produces = DispatchingMediaTypedEncoder(encoders)
+        val (_, responseEncoder) = evaluateEndpoint(accept = Some(accept.show), produces = produces).get
+        val actual = responseEncoder.mediaType
+        assertResult(expected)(actual)
+      }
+    }
+
+    def evaluateEndpoint[Res](
       accept: Option[String] = Some(MediaTypes.applicationJson.show),
       authorization: Option[String] = None,
-      produces: DispatchingMediaTypedEncoder[Res] = DispatchingMediaTypedEncoder(Seq(
+      produces: DispatchingMediaTypedEncoder[Res] = DispatchingMediaTypedEncoder(Set(
         MediaTypedEncoder(Encoder.instance[Res](_ => Json.Null), MediaTypes.applicationJson)
       ))
     ): Try[(RequestSession, MediaTypedEncoder[Res])] = {
@@ -117,7 +134,7 @@ final class RequestReadersSpec extends FreeSpec {
 
 }
 
-object RequestReadersSpec {
+object RequestValidatorsSpec {
 
   /** This factory trait is needed because the `Req` type is different for each factory function in
     * [[RequestValidators]], but the `Res` type can be different for each test case in `baseReader`.

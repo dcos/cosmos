@@ -129,7 +129,7 @@ object Encoders extends LowPriorityImplicits {
         Some(JsonObject.singleton("errors", details))
       )
     case ce: CosmosError =>
-      ErrorResponse(ce.getClass.getSimpleName, msgForCosmosError(ce), ce.getData)
+      ErrorResponse(ce.errType, msgForCosmosError(ce), ce.getData)
     case t: Throwable =>
       ErrorResponse("unhandled_exception", t.getMessage)
   }
@@ -252,6 +252,8 @@ object Encoders extends LowPriorityImplicits {
     case ConversionError(failure) => failure.message
     case ServiceMarathonTemplateNotFound(name, PackageDefinition.Version(version)) =>
       s"Package: [$name] version: [$version] does not have a Marathon template defined and can not be rendered"
+    case IncompatibleAcceptHeader(available, specified) =>
+      s"Item 'header 'Accept'' deemed invalid by rule: 'should match one of: ${available.map(_.show).mkString(", ")}'"
   }
 
 }

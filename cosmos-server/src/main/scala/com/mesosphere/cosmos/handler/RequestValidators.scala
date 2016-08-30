@@ -1,9 +1,10 @@
 package com.mesosphere.cosmos.handler
 
-import cats.syntax.option._
+import com.mesosphere.cosmos.IncompatibleAcceptHeader
 import com.mesosphere.cosmos.circe.{DispatchingMediaTypedEncoder, MediaTypedDecoder, MediaTypedEncoder}
 import com.mesosphere.cosmos.http.FinchExtensions._
-import com.mesosphere.cosmos.http.{Authorization, MediaType, RequestSession}
+import com.mesosphere.cosmos.http.{Authorization, CompoundMediaType, MediaType, RequestSession}
+import com.twitter.util.Future
 import io.finch._
 import shapeless.{::, HNil}
 
@@ -12,7 +13,7 @@ object RequestValidators {
   def noBody[Res](implicit
     produces: DispatchingMediaTypedEncoder[Res]
   ): Endpoint[EndpointContext[Unit, Res]] = {
-    baseValidator(produces).map { case (session, responseEncoder) =>
+    baseValidator(produces).map { case session :: responseEncoder :: HNil =>
       EndpointContext((), session, responseEncoder)
     }
   }
@@ -26,23 +27,24 @@ object RequestValidators {
     val b = body.as[Req](accepts.decoder, accepts.classTag)
     val c = r :: h :: b
     c.map {
-      case (reqSession, responseEncoder) :: _ :: req :: HNil => EndpointContext(req, reqSession, responseEncoder)
+      case reqSession :: responseEncoder :: _ :: req :: HNil => EndpointContext(req, reqSession, responseEncoder)
     }
   }
 
   private[this] def baseValidator[Res](
     produces: DispatchingMediaTypedEncoder[Res]
-  ): Endpoint[(RequestSession, MediaTypedEncoder[Res])] = {
-    val h = header("Accept")
-            .as[MediaType]
-            .convert { accept =>
-              produces(accept)
-                .toRightXor(s"should match one of: ${produces.mediaTypes.map(_.show).mkString(", ")}")
+  ): Endpoint[RequestSession :: MediaTypedEncoder[Res] :: HNil] = {
+    val accept = header("Accept")
+            .as[CompoundMediaType]
+            .mapAsync { accept =>
+              produces(accept) match {
+                case Some(x) =>
+                  Future.value(x)
+                case None =>
+                  Future.exception(IncompatibleAcceptHeader(produces.mediaTypes, accept.mediaTypes))
+              }
             }
-    val a = headerOption("Authorization")
-    val c = h :: a 
-    c.map {
-      case responseEncoder :: auth :: HNil => (RequestSession(auth.map(Authorization)), responseEncoder)
-    }
+    val auth = headerOption("Authorization").map { a => RequestSession(a.map(Authorization)) }
+    auth :: accept
   }
 }
