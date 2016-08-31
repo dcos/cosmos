@@ -257,12 +257,11 @@ private final class WriteHandler(
         promise.setValue(repositories)
       } else {
         val exception = if (code == KeeperException.Code.BADVERSION) {
-          // BADVERSION is expected so let's deplay a friendlier error
+          // BADVERSION is expected so let's display a friendlier error
           ConcurrentAccess(KeeperException.create(code, event.getPath))
         } else {
           KeeperException.create(code, event.getPath)
         }
-
         promise.setException(exception)
       }
     } else {
@@ -284,7 +283,7 @@ private final class CreateHandler(
         promise.setValue(repositories)
       } else {
         val exception = if (code == KeeperException.Code.NODEEXISTS) {
-          // NODEEXISTS is expected so let's deplay a friendlier error
+          // NODEEXISTS is expected so let's display a friendlier error
           ConcurrentAccess(KeeperException.create(code, event.getPath))
         } else {
           KeeperException.create(code, event.getPath)
