@@ -12,9 +12,11 @@ case class MediaTypeParseError(msg: String, cause: Throwable) extends RuntimeExc
 
 object MediaTypeParser {
 
+  def parseUnsafe(s: String): MediaType = parse(s).get
+
   def parse(s: String): Try[MediaType] = {
     Try {
-      GMediaType.parse(s)
+      GMediaType.parse(s.trim)
     }
       .map { mediaType =>
         val parameters = mediaType.parameters()
@@ -33,9 +35,9 @@ object MediaTypeParser {
       }
       .handle {
         case iae: IllegalArgumentException =>
-          throw new MediaTypeParseError(s"Unable to parse MediaType for input: '$s'", iae)
+          throw MediaTypeParseError(s"Unable to parse MediaType for input: '$s'", iae)
         case ise: IllegalStateException =>
-          throw new MediaTypeParseError(s"Unable to parse MediaType for input: '$s'", ise)
+          throw MediaTypeParseError(s"Unable to parse MediaType for input: '$s'", ise)
       }
   }
 }

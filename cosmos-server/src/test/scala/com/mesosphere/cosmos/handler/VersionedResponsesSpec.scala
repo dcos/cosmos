@@ -82,7 +82,7 @@ object VersionedResponsesSpec {
   implicit val stringRichDecoder: MediaTypedDecoder[String] =
     MediaTypedDecoder(MediaTypes.applicationJson)
   implicit val foobarResponseEnocoder: DispatchingMediaTypedEncoder[FoobarResponse] =
-    DispatchingMediaTypedEncoder(Seq(Foo.encoder, Bar.encoder))
+    DispatchingMediaTypedEncoder(Set(Foo.encoder, Bar.encoder))
 
   object FoobarHandler extends EndpointHandler[String, FoobarResponse] {
 

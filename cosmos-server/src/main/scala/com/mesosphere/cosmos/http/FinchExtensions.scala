@@ -1,8 +1,6 @@
 package com.mesosphere.cosmos.http
 
-import cats.data.Xor
-import com.twitter.util.Future
-import io.finch.{DecodeRequest, Error, Endpoint, ValidationRule}
+import io.finch.{DecodeRequest, ValidationRule}
 
 object FinchExtensions {
 
@@ -15,21 +13,8 @@ object FinchExtensions {
     DecodeRequest.instance(s => MediaType.parse(s))
   }
 
-  implicit class EndpointOps[A](val rr: Endpoint[A]) extends AnyVal {
-
-    /** Like [[io.finch.Endpoint.map]] but with the possibility of failure.
-      *
-      * @param fn Converts `A` to `B`, or fails with a `String` error message
-      */
-    def convert[B](fn: A => String Xor B): Endpoint[B] = {
-      rr.mapAsync { a =>
-        fn(a) match {
-          case Xor.Right(b) => Future.value(b)
-          case Xor.Left(error) => Future.exception(Error.NotValid(rr.item, error))
-        }
-      }
-    }
-
+  implicit val decodeCompoundMediaType: DecodeRequest[CompoundMediaType] = {
+    DecodeRequest.instance(s => CompoundMediaTypeParser.parse(s))
   }
 
 }

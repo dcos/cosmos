@@ -19,6 +19,8 @@ import scala.util.control.NoStackTrace
 
 sealed abstract class CosmosError(causedBy: Throwable = null /*java compatibility*/) extends RuntimeException(causedBy) {
 
+  def errType: String = this.getClass.getSimpleName
+
   def status: Status = Status.BadRequest
 
   def getData: Option[JsonObject] = {
@@ -214,3 +216,14 @@ case class RepositoryNotPresent(nameOrUri: Ior[String, Uri]) extends CosmosError
 case class ConversionError(failure: ConversionFailure) extends CosmosError
 case class ServiceMarathonTemplateNotFound(packageName: String, packageVersion: PackageDefinition.Version) extends CosmosError
 
+case class IncompatibleAcceptHeader(available: Set[MediaType], specified: Set[MediaType]) extends CosmosError {
+  override val errType: String = "not_valid"
+  override val getData: Option[JsonObject] = Some(JsonObject.fromMap(Map(
+    "invalidItem" -> JsonObject.fromMap(Map(
+      "type" -> "header".asJson,
+      "name" -> "Accept".asJson
+    )).asJson,
+    "specified" -> specified.map(_.show).asJson,
+    "available" -> available.map(_.show).asJson
+  )))
+}

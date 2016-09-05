@@ -12,7 +12,7 @@ import com.twitter.util.Try
 object MediaTypedEncoders {
 
   implicit val packageDescribeResponseEncoder: DispatchingMediaTypedEncoder[internal.model.PackageDefinition] = {
-    DispatchingMediaTypedEncoder(Seq(
+    DispatchingMediaTypedEncoder(Set(
       MediaTypedEncoder(
         encoder = rpc.v2.circe.Encoders.encodeV2DescribeResponse.contramap { (pkgDefinition: internal.model.PackageDefinition) =>
           converter.Universe.internalPackageDefinitionToV2DescribeResponse(pkgDefinition)
@@ -29,7 +29,7 @@ object MediaTypedEncoders {
   }
 
   implicit val packageInstallResponseEncoder: DispatchingMediaTypedEncoder[rpc.v2.model.InstallResponse] = {
-    DispatchingMediaTypedEncoder(Seq(
+    DispatchingMediaTypedEncoder(Set(
       MediaTypedEncoder(
         encoder = rpc.v2.circe.Encoders.encodeV2InstallResponse,
         mediaType = MediaTypes.V2InstallResponse
