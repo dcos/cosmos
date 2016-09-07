@@ -1,12 +1,17 @@
 package com.mesosphere.cosmos.circe
 
 import cats.data.Xor
+import com.google.common.io.CharStreams
 import com.mesosphere.cosmos._
 import com.mesosphere.cosmos.rpc.v1.model.PackageRepository
+import com.mesosphere.universe.v3.model.Repository
 import com.netaporter.uri.Uri
 import io.circe.syntax._
-import io.circe.{JsonObject, ParsingFailure}
+import io.circe.jawn._
+import io.circe.{DecodingFailure, Error, Json, JsonObject, ParsingFailure}
 import org.scalatest.FreeSpec
+
+import java.io.InputStreamReader
 
 class EncodersDecodersSpec extends FreeSpec {
   import Decoders._
@@ -83,4 +88,72 @@ class EncodersDecodersSpec extends FreeSpec {
     }
   }
 
+  "Encoder for io.circe.Error" - {
+    "DecodingFailure should specify path instead of cursor history" - {
+      "when value is valid type but not acceptable" in {
+        val Xor.Left(err: DecodingFailure) = loadAndDecode(
+          "/com/mesosphere/cosmos/universe_invalid_packagingVersion_value.json"
+        )
+
+        val encoded = encodeCirceError(err)
+        val c = encoded.hcursor
+        val Xor.Right(typ) = c.downField("type").as[String]
+        val Xor.Right(dataType) = c.downField("data").downField("type").as[String]
+        val Xor.Right(reason) = c.downField("data").downField("reason").as[String]
+        val Xor.Right(path) = c.downField("data").downField("path").as[String]
+        assertResult("json_error")(typ)
+        assertResult("decode")(dataType)
+        assertResult("Expected one of [2.0, 3.0] for packaging version, but found [1.0]")(reason)
+        assertResult(".packages[0].packagingVersion")(path)
+      }
+
+      "when ByteBuffer value is incorrect type" in {
+        val Xor.Left(err: DecodingFailure) = loadAndDecode(
+          "/com/mesosphere/cosmos/universe_invalid_byteBuffer.json"
+        )
+
+        val encoded = encodeCirceError(err)
+        val c = encoded.hcursor
+        val Xor.Right(typ) = c.downField("type").as[String]
+        val Xor.Right(dataType) = c.downField("data").downField("type").as[String]
+        val Xor.Right(reason) = c.downField("data").downField("reason").as[String]
+        val Xor.Right(path) = c.downField("data").downField("path").as[String]
+        assertResult("json_error")(typ)
+        assertResult("decode")(dataType)
+        assertResult(".packages[0].marathon.v2AppMustacheTemplate")(path)
+        assertResult("Base64 string value expected")(reason)
+      }
+
+    }
+
+    "ParsingFailure should" - {
+      "explain where the parsing failure occurred" in {
+        val Xor.Left(err: ParsingFailure) = loadAndDecode("/com/mesosphere/cosmos/repository/malformed.json")
+        val encoded = encodeCirceError(err)
+        val c = encoded.hcursor
+        val Xor.Right(typ) = c.downField("type").as[String]
+        val Xor.Right(dataType) = c.downField("data").downField("type").as[String]
+        val Xor.Right(reason) = c.downField("data").downField("reason").as[String]
+        assertResult("json_error")(typ)
+        assertResult("parse")(dataType)
+        assertResult("expected \" got ] (line 1, column 2)")(reason)
+      }
+    }
+  }
+
+  private[this] def encodeCirceError(err: io.circe.Error): Json = {
+    import com.mesosphere.cosmos.circe.Encoders._
+    err.asInstanceOf[Exception].asJson // up-cast the error so that the implicit matches; io.circe.Error is too specific
+  }
+
+  private[this] def loadAndDecode(resourceName: String): Xor[Error, Repository] = {
+    import com.mesosphere.universe.v3.circe.Decoders._
+    val is = this.getClass.getResourceAsStream(resourceName)
+    if (is == null) {
+      throw new IllegalStateException(s"Unable to load classpath resource: $resourceName")
+    }
+    val jsonString = CharStreams.toString(new InputStreamReader(is))
+    is.close()
+    decode[Repository](jsonString)
+  }
 }
