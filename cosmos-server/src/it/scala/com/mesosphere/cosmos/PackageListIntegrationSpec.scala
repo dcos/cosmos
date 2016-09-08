@@ -151,7 +151,7 @@ final class PackageListIntegrationSpec
         assert(packages == packages.sorted)
         assert(names.sorted == resultNames.sorted)
       } finally {
-        installResponses.map(ir => Try(packageUninstall(ir)))
+        installResponses.foreach(ir => packageUninstall(ir))
       }
     }
   }
