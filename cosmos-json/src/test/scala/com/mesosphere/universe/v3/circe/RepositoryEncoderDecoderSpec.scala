@@ -45,14 +45,16 @@ class RepositoryEncoderDecoderSpec extends FreeSpec {
       ))
 
       val json = repo.asJson
-      val inputStream = this.getClass.getResourceAsStream("/com/mesosphere/universe/v3/circe/RepositoryEncoderDecoderSpec/expected-encoded-repo.json")
+      val inputStream = this.getClass.getResourceAsStream("/com/mesosphere/universe/v3/circe/expected-encoded-repo.json")
       val jsonString = Source.fromInputStream(inputStream, "UTF-8").mkString
       val Xor.Right(expected) = parse(jsonString)
 
       assertResult(expected)(json)
     }
     "decode" in {
-      val inputStream = this.getClass.getResourceAsStream("/com/mesosphere/universe/v3/circe/RepositoryEncoderDecoderSpec/test-v3-repo-up-to-1.8.json")
+      val inputStream = this.getClass.getResourceAsStream(
+        "/com/mesosphere/universe/v3/circe/test-v3-repo-up-to-1.8.json"
+      )
       val jsonString = Source.fromInputStream(inputStream, "UTF-8").mkString
       val parsed = parse(jsonString)
       val Xor.Right(repo) = parsed.flatMap(decodeRepository.decodeJson)
