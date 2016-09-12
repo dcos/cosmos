@@ -11,14 +11,13 @@ import org.apache.curator.retry.ExponentialBackoffRetry
 import com.mesosphere.cosmos.ZooKeeperStorageError
 
 private[cosmos] final class DistributedAtomicCounter(
-  zkClient: CuratorFramework
+  zkClient: CuratorFramework,
+  pool: FuturePool
 )(implicit
   statsReceiver: StatsReceiver = NullStatsReceiver
 ) {
 
   import DistributedAtomicCounter._
-
-  private[this] val pool = FuturePool.interruptibleUnboundedPool
 
   private[this] val counter = new DistributedAtomicLong(zkClient, counterPath, retryPolicy)
 
@@ -30,7 +29,8 @@ private[cosmos] final class DistributedAtomicCounter(
         val newValue = counter.increment()
 
         val newStats = newValue.getStats()
-        stats.counter("optimisticTries").incr(newStats.getOptimisticTries())
+        stats.stat("optimisticTries").add(newStats.getOptimisticTries().asInstanceOf[Float])
+        stats.stat("optimisticTriesMs").add(newStats.getOptimisticTimeMs().asInstanceOf[Float])
 
         if (newValue.succeeded()) {
           newValue.postValue()
