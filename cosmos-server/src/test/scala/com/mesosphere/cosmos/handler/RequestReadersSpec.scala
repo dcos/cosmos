@@ -4,12 +4,13 @@ import com.mesosphere.cosmos.circe.{DispatchingMediaTypedEncoder, MediaTypedDeco
 import com.mesosphere.cosmos.http.{Authorization, MediaType, MediaTypes, RequestSession}
 import com.twitter.finagle.http.RequestBuilder
 import com.twitter.io.Buf
-import com.twitter.util.{Await, Return, Try, Future}
+import com.twitter.util.{Await, Future, Return, Try}
 import io.circe.syntax._
 import io.circe.{Encoder, Json}
-import io.finch.{Endpoint,Output,Input}
+import io.finch.{Endpoint, Input, Output}
 import org.scalatest.FreeSpec
 import cats.Eval
+import com.mesosphere.cosmos.finch.MediaTypedRequestDecoder
 
 final class RequestReadersSpec extends FreeSpec {
 
@@ -104,7 +105,7 @@ final class RequestReadersSpec extends FreeSpec {
         .setHeader("Accept", accept.toSeq)
         .setHeader("Authorization", authorization.toSeq)
         .setHeader("Content-Type", MediaTypes.applicationJson.show)
-        .buildPost(Buf.Utf8(Json.Null.noSpaces))
+        .buildPost(Buf.Utf8("\"null\""))
 
       val reader = factory(produces)
       val res = reader(Input(request))
@@ -143,7 +144,7 @@ object RequestReadersSpec {
       produces: DispatchingMediaTypedEncoder[Res]
     ): Endpoint[EndpointContext[String, Res]] = {
       RequestValidators.standard(
-        accepts = MediaTypedDecoder.apply(MediaTypes.applicationJson),
+        accepts = MediaTypedRequestDecoder.apply(MediaTypedDecoder(MediaTypes.applicationJson)),
         produces = produces
       )
     }
