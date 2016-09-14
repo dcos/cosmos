@@ -8,6 +8,7 @@ import com.mesosphere.cosmos.model._
 import com.mesosphere.cosmos.thirdparty.marathon.circe.Encoders._
 import com.mesosphere.cosmos.rpc.v1.circe.Encoders._
 import com.mesosphere.cosmos.rpc.v1.model.ErrorResponse
+import com.mesosphere.cosmos.storage.PackageCoordinate
 import com.mesosphere.universe.common.circe.Encoders._
 import com.mesosphere.universe.v2.circe.Encoders._
 import com.mesosphere.universe.v3.circe.Encoders._
@@ -53,6 +54,9 @@ object Encoders extends LowPriorityImplicits {
 
   implicit val encodeZooKeeperStorageEnvelope: Encoder[ZooKeeperStorageEnvelope] =
     deriveEncoder[ZooKeeperStorageEnvelope]
+
+  implicit val encodePackageCoordinate: Encoder[PackageCoordinate] =
+    deriveEncoder[PackageCoordinate]
 
   implicit val exceptionEncoder: Encoder[Exception] = {
     Encoder.instance { e => exceptionErrorResponse(e).asJson }
