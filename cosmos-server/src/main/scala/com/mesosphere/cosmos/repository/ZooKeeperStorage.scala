@@ -1,25 +1,14 @@
 package com.mesosphere.cosmos.repository
 
-import java.nio.ByteBuffer
-import java.nio.charset.StandardCharsets
-
 import cats.data.Ior
 import com.mesosphere.cosmos._
-import com.mesosphere.cosmos.circe.Decoders._
-import com.mesosphere.cosmos.circe.Encoders._
-import com.mesosphere.cosmos.http.{MediaType, MediaTypeOps, MediaTypeSubType}
-import com.mesosphere.cosmos.model.ZooKeeperStorageEnvelope
 import com.mesosphere.cosmos.repository.DefaultRepositories._
-import com.mesosphere.cosmos.rpc.v1.circe.Decoders._
 import com.mesosphere.cosmos.rpc.v1.circe.Encoders._
 import com.mesosphere.cosmos.rpc.v1.model.PackageRepository
-import com.mesosphere.universe.common.ByteBuffers
+import com.mesosphere.cosmos.storage.Envelope._
 import com.netaporter.uri.Uri
 import com.twitter.finagle.stats.{NullStatsReceiver, Stat, StatsReceiver}
 import com.twitter.util._
-import io.circe.Encoder
-import io.circe.jawn.decode
-import io.circe.syntax._
 import org.apache.curator.framework.CuratorFramework
 import org.apache.curator.framework.api.{BackgroundCallback, CuratorEvent, CuratorEventType}
 import org.apache.curator.framework.recipes.cache.NodeCache
@@ -38,15 +27,6 @@ private[cosmos] final class ZooKeeperStorage(
   caching.start()
 
   private[this] val stats = statsReceiver.scope("zkStorage")
-
-  private[this] val envelopeMediaType = MediaType(
-    "application",
-    MediaTypeSubType("vnd.dcos.package.repository.repo-list", Some("json")),
-    Map(
-      "charset" -> "utf-8",
-      "version" -> "v1"
-    )
-  )
 
   private[this] val DefaultRepos: List[PackageRepository] = DefaultRepositories().getOrElse(Nil)
 
@@ -74,7 +54,6 @@ private[cosmos] final class ZooKeeperStorage(
       }
     }
   }
-
 
   override def add(
     index: Option[Int],
@@ -187,44 +166,6 @@ private[cosmos] final class ZooKeeperStorage(
       case Some(i) =>
         throw new RepositoryAddIndexOutOfBounds(i, list.size - 1)
     }
-  }
-
-  private[this] def decodeData(bytes: Array[Byte]): List[PackageRepository] = {
-    decode[ZooKeeperStorageEnvelope](new String(bytes, StandardCharsets.UTF_8))
-      .flatMap { envelope =>
-        val contentType = envelope.metadata
-          .get("Content-Type")
-          .flatMap { s => MediaType.parse(s).toOption }
-
-        contentType match {
-          case Some(mt) if MediaTypeOps.compatible(envelopeMediaType, mt) =>
-            val dataString: String = new String(
-              ByteBuffers.getBytes(envelope.data),
-              StandardCharsets.UTF_8)
-            decode[List[PackageRepository]](dataString)
-          case Some(mt) =>
-            throw new ZooKeeperStorageError(
-              s"Error while trying to deserialize data. " +
-              s"Expected Content-Type '${envelopeMediaType.show}' actual '${mt.show}'"
-            )
-          case None =>
-            throw new ZooKeeperStorageError(
-              s"Error while trying to deserialize data. " +
-              s"Content-Type not defined."
-            )
-        }
-      } valueOr { err => throw new CirceError(err) }
-  }
-
-  private[this] def toByteBuffer[A : Encoder](a: A): ByteBuffer = {
-    ByteBuffer.wrap(a.asJson.noSpaces.getBytes(StandardCharsets.UTF_8))
-  }
-
-  private[this] def encodeEnvelope(data: ByteBuffer): Array[Byte] = {
-    ZooKeeperStorageEnvelope(
-      metadata = Map("Content-Type" -> envelopeMediaType.show),
-      data = data
-    ).asJson.noSpaces.getBytes(StandardCharsets.UTF_8)
   }
 }
 
