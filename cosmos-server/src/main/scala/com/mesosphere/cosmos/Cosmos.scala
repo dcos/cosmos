@@ -5,7 +5,7 @@ import com.mesosphere.cosmos.handler._
 import com.mesosphere.cosmos.http.MediaTypes
 import com.mesosphere.cosmos.repository.PackageSourcesStorage
 import com.mesosphere.cosmos.repository.UniverseClient
-import com.mesosphere.cosmos.repository.ZooKeeperStorage
+import com.mesosphere.cosmos.repository.ZkRepositoryList
 import com.mesosphere.cosmos.rpc.v1.circe.MediaTypedDecoders._
 import com.mesosphere.cosmos.rpc.v1.circe.MediaTypedEncoders._
 import com.mesosphere.cosmos.rpc.v2.circe.MediaTypedEncoders._
@@ -197,7 +197,7 @@ object Cosmos extends FinchServer {
         zkClient.close()
       }
 
-      val sourcesStorage = new ZooKeeperStorage(zkClient)()
+      val sourcesStorage = new ZkRepositoryList(zkClient)()
       val packageStorage = new InMemoryPackageStorage()
 
       val cosmos = Cosmos(adminRouter, marathonPackageRunner, sourcesStorage, packageStorage, UniverseClient(adminRouter))

@@ -26,15 +26,15 @@ import org.apache.curator.framework.recipes.cache.NodeCache
 import org.apache.zookeeper.KeeperException
 import org.apache.zookeeper.data.{Stat => ZooKeeperStat}
 
-private[cosmos] final class ZooKeeperStorage(
+private[cosmos] final class ZkRepositoryList(
   zkClient: CuratorFramework
 )(implicit
   statsReceiver: StatsReceiver = NullStatsReceiver
 ) extends PackageSourcesStorage {
 
-  import ZooKeeperStorage._
+  import ZkRepositoryList._
 
-  private[this] val caching = new NodeCache(zkClient, ZooKeeperStorage.PackageRepositoriesPath)
+  private[this] val caching = new NodeCache(zkClient, ZkRepositoryList.PackageRepositoriesPath)
   caching.start()
 
   private[this] val stats = statsReceiver.scope("zkStorage")
@@ -118,7 +118,7 @@ private[cosmos] final class ZooKeeperStorage(
     zkClient.create.creatingParentsIfNeeded.inBackground(
       new CreateHandler(promise, repositories)
     ).forPath(
-      ZooKeeperStorage.PackageRepositoriesPath,
+      ZkRepositoryList.PackageRepositoriesPath,
       encodeEnvelope(toByteBuffer(repositories))
     )
 
@@ -134,7 +134,7 @@ private[cosmos] final class ZooKeeperStorage(
     zkClient.setData().withVersion(stat.getVersion).inBackground(
       new WriteHandler(promise, repositories)
     ).forPath(
-      ZooKeeperStorage.PackageRepositoriesPath,
+      ZkRepositoryList.PackageRepositoriesPath,
       encodeEnvelope(toByteBuffer(repositories))
     )
 
@@ -155,7 +155,7 @@ private[cosmos] final class ZooKeeperStorage(
     zkClient.getData().inBackground(
       new ReadHandler(promise)
     ).forPath(
-      ZooKeeperStorage.PackageRepositoriesPath
+      ZkRepositoryList.PackageRepositoriesPath
     )
 
     promise
@@ -228,7 +228,7 @@ private[cosmos] final class ZooKeeperStorage(
   }
 }
 
-private object ZooKeeperStorage {
+private object ZkRepositoryList {
   private val PackageRepositoriesPath: String = "/package/repositories"
 
   private[cosmos] def getPredicate(nameOrUri: Ior[String, Uri]): PackageRepository => Boolean = {
