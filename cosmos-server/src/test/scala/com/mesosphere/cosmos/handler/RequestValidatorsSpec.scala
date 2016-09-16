@@ -10,6 +10,7 @@ import io.circe.{Encoder, Json}
 import io.finch.{Endpoint, Input, Output}
 import org.scalatest.FreeSpec
 import cats.Eval
+import com.mesosphere.cosmos.finch.MediaTypedRequestDecoder
 
 final class RequestValidatorsSpec extends FreeSpec {
 
@@ -121,7 +122,7 @@ final class RequestValidatorsSpec extends FreeSpec {
         .setHeader("Accept", accept.toSeq)
         .setHeader("Authorization", authorization.toSeq)
         .setHeader("Content-Type", MediaTypes.applicationJson.show)
-        .buildPost(Buf.Utf8(Json.Null.noSpaces))
+        .buildPost(Buf.Utf8("\"null\""))
 
       val reader = factory(produces)
       val res = reader(Input(request))
@@ -160,7 +161,7 @@ object RequestValidatorsSpec {
       produces: DispatchingMediaTypedEncoder[Res]
     ): Endpoint[EndpointContext[String, Res]] = {
       RequestValidators.standard(
-        accepts = MediaTypedDecoder.apply(MediaTypes.applicationJson),
+        accepts = MediaTypedRequestDecoder.apply(MediaTypedDecoder(MediaTypes.applicationJson)),
         produces = produces
       )
     }
