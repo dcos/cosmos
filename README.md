@@ -1,6 +1,6 @@
 # Cosmos [![In Progress](https://badge.waffle.io/dcos/cosmos.png?label=in+progress&title=In+Progress)](https://waffle.io/dcos/cosmos)
 
-An [orderly, harmonius, complete](http://www.thefreedictionary.com/cosmos) API for DC/OS services.
+An [orderly, harmonious, complete](http://www.thefreedictionary.com/cosmos) API for DC/OS services.
 
 ## Running tests
 

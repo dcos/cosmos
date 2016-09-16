@@ -75,7 +75,7 @@ object CosmosIntegrationTestClient extends Matchers {
     val property = "com.mesosphere.cosmos.test.CosmosIntegrationTestClient.CosmosClient.uri"
     private[this] val client = Try {
         Option(System.getProperty(property))
-          .getOrElse(throw new AssertionError(s"Missing system property '$property "))
+          .getOrElse(throw new AssertionError(s"Missing system property '$property' "))
       }
       .flatMap { uri =>
         Services.httpClient("cosmosIntegrationTestClient", uri, RequestLogging)

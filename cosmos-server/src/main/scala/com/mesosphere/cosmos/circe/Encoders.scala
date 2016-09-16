@@ -12,11 +12,11 @@ import com.mesosphere.universe.v2.circe.Encoders._
 import com.mesosphere.universe.v3.circe.Encoders._
 import com.mesosphere.universe.v3.model._
 import com.twitter.finagle.http.Status
-import io.circe.DecodingFailure
+import io.circe.HistoryOp.opsToPath
 import io.circe.generic.encoding.DerivedObjectEncoder
 import io.circe.syntax._
 import io.circe.generic.semiauto._
-import io.circe.{Encoder, JsonObject}
+import io.circe.{DecodingFailure, Encoder, JsonObject, ParsingFailure}
 import io.finch.Error
 import org.jboss.netty.handler.codec.http.HttpMethod
 import shapeless._
@@ -115,6 +115,7 @@ object Encoders extends LowPriorityImplicits {
   implicit val encodeCosmosError: Encoder[CosmosError] = deriveEncoder[CosmosError]
 
   private[this] def exceptionErrorResponse(t: Throwable): ErrorResponse = t match {
+    case cerr: io.circe.Error => circeErrorResponse(cerr)
     case Error.NotPresent(item) =>
       ErrorResponse("not_present", s"Item '${item.description}' not present but required")
     case Error.NotParsed(item, typ, cause) =>
@@ -129,9 +130,32 @@ object Encoders extends LowPriorityImplicits {
         Some(JsonObject.singleton("errors", details))
       )
     case ce: CosmosError =>
-      ErrorResponse(ce.getClass.getSimpleName, msgForCosmosError(ce), ce.getData)
+      ErrorResponse(ce.errType, msgForCosmosError(ce), ce.getData)
     case t: Throwable =>
       ErrorResponse("unhandled_exception", t.getMessage)
+  }
+
+  private[this] def circeErrorResponse(cerr: io.circe.Error): ErrorResponse = cerr match {
+    case pf: ParsingFailure =>
+      ErrorResponse(
+        "json_error",
+        s"Json parsing failure '${pf.message}'",
+        data = Some(JsonObject.fromMap(Map(
+          "type" -> "parse".asJson,
+          "reason" -> pf.message.asJson
+        )))
+      )
+    case df: DecodingFailure =>
+      val path = opsToPath(df.history)
+      ErrorResponse(
+        "json_error",
+        s"Json decoding failure '${df.message}' at: $path",
+        data = Some(JsonObject.fromMap(Map(
+          "type" -> "decode".asJson,
+          "reason" -> df.message.asJson,
+          "path" -> path.asJson
+        )))
+      )
   }
 
   private[this] def msgForCosmosError(err: CosmosError): String = err match {
@@ -252,6 +276,8 @@ object Encoders extends LowPriorityImplicits {
     case ConversionError(failure) => failure.message
     case ServiceMarathonTemplateNotFound(name, PackageDefinition.Version(version)) =>
       s"Package: [$name] version: [$version] does not have a Marathon template defined and can not be rendered"
+    case IncompatibleAcceptHeader(available, specified) =>
+      s"Item 'header 'Accept'' deemed invalid by rule: 'should match one of: ${available.map(_.show).mkString(", ")}'"
   }
 
 }

@@ -28,7 +28,7 @@ object mesosMasterUri extends GlobalFlag[Uri](
 )
 
 object zookeeperUri extends GlobalFlag[ZooKeeperUri](
-  ZooKeeperUri.parse("zk://localhost:2181/cosmos").get(),
+  ZooKeeperUri.parse("zk://127.0.0.1:2181/cosmos").get(),
   "The ZooKeeper connection string"
 )
 

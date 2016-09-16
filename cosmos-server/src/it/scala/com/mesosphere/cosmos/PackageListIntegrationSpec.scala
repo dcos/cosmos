@@ -1,6 +1,7 @@
 package com.mesosphere.cosmos
 
 import java.util.UUID
+
 import cats.data.Xor
 import com.mesosphere.cosmos.http.MediaTypes
 import com.mesosphere.cosmos.label.v1.model.PackageMetadata
@@ -11,6 +12,7 @@ import com.mesosphere.cosmos.rpc.v1.model._
 import com.mesosphere.cosmos.test.CosmosIntegrationTestClient
 import com.mesosphere.cosmos.thirdparty.marathon.model.AppId
 import com.mesosphere.universe.v2.model.{PackageDetailsVersion, PackagingVersion}
+import com.twitter.util.Try
 import org.scalatest.concurrent.Eventually
 import org.scalatest.{AppendedClues, FreeSpec, Inside}
 
@@ -134,20 +136,24 @@ final class PackageListIntegrationSpec
     }
   }
 
-
-
-  "Issue #124: Package list endpoint responds with packages sorted " in {
-    val (c, d, b, a) = ("linkerd", "zeppelin", "jenkins", "cassandra")
-    val installResponses = List(c, d, b, a).map(packageInstall)
-    val packages = packageList().packages
-
-    assert(packages.size === 4)
-    assert(packages(0).packageInformation.packageDefinition.name === a)
-    assert(packages(1).packageInformation.packageDefinition.name === b)
-    assert(packages(2).packageInformation.packageDefinition.name === c)
-    assert(packages(3).packageInformation.packageDefinition.name === d)
-
-    installResponses foreach packageUninstall
+  "Package list endpoint responds with" - {
+    "(issue #124) packages sorted by name and app id" in {
+      val names = List(
+        "linkerd",
+        "linkerd",
+        "zeppelin",
+        "jenkins",
+        "cassandra")
+      val installResponses = names map packageInstall
+      try {
+        val packages = packageList().packages.map(app => (app.packageInformation.packageDefinition.name, app.appId))
+        val resultNames = packages.map(_._1)
+        assert(packages == packages.sorted)
+        assert(names.sorted == resultNames.sorted)
+      } finally {
+        installResponses.foreach(ir => packageUninstall(ir))
+      }
+    }
   }
 
   private[this] def packageList(): ListResponse = {
