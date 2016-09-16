@@ -8,6 +8,12 @@ final class MediaTypedEncoder[A] private(val encoder: Encoder[A], val mediaType:
 
 object MediaTypedEncoder {
 
+  def apply[A](mediaType: MediaType)(implicit 
+    encoder: Encoder[A]
+  ): MediaTypedEncoder[A] = {
+    MediaTypedEncoder(encoder, mediaType)
+  }
+  
   def apply[A](encoder: Encoder[A], mediaType: MediaType): MediaTypedEncoder[A] = {
     new MediaTypedEncoder(encoder, mediaType)
   }

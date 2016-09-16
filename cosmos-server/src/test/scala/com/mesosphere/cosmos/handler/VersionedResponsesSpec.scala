@@ -3,6 +3,7 @@ package com.mesosphere.cosmos.handler
 import cats.Eval
 import com.mesosphere.cosmos.Cosmos
 import com.mesosphere.cosmos.circe.{DispatchingMediaTypedEncoder, MediaTypedDecoder, MediaTypedEncoder}
+import com.mesosphere.cosmos.finch.MediaTypedRequestDecoder
 import com.mesosphere.cosmos.http.{MediaType, MediaTypes, RequestSession}
 import com.twitter.finagle.http.RequestBuilder
 import com.twitter.io.Buf
@@ -20,14 +21,14 @@ final class VersionedResponsesSpec extends FreeSpec {
   "The Accept header determines the version of the response to send" - {
 
     "Foo version" in {
-      val input = buildInput(Foo.encoder.mediaType, "42")
+      val input = buildInput(Foo.encoder.mediaType, "\"42\"")
       val result = FoobarEndpoint(input)
       val jsonBody = extractBody(result)
       assertResult(Json.obj("whole" -> 42.asJson))(jsonBody)
     }
 
     "Bar version" in {
-      val input = buildInput(Bar.encoder.mediaType, "3.14159")
+      val input = buildInput(Bar.encoder.mediaType, "\"3.14159\"")
       val result = FoobarEndpoint(input)
       val jsonBody = extractBody(result)
       assertResult(Json.obj("decimal" -> 3.14159.asJson))(jsonBody)
@@ -79,9 +80,9 @@ object VersionedResponsesSpec {
     Await.result(eval.value).value
   }
 
-  implicit val stringRichDecoder: MediaTypedDecoder[String] =
-    MediaTypedDecoder(MediaTypes.applicationJson)
-  implicit val foobarResponseEnocoder: DispatchingMediaTypedEncoder[FoobarResponse] =
+  implicit val stringRichDecoder: MediaTypedRequestDecoder[String] =
+    MediaTypedRequestDecoder(MediaTypedDecoder(MediaTypes.applicationJson))
+  implicit val foobarResponseEncoder: DispatchingMediaTypedEncoder[FoobarResponse] =
     DispatchingMediaTypedEncoder(Seq(Foo.encoder, Bar.encoder))
 
   object FoobarHandler extends EndpointHandler[String, FoobarResponse] {
