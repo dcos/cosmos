@@ -8,6 +8,10 @@ object MediaTypes {
       Map("charset" -> "utf-8", "version" -> ("v" + version))
     )
 
+  // Storage Media Types
+  val ETag = vnd("repository.etag")
+
+  // RPR Media Types
   val any = MediaType("*", MediaTypeSubType("*"))
   val applicationJson = MediaType("application", MediaTypeSubType("json"), Map("charset" -> "utf-8"))
   val applicationZip = MediaType("application", MediaTypeSubType("zip"))
