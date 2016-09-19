@@ -1,6 +1,7 @@
 package com.mesosphere.cosmos.handler
 
 import com.mesosphere.cosmos.circe.{DispatchingMediaTypedEncoder, MediaTypedDecoder, MediaTypedEncoder}
+import com.mesosphere.cosmos.finch.MediaTypedRequestDecoder
 import com.mesosphere.cosmos.http._
 import com.twitter.finagle.http.RequestBuilder
 import com.twitter.io.Buf
@@ -10,7 +11,6 @@ import io.circe.{Encoder, Json}
 import io.finch.{Endpoint, Input, Output}
 import org.scalatest.FreeSpec
 import cats.Eval
-import com.mesosphere.cosmos.finch.MediaTypedRequestDecoder
 
 final class RequestValidatorsSpec extends FreeSpec {
 
