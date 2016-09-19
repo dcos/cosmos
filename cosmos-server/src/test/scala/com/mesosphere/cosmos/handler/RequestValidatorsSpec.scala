@@ -122,7 +122,7 @@ final class RequestValidatorsSpec extends FreeSpec {
         .setHeader("Accept", accept.toSeq)
         .setHeader("Authorization", authorization.toSeq)
         .setHeader("Content-Type", MediaTypes.applicationJson.show)
-        .buildPost(Buf.Utf8("\"null\""))
+        .buildPost(Buf.Utf8("\"null\"")) //decode circe requires the double quotes
 
       val reader = factory(produces)
       val res = reader(Input(request))
