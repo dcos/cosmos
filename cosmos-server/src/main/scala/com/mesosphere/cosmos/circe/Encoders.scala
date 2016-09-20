@@ -3,7 +3,6 @@ package com.mesosphere.cosmos.circe
 import cats.data.Ior
 import com.mesosphere.cosmos._
 import com.mesosphere.cosmos.http.MediaType
-import com.mesosphere.cosmos.model._
 import com.mesosphere.cosmos.converter.ConversionFailure
 import com.mesosphere.cosmos.thirdparty.marathon.circe.Encoders._
 import com.mesosphere.cosmos.rpc.v1.circe.Encoders._
@@ -51,9 +50,6 @@ sealed trait LowPriorityImplicits {
 object Encoders extends LowPriorityImplicits {
 
   implicit val encodeErrorResponse: Encoder[ErrorResponse] = deriveEncoder[ErrorResponse]
-
-  implicit val encodeZooKeeperStorageEnvelope: Encoder[ZooKeeperStorageEnvelope] =
-    deriveEncoder[ZooKeeperStorageEnvelope]
 
   implicit val exceptionEncoder: Encoder[Exception] = {
     Encoder.instance { e => exceptionErrorResponse(e).asJson }
@@ -278,6 +274,7 @@ object Encoders extends LowPriorityImplicits {
       s"Package: [$name] version: [$version] does not have a Marathon template defined and can not be rendered"
     case IncompatibleAcceptHeader(available, specified) =>
       s"Item 'header 'Accept'' deemed invalid by rule: 'should match one of: ${available.map(_.show).mkString(", ")}'"
+    case EnvelopeError(msg) => msg
   }
 
 }
