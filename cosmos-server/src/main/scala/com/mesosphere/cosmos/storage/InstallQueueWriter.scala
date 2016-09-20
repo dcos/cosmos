@@ -18,7 +18,7 @@ import java.nio.charset.StandardCharsets
 
 class LocalInstallQueueWriter(zkClient: CuratorFramework) extends InstallQueueWriter[PackageDefinition] {
 
-  val installQueue = s"$installQueueBase/local"
+  val installQueue = InstallQueueHelpers.localInstallQueue
 
   override def getBytes(pkgDef: PackageDefinition) =
     pkgDef.asJson.noSpaces.getBytes(StandardCharsets.UTF_8)
@@ -26,14 +26,12 @@ class LocalInstallQueueWriter(zkClient: CuratorFramework) extends InstallQueueWr
 
 class UniverseInstallQueueWriter(zkClient: CuratorFramework) extends InstallQueueWriter[Uri] {
 
-  val installQueue = s"$installQueueBase/universe"
+  val installQueue = InstallQueueHelpers.universeInstallQueue
 
   override def getBytes(uri: Uri) =  uri.toString.getBytes(StandardCharsets.UTF_8)
 }
 
 trait InstallQueueWriter[T] {
-
-  val installQueueBase = "/package/installStatus"
 
   val installQueue: String
 
