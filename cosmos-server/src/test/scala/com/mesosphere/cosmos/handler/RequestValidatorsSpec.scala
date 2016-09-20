@@ -1,6 +1,7 @@
 package com.mesosphere.cosmos.handler
 
 import com.mesosphere.cosmos.circe.{DispatchingMediaTypedEncoder, MediaTypedDecoder, MediaTypedEncoder}
+import com.mesosphere.cosmos.finch.MediaTypedRequestDecoder
 import com.mesosphere.cosmos.http._
 import com.twitter.finagle.http.RequestBuilder
 import com.twitter.io.Buf
@@ -155,12 +156,12 @@ object RequestValidatorsSpec {
     }
   }
 
-  object StandardReaderFactory extends RequestReaderFactory[String] {
+  object StandardReaderFactory extends RequestReaderFactory[Json] {
     override def apply[Res](
       produces: DispatchingMediaTypedEncoder[Res]
-    ): Endpoint[EndpointContext[String, Res]] = {
+    ): Endpoint[EndpointContext[Json, Res]] = {
       RequestValidators.standard(
-        accepts = MediaTypedDecoder.apply(MediaTypes.applicationJson),
+        accepts = MediaTypedRequestDecoder.apply(MediaTypedDecoder(MediaTypes.applicationJson)),
         produces = produces
       )
     }
