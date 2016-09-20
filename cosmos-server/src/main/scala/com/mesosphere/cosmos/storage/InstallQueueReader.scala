@@ -25,12 +25,12 @@ import java.util.Base64
 
 import scala.collection.JavaConversions._
 
-class LocalInstallQueueReader(zkClient: CuratorFramework) extends InstallQueueReader[PackageDefinition] {
+class UniverseInstallQueueReader(zkClient: CuratorFramework) extends InstallQueueReader[PackageDefinition] {
 
-  val installQueue = InstallQueueHelpers.localInstallQueue
+  val installQueue = InstallQueueHelpers.universeInstallQueue
 
   override def getData(bytes: Array[Byte]): PackageDefinition = {
-    val str = new String(Base64.getDecoder.decode(bytes), StandardCharsets.UTF_8)
+    val str = new String(bytes, StandardCharsets.UTF_8)
     decode[PackageDefinition](str) match {
       case Xor.Right(pkgDef) => pkgDef
       case Xor.Left(failure) => throw ZooKeeperStorageError("Couldn't parse data read from Zookeeper")
@@ -39,12 +39,12 @@ class LocalInstallQueueReader(zkClient: CuratorFramework) extends InstallQueueRe
 
 }
 
-class UniverseInstallQueueReader(zkClient: CuratorFramework) extends InstallQueueReader[Uri] {
+class LocalInstallQueueReader(zkClient: CuratorFramework) extends InstallQueueReader[Uri] {
 
-  val installQueue = InstallQueueHelpers.universeInstallQueue
+  val installQueue = InstallQueueHelpers.localInstallQueue
 
   override def getData(bytes: Array[Byte]): Uri = {
-    new String(Base64.getDecoder.decode(bytes), StandardCharsets.UTF_8).as[Uri]
+    new String(bytes, StandardCharsets.UTF_8).as[Uri]
   }
 }
 
@@ -56,13 +56,12 @@ trait InstallQueueReader[T] {
 
   def readPackage(
     zkClient: CuratorFramework,
-    pkg: PackageCoordinate,
-    data: T
+    pkg: PackageCoordinate
   ): Future[T] = {
 
     val pkgPath = s"${installQueue}/${pkg.as[String]}"
     Future {
-      if (zkClient.checkExists().forPath(pkgPath) == null) {
+      if (zkClient.checkExists().forPath(pkgPath) != null) {
         getData(zkClient.getData().forPath(pkgPath))
       } else {
         throw PackageNotFound(pkg.name)

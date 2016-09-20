@@ -4,9 +4,10 @@ import com.netaporter.uri.Uri
 import com.twitter.util.Future
 import com.twitter.bijection.Conversion.asMethod
 
+import com.mesosphere.cosmos.converter.Storage._
+import com.mesosphere.cosmos.ZooKeeperStorageError
 import com.mesosphere.universe.v3.model.PackageDefinition
 import com.mesosphere.universe.v3.circe.Encoders._
-import com.mesosphere.cosmos.converter.Storage._
 
 import io.circe.Encoder
 import io.circe.jawn.decode
@@ -16,19 +17,21 @@ import org.apache.curator.framework.CuratorFramework
 
 import java.nio.charset.StandardCharsets
 
-class LocalInstallQueueWriter(zkClient: CuratorFramework) extends InstallQueueWriter[PackageDefinition] {
+class UniverseInstallQueueWriter(zkClient: CuratorFramework) extends InstallQueueWriter[PackageDefinition] {
 
-  val installQueue = InstallQueueHelpers.localInstallQueue
+  val installQueue = InstallQueueHelpers.universeInstallQueue
 
   override def getBytes(pkgDef: PackageDefinition) =
     pkgDef.asJson.noSpaces.getBytes(StandardCharsets.UTF_8)
 }
 
-class UniverseInstallQueueWriter(zkClient: CuratorFramework) extends InstallQueueWriter[Uri] {
+class LocalInstallQueueWriter(zkClient: CuratorFramework) extends InstallQueueWriter[Uri] {
 
-  val installQueue = InstallQueueHelpers.universeInstallQueue
+  val installQueue = InstallQueueHelpers.localInstallQueue
 
-  override def getBytes(uri: Uri) =  uri.toString.getBytes(StandardCharsets.UTF_8)
+  override def getBytes(uri: Uri) = {
+    uri.toString.getBytes(StandardCharsets.UTF_8)
+  }
 }
 
 trait InstallQueueWriter[T] {
@@ -43,11 +46,24 @@ trait InstallQueueWriter[T] {
     data: T
   ): Future[Unit] = {
 
-    // readPackage -> add if needed
     val pkgPath = s"${installQueue}/${pkg.as[String]}"
     Future {
       if (zkClient.checkExists().forPath(pkgPath) == null) {
-        zkClient.setData().forPath(pkgPath, getBytes(data))
+          zkClient.create.creatingParentsIfNeeded.forPath(pkgPath)
+          zkClient.setData().forPath(pkgPath, getBytes(data))
+      }
+    }
+  }
+
+  def deletePackage(
+    zkClient: CuratorFramework,
+    pkg: PackageCoordinate
+  ): Future[Unit] = {
+
+    val pkgPath = s"${installQueue}/${pkg.as[String]}"
+    Future {
+      if (zkClient.checkExists().forPath(pkgPath) != null) {
+        zkClient.delete().deletingChildrenIfNeeded().forPath(pkgPath)
       }
     }
   }
