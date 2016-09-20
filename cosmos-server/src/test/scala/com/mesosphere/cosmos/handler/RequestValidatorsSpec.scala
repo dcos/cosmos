@@ -122,7 +122,7 @@ final class RequestValidatorsSpec extends FreeSpec {
         .setHeader("Accept", accept.toSeq)
         .setHeader("Authorization", authorization.toSeq)
         .setHeader("Content-Type", MediaTypes.applicationJson.show)
-        .buildPost(Buf.Utf8("\"null\"")) //decode circe requires the double quotes
+        .buildPost(Buf.Utf8(Json.Null.noSpaces))
 
       val reader = factory(produces)
       val res = reader(Input(request))
@@ -156,10 +156,10 @@ object RequestValidatorsSpec {
     }
   }
 
-  object StandardReaderFactory extends RequestReaderFactory[String] {
+  object StandardReaderFactory extends RequestReaderFactory[Json] {
     override def apply[Res](
       produces: DispatchingMediaTypedEncoder[Res]
-    ): Endpoint[EndpointContext[String, Res]] = {
+    ): Endpoint[EndpointContext[Json, Res]] = {
       RequestValidators.standard(
         accepts = MediaTypedRequestDecoder.apply(MediaTypedDecoder(MediaTypes.applicationJson)),
         produces = produces
