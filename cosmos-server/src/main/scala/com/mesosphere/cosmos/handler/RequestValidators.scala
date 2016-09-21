@@ -1,7 +1,8 @@
 package com.mesosphere.cosmos.handler
 
 import com.mesosphere.cosmos.IncompatibleAcceptHeader
-import com.mesosphere.cosmos.circe.{DispatchingMediaTypedEncoder, MediaTypedDecoder, MediaTypedEncoder}
+import com.mesosphere.cosmos.circe.{DispatchingMediaTypedEncoder, MediaTypedEncoder}
+import com.mesosphere.cosmos.finch.MediaTypedRequestDecoder
 import com.mesosphere.cosmos.http.FinchExtensions._
 import com.mesosphere.cosmos.http.{Authorization, CompoundMediaType, MediaType, RequestSession}
 import com.twitter.util.Future
@@ -19,11 +20,11 @@ object RequestValidators {
   }
 
   def standard[Req, Res](implicit
-    accepts: MediaTypedDecoder[Req],
+    accepts: MediaTypedRequestDecoder[Req],
     produces: DispatchingMediaTypedEncoder[Res]
   ): Endpoint[EndpointContext[Req, Res]] = {
     val r = baseValidator(produces)
-    val h = header("Content-Type").as[MediaType].should(beTheExpectedType(accepts.mediaType))
+    val h = header("Content-Type").as[MediaType].should(beTheExpectedType(accepts.mediaTypedDecoder.mediaType))
     val b = body.as[Req](accepts.decoder, accepts.classTag)
     val c = r :: h :: b
     c.map {

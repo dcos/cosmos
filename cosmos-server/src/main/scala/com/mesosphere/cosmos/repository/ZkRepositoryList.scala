@@ -1,25 +1,15 @@
 package com.mesosphere.cosmos.repository
 
-import java.nio.ByteBuffer
-import java.nio.charset.StandardCharsets
-
 import cats.data.Ior
 import com.mesosphere.cosmos._
-import com.mesosphere.cosmos.circe.Decoders._
-import com.mesosphere.cosmos.circe.Encoders._
-import com.mesosphere.cosmos.http.{MediaType, MediaTypeOps, MediaTypeSubType}
-import com.mesosphere.cosmos.model.ZooKeeperStorageEnvelope
 import com.mesosphere.cosmos.repository.DefaultRepositories._
-import com.mesosphere.cosmos.rpc.v1.circe.Decoders._
-import com.mesosphere.cosmos.rpc.v1.circe.Encoders._
 import com.mesosphere.cosmos.rpc.v1.model.PackageRepository
-import com.mesosphere.universe.common.ByteBuffers
+import com.mesosphere.cosmos.storage.Envelope
+import com.mesosphere.cosmos.storage.v1.circe.MediaTypedDecoders._
+import com.mesosphere.cosmos.storage.v1.circe.MediaTypedEncoders._
 import com.netaporter.uri.Uri
 import com.twitter.finagle.stats.{NullStatsReceiver, Stat, StatsReceiver}
 import com.twitter.util._
-import io.circe.Encoder
-import io.circe.jawn.decode
-import io.circe.syntax._
 import org.apache.curator.framework.CuratorFramework
 import org.apache.curator.framework.api.{BackgroundCallback, CuratorEvent, CuratorEventType}
 import org.apache.curator.framework.recipes.cache.NodeCache
@@ -39,22 +29,13 @@ private[cosmos] final class ZkRepositoryList(
 
   private[this] val stats = statsReceiver.scope("zkStorage")
 
-  private[this] val envelopeMediaType = MediaType(
-    "application",
-    MediaTypeSubType("vnd.dcos.package.repository.repo-list", Some("json")),
-    Map(
-      "charset" -> "utf-8",
-      "version" -> "v1"
-    )
-  )
-
   private[this] val DefaultRepos: List[PackageRepository] = DefaultRepositories().getOrElse(Nil)
 
   override def read(): Future[List[PackageRepository]] = {
     Stat.timeFuture(stats.stat("read")) {
       readFromZooKeeper.flatMap {
         case Some((_, bytes)) =>
-          Future(decodeData(bytes))
+          Future(Envelope.decodeData[List[PackageRepository]](bytes))
         case None =>
           create(DefaultRepos)
       }
@@ -67,14 +48,13 @@ private[cosmos] final class ZkRepositoryList(
       readFromCache.flatMap {
         case Some((_, bytes)) =>
           readCacheStats.counter("hit").incr
-          Future(decodeData(bytes))
+          Future(Envelope.decodeData[List[PackageRepository]](bytes))
         case None =>
           readCacheStats.counter("miss").incr
           read()
       }
     }
   }
-
 
   override def add(
     index: Option[Int],
@@ -83,7 +63,7 @@ private[cosmos] final class ZkRepositoryList(
     Stat.timeFuture(stats.stat("add")) {
       readFromZooKeeper.flatMap {
         case Some((stat, bytes)) =>
-          write(stat, addToList(index, packageRepository, decodeData(bytes)))
+          write(stat, addToList(index, packageRepository, Envelope.decodeData[List[PackageRepository]](bytes)))
 
         case None =>
           create(addToList(index, packageRepository, DefaultRepos))
@@ -96,7 +76,7 @@ private[cosmos] final class ZkRepositoryList(
       Stat.timeFuture(stats.stat("delete")) {
         readFromZooKeeper.flatMap {
           case Some((stat, bytes)) =>
-            val originalData = decodeData(bytes)
+            val originalData = Envelope.decodeData[List[PackageRepository]](bytes)
             val updatedData = originalData.filterNot(predicate)
             if (originalData.size == updatedData.size) {
               throw new RepositoryNotPresent(nameOrUri)
@@ -119,7 +99,7 @@ private[cosmos] final class ZkRepositoryList(
       new CreateHandler(promise, repositories)
     ).forPath(
       ZkRepositoryList.PackageRepositoriesPath,
-      encodeEnvelope(toByteBuffer(repositories))
+      Envelope.encodeData(repositories)
     )
 
     promise
@@ -135,7 +115,7 @@ private[cosmos] final class ZkRepositoryList(
       new WriteHandler(promise, repositories)
     ).forPath(
       ZkRepositoryList.PackageRepositoriesPath,
-      encodeEnvelope(toByteBuffer(repositories))
+      Envelope.encodeData(repositories)
     )
 
     promise
@@ -188,44 +168,6 @@ private[cosmos] final class ZkRepositoryList(
         throw new RepositoryAddIndexOutOfBounds(i, list.size - 1)
     }
   }
-
-  private[this] def decodeData(bytes: Array[Byte]): List[PackageRepository] = {
-    decode[ZooKeeperStorageEnvelope](new String(bytes, StandardCharsets.UTF_8))
-      .flatMap { envelope =>
-        val contentType = envelope.metadata
-          .get("Content-Type")
-          .flatMap { s => MediaType.parse(s).toOption }
-
-        contentType match {
-          case Some(mt) if MediaTypeOps.compatible(envelopeMediaType, mt) =>
-            val dataString: String = new String(
-              ByteBuffers.getBytes(envelope.data),
-              StandardCharsets.UTF_8)
-            decode[List[PackageRepository]](dataString)
-          case Some(mt) =>
-            throw new ZooKeeperStorageError(
-              s"Error while trying to deserialize data. " +
-              s"Expected Content-Type '${envelopeMediaType.show}' actual '${mt.show}'"
-            )
-          case None =>
-            throw new ZooKeeperStorageError(
-              s"Error while trying to deserialize data. " +
-              s"Content-Type not defined."
-            )
-        }
-      } valueOr { err => throw new CirceError(err) }
-  }
-
-  private[this] def toByteBuffer[A : Encoder](a: A): ByteBuffer = {
-    ByteBuffer.wrap(a.asJson.noSpaces.getBytes(StandardCharsets.UTF_8))
-  }
-
-  private[this] def encodeEnvelope(data: ByteBuffer): Array[Byte] = {
-    ZooKeeperStorageEnvelope(
-      metadata = Map("Content-Type" -> envelopeMediaType.show),
-      data = data
-    ).asJson.noSpaces.getBytes(StandardCharsets.UTF_8)
-  }
 }
 
 private object ZkRepositoryList {
@@ -257,7 +199,7 @@ private final class WriteHandler(
         promise.setValue(repositories)
       } else {
         val exception = if (code == KeeperException.Code.BADVERSION) {
-          // BADVERSION is expected so let's deplay a friendlier error
+          // BADVERSION is expected so let's display a friendlier error
           ConcurrentAccess(KeeperException.create(code, event.getPath))
         } else {
           KeeperException.create(code, event.getPath)
@@ -284,7 +226,7 @@ private final class CreateHandler(
         promise.setValue(repositories)
       } else {
         val exception = if (code == KeeperException.Code.NODEEXISTS) {
-          // NODEEXISTS is expected so let's deplay a friendlier error
+          // NODEEXISTS is expected so let's display a friendlier error
           ConcurrentAccess(KeeperException.create(code, event.getPath))
         } else {
           KeeperException.create(code, event.getPath)

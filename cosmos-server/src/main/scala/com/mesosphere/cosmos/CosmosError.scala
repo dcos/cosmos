@@ -227,3 +227,5 @@ case class IncompatibleAcceptHeader(available: Set[MediaType], specified: Set[Me
     "available" -> available.map(_.show).asJson
   )))
 }
+
+case class EnvelopeError(msg: String) extends CosmosError
