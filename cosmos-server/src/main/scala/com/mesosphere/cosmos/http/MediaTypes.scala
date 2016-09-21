@@ -8,6 +8,7 @@ object MediaTypes {
       Map("charset" -> "utf-8", "version" -> ("v" + version))
     )
 
+  // RPC Media Types
   val any = MediaType("*", MediaTypeSubType("*"))
   val applicationJson = MediaType("application", MediaTypeSubType("json"), Map("charset" -> "utf-8"))
   val applicationZip = MediaType("application", MediaTypeSubType("zip"))
@@ -55,5 +56,8 @@ object MediaTypes {
   val V2InstallResponse = vnd("install-response", 2)
   val V1ListResponse = vnd("list-response", 1)
   val V2ListResponse = vnd("list-response", 2)
+
+  // Storage Media Types
+  val RepositoryList = vnd("repository.repo-list")
 
 }

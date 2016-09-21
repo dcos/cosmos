@@ -278,6 +278,7 @@ object Encoders extends LowPriorityImplicits {
       s"Package: [$name] version: [$version] does not have a Marathon template defined and can not be rendered"
     case IncompatibleAcceptHeader(available, specified) =>
       s"Item 'header 'Accept'' deemed invalid by rule: 'should match one of: ${available.map(_.show).mkString(", ")}'"
+    case EnvelopeError(msg) => msg
   }
 
 }
