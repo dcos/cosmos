@@ -2,14 +2,16 @@ package com.mesosphere.cosmos.converter
 
 import com.mesosphere.cosmos.{label, rpc}
 import com.mesosphere.universe
-import com.twitter.bijection.Bijection
+import com.twitter.bijection.{Bijection, Conversion}
+import io.finch
+import io.finch.internal
 
 object Label {
 
-  implicit val labelV1PackageMetadataToRpcV1InstalledPackageInformation: Bijection[
-      label.v1.model.PackageMetadata,
-      rpc.v1.model.InstalledPackageInformation
-    ] = Bijection.build(fwd)(rev)
+  implicit val labelV1PackageMetadataToRpcV1InstalledPackageInformation:
+    Bijection[label.v1.model.PackageMetadata, rpc.v1.model.InstalledPackageInformation] = {
+    Bijection.build(fwd)(rev)
+  }
 
   private[this] def fwd(x: label.v1.model.PackageMetadata) = {
     rpc.v1.model.InstalledPackageInformation(

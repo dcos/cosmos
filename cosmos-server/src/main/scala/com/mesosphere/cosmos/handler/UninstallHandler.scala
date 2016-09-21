@@ -79,11 +79,13 @@ private[cosmos] final class UninstallHandler(
   override def apply(req: rpc.v1.model.UninstallRequest)(implicit
     session: RequestSession
   ): Future[rpc.v1.model.UninstallResponse] = {
-    // the following implementation is based on what the current CLI implementation does.
-    // I've decided to follow it as close as possible so that we reduce any possible behavioral
-    // changes that could have unforeseen consequences.
-    //
-    // In the future this will probably be revisited once Cosmos is the actual authority on services
+    /*
+    the following implementation is based on what the current CLI implementation does.
+    I've decided to follow it as close as possible so that we reduce any possible behavioral
+    changes that could have unforeseen consequences.
+
+    In the future this will probably be revisited once Cosmos is the actual authority on services
+    */
     val f = req.appId match {
       case Some(appId) =>
         adminRouter.getAppOption(appId)

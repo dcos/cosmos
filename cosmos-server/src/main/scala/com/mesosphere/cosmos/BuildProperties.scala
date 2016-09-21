@@ -19,7 +19,7 @@ private[cosmos] class BuildProperties private[cosmos](resourceName: String) {
 object BuildProperties {
   private[this] val loaded = new BuildProperties("/build.properties")
 
-  def apply() = loaded
+  def apply(): BuildProperties = loaded
 
   implicit class BuildPropertiesOps(val bp: BuildProperties) {
 

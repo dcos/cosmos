@@ -24,7 +24,7 @@ private[repository] class DefaultRepositories private[repository](resourceName: 
 object DefaultRepositories {
   private[this] val loaded = new DefaultRepositories("/default-repositories.json")
 
-  def apply() = loaded
+  def apply(): DefaultRepositories = loaded
 
   implicit class DefaultRepositoriesOps(val dr: DefaultRepositories) extends AnyVal {
     def get(): Try[Xor[io.circe.Error, List[PackageRepository]]] = {

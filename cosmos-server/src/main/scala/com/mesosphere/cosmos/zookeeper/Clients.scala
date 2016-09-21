@@ -18,6 +18,9 @@ import com.mesosphere.cosmos.model.ZooKeeperUri
 object Clients {
   val logger = org.slf4j.LoggerFactory.getLogger(getClass)
 
+  val retries = 3
+  val baseSleepTimeMs = 1000
+
   def createAndInitialize(
     zkUri: ZooKeeperUri,
     zkCredentials: Option[(String, String)]
@@ -26,7 +29,7 @@ object Clients {
       .builder()
       .namespace(zkUri.path.stripPrefix("/"))
       .connectString(zkUri.connectString)
-      .retryPolicy(new ExponentialBackoffRetry(1000, 3))
+      .retryPolicy(new ExponentialBackoffRetry(baseSleepTimeMs, retries))
 
     val authInfo = zkCredentials.map {
       case (user, secret) =>

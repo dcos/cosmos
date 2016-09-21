@@ -5,10 +5,14 @@ import com.twitter.util.Try
 
 object Uris {
 
+  private[this] val httpsPort = 443
+  private[this] val httpPort = 80
+
   def extractHostAndPort(uri: Uri): Try[ConnectionDetails] = Try {
+
     (uri.scheme, uri.host, uri.port) match {
-      case (Some("https"), Some(h), p) => ConnectionDetails(h, p.getOrElse(443), tls = true)
-      case (Some("http"), Some(h), p) => ConnectionDetails(h, p.getOrElse(80), tls = false)
+      case (Some("https"), Some(h), p) => ConnectionDetails(h, p.getOrElse(httpsPort), tls = true)
+      case (Some("http"), Some(h), p) => ConnectionDetails(h, p.getOrElse(httpPort), tls = false)
       case (_, _, _) => throw err(uri.toString)
     }
   }

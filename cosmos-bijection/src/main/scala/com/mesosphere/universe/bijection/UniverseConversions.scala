@@ -179,9 +179,10 @@ object UniverseConversions {
     Injection.build(fwd)(rev)
   }
 
-  implicit val v2CommandToV3Command: Bijection[
-    universe.v2.model.Command,
-    universe.v3.model.Command
+  implicit val v2CommandToV3Command:
+    Bijection[
+      universe.v2.model.Command,
+      universe.v3.model.Command
     ] = {
     Bijection.build { (x: universe.v2.model.Command) =>
       universe.v3.model.Command(pip = x.pip)
@@ -190,9 +191,10 @@ object UniverseConversions {
     }
   }
 
-  implicit val v3V2ResourceToV3V3Resource: Injection[
-    universe.v3.model.V2Resource,
-    universe.v3.model.V3Resource
+  implicit val v3V2ResourceToV3V3Resource:
+    Injection[
+      universe.v3.model.V2Resource,
+      universe.v3.model.V3Resource
     ] = {
     Injection.buildCatchInvert { (value: universe.v3.model.V2Resource) =>
       universe.v3.model.V3Resource(value.assets, value.images)
