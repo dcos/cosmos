@@ -7,18 +7,13 @@ import com.mesosphere.cosmos.{CirceError, EnvelopeError}
 import com.mesosphere.cosmos.circe.{MediaTypedDecoder, MediaTypedEncoder}
 import com.mesosphere.cosmos.http.{MediaType, MediaTypeOps}
 import com.mesosphere.universe.common.ByteBuffers
-import com.mesosphere.universe.common.circe.Decoders._
-import com.mesosphere.universe.common.circe.Encoders._
-import io.circe.{Decoder, Encoder}
-import io.circe.generic.semiauto._
+import com.mesosphere.cosmos.circe.Decoders._
+import com.mesosphere.cosmos.circe.Encoders._
+import com.mesosphere.cosmos.model.StorageEnvelope
 import io.circe.jawn.decode
 import io.circe.syntax._
 
 object Envelope {
-
-  private[this] case class StorageEnvelope(metadata: Map[String, String], data: ByteBuffer)
-  private[this] implicit val decodeStorageEnvelope: Decoder[StorageEnvelope] = deriveDecoder
-  private[this] implicit val encodeStorageEnvelope: Encoder[StorageEnvelope] = deriveEncoder
 
   def encodeData[T](data: T)(implicit mediaTypedEncoder: MediaTypedEncoder[T]): Array[Byte] = {
     implicit val encoder = mediaTypedEncoder.encoder
@@ -59,4 +54,5 @@ object Envelope {
         }
       } valueOr { err => throw CirceError(err) }
   }
+
 }

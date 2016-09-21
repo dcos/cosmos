@@ -3,6 +3,7 @@ package com.mesosphere.cosmos.circe
 import cats.data.Ior
 import com.mesosphere.cosmos._
 import com.mesosphere.cosmos.http.MediaType
+import com.mesosphere.cosmos.model._
 import com.mesosphere.cosmos.converter.ConversionFailure
 import com.mesosphere.cosmos.thirdparty.marathon.circe.Encoders._
 import com.mesosphere.cosmos.rpc.v1.circe.Encoders._
@@ -50,6 +51,9 @@ sealed trait LowPriorityImplicits {
 object Encoders extends LowPriorityImplicits {
 
   implicit val encodeErrorResponse: Encoder[ErrorResponse] = deriveEncoder[ErrorResponse]
+
+  implicit val encodeStorageEnvelope: Encoder[StorageEnvelope] =
+    deriveEncoder[StorageEnvelope]
 
   implicit val exceptionEncoder: Encoder[Exception] = {
     Encoder.instance { e => exceptionErrorResponse(e).asJson }
