@@ -52,8 +52,8 @@ object Encoders extends LowPriorityImplicits {
 
   implicit val encodeErrorResponse: Encoder[ErrorResponse] = deriveEncoder[ErrorResponse]
 
-  implicit val encodeStorageEnvelope: Encoder[StorageEnvelope] =
-    deriveEncoder[StorageEnvelope]
+  implicit val encodeZooKeeperStorageEnvelope: Encoder[ZooKeeperStorageEnvelope] =
+    deriveEncoder[ZooKeeperStorageEnvelope]
 
   implicit val exceptionEncoder: Encoder[Exception] = {
     Encoder.instance { e => exceptionErrorResponse(e).asJson }

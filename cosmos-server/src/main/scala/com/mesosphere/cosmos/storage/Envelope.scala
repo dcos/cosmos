@@ -9,7 +9,7 @@ import com.mesosphere.cosmos.http.{MediaType, MediaTypeOps}
 import com.mesosphere.universe.common.ByteBuffers
 import com.mesosphere.cosmos.circe.Decoders._
 import com.mesosphere.cosmos.circe.Encoders._
-import com.mesosphere.cosmos.model.StorageEnvelope
+import com.mesosphere.cosmos.model.ZooKeeperStorageEnvelope
 import io.circe.jawn.decode
 import io.circe.syntax._
 
@@ -19,7 +19,7 @@ object Envelope {
     implicit val encoder = mediaTypedEncoder.encoder
     val mediaType = mediaTypedEncoder.mediaType
     val bytes = ByteBuffer.wrap(data.asJson.noSpaces.getBytes(StandardCharsets.UTF_8))
-    StorageEnvelope(
+    ZooKeeperStorageEnvelope(
       metadata = Map("Content-Type" -> mediaType.show),
       data = bytes
     ).asJson.noSpaces.getBytes(StandardCharsets.UTF_8)
@@ -29,7 +29,7 @@ object Envelope {
     implicit val decoder = mediaTypedDecoder.decoder
     val mediaType = mediaTypedDecoder.mediaType
 
-    decode[StorageEnvelope](new String(data, StandardCharsets.UTF_8))
+    decode[ZooKeeperStorageEnvelope](new String(data, StandardCharsets.UTF_8))
       .flatMap { envelope =>
         val contentType = envelope.metadata
           .get("Content-Type")
