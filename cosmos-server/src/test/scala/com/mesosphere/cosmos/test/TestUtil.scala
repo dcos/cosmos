@@ -1,20 +1,24 @@
 package com.mesosphere.cosmos.test
 
-import com.mesosphere.cosmos.http.RequestSession
+import com.mesosphere.cosmos.http.{MediaType, MediaTypeSubType, RequestSession}
 import java.io.IOException
 import java.nio.file._
 import java.nio.file.attribute.BasicFileAttributes
+
 import com.mesosphere.cosmos._
 import com.mesosphere.cosmos.converter.Common._
 import java.nio.ByteBuffer
 import java.nio.charset.StandardCharsets
+
+import com.mesosphere.cosmos.circe.{MediaTypedDecoder, MediaTypedEncoder}
 import com.mesosphere.universe
 import com.mesosphere.universe.v3.model.PackageDefinition.ReleaseVersion
 import com.mesosphere.universe.v3.model._
 import com.netaporter.uri.Uri
 import com.twitter.bijection.Conversion.asMethod
+import io.circe.generic.semiauto._
 import io.circe.syntax._
-import io.circe.JsonObject
+import io.circe.{Decoder, Encoder, JsonObject}
 
 object TestUtil {
 
@@ -322,4 +326,33 @@ object TestUtil {
     case v2: V2Package => (v2.name, v2.releaseVersion)
     case v3: V3Package => (v3.name, v3.releaseVersion)
   }
+
+  case class TestClass(name: String)
+  private val TestClassMt = MediaType(
+    "application",
+    MediaTypeSubType("vnd.dcos.package.repository.test-class", Some("json")),
+    Map(
+      "charset" -> "utf-8",
+      "version" -> "v1"
+    )
+  )
+  implicit val decodeTestClass: Decoder[TestClass] = deriveDecoder
+  implicit val encodeTestClass: Encoder[TestClass] = deriveEncoder
+  implicit val testClassDecoder: MediaTypedDecoder[TestClass] =
+    MediaTypedDecoder(TestClassMt)
+  implicit val testClassEncoder: MediaTypedEncoder[TestClass] =
+    MediaTypedEncoder(TestClassMt)
+
+  case class TestClass2(name: String)
+  val TestClass2Mt = MediaType(
+    "application",
+    MediaTypeSubType("vnd.dcos.package.repository.test-class2", Some("json")),
+    Map(
+      "charset" -> "utf-8",
+      "version" -> "v1"
+    )
+  )
+  implicit val encodeTestClass2: Encoder[TestClass2] = deriveEncoder
+  implicit val testClass2Encoder: MediaTypedEncoder[TestClass2] =
+    MediaTypedEncoder(TestClass2Mt)
 }
