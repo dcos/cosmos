@@ -17,7 +17,7 @@ import org.apache.curator.framework.CuratorFramework
 
 import java.nio.charset.StandardCharsets
 
-private[cosmos] final class UniverseInstallQueueWriter(zkClient: CuratorFramework) extends InstallQueueWriter[PackageDefinition] {
+private[cosmos] final class UniverseInstallQueueAdder(zkClient: CuratorFramework) extends InstallQueueAdder[PackageDefinition] {
 
   val zkPath = InstallQueueHelpers.universeInstallQueue
 
@@ -25,7 +25,7 @@ private[cosmos] final class UniverseInstallQueueWriter(zkClient: CuratorFramewor
     pkgDef.asJson.noSpaces.getBytes(StandardCharsets.UTF_8)
 }
 
-private[cosmos] final class LocalInstallQueueWriter(zkClient: CuratorFramework) extends InstallQueueWriter[Uri] {
+private[cosmos] final class LocalInstallQueueAdder(zkClient: CuratorFramework) extends InstallQueueAdder[Uri] {
 
   val zkPath = InstallQueueHelpers.localInstallQueue
 
@@ -34,7 +34,7 @@ private[cosmos] final class LocalInstallQueueWriter(zkClient: CuratorFramework) 
   }
 }
 
-sealed trait InstallQueueWriter[T] {
+sealed trait InstallQueueAdder[T] {
 
   val zkPath: String
 
@@ -51,19 +51,6 @@ sealed trait InstallQueueWriter[T] {
       if (zkClient.checkExists().forPath(pkgPath) == null) {
           zkClient.create.creatingParentsIfNeeded.forPath(pkgPath)
           zkClient.setData().forPath(pkgPath, getBytes(data))
-      }
-    }
-  }
-
-  def deletePackage(
-    zkClient: CuratorFramework,
-    pkg: PackageCoordinate
-  ): Future[Unit] = {
-
-    val pkgPath = s"${zkPath}/${pkg.as[String]}"
-    Future {
-      if (zkClient.checkExists().forPath(pkgPath) != null) {
-        zkClient.delete().deletingChildrenIfNeeded().forPath(pkgPath)
       }
     }
   }
