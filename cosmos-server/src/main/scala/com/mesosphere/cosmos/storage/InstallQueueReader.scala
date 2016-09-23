@@ -25,32 +25,32 @@ import java.util.Base64
 
 import scala.collection.JavaConversions._
 
-class UniverseInstallQueueReader(zkClient: CuratorFramework) extends InstallQueueReader[PackageDefinition] {
+private[cosmos] final class UniverseInstallQueueReader(zkClient: CuratorFramework) extends InstallQueueReader[PackageDefinition] {
 
-  val installQueue = InstallQueueHelpers.universeInstallQueue
+  val zkPath = InstallQueueHelpers.universeInstallQueue
 
   override def getData(bytes: Array[Byte]): PackageDefinition = {
     val str = new String(bytes, StandardCharsets.UTF_8)
     decode[PackageDefinition](str) match {
       case Xor.Right(pkgDef) => pkgDef
-      case Xor.Left(failure) => throw ZooKeeperStorageError("Couldn't parse data read from Zookeeper")
+      case Xor.Left(failure) => throw ZooKeeperStorageError(s"Couldn't parse package definition from Zookeeper: $str")
     }
   }
 
 }
 
-class LocalInstallQueueReader(zkClient: CuratorFramework) extends InstallQueueReader[Uri] {
+private[cosmos] final class LocalInstallQueueReader(zkClient: CuratorFramework) extends InstallQueueReader[Uri] {
 
-  val installQueue = InstallQueueHelpers.localInstallQueue
+  val zkPath = InstallQueueHelpers.localInstallQueue
 
   override def getData(bytes: Array[Byte]): Uri = {
     new String(bytes, StandardCharsets.UTF_8).as[Uri]
   }
 }
 
-trait InstallQueueReader[T] {
+sealed trait InstallQueueReader[T] {
 
-  val installQueue: String
+  val zkPath: String
 
   def getData(bytes: Array[Byte]): T
 
@@ -59,7 +59,7 @@ trait InstallQueueReader[T] {
     pkg: PackageCoordinate
   ): Future[T] = {
 
-    val pkgPath = s"${installQueue}/${pkg.as[String]}"
+    val pkgPath = s"${zkPath}/${pkg.as[String]}"
     Future {
       if (zkClient.checkExists().forPath(pkgPath) != null) {
         getData(zkClient.getData().forPath(pkgPath))
@@ -71,7 +71,7 @@ trait InstallQueueReader[T] {
 
   def queue(zkClient: CuratorFramework): Future[List[PackageCoordinate]] = {
     Future {
-      zkClient.getChildren().forPath(installQueue).toList.map(_.as[PackageCoordinate])
+      zkClient.getChildren().forPath(zkPath).toList.map(_.as[PackageCoordinate])
     }
   }
 }

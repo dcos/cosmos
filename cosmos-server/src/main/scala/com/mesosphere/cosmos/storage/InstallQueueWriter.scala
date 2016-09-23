@@ -17,26 +17,26 @@ import org.apache.curator.framework.CuratorFramework
 
 import java.nio.charset.StandardCharsets
 
-class UniverseInstallQueueWriter(zkClient: CuratorFramework) extends InstallQueueWriter[PackageDefinition] {
+private[cosmos] final class UniverseInstallQueueWriter(zkClient: CuratorFramework) extends InstallQueueWriter[PackageDefinition] {
 
-  val installQueue = InstallQueueHelpers.universeInstallQueue
+  val zkPath = InstallQueueHelpers.universeInstallQueue
 
   override def getBytes(pkgDef: PackageDefinition) =
     pkgDef.asJson.noSpaces.getBytes(StandardCharsets.UTF_8)
 }
 
-class LocalInstallQueueWriter(zkClient: CuratorFramework) extends InstallQueueWriter[Uri] {
+private[cosmos] final class LocalInstallQueueWriter(zkClient: CuratorFramework) extends InstallQueueWriter[Uri] {
 
-  val installQueue = InstallQueueHelpers.localInstallQueue
+  val zkPath = InstallQueueHelpers.localInstallQueue
 
   override def getBytes(uri: Uri) = {
     uri.toString.getBytes(StandardCharsets.UTF_8)
   }
 }
 
-trait InstallQueueWriter[T] {
+sealed trait InstallQueueWriter[T] {
 
-  val installQueue: String
+  val zkPath: String
 
   def getBytes(a: T): Array[Byte]
 
@@ -46,7 +46,7 @@ trait InstallQueueWriter[T] {
     data: T
   ): Future[Unit] = {
 
-    val pkgPath = s"${installQueue}/${pkg.as[String]}"
+    val pkgPath = s"${zkPath}/${pkg.as[String]}"
     Future {
       if (zkClient.checkExists().forPath(pkgPath) == null) {
           zkClient.create.creatingParentsIfNeeded.forPath(pkgPath)
@@ -60,7 +60,7 @@ trait InstallQueueWriter[T] {
     pkg: PackageCoordinate
   ): Future[Unit] = {
 
-    val pkgPath = s"${installQueue}/${pkg.as[String]}"
+    val pkgPath = s"${zkPath}/${pkg.as[String]}"
     Future {
       if (zkClient.checkExists().forPath(pkgPath) != null) {
         zkClient.delete().deletingChildrenIfNeeded().forPath(pkgPath)
