@@ -14,6 +14,6 @@ object Decoders {
   implicit val decodeZooKeeperStorageEnvelope: Decoder[ZooKeeperStorageEnvelope] =
     deriveDecoder[ZooKeeperStorageEnvelope]
 
-  implicit val decodePackageCoordinate: Decoder[PackageCoordinate]=
+  implicit val decodePackageCoordinate: Decoder[PackageCoordinate] =
     deriveDecoder[PackageCoordinate]
 }
