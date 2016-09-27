@@ -27,7 +27,7 @@ import java.nio.charset.StandardCharsets
 import java.util.Base64
 
 import scala.collection.JavaConversions._
-
+/*
 private[cosmos] final class UniversePackageQueueReader(zkClient: CuratorFramework) extends
   PackageQueueReader[PackageDefinition](zkClient) {
 
@@ -52,9 +52,13 @@ private[cosmos] final class LocalPackageQueueReader(zkClient: CuratorFramework) 
     new String(bytes, StandardCharsets.UTF_8)
   }
 }
+*/
+trait PackageQueueReader {
 
-sealed abstract class PackageQueueReader[T](zkClient: CuratorFramework) {
+  def readAll(): Future[List[(PackageCoordinate, PackageQueueContents)]]
 
+  def read(pkg: PackageCoordinate): Future[PackageQueueContents]
+/*
   val zkPath: String
 
   def getData(bytes: Array[Byte]): T
@@ -132,5 +136,5 @@ sealed abstract class PackageQueueReader[T](zkClient: CuratorFramework) {
 	logger.error("Package queue ReadQueue callback called for incorrect event: {}", event)
       }
     }
-  }
+  }*/
 }

@@ -9,10 +9,12 @@ import com.mesosphere.cosmos.thirdparty.marathon.circe.Encoders._
 import com.mesosphere.cosmos.rpc.v1.circe.Encoders._
 import com.mesosphere.cosmos.rpc.v1.model.ErrorResponse
 import com.mesosphere.cosmos.storage.PackageCoordinate
+import com.mesosphere.cosmos.storage.{ PackageCoordinate, PackageQueueContents, Operation }
 import com.mesosphere.universe.common.circe.Encoders._
 import com.mesosphere.universe.v2.circe.Encoders._
 import com.mesosphere.universe.v3.circe.Encoders._
 import com.mesosphere.universe.v3.model._
+import com.netaporter.uri.Uri
 import com.twitter.finagle.http.Status
 import io.circe.HistoryOp.opsToPath
 import io.circe.generic.encoding.DerivedObjectEncoder
@@ -57,6 +59,16 @@ object Encoders extends LowPriorityImplicits {
 
   implicit val encodePackageCoordinate: Encoder[PackageCoordinate] =
     deriveEncoder[PackageCoordinate]
+
+  implicit val encodeOperation: Encoder[Operation] =
+    deriveEncoder[Operation]
+
+  implicit val encodeEitherPackageQueue: Encoder[Either[PackageDefinition, Uri]] =
+    Encoder.instance(_.fold(_.asJson, _.asJson))
+
+  implicit val encodePackageQueueContents: Encoder[PackageQueueContents] = {
+    deriveEncoder[PackageQueueContents]
+  }
 
   implicit val exceptionEncoder: Encoder[Exception] = {
     Encoder.instance { e => exceptionErrorResponse(e).asJson }

@@ -40,5 +40,4 @@ object MediaTypedRequestDecoders {
 
   implicit val packageUninstallDecoder: MediaTypedRequestDecoder[UninstallRequest] =
     MediaTypedRequestDecoder(MediaTypedDecoder(MediaTypes.UninstallRequest))
-
 }
