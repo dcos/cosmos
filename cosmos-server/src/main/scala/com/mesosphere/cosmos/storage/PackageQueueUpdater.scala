@@ -24,22 +24,23 @@ import org.apache.zookeeper.KeeperException
 import java.nio.charset.StandardCharsets
 import java.util.Base64
 
-private[cosmos] final class UniversePackageQueueUpdater(zkClient: CuratorFramework) extends PackageQueueUpdater[PackageDefinition] {
+private[cosmos] final class UniversePackageQueueUpdater(zkClient: CuratorFramework)
+  extends PackageQueueUpdater[PackageDefinition](zkClient) {
 
   val zkPath = PackageQueueHelpers.universePackageQueue
 }
 
-private[cosmos] final class LocalPackageQueueUpdater(zkClient: CuratorFramework) extends PackageQueueUpdater[Uri] {
+private[cosmos] final class LocalPackageQueueUpdater(zkClient: CuratorFramework)
+  extends PackageQueueUpdater[Uri](zkClient) {
 
   val zkPath = PackageQueueHelpers.localPackageQueue
 }
 
-sealed trait PackageQueueUpdater[T] {
+sealed abstract class PackageQueueUpdater[T](zkClient: CuratorFramework) {
 
   val zkPath: String
 
   def deletePackage(
-    zkClient: CuratorFramework,
     pkg: PackageCoordinate
   ): Future[Boolean] = {
 

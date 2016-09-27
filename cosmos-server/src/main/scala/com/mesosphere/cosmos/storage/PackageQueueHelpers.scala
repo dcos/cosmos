@@ -2,16 +2,17 @@ package com.mesosphere.cosmos.storage
 
 object PackageQueueHelpers {
 
-  val newNode = true
-  val nodeAlreadyExists = false
-
-  val packageQueueBase = "/package/state"
+  val packageQueueBase = "/package/packageQueue"
   val localPackageQueue = s"$packageQueueBase/local"
   val universePackageQueue = s"$packageQueueBase/universe"
 
-  sealed trait EnumVal
-  case object Install extends EnumVal
-  case object Uninstall extends EnumVal
-  val PackageState = Seq(Install, Uninstall)
+  sealed trait NodeState
+  case object NewNode extends NodeState
+  case object NodeAlreadyExists extends NodeState
+  val NodeStates = Seq(NewNode, NodeAlreadyExists)
 
+  sealed trait PackageOperation
+  case object Install extends PackageOperation
+  case object Uninstall extends PackageOperation
+  val PackageStates = Seq(Install, Uninstall)
 }

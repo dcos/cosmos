@@ -41,17 +41,20 @@ private[cosmos] final class LocalPackageQueueAdder(zkClient: CuratorFramework) e
 
 sealed abstract class PackageQueueAdder[T](zkClient: CuratorFramework) {
 
+  import PackageQueueHelpers._
+
   val zkPath: String
 
   def getBytes(a: T): Array[Byte]
 
   def addPackage(
     pkg: PackageCoordinate,
-    data: T
-  ): Future[Boolean] = {
+    data: T,
+    state: PackageOperation
+  ): Future[NodeState] = {
 
-    val promise = Promise[Boolean]()
-    val pkgPath = s"${zkPath}/${pkg.as[String]}"
+    val promise = Promise[NodeState]()
+    val pkgPath = s"${zkPath}/${pkg.as[String]}/$state"
 
     zkClient.create.creatingParentsIfNeeded.inBackground(
       new AddPackageHandler(promise, data)
@@ -64,7 +67,7 @@ sealed abstract class PackageQueueAdder[T](zkClient: CuratorFramework) {
   }
 
   private[this] final class AddPackageHandler(
-    promise: Promise[Boolean],
+    promise: Promise[NodeState],
     data: T
   ) extends  BackgroundCallback {
     private[this] val logger = org.slf4j.LoggerFactory.getLogger(getClass)
@@ -74,9 +77,9 @@ sealed abstract class PackageQueueAdder[T](zkClient: CuratorFramework) {
         val code = KeeperException.Code.get(event.getResultCode)
         code match {
           case KeeperException.Code.OK =>
-            promise.setValue(PackageQueueHelpers.newNode)
+            promise.setValue(NewNode)
           case KeeperException.Code.NODEEXISTS =>
-            promise.setValue(PackageQueueHelpers.nodeAlreadyExists)
+            promise.setValue(NodeAlreadyExists)
           case _ =>
             promise.setException(KeeperException.create(code, event.getPath))
         }
