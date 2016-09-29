@@ -10,6 +10,7 @@ import com.mesosphere.cosmos.rpc.v1.circe.Encoders._
 import com.mesosphere.cosmos.rpc.v1.model.ErrorResponse
 import com.mesosphere.cosmos.storage.PackageCoordinate
 import com.mesosphere.cosmos.storage.{ PackageCoordinate, PackageQueueContents, Operation }
+import com.mesosphere.cosmos.storage._
 import com.mesosphere.universe.common.circe.Encoders._
 import com.mesosphere.universe.v2.circe.Encoders._
 import com.mesosphere.universe.v3.circe.Encoders._
@@ -61,7 +62,10 @@ object Encoders extends LowPriorityImplicits {
     deriveEncoder[PackageCoordinate]
 
   implicit val encodeOperation: Encoder[Operation] =
-    deriveEncoder[Operation]
+    Encoder.instance {
+      case Install => "install".asJson
+      case Uninstall => "uninstall".asJson
+    }
 
   implicit val encodeEitherPackageQueue: Encoder[Either[PackageDefinition, Uri]] =
     Encoder.instance(_.fold(_.asJson, _.asJson))
