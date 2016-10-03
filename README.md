@@ -1,4 +1,4 @@
-# Cosmos [![In Progress](https://badge.waffle.io/dcos/cosmos.png?label=in+progress&title=In+Progress)](https://waffle.io/dcos/cosmos)
+# Cosmos
 
 An [orderly, harmonious, complete](http://www.thefreedictionary.com/cosmos) API for DC/OS services.
 
@@ -172,3 +172,8 @@ A v2 install can succeed in the following scenarios:
 2. The package being installed was published as a Universe package with `packagingVersion` 3.0 and the package has a marathon template defined
 3. The package being installed was published as a Universe package with `packagingVersion` 3.0 and the package has a `.cli` object defined in it's resource set
 
+## Reporting Problems
+
+If you encounter a problem that seems to be related to a Cosmos bug, please create an issue at
+[DC/OS Jira](https://dcosjira.atlassian.net/secure/Dashboard.jspa). To create an issue click on the
+`Create` button at the top and add `cosmos` to the component.
