@@ -174,6 +174,6 @@ A v2 install can succeed in the following scenarios:
 
 ## Reporting Problems
 
-If you encounter a problem that seem to be related to a Cosmos bug, please create an issue at
+If you encounter a problem that seems to be related to a Cosmos bug, please create an issue at
 [DC/OS Jira](https://dcosjira.atlassian.net/secure/Dashboard.jspa). To create an issue click on the
 `Create` button at the top and add `cosmos` to the component.
