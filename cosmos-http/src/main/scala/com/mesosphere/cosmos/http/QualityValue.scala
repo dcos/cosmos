@@ -1,6 +1,6 @@
 package com.mesosphere.cosmos.http
 
-import scala.util.{Success, Try}
+import com.twitter.util.{Return, Try}
 
 /**
   * Case class that represents the QualityValue defined in the HTTP RFC
@@ -19,7 +19,7 @@ object QualityValue {
   def parse(value: String): Try[QualityValue] = {
     Try { validateString(value) }
       .map { _.toDouble}
-      .recover {
+      .handle {
         case e: NumberFormatException => throw err(value)
       }
       .map(QualityValue.apply)
@@ -27,7 +27,7 @@ object QualityValue {
 
   def getFromMediaType(mt: MediaType): Try[Option[QualityValue]] = {
     mt.parameters.get("q") match {
-      case None => Success(None)
+      case None => Return(None)
       case Some(s) => parse(s).map(Some(_))
     }
   }

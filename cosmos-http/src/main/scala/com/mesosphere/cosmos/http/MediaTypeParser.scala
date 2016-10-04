@@ -1,12 +1,11 @@
 package com.mesosphere.cosmos.http
 
-import java.util
-
 import com.google.common.collect.Multimaps
 import com.google.common.net.{MediaType => GMediaType}
 import com.twitter.util.Try
 
 import scala.collection.JavaConversions._
+import java.util
 
 case class MediaTypeParseError(msg: String, cause: Throwable) extends RuntimeException(msg, cause)
 

@@ -17,6 +17,7 @@ object CosmosBuild extends Build {
     val curator = "2.9.1"
     val finch = "0.10.0"
     val finchServer = "0.9.1"
+    val guava = "16.0.1"
     val jsonSchema = "2.2.6"
     val logback = "1.1.3"
     val mockito = "1.10.19"
@@ -76,8 +77,8 @@ object CosmosBuild extends Build {
       ExclusionRule("com.github.spullara.mustache.java", "compiler")
     ))
 
-    val finchTest = Seq(
-      "com.github.finagle" %% "finch-test" % V.finch % "test"
+    val guava = Seq(
+      "com.google.guava" % "guava" % V.guava
     )
 
     val jsonSchema = Seq(
@@ -284,6 +285,15 @@ object CosmosBuild extends Build {
     )
     .dependsOn(model % "compile;test->test")
 
+  lazy val http = Project("cosmos-http", file("cosmos-http"))
+    .settings(sharedSettings)
+    .settings(
+      libraryDependencies ++=
+        Deps.guava
+          ++ Deps.twitterUtilCore
+          ++ Deps.scalaTest
+    )
+
   lazy val server = Project("cosmos-server", file("cosmos-server"))
     .configs(IntegrationTest extend Test)
     .settings(itSettings)
@@ -297,14 +307,16 @@ object CosmosBuild extends Build {
           ++ Deps.curator
           ++ Deps.finch
           ++ Deps.finchServer
-          ++ Deps.finchTest
           ++ Deps.jsonSchema
           ++ Deps.logback
           ++ Deps.mustache
           ++ Deps.scalaTest
           ++ Deps.scalaUri
     )
-    .dependsOn(json % "compile;test->test")
+    .dependsOn(
+      json % "compile;test->test",
+      http % "compile;test->test"
+    )
 
   //////////////////////////////////////////////////////////////////////////////
   // BUILD TASKS

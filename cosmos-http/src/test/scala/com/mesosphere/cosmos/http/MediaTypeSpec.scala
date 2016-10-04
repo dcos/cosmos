@@ -1,12 +1,15 @@
 package com.mesosphere.cosmos.http
 
-import com.mesosphere.cosmos.circe.Encoders._
 import com.twitter.util.Return
-import io.circe.Json
-import io.circe.syntax._
 import org.scalatest.FreeSpec
 
 class MediaTypeSpec extends FreeSpec {
+
+  private val testMediaType = MediaType(
+    "application",
+    MediaTypeSubType("vnd.dcos.test", Some("json")),
+    Map("charset" -> "utf-8", "version" -> "v1")
+  )
 
   "MediaType.parse(string) should" -  {
     "parse basic type" in  {
@@ -47,8 +50,8 @@ class MediaTypeSpec extends FreeSpec {
     }
 
     "parse a vendor type" in {
-      val Return(t) = MediaType.parse("application/vnd.dcos.package.uninstall-request+json; charset=utf-8; version=v1")
-      assertResult(MediaTypes.UninstallRequest)(t)
+      val Return(t) = MediaType.parse("application/vnd.dcos.test+json; charset=utf-8; version=v1")
+      assertResult(testMediaType)(t)
     }
 
     "unquote parameter values" in  {
@@ -73,12 +76,6 @@ class MediaTypeSpec extends FreeSpec {
         MediaType("application", MediaTypeSubType("vnd.dcos.custom-request", Some("json"))).show
       )
     }
-  }
-
-  "A MediaType should use show for encoding" in {
-    val subType = MediaTypeSubType("vnd.dcos.custom-request", Some("json"))
-    val mediaType = MediaType("application", subType)
-    assertResult(Json.fromString("application/vnd.dcos.custom-request+json"))(mediaType.asJson)
   }
 
 }

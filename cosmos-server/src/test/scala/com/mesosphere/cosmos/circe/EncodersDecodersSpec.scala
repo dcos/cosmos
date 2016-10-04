@@ -3,6 +3,7 @@ package com.mesosphere.cosmos.circe
 import cats.data.Xor
 import com.google.common.io.CharStreams
 import com.mesosphere.cosmos._
+import com.mesosphere.cosmos.http.{MediaType, MediaTypeSubType}
 import com.mesosphere.cosmos.rpc.v1.model.PackageRepository
 import com.mesosphere.universe.v3.model.Repository
 import com.netaporter.uri.Uri
@@ -139,6 +140,12 @@ class EncodersDecodersSpec extends FreeSpec {
         assertResult("expected \" got ] (line 1, column 2)")(reason)
       }
     }
+  }
+
+  "A MediaType should use show for encoding" in {
+    val subType = MediaTypeSubType("vnd.dcos.custom-request", Some("json"))
+    val mediaType = MediaType("application", subType)
+    assertResult(Json.fromString("application/vnd.dcos.custom-request+json"))(mediaType.asJson)
   }
 
   private[this] def encodeCirceError(err: io.circe.Error): Json = {
