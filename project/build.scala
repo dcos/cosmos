@@ -271,8 +271,6 @@ object CosmosBuild extends Build {
         Deps.scalaUri
         ++ Deps.circeCore
         ++ Deps.twitterUtilCore
-        ++ Deps.scalaTest
-        ++ Deps.bijection
     )
 
   lazy val json = Project("cosmos-json", file("cosmos-json"))
@@ -281,7 +279,6 @@ object CosmosBuild extends Build {
       libraryDependencies ++=
         Deps.scalaUri
         ++ Deps.circe
-        ++ Deps.scalaTest
     )
     .dependsOn(model % "compile;test->test")
 
@@ -291,7 +288,6 @@ object CosmosBuild extends Build {
       libraryDependencies ++=
         Deps.guava
           ++ Deps.twitterUtilCore
-          ++ Deps.scalaTest
     )
 
   lazy val server = Project("cosmos-server", file("cosmos-server"))
@@ -303,6 +299,7 @@ object CosmosBuild extends Build {
     .settings(filterSettings)
     .settings(
       libraryDependencies ++=
+        Deps.bijection ++ //TODO: move this to the new converters module
         Deps.circe
           ++ Deps.curator
           ++ Deps.finch
@@ -310,7 +307,6 @@ object CosmosBuild extends Build {
           ++ Deps.jsonSchema
           ++ Deps.logback
           ++ Deps.mustache
-          ++ Deps.scalaTest
           ++ Deps.scalaUri
     )
     .dependsOn(

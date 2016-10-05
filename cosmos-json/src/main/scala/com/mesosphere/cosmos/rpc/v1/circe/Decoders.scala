@@ -15,9 +15,6 @@ object Decoders {
   implicit val keyDecodePackageDefinitionVersion: KeyDecoder[universe.v3.model.PackageDefinition.Version] = {
     KeyDecoder.instance { s => Some(universe.v3.model.PackageDefinition.Version(s)) }
   }
-  implicit val decodePackageDefinitionReleaseVersion: Decoder[universe.v3.model.PackageDefinition.ReleaseVersion] = {
-    Decoder.decodeInt.emapTry { i => universe.v3.model.PackageDefinition.ReleaseVersion(i) }
-  }
 
   implicit val decodeSearchResult: Decoder[SearchResult] = deriveDecoder[SearchResult]
 

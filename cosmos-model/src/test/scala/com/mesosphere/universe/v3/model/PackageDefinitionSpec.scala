@@ -16,7 +16,7 @@ final class PackageDefinitionSpec extends FreeSpec with PropertyChecks {
       "succeed on non-negative numbers" in {
         forAll (nonNegNum) { n =>
           whenever (n >= 0) {
-            assert(PackageDefinition.ReleaseVersion(n).isSuccess)
+            assert(PackageDefinition.ReleaseVersion(n).isReturn)
           }
         }
       }
@@ -24,7 +24,7 @@ final class PackageDefinitionSpec extends FreeSpec with PropertyChecks {
       "fail on negative numbers" in {
         forAll (Gen.negNum[Int]) { n =>
           whenever (n < 0) {
-            assert(PackageDefinition.ReleaseVersion(n).isFailure)
+            assert(PackageDefinition.ReleaseVersion(n).isThrow)
           }
         }
       }

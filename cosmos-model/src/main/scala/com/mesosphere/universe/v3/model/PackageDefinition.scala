@@ -3,7 +3,7 @@ package com.mesosphere.universe.v3.model
 import io.circe.JsonObject
 import java.util.regex.Pattern
 
-import scala.util.{Failure, Success, Try}
+import com.twitter.util.{Return, Throw, Try}
 
 sealed abstract class PackageDefinition
 object PackageDefinition {
@@ -26,8 +26,8 @@ object PackageDefinition {
   object ReleaseVersion {
 
     def apply(value: Int): Try[ReleaseVersion] = {
-      if (value >= 0) Success(new ReleaseVersion(value))
-      else Failure(new IllegalArgumentException("negative value"))
+      if (value >= 0) Return(new ReleaseVersion(value))
+      else Throw(new IllegalArgumentException(s"Expected integer value >= 0 for release version, but found [$value]"))
     }
 
     implicit val packageDefinitionReleaseVersionOrdering: Ordering[ReleaseVersion] = Ordering.by(_.value)

@@ -1,22 +1,22 @@
 package com.mesosphere.cosmos.converter
 
 import com.mesosphere.universe
-import com.mesosphere.universe.v3.model.PackageDefinition.ReleaseVersion
-import com.mesosphere.universe.v3.model._
 import com.netaporter.uri.Uri
-import com.twitter.bijection.{Bijection, Injection}
 import com.twitter.bijection.Conversion.asMethod
+import com.twitter.bijection.{Bijection, Injection}
 
 import scala.util.{Failure, Success, Try}
 
 object Common {
 
-  implicit val V2BundleToV2Package
-  : Bijection[(V2Bundle, ReleaseVersion), V2Package] = {
-    def fwd(bundlePair: (V2Bundle, ReleaseVersion)): V2Package = {
+  implicit val V2BundleToV2Package: Bijection[
+    (universe.v3.model.V2Bundle, universe.v3.model.PackageDefinition.ReleaseVersion),
+    universe.v3.model.V2Package // TODO Move these "Bundle" objects out of v3 they don't belong there
+    ] = {
+    def fwd(bundlePair: (universe.v3.model.V2Bundle, universe.v3.model.PackageDefinition.ReleaseVersion)): universe.v3.model.V2Package = {
       val v2 = bundlePair._1
       val releaseVersion = bundlePair._2
-      V2Package(
+      universe.v3.model.V2Package(
         v2.packagingVersion,
         v2.name,
         v2.version,
@@ -39,8 +39,8 @@ object Common {
       )
     }
 
-    def rev(v2: V2Package): (V2Bundle, ReleaseVersion) =
-      (V2Bundle(
+    def rev(v2: universe.v3.model.V2Package): (universe.v3.model.V2Bundle, universe.v3.model.PackageDefinition.ReleaseVersion) =
+      (universe.v3.model.V2Bundle(
         v2.packagingVersion,
         v2.name,
         v2.version,
@@ -62,15 +62,17 @@ object Common {
       ),
         v2.releaseVersion)
 
-    Bijection.build[(V2Bundle, ReleaseVersion), V2Package](fwd)(rev)
+    Bijection.build(fwd)(rev)
   }
 
-  implicit val V3BundleToV3Package
-  : Bijection[(V3Bundle, ReleaseVersion), V3Package] = {
-    def fwd(bundlePair: (V3Bundle, ReleaseVersion)): V3Package = {
+  implicit val V3BundleToV3Package: Bijection[
+    (universe.v3.model.V3Bundle, universe.v3.model.PackageDefinition.ReleaseVersion),
+    universe.v3.model.V3Package
+    ] = {
+    def fwd(bundlePair: (universe.v3.model.V3Bundle, universe.v3.model.PackageDefinition.ReleaseVersion)): universe.v3.model.V3Package = {
       val v3 = bundlePair._1
       val releaseVersion = bundlePair._2
-      V3Package(
+      universe.v3.model.V3Package(
         v3.packagingVersion,
         v3.name,
         v3.version,
@@ -94,8 +96,8 @@ object Common {
       )
     }
 
-    def rev(v3: V3Package): (V3Bundle, ReleaseVersion) =
-      (V3Bundle(
+    def rev(v3: universe.v3.model.V3Package): (universe.v3.model.V3Bundle, universe.v3.model.PackageDefinition.ReleaseVersion) =
+      (universe.v3.model.V3Bundle(
         v3.packagingVersion,
         v3.name,
         v3.version,
@@ -118,27 +120,29 @@ object Common {
       ),
         v3.releaseVersion)
 
-    Bijection.build[(V3Bundle, ReleaseVersion), V3Package](fwd)(rev)
+    Bijection.build(fwd)(rev)
   }
 
-  implicit val BundleToPackage
-  : Bijection[(BundleDefinition, ReleaseVersion), PackageDefinition] = {
-    def fwd(bundlePair: (BundleDefinition, ReleaseVersion)): PackageDefinition = {
+  implicit val BundleToPackage: Bijection[
+    (universe.v3.model.BundleDefinition, universe.v3.model.PackageDefinition.ReleaseVersion),
+    universe.v3.model.PackageDefinition
+    ] = {
+    def fwd(bundlePair: (universe.v3.model.BundleDefinition, universe.v3.model.PackageDefinition.ReleaseVersion)): universe.v3.model.PackageDefinition = {
       val (bundle, releaseVersion) = bundlePair
       bundle match {
-        case v2: V2Bundle => (v2, releaseVersion).as[V2Package]
-        case v3: V3Bundle => (v3, releaseVersion).as[V3Package]
+        case v2: universe.v3.model.V2Bundle => (v2, releaseVersion).as[universe.v3.model.V2Package]
+        case v3: universe.v3.model.V3Bundle => (v3, releaseVersion).as[universe.v3.model.V3Package]
       }
     }
 
-    def rev(packageDefinition: PackageDefinition): (BundleDefinition, ReleaseVersion) = {
+    def rev(packageDefinition: universe.v3.model.PackageDefinition): (universe.v3.model.BundleDefinition, universe.v3.model.PackageDefinition.ReleaseVersion) = {
       packageDefinition match {
-        case v2: V2Package => v2.as[(V2Bundle, ReleaseVersion)]
-        case v3: V3Package => v3.as[(V3Bundle, ReleaseVersion)]
+        case v2: universe.v3.model.V2Package => v2.as[(universe.v3.model.V2Bundle, universe.v3.model.PackageDefinition.ReleaseVersion)]
+        case v3: universe.v3.model.V3Package => v3.as[(universe.v3.model.V3Bundle, universe.v3.model.PackageDefinition.ReleaseVersion)]
       }
     }
 
-    Bijection.build[(BundleDefinition, PackageDefinition.ReleaseVersion), PackageDefinition](fwd)(rev)
+    Bijection.build(fwd)(rev)
   }
 
   implicit val uriToString: Injection[Uri, String] = {
@@ -169,14 +173,20 @@ object Common {
     }
   }
 
-  implicit val v3V2PackagingVersionToV2PackagingVersion =
-    Injection.connect[universe.v3.model.V2PackagingVersion.type, String, universe.v2.model.PackagingVersion]
+  implicit val v3V2PackagingVersionToV2PackagingVersion: Injection[
+    universe.v3.model.V2PackagingVersion.type,
+    universe.v2.model.PackagingVersion
+    ] = Injection.connect[universe.v3.model.V2PackagingVersion.type, String, universe.v2.model.PackagingVersion]
 
-  implicit val v3V3PackagingVersionToV2PackagingVersion =
-    Injection.connect[universe.v3.model.V3PackagingVersion.type, String, universe.v2.model.PackagingVersion]
+  implicit val v3V3PackagingVersionToV2PackagingVersion: Injection[
+    universe.v3.model.V3PackagingVersion.type,
+    universe.v2.model.PackagingVersion
+    ] = Injection.connect[universe.v3.model.V3PackagingVersion.type, String, universe.v2.model.PackagingVersion]
 
-  implicit val v3PackagingVersionToV2PackagingVersion =
-    Injection.connect[universe.v3.model.PackagingVersion, String, universe.v2.model.PackagingVersion]
+  implicit val v3PackagingVersionToV2PackagingVersion: Injection[
+    universe.v3.model.PackagingVersion,
+    universe.v2.model.PackagingVersion
+    ] = Injection.connect[universe.v3.model.PackagingVersion, String, universe.v2.model.PackagingVersion]
 
   private[this] def packagingVersionSubclassToString[V <: universe.v3.model.PackagingVersion](
     expected: V
@@ -200,19 +210,28 @@ object Common {
 
   implicit val v3ReleaseVersionToInt: Injection[universe.v3.model.PackageDefinition.ReleaseVersion, Int] = {
     val fwd = (x: universe.v3.model.PackageDefinition.ReleaseVersion) => x.value
-    val rev = universe.v3.model.PackageDefinition.ReleaseVersion.apply _
+    val rev = twitterTryToScalaTry(universe.v3.model.PackageDefinition.ReleaseVersion.apply)
 
     ConversionFailureInjection(Injection.build(fwd)(rev)) { from =>
       s"Expected integer value >= 0 for release version, but found [$from]"
     }
   }
 
-  implicit val v3ReleaseVersionToString = {
-    Injection.connect[universe.v3.model.PackageDefinition.ReleaseVersion, Int, String]
-  }
+  implicit val v3ReleaseVersionToString: Injection[
+    universe.v3.model.PackageDefinition.ReleaseVersion,
+    String
+    ] = Injection.connect[universe.v3.model.PackageDefinition.ReleaseVersion, Int, String]
 
-  implicit val v3ReleaseVersionToV2ReleaseVersion = {
-    Injection.connect[universe.v3.model.PackageDefinition.ReleaseVersion, String, universe.v2.model.ReleaseVersion]
+  implicit val v3ReleaseVersionToV2ReleaseVersion: Injection[
+    universe.v3.model.PackageDefinition.ReleaseVersion,
+    universe.v2.model.ReleaseVersion
+    ] = Injection.connect[universe.v3.model.PackageDefinition.ReleaseVersion, String, universe.v2.model.ReleaseVersion]
+
+  private[this] def twitterTryToScalaTry[A, B](a: (A) => com.twitter.util.Try[B]): (A) => scala.util.Try[B] = {
+    (aa: A) => a(aa) match {
+      case com.twitter.util.Return(aaa) => Success(aaa)
+      case com.twitter.util.Throw(e) => Failure(e)
+    }
   }
 
 }

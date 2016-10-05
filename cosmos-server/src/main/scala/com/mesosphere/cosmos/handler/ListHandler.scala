@@ -7,6 +7,7 @@ import cats.data.Xor
 import com.mesosphere.cosmos.{AdminRouter, CirceError}
 import com.mesosphere.cosmos.converter.Label._
 import com.mesosphere.cosmos.http.RequestSession
+import com.mesosphere.cosmos.internal.model.MarathonAppOps._
 import com.mesosphere.cosmos.label
 import com.mesosphere.cosmos.label.v1.circe.Decoders._
 import com.mesosphere.cosmos.repository.CosmosRepository
