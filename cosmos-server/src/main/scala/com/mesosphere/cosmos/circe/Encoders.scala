@@ -6,6 +6,7 @@ import com.mesosphere.cosmos.http.MediaType
 import com.mesosphere.cosmos.model._
 import com.mesosphere.cosmos.thirdparty.marathon.circe.Encoders._
 import com.mesosphere.cosmos.rpc.v1.circe.Encoders._
+import com.mesosphere.cosmos.rpc.v1.model.ErrorResponse
 import com.mesosphere.universe.common.circe.Encoders._
 import com.mesosphere.universe.v2.circe.Encoders._
 import com.mesosphere.universe.v3.circe.Encoders._

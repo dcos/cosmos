@@ -4,7 +4,7 @@ import cats.data.Xor
 import com.google.common.io.CharStreams
 import com.mesosphere.cosmos._
 import com.mesosphere.cosmos.http.{MediaType, MediaTypeSubType}
-import com.mesosphere.cosmos.rpc.v1.model.PackageRepository
+import com.mesosphere.cosmos.rpc.v1.model.{ErrorResponse, PackageRepository}
 import com.mesosphere.universe.v3.model.Repository
 import com.netaporter.uri.Uri
 import io.circe.syntax._

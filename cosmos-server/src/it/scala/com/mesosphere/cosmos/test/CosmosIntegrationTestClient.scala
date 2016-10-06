@@ -2,7 +2,8 @@ package com.mesosphere.cosmos.test
 
 import cats.data.Xor
 import com.mesosphere.cosmos._
-import com.mesosphere.cosmos.http.{Authorization, MediaType, MediaTypes, RequestSession}
+import com.mesosphere.cosmos.http.{Authorization, MediaType, RequestSession}
+import com.mesosphere.cosmos.rpc.MediaTypes
 import com.netaporter.uri.Uri
 import com.netaporter.uri.dsl._
 import com.twitter.finagle.{Service, SimpleFilter}
@@ -19,6 +20,7 @@ import java.util.concurrent.atomic.AtomicInteger
 import com.mesosphere.universe.v3.circe.Decoders._
 import com.mesosphere.cosmos.rpc.v1.model._
 import com.mesosphere.universe.v3.model.Repository
+import com.mesosphere.universe.{MediaTypes => UMediaTypes}
 import com.mesosphere.cosmos.circe.Decoders._
 import com.mesosphere.cosmos.rpc.v1.circe.Decoders._
 import com.mesosphere.cosmos.rpc.v1.circe.Encoders._
@@ -178,8 +180,8 @@ object CosmosIntegrationTestClient extends Matchers {
         callEndpoint[Unit, Repository](
           "package/storage/repository",
           (),
-          MediaTypes.any,
-          MediaTypes.UniverseV3Repository,
+          TestUtil.MediaTypeAny,
+          UMediaTypes.UniverseV3Repository,
           method = "GET"
         )
       response

@@ -2,7 +2,7 @@ package com.mesosphere.cosmos
 
 import com.mesosphere.cosmos.circe.Encoders._
 import com.mesosphere.cosmos.handler._
-import com.mesosphere.cosmos.http.MediaTypes
+import com.mesosphere.cosmos.rpc.MediaTypes
 import com.mesosphere.cosmos.repository.PackageSourcesStorage
 import com.mesosphere.cosmos.repository.UniverseClient
 import com.mesosphere.cosmos.repository.ZkRepositoryList

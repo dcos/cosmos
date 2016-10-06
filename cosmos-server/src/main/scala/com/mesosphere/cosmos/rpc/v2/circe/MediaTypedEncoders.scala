@@ -3,8 +3,8 @@ package com.mesosphere.cosmos.rpc.v2.circe
 import com.mesosphere.cosmos.circe.{DispatchingMediaTypedEncoder, MediaTypedEncoder}
 import com.mesosphere.cosmos.converter
 import com.mesosphere.cosmos.converter.Response._
-import com.mesosphere.cosmos.http.MediaTypes
 import com.mesosphere.cosmos.rpc
+import com.mesosphere.cosmos.rpc.MediaTypes
 import com.mesosphere.cosmos.internal
 import com.twitter.bijection.Conversion.asMethod
 import com.twitter.util.Try

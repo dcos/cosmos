@@ -5,7 +5,8 @@ import java.nio.charset.StandardCharsets
 
 import cats.data.Xor
 import com.mesosphere.cosmos.handler._
-import com.mesosphere.cosmos.http.{MediaTypes, RequestSession}
+import com.mesosphere.cosmos.http.RequestSession
+import com.mesosphere.cosmos.rpc.MediaTypes
 import com.mesosphere.cosmos.rpc.v1.circe.Encoders._
 import com.mesosphere.cosmos.storage.InMemoryPackageStorage
 import com.mesosphere.cosmos.thirdparty.marathon.circe.Decoders._

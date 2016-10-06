@@ -3,6 +3,7 @@ package com.mesosphere.cosmos.handler
 import com.mesosphere.cosmos.circe.{DispatchingMediaTypedEncoder, MediaTypedDecoder, MediaTypedEncoder}
 import com.mesosphere.cosmos.finch.MediaTypedRequestDecoder
 import com.mesosphere.cosmos.http._
+import com.mesosphere.cosmos.rpc.MediaTypes._
 import com.twitter.finagle.http.RequestBuilder
 import com.twitter.io.Buf
 import com.twitter.util.{Await, Future, Return, Try}
@@ -94,14 +95,14 @@ final class RequestValidatorsSpec extends FreeSpec {
 
     "if the Accept header has multiple values we support" - {
       "include the highest quality Content-Type in the return value" in {
-        val v1String = MediaTypes.V1InstallResponse.show + ";q=0.8"
-        val v2String = MediaTypes.V2InstallResponse.show + ";q=0.9"
-        val expected = MediaTypes.V2InstallResponse
+        val v1String = V1InstallResponse.show + ";q=0.8"
+        val v2String = V2InstallResponse.show + ";q=0.9"
+        val expected = V2InstallResponse
 
         val accept = CompoundMediaTypeParser.parse(Seq(v1String, v2String).mkString(",")).get
         val encoders = Set(
-          MediaTypedEncoder(implicitly[Encoder[Unit]], MediaTypes.V1InstallResponse),
-          MediaTypedEncoder(implicitly[Encoder[Unit]], MediaTypes.V2InstallResponse)
+          MediaTypedEncoder(implicitly[Encoder[Unit]], V1InstallResponse),
+          MediaTypedEncoder(implicitly[Encoder[Unit]], V2InstallResponse)
         )
         val produces = DispatchingMediaTypedEncoder(encoders)
         val (_, responseEncoder) = evaluateEndpoint(accept = Some(accept.show), produces = produces).get

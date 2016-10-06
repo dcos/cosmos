@@ -1,6 +1,6 @@
-package com.mesosphere.cosmos
+package com.mesosphere.cosmos.rpc.v1.model
 
-import io.circe._
+import io.circe.JsonObject
 
 case class ErrorResponse(
   `type`: String,

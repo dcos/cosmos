@@ -54,4 +54,15 @@ object MediaType {
     MediaTypeParser.parse(s)
   }
 
+  def vndJson(namespace: List[String])(kind: String, version: Int): MediaType = {
+    assert(namespace.nonEmpty, "`namespace` must not be empty")
+    assert(kind.trim.nonEmpty, "`kind` must not be empty")
+    assert(version > 0, "`version` must be > 0")
+    MediaType(
+      "application",
+      MediaTypeSubType(s"vnd.${namespace.mkString(".")}.$kind", Some("json")),
+      Map("charset" -> "utf-8", "version" -> ("v" + version))
+    )
+  }
+
 }

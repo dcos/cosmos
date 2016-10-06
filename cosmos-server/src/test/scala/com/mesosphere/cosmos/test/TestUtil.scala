@@ -1,13 +1,12 @@
 package com.mesosphere.cosmos.test
 
-import com.mesosphere.cosmos.http.RequestSession
+import com.mesosphere.cosmos.http.{MediaType, MediaTypeSubType, RequestSession}
 
 import java.io.IOException
 import java.nio.file._
 import java.nio.file.attribute.BasicFileAttributes
 import com.mesosphere.cosmos._
 import com.mesosphere.cosmos.converter.Common._
-
 import com.mesosphere.universe
 import com.mesosphere.universe.test.TestingPackages
 import com.mesosphere.universe.v3.model.PackageDefinition.ReleaseVersion
@@ -39,6 +38,7 @@ object TestUtil {
 
   implicit val Anonymous = RequestSession(None)
 
+  val MediaTypeAny = MediaType("*", MediaTypeSubType("*"))
 
   val RepoUri = Uri.parse("some/repo/uri")
 

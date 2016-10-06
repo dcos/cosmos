@@ -3,6 +3,7 @@ package com.mesosphere.cosmos.handler
 import cats.data.Xor
 import com.mesosphere.cosmos.circe.MediaTypedEncoder
 import com.mesosphere.cosmos.http.{Authorization, MediaType, MediaTypes, RequestSession}
+import com.mesosphere.cosmos.test.TestUtil
 import com.twitter.finagle.http.Status
 import com.twitter.util.{Await, Future}
 import io.circe.syntax._
@@ -62,7 +63,7 @@ final class EndpointHandlerSpec extends FreeSpec {
       "because all responses must be sent in JSON format" - {
 
         "response value of type Int" in {
-          val encoder = MediaTypedEncoder(Encoder.instance[Unit](_ => 42.asJson), MediaTypes.any)
+          val encoder = MediaTypedEncoder(Encoder.instance[Unit](_ => 42.asJson), TestUtil.MediaTypeAny)
           val context = buildEndpointContext[Unit, Unit](requestBody = ())(encoder)
           val result = (new IdentityHandler[Unit])(context)
           val responseBody = extractBody[Int](result)
@@ -70,7 +71,7 @@ final class EndpointHandlerSpec extends FreeSpec {
         }
 
         "response value of type String" in {
-          val encoder = MediaTypedEncoder(Encoder.instance[Unit](_ => "hello world".asJson), MediaTypes.any)
+          val encoder = MediaTypedEncoder(Encoder.instance[Unit](_ => "hello world".asJson), TestUtil.MediaTypeAny)
           val context = buildEndpointContext[Unit, Unit](requestBody = ())(encoder)
           val result = (new IdentityHandler[Unit])(context)
           val responseBody = extractBody[String](result)
@@ -174,7 +175,7 @@ object EndpointHandlerSpec {
   }
 
   implicit def anyMediaTypedEncoder[A](implicit encoder: Encoder[A]): MediaTypedEncoder[A] = {
-    MediaTypedEncoder(encoder, MediaTypes.any)
+    MediaTypedEncoder(encoder, TestUtil.MediaTypeAny)
   }
 
 }
