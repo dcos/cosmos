@@ -1,6 +1,5 @@
 package com.mesosphere.cosmos.handler
 
-import com.mesosphere.cosmos.converter.Universe._
 import com.mesosphere.cosmos.http.RequestSession
 import com.mesosphere.cosmos.internal.model.MarathonAppOps._
 import com.mesosphere.cosmos.repository.PackageCollection
@@ -15,6 +14,7 @@ import com.mesosphere.cosmos.UninstallNonExistentAppForPackage
 import com.mesosphere.cosmos.rpc
 import com.mesosphere.cosmos.thirdparty.marathon.model.{AppId, MarathonApp}
 import com.mesosphere.universe
+import com.mesosphere.universe.bijection.UniverseConversions._
 import com.twitter.bijection.Conversion.asMethod
 import com.twitter.finagle.http.Status
 import com.twitter.util.Future

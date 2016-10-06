@@ -5,13 +5,13 @@ import java.io.{StringReader, StringWriter}
 import cats.data.Xor
 import com.github.mustachejava.DefaultMustacheFactory
 import com.mesosphere.cosmos._
-import com.mesosphere.cosmos.converter.Universe._
 import com.mesosphere.cosmos.http.RequestSession
 import com.mesosphere.cosmos.jsonschema.JsonSchemaValidation
 import com.mesosphere.cosmos.repository.PackageCollection
 import com.mesosphere.cosmos.thirdparty.marathon.model.AppId
 import com.mesosphere.universe
 import com.mesosphere.universe.common.ByteBuffers
+import com.mesosphere.universe.bijection.UniverseConversions._
 import com.netaporter.uri.Uri
 import com.twitter.bijection.Conversion.asMethod
 import com.twitter.io.Charsets

@@ -6,12 +6,12 @@ import java.util.Base64
 import cats.data.Xor
 import com.mesosphere.cosmos.{AdminRouter, CirceError}
 import com.mesosphere.cosmos.converter.Label._
+import com.mesosphere.cosmos.converter.InternalPackageDefinition._
 import com.mesosphere.cosmos.http.RequestSession
 import com.mesosphere.cosmos.internal.model.MarathonAppOps._
 import com.mesosphere.cosmos.label
 import com.mesosphere.cosmos.label.v1.circe.Decoders._
 import com.mesosphere.cosmos.repository.CosmosRepository
-import com.mesosphere.cosmos.converter.Universe.internalPackageDefinitionToInstalledPackageInformation
 import com.mesosphere.cosmos.rpc.v1.model.{Installation, InstalledPackageInformation, ListRequest, ListResponse}
 import com.mesosphere.cosmos.thirdparty.marathon.model.{AppId, MarathonApp}
 import com.mesosphere.universe.v3.model.PackageDefinition.ReleaseVersion

@@ -1,7 +1,7 @@
-package com.mesosphere.cosmos.converter
+package com.mesosphere.universe.bijection
 
-import com.mesosphere.cosmos.converter.Common._
 import com.mesosphere.universe
+import com.mesosphere.universe.bijection.UniverseConversions._
 import com.twitter.bijection.Conversion.asMethod
 import com.twitter.bijection.{Bijection, Injection}
 import org.scalatest.FreeSpec
@@ -64,10 +64,9 @@ final class PackagingVersionConverterSpec extends FreeSpec {
     }
 
     "fail in the reverse direction if the string is anything else" in {
+      val Failure(iae) = "3.0".as[A].as[Try[universe.v3.model.V2PackagingVersion.type]]
       val message = "Expected value [2.0] for packaging version, but found [3.0]"
-      assertResult(Failure(ConversionFailure(message))) {
-        "3.0".as[A].as[Try[universe.v3.model.V2PackagingVersion.type]]
-      }
+      assertResult(message)(iae.getMessage)
     }
 
   }
@@ -88,10 +87,9 @@ final class PackagingVersionConverterSpec extends FreeSpec {
     }
 
     "fail in the reverse direction if the string is anything else" in {
+      val Failure(iae) = "2.0".as[A].as[Try[universe.v3.model.V3PackagingVersion.type]]
       val message = "Expected value [3.0] for packaging version, but found [2.0]"
-      assertResult(Failure(ConversionFailure(message))) {
-        "2.0".as[A].as[Try[universe.v3.model.V3PackagingVersion.type]]
-      }
+      assertResult(message)(iae.getMessage)
     }
 
   }
@@ -132,10 +130,9 @@ final class PackagingVersionConverterSpec extends FreeSpec {
     }
 
     "fail in the reverse direction if the version is not 2.0 or 3.0" in {
+      val Failure(iae) = "2.5".as[A].as[Try[universe.v3.model.PackagingVersion]]
       val message = "Expected one of [2.0, 3.0] for packaging version, but found [2.5]"
-      assertResult(Failure(ConversionFailure(message))) {
-        "2.5".as[A].as[Try[universe.v3.model.PackagingVersion]]
-      }
+      assertResult(message)(iae.getMessage)
     }
 
   }

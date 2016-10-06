@@ -15,7 +15,7 @@ object MediaTypedEncoders {
     DispatchingMediaTypedEncoder(Set(
       MediaTypedEncoder(
         encoder = rpc.v2.circe.Encoders.encodeV2DescribeResponse.contramap { (pkgDefinition: internal.model.PackageDefinition) =>
-          converter.Universe.internalPackageDefinitionToV2DescribeResponse(pkgDefinition)
+          converter.InternalPackageDefinition.internalPackageDefinitionToV2DescribeResponse(pkgDefinition)
         },
         mediaType = MediaTypes.V2DescribeResponse
       ),

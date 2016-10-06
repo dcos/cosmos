@@ -195,7 +195,7 @@ object CosmosBuild extends Build {
 
     publishArtifact in Test := false,
 
-    parallelExecution in ThisBuild := false,
+    parallelExecution in Global := false,
 
     parallelExecution in Test := false,
 
@@ -262,7 +262,7 @@ object CosmosBuild extends Build {
 
   lazy val cosmos = Project("cosmos", file("."))
     .settings(sharedSettings)
-    .aggregate(model, json, server)
+    .aggregate(http, model, json, bijection, server)
 
   lazy val model = Project("cosmos-model", file("cosmos-model"))
     .settings(sharedSettings)
@@ -280,7 +280,15 @@ object CosmosBuild extends Build {
         Deps.scalaUri
         ++ Deps.circe
     )
-    .dependsOn(model % "compile;test->test")
+    .dependsOn(model)
+
+  lazy val bijection = Project("cosmos-bijection", file("cosmos-bijection"))
+    .settings(sharedSettings)
+    .settings(
+      libraryDependencies ++=
+        Deps.bijection
+    )
+    .dependsOn(model)
 
   lazy val http = Project("cosmos-http", file("cosmos-http"))
     .settings(sharedSettings)
@@ -299,7 +307,6 @@ object CosmosBuild extends Build {
     .settings(filterSettings)
     .settings(
       libraryDependencies ++=
-        Deps.bijection ++ //TODO: move this to the new converters module
         Deps.circe
           ++ Deps.curator
           ++ Deps.finch
@@ -310,8 +317,9 @@ object CosmosBuild extends Build {
           ++ Deps.scalaUri
     )
     .dependsOn(
-      json % "compile;test->test",
-      http % "compile;test->test"
+      json,
+      http,
+      bijection % "compile;test->test"
     )
 
   //////////////////////////////////////////////////////////////////////////////

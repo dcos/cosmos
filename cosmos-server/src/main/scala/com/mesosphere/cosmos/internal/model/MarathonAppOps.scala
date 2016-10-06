@@ -1,8 +1,8 @@
 package com.mesosphere.cosmos.internal.model
 
-import com.mesosphere.cosmos.converter.Common._
 import com.mesosphere.cosmos.thirdparty.marathon.model.MarathonApp
 import com.mesosphere.universe
+import com.mesosphere.universe.bijection.UniverseConversions._
 import com.twitter.bijection.Injection
 
 class MarathonAppOps(val app: MarathonApp) extends AnyVal {

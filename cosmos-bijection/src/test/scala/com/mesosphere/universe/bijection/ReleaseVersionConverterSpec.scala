@@ -1,7 +1,7 @@
-package com.mesosphere.cosmos.converter
+package com.mesosphere.universe.bijection
 
-import com.mesosphere.cosmos.converter.Common._
 import com.mesosphere.universe
+import com.mesosphere.universe.bijection.UniverseConversions._
 import com.twitter.bijection.Conversion.asMethod
 import com.twitter.bijection.{Bijection, Injection}
 import org.scalatest.FreeSpec
@@ -35,10 +35,9 @@ final class ReleaseVersionConverterSpec extends FreeSpec {
     }
 
     "fail in the reverse direction on negative numbers" in {
-      val message = "Expected integer value >= 0 for release version, but found [-1]"
-      assertResult(Failure(ConversionFailure(message))) {
-        (-1).as[Try[universe.v3.model.PackageDefinition.ReleaseVersion]]
-      }
+      val Failure(iae) = (-1).as[Try[universe.v3.model.PackageDefinition.ReleaseVersion]]
+      val expectedMessage = "Expected integer value >= 0 for release version, but found [-1]"
+      assertResult(expectedMessage)(iae.getMessage)
     }
 
   }
@@ -67,17 +66,15 @@ final class ReleaseVersionConverterSpec extends FreeSpec {
     }
 
     "fail in the reverse direction on negative version numbers" in {
+      val Failure(iae) = "-2".as[A].as[Try[universe.v3.model.PackageDefinition.ReleaseVersion]]
       val message = "Expected integer value >= 0 for release version, but found [-2]"
-      assertResult(Failure(ConversionFailure(message))) {
-        "-2".as[A].as[Try[universe.v3.model.PackageDefinition.ReleaseVersion]]
-      }
+      assertResult(message)(iae.getMessage)
     }
 
     "fail in the reverse direction on non-number values" in {
-      val message = "Expected integer value >= 0 for release version, but found [foo]"
-      assertResult(Failure(ConversionFailure(message))) {
-        "foo".as[A].as[Try[universe.v3.model.PackageDefinition.ReleaseVersion]]
-      }
+      val Failure(iae) = "foo".as[A].as[Try[universe.v3.model.PackageDefinition.ReleaseVersion]]
+      val message = "Failed to invert: foo"
+      assertResult(message)(iae.getMessage)
     }
 
   }

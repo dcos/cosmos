@@ -1,28 +1,20 @@
 package com.mesosphere.cosmos.converter
 
-import com.mesosphere.cosmos.converter.Universe._
-import com.mesosphere.cosmos.converter.Common._
-import com.mesosphere.cosmos.thirdparty.marathon.model.AppId
-import com.mesosphere.cosmos.{label,ServiceMarathonTemplateNotFound, internal, rpc}
 import com.mesosphere.cosmos.converter.Response._
-import com.mesosphere.cosmos.test.TestUtil.{MinimalPackageDefinition,MaximalPackageDefinition}
-
-import java.nio.charset.StandardCharsets
-
+import com.mesosphere.cosmos.test.TestUtil.{MaximalPackageDefinition, MinimalPackageDefinition}
+import com.mesosphere.cosmos.thirdparty.marathon.model.AppId
+import com.mesosphere.cosmos.{ServiceMarathonTemplateNotFound, rpc}
 import com.mesosphere.universe
-import com.mesosphere.universe.v3.model.Cli
+import com.mesosphere.universe.bijection.UniverseConversions._
 import com.mesosphere.universe.common.ByteBuffers
-
-import com.twitter.bijection.Conversion
+import com.mesosphere.universe.v3.model.Cli
 import com.twitter.bijection.Conversion.asMethod
-import com.twitter.util.{Try,Return,Throw}
-
+import com.twitter.util.{Return, Throw, Try}
+import org.scalacheck.Gen
 import org.scalatest.FreeSpec
 import org.scalatest.prop.GeneratorDrivenPropertyChecks.forAll
-import org.scalacheck.Gen
 
-import cats.data.Xor
-import scala.io.Source
+import java.nio.charset.StandardCharsets
 
 final class ResponseSpec extends FreeSpec {
   "Conversion[rpc.v2.model.InstallResponse,Try[rpc.v1.model.InstallResponse]]" - {

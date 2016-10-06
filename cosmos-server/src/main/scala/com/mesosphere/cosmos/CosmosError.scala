@@ -2,7 +2,6 @@ package com.mesosphere.cosmos
 
 import cats.data.Ior
 import com.mesosphere.cosmos.circe.Encoders._
-import com.mesosphere.cosmos.converter.ConversionFailure
 import com.mesosphere.cosmos.http.MediaType
 import com.mesosphere.cosmos.rpc.v1.model.PackageRepository
 import com.mesosphere.cosmos.thirdparty.marathon.model.{AppId, MarathonError}
@@ -213,7 +212,7 @@ case class RepositoryNotPresent(nameOrUri: Ior[String, Uri]) extends CosmosError
   }
 }
 
-case class ConversionError(failure: ConversionFailure) extends CosmosError
+case class ConversionError(failure: String) extends CosmosError
 case class ServiceMarathonTemplateNotFound(packageName: String, packageVersion: PackageDefinition.Version) extends CosmosError
 
 case class IncompatibleAcceptHeader(available: Set[MediaType], specified: Set[MediaType]) extends CosmosError {

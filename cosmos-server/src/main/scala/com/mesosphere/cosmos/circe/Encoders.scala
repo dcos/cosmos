@@ -4,7 +4,6 @@ import cats.data.Ior
 import com.mesosphere.cosmos._
 import com.mesosphere.cosmos.http.MediaType
 import com.mesosphere.cosmos.model._
-import com.mesosphere.cosmos.converter.ConversionFailure
 import com.mesosphere.cosmos.thirdparty.marathon.circe.Encoders._
 import com.mesosphere.cosmos.rpc.v1.circe.Encoders._
 import com.mesosphere.universe.common.circe.Encoders._
@@ -273,7 +272,7 @@ object Encoders extends LowPriorityImplicits {
         case None =>
           s"Unsupported redirect scheme - supported: $supportedMsg"
       }
-    case ConversionError(failure) => failure.message
+    case ConversionError(failure) => failure
     case ServiceMarathonTemplateNotFound(name, PackageDefinition.Version(version)) =>
       s"Package: [$name] version: [$version] does not have a Marathon template defined and can not be rendered"
     case IncompatibleAcceptHeader(available, specified) =>

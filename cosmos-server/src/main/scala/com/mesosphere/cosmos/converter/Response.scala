@@ -1,10 +1,9 @@
 package com.mesosphere.cosmos.converter
 
 import java.nio.charset.StandardCharsets
-import com.mesosphere.cosmos.converter.Common._
-import com.mesosphere.cosmos.converter.Universe._
 import com.mesosphere.cosmos.{ServiceMarathonTemplateNotFound, internal, rpc}
 import com.mesosphere.universe
+import com.mesosphere.universe.bijection.UniverseConversions._
 import com.mesosphere.universe.common.ByteBuffers
 import com.twitter.bijection.Conversion.asMethod
 import com.twitter.bijection.Conversion

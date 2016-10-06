@@ -1,13 +1,89 @@
-package com.mesosphere.cosmos.converter
+package com.mesosphere.universe.bijection
 
-import com.mesosphere.cosmos.converter.Common._
-import com.mesosphere.cosmos.internal
-import com.mesosphere.cosmos.rpc
 import com.mesosphere.universe
-import com.twitter.bijection.Conversion.asMethod
+import com.netaporter.uri.Uri
 import com.twitter.bijection.{Bijection, Conversion, Injection}
+import com.twitter.bijection.Conversion.asMethod
 
-object Universe {
+import scala.util.{Failure, Success, Try}
+
+object UniverseConversions {
+
+  implicit val uriToString: Injection[Uri, String] = {
+    Injection.build[Uri, String](_.toString)(s => Try(Uri.parse(s)))
+  }
+
+  implicit val v2PackagingVersionToString: Bijection[universe.v2.model.PackagingVersion, String] = {
+    val fwd = (version: universe.v2.model.PackagingVersion) => version.toString
+    val rev = universe.v2.model.PackagingVersion.apply _
+    Bijection.build(fwd)(rev)
+  }
+
+  implicit val v3V2PackagingVersionToString: Injection[universe.v3.model.V2PackagingVersion.type, String] = {
+    packagingVersionSubclassToString(universe.v3.model.V2PackagingVersion)
+  }
+
+  implicit val v3V3PackagingVersionToString: Injection[universe.v3.model.V3PackagingVersion.type, String] = {
+    packagingVersionSubclassToString(universe.v3.model.V3PackagingVersion)
+  }
+
+  implicit val v3PackagingVersionToString: Injection[universe.v3.model.PackagingVersion, String] = {
+    val fwd = (version: universe.v3.model.PackagingVersion) => version.show
+    val rev = BijectionUtils.twitterTryToScalaTry(universe.v3.model.PackagingVersion.apply)
+
+    Injection.build(fwd)(rev)
+  }
+
+  implicit val v3V2PackagingVersionToV2PackagingVersion: Injection[
+    universe.v3.model.V2PackagingVersion.type,
+    universe.v2.model.PackagingVersion
+    ] = Injection.connect[universe.v3.model.V2PackagingVersion.type, String, universe.v2.model.PackagingVersion]
+
+  implicit val v3V3PackagingVersionToV2PackagingVersion: Injection[
+    universe.v3.model.V3PackagingVersion.type,
+    universe.v2.model.PackagingVersion
+    ] = Injection.connect[universe.v3.model.V3PackagingVersion.type, String, universe.v2.model.PackagingVersion]
+
+  implicit val v3PackagingVersionToV2PackagingVersion: Injection[
+    universe.v3.model.PackagingVersion,
+    universe.v2.model.PackagingVersion
+    ] = Injection.connect[universe.v3.model.PackagingVersion, String, universe.v2.model.PackagingVersion]
+
+  private[this] def packagingVersionSubclassToString[V <: universe.v3.model.PackagingVersion](
+    expected: V
+  ): Injection[V, String] = {
+    val fwd = (version: V) => version.show
+    val rev = (version: String) => {
+      if (version == expected.show) Success(expected)
+      else Failure(new IllegalArgumentException(s"Expected value [${expected.show}] for packaging version, but found [$version]"))
+    }
+
+    Injection.build(fwd)(rev)
+  }
+
+  implicit val v2ReleaseVersionToString: Bijection[universe.v2.model.ReleaseVersion, String] = {
+    val fwd = (x: universe.v2.model.ReleaseVersion) => x.toString
+    val rev = (x: String) => universe.v2.model.ReleaseVersion(x)
+    Bijection.build(fwd)(rev)
+  }
+
+  implicit val v3ReleaseVersionToInt: Injection[universe.v3.model.PackageDefinition.ReleaseVersion, Int] = {
+    val fwd = (x: universe.v3.model.PackageDefinition.ReleaseVersion) => x.value
+    val rev = BijectionUtils.twitterTryToScalaTry(universe.v3.model.PackageDefinition.ReleaseVersion.apply)
+
+    Injection.build(fwd)(rev)
+  }
+
+  implicit val v3ReleaseVersionToString: Injection[
+    universe.v3.model.PackageDefinition.ReleaseVersion,
+    String
+    ] = Injection.connect[universe.v3.model.PackageDefinition.ReleaseVersion, Int, String]
+
+  implicit val v3ReleaseVersionToV2ReleaseVersion: Injection[
+    universe.v3.model.PackageDefinition.ReleaseVersion,
+    universe.v2.model.ReleaseVersion
+    ] = Injection.connect[universe.v3.model.PackageDefinition.ReleaseVersion, String, universe.v2.model.ReleaseVersion]
+
 
   implicit val v3PackageDefinitionToV2PackageDetails: Conversion[
     universe.v3.model.PackageDefinition,
@@ -64,101 +140,6 @@ object Universe {
       )
     }
 
-  implicit val v3V2PackageToInternalPackageDefinition: Conversion[
-    universe.v3.model.V2Package,
-    internal.model.PackageDefinition
-    ] =
-    Conversion.fromFunction { (value: universe.v3.model.V2Package) =>
-      internal.model.PackageDefinition(
-        value.packagingVersion,
-        value.name,
-        value.version,
-        value.releaseVersion,
-        value.maintainer,
-        value.description,
-        value.tags,
-        value.selected.getOrElse(false),
-        value.scm,
-        value.website,
-        value.framework.getOrElse(false),
-        value.preInstallNotes,
-        value.postInstallNotes,
-        value.postUninstallNotes,
-        value.licenses,
-        None,
-        Some(value.marathon),
-        value.resource.as[Option[universe.v3.model.V3Resource]],
-        value.config,
-        value.command
-      )
-    }
-
-  implicit val v3V3PackageToInternalPackageDefinition: Conversion[
-    universe.v3.model.V3Package,
-    internal.model.PackageDefinition
-    ] =
-    Conversion.fromFunction { (value: universe.v3.model.V3Package) =>
-      internal.model.PackageDefinition(
-        value.packagingVersion,
-        value.name,
-        value.version,
-        value.releaseVersion,
-        value.maintainer,
-        value.description,
-        value.tags,
-        value.selected.getOrElse(false),
-        value.scm,
-        value.website,
-        value.framework.getOrElse(false),
-        value.preInstallNotes,
-        value.postInstallNotes,
-        value.postUninstallNotes,
-        value.licenses,
-        value.minDcosReleaseVersion,
-        value.marathon,
-        value.resource,
-        value.config,
-        value.command
-      )
-    }
-
-  implicit val internalPackageDefinitionToV2DescribeResponse: Conversion[
-    internal.model.PackageDefinition,
-    rpc.v2.model.DescribeResponse
-    ] =
-    Conversion.fromFunction((pkgDef: internal.model.PackageDefinition) => {
-      rpc.v2.model.DescribeResponse(
-        pkgDef.packagingVersion,
-        pkgDef.name,
-        pkgDef.version,
-        pkgDef.maintainer,
-        pkgDef.description,
-        pkgDef.tags,
-        pkgDef.selected,
-        pkgDef.scm,
-        pkgDef.website,
-        pkgDef.framework,
-        pkgDef.preInstallNotes,
-        pkgDef.postInstallNotes,
-        pkgDef.postUninstallNotes,
-        pkgDef.licenses,
-        pkgDef.minDcosReleaseVersion,
-        pkgDef.marathon,
-        pkgDef.resource,
-        pkgDef.config,
-        pkgDef.command
-      )
-    })
-
-  implicit val v3PackageDefinitionToInternalPackageDefinition: Conversion[
-    universe.v3.model.PackageDefinition,
-    internal.model.PackageDefinition
-    ] =
-    Conversion.fromFunction {
-      case v2Package: universe.v3.model.V2Package => v2Package.as[internal.model.PackageDefinition]
-      case v3Package: universe.v3.model.V3Package => v3Package.as[internal.model.PackageDefinition]
-    }
-
   implicit val v2PackageDetailsVersionToV3PackageDefinitionVersion: Bijection[
     universe.v2.model.PackageDetailsVersion,
     universe.v3.model.PackageDefinition.Version
@@ -171,7 +152,7 @@ object Universe {
 
   implicit val v3PackageDefinitionTagToString: Injection[
     universe.v3.model.PackageDefinition.Tag,
-    String
+    String  // "Tag" in universe.v2.model.PackageDefinition is only a String
     ] = {
     val fwd = (x: universe.v3.model.PackageDefinition.Tag) => x.value
     val rev = (x: String) => universe.v3.model.PackageDefinition.Tag(x)
@@ -190,7 +171,7 @@ object Universe {
         url = x.url.toString
       )
     val rev = (x: universe.v2.model.License) => {
-      Common.uriToString.invert(x.url).map { url =>
+      Injection.invert[Uri, String](x.url).map { url =>
         universe.v3.model.License(name = x.name, url = url)
       }
     }
@@ -299,32 +280,5 @@ object Universe {
     universe.v3.model.Images,
     universe.v2.model.Images
     ] = v2ImagesToV3Images.inverse
-
-  implicit val internalPackageDefinitionToInstalledPackageInformation: Conversion[
-    internal.model.PackageDefinition,
-    rpc.v1.model.InstalledPackageInformation
-    ] =
-    Conversion.fromFunction { (x: internal.model.PackageDefinition) =>
-      rpc.v1.model.InstalledPackageInformation(
-        packageDefinition = rpc.v1.model.InstalledPackageInformationPackageDetails(
-          packagingVersion = x.packagingVersion.as[universe.v2.model.PackagingVersion],
-          name = x.name,
-          version = x.version.as[universe.v2.model.PackageDetailsVersion],
-          maintainer = x.maintainer,
-          description = x.description,
-          tags = x.tags.as[List[String]],
-          selected = Some(x.selected),
-          scm = x.scm,
-          website = x.website,
-          framework = Some(x.framework),
-          preInstallNotes = x.preInstallNotes,
-          postInstallNotes = x.postInstallNotes,
-          postUninstallNotes = x.postUninstallNotes,
-          licenses = x.licenses.as[Option[List[universe.v2.model.License]]]
-        ),
-        resourceDefinition = x.resource.map(_.as[universe.v2.model.Resource])
-      )
-
-    }
 
 }

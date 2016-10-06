@@ -1,11 +1,10 @@
 package com.mesosphere.cosmos
 
 import com.mesosphere.cosmos.label.v1.circe.Decoders._
-import com.mesosphere.cosmos.converter.Common._
-import com.mesosphere.cosmos.converter.Universe._
 import com.mesosphere.cosmos.thirdparty.marathon.model.MarathonApp
 import com.mesosphere.cosmos.test.TestUtil.{MinimalPackageDefinition,MaximalPackageDefinition,RepoUri}
 import com.mesosphere.universe
+import com.mesosphere.universe.bijection.UniverseConversions._
 import com.mesosphere.universe.v3.circe.Decoders._
 import com.mesosphere.universe.v3.model.Command
 import com.netaporter.uri.Uri

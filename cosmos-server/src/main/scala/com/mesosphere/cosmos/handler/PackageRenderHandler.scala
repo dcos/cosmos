@@ -1,11 +1,11 @@
 package com.mesosphere.cosmos.handler
 
 import com.mesosphere.cosmos.ServiceMarathonTemplateNotFound
-import com.mesosphere.cosmos.converter.Universe._
 import com.mesosphere.cosmos.http.RequestSession
 import com.mesosphere.cosmos.repository.PackageCollection
 import com.mesosphere.cosmos.rpc.v1.model.{RenderRequest, RenderResponse}
 import com.mesosphere.universe
+import com.mesosphere.universe.bijection.UniverseConversions._
 import com.twitter.bijection.Conversion.asMethod
 import com.twitter.util.Future
 

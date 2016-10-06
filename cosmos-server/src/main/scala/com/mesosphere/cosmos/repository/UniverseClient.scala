@@ -9,14 +9,14 @@ import java.util.zip.{GZIPInputStream, ZipInputStream}
 import cats.data.Xor
 import cats.data.Xor.{Left, Right}
 import com.mesosphere.cosmos._
-import com.mesosphere.cosmos.converter.Common._
-import com.mesosphere.cosmos.converter.Universe._
+import com.mesosphere.cosmos.converter.InternalPackageDefinition._
 import com.mesosphere.cosmos.http.MediaTypeOps._
 import com.mesosphere.cosmos.http.{MediaTypeParseError, MediaTypeParser, MediaTypes, RequestSession}
 import com.mesosphere.cosmos.rpc.v1.model.PackageRepository
 import com.mesosphere.universe
 import com.mesosphere.universe.v2.circe.Decoders._
 import com.mesosphere.universe.v3.circe.Decoders._
+import com.mesosphere.universe.bijection.UniverseConversions._
 import com.netaporter.uri.Uri
 import com.twitter.bijection.Conversion.asMethod
 import com.twitter.finagle.stats.{NullStatsReceiver, Stat, StatsReceiver}
