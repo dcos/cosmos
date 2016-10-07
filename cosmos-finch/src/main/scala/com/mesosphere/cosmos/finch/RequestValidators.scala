@@ -1,9 +1,6 @@
-package com.mesosphere.cosmos.handler
+package com.mesosphere.cosmos.finch
 
-import com.mesosphere.cosmos.IncompatibleAcceptHeader
-import com.mesosphere.cosmos.circe.{DispatchingMediaTypedEncoder, MediaTypedEncoder}
-import com.mesosphere.cosmos.finch.MediaTypedRequestDecoder
-import com.mesosphere.cosmos.http.FinchExtensions._
+import com.mesosphere.cosmos.finch.FinchExtensions._
 import com.mesosphere.cosmos.http.{Authorization, CompoundMediaType, MediaType, RequestSession}
 import com.twitter.util.Future
 import io.finch._

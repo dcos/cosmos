@@ -1,11 +1,11 @@
 package com.mesosphere.cosmos
 
-import java.util.{Base64, UUID}
 import cats.data.Xor
 import cats.data.Xor.Right
 import com.mesosphere.cosmos.circe.Decoders._
-import com.mesosphere.cosmos.http.{MediaTypes, RequestSession}
+import com.mesosphere.cosmos.http.RequestSession
 import com.mesosphere.cosmos.repository.DefaultRepositories
+import com.mesosphere.cosmos.rpc.MediaTypes
 import com.mesosphere.cosmos.rpc.v1.circe.Decoders._
 import com.mesosphere.cosmos.rpc.v1.circe.Encoders._
 import com.mesosphere.cosmos.rpc.v1.model.{ErrorResponse, InstallRequest, InstallResponse}
@@ -24,6 +24,8 @@ import io.circe.syntax._
 import io.circe.{Json, JsonObject}
 import org.scalatest.prop.TableDrivenPropertyChecks
 import org.scalatest.{BeforeAndAfterAll, FreeSpec, Matchers}
+
+import java.util.{Base64, UUID}
 
 final class PackageInstallIntegrationSpec extends FreeSpec with BeforeAndAfterAll {
 

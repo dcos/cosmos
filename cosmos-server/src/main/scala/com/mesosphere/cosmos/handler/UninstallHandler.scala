@@ -11,6 +11,7 @@ import com.mesosphere.cosmos.MultipleFrameworkIds
 import com.mesosphere.cosmos.PackageNotInstalled
 import com.mesosphere.cosmos.ServiceUnavailable
 import com.mesosphere.cosmos.UninstallNonExistentAppForPackage
+import com.mesosphere.cosmos.finch.EndpointHandler
 import com.mesosphere.cosmos.rpc
 import com.mesosphere.cosmos.thirdparty.marathon.model.{AppId, MarathonApp}
 import com.mesosphere.universe

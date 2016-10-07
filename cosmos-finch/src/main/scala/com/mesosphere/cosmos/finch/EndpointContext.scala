@@ -1,6 +1,5 @@
-package com.mesosphere.cosmos.handler
+package com.mesosphere.cosmos.finch
 
-import com.mesosphere.cosmos.circe.MediaTypedEncoder
 import com.mesosphere.cosmos.http.RequestSession
 
 /** Information extracted from a request that affects endpoint behavior. */

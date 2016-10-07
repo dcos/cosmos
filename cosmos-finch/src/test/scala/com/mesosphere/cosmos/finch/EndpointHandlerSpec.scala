@@ -1,9 +1,7 @@
-package com.mesosphere.cosmos.handler
+package com.mesosphere.cosmos.finch
 
 import cats.data.Xor
-import com.mesosphere.cosmos.circe.MediaTypedEncoder
-import com.mesosphere.cosmos.http.{Authorization, MediaType, MediaTypes, RequestSession}
-import com.mesosphere.cosmos.test.TestUtil
+import com.mesosphere.cosmos.http.{Authorization, MediaType, RequestSession}
 import com.twitter.finagle.http.Status
 import com.twitter.util.{Await, Future}
 import io.circe.syntax._
@@ -63,7 +61,7 @@ final class EndpointHandlerSpec extends FreeSpec {
       "because all responses must be sent in JSON format" - {
 
         "response value of type Int" in {
-          val encoder = MediaTypedEncoder(Encoder.instance[Unit](_ => 42.asJson), TestUtil.MediaTypeAny)
+          val encoder = MediaTypedEncoder(Encoder.instance[Unit](_ => 42.asJson), TestingMediaTypes.any)
           val context = buildEndpointContext[Unit, Unit](requestBody = ())(encoder)
           val result = (new IdentityHandler[Unit])(context)
           val responseBody = extractBody[Int](result)
@@ -71,7 +69,7 @@ final class EndpointHandlerSpec extends FreeSpec {
         }
 
         "response value of type String" in {
-          val encoder = MediaTypedEncoder(Encoder.instance[Unit](_ => "hello world".asJson), TestUtil.MediaTypeAny)
+          val encoder = MediaTypedEncoder(Encoder.instance[Unit](_ => "hello world".asJson), TestingMediaTypes.any)
           val context = buildEndpointContext[Unit, Unit](requestBody = ())(encoder)
           val result = (new IdentityHandler[Unit])(context)
           val responseBody = extractBody[String](result)
@@ -85,11 +83,11 @@ final class EndpointHandlerSpec extends FreeSpec {
       "because the encoder has generated a response having that Content-Type" - {
 
         "with value application/json" in {
-          val encoder = MediaTypedEncoder(implicitly[Encoder[Unit]], MediaTypes.applicationJson)
+          val encoder = MediaTypedEncoder(implicitly[Encoder[Unit]], TestingMediaTypes.applicationJson)
           val context = buildEndpointContext[Unit, Unit](requestBody = ())(encoder)
           val result = (new IdentityHandler[Unit])(context)
           val contentType = extractContentType(result)
-          assertResult(MediaTypes.applicationJson.show)(contentType)
+          assertResult(TestingMediaTypes.applicationJson.show)(contentType)
         }
 
         "with value text/plain" in {
@@ -175,7 +173,7 @@ object EndpointHandlerSpec {
   }
 
   implicit def anyMediaTypedEncoder[A](implicit encoder: Encoder[A]): MediaTypedEncoder[A] = {
-    MediaTypedEncoder(encoder, TestUtil.MediaTypeAny)
+    MediaTypedEncoder(encoder, TestingMediaTypes.any)
   }
 
 }

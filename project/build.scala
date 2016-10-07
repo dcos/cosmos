@@ -78,7 +78,8 @@ object CosmosBuild extends Build {
     ))
 
     val guava = Seq(
-      "com.google.guava" % "guava" % V.guava
+      "com.google.guava" % "guava" % V.guava,
+      "com.google.code.findbugs" % "jsr305" % "3.0.1"
     )
 
     val jsonSchema = Seq(
@@ -195,7 +196,7 @@ object CosmosBuild extends Build {
 
     publishArtifact in Test := false,
 
-    parallelExecution in Global := false,
+    parallelExecution in ThisBuild := false,
 
     parallelExecution in Test := false,
 
@@ -262,7 +263,7 @@ object CosmosBuild extends Build {
 
   lazy val cosmos = Project("cosmos", file("."))
     .settings(sharedSettings)
-    .aggregate(http, model, json, bijection, server)
+    .aggregate(http, model, json, finch, bijection, server)
 
   lazy val model = Project("cosmos-model", file("cosmos-model"))
     .settings(sharedSettings)
@@ -298,6 +299,17 @@ object CosmosBuild extends Build {
           ++ Deps.twitterUtilCore
     )
 
+  lazy val finch = Project("cosmos-finch", file("cosmos-finch"))
+    .settings(sharedSettings)
+    .settings(
+      libraryDependencies ++=
+        Deps.finch
+    )
+    .dependsOn(
+      json,
+      http % "compile;test->test"
+    )
+
   lazy val server = Project("cosmos-server", file("cosmos-server"))
     .configs(IntegrationTest extend Test)
     .settings(itSettings)
@@ -309,7 +321,6 @@ object CosmosBuild extends Build {
       libraryDependencies ++=
         Deps.circe
           ++ Deps.curator
-          ++ Deps.finch
           ++ Deps.finchServer
           ++ Deps.jsonSchema
           ++ Deps.logback
@@ -319,7 +330,8 @@ object CosmosBuild extends Build {
     .dependsOn(
       json,
       http,
-      bijection % "compile;test->test"
+      bijection % "compile;test->test",
+      finch % "compile;test->test"
     )
 
   //////////////////////////////////////////////////////////////////////////////

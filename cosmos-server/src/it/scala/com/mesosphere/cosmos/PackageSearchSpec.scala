@@ -1,7 +1,7 @@
 package com.mesosphere.cosmos
 
 import cats.data.Xor.Right
-import com.mesosphere.cosmos.http.MediaTypes
+import com.mesosphere.cosmos.rpc.MediaTypes
 import com.mesosphere.cosmos.rpc.v1.circe.Decoders._
 import com.mesosphere.cosmos.rpc.v1.circe.Encoders._
 import com.mesosphere.cosmos.rpc.v1.model.{SearchRequest, SearchResponse, SearchResult}

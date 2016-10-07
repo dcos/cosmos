@@ -1,6 +1,5 @@
 package com.mesosphere.cosmos.finch
 
-import com.mesosphere.cosmos.circe.MediaTypedDecoder
 import io.finch.DecodeRequest
 import io.finch.circe.decodeCirce
 

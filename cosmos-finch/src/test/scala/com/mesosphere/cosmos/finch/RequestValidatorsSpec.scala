@@ -1,7 +1,6 @@
-package com.mesosphere.cosmos.handler
+package com.mesosphere.cosmos.finch
 
-import com.mesosphere.cosmos.circe.{DispatchingMediaTypedEncoder, MediaTypedDecoder, MediaTypedEncoder}
-import com.mesosphere.cosmos.finch.MediaTypedRequestDecoder
+import cats.Eval
 import com.mesosphere.cosmos.http._
 import com.mesosphere.cosmos.rpc.MediaTypes._
 import com.twitter.finagle.http.RequestBuilder
@@ -11,7 +10,6 @@ import io.circe.syntax._
 import io.circe.{Encoder, Json}
 import io.finch.{Endpoint, Input, Output}
 import org.scalatest.FreeSpec
-import cats.Eval
 
 final class RequestValidatorsSpec extends FreeSpec {
 
@@ -85,7 +83,7 @@ final class RequestValidatorsSpec extends FreeSpec {
         "so that it can be used to correctly encode the response" in {
           val produces = DispatchingMediaTypedEncoder(Set(
             MediaTypedEncoder(Encoder.instance[Int](_ => 0.asJson), MediaType("text", "plain")),
-            MediaTypedEncoder(Encoder.instance[Int](_ => 1.asJson), MediaTypes.applicationJson)
+            MediaTypedEncoder(Encoder.instance[Int](_ => 1.asJson), TestingMediaTypes.applicationJson)
           ))
           val (_, responseEncoder) = evaluateEndpoint(produces = produces).get
           assertResult(Json.fromInt(1))(responseEncoder.encoder(42))
@@ -112,17 +110,17 @@ final class RequestValidatorsSpec extends FreeSpec {
     }
 
     def evaluateEndpoint[Res](
-      accept: Option[String] = Some(MediaTypes.applicationJson.show),
+      accept: Option[String] = Some(TestingMediaTypes.applicationJson.show),
       authorization: Option[String] = None,
       produces: DispatchingMediaTypedEncoder[Res] = DispatchingMediaTypedEncoder(Set(
-        MediaTypedEncoder(Encoder.instance[Res](_ => Json.Null), MediaTypes.applicationJson)
+        MediaTypedEncoder(Encoder.instance[Res](_ => Json.Null), TestingMediaTypes.applicationJson)
       ))
     ): Try[(RequestSession, MediaTypedEncoder[Res])] = {
       val request = RequestBuilder()
         .url("http://some.host")
         .setHeader("Accept", accept.toSeq)
         .setHeader("Authorization", authorization.toSeq)
-        .setHeader("Content-Type", MediaTypes.applicationJson.show)
+        .setHeader("Content-Type", TestingMediaTypes.applicationJson.show)
         .buildPost(Buf.Utf8(Json.Null.noSpaces))
 
       val reader = factory(produces)
@@ -162,7 +160,7 @@ object RequestValidatorsSpec {
       produces: DispatchingMediaTypedEncoder[Res]
     ): Endpoint[EndpointContext[Json, Res]] = {
       RequestValidators.standard(
-        accepts = MediaTypedRequestDecoder.apply(MediaTypedDecoder(MediaTypes.applicationJson)),
+        accepts = MediaTypedRequestDecoder.apply(MediaTypedDecoder(TestingMediaTypes.applicationJson)),
         produces = produces
       )
     }

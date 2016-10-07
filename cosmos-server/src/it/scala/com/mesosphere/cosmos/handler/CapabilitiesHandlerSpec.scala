@@ -1,7 +1,7 @@
 package com.mesosphere.cosmos.handler
 
 import cats.data.Xor
-import com.mesosphere.cosmos.http.MediaTypes
+import com.mesosphere.cosmos.rpc.MediaTypes
 import com.mesosphere.cosmos.rpc.v1.circe.Decoders._
 import com.mesosphere.cosmos.rpc.v1.model.{CapabilitiesResponse, Capability}
 import com.mesosphere.cosmos.test.CosmosIntegrationTestClient._

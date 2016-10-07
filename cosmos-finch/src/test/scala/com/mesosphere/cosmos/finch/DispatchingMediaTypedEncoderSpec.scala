@@ -1,6 +1,6 @@
-package com.mesosphere.cosmos.circe
+package com.mesosphere.cosmos.finch
 
-import com.mesosphere.cosmos.http.{CompoundMediaType, MediaType, MediaTypes}
+import com.mesosphere.cosmos.http.{CompoundMediaType, MediaType}
 import io.circe.syntax._
 import io.circe.{Encoder, Json}
 import org.scalatest.FreeSpec
@@ -21,11 +21,11 @@ final class DispatchingMediaTypedEncoderSpec extends FreeSpec {
 
       "because there are no encoders" in {
         val dispatchingEncoder = DispatchingMediaTypedEncoder(Set.empty[MediaTypedEncoder[String]])
-        assertResult(None)(dispatchingEncoder(CompoundMediaType(MediaTypes.applicationJson)))
+        assertResult(None)(dispatchingEncoder(CompoundMediaType(TestingMediaTypes.applicationJson)))
       }
 
       "because there are only incompatible encoders" in {
-        assertResult(None)(ThreeElementEncoder(CompoundMediaType(MediaTypes.applicationJson)))
+        assertResult(None)(ThreeElementEncoder(CompoundMediaType(TestingMediaTypes.applicationJson)))
       }
 
     }

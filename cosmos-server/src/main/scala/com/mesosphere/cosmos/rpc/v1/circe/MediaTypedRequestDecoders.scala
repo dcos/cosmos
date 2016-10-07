@@ -1,7 +1,6 @@
 package com.mesosphere.cosmos.rpc.v1.circe
 
-import com.mesosphere.cosmos.circe.MediaTypedDecoder
-import com.mesosphere.cosmos.finch.MediaTypedRequestDecoder
+import com.mesosphere.cosmos.finch.{MediaTypedDecoder, MediaTypedRequestDecoder}
 import com.mesosphere.cosmos.rpc.MediaTypes
 import com.mesosphere.cosmos.rpc.v1.circe.Decoders._
 import com.mesosphere.cosmos.rpc.v1.model._

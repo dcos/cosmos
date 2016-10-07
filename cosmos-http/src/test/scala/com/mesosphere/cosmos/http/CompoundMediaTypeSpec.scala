@@ -1,13 +1,13 @@
 package com.mesosphere.cosmos.http
 
 import com.mesosphere.cosmos.http.CompoundMediaTypeOps.compoundMediaTypeToCompoundMediaTypeOps
+import com.mesosphere.universe.MediaTypes
 import com.twitter.util.Return
 import org.scalatest.FreeSpec
 
 class CompoundMediaTypeSpec extends FreeSpec {
 
   private val applicationJson = MediaType("application", MediaTypeSubType("json"), Map("charset" -> "utf-8"))
-  private val applicationZip = MediaType("application", MediaTypeSubType("zip"))
   private val v1 = withV(applicationJson, "v1")
   private val v2 = withV(applicationJson, "v2")
 
@@ -75,7 +75,7 @@ class CompoundMediaTypeSpec extends FreeSpec {
       ))
 
       val accepted = Set(
-        applicationZip
+        MediaTypes.applicationZip
       )
 
       val actual = CompoundMediaTypeOps.calculateIntersectionAndOrder(cmt, accepted)
@@ -135,7 +135,7 @@ class CompoundMediaTypeSpec extends FreeSpec {
       ))
 
       val accepted = Set(
-        applicationZip
+        MediaTypes.applicationZip
       )
 
       val actual = cmt.getMostAppropriateMediaType(accepted)

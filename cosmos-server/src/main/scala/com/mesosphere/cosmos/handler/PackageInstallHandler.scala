@@ -1,10 +1,10 @@
 package com.mesosphere.cosmos.handler
 
 import java.io.{StringReader, StringWriter}
-
 import cats.data.Xor
 import com.github.mustachejava.DefaultMustacheFactory
 import com.mesosphere.cosmos._
+import com.mesosphere.cosmos.finch.EndpointHandler
 import com.mesosphere.cosmos.http.RequestSession
 import com.mesosphere.cosmos.jsonschema.JsonSchemaValidation
 import com.mesosphere.cosmos.repository.PackageCollection

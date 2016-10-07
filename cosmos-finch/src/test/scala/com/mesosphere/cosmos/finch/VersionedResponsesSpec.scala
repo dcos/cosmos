@@ -1,10 +1,8 @@
-package com.mesosphere.cosmos.handler
+package com.mesosphere.cosmos.finch
 
 import cats.Eval
-import com.mesosphere.cosmos.Cosmos
-import com.mesosphere.cosmos.circe.{DispatchingMediaTypedEncoder, MediaTypedDecoder, MediaTypedEncoder}
-import com.mesosphere.cosmos.finch.MediaTypedRequestDecoder
-import com.mesosphere.cosmos.http.{MediaType, MediaTypes, RequestSession}
+import com.mesosphere.cosmos.finch.TestingMediaTypes._
+import com.mesosphere.cosmos.http.{MediaType, RequestSession}
 import com.twitter.finagle.http.RequestBuilder
 import com.twitter.io.Buf
 import com.twitter.util.{Await, Future, Try}
@@ -60,7 +58,7 @@ object VersionedResponsesSpec {
   }
 
   def versionedJson(version: Int): MediaType = {
-    MediaTypes.applicationJson.copy(parameters = Map("version" -> s"v$version"))
+    applicationJson.copy(parameters = Map("version" -> s"v$version"))
   }
 
   val endpointPath: Seq[String] = Seq("package", "foobar")
@@ -69,7 +67,7 @@ object VersionedResponsesSpec {
     val request = RequestBuilder()
       .url(s"http://some.host/${endpointPath.mkString("/")}")
       .setHeader("Accept", acceptHeader.show)
-      .setHeader("Content-Type", MediaTypes.applicationJson.show)
+      .setHeader("Content-Type", applicationJson.show)
       .buildPost(Buf.Utf8(body))
 
     Input(request)
@@ -81,7 +79,7 @@ object VersionedResponsesSpec {
   }
 
   implicit val stringRichDecoder: MediaTypedRequestDecoder[String] =
-    MediaTypedRequestDecoder(MediaTypedDecoder(MediaTypes.applicationJson))
+    MediaTypedRequestDecoder(MediaTypedDecoder(applicationJson))
   implicit val foobarResponseEncoder: DispatchingMediaTypedEncoder[FoobarResponse] =
     DispatchingMediaTypedEncoder(Set(Foo.encoder, Bar.encoder))
 
@@ -95,6 +93,6 @@ object VersionedResponsesSpec {
 
   }
 
-  val FoobarEndpoint: Endpoint[Json] = Cosmos.route(post(/), FoobarHandler)(RequestValidators.standard)
+  val FoobarEndpoint: Endpoint[Json] = FinchExtensions.route(post(/), FoobarHandler)(RequestValidators.standard)
 
 }

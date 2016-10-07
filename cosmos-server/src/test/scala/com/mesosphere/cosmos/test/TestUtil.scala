@@ -38,8 +38,6 @@ object TestUtil {
 
   implicit val Anonymous = RequestSession(None)
 
-  val MediaTypeAny = MediaType("*", MediaTypeSubType("*"))
-
   val RepoUri = Uri.parse("some/repo/uri")
 
   val MinimalPackageDefinition = internal.model.PackageDefinition(

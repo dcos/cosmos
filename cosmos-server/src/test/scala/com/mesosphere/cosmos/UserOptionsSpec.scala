@@ -2,8 +2,8 @@ package com.mesosphere.cosmos
 
 import java.nio.ByteBuffer
 import java.nio.charset.StandardCharsets
-
 import cats.data.Xor
+import com.mesosphere.cosmos.finch.EndpointHandler
 import com.mesosphere.cosmos.handler._
 import com.mesosphere.cosmos.http.RequestSession
 import com.mesosphere.cosmos.rpc.MediaTypes

@@ -1,4 +1,4 @@
-package com.mesosphere.cosmos.handler
+package com.mesosphere.cosmos.finch
 
 import com.mesosphere.cosmos.http.RequestSession
 import com.twitter.util.Future

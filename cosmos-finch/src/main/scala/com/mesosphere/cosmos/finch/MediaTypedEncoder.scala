@@ -1,4 +1,4 @@
-package com.mesosphere.cosmos.circe
+package com.mesosphere.cosmos.finch
 
 import com.mesosphere.cosmos.http.MediaType
 import io.circe.Encoder

@@ -1,7 +1,7 @@
 package com.mesosphere.cosmos.storage
 
 import com.mesosphere.cosmos.EnvelopeError
-import com.mesosphere.cosmos.circe.{MediaTypedDecoder, MediaTypedEncoder}
+import com.mesosphere.cosmos.finch.{MediaTypedDecoder, MediaTypedEncoder}
 import com.mesosphere.cosmos.http.{MediaType, MediaTypeSubType}
 import com.mesosphere.cosmos.storage.Envelope._
 import io.circe.generic.semiauto._

@@ -2,6 +2,7 @@ package com.mesosphere.cosmos.circe
 
 import cats.data.Ior
 import com.mesosphere.cosmos._
+import com.mesosphere.cosmos.finch.{IncompatibleAcceptHeader, RequestError}
 import com.mesosphere.cosmos.http.MediaType
 import com.mesosphere.cosmos.model._
 import com.mesosphere.cosmos.thirdparty.marathon.circe.Encoders._
@@ -49,8 +50,6 @@ sealed trait LowPriorityImplicits {
 }
 
 object Encoders extends LowPriorityImplicits {
-
-  implicit val encodeErrorResponse: Encoder[ErrorResponse] = deriveEncoder[ErrorResponse]
 
   implicit val encodeZooKeeperStorageEnvelope: Encoder[ZooKeeperStorageEnvelope] =
     deriveEncoder[ZooKeeperStorageEnvelope]
@@ -129,8 +128,8 @@ object Encoders extends LowPriorityImplicits {
         "Multiple errors while processing request",
         Some(JsonObject.singleton("errors", details))
       )
-    case ce: CosmosError =>
-      ErrorResponse(ce.errType, msgForCosmosError(ce), ce.getData)
+    case ce: RequestError =>
+      ErrorResponse(ce.errType, msgForRequestError(ce), ce.getData)
     case t: Throwable =>
       ErrorResponse("unhandled_exception", t.getMessage)
   }
@@ -156,6 +155,12 @@ object Encoders extends LowPriorityImplicits {
           "path" -> path.asJson
         )))
       )
+  }
+
+  private[this] def msgForRequestError(re: RequestError): String = re match {
+    case ce: CosmosError => msgForCosmosError(ce)
+    case IncompatibleAcceptHeader(available, specified) =>
+      s"Item 'header 'Accept'' deemed invalid by rule: 'should match one of: ${available.map(_.show).mkString(", ")}'"
   }
 
   private[this] def msgForCosmosError(err: CosmosError): String = err match {
@@ -276,9 +281,7 @@ object Encoders extends LowPriorityImplicits {
     case ConversionError(failure) => failure
     case ServiceMarathonTemplateNotFound(name, PackageDefinition.Version(version)) =>
       s"Package: [$name] version: [$version] does not have a Marathon template defined and can not be rendered"
-    case IncompatibleAcceptHeader(available, specified) =>
-      s"Item 'header 'Accept'' deemed invalid by rule: 'should match one of: ${available.map(_.show).mkString(", ")}'"
-    case EnvelopeError(msg) => msg
+     case EnvelopeError(msg) => msg
   }
 
 }

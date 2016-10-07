@@ -16,12 +16,14 @@ import io.circe.syntax._
 import io.circe.{Decoder, Encoder}
 import org.scalatest.Matchers
 import org.slf4j.LoggerFactory
+
 import java.util.concurrent.atomic.AtomicInteger
 import com.mesosphere.universe.v3.circe.Decoders._
 import com.mesosphere.cosmos.rpc.v1.model._
 import com.mesosphere.universe.v3.model.Repository
 import com.mesosphere.universe.{MediaTypes => UMediaTypes}
 import com.mesosphere.cosmos.circe.Decoders._
+import com.mesosphere.cosmos.finch.TestingMediaTypes
 import com.mesosphere.cosmos.rpc.v1.circe.Decoders._
 import com.mesosphere.cosmos.rpc.v1.circe.Encoders._
 
@@ -180,7 +182,7 @@ object CosmosIntegrationTestClient extends Matchers {
         callEndpoint[Unit, Repository](
           "package/storage/repository",
           (),
-          TestUtil.MediaTypeAny,
+          TestingMediaTypes.any,
           UMediaTypes.UniverseV3Repository,
           method = "GET"
         )

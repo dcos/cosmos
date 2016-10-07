@@ -76,4 +76,5 @@ object Encoders {
   implicit val encodePublishResponse: Encoder[PublishResponse] = deriveEncoder[PublishResponse]
   implicit val encodePublishRequest: Encoder[PublishRequest] = deriveEncoder[PublishRequest]
 
+  implicit val encodeErrorResponse: Encoder[ErrorResponse] = deriveEncoder[ErrorResponse]
 }

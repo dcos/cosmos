@@ -2,11 +2,11 @@ package com.mesosphere.cosmos.handler
 
 import java.nio.charset.StandardCharsets
 import java.util.Base64
-
 import cats.data.Xor
 import com.mesosphere.cosmos.{AdminRouter, CirceError}
 import com.mesosphere.cosmos.converter.Label._
 import com.mesosphere.cosmos.converter.InternalPackageDefinition._
+import com.mesosphere.cosmos.finch.EndpointHandler
 import com.mesosphere.cosmos.http.RequestSession
 import com.mesosphere.cosmos.internal.model.MarathonAppOps._
 import com.mesosphere.cosmos.label

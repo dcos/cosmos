@@ -1,7 +1,7 @@
-package com.mesosphere.cosmos.circe
+package com.mesosphere.cosmos.finch
 
-import com.mesosphere.cosmos.http.{CompoundMediaType, MediaType}
 import com.mesosphere.cosmos.http.CompoundMediaTypeOps._
+import com.mesosphere.cosmos.http.{CompoundMediaType, MediaType}
 import io.circe.Encoder
 
 /** Allows an [[io.circe.Encoder]] to be selected by a [[com.mesosphere.cosmos.http.MediaType]]. */
