@@ -6,7 +6,7 @@ import com.github.mustachejava.DefaultMustacheFactory
 import com.mesosphere.cosmos._
 import com.mesosphere.cosmos.finch.EndpointHandler
 import com.mesosphere.cosmos.http.RequestSession
-import com.mesosphere.cosmos.jsonschema.JsonSchemaValidation
+import com.mesosphere.cosmos.jsonschema.JsonSchema
 import com.mesosphere.cosmos.repository.PackageCollection
 import com.mesosphere.cosmos.thirdparty.marathon.model.AppId
 import com.mesosphere.universe
@@ -101,7 +101,7 @@ object PackageInstallHandler {
     assetsJson: Option[Json],
     options: Option[JsonObject]
   ): Json = {
-    val defaults = extractDefaultsFromConfig(packageConfig)
+    val defaults = JsonSchema.extractDefaultsFromSchema(packageConfig.getOrElse(JsonObject.empty))
     val merged: JsonObject = (packageConfig, options) match {
       case (None, None) => JsonObject.empty
       case (Some(config), None) => validConfig(defaults, config)
@@ -163,44 +163,13 @@ object PackageInstallHandler {
     }
   }
 
-  private[this] def extractDefaultsFromConfig(configJson: Option[JsonObject]): JsonObject = {
-    configJson
-      .flatMap { json =>
-        val topProperties =
-          json("properties")
-            .getOrElse(Json.Null)
-
-        filterDefaults(topProperties)
-          .asObject
-      }
-      .getOrElse(JsonObject.empty)
-  }
-
-  private[this] def filterDefaults(properties: Json): Json = {
-    val defaults = properties
-      .asObject
-      .getOrElse(JsonObject.empty)
-      .toMap
-      .flatMap { case (propertyName, propertyJson) =>
-        propertyJson
-          .asObject
-          .flatMap { propertyObject =>
-            propertyObject("default").orElse {
-              propertyObject("properties").map(filterDefaults)
-            }
-          }
-          .map(propertyName -> _)
-      }
-
-    Json.fromJsonObject(JsonObject.fromMap(defaults))
-  }
-
   private[this] def validConfig(options: JsonObject, config: JsonObject): JsonObject = {
-    val validationErrors = JsonSchemaValidation.matchesSchema(options, config)
-    if (validationErrors.nonEmpty) {
-      throw JsonSchemaMismatch(validationErrors)
+    JsonSchema.jsonObjectMatchesSchema(options, config) match {
+      case Xor.Left(validationErrors) =>
+        throw JsonSchemaMismatch(validationErrors)
+      case Xor.Right(_) =>
+        options
     }
-    options
   }
 
   private[cosmos] def merge(target: JsonObject, fragment: JsonObject): JsonObject = {

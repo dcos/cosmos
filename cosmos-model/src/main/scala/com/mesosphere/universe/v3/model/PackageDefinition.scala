@@ -11,7 +11,7 @@ object PackageDefinition {
 
   case class Tag(value: String) {
     import Tag._
-    assert(
+    assert(                                                    //TODO: move this to companion object with explicit Try
       packageDetailsTagPattern.matcher(value).matches(),
       s"Value '$value' does not conform to expected format $packageDetailsTagRegex"
     )
