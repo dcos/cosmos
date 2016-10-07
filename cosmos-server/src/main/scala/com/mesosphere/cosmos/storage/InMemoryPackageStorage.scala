@@ -1,10 +1,10 @@
 package com.mesosphere.cosmos.storage
 
 import java.util.concurrent.atomic.AtomicReference
-
 import scala.collection.concurrent.TrieMap
 import com.mesosphere.cosmos.ConcurrentPackageUpdateDuringPublish
 import com.mesosphere.cosmos.converter.Common.BundleToPackage
+import com.mesosphere.cosmos.internal.model.{BundleDefinition, V2Bundle, V3Bundle}
 import com.mesosphere.universe.v3.model._
 import com.twitter.bijection.Conversion.asMethod
 import com.twitter.util.Future

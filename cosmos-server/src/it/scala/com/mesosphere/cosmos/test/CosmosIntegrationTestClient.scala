@@ -18,14 +18,16 @@ import org.scalatest.Matchers
 import org.slf4j.LoggerFactory
 
 import java.util.concurrent.atomic.AtomicInteger
-import com.mesosphere.universe.v3.circe.Decoders._
-import com.mesosphere.cosmos.rpc.v1.model._
-import com.mesosphere.universe.v3.model.Repository
-import com.mesosphere.universe.{MediaTypes => UMediaTypes}
 import com.mesosphere.cosmos.circe.Decoders._
 import com.mesosphere.cosmos.finch.TestingMediaTypes
+import com.mesosphere.cosmos.internal.circe.Decoders._
+import com.mesosphere.cosmos.internal.circe.Encoders._
 import com.mesosphere.cosmos.rpc.v1.circe.Decoders._
 import com.mesosphere.cosmos.rpc.v1.circe.Encoders._
+import com.mesosphere.cosmos.rpc.v1.model._
+import com.mesosphere.universe.v3.circe.Decoders._
+import com.mesosphere.universe.v3.model.Repository
+import com.mesosphere.universe.{MediaTypes => UMediaTypes}
 
 object CosmosIntegrationTestClient extends Matchers {
 

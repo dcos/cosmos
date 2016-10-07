@@ -7,6 +7,7 @@ import java.nio.file._
 import java.nio.file.attribute.BasicFileAttributes
 import com.mesosphere.cosmos._
 import com.mesosphere.cosmos.converter.Common._
+import com.mesosphere.cosmos.internal.model.{BundleDefinition, V2Bundle}
 import com.mesosphere.universe
 import com.mesosphere.universe.test.TestingPackages
 import com.mesosphere.universe.v3.model.PackageDefinition.ReleaseVersion

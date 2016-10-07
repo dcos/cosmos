@@ -1,6 +1,7 @@
 package com.mesosphere.cosmos.rpc.v1.circe
 
 import com.mesosphere.cosmos.finch.DispatchingMediaTypedEncoder
+import com.mesosphere.cosmos.internal.circe.Encoders._
 import com.mesosphere.cosmos.rpc.MediaTypes
 import com.mesosphere.cosmos.rpc.v1.circe.Encoders._
 import com.mesosphere.cosmos.rpc.v1.model._

@@ -1,5 +1,7 @@
-package com.mesosphere.universe.v3.model
+package com.mesosphere.cosmos.internal.model
 
+import com.mesosphere.universe
+import com.mesosphere.universe.v3.model._
 import io.circe.JsonObject
 
 sealed abstract class BundleDefinition
@@ -7,11 +9,11 @@ sealed abstract class BundleDefinition
 case class V2Bundle(
   packagingVersion: V2PackagingVersion.type = V2PackagingVersion,
   name: String,
-  version: PackageDefinition.Version,
+  version: universe.v3.model.PackageDefinition.Version,
   maintainer: String,
   description: String,
   marathon: Marathon,
-  tags: List[PackageDefinition.Tag] = Nil,
+  tags: List[universe.v3.model.PackageDefinition.Tag] = Nil,
   selected: Option[Boolean] = None,
   scm: Option[String] = None,
   website: Option[String] = None,
@@ -28,10 +30,10 @@ case class V2Bundle(
 case class V3Bundle(
   packagingVersion: V3PackagingVersion.type = V3PackagingVersion,
   name: String,
-  version: PackageDefinition.Version,
+  version: universe.v3.model.PackageDefinition.Version,
   maintainer: String,
   description: String,
-  tags: List[PackageDefinition.Tag] = Nil,
+  tags: List[universe.v3.model.PackageDefinition.Tag] = Nil,
   selected: Option[Boolean] = None,
   scm: Option[String] = None,
   website: Option[String] = None,

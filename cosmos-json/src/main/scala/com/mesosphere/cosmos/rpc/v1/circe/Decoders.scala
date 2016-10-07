@@ -65,8 +65,4 @@ object Decoders {
     deriveDecoder[PackageRepositoryDeleteResponse]
   }
 
-  implicit val decodePublishResponse: Decoder[PublishResponse] = deriveDecoder[PublishResponse]
-  implicit val decodePublishRequest: Decoder[PublishRequest] = deriveDecoder[PublishRequest]
-
-
 }

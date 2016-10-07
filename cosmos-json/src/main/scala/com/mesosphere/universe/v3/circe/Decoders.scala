@@ -78,17 +78,6 @@ object Decoders {
 
   implicit val decodeV3V3Resource: Decoder[V3Resource] = deriveDecoder[V3Resource]
 
-  implicit val decodeBundleDefinition: Decoder[BundleDefinition] = {
-    Decoder.instance { (hc: HCursor) =>
-      hc.downField("packagingVersion").as[PackagingVersion].flatMap {
-        case V2PackagingVersion => hc.as[V2Bundle]
-        case V3PackagingVersion => hc.as[V3Bundle]
-      }
-    }
-  }
-  implicit val decodeV2Bundle = deriveDecoder[V2Bundle]
-  implicit val decodeV3Bundle = deriveDecoder[V3Bundle]
-
   implicit val decodeV3PackagingVersion: Decoder[PackagingVersion] = Decoder.instance[PackagingVersion] { (c: HCursor) =>
     c.as[String].map(PackagingVersion(_)).flatMap {
       case Return(v) => Xor.Right(v)
