@@ -1,37 +1,10 @@
 package com.mesosphere.cosmos.converter
 
-import com.mesosphere.cosmos.internal
-import com.mesosphere.cosmos.label
-import com.mesosphere.cosmos.rpc
+import com.mesosphere.cosmos.{label, rpc}
 import com.mesosphere.universe
-import com.mesosphere.universe.bijection.UniverseConversions._
-import com.twitter.bijection.Conversion.asMethod
-import com.twitter.bijection.{Bijection, Conversion}
+import com.twitter.bijection.Bijection
 
 object Label {
-
-  implicit val internalPackageDefinitionToLabelV1PackageMetadata: Conversion[
-      internal.model.PackageDefinition,
-      label.v1.model.PackageMetadata
-    ] = Conversion.fromFunction { (x: internal.model.PackageDefinition) =>
-      label.v1.model.PackageMetadata(
-        packagingVersion = x.packagingVersion.as[universe.v2.model.PackagingVersion],
-        name = x.name,
-        version = x.version.as[universe.v2.model.PackageDetailsVersion],
-        maintainer = x.maintainer,
-        description = x.description,
-        tags = x.tags.as[List[String]],
-        selected = Some(x.selected),
-        scm = x.scm,
-        website = x.website,
-        framework = Some(x.framework),
-        preInstallNotes = x.preInstallNotes,
-        postInstallNotes = x.postInstallNotes,
-        postUninstallNotes = x.postUninstallNotes,
-        licenses = x.licenses.as[Option[List[universe.v2.model.License]]],
-        images = x.resource.flatMap(_.images).as[Option[universe.v2.model.Images]]
-      )
-    }
 
   implicit val labelV1PackageMetadataToRpcV1InstalledPackageInformation: Bijection[
       label.v1.model.PackageMetadata,

@@ -263,7 +263,7 @@ object CosmosBuild extends Build {
 
   lazy val cosmos = Project("cosmos", file("."))
     .settings(sharedSettings)
-    .aggregate(http, model, json, jsonschema, finch, bijection, server)
+    .aggregate(http, model, json, jsonschema, bijection, render, finch, server)
 
   lazy val model = Project("cosmos-model", file("cosmos-model"))
     .settings(sharedSettings)
@@ -318,6 +318,18 @@ object CosmosBuild extends Build {
           ++ Deps.jsonSchema
     )
 
+  lazy val render = Project("cosmos-render", file("cosmos-render"))
+    .settings(sharedSettings)
+    .settings(
+      libraryDependencies ++=
+        Deps.mustache
+    )
+    .dependsOn(
+      json,
+      jsonschema,
+      bijection % "compile;test->test"
+    )
+
   lazy val server = Project("cosmos-server", file("cosmos-server"))
     .configs(IntegrationTest extend Test)
     .settings(itSettings)
@@ -335,11 +347,8 @@ object CosmosBuild extends Build {
           ++ Deps.scalaUri
     )
     .dependsOn(
-      json,
-      http,
-      bijection % "compile;test->test",
       finch % "compile;test->test",
-      jsonschema
+      render % "compile;test->test"
     )
 
   //////////////////////////////////////////////////////////////////////////////

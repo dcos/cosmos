@@ -1,47 +1,75 @@
-package com.mesosphere.cosmos
+package com.mesosphere.cosmos.render
 
-import java.nio.ByteBuffer
-import java.nio.charset.StandardCharsets
 import cats.data.Xor
-import com.mesosphere.cosmos.finch.EndpointHandler
-import com.mesosphere.cosmos.handler._
-import com.mesosphere.cosmos.http.RequestSession
-import com.mesosphere.cosmos.rpc.MediaTypes
-import com.mesosphere.cosmos.rpc.v1.circe.Encoders._
-import com.mesosphere.cosmos.storage.InMemoryPackageStorage
-import com.mesosphere.cosmos.thirdparty.marathon.circe.Decoders._
-import com.mesosphere.cosmos.thirdparty.marathon.model._
 import com.mesosphere.universe
-import com.netaporter.uri.Uri
-import com.twitter.finagle.http.RequestBuilder
-import com.twitter.io.Buf
-import com.twitter.util.{Await, Future}
-import io.circe.syntax._
+import com.mesosphere.universe.v3.model.V3Package
+import com.netaporter.uri.dsl._
 import io.circe.{Json, JsonObject}
-import io.finch.Input
+import io.circe.syntax._
 import org.scalatest.FreeSpec
 import org.scalatest.prop.TableDrivenPropertyChecks
 
-final class UserOptionsSpec extends FreeSpec with TableDrivenPropertyChecks {
+import java.nio.ByteBuffer
+import java.nio.charset.StandardCharsets
+
+class PackageDefinitionRendererSpec extends FreeSpec with TableDrivenPropertyChecks {
+
+  "if .labels from .marathon.v2AppMustacheTemplate " - {
+    "isn't Map[String, String] an error is returned" in {
+      val mustache =
+        """
+          |{
+          |  "labels": {
+          |    "idx": 0,
+          |    "string": "value"
+          |  }
+          |}
+        """.stripMargin
+
+      val pd = packageDefinition(mustache)
+
+      PackageDefinitionRenderer.renderMarathonV2App("http://someplace", pd, None, None) match {
+        case Xor.Left(InvalidLabelSchema(err)) =>
+          assertResult("String: El(DownField(idx),true,false),El(DownField(labels),true,false)")(err.getMessage)
+        case _ =>
+          fail("expected InvalidLabelSchemaError")
+      }
+    }
+
+    "does not exist, a default empty object is used" in {
+      val mustache =
+        """
+          |{
+          |  "env": {
+          |    "some": "thing"
+          |  }
+          |}
+        """.stripMargin
+
+      val pd = packageDefinition(mustache)
+
+      val Xor.Right(some) = PackageDefinitionRenderer.renderMarathonV2App("http://someplace", pd, None, None)
+        .flatMap(_.hcursor.downField("env").downField("some").as[String])
+
+      assertResult("thing")(some)
+    }
+  }
 
   "Merging JSON objects" - {
 
     "should pass on all examples" in {
       forAll (Examples) { (defaultsJson, optionsJson, mergedJson) =>
-        assertResult(mergedJson) {
-          PackageInstallHandler.merge(defaultsJson, optionsJson)
-        }
+        assertResult(mergedJson)(PackageDefinitionRenderer.merge(defaultsJson, optionsJson))
       }
     }
 
     "should happen as part of package install" in {
       forAll (Examples) { (defaultsJson, optionsJson, mergedJson) =>
         val packageName = "options-test"
-        val reqBody = rpc.v1.model.InstallRequest(packageName, None, Some(optionsJson))
         val mustacheTemplate = buildMustacheTemplate(mergedJson)
         val mustacheBytes = ByteBuffer.wrap(mustacheTemplate.getBytes(StandardCharsets.UTF_8))
 
-        val packageDefinition = internal.model.PackageDefinition(
+        val packageDefinition = V3Package(
           packagingVersion = universe.v3.model.V3PackagingVersion,
           name = packageName,
           version = universe.v3.model.PackageDefinition.Version("1.2.3"),
@@ -52,38 +80,13 @@ final class UserOptionsSpec extends FreeSpec with TableDrivenPropertyChecks {
           config = Some(buildConfig(Json.fromJsonObject(defaultsJson)))
         )
 
-        val packages = Map(packageName -> packageDefinition)
-        val packageCache = MemoryPackageCache(packages, Uri.parse("in/memory/source"))
-        val packageRunner = new RecordingPackageRunner
-        val packageStorage = new InMemoryPackageStorage
+        val Xor.Right(marathonJson) = PackageDefinitionRenderer.renderMarathonV2App(
+          "http://someplace",
+          packageDefinition,
+          Some(optionsJson),
+          None
+        ).map(_.asObject.get)
 
-        val cosmos = new Cosmos(
-          constHandler(rpc.v1.model.UninstallResponse(Nil)),
-          new PackageInstallHandler(packageCache, packageRunner),
-          new PackageRenderHandler(packageCache),
-          constHandler(rpc.v1.model.SearchResponse(List.empty)),
-          constHandler(packageDefinition),
-          constHandler(rpc.v1.model.ListVersionsResponse(Map.empty)),
-          constHandler(rpc.v1.model.ListResponse(Nil)),
-          constHandler(rpc.v1.model.PackageRepositoryListResponse(Nil)),
-          constHandler(rpc.v1.model.PackageRepositoryAddResponse(Nil)),
-          constHandler(rpc.v1.model.PackageRepositoryDeleteResponse(Nil)),
-          new PackagePublishHandler(packageStorage),
-          new RepositoryServeHandler(packageStorage),
-          new CapabilitiesHandler
-        )
-        val request = RequestBuilder()
-          .url("http://dummy.cosmos.host/package/install")
-          .addHeader("Content-Type", MediaTypes.InstallRequest.show)
-          .addHeader("Accept", MediaTypes.V1InstallResponse.show)
-          .buildPost(Buf.Utf8(reqBody.asJson.noSpaces))
-
-        val Some((_, eval)) = cosmos.packageInstall(Input(request))
-        val _ = Await.result(eval.value)
-
-        val marathonJson = packageRunner.marathonJson
-          .flatMap(_.asObject)
-          .getOrElse(JsonObject.empty)
         val expectedOptions = keyValify(mergedJson)
         val hasAllOptions = expectedOptions.forall { case (k, v) =>
           marathonJson(k).map(_.toString).contains(v)
@@ -186,32 +189,17 @@ final class UserOptionsSpec extends FreeSpec with TableDrivenPropertyChecks {
       .mkString("{", ",", "}")
   }
 
-  private[this] def constHandler[Request, Response](
-    resp: Response
-  ): EndpointHandler[Request, Response] = {
-    new EndpointHandler[Request, Response] {
-      override def apply(v1: Request)(implicit session: RequestSession): Future[Response] = {
-        Future.value(resp)
-      }
-    }
+
+  private[this] def packageDefinition(mustache: String) = {
+    V3Package(
+      packagingVersion = universe.v3.model.V3PackagingVersion,
+      name = "testing",
+      version = universe.v3.model.PackageDefinition.Version("a.b.c"),
+      maintainer = "foo@bar.baz",
+      description = "blah",
+      releaseVersion = universe.v3.model.PackageDefinition.ReleaseVersion(0).get,
+      marathon = Some(universe.v3.model.Marathon(ByteBuffer.wrap(mustache.getBytes(StandardCharsets.UTF_8))))
+    )
   }
 
 }
-
-private final class RecordingPackageRunner extends PackageRunner {
-
-  private[cosmos] var marathonJson: Option[Json] = None
-
-  override def launch(renderedConfig: Json)(implicit session: RequestSession): Future[MarathonApp] = {
-    marathonJson = Some(renderedConfig)
-    val Xor.Right(id) = renderedConfig.cursor.get[AppId]("id")
-    Future.value(MarathonApp(id, Map.empty, List.empty, 0.0, 0.0, 1, None, None))
-  }
-
-}
-
-private case class Config(
-  `type`: String,
-  default: Option[Json] = None,
-  properties: Option[Map[String, Config]] = None
-)
