@@ -16,7 +16,7 @@ CLUSTER_ID=$(
         "Authorization:Token ${CCM_AUTH_TOKEN}" \
         "name=${CLUSTER_NAME}" \
         cloud_provider=0 \
-        region=us-west-2 \
+        region="${CCM_AWS_CLUSTER_REGION:-"us-west-2"}" \
         time=60 \
         channel=testing/master \
         "cluster_desc=Cosmos testing cluster" \

@@ -13,7 +13,7 @@ object CosmosBuild extends Build {
 
   object V {
     val bijection = "0.9.2"
-    val circe = "0.5.0-M3"
+    val circe = "0.5.2"
     val curator = "2.9.1"
     val finch = "0.10.0"
     val finchServer = "0.9.1"
@@ -59,10 +59,13 @@ object CosmosBuild extends Build {
     ))
 
     val finch = Seq(
-      "com.github.finagle" %% "finch-core" % V.finch,
+      "com.github.finagle" %% "finch-core" % V.finch
+    ) ++ Seq(
       "com.github.finagle" %% "finch-circe" % V.finch
     ).map(_.excludeAll(
-      ExclusionRule("io.circe")
+      ExclusionRule("io.circe", "circe-core"),
+      ExclusionRule("io.circe", "circe-jawn"),
+      ExclusionRule("io.circe", "circe-jackson")
     ))
 
     val finchServer = Seq(
@@ -199,7 +202,43 @@ object CosmosBuild extends Build {
 
     cancelable in Global := true,
 
-    coverageOutputTeamCity := teamcityVersion.isDefined
+    coverageOutputTeamCity := teamcityVersion.isDefined,
+
+    publishTo := {
+      val nexus = "https://oss.sonatype.org/"
+      if (isSnapshot.value)
+        Some("snapshots" at nexus + "content/repositories/snapshots")
+      else
+        Some("releases" at nexus + "service/local/staging/deploy/maven2")
+    },
+
+    pomExtra :=
+        <url>https://dcos.io</url>
+        <licenses>
+          <license>
+            <name>Apache License Version 2.0</name>
+            <url>https://github.com/dcos/cosmos/blob/master/LICENSE.txt</url>
+            <distribution>repo</distribution>
+          </license>
+        </licenses>
+        <scm>
+          <url>https://github.com/dcos/cosmos.git</url>
+          <connection>scm:git:https://github.com/dcos/cosmos.git</connection>
+        </scm>
+        <developers>
+          <developer>
+            <name>Ben Whitehead</name>
+          </developer>
+          <developer>
+            <name>Charles Ruhland</name>
+          </developer>
+          <developer>
+            <name>José Armando García Sancio</name>
+          </developer>
+          <developer>
+            <name>Tamar Ben-Shachar</name>
+          </developer>
+        </developers>
   )
 
   private lazy val cosmosIntegrationTestServer = settingKey[CosmosIntegrationTestServer]("cosmos-it-server")
