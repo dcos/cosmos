@@ -5,7 +5,6 @@ import com.mesosphere.cosmos.rpc.v1.model._
 import com.mesosphere.cosmos.test.CosmosIntegrationTestClient
 import org.scalatest.FreeSpec
 import com.mesosphere.cosmos.test.TestUtil._
-import com.mesosphere.universe.v3.model._
 import com.netaporter.uri.Uri
 
 class PackageStorageIntegrationSpec extends FreeSpec {

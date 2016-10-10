@@ -35,6 +35,10 @@ object CosmosBuild extends Build {
       "com.twitter" %% "bijection-core" % V.bijection
     )
 
+    val bijectionUtil = Seq(
+      "com.twitter" %% "bijection-util" % V.bijection
+    )
+
     val circeCore = Seq(
       "io.circe" %% "circe-core" % V.circe
     )
@@ -345,6 +349,7 @@ object CosmosBuild extends Build {
           ++ Deps.logback
           ++ Deps.mustache
           ++ Deps.scalaUri
+          ++ Deps.bijectionUtil
     )
     .dependsOn(
       finch % "compile;test->test",

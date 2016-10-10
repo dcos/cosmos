@@ -31,14 +31,15 @@ object PackageDefinitionRenderer {
     pkgDef.marathon match {
       case None => Xor.Left(MissingMarathonV2AppTemplate)
       case Some(m) =>
-        validateOptionsAgainstSchema(pkgDef, options).flatMap { _ =>
+        val defaultOptions = pkgDef.config.map(JsonSchema.extractDefaultsFromSchema)
+        val defaultOptionsAndUserOptions = Seq(defaultOptions, options).flatten.foldLeft(JsonObject.empty)(merge)
+        validateOptionsAgainstSchema(pkgDef, defaultOptionsAndUserOptions).flatMap { _ =>
           // now that we know the users options are valid for the schema, we build up a composite json object
           // to send into the mustache context for rendering. The following seq prepares for the merge
           // of all the options, documents at later indices have higher priority than lower index objects
           // order here is important, DO NOT carelessly re-order.
           val mergedOptions = Seq(
-            pkgDef.config.map(JsonSchema.extractDefaultsFromSchema),
-            options,
+            Some(defaultOptionsAndUserOptions),
             resourceJson(pkgDef)
           ).flatten.foldLeft(JsonObject.empty)(merge)
 
@@ -48,9 +49,9 @@ object PackageDefinitionRenderer {
                 val labels = MarathonLabels(pkgDef, sourceUri)
 
                 val newLabelsAndAppId = Seq(
-                  Some(labels.requiredLabelsJson),
-                  Some(existingLabels),
-                  Some(labels.nonOverridableLabelsJson),
+                  Some(labels.requiredLabelsJson).map(obj => JsonObject.singleton("labels", Json.fromJsonObject(obj))),
+                  Some(existingLabels).map(obj => JsonObject.singleton("labels", Json.fromJsonObject(obj))),
+                  Some(labels.nonOverridableLabelsJson).map(obj => JsonObject.singleton("labels", Json.fromJsonObject(obj))),
                   marathonAppId.map(appIdDoc)
                 ).flatten.foldLeft(JsonObject.empty)(merge)
 
@@ -64,23 +65,23 @@ object PackageDefinitionRenderer {
 
   private[this] def validateOptionsAgainstSchema(
     pkgDef: PackageDefinition,
-    options: Option[JsonObject]
+    options: JsonObject
   ): Xor[PackageDefinitionRenderError, Unit] = {
-    (pkgDef.config, options) match {
+    (pkgDef.config, options.nonEmpty) match {
       // Success scenarios
-      case (None, None) => Xor.Right(())
-      case (Some(schema), None) => Xor.Right(())
+      case (None, false) => Xor.Right(())
+      case (Some(schema), false) => Xor.Right(())
       // Failure scenarios
-      case (None, Some(opts)) => Xor.Left(OptionsNotAllowed)
-      case (Some(schema), Some(opts)) =>
-        JsonSchema.jsonObjectMatchesSchema(opts, schema)
+      case (None, true) => Xor.Left(OptionsNotAllowed)
+      case (Some(schema), true) =>
+        JsonSchema.jsonObjectMatchesSchema(options, schema)
           .leftMap(OptionsValidationFailure)
     }
   }
 
   private[this] def resourceJson(pkgDef: PackageDefinition): Option[JsonObject] = pkgDef match {
-    case v2: V2Package => v2.resource.asJson.asObject
-    case v3: V3Package => v3.resource.asJson.asObject
+    case v2: V2Package => v2.resource.map(res => JsonObject.singleton("resource", res.asJson))
+    case v3: V3Package => v3.resource.map(res => JsonObject.singleton("resource", res.asJson))
   }
 
   private[render] def merge(target: JsonObject, fragment: JsonObject): JsonObject = {

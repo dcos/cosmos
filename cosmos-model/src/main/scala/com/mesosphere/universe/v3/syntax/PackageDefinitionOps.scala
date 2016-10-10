@@ -1,5 +1,6 @@
 package com.mesosphere.universe.v3.syntax
 
+import com.mesosphere.universe
 import com.mesosphere.universe.v3.model.PackageDefinition.Tag
 import com.mesosphere.universe.v3.model._
 import io.circe.JsonObject
@@ -95,6 +96,18 @@ final class PackageDefinitionOps(val pkgDef: PackageDefinition) extends AnyVal {
   def command: Option[Command] = pkgDef match {
     case v2: V2Package => v2.command
     case v3: V3Package => v3.command
+  }
+
+  def minDcosReleaseVersion: Option[DcosReleaseVersion] = pkgDef match {
+    case v2: V2Package => None
+    case v3: V3Package => v3.minDcosReleaseVersion
+  }
+
+  def v3Resource: Option[V3Resource] = pkgDef match {
+    case v2: V2Package => v2.resource.map { case V2Resource(assets, images) =>
+      V3Resource(assets, images)
+    }
+    case v3: V3Package => v3.resource
   }
 
   // -------- Non top-level properties that we are save to "jump" to --------------

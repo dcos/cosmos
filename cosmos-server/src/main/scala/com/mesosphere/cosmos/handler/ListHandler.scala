@@ -5,7 +5,7 @@ import java.util.Base64
 import cats.data.Xor
 import com.mesosphere.cosmos.{AdminRouter, CirceError}
 import com.mesosphere.cosmos.converter.Label._
-import com.mesosphere.cosmos.converter.InternalPackageDefinition._
+import com.mesosphere.cosmos.converter.Response._
 import com.mesosphere.cosmos.finch.EndpointHandler
 import com.mesosphere.cosmos.http.RequestSession
 import com.mesosphere.cosmos.internal.model.MarathonAppOps._
@@ -18,7 +18,7 @@ import com.mesosphere.universe.v3.model.PackageDefinition.ReleaseVersion
 import com.netaporter.uri.Uri
 import com.netaporter.uri.dsl.stringToUri
 import com.twitter.bijection.Conversion.asMethod
-import com.twitter.util.Future
+import com.twitter.util.{Future, Try}
 import io.circe.jawn.decode
 
 
@@ -88,7 +88,11 @@ private[cosmos] final class ListHandler(
         case (app, Some(repo)) =>
           repo
             .getPackageByReleaseVersion(app.pkgName, app.pkgReleaseVersion)
-            .map(pkgInfo => Installation(app.id, pkgInfo.as[InstalledPackageInformation]))
+            .map(_.as[Try[InstalledPackageInformation]])
+            .lowerFromTry
+            .map { pkgInfo =>
+              Installation(app.id, pkgInfo)
+            }
         case (app, None) => Future.value(Installation(app.id, decodeInstalledPackageInformation(app)))
       }
     }

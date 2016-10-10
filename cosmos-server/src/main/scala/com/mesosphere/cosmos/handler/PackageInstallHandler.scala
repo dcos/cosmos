@@ -8,7 +8,6 @@ import com.mesosphere.cosmos.render._
 import com.mesosphere.cosmos.repository.PackageCollection
 import com.mesosphere.universe
 import com.mesosphere.universe.bijection.UniverseConversions._
-import com.mesosphere.universe.v3.model.PackageDefinition
 import com.mesosphere.universe.v3.syntax.PackageDefinitionOps._
 import com.twitter.bijection.Conversion.asMethod
 import com.twitter.util.Future
@@ -27,8 +26,7 @@ private[cosmos] final class PackageInstallHandler(
         request.packageName,
         request.packageVersion.as[Option[universe.v3.model.PackageDefinition.Version]]
       )
-      .flatMap { case (v3Package, sourceUri) =>
-        val pkg: PackageDefinition = ??? // TODO: Fix me
+      .flatMap { case (pkg, sourceUri) =>
         val packageConfig =
           PackageDefinitionRenderer.renderMarathonV2App(sourceUri, pkg, request.options, request.appId)
 

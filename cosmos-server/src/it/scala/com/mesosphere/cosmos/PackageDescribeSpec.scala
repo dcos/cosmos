@@ -145,7 +145,7 @@ private object PackageDescribeSpec extends TableDrivenPropertyChecks {
     postInstallNotes = Some("A sample post-installation message"),
     tags = List("mesosphere", "example", "subcommand"),
     selected = Some(false),
-    framework = Some(false)
+    framework = None
   )
 
   val HelloworldConfigDef = Json.obj(

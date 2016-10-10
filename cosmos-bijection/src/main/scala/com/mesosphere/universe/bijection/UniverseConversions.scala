@@ -190,18 +190,6 @@ object UniverseConversions {
     }
   }
 
-  implicit val v3V3ResourceToV2Resource: Conversion[
-    universe.v3.model.V3Resource,
-    universe.v2.model.Resource
-    ] = {
-    Conversion.fromFunction { (value: universe.v3.model.V3Resource) =>
-      universe.v2.model.Resource(
-        value.assets.as[Option[universe.v2.model.Assets]],
-        value.images.as[Option[universe.v2.model.Images]]
-      )
-    }
-  }
-
   implicit val v3V2ResourceToV3V3Resource: Injection[
     universe.v3.model.V2Resource,
     universe.v3.model.V3Resource
@@ -229,6 +217,15 @@ object UniverseConversions {
         value.assets.as[Option[universe.v2.model.Assets]],
         value.images.as[Option[universe.v2.model.Images]])
     }
+
+  implicit val v2ResourceToV3V3Resource: Injection[
+    universe.v2.model.Resource,
+    universe.v3.model.V3Resource
+    ] = Injection.connect[
+      universe.v2.model.Resource,
+      universe.v3.model.V2Resource,
+      universe.v3.model.V3Resource
+    ]
 
   implicit val v2AssetsToV3Assets: Bijection[
     universe.v2.model.Assets,

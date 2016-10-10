@@ -112,7 +112,7 @@ private object PackageSearchSpec extends TableDrivenPropertyChecks {
       "database",
       "nosql"
     ).map(universe.v3.model.PackageDefinition.Tag(_)),
-    selected = Some(false),
+    selected = None,
     images = Some(universe.v3.model.Images(
       Some("https://downloads.mesosphere.com/universe/assets/icon-service-crate-small.png"),
       Some("https://downloads.mesosphere.com/universe/assets/icon-service-crate-medium.png"),
@@ -128,7 +128,7 @@ private object PackageSearchSpec extends TableDrivenPropertyChecks {
     description = "MemSQL running on Apache Mesos. This framework provides the ability to create and manage a set of MemSQL clusters, each running with the MemSQL Ops management tool.",
     framework = true,
     tags = List("mysql", "database", "rdbms").map(universe.v3.model.PackageDefinition.Tag(_)),
-    selected = Some(false),
+    selected = None,
     images = Some(universe.v3.model.Images(
       Some("https://downloads.mesosphere.com/universe/assets/icon-service-memsql-small.png"),
       Some("https://downloads.mesosphere.com/universe/assets/icon-service-memsql-medium.png"),
@@ -144,7 +144,7 @@ private object PackageSearchSpec extends TableDrivenPropertyChecks {
     description = "MySQL is the world's most popular open source database. With its proven performance, reliability and ease-of-use, MySQL has become the leading database choice for web-based applications, covering the entire range from personal projects and websites, via e-commerce and information services, all the way to high profile web properties including Facebook, Twitter, YouTube, Yahoo! and many more.",
     framework = false,
     tags = List("database", "mysql", "sql").map(universe.v3.model.PackageDefinition.Tag(_)),
-    selected = Some(false),
+    selected = None,
     images = None
   )
 
@@ -159,7 +159,7 @@ private object PackageSearchSpec extends TableDrivenPropertyChecks {
       "riak",
       "NoSql"
     ).map(universe.v3.model.PackageDefinition.Tag(_)),
-    selected = Some(false),
+    selected = None,
     images = Some(universe.v3.model.Images(
       Some("https://downloads.mesosphere.com/universe/assets/icon-service-riak-small.png"),
       Some("https://downloads.mesosphere.com/universe/assets/icon-service-riak-medium.png"),

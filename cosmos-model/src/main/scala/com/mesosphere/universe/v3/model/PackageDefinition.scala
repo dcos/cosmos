@@ -34,6 +34,11 @@ object PackageDefinition {
 
   }
 
+  implicit val packageDefinitionOrdering: Ordering[PackageDefinition] = Ordering.by {
+    case v2: V2Package => v2.name -> v2.releaseVersion
+    case v3: V3Package => v3.name -> v3.releaseVersion
+  }
+
 }
 
 /**

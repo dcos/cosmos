@@ -38,27 +38,25 @@ object TestUtil {
 
   implicit val Anonymous = RequestSession(None)
 
-  val MinimalPackageDefinition = internal.model.PackageDefinition(
-    packagingVersion = universe.v3.model.V2PackagingVersion,
-    name = TestingPackages.MinimalV3ModelV3PackageDefinition.name,
-    version = TestingPackages.MinimalV3ModelV3PackageDefinition.version,
-    releaseVersion = TestingPackages.MinimalV3ModelV3PackageDefinition.releaseVersion,
-    maintainer = TestingPackages.MinimalV3ModelV3PackageDefinition.maintainer,
-    description = TestingPackages.MinimalV3ModelV3PackageDefinition.description
+  val MinimalV2ModelDescribeResponse = rpc.v2.model.DescribeResponse(
+    packagingVersion = TestingPackages.MinimalV3ModelV2PackageDefinition.packagingVersion,
+    name = TestingPackages.MinimalV3ModelV2PackageDefinition.name,
+    version = TestingPackages.MinimalV3ModelV2PackageDefinition.version,
+    maintainer = TestingPackages.MinimalV3ModelV2PackageDefinition.maintainer,
+    description = TestingPackages.MinimalV3ModelV2PackageDefinition.description
   )
 
-  val MaximalPackageDefinition = internal.model.PackageDefinition(
-    packagingVersion = universe.v3.model.V3PackagingVersion,
+  val MaximalV2ModelDescribeResponse = rpc.v2.model.DescribeResponse(
+    packagingVersion = TestingPackages.MaximalV3ModelV3PackageDefinition.packagingVersion,
     name = TestingPackages.MaximalV3ModelV3PackageDefinition.name,
     version = TestingPackages.MaximalV3ModelV3PackageDefinition.version,
-    releaseVersion = TestingPackages.MaximalV3ModelV3PackageDefinition.releaseVersion,
     maintainer = TestingPackages.MaximalV3ModelV3PackageDefinition.maintainer,
     description = TestingPackages.MaximalV3ModelV3PackageDefinition.description,
     tags = TestingPackages.MaximalV3ModelV3PackageDefinition.tags,
-    selected = TestingPackages.MaximalV3ModelV3PackageDefinition.selected.get,
+    selected = TestingPackages.MaximalV3ModelV3PackageDefinition.selected.getOrElse(false),
     scm = TestingPackages.MaximalV3ModelV3PackageDefinition.scm,
     website = TestingPackages.MaximalV3ModelV3PackageDefinition.website,
-    framework = TestingPackages.MaximalV3ModelV3PackageDefinition.framework.get,
+    framework = TestingPackages.MaximalV3ModelV3PackageDefinition.framework.getOrElse(false),
     preInstallNotes = TestingPackages.MaximalV3ModelV3PackageDefinition.preInstallNotes,
     postInstallNotes = TestingPackages.MaximalV3ModelV3PackageDefinition.postInstallNotes,
     postUninstallNotes = TestingPackages.MaximalV3ModelV3PackageDefinition.postUninstallNotes,
@@ -68,36 +66,6 @@ object TestUtil {
     resource = TestingPackages.MaximalV3ModelV3PackageDefinition.resource,
     config = TestingPackages.MaximalV3ModelV3PackageDefinition.config,
     command = TestingPackages.MaximalV3ModelV3PackageDefinition.command
-  )
-
-  val MinimalV2ModelDescribeResponse = rpc.v2.model.DescribeResponse(
-    packagingVersion = MinimalPackageDefinition.packagingVersion,
-    name = MinimalPackageDefinition.name,
-    version = MinimalPackageDefinition.version,
-    maintainer = MinimalPackageDefinition.maintainer,
-    description = MinimalPackageDefinition.description
-  )
-
-  val MaximalV2ModelDescribeResponse = rpc.v2.model.DescribeResponse(
-    packagingVersion = MaximalPackageDefinition.packagingVersion,
-    name = MaximalPackageDefinition.name,
-    version = MaximalPackageDefinition.version,
-    maintainer = MaximalPackageDefinition.maintainer,
-    description = MaximalPackageDefinition.description,
-    tags = MaximalPackageDefinition.tags,
-    selected = MaximalPackageDefinition.selected,
-    scm = MaximalPackageDefinition.scm,
-    website = MaximalPackageDefinition.website,
-    framework = MaximalPackageDefinition.framework,
-    preInstallNotes = MaximalPackageDefinition.preInstallNotes,
-    postInstallNotes = MaximalPackageDefinition.postInstallNotes,
-    postUninstallNotes = MaximalPackageDefinition.postUninstallNotes,
-    licenses = MaximalPackageDefinition.licenses,
-    minDcosReleaseVersion = MaximalPackageDefinition.minDcosReleaseVersion,
-    marathon = MaximalPackageDefinition.marathon,
-    resource = MaximalPackageDefinition.resource,
-    config = MaximalPackageDefinition.config,
-    command = MaximalPackageDefinition.command
   )
 
   val MaximalInstalledPackageInformation  = rpc.v1.model.InstalledPackageInformation(

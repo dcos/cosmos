@@ -48,7 +48,7 @@ final class PackageListIntegrationSpec
         postInstallNotes = Some("A sample post-installation message"),
         tags = List("mesosphere", "example", "subcommand"),
         selected = Some(false),
-        framework = Some(false)
+        framework = None
       )
     )
     withInstalledPackage("helloworld") { installResponse =>

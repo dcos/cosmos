@@ -316,8 +316,7 @@ private object PackageInstallIntegrationSpec extends Matchers with TableDrivenPr
       "selected" -> false.asJson,
       "maintainer" -> "support@mesosphere.io".asJson,
       "version" -> "0.1.0".asJson,
-      "preInstallNotes" -> "A sample pre-installation message".asJson,
-      "framework" -> false.asJson
+      "preInstallNotes" -> "A sample pre-installation message".asJson
     ).asJson,
     packageCommand = HelloWorldCommand,
     packageRegistryVersion = "2.0",

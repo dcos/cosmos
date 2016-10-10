@@ -38,7 +38,7 @@ class PackageRenderHandlerSpec extends FreeSpec {
           "DCOS_PACKAGE_RELEASE" -> "0".asJson,
           "DCOS_PACKAGE_SOURCE" -> "https://downloads.mesosphere.com/universe/helloworld.zip".asJson,
           "DCOS_PACKAGE_COMMAND" -> "eyJwaXAiOlsiZGNvczwxLjAiLCJnaXQraHR0cHM6Ly9naXRodWIuY29tL21lc29zcGhlcmUvZGNvcy1oZWxsb3dvcmxkLmdpdCNkY29zLWhlbGxvd29ybGQ9MC4xLjAiXX0=".asJson,
-          "DCOS_PACKAGE_METADATA" -> "eyJwYWNrYWdpbmdWZXJzaW9uIjoiMi4wIiwibmFtZSI6ImhlbGxvd29ybGQiLCJ2ZXJzaW9uIjoiMC4xLjAiLCJtYWludGFpbmVyIjoic3VwcG9ydEBtZXNvc3BoZXJlLmlvIiwiZGVzY3JpcHRpb24iOiJFeGFtcGxlIERDT1MgYXBwbGljYXRpb24gcGFja2FnZSIsInRhZ3MiOlsibWVzb3NwaGVyZSIsImV4YW1wbGUiLCJzdWJjb21tYW5kIl0sInNlbGVjdGVkIjpmYWxzZSwid2Vic2l0ZSI6Imh0dHBzOi8vZ2l0aHViLmNvbS9tZXNvc3BoZXJlL2Rjb3MtaGVsbG93b3JsZCIsImZyYW1ld29yayI6ZmFsc2UsInByZUluc3RhbGxOb3RlcyI6IkEgc2FtcGxlIHByZS1pbnN0YWxsYXRpb24gbWVzc2FnZSIsInBvc3RJbnN0YWxsTm90ZXMiOiJBIHNhbXBsZSBwb3N0LWluc3RhbGxhdGlvbiBtZXNzYWdlIn0=".asJson,
+          "DCOS_PACKAGE_METADATA" -> "eyJwYWNrYWdpbmdWZXJzaW9uIjoiMi4wIiwibmFtZSI6ImhlbGxvd29ybGQiLCJ2ZXJzaW9uIjoiMC4xLjAiLCJtYWludGFpbmVyIjoic3VwcG9ydEBtZXNvc3BoZXJlLmlvIiwiZGVzY3JpcHRpb24iOiJFeGFtcGxlIERDT1MgYXBwbGljYXRpb24gcGFja2FnZSIsInRhZ3MiOlsibWVzb3NwaGVyZSIsImV4YW1wbGUiLCJzdWJjb21tYW5kIl0sInNlbGVjdGVkIjpmYWxzZSwid2Vic2l0ZSI6Imh0dHBzOi8vZ2l0aHViLmNvbS9tZXNvc3BoZXJlL2Rjb3MtaGVsbG93b3JsZCIsInByZUluc3RhbGxOb3RlcyI6IkEgc2FtcGxlIHByZS1pbnN0YWxsYXRpb24gbWVzc2FnZSIsInBvc3RJbnN0YWxsTm90ZXMiOiJBIHNhbXBsZSBwb3N0LWluc3RhbGxhdGlvbiBtZXNzYWdlIn0=".asJson,
           "DCOS_PACKAGE_REGISTRY_VERSION" -> "2.0".asJson,
           "DCOS_PACKAGE_VERSION" -> "0.1.0".asJson,
           "DCOS_PACKAGE_NAME" -> "helloworld".asJson,
