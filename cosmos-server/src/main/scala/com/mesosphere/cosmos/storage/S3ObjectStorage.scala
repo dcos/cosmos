@@ -52,7 +52,7 @@ final class S3ObjectStorage(
     }
   }
 
-  override def list(directory: String): Future[ObjectStorage.ObjectList] = {
+  override def list(directory: String): Future[S3ObjectStorage.ObjectList] = {
     pool {
       val listRequest = new ListObjectsRequest()
         .withBucketName(bucket)
@@ -65,7 +65,7 @@ final class S3ObjectStorage(
 
   override def listNext(
     listToken: ObjectStorage.ListToken
-  ): Future[ObjectStorage.ObjectList] = {
+  ): Future[S3ObjectStorage.ObjectList] = {
     listToken match {
       case S3ObjectStorage.ListToken(token) =>
         pool {
@@ -85,7 +85,7 @@ final class S3ObjectStorage(
 
   private[this] def convertListResult(
     objectListing: ObjectListing
-  ): ObjectStorage.ObjectList = {
+  ): S3ObjectStorage.ObjectList = {
     val listToken = if (objectListing.isTruncated) {
       Some(new S3ObjectStorage.ListToken(objectListing))
     } else {
@@ -104,8 +104,8 @@ final class S3ObjectStorage(
   }
 
   /*
-   * This functiona makes sure that the string ends in a `/`. S3 doesn't have the concept of
-   * directory but you it can be emulated by adding `/` to the key. This allows you to list
+   * This function makes sure that the string ends in a `/`. S3 doesn't have the concept of
+   * directory but it can be emulated by adding `/` to the key. This allows you to list
    * objects with a given prefix.
    */
   private[this] def makeStringDirectory(prefix: String): String = {

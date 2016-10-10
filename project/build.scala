@@ -108,7 +108,7 @@ object CosmosBuild extends Build {
     )
 
     val scalaTest = Seq(
-      "org.scalatest"       %% "scalatest"        % V.scalaTest     % "test"
+      "org.scalatest" %% "scalatest" % V.scalaTest % "test"
     )
 
     val scalaUri = Seq(
@@ -121,7 +121,12 @@ object CosmosBuild extends Build {
 
     val aws = Seq(
       "com.amazonaws" % "aws-java-sdk" % V.aws
-    )
+    ).map(_.excludeAll(
+      // Exclude commons-logging; we are using logback
+      ExclusionRule("commons-logging", "commons-logging"),
+      // Temporary solution for now; the long term solution is to upgrade twitter-server
+      ExclusionRule("com.fasterxml.jackson.core")
+    ))
 
   }
 
