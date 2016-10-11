@@ -45,10 +45,20 @@ final class S3ObjectStorage(
     }
   }
 
-  override def read(name: String): Future[Reader] = {
+  override def read(name: String): Future[(Option[MediaType], Reader)] = {
     pool {
       val result = client.getObject(bucket, fullPath(name))
-      Reader.fromStream(result.getObjectContent())
+
+      (
+        MediaType.parse(result.getObjectMetadata.getContentType).toOption,
+        Reader.fromStream(result.getObjectContent())
+      )
+    }
+  }
+
+  override def delete(name: String): Future[Unit] = {
+    pool {
+      client.deleteObject(bucket, fullPath(name))
     }
   }
 

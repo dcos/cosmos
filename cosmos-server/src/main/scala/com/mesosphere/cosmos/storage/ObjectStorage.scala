@@ -15,7 +15,8 @@ trait ObjectStorage {
     contentLength: Long,
     contentType: Option[MediaType] = None
   ): Future[Unit]
-  def read(name: String): Future[Reader]
+  def read(name: String): Future[(Option[MediaType], Reader)]
+  def delete(name: String): Future[Unit]
   def list(directory: String): Future[ObjectStorage.ObjectList]
   def listNext(token: ObjectStorage.ListToken): Future[ObjectStorage.ObjectList]
   def getUrl(name: String): Option[Uri]
