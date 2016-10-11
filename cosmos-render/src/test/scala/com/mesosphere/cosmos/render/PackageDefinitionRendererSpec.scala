@@ -1,10 +1,11 @@
 package com.mesosphere.cosmos.render
 
 import cats.data.Xor
-import com.mesosphere.universe
-import com.mesosphere.universe.v3.model.V3Package
+import com.mesosphere.cosmos.thirdparty.marathon.model.AppId
+import com.mesosphere.cosmos.thirdparty.marathon.circe.Decoders.decodeAppId
+import com.mesosphere.universe.v3.model._
 import com.netaporter.uri.dsl._
-import io.circe.{Json, JsonObject}
+import io.circe.{Json, JsonObject, ParsingFailure}
 import io.circe.syntax._
 import org.scalatest.FreeSpec
 import org.scalatest.prop.TableDrivenPropertyChecks
@@ -53,6 +54,22 @@ class PackageDefinitionRendererSpec extends FreeSpec with TableDrivenPropertyChe
 
       assertResult("thing")(some)
     }
+
+    "is Map[String, String] is left in tact" in {
+      val json = Json.obj(
+        "labels" -> Json.obj(
+          "a" -> "A".asJson,
+          "b" -> "B".asJson
+        )
+      )
+      val pkg = packageDefinition(json.noSpaces)
+
+      val Xor.Right(rendered) = PackageDefinitionRenderer.renderMarathonV2App("http://someplace", pkg, None, None)
+
+      val Xor.Right(labels) = rendered.cursor.get[Map[String, String]]("labels")
+      assertResult("A")(labels("a"))
+      assertResult("B")(labels("b"))
+    }
   }
 
   "Merging JSON objects" - {
@@ -70,13 +87,13 @@ class PackageDefinitionRendererSpec extends FreeSpec with TableDrivenPropertyChe
         val mustacheBytes = ByteBuffer.wrap(mustacheTemplate.getBytes(StandardCharsets.UTF_8))
 
         val packageDefinition = V3Package(
-          packagingVersion = universe.v3.model.V3PackagingVersion,
+          packagingVersion = V3PackagingVersion,
           name = packageName,
-          version = universe.v3.model.PackageDefinition.Version("1.2.3"),
+          version = PackageDefinition.Version("1.2.3"),
           maintainer = "Mesosphere",
           description = "Testing user options",
-          releaseVersion = universe.v3.model.PackageDefinition.ReleaseVersion(0).get,
-          marathon = Some(universe.v3.model.Marathon(mustacheBytes)),
+          releaseVersion = PackageDefinition.ReleaseVersion(0).get,
+          marathon = Some(Marathon(mustacheBytes)),
           config = Some(buildConfig(Json.fromJsonObject(defaultsJson)))
         )
 
@@ -96,6 +113,171 @@ class PackageDefinitionRendererSpec extends FreeSpec with TableDrivenPropertyChe
       }
     }
 
+  }
+
+  "renderMarathonV2App should" - {
+    "result in error if no marathon template defined" in {
+      val pkg = V3Package(
+        name = "test",
+        version = PackageDefinition.Version("1.2.3"),
+        releaseVersion = PackageDefinition.ReleaseVersion(0).get(),
+        maintainer = "maintainer",
+        description = "description"
+      )
+
+      val Xor.Left(err) = PackageDefinitionRenderer.renderMarathonV2App("http://someplace", pkg, None, None)
+      assertResult(MissingMarathonV2AppTemplate)(err)
+    }
+    
+    "result in error if options provided but no config defined" in {
+      val mustache = """{"id": "{{option.id}}"}"""
+      val mustacheBytes = ByteBuffer.wrap(mustache.getBytes(StandardCharsets.UTF_8))
+      val pkg = V3Package(
+        name = "test",
+        version = PackageDefinition.Version("1.2.3"),
+        releaseVersion = PackageDefinition.ReleaseVersion(0).get(),
+        maintainer = "maintainer",
+        description = "description",
+        marathon = Some(Marathon(mustacheBytes))
+      )
+      val options = Json.obj(
+        "option" -> Json.obj(
+          "id" -> "should-be-overridden".asJson
+        )
+      ).asObject.get
+
+      val Xor.Left(err) = PackageDefinitionRenderer.renderMarathonV2App("http://someplace", pkg, Some(options), None)
+      assertResult(OptionsNotAllowed)(err)
+    }
+
+    "result in error if rendered template is not valid json" in {
+      val mustache = """{"id": "broken""""
+      val mustacheBytes = ByteBuffer.wrap(mustache.getBytes(StandardCharsets.UTF_8))
+      val pkg = V3Package(
+        name = "test",
+        version = PackageDefinition.Version("1.2.3"),
+        releaseVersion = PackageDefinition.ReleaseVersion(0).get(),
+        maintainer = "maintainer",
+        description = "description",
+        marathon = Some(Marathon(mustacheBytes))
+      )
+
+      val Xor.Left(RenderedTemplateNotJson(ParsingFailure(_, cause))) = PackageDefinitionRenderer.renderMarathonV2App("http://someplace", pkg, None, None)
+      assert(cause.isInstanceOf[jawn.IncompleteParseException])
+    }
+
+    "result in error if rendered template is valid json but is not valid json object" in {
+      val mustache = """["not-an-object"]"""
+      val mustacheBytes = ByteBuffer.wrap(mustache.getBytes(StandardCharsets.UTF_8))
+      val pkg = V3Package(
+        name = "test",
+        version = PackageDefinition.Version("1.2.3"),
+        releaseVersion = PackageDefinition.ReleaseVersion(0).get(),
+        maintainer = "maintainer",
+        description = "description",
+        marathon = Some(Marathon(mustacheBytes))
+      )
+
+      val Xor.Left(err) = PackageDefinitionRenderer.renderMarathonV2App("http://someplace", pkg, None, None)
+      // when the rendered template is valid json, but not a valid json object the transformation
+      // results in a None, not providing us any specific error, so we expect the cause to be 'null'
+      // I realize this isn't great in scala, but we're dealing with exceptions and the java baggage
+      // that come with them.
+      assertResult(RenderedTemplateNotJson(null))(err)
+    }
+
+    "enforce appId is set to argument passed to argument if Some" in {
+      val mustache = """{"id": "{{option.id}}"}"""
+      val mustacheBytes = ByteBuffer.wrap(mustache.getBytes(StandardCharsets.UTF_8))
+      val pkg = V2Package(
+        name = "test",
+        version = PackageDefinition.Version("1.2.3"),
+        releaseVersion = PackageDefinition.ReleaseVersion(0).get(),
+        maintainer = "maintainer",
+        description = "description",
+        marathon = Marathon(mustacheBytes),
+        config = Some(buildConfig(Json.obj(
+          "option" -> Json.obj(
+            "id" -> "default".asJson
+          )
+        )))
+      )
+
+      val options = Json.obj(
+        "option" -> Json.obj(
+          "id" -> "should-be-overridden".asJson
+        )
+      ).asObject.get
+
+      val appId = AppId("/override")
+      val Xor.Right(rendered) = PackageDefinitionRenderer.renderMarathonV2App(
+        "http://someplace",
+        pkg,
+        Some(options),
+        Some(appId)
+      )
+
+      val Xor.Right(actualAppId) = rendered.cursor.get[AppId]("id")
+      assertResult(appId)(actualAppId)
+    }
+
+    "property add resource object to options" - {
+      "V2Package" in {
+        val mustache =
+          """{
+            |  "some": "{{resource.assets.uris.blob}}"
+            |}""".stripMargin
+        val mustacheBytes = ByteBuffer.wrap(mustache.getBytes(StandardCharsets.UTF_8))
+        val pkg = V2Package(
+          name = "test",
+          version = PackageDefinition.Version("1.2.3"),
+          releaseVersion = PackageDefinition.ReleaseVersion(0).get(),
+          maintainer = "maintainer",
+          description = "description",
+          marathon = Marathon(mustacheBytes),
+          resource = Some(V2Resource(
+            assets = Some(Assets(
+              uris = Some(Map(
+                "blob" -> "http://someplace/blob"
+              )),
+              container = None
+            ))
+          ))
+        )
+        val Xor.Right(rendered) = PackageDefinitionRenderer.renderMarathonV2App("http://someplace", pkg, None, None)
+
+        val Xor.Right(renderedValue) = rendered.cursor.get[String]("some")
+        assertResult("http://someplace/blob")(renderedValue)
+      }
+
+      "V3Package" in {
+        val mustache =
+          """{
+            |  "some": "{{resource.assets.uris.blob}}"
+            |}""".stripMargin
+        val mustacheBytes = ByteBuffer.wrap(mustache.getBytes(StandardCharsets.UTF_8))
+        val pkg = V3Package(
+          name = "test",
+          version = PackageDefinition.Version("1.2.3"),
+          releaseVersion = PackageDefinition.ReleaseVersion(0).get(),
+          maintainer = "maintainer",
+          description = "description",
+          marathon = Some(Marathon(mustacheBytes)),
+          resource = Some(V3Resource(
+            assets = Some(Assets(
+              uris = Some(Map(
+                "blob" -> "http://someplace/blob"
+              )),
+              container = None
+            ))
+          ))
+        )
+        val Xor.Right(rendered) = PackageDefinitionRenderer.renderMarathonV2App("http://someplace", pkg, None, None)
+
+        val Xor.Right(renderedValue) = rendered.cursor.get[String]("some")
+        assertResult("http://someplace/blob")(renderedValue)
+      }
+    }
   }
 
   private[this] val Examples = Table(
@@ -192,13 +374,13 @@ class PackageDefinitionRendererSpec extends FreeSpec with TableDrivenPropertyChe
 
   private[this] def packageDefinition(mustache: String) = {
     V3Package(
-      packagingVersion = universe.v3.model.V3PackagingVersion,
+      packagingVersion = V3PackagingVersion,
       name = "testing",
-      version = universe.v3.model.PackageDefinition.Version("a.b.c"),
+      version = PackageDefinition.Version("a.b.c"),
       maintainer = "foo@bar.baz",
       description = "blah",
-      releaseVersion = universe.v3.model.PackageDefinition.ReleaseVersion(0).get,
-      marathon = Some(universe.v3.model.Marathon(ByteBuffer.wrap(mustache.getBytes(StandardCharsets.UTF_8))))
+      releaseVersion = PackageDefinition.ReleaseVersion(0).get,
+      marathon = Some(Marathon(ByteBuffer.wrap(mustache.getBytes(StandardCharsets.UTF_8))))
     )
   }
 
