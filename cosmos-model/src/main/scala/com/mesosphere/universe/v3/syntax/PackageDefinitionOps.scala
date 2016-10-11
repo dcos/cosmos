@@ -110,7 +110,7 @@ final class PackageDefinitionOps(val pkgDef: PackageDefinition) extends AnyVal {
     case v3: V3Package => v3.resource
   }
 
-  // -------- Non top-level properties that we are save to "jump" to --------------
+  // -------- Non top-level properties that we are safe to "jump" to --------------
 
   def images: Option[Images] = pkgDef match {
     case v2: V2Package => v2.resource.flatMap(_.images)
