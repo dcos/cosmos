@@ -29,7 +29,7 @@ object UniverseConversions {
 
   implicit val v3PackagingVersionToString: Injection[universe.v3.model.PackagingVersion, String] = {
     val fwd = (version: universe.v3.model.PackagingVersion) => version.show
-    val rev = BijectionUtils.twitterTryToScalaTry(universe.v3.model.PackagingVersion.apply)
+    val rev = (universe.v3.model.PackagingVersion.apply _).andThen(BijectionUtils.twitterTryToScalaTry)
 
     Injection.build(fwd)(rev)
   }
@@ -69,7 +69,7 @@ object UniverseConversions {
 
   implicit val v3ReleaseVersionToInt: Injection[universe.v3.model.PackageDefinition.ReleaseVersion, Int] = {
     val fwd = (x: universe.v3.model.PackageDefinition.ReleaseVersion) => x.value
-    val rev = BijectionUtils.twitterTryToScalaTry(universe.v3.model.PackageDefinition.ReleaseVersion.apply)
+    val rev = (universe.v3.model.PackageDefinition.ReleaseVersion.apply _).andThen(BijectionUtils.twitterTryToScalaTry)
 
     Injection.build(fwd)(rev)
   }
@@ -155,7 +155,7 @@ object UniverseConversions {
     String  // "Tag" in universe.v2.model.PackageDefinition is only a String
     ] = {
     val fwd = (x: universe.v3.model.PackageDefinition.Tag) => x.value
-    val rev = BijectionUtils.twitterTryToScalaTry(universe.v3.model.PackageDefinition.Tag.apply)
+    val rev = (universe.v3.model.PackageDefinition.Tag.apply _).andThen(BijectionUtils.twitterTryToScalaTry)
 
     Injection.build(fwd)(rev)
   }
