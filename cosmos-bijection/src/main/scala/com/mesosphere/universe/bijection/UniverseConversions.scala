@@ -155,9 +155,9 @@ object UniverseConversions {
     String  // "Tag" in universe.v2.model.PackageDefinition is only a String
     ] = {
     val fwd = (x: universe.v3.model.PackageDefinition.Tag) => x.value
-    val rev = (x: String) => universe.v3.model.PackageDefinition.Tag(x)
+    val rev = BijectionUtils.twitterTryToScalaTry(universe.v3.model.PackageDefinition.Tag.apply)
 
-    Injection.buildCatchInvert(fwd)(rev)
+    Injection.build(fwd)(rev)
   }
 
   implicit val v3LicenseToV2License: Injection[

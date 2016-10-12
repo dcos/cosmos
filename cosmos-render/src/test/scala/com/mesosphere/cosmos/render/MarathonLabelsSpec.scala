@@ -66,7 +66,7 @@ final class MarathonLabelsSpec extends FreeSpec {
     val Success(resultPackagingVersion) =
       result.packagingVersion.as[Try[universe.v3.model.PackagingVersion]]
 
-    val resultTags = result.tags.map(tag => universe.v3.model.PackageDefinition.Tag(tag))
+    val resultTags = result.tags.map(tag => universe.v3.model.PackageDefinition.Tag(tag).get)
     val resultLicenses = result.licenses.map { licenses =>
       licenses.map { case universe.v2.model.License(name, url) =>
         universe.v3.model.License(name, Uri.parse(url))

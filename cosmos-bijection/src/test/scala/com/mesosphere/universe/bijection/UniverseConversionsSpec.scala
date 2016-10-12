@@ -42,7 +42,7 @@ class UniverseConversionsSpec extends FreeSpec {
   }
 
   "Injection[universe.v3.model.PackageDefinition.Tag, String]" in {
-    val tag = universe.v3.model.PackageDefinition.Tag("foobar")
+    val tag = universe.v3.model.PackageDefinition.Tag("foobar").get
     val stringFromTag = tag.as[String]
     assertResult(Success(tag))(Injection.invert[universe.v3.model.PackageDefinition.Tag, String](stringFromTag))
     assertResult(true)(Injection.invert[universe.v3.model.PackageDefinition.Tag, String]("foo bar\nfar").isFailure)

@@ -53,7 +53,7 @@ final class PackageDefinitionOps(val pkgDef: PackageDefinition) extends AnyVal {
     case v3: V3Package => v3.selected
   }
 
-  def scm: Option[String ]= pkgDef match {
+  def scm: Option[String]= pkgDef match {
     case v2: V2Package => v2.scm
     case v3: V3Package => v3.scm
   }

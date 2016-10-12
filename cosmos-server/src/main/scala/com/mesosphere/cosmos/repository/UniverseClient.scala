@@ -206,7 +206,7 @@ final class DefaultUniverseClient(adminRouter: AdminRouter)(implicit statsReceiv
                     // unfortunately com.mesosphere.universe.v2.model.PackageDetails#tags is a list string due to the
                     // more formal type not being defined. The likely of this failing is remove, especially when the
                     // source is universe-server.
-                    universe.v3.model.PackageDefinition.Tag(tag)
+                    universe.v3.model.PackageDefinition.Tag(tag).get
                 },
                 details.selected.orElse(Some(false)),
                 details.scm,

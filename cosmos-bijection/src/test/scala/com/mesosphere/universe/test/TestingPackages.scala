@@ -20,7 +20,7 @@ object TestingPackages {
     marathon = Some(universe.v3.model.Marathon(
       v2AppMustacheTemplate = ByteBuffer.wrap("marathon template".getBytes(StandardCharsets.UTF_8))
     )),
-    tags = List("all", "the", "things").map(s => universe.v3.model.PackageDefinition.Tag(s)),
+    tags = List("all", "the", "things").map(s => universe.v3.model.PackageDefinition.Tag(s).get),
     selected = Some(true),
     scm = Some("git"),
     website = Some("mesosphere.com"),
