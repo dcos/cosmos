@@ -3,22 +3,26 @@ package com.mesosphere.universe.v3.model
 import io.circe.JsonObject
 import java.util.regex.Pattern
 
-import scala.util.{Failure, Success, Try}
+import com.twitter.util.{Return, Throw, Try}
 
 sealed abstract class PackageDefinition
 object PackageDefinition {
-  case class Version(override val toString: String) extends AnyVal
+  final case class Version(override val toString: String) extends AnyVal
 
-  case class Tag(value: String) {
-    import Tag._
-    assert(
-      packageDetailsTagPattern.matcher(value).matches(),
-      s"Value '$value' does not conform to expected format $packageDetailsTagRegex"
-    )
+  final class Tag private(val value: String) extends AnyVal {
+    override def toString = value
   }
   object Tag {
     val packageDetailsTagRegex = "^[^\\s]+$"
     val packageDetailsTagPattern = Pattern.compile(packageDetailsTagRegex)
+
+    def apply(s: String): Try[Tag] = {
+      if (packageDetailsTagPattern.matcher(s).matches()) {
+        Return(new Tag(s))
+      } else {
+        Throw(new IllegalArgumentException(s"Value '$s' does not conform to expected format $packageDetailsTagRegex"))
+      }
+    }
   }
 
   final class ReleaseVersion private(val value: Int) extends AnyVal
@@ -26,12 +30,17 @@ object PackageDefinition {
   object ReleaseVersion {
 
     def apply(value: Int): Try[ReleaseVersion] = {
-      if (value >= 0) Success(new ReleaseVersion(value))
-      else Failure(new IllegalArgumentException("negative value"))
+      if (value >= 0) Return(new ReleaseVersion(value))
+      else Throw(new IllegalArgumentException(s"Expected integer value >= 0 for release version, but found [$value]"))
     }
 
     implicit val packageDefinitionReleaseVersionOrdering: Ordering[ReleaseVersion] = Ordering.by(_.value)
 
+  }
+
+  implicit val packageDefinitionOrdering: Ordering[PackageDefinition] = Ordering.by {
+    case v2: V2Package => v2.name -> v2.releaseVersion
+    case v3: V3Package => v3.name -> v3.releaseVersion
   }
 
 }

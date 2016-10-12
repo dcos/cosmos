@@ -1,7 +1,7 @@
 package com.mesosphere.cosmos
 
 import cats.data.Xor.Right
-import com.mesosphere.cosmos.http.MediaTypes
+import com.mesosphere.cosmos.rpc.MediaTypes
 import com.mesosphere.cosmos.rpc.v1.circe.Decoders._
 import com.mesosphere.cosmos.rpc.v1.circe.Encoders._
 import com.mesosphere.cosmos.rpc.v1.model.{SearchRequest, SearchResponse, SearchResult}
@@ -68,7 +68,7 @@ private object PackageSearchSpec extends TableDrivenPropertyChecks {
       "Build high performance applications using a convenient SQL-like query language or JavaScript extensions.",
     framework = true,
     tags = List("arangodb", "NoSQL", "database")
-      .map(universe.v3.model.PackageDefinition.Tag(_)),
+      .map(universe.v3.model.PackageDefinition.Tag(_).get),
     selected = Some(true),
     images = Some(universe.v3.model.Images(
       iconSmall = Some("https://raw.githubusercontent.com/arangodb/arangodb-dcos/master/icons/arangodb_small.png"),
@@ -92,7 +92,7 @@ private object PackageSearchSpec extends TableDrivenPropertyChecks {
     ),
     description = "Apache Cassandra running on DC/OS",
     framework = true,
-    tags = List("data", "database", "nosql").map(universe.v3.model.PackageDefinition.Tag(_)),
+    tags = List("data", "database", "nosql").map(universe.v3.model.PackageDefinition.Tag(_).get),
     selected = Some(true),
     images = Some(universe.v3.model.Images(
       iconSmall = Some("https://downloads.mesosphere.com/cassandra-mesos/assets/cassandra-small.png"),
@@ -111,8 +111,8 @@ private object PackageSearchSpec extends TableDrivenPropertyChecks {
     tags = List(
       "database",
       "nosql"
-    ).map(universe.v3.model.PackageDefinition.Tag(_)),
-    selected = Some(false),
+    ).map(universe.v3.model.PackageDefinition.Tag(_).get),
+    selected = None,
     images = Some(universe.v3.model.Images(
       Some("https://downloads.mesosphere.com/universe/assets/icon-service-crate-small.png"),
       Some("https://downloads.mesosphere.com/universe/assets/icon-service-crate-medium.png"),
@@ -127,8 +127,8 @@ private object PackageSearchSpec extends TableDrivenPropertyChecks {
     versions = Map(universe.v3.model.PackageDefinition.Version("0.0.1") -> universe.v3.model.PackageDefinition.ReleaseVersion(0).get),
     description = "MemSQL running on Apache Mesos. This framework provides the ability to create and manage a set of MemSQL clusters, each running with the MemSQL Ops management tool.",
     framework = true,
-    tags = List("mysql", "database", "rdbms").map(universe.v3.model.PackageDefinition.Tag(_)),
-    selected = Some(false),
+    tags = List("mysql", "database", "rdbms").map(universe.v3.model.PackageDefinition.Tag(_).get),
+    selected = None,
     images = Some(universe.v3.model.Images(
       Some("https://downloads.mesosphere.com/universe/assets/icon-service-memsql-small.png"),
       Some("https://downloads.mesosphere.com/universe/assets/icon-service-memsql-medium.png"),
@@ -143,8 +143,8 @@ private object PackageSearchSpec extends TableDrivenPropertyChecks {
     versions = Map(universe.v3.model.PackageDefinition.Version("5.7.12") -> universe.v3.model.PackageDefinition.ReleaseVersion(1).get),
     description = "MySQL is the world's most popular open source database. With its proven performance, reliability and ease-of-use, MySQL has become the leading database choice for web-based applications, covering the entire range from personal projects and websites, via e-commerce and information services, all the way to high profile web properties including Facebook, Twitter, YouTube, Yahoo! and many more.",
     framework = false,
-    tags = List("database", "mysql", "sql").map(universe.v3.model.PackageDefinition.Tag(_)),
-    selected = Some(false),
+    tags = List("database", "mysql", "sql").map(universe.v3.model.PackageDefinition.Tag(_).get),
+    selected = None,
     images = None
   )
 
@@ -158,8 +158,8 @@ private object PackageSearchSpec extends TableDrivenPropertyChecks {
       "database",
       "riak",
       "NoSql"
-    ).map(universe.v3.model.PackageDefinition.Tag(_)),
-    selected = Some(false),
+    ).map(universe.v3.model.PackageDefinition.Tag(_).get),
+    selected = None,
     images = Some(universe.v3.model.Images(
       Some("https://downloads.mesosphere.com/universe/assets/icon-service-riak-small.png"),
       Some("https://downloads.mesosphere.com/universe/assets/icon-service-riak-medium.png"),

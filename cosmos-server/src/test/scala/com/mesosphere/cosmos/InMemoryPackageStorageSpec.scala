@@ -1,5 +1,6 @@
 package com.mesosphere.cosmos
 
+import com.mesosphere.cosmos.internal.model.BundleDefinition
 import com.mesosphere.cosmos.storage.InMemoryPackageStorage
 import com.mesosphere.cosmos.test.TestUtil._
 import com.mesosphere.universe.v3.model._

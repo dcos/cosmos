@@ -2,7 +2,8 @@ package com.mesosphere.cosmos.test
 
 import cats.data.Xor
 import com.mesosphere.cosmos._
-import com.mesosphere.cosmos.http.{Authorization, MediaType, MediaTypes, RequestSession}
+import com.mesosphere.cosmos.http.{Authorization, MediaType, RequestSession}
+import com.mesosphere.cosmos.rpc.MediaTypes
 import com.netaporter.uri.Uri
 import com.netaporter.uri.dsl._
 import com.twitter.finagle.{Service, SimpleFilter}
@@ -15,13 +16,18 @@ import io.circe.syntax._
 import io.circe.{Decoder, Encoder}
 import org.scalatest.Matchers
 import org.slf4j.LoggerFactory
+
 import java.util.concurrent.atomic.AtomicInteger
-import com.mesosphere.universe.v3.circe.Decoders._
-import com.mesosphere.cosmos.rpc.v1.model._
-import com.mesosphere.universe.v3.model.Repository
 import com.mesosphere.cosmos.circe.Decoders._
+import com.mesosphere.cosmos.finch.TestingMediaTypes
+import com.mesosphere.cosmos.internal.circe.Decoders._
+import com.mesosphere.cosmos.internal.circe.Encoders._
 import com.mesosphere.cosmos.rpc.v1.circe.Decoders._
 import com.mesosphere.cosmos.rpc.v1.circe.Encoders._
+import com.mesosphere.cosmos.rpc.v1.model._
+import com.mesosphere.universe.v3.circe.Decoders._
+import com.mesosphere.universe.v3.model.Repository
+import com.mesosphere.universe.{MediaTypes => UMediaTypes}
 
 object CosmosIntegrationTestClient extends Matchers {
 
@@ -178,8 +184,8 @@ object CosmosIntegrationTestClient extends Matchers {
         callEndpoint[Unit, Repository](
           "package/storage/repository",
           (),
-          MediaTypes.any,
-          MediaTypes.UniverseV3Repository,
+          TestingMediaTypes.any,
+          UMediaTypes.UniverseV3Repository,
           method = "GET"
         )
       response

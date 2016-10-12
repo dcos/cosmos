@@ -8,6 +8,7 @@ import com.mesosphere.cosmos.test.CosmosIntegrationTestClient
 import com.mesosphere.cosmos.{GenericHttpError, RepositoryUriConnection, RepositoryUriSyntax}
 import com.mesosphere.universe.v3.model.PackageDefinition.Version
 import com.mesosphere.universe.v3.model.{DcosReleaseVersion, DcosReleaseVersionParser}
+import com.mesosphere.universe.v3.syntax.PackageDefinitionOps._
 import com.netaporter.uri.Uri
 import com.netaporter.uri.dsl._
 import com.twitter.util.{Await, Throw}

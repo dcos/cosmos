@@ -27,7 +27,7 @@ class RepositoryEncoderDecoderSpec extends FreeSpec {
           "bill@cool.co",
           "some awesome package",
           Marathon(ByteBuffer.wrap("testing".getBytes(StandardCharsets.UTF_8))),
-          List(Tag("abc"), Tag("def")),
+          List("abc", "def").map(Tag(_).get),
           selected = Some(false)
         ),
         V3Package(
@@ -37,7 +37,7 @@ class RepositoryEncoderDecoderSpec extends FreeSpec {
           ReleaseVersion(2).get,
           "bill@cool.co",
           "some awesome package",
-          List(Tag("abc"), Tag("def")),
+          List("abc", "def").map(Tag(_).get),
           selected = Some(false),
           marathon = Some(Marathon(ByteBuffer.wrap("testing".getBytes(StandardCharsets.UTF_8)))),
           minDcosReleaseVersion = Some(DcosReleaseVersionParser.parseUnsafe("1.8"))

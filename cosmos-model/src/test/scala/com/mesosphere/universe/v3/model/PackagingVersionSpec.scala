@@ -17,7 +17,7 @@ final class PackagingVersionSpec extends FreeSpec {
   }
 
   "PackagingVersion$.allVersions" in {
-    assertResult(Map("2.0" -> V2PackagingVersion, "3.0" -> V3PackagingVersion)) {
+    assertResult(Seq(V2PackagingVersion, V3PackagingVersion)) {
       PackagingVersion.allVersions
     }
   }

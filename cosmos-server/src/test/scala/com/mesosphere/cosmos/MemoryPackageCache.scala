@@ -12,7 +12,7 @@ import com.twitter.util.Future
   * @param packages the contents of the cache: package data indexed by package name
   */
 final case class MemoryPackageCache(
-  packages: Map[String, internal.model.PackageDefinition],
+  packages: Map[String, universe.v3.model.PackageDefinition],
   sourceUri: Uri
 ) extends CosmosRepository {
 
@@ -23,7 +23,7 @@ final case class MemoryPackageCache(
   override def getPackageByPackageVersion(
     packageName: String,
     packageVersion: Option[universe.v3.model.PackageDefinition.Version]
-  )(implicit session: RequestSession): Future[(internal.model.PackageDefinition, Uri)] = {
+  )(implicit session: RequestSession): Future[(universe.v3.model.PackageDefinition, Uri)] = {
     Future.value {
       packages.get(packageName) match {
         case None => throw PackageNotFound(packageName)
@@ -35,7 +35,7 @@ final case class MemoryPackageCache(
   override def getPackageByReleaseVersion(
     packageName: String,
     releaseVersion: universe.v3.model.PackageDefinition.ReleaseVersion
-  )(implicit session: RequestSession): Future[internal.model.PackageDefinition] = {
+  )(implicit session: RequestSession): Future[universe.v3.model.PackageDefinition] = {
     Future.value {
       packages.get(packageName) match {
         case None => throw PackageNotFound(packageName)
@@ -50,7 +50,7 @@ final case class MemoryPackageCache(
 
   override def getPackagesByPackageName(
     packageName: String
-  )(implicit session: RequestSession): Future[List[internal.model.PackageDefinition]] = {
+  )(implicit session: RequestSession): Future[List[universe.v3.model.PackageDefinition]] = {
     Future.exception(PackageNotFound(packageName))
   }
 
