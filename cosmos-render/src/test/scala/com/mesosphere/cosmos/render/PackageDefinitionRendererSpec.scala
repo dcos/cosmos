@@ -6,10 +6,12 @@ import com.mesosphere.cosmos.thirdparty.marathon.circe.Decoders.decodeAppId
 import com.mesosphere.universe.v3.model._
 import com.netaporter.uri.dsl._
 import io.circe.{Json, JsonObject, ParsingFailure}
+import io.circe.jawn._
 import io.circe.syntax._
 import org.scalatest.FreeSpec
 import org.scalatest.prop.TableDrivenPropertyChecks
 
+import scala.io.Source
 import java.nio.ByteBuffer
 import java.nio.charset.StandardCharsets
 
@@ -111,6 +113,86 @@ class PackageDefinitionRendererSpec extends FreeSpec with TableDrivenPropertyChe
 
         assert(hasAllOptions)
       }
+    }
+
+    "should correctly follow the priority [" +
+      "config defaults -> " +
+      "user options -> " +
+      "resources -> " +
+      "required labels -> " +
+      "template rendered labels -> " +
+      "non overridable labels -> " +
+      "user specified appId" +
+      "]" in {
+      val s = classpathJsonString("/com/mesosphere/cosmos/render/test-schema.json")
+      val Xor.Right(schema) = parse(s).map(_.asObject.get)
+
+      val mustache =
+        """
+          |{
+          |  "id": "{{opt.id}}",
+          |  "uri": "{{resource.assets.uris.blob}}",
+          |  "labels": {
+          |    "DCOS_PACKAGE_NAME": "{{opt.name}}",
+          |    "DCOS_PACKAGE_COMMAND": "{{opt.cmd}}"
+          |  }
+          |}
+        """.stripMargin
+      val mustacheBytes = ByteBuffer.wrap(mustache.getBytes(StandardCharsets.UTF_8))
+
+      val pkg = V2Package(
+        name = "test",
+        version = PackageDefinition.Version("1.2.3"),
+        releaseVersion = PackageDefinition.ReleaseVersion(0).get(),
+        maintainer = "maintainer",
+        description = "description",
+        marathon = Marathon(mustacheBytes),
+        config = Some(schema),
+        resource = Some(V2Resource(
+          assets = Some(Assets(
+            uris = Some(Map(
+              "blob" -> "http://someplace/blob"
+            )),
+            container = None
+          ))
+        )),
+        command = Some(Command(List("something-not-overridden-cmd")))
+      )
+
+      val options = Json.obj(
+        "opt" -> Json.obj(
+          "id" -> "should-be-overridden-id".asJson,
+          "name" -> "testing-name".asJson,
+          "cmd" -> "should-be-overridden-cmd".asJson
+        ),
+        "resource" -> Json.obj(
+          "assets" -> Json.obj(
+            "uris" -> Json.obj(
+              "blob" -> "should-be-overridden-blob".asJson
+            )
+          )
+        )
+      ).asObject.get
+
+      val appId = AppId("/override")
+      val Xor.Right(rendered) = PackageDefinitionRenderer.renderMarathonV2App(
+        "http://someplace",
+        pkg,
+        Some(options),
+        Some(appId)
+      )
+
+      val Xor.Right(actualAppId) = rendered.cursor.get[AppId]("id")
+      assertResult(appId)(actualAppId)
+
+      val Xor.Right(actualUri) = rendered.cursor.get[String]("uri")
+      assertResult("http://someplace/blob")(actualUri)
+
+      val Xor.Right(actualDcosPackageName) = rendered.hcursor.downField("labels").get[String]("DCOS_PACKAGE_NAME")
+      assertResult("testing-name")(actualDcosPackageName)
+
+      val Xor.Right(actualDcosPackageCommand) = rendered.hcursor.downField("labels").get[String]("DCOS_PACKAGE_COMMAND")
+      assert(actualDcosPackageCommand !== "should-be-overridden-cmd")
     }
 
   }
@@ -384,4 +466,11 @@ class PackageDefinitionRendererSpec extends FreeSpec with TableDrivenPropertyChe
     )
   }
 
+  private[this] def classpathJsonString(resourceName: String): String = {
+    val is = this.getClass.getResourceAsStream(resourceName)
+    if (is == null) {
+      throw new IllegalStateException(s"Unable to load classpath resource: $resourceName")
+    }
+    Source.fromInputStream(is).mkString
+  }
 }
