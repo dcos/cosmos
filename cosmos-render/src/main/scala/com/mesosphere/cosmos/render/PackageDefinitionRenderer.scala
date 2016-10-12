@@ -140,12 +140,12 @@ object PackageDefinitionRenderer {
     val hasLabels = obj.cursor.fieldSet.exists(_.contains("labels"))
     if (hasLabels) {
       // this is a bit of a sketchy check since marathon could change underneath us, but we want to try and
-      // surface this error the user as soon as possible. The check that is being performed here is to ensure
+      // surface this error to the user as soon as possible. The check that is being performed here is to ensure
       // that `.labels` of `obj` is a Map[String, String]. Marathon enforces this and produces a very cryptic
-      // message if not adhered to, so we try and let the user know here were we can craft a more informational
+      // message if not adhered to, so we try and let the user know here where we can craft a more informational
       // error message.
-      // If marathon ever changes it's schema for labels then this code will most likely need a new version with
-      // this version left in tact for backward compatibility reasons.
+      // If marathon ever changes its schema for labels then this code will most likely need a new version with
+      // this version left intact for backward compatibility reasons.
       obj.cursor.get[Map[String, String]]("labels") match {
         case Xor.Left(err) => Xor.Left(InvalidLabelSchema(err))
         case Xor.Right(m) => Xor.Right(JsonObject.fromMap(m.mapValues(_.asJson)))
