@@ -31,12 +31,12 @@ final class S3ObjectStorage(
     name: String,
     body: InputStream,
     contentLength: Long,
-    contentType: Option[MediaType] = None
+    contentType: MediaType
   ): Future[Unit] = {
     pool {
       val metadata = new ObjectMetadata()
       metadata.setContentLength(contentLength)
-      contentType.foreach(value => metadata.setContentType(value.show))
+      metadata.setContentType(contentType.show)
 
       val putRequest = new PutObjectRequest(bucket, fullPath(name), body, metadata)
         .withCannedAcl(CannedAccessControlList.PublicRead)

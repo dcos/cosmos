@@ -32,7 +32,7 @@ final class LocalObjectStorage(path: Path) extends ObjectStorage {
     name: String,
     body: InputStream,
     contentLength: Long,
-    contentType: Option[MediaType] = None
+    contentType: MediaType
   ): Future[Unit] = {
     pool {
       val absolutePath = path.resolve(name)
@@ -41,7 +41,7 @@ final class LocalObjectStorage(path: Path) extends ObjectStorage {
       Files.createDirectories(absolutePath.getParent)
 
       val (_, bodySize) = writeToFile(
-        contentType.map(mediaType => (LocalObjectStorage.contentTypeKey, mediaType.show)).toMap,
+        Map(LocalObjectStorage.contentTypeKey -> contentType.show),
         body,
         absolutePath
       )
@@ -94,7 +94,7 @@ final class LocalObjectStorage(path: Path) extends ObjectStorage {
 
   override def listNext(token: ObjectStorage.ListToken): Future[ObjectStorage.ObjectList] = {
     Future.exception(
-      new IllegalArgumentException(s"Local object store doesn't support paged listing")
+      new UnsupportedOperationException(s"Local object store doesn't support paged listing")
     )
   }
 
