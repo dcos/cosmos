@@ -17,7 +17,7 @@ trait ObjectStorage {
    * Writes an object to the store. If contentType is not provided the default
    * application/octet-stream is used.
    */
-  def write(
+  final def write(
     name: String,
     body: InputStream,
     contentLength: Long,
@@ -42,7 +42,7 @@ trait ObjectStorage {
   ): Future[Unit]
 
   /**
-   * Reades an object from the store. If the file doesn't exists an Exception is
+   * Reads an object from the store. If the file doesn't exists an Exception is
    * returned.
    */
   def read(name: String): Future[(Option[MediaType], Reader)]
