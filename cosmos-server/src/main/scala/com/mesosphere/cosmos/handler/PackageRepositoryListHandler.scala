@@ -1,5 +1,6 @@
 package com.mesosphere.cosmos.handler
 
+import com.mesosphere.cosmos.finch.EndpointHandler
 import com.mesosphere.cosmos.http.RequestSession
 import com.mesosphere.cosmos.repository.PackageSourcesStorage
 import com.mesosphere.cosmos.rpc.v1.model.{PackageRepositoryListRequest, PackageRepositoryListResponse}

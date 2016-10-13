@@ -9,14 +9,14 @@ import java.util.zip.{GZIPInputStream, ZipInputStream}
 import cats.data.Xor
 import cats.data.Xor.{Left, Right}
 import com.mesosphere.cosmos._
-import com.mesosphere.cosmos.converter.Common._
-import com.mesosphere.cosmos.converter.Universe._
 import com.mesosphere.cosmos.http.MediaTypeOps._
-import com.mesosphere.cosmos.http.{MediaTypeParseError, MediaTypeParser, MediaTypes, RequestSession}
+import com.mesosphere.cosmos.http.{MediaTypeParseError, MediaTypeParser, RequestSession}
 import com.mesosphere.cosmos.rpc.v1.model.PackageRepository
 import com.mesosphere.universe
 import com.mesosphere.universe.v2.circe.Decoders._
 import com.mesosphere.universe.v3.circe.Decoders._
+import com.mesosphere.universe.bijection.UniverseConversions._
+import com.mesosphere.universe.MediaTypes
 import com.netaporter.uri.Uri
 import com.twitter.bijection.Conversion.asMethod
 import com.twitter.finagle.stats.{NullStatsReceiver, Stat, StatsReceiver}
@@ -29,7 +29,7 @@ import scala.io.Source
 import scala.util.{Failure, Success, Try}
 
 trait UniverseClient {
-  def apply(repository: PackageRepository)(implicit session: RequestSession): Future[internal.model.CosmosInternalRepository]
+  def apply(repository: PackageRepository)(implicit session: RequestSession): Future[universe.v3.model.Repository]
 }
 
 final class DefaultUniverseClient(adminRouter: AdminRouter)(implicit statsReceiver: StatsReceiver = NullStatsReceiver) extends UniverseClient {
@@ -39,7 +39,7 @@ final class DefaultUniverseClient(adminRouter: AdminRouter)(implicit statsReceiv
 
   private[this] val cosmosVersion = BuildProperties().cosmosVersion
 
-  def apply(repository: PackageRepository)(implicit session: RequestSession): Future[internal.model.CosmosInternalRepository] = {
+  def apply(repository: PackageRepository)(implicit session: RequestSession): Future[universe.v3.model.Repository] = {
     adminRouter.getDcosVersion().flatMap { dcosVersion =>
       apply(repository, dcosVersion.version)
     }
@@ -48,7 +48,7 @@ final class DefaultUniverseClient(adminRouter: AdminRouter)(implicit statsReceiv
   private[repository] def apply(
       repository: PackageRepository,
       dcosReleaseVersion: universe.v3.model.DcosReleaseVersion
-  ): Future[internal.model.CosmosInternalRepository] = {
+  ): Future[universe.v3.model.Repository] = {
     fetchScope.counter("requestCount").incr()
     Stat.timeFuture(fetchScope.stat("histogram")) {
       Future { repository.uri.toURI.toURL.openConnection() } handle {
@@ -73,7 +73,7 @@ final class DefaultUniverseClient(adminRouter: AdminRouter)(implicit statsReceiv
                 Option(conn.getHeaderField("Content-Type")).getOrElse(
                   throw UnsupportedContentType(
                     List(MediaTypes.UniverseV3Repository,
-                      MediaTypes.applicationZip)
+                      MediaTypes.UniverseV2Repository)
                   )
                 )
               val parsedContentType = MediaTypeParser
@@ -82,7 +82,7 @@ final class DefaultUniverseClient(adminRouter: AdminRouter)(implicit statsReceiv
                   case MediaTypeParseError(msg, cause) =>
                     throw UnsupportedContentType(
                       List(MediaTypes.UniverseV3Repository,
-                        MediaTypes.applicationZip)
+                        MediaTypes.UniverseV2Repository)
                     )
                 }
                 .get
@@ -124,7 +124,7 @@ final class DefaultUniverseClient(adminRouter: AdminRouter)(implicit statsReceiv
                   case Xor.Right(repo) => repo
                 }
               }
-            } else if (contentType.isCompatibleWith(MediaTypes.applicationZip)) {
+            } else if (contentType.isCompatibleWith(MediaTypes.UniverseV2Repository)) {
               val v2Scope = decodeScope.scope("v2")
               v2Scope.counter("count").incr()
               Stat.time(v2Scope.stat("histogram")) {
@@ -133,15 +133,11 @@ final class DefaultUniverseClient(adminRouter: AdminRouter)(implicit statsReceiv
             } else {
               throw UnsupportedContentType.forMediaType(
                   List(MediaTypes.UniverseV3Repository,
-                       MediaTypes.applicationZip),
+                       MediaTypes.UniverseV2Repository),
                   Some(contentType)
               )
             }
         }
-      } map { repo =>
-        internal.model.CosmosInternalRepository(
-            repo.packages.map(_.as[internal.model.PackageDefinition]).sorted.reverse
-        )
       }
     }
   }
@@ -210,7 +206,7 @@ final class DefaultUniverseClient(adminRouter: AdminRouter)(implicit statsReceiv
                     // unfortunately com.mesosphere.universe.v2.model.PackageDetails#tags is a list string due to the
                     // more formal type not being defined. The likely of this failing is remove, especially when the
                     // source is universe-server.
-                    universe.v3.model.PackageDefinition.Tag(tag)
+                    universe.v3.model.PackageDefinition.Tag(tag).get
                 },
                 details.selected.orElse(Some(false)),
                 details.scm,

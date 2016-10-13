@@ -53,13 +53,4 @@ object Encoders {
   implicit val encodeV3Package: Encoder[V3Package] = deriveEncoder[V3Package]
   implicit val encodeV3Resource: Encoder[V3Resource] = deriveEncoder[V3Resource]
 
-  implicit val encodeBundleDefinition: Encoder[BundleDefinition] =
-    Encoder.instance {
-      case v2: V2Bundle => v2.asJson
-      case v3: V3Bundle => v3.asJson
-    }
-  implicit val encodeV2Bundle: Encoder[V2Bundle] = deriveEncoder[V2Bundle]
-  implicit val encodeV3Bundle: Encoder[V3Bundle] = deriveEncoder[V3Bundle]
-
-
 }

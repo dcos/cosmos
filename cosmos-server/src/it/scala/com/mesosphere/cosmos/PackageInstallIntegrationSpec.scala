@@ -1,15 +1,14 @@
 package com.mesosphere.cosmos
 
-import java.util.{Base64, UUID}
-
 import cats.data.Xor
 import cats.data.Xor.Right
 import com.mesosphere.cosmos.circe.Decoders._
-import com.mesosphere.cosmos.http.{MediaTypes, RequestSession}
+import com.mesosphere.cosmos.http.RequestSession
 import com.mesosphere.cosmos.repository.DefaultRepositories
+import com.mesosphere.cosmos.rpc.MediaTypes
 import com.mesosphere.cosmos.rpc.v1.circe.Decoders._
 import com.mesosphere.cosmos.rpc.v1.circe.Encoders._
-import com.mesosphere.cosmos.rpc.v1.model.{InstallRequest, InstallResponse}
+import com.mesosphere.cosmos.rpc.v1.model.{ErrorResponse, InstallRequest, InstallResponse}
 import com.mesosphere.cosmos.rpc.v2.circe.Decoders._
 import com.mesosphere.cosmos.test.CosmosIntegrationTestClient
 import com.mesosphere.cosmos.thirdparty.marathon.circe.Encoders._
@@ -25,6 +24,8 @@ import io.circe.syntax._
 import io.circe.{Json, JsonObject}
 import org.scalatest.prop.TableDrivenPropertyChecks
 import org.scalatest.{BeforeAndAfterAll, FreeSpec, Matchers}
+
+import java.util.{Base64, UUID}
 
 final class PackageInstallIntegrationSpec extends FreeSpec with BeforeAndAfterAll {
 
@@ -315,8 +316,7 @@ private object PackageInstallIntegrationSpec extends Matchers with TableDrivenPr
       "selected" -> false.asJson,
       "maintainer" -> "support@mesosphere.io".asJson,
       "version" -> "0.1.0".asJson,
-      "preInstallNotes" -> "A sample pre-installation message".asJson,
-      "framework" -> false.asJson
+      "preInstallNotes" -> "A sample pre-installation message".asJson
     ).asJson,
     packageCommand = HelloWorldCommand,
     packageRegistryVersion = "2.0",

@@ -17,6 +17,7 @@ object CosmosBuild extends Build {
     val curator = "2.9.1"
     val finch = "0.10.0"
     val finchServer = "0.9.1"
+    val guava = "16.0.1"
     val jsonSchema = "2.2.6"
     val logback = "1.1.3"
     val mockito = "1.10.19"
@@ -32,6 +33,10 @@ object CosmosBuild extends Build {
 
     val bijection = Seq(
       "com.twitter" %% "bijection-core" % V.bijection
+    )
+
+    val bijectionUtil = Seq(
+      "com.twitter" %% "bijection-util" % V.bijection
     )
 
     val circeCore = Seq(
@@ -76,8 +81,9 @@ object CosmosBuild extends Build {
       ExclusionRule("com.github.spullara.mustache.java", "compiler")
     ))
 
-    val finchTest = Seq(
-      "com.github.finagle" %% "finch-test" % V.finch % "test"
+    val guava = Seq(
+      "com.google.guava" % "guava" % V.guava,
+      "com.google.code.findbugs" % "jsr305" % "3.0.1"
     )
 
     val jsonSchema = Seq(
@@ -261,7 +267,7 @@ object CosmosBuild extends Build {
 
   lazy val cosmos = Project("cosmos", file("."))
     .settings(sharedSettings)
-    .aggregate(model, json, server)
+    .aggregate(http, model, json, jsonschema, bijection, render, finch, server)
 
   lazy val model = Project("cosmos-model", file("cosmos-model"))
     .settings(sharedSettings)
@@ -270,8 +276,6 @@ object CosmosBuild extends Build {
         Deps.scalaUri
         ++ Deps.circeCore
         ++ Deps.twitterUtilCore
-        ++ Deps.scalaTest
-        ++ Deps.bijection
     )
 
   lazy val json = Project("cosmos-json", file("cosmos-json"))
@@ -280,9 +284,55 @@ object CosmosBuild extends Build {
       libraryDependencies ++=
         Deps.scalaUri
         ++ Deps.circe
-        ++ Deps.scalaTest
     )
-    .dependsOn(model % "compile;test->test")
+    .dependsOn(model)
+
+  lazy val bijection = Project("cosmos-bijection", file("cosmos-bijection"))
+    .settings(sharedSettings)
+    .settings(
+      libraryDependencies ++=
+        Deps.bijection
+    )
+    .dependsOn(model)
+
+  lazy val http = Project("cosmos-http", file("cosmos-http"))
+    .settings(sharedSettings)
+    .settings(
+      libraryDependencies ++=
+        Deps.guava
+          ++ Deps.twitterUtilCore
+    )
+
+  lazy val finch = Project("cosmos-finch", file("cosmos-finch"))
+    .settings(sharedSettings)
+    .settings(
+      libraryDependencies ++=
+        Deps.finch
+    )
+    .dependsOn(
+      json,
+      http % "compile;test->test"
+    )
+
+  lazy val jsonschema = Project("cosmos-jsonschema", file("cosmos-jsonschema"))
+    .settings(sharedSettings)
+    .settings(
+      libraryDependencies ++=
+        Deps.circe
+          ++ Deps.jsonSchema
+    )
+
+  lazy val render = Project("cosmos-render", file("cosmos-render"))
+    .settings(sharedSettings)
+    .settings(
+      libraryDependencies ++=
+        Deps.mustache
+    )
+    .dependsOn(
+      json,
+      jsonschema,
+      bijection % "compile;test->test"
+    )
 
   lazy val server = Project("cosmos-server", file("cosmos-server"))
     .configs(IntegrationTest extend Test)
@@ -295,16 +345,16 @@ object CosmosBuild extends Build {
       libraryDependencies ++=
         Deps.circe
           ++ Deps.curator
-          ++ Deps.finch
           ++ Deps.finchServer
-          ++ Deps.finchTest
-          ++ Deps.jsonSchema
           ++ Deps.logback
           ++ Deps.mustache
-          ++ Deps.scalaTest
           ++ Deps.scalaUri
+          ++ Deps.bijectionUtil
     )
-    .dependsOn(json % "compile;test->test")
+    .dependsOn(
+      finch % "compile;test->test",
+      render % "compile;test->test"
+    )
 
   //////////////////////////////////////////////////////////////////////////////
   // BUILD TASKS

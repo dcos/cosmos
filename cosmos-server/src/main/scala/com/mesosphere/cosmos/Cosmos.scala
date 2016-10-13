@@ -1,8 +1,11 @@
 package com.mesosphere.cosmos
 
 import com.mesosphere.cosmos.circe.Encoders._
+import com.mesosphere.cosmos.finch.{EndpointContext, EndpointHandler, RequestValidators}
+import com.mesosphere.cosmos.finch.FinchExtensions._
+import com.mesosphere.cosmos.finch.RequestError
 import com.mesosphere.cosmos.handler._
-import com.mesosphere.cosmos.http.MediaTypes
+import com.mesosphere.cosmos.rpc.MediaTypes
 import com.mesosphere.cosmos.repository.PackageSourcesStorage
 import com.mesosphere.cosmos.repository.UniverseClient
 import com.mesosphere.cosmos.repository.ZkRepositoryList
@@ -10,6 +13,7 @@ import com.mesosphere.cosmos.rpc.v1.circe.MediaTypedRequestDecoders._
 import com.mesosphere.cosmos.rpc.v1.circe.MediaTypedEncoders._
 import com.mesosphere.cosmos.rpc.v2.circe.MediaTypedEncoders._
 import com.mesosphere.cosmos.storage.{InMemoryPackageStorage, PackageStorage}
+import com.mesosphere.universe
 import com.netaporter.uri.Uri
 import com.twitter.finagle.Service
 import com.twitter.finagle.http.{Request, Response, Status}
@@ -26,7 +30,7 @@ private[cosmos] final class Cosmos(
   packageInstallHandler: EndpointHandler[rpc.v1.model.InstallRequest, rpc.v2.model.InstallResponse],
   packageRenderHandler: EndpointHandler[rpc.v1.model.RenderRequest, rpc.v1.model.RenderResponse],
   packageSearchHandler: EndpointHandler[rpc.v1.model.SearchRequest, rpc.v1.model.SearchResponse],
-  packageDescribeHandler: EndpointHandler[rpc.v1.model.DescribeRequest, internal.model.PackageDefinition],
+  packageDescribeHandler: EndpointHandler[rpc.v1.model.DescribeRequest, universe.v3.model.PackageDefinition],
   packageListVersionsHandler: EndpointHandler[rpc.v1.model.ListVersionsRequest, rpc.v1.model.ListVersionsResponse],
   listHandler: EndpointHandler[rpc.v1.model.ListRequest, rpc.v1.model.ListResponse],
   listRepositoryHandler: EndpointHandler[rpc.v1.model.PackageRepositoryListRequest, rpc.v1.model.PackageRepositoryListResponse],
@@ -36,8 +40,6 @@ private[cosmos] final class Cosmos(
   repositoryServeHandler: RepositoryServeHandler,
   capabilitiesHandler: CapabilitiesHandler
 )(implicit statsReceiver: StatsReceiver = NullStatsReceiver) {
-
-  import Cosmos._
 
   lazy val logger = org.slf4j.LoggerFactory.getLogger(classOf[Cosmos])
 
@@ -111,10 +113,10 @@ private[cosmos] final class Cosmos(
       :+: repositoryServe
     )
       .handle {
-        case ce: CosmosError =>
-          stats.counter(s"definedError/${sanitiseClassName(ce.getClass)}").incr()
-          val output = Output.failure(ce, ce.status).withContentType(Some(MediaTypes.ErrorResponse.show))
-          ce.getHeaders.foldLeft(output) { case (out, kv) => out.withHeader(kv) }
+        case re: RequestError =>
+          stats.counter(s"definedError/${sanitiseClassName(re.getClass)}").incr()
+          val output = Output.failure(re, re.status).withContentType(Some(MediaTypes.ErrorResponse.show))
+          re.getHeaders.foldLeft(output) { case (out, kv) => out.withHeader(kv) }
         case fe: io.finch.Error =>
           stats.counter(s"finchError/${sanitiseClassName(fe.getClass)}").incr()
           Output.failure(fe, Status.BadRequest).withContentType(Some(MediaTypes.ErrorResponse.show))
@@ -236,9 +238,4 @@ object Cosmos extends FinchServer {
     )(statsReceiver)
   }
 
-  private[cosmos] def route[Req, Res](base: Endpoint[HNil], handler: EndpointHandler[Req, Res])(
-    requestReader: Endpoint[EndpointContext[Req, Res]]
-  ): Endpoint[Json] = {
-    (base ? requestReader).apply((context: EndpointContext[Req, Res]) => handler(context))
-  }
 }

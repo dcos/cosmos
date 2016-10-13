@@ -17,7 +17,7 @@ final class MultiRepository(
 
   override def getPackagesByPackageName(
       packageName: String
-  )(implicit session: RequestSession): Future[List[internal.model.PackageDefinition]] = {
+  )(implicit session: RequestSession): Future[List[universe.v3.model.PackageDefinition]] = {
     /* Fold over all the results in order and ignore PackageNotFound errors.
      * We have found our answer when we find a PackageDefinition or a generic exception.
      */
@@ -37,7 +37,7 @@ final class MultiRepository(
   override def getPackageByPackageVersion(
       packageName: String,
       packageVersion: Option[universe.v3.model.PackageDefinition.Version]
-  )(implicit session: RequestSession): Future[(internal.model.PackageDefinition, Uri)] = {
+  )(implicit session: RequestSession): Future[(universe.v3.model.PackageDefinition, Uri)] = {
     /* Fold over all the results in order and ignore PackageNotFound and VersionNotFound errors.
      * We have found our answer when we find a PackageDefinition or a generic exception.
      */

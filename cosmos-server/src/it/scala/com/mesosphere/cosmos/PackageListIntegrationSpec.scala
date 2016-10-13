@@ -1,20 +1,18 @@
 package com.mesosphere.cosmos
 
-import java.util.UUID
-
 import cats.data.Xor
-import com.mesosphere.cosmos.http.MediaTypes
-import com.mesosphere.cosmos.label.v1.model.PackageMetadata
 import com.mesosphere.cosmos.repository.DefaultRepositories
+import com.mesosphere.cosmos.rpc.MediaTypes
 import com.mesosphere.cosmos.rpc.v1.circe.Decoders._
 import com.mesosphere.cosmos.rpc.v1.circe.Encoders._
 import com.mesosphere.cosmos.rpc.v1.model._
 import com.mesosphere.cosmos.test.CosmosIntegrationTestClient
 import com.mesosphere.cosmos.thirdparty.marathon.model.AppId
 import com.mesosphere.universe.v2.model.{PackageDetailsVersion, PackagingVersion}
-import com.twitter.util.Try
 import org.scalatest.concurrent.Eventually
 import org.scalatest.{AppendedClues, FreeSpec, Inside}
+
+import java.util.UUID
 
 final class PackageListIntegrationSpec
   extends FreeSpec with Inside with AppendedClues with Eventually {
@@ -50,7 +48,7 @@ final class PackageListIntegrationSpec
         postInstallNotes = Some("A sample post-installation message"),
         tags = List("mesosphere", "example", "subcommand"),
         selected = Some(false),
-        framework = Some(false)
+        framework = None
       )
     )
     withInstalledPackage("helloworld") { installResponse =>

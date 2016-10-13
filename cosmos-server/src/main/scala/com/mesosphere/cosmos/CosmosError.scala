@@ -2,7 +2,7 @@ package com.mesosphere.cosmos
 
 import cats.data.Ior
 import com.mesosphere.cosmos.circe.Encoders._
-import com.mesosphere.cosmos.converter.ConversionFailure
+import com.mesosphere.cosmos.finch.RequestError
 import com.mesosphere.cosmos.http.MediaType
 import com.mesosphere.cosmos.rpc.v1.model.PackageRepository
 import com.mesosphere.cosmos.thirdparty.marathon.model.{AppId, MarathonError}
@@ -17,7 +17,7 @@ import org.jboss.netty.handler.codec.http.HttpMethod
 
 import scala.util.control.NoStackTrace
 
-sealed abstract class CosmosError(causedBy: Throwable = null /*java compatibility*/) extends RuntimeException(causedBy) {
+sealed abstract class CosmosError(causedBy: Throwable = null /*java compatibility*/) extends RequestError(causedBy) {
 
   def errType: String = this.getClass.getSimpleName
 
@@ -213,19 +213,7 @@ case class RepositoryNotPresent(nameOrUri: Ior[String, Uri]) extends CosmosError
   }
 }
 
-case class ConversionError(failure: ConversionFailure) extends CosmosError
+case class ConversionError(failure: String) extends CosmosError
 case class ServiceMarathonTemplateNotFound(packageName: String, packageVersion: PackageDefinition.Version) extends CosmosError
-
-case class IncompatibleAcceptHeader(available: Set[MediaType], specified: Set[MediaType]) extends CosmosError {
-  override val errType: String = "not_valid"
-  override val getData: Option[JsonObject] = Some(JsonObject.fromMap(Map(
-    "invalidItem" -> JsonObject.fromMap(Map(
-      "type" -> "header".asJson,
-      "name" -> "Accept".asJson
-    )).asJson,
-    "specified" -> specified.map(_.show).asJson,
-    "available" -> available.map(_.show).asJson
-  )))
-}
 
 case class EnvelopeError(msg: String) extends CosmosError
