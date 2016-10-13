@@ -12,6 +12,8 @@ import com.amazonaws.services.s3.model.ObjectListing
 import com.amazonaws.services.s3.model.ObjectMetadata
 import com.amazonaws.services.s3.model.PutObjectRequest
 import com.netaporter.uri.Uri
+import com.twitter.finagle.stats.Stat
+import com.twitter.finagle.stats.StatsReceiver
 import com.twitter.io.Reader
 import com.twitter.util.Future
 import com.twitter.util.FuturePool
@@ -23,9 +25,13 @@ final class S3ObjectStorage(
   client: AmazonS3Client,
   bucket: String,
   path: String
+)(
+  implicit statsReceiver: StatsReceiver
 ) extends ObjectStorage {
   // We don't need to make it configurable for now.
   private[this] val pool = FuturePool.interruptibleUnboundedPool
+
+  private[this] val stats = statsReceiver.scope(s"S3ObjectStorage($bucket, $path)")
 
   override def write(
     name: String,
@@ -33,58 +39,68 @@ final class S3ObjectStorage(
     contentLength: Long,
     contentType: MediaType
   ): Future[Unit] = {
-    pool {
-      val metadata = new ObjectMetadata()
-      metadata.setContentLength(contentLength)
-      metadata.setContentType(contentType.show)
+    Stat.timeFuture(stats.stat("write")) {
+      pool {
+        val metadata = new ObjectMetadata()
+        metadata.setContentLength(contentLength)
+        metadata.setContentType(contentType.show)
 
-      val putRequest = new PutObjectRequest(bucket, fullPath(name), body, metadata)
-        .withCannedAcl(CannedAccessControlList.PublicRead)
+        val putRequest = new PutObjectRequest(bucket, fullPath(name), body, metadata)
+          .withCannedAcl(CannedAccessControlList.PublicRead)
 
-      val _ = client.putObject(putRequest)
+          val _ = client.putObject(putRequest)
+      }
     }
   }
 
   override def read(name: String): Future[(Option[MediaType], Reader)] = {
-    pool {
-      val result = client.getObject(bucket, fullPath(name))
+    Stat.timeFuture(stats.stat("read")) {
+      pool {
+        val result = client.getObject(bucket, fullPath(name))
 
-      (
-        MediaType.parse(result.getObjectMetadata.getContentType).toOption,
-        Reader.fromStream(result.getObjectContent())
-      )
+        (
+          MediaType.parse(result.getObjectMetadata.getContentType).toOption,
+          Reader.fromStream(result.getObjectContent())
+        )
+      }
     }
   }
 
   override def delete(name: String): Future[Unit] = {
-    pool {
-      client.deleteObject(bucket, fullPath(name))
+    Stat.timeFuture(stats.stat("delete")) {
+      pool {
+        client.deleteObject(bucket, fullPath(name))
+      }
     }
   }
 
   override def list(directory: String): Future[S3ObjectStorage.ObjectList] = {
-    pool {
-      val listRequest = new ListObjectsRequest()
-        .withBucketName(bucket)
-        .withPrefix(makeStringDirectory(fullPath(directory)))
-        .withDelimiter("/")
+    Stat.timeFuture(stats.stat("list")) {
+      pool {
+        val listRequest = new ListObjectsRequest()
+          .withBucketName(bucket)
+          .withPrefix(makeStringDirectory(fullPath(directory)))
+          .withDelimiter("/")
 
-      convertListResult(client.listObjects(listRequest))
+          convertListResult(client.listObjects(listRequest))
+      }
     }
   }
 
   override def listNext(
     listToken: ObjectStorage.ListToken
   ): Future[S3ObjectStorage.ObjectList] = {
-    listToken match {
-      case S3ObjectStorage.ListToken(token) =>
-        pool {
-          convertListResult(client.listNextBatchOfObjects(token))
-        }
-      case _ =>
-        Future.exception(
-          new IllegalArgumentException("Programming error. Wrong type of ListToken passed to listNext")
-        )
+    Stat.timeFuture(stats.stat("listNext")) {
+      listToken match {
+        case S3ObjectStorage.ListToken(token) =>
+          pool {
+            convertListResult(client.listNextBatchOfObjects(token))
+          }
+        case _ =>
+          Future.exception(
+            new IllegalArgumentException("Programming error. Wrong type of ListToken passed to listNext")
+          )
+      }
     }
   }
 
@@ -136,7 +152,7 @@ object S3ObjectStorage {
     client: AmazonS3Client,
     bucket: String,
     path: String
-  ): S3ObjectStorage = {
+  )(implicit statsReceiver: StatsReceiver): S3ObjectStorage = {
     new S3ObjectStorage(client, bucket, path)
   }
 

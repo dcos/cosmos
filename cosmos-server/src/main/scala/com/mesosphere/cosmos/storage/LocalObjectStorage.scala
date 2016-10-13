@@ -14,6 +14,8 @@ import scala.collection.breakOut
 import scala.util.control.NonFatal
 
 import com.netaporter.uri.Uri
+import com.twitter.finagle.stats.Stat
+import com.twitter.finagle.stats.StatsReceiver
 import com.twitter.io.Reader
 import com.twitter.io.StreamIO
 import com.twitter.util.Future
@@ -25,8 +27,14 @@ import com.mesosphere.cosmos.CirceError
 import com.mesosphere.cosmos.http.MediaType
 
 
-final class LocalObjectStorage(path: Path) extends ObjectStorage {
+final class LocalObjectStorage(
+  path: Path
+)(
+  implicit statsReceiver: StatsReceiver
+) extends ObjectStorage {
   private[this] val pool = FuturePool.interruptibleUnboundedPool
+
+  private[this] val stats = statsReceiver.scope(s"LocalObjectStorage($path)")
 
   override def write(
     name: String,
@@ -34,60 +42,68 @@ final class LocalObjectStorage(path: Path) extends ObjectStorage {
     contentLength: Long,
     contentType: MediaType
   ): Future[Unit] = {
-    pool {
-      val absolutePath = path.resolve(name)
+    Stat.timeFuture(stats.stat("write")) {
+      pool {
+        val absolutePath = path.resolve(name)
 
-      // Create all parent directories
-      Files.createDirectories(absolutePath.getParent)
+        // Create all parent directories
+        Files.createDirectories(absolutePath.getParent)
 
-      val (_, bodySize) = writeToFile(
-        Map(LocalObjectStorage.contentTypeKey -> contentType.show),
-        body,
-        absolutePath
-      )
+        val (_, bodySize) = writeToFile(
+          Map(LocalObjectStorage.contentTypeKey -> contentType.show),
+          body,
+          absolutePath
+        )
 
-      if (contentLength != bodySize) {
-        // content length doesn't match the size of the input stream. Delete file and notify
-        Files.delete(absolutePath)
-        throw new IllegalArgumentException(s"Content length $contentLength doesn't equal size of stream $bodySize")
+        if (contentLength != bodySize) {
+          // content length doesn't match the size of the input stream. Delete file and notify
+          Files.delete(absolutePath)
+          throw new IllegalArgumentException(s"Content length $contentLength doesn't equal size of stream $bodySize")
+        }
       }
     }
   }
 
   override def read(name: String): Future[(Option[MediaType], Reader)] = {
-    pool {
-      val (metadata, reader) = readFromFile(path.resolve(name))
+    Stat.timeFuture(stats.stat("read")) {
+      pool {
+        val (metadata, reader) = readFromFile(path.resolve(name))
 
-      (
-        metadata.get(LocalObjectStorage.contentTypeKey).flatMap(
-          value => MediaType.parse(value).toOption
-        ),
-        reader
-      )
+        (
+          metadata.get(LocalObjectStorage.contentTypeKey).flatMap { value =>
+            MediaType.parse(value).toOption
+          },
+          reader
+        )
+      }
     }
   }
 
   override def delete(name: String): Future[Unit] = {
-    pool {
-      // Drop the boolean. We want to have the same semantic as S3 which succeeds in either case.
-      val _ = Files.deleteIfExists(path.resolve(name))
+    Stat.timeFuture(stats.stat("delete")) {
+      pool {
+        // Drop the boolean. We want to have the same semantic as S3 which succeeds in either case.
+        val _ = Files.deleteIfExists(path.resolve(name))
+      }
     }
   }
 
   override def list(directory: String): Future[LocalObjectStorage.ObjectList] = {
-    pool {
-      val absolutePath = path.resolve(directory)
-      val stream = Files.newDirectoryStream(absolutePath)
+    Stat.timeFuture(stats.stat("list")) {
+      pool {
+        val absolutePath = path.resolve(directory)
+        val stream = Files.newDirectoryStream(absolutePath)
 
-      try {
-        val (directories, objects) = stream.asScala.partition(path => Files.isDirectory(path))
+        try {
+          val (directories, objects) = stream.asScala.partition(path => Files.isDirectory(path))
 
-        LocalObjectStorage.ObjectList(
-          objects.map(objectPath => path.relativize(objectPath).toString)(breakOut),
-          directories.map(directoryPath => path.relativize(directoryPath).toString)(breakOut)
-        )
-      } finally {
-        stream.close()
+          LocalObjectStorage.ObjectList(
+            objects.map(objectPath => path.relativize(objectPath).toString)(breakOut),
+            directories.map(directoryPath => path.relativize(directoryPath).toString)(breakOut)
+          )
+        } finally {
+          stream.close()
+        }
       }
     }
   }
@@ -176,7 +192,7 @@ final class LocalObjectStorage(path: Path) extends ObjectStorage {
 }
 
 object LocalObjectStorage {
-  def apply(path: Path): LocalObjectStorage = {
+  def apply(path: Path)(implicit statsReceiver: StatsReceiver): LocalObjectStorage = {
     new LocalObjectStorage(path)
   }
 
