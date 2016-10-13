@@ -27,6 +27,7 @@ object CosmosBuild extends Build {
     val scalaCheck = "1.12.5"
     val twitterUtilCore = "6.30.0"
     val zookeeper = "3.4.6"
+    val aws = "1.11.30"
   }
 
   object Deps {
@@ -107,7 +108,7 @@ object CosmosBuild extends Build {
     )
 
     val scalaTest = Seq(
-      "org.scalatest"       %% "scalatest"        % V.scalaTest     % "test"
+      "org.scalatest" %% "scalatest" % V.scalaTest % "test"
     )
 
     val scalaUri = Seq(
@@ -117,6 +118,15 @@ object CosmosBuild extends Build {
     val twitterUtilCore = Seq(
       "com.twitter" %% "util-core" % V.twitterUtilCore
     )
+
+    val aws = Seq(
+      "com.amazonaws" % "aws-java-sdk" % V.aws
+    ).map(_.excludeAll(
+      // Exclude commons-logging; we are using logback
+      ExclusionRule("commons-logging", "commons-logging"),
+      // Temporary solution for now; the long term solution is to upgrade twitter-server
+      ExclusionRule("com.fasterxml.jackson.core")
+    ))
 
   }
 
@@ -350,6 +360,7 @@ object CosmosBuild extends Build {
           ++ Deps.mustache
           ++ Deps.scalaUri
           ++ Deps.bijectionUtil
+          ++ Deps.aws
     )
     .dependsOn(
       finch % "compile;test->test",
