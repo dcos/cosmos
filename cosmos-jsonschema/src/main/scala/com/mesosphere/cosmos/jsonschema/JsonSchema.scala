@@ -17,16 +17,10 @@ object JsonSchema {
   type ValidationErrors = Iterable[Json]
 
   /**
-    * Pre-configured validator instance for draft v4 JsonSchema documents
-    */
-  val draftV4Validator: JsonValidator = JsonSchemaFactory.byDefault().getValidator
-
-  /**
     * Validates `document` against `schema` returning all validation failures.
     * @param document   The document to validation
     * @param schema     The schema to validate against
-    * @param validator  The configured validator to use for the validation. The default validator is pre-configured
-    *                   for draft v4 of json schema.
+    * @param jsf        The configured factory used to acquire the validator used for the validation.
     * @return           Returns an [[cats.data.Xor Xor]] representing the result of validating `document` against `schema`.
     *                   [[cats.data.Xor.Left Xor.Left[ValidationErrors] ]] Will be returned containing all validation
     *                   failures if they occur. [[cats.data.Xor.Right Xor.Right[Unit] ]] Will be returned if no validation failures occur.
@@ -35,7 +29,7 @@ object JsonSchema {
     document: JsonObject,
     schema: JsonObject
   )(
-    implicit validator: JsonValidator = draftV4Validator
+    implicit jsf: JsonSchemaFactory
   ): Xor[ValidationErrors, Unit] = {
     jsonMatchesSchema(Json.fromJsonObject(document), Json.fromJsonObject(schema))
   }
@@ -44,8 +38,7 @@ object JsonSchema {
     * Validates `document` against `schema` returning all validation failures.
     * @param document   The document to validation
     * @param schema     The schema to validate against
-    * @param validator  The configured validator to use for the validation. The default validator is pre-configured
-    *                   for draft v4 of json schema.
+    * @param jsf        The configured factory used to acquire the validator used for the validation.
     * @return           Returns an [[cats.data.Xor Xor]] representing the result of validating `document` against `schema`.
     *                   [[cats.data.Xor.Left Xor.Left[ValidationErrors] ]] Will be returned containing all validation
     *                   failures if they occur. [[cats.data.Xor.Right Xor.Right[Unit] ]] Will be returned if no validation failures occur.
@@ -54,12 +47,12 @@ object JsonSchema {
     document: Json,
     schema: Json
   )(
-    implicit validator: JsonValidator = draftV4Validator
+    implicit jsf: JsonSchemaFactory
   ): Xor[Iterable[Json], Unit] = {
     val Xor.Right(documentNode) = document.as[JsonNode]
     val Xor.Right(schemaNode) = schema.as[JsonNode]
 
-    val validationErrors = validator.validate(schemaNode, documentNode)
+    val validationErrors = jsf.getValidator.validate(schemaNode, documentNode)
     if (validationErrors.isSuccess) {
       Xor.right[ValidationErrors, Unit](())
     } else {

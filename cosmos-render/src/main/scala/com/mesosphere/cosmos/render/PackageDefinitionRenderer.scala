@@ -1,6 +1,7 @@
 package com.mesosphere.cosmos.render
 
 import cats.data.Xor
+import com.github.fge.jsonschema.main.JsonSchemaFactory
 import com.github.mustachejava.DefaultMustacheFactory
 import com.mesosphere.cosmos.jsonschema.JsonSchema
 import com.mesosphere.cosmos.thirdparty.marathon.model.AppId
@@ -21,6 +22,7 @@ import java.nio.charset.StandardCharsets
 
 object PackageDefinitionRenderer {
   private[this] final val MustacheFactory = new DefaultMustacheFactory()
+  private[this] implicit val jsf: JsonSchemaFactory = JsonSchemaFactory.byDefault()
 
   def renderMarathonV2App(
     sourceUri: Uri,
