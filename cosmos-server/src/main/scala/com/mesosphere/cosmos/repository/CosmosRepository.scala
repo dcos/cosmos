@@ -89,6 +89,7 @@ final class DefaultCosmosRepository(
     }
   }
 
+  // TODO (devflow) (jsancio): Refactor this to use the generic search when we change the API
   override def search(
       query: Option[String]
   )(implicit session: RequestSession): Future[List[rpc.v1.model.SearchResult]] = {
@@ -169,6 +170,7 @@ final class DefaultCosmosRepository(
         case v => Pattern.quote(v)
       }.mkString(".*")
   }
+
   private[repository] def createRegex(query: String): Regex = {
     s"""^${safePattern(query)}$$""".r
   }

@@ -13,7 +13,6 @@ import io.circe.generic.semiauto._
 import io.circe.syntax._
 
 object Encoders {
-
   implicit val keyEncodePackageDefinitionVersion: KeyEncoder[universe.v3.model.PackageDefinition.Version] = {
     KeyEncoder.instance(_.toString)
   }

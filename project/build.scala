@@ -15,6 +15,7 @@ object CosmosBuild extends Build {
     val bijection = "0.9.2"
     val circe = "0.5.2"
     val curator = "2.9.1"
+    val fastparse = "0.4.1"
     val finch = "0.10.0"
     val finchServer = "0.9.1"
     val guava = "16.0.1"
@@ -63,6 +64,10 @@ object CosmosBuild extends Build {
       ExclusionRule("javax.jms", "jms"),
       ExclusionRule("jline", "jline")
     ))
+
+    val fastparse = Seq(
+      "com.lihaoyi" %% "fastparse" % V.fastparse
+    )
 
     val finch = Seq(
       "com.github.finagle" %% "finch-core" % V.finch
@@ -361,6 +366,7 @@ object CosmosBuild extends Build {
           ++ Deps.scalaUri
           ++ Deps.bijectionUtil
           ++ Deps.aws
+          ++ Deps.fastparse
     )
     .dependsOn(
       finch % "compile;test->test",

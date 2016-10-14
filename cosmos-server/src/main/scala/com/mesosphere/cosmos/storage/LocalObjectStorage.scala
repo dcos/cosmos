@@ -1,18 +1,7 @@
 package com.mesosphere.cosmos.storage
 
-import java.io.DataInputStream
-import java.io.DataOutputStream
-import java.io.InputStream
-import java.nio.charset.StandardCharsets
-import java.nio.file.Files
-import java.nio.file.Path
-import java.nio.file.StandardCopyOption
-import java.nio.file.StandardOpenOption
-
-import scala.collection.JavaConverters._
-import scala.collection.breakOut
-import scala.util.control.NonFatal
-
+import com.mesosphere.cosmos.CirceError
+import com.mesosphere.cosmos.http.MediaType
 import com.netaporter.uri.Uri
 import com.twitter.finagle.stats.Stat
 import com.twitter.finagle.stats.StatsReceiver
@@ -22,9 +11,17 @@ import com.twitter.util.Future
 import com.twitter.util.FuturePool
 import io.circe.jawn.decode
 import io.circe.syntax._
-
-import com.mesosphere.cosmos.CirceError
-import com.mesosphere.cosmos.http.MediaType
+import java.io.DataInputStream
+import java.io.DataOutputStream
+import java.io.InputStream
+import java.nio.charset.StandardCharsets
+import java.nio.file.Files
+import java.nio.file.NoSuchFileException
+import java.nio.file.Path
+import java.nio.file.StandardOpenOption
+import scala.collection.JavaConverters._
+import scala.collection.breakOut
+import scala.util.control.NonFatal
 
 
 final class LocalObjectStorage(
@@ -64,17 +61,15 @@ final class LocalObjectStorage(
     }
   }
 
-  override def read(name: String): Future[(Option[MediaType], Reader)] = {
+  override def read(name: String): Future[Option[(MediaType, Reader)]] = {
     Stat.timeFuture(stats.stat("read")) {
       pool {
-        val (metadata, reader) = readFromFile(path.resolve(name))
-
-        (
-          metadata.get(LocalObjectStorage.contentTypeKey).flatMap { value =>
-            MediaType.parse(value).toOption
-          },
-          reader
-        )
+        readFromFile(path.resolve(name)).map { case (metadata, reader) =>
+          (
+            MediaType.parse(metadata(LocalObjectStorage.contentTypeKey)).get,
+            reader
+          )
+        }
       }
     }
   }
@@ -84,6 +79,8 @@ final class LocalObjectStorage(
       pool {
         // Drop the boolean. We want to have the same semantic as S3 which succeeds in either case.
         val _ = Files.deleteIfExists(path.resolve(name))
+
+        // TODO: To have the same semantic as S3 we need to delete all empty parent directories
       }
     }
   }
@@ -161,32 +158,41 @@ final class LocalObjectStorage(
   // See writeToFile for information on the file format.
   private[this] def readFromFile(
     absolutePath: Path
-  ): (Map[String, String], Reader) = {
-    val inputStream = new DataInputStream(
-      Files.newInputStream(
-        absolutePath,
-        StandardOpenOption.READ
+  ): Option[(Map[String, String], Reader)] = {
+    val maybeInputStream = try {
+      Some(
+        new DataInputStream(
+          Files.newInputStream(
+            absolutePath,
+            StandardOpenOption.READ
+          )
+        )
       )
-    )
-
-    try {
-      val metadataBytesSize = inputStream.readInt()
-
-      val metadata = {
-        val metadataBytes = new Array[Byte](metadataBytesSize)
-        inputStream.readFully(metadataBytes)
-        decode[Map[String, String]](
-          new String(metadataBytes, StandardCharsets.UTF_8)
-        ).valueOr { err =>
-          throw CirceError(err)
-        }
-      }
-
-      (metadata, Reader.fromStream(inputStream))
     } catch {
-      case NonFatal(e) =>
-        inputStream.close()
-        throw e
+      case e: NoSuchFileException =>
+        None
+    }
+
+    maybeInputStream.map { inputStream =>
+      try {
+        val metadataBytesSize = inputStream.readInt()
+
+        val metadata = {
+          val metadataBytes = new Array[Byte](metadataBytesSize)
+          inputStream.readFully(metadataBytes)
+          decode[Map[String, String]](
+            new String(metadataBytes, StandardCharsets.UTF_8)
+          ).valueOr { err =>
+            throw CirceError(err)
+          }
+        }
+
+        (metadata, Reader.fromStream(inputStream))
+      } catch {
+        case NonFatal(e) =>
+          inputStream.close()
+          throw e
+      }
     }
   }
 }

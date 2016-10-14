@@ -11,7 +11,6 @@ import io.circe._
 import io.circe.generic.semiauto._
 
 object Decoders {
-
   implicit val keyDecodePackageDefinitionVersion: KeyDecoder[universe.v3.model.PackageDefinition.Version] = {
     KeyDecoder.instance { s => Some(universe.v3.model.PackageDefinition.Version(s)) }
   }

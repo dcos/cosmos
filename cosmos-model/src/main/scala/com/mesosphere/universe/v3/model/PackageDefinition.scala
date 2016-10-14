@@ -38,11 +38,11 @@ object PackageDefinition {
 
   }
 
+  // TODO: This is used in test but not in Cosmos; Fix it to use the new Ordering rules
   implicit val packageDefinitionOrdering: Ordering[PackageDefinition] = Ordering.by {
     case v2: V2Package => v2.name -> v2.releaseVersion
     case v3: V3Package => v3.name -> v3.releaseVersion
   }
-
 }
 
 /**
@@ -97,5 +97,6 @@ case class V3Package(
 ) extends PackageDefinition
 
 object V3Package {
+  // TODO: We need to change this Ordering. File a Jira against this. This is used in tests.
   implicit val v3PackageOrdering: Ordering[V3Package] = Ordering.by(p => p.name -> p.releaseVersion)
 }
