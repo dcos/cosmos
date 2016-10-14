@@ -1,6 +1,7 @@
 package com.mesosphere.cosmos.jsonschema
 
 import cats.data.Xor
+import com.github.fge.jsonschema.main.JsonSchemaFactory
 import io.circe.jawn.parse
 import io.circe.syntax._
 import io.circe.{Json, JsonObject}
@@ -10,6 +11,7 @@ import scala.io.Source
 
 class JsonSchemaSpec extends FreeSpec {
 
+  private[this] implicit val jsf = JsonSchemaFactory.byDefault()
 
   "JsonSchema should" - {
     "be able to validate a document against a schema" - {
