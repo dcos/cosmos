@@ -1,5 +1,8 @@
 package com.mesosphere.universe.v3.model
 
+/**
+  * Conforms to: https://universe.mesosphere.com/v3/schema/repo#/definitions/dcosReleaseVersion
+  */
 case class DcosReleaseVersion(
   version: DcosReleaseVersion.Version,
   subVersions: List[DcosReleaseVersion.Version] = List.empty,
