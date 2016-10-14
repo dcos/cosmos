@@ -20,8 +20,7 @@ object JsonSchema {
     * Validates `document` against `schema` returning all validation failures.
     * @param document   The document to validation
     * @param schema     The schema to validate against
-    * @param jsf        The configured validator to use for the validation. The default validator is pre-configured
-    *                   for draft v4 of json schema.
+    * @param jsf        The configured factory used to acquire the validator used for the validation.
     * @return           Returns an [[cats.data.Xor Xor]] representing the result of validating `document` against `schema`.
     *                   [[cats.data.Xor.Left Xor.Left[ValidationErrors] ]] Will be returned containing all validation
     *                   failures if they occur. [[cats.data.Xor.Right Xor.Right[Unit] ]] Will be returned if no validation failures occur.
@@ -39,8 +38,7 @@ object JsonSchema {
     * Validates `document` against `schema` returning all validation failures.
     * @param document   The document to validation
     * @param schema     The schema to validate against
-    * @param jsf        The configured validator to use for the validation. The default validator is pre-configured
-    *                   for draft v4 of json schema.
+    * @param jsf        The configured factory used to acquire the validator used for the validation.
     * @return           Returns an [[cats.data.Xor Xor]] representing the result of validating `document` against `schema`.
     *                   [[cats.data.Xor.Left Xor.Left[ValidationErrors] ]] Will be returned containing all validation
     *                   failures if they occur. [[cats.data.Xor.Right Xor.Right[Unit] ]] Will be returned if no validation failures occur.
