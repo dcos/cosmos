@@ -1,7 +1,6 @@
 package com.mesosphere.cosmos.storage
 
-import com.mesosphere.cosmos.ErrorResponse
-
+import com.mesosphere.cosmos.rpc.v1.model.ErrorResponse
 import com.twitter.util.Future
 
 trait PackageQueueRemover {

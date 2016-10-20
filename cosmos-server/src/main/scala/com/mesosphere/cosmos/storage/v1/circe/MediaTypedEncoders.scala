@@ -1,12 +1,11 @@
 package com.mesosphere.cosmos.storage.v1.circe
 
-import com.mesosphere.cosmos.finch.MediaTypedEncoder
-import com.mesosphere.cosmos._
 import com.mesosphere.cosmos.circe.Encoders._
-import com.mesosphere.cosmos.circe.MediaTypedEncoder
+import com.mesosphere.cosmos.finch.MediaTypedEncoder
 import com.mesosphere.cosmos.http.MediaTypes
+import com.mesosphere.cosmos.rpc
 import com.mesosphere.cosmos.rpc.v1.circe.Encoders._
-import com.mesosphere.cosmos.rpc.v1.model.PackageRepository
+import com.mesosphere.cosmos.rpc.v1.model.{ErrorResponse, PackageRepository}
 import com.mesosphere.cosmos.storage.PackageQueueContents
 
 object MediaTypedEncoders {
@@ -18,5 +17,5 @@ object MediaTypedEncoders {
     MediaTypedEncoder[PackageQueueContents](MediaTypes.PackageQueueContents)
 
   implicit val errorResponseEncoder: MediaTypedEncoder[ErrorResponse] =
-    MediaTypedEncoder[ErrorResponse](MediaTypes.ErrorResponse)
+    MediaTypedEncoder[ErrorResponse](rpc.MediaTypes.ErrorResponse)
 }

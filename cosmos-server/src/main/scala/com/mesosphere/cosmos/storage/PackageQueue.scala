@@ -1,25 +1,15 @@
 package com.mesosphere.cosmos.storage
 
-import com.netaporter.uri.Uri
-import com.twitter.util.{ Future, Promise }
-import com.twitter.bijection.Conversion.asMethod
-
-import com.mesosphere.cosmos.ErrorResponse
 import com.mesosphere.cosmos.ZooKeeperStorageError
 import com.mesosphere.cosmos.converter.Storage._
-import com.mesosphere.universe.v3.model.PackageDefinition
+import com.mesosphere.cosmos.rpc.v1.model.ErrorResponse
 import com.mesosphere.cosmos.storage.v1.circe.MediaTypedDecoders._
 import com.mesosphere.cosmos.storage.v1.circe.MediaTypedEncoders._
-
-import io.circe.Encoder
-import io.circe.jawn.decode
-
+import com.twitter.bijection.Conversion.asMethod
+import com.twitter.util.{Future, Promise}
 import org.apache.curator.framework.CuratorFramework
-import org.apache.curator.framework.api.{ BackgroundCallback, CuratorEvent, CuratorEventType }
-
+import org.apache.curator.framework.api.{BackgroundCallback, CuratorEvent, CuratorEventType}
 import org.apache.zookeeper.KeeperException
-
-import java.nio.charset.StandardCharsets
 
 import scala.collection.JavaConversions._
 

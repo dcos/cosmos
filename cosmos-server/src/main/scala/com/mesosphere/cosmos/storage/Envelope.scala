@@ -3,10 +3,6 @@ package com.mesosphere.cosmos.storage
 import java.nio.ByteBuffer
 import java.nio.charset.StandardCharsets
 
-import com.mesosphere.cosmos.{CirceError, EnvelopeError}
-import com.mesosphere.cosmos.circe.{MediaTypedDecoder, MediaTypedEncoder}
-import com.mesosphere.cosmos.http.{MediaType, MediaTypeOps, MediaTypes}
-import com.mesosphere.universe.common.ByteBuffers
 import com.mesosphere.cosmos.circe.Decoders._
 import com.mesosphere.cosmos.circe.Encoders._
 import com.mesosphere.cosmos.finch.{MediaTypedDecoder, MediaTypedEncoder}
@@ -16,9 +12,6 @@ import com.mesosphere.cosmos.{CirceError, EnvelopeError}
 import com.mesosphere.universe.common.ByteBuffers
 import io.circe.jawn.decode
 import io.circe.syntax._
-
-import java.nio.ByteBuffer
-import java.nio.charset.StandardCharsets
 
 object Envelope {
 
