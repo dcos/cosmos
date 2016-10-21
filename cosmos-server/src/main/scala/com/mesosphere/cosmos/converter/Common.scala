@@ -178,7 +178,5 @@ object Common {
 
     Injection.build[PackageCoordinate, String](fwd)(s => Try(rev(s)))
   }
-
-
-
+  
 }
