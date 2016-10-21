@@ -13,14 +13,14 @@ import com.twitter.bijection.Conversion.asMethod
 import com.twitter.util.Future
 import io.circe.syntax._
 
-private[cosmos] final class PackageInstallHandler(
+private[cosmos] final class PackageRunHandler(
   packageCollection: PackageCollection,
   packageRunner: PackageRunner
-) extends EndpointHandler[rpc.v1.model.InstallRequest, rpc.v2.model.InstallResponse] {
+) extends EndpointHandler[rpc.v1.model.RunRequest, rpc.v2.model.RunResponse] {
 
-  override def apply(request: rpc.v1.model.InstallRequest)(implicit
+  override def apply(request: rpc.v1.model.RunRequest)(implicit
     session: RequestSession
-  ): Future[rpc.v2.model.InstallResponse] = {
+  ): Future[rpc.v2.model.RunResponse] = {
     packageCollection
       .getPackageByPackageVersion(
         request.packageName,
@@ -34,7 +34,7 @@ private[cosmos] final class PackageInstallHandler(
           case Xor.Right(renderedMarathonJson) =>
             packageRunner.launch(renderedMarathonJson)
               .map { runnerResponse =>
-                rpc.v2.model.InstallResponse(
+                rpc.v2.model.RunResponse(
                   packageName = pkg.name,
                   packageVersion = pkg.version,
                   appId = Some(runnerResponse.id),
@@ -52,7 +52,7 @@ private[cosmos] final class PackageInstallHandler(
               Future.exception(JsonSchemaMismatch(List(error)))
             case MissingMarathonV2AppTemplate =>
               Future {
-                rpc.v2.model.InstallResponse(
+                rpc.v2.model.RunResponse(
                   packageName = pkg.name,
                   packageVersion = pkg.version,
                   appId = None,

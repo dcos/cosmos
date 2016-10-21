@@ -176,7 +176,7 @@
     },
 
 
-    "installation": {
+    "instantiation": {
       "type": "object",
       "properties": {
         "appId": {
@@ -199,9 +199,9 @@
   "properties": {
     "packages": {
       "type": "array",
-      "description": "The list of installed packages",
+      "description": "The list of running packages",
       "items": {
-        "$ref": "#/definitions/installation"
+        "$ref": "#/definitions/instantiation"
       }
     }
   },

@@ -58,8 +58,8 @@ class EncodersDecodersSpec extends FreeSpec {
       assertThrowableDropped(error, "causedBy")
     }
 
-    "IncompleteUninstall" in {
-      val error = IncompleteUninstall(packageName = "spark", causedBy = throwable)
+    "IncompleteKill" in {
+      val error = IncompleteKill(packageName = "spark", causedBy = throwable)
       assertThrowableDropped(error, "causedBy")
     }
 

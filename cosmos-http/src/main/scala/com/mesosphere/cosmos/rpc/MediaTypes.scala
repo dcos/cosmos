@@ -11,14 +11,14 @@ object MediaTypes {
   val PublishRequest = vnd("publish-request")
   val PublishResponse = vnd("publish-response")
 
-  val UninstallRequest = vnd("uninstall-request")
-  val UninstallResponse = vnd("uninstall-response")
+  val KillRequest = vnd("kill-request")
+  val KillResponse = vnd("kill-response")
 
   val ListRequest = vnd("list-request")
   val ListResponse = vnd("list-response")
 
   val ErrorResponse = vnd("error")
-  val InstallRequest = vnd("install-request")
+  val RunRequest = vnd("run-request")
   val RenderRequest = vnd("render-request")
   val RenderResponse = vnd("render-response")
   val SearchRequest = vnd("search-request")
@@ -37,8 +37,8 @@ object MediaTypes {
 
   val V1DescribeResponse = vnd("describe-response", 1)
   val V2DescribeResponse = vnd("describe-response", 2)
-  val V1InstallResponse = vnd("install-response", 1)
-  val V2InstallResponse = vnd("install-response", 2)
+  val V1RunResponse = vnd("run-response", 1)
+  val V2RunResponse = vnd("run-response", 2)
   val V1ListResponse = vnd("list-response", 1)
   val V2ListResponse = vnd("list-response", 2)
 

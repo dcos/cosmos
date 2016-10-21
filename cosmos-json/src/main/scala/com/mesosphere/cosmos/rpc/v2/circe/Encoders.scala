@@ -9,8 +9,8 @@ import io.circe.generic.semiauto._
 
 object Encoders {
 
-  implicit val encodeV2InstallResponse: Encoder[rpc.v2.model.InstallResponse] = {
-    deriveEncoder[rpc.v2.model.InstallResponse]
+  implicit val encodeV2RunResponse: Encoder[rpc.v2.model.RunResponse] = {
+    deriveEncoder[rpc.v2.model.RunResponse]
   }
 
   implicit val encodeV2DescribeResponse: Encoder[DescribeResponse] = {

@@ -26,11 +26,11 @@ object Encoders {
   implicit val encodeDescribeRequest: Encoder[DescribeRequest] = deriveEncoder[DescribeRequest]
   implicit val encodeSearchRequest: Encoder[SearchRequest] = deriveEncoder[SearchRequest]
   implicit val encodeSearchResponse: Encoder[SearchResponse] = deriveEncoder[SearchResponse]
-  implicit val encodeInstallRequest: Encoder[InstallRequest] = deriveEncoder[InstallRequest]
-  implicit val encodeInstallResponse: Encoder[InstallResponse] = deriveEncoder[InstallResponse]
-  implicit val encodeUninstallRequest: Encoder[UninstallRequest] = deriveEncoder[UninstallRequest]
-  implicit val encodeUninstallResponse: Encoder[UninstallResponse] = deriveEncoder[UninstallResponse]
-  implicit val encodeUninstallResult: Encoder[UninstallResult] = deriveEncoder[UninstallResult]
+  implicit val encodeRunRequest: Encoder[RunRequest] = deriveEncoder[RunRequest]
+  implicit val encodeRunResponse: Encoder[RunResponse] = deriveEncoder[RunResponse]
+  implicit val encodeKillRequest: Encoder[KillRequest] = deriveEncoder[KillRequest]
+  implicit val encodeKillResponse: Encoder[KillResponse] = deriveEncoder[KillResponse]
+  implicit val encodeKillResult: Encoder[KillResult] = deriveEncoder[KillResult]
 
   implicit val encodeRenderRequest: Encoder[RenderRequest] = deriveEncoder[RenderRequest]
   implicit val encodeRenderResponse: Encoder[RenderResponse] = deriveEncoder[RenderResponse]
@@ -41,12 +41,12 @@ object Encoders {
 
   implicit val encodeListRequest: Encoder[ListRequest] = deriveEncoder[ListRequest]
   implicit val encodeListResponse: Encoder[ListResponse] = deriveEncoder[ListResponse]
-  implicit val encodeInstallation: Encoder[Installation] = deriveEncoder[Installation]
-  implicit val encodeInstalledPackageInformationPackageDetails: Encoder[InstalledPackageInformationPackageDetails] = {
+  implicit val encodeInstantiation: Encoder[Instantiation] = deriveEncoder[Instantiation]
+  implicit val encodeRunningPackageInformationPackageDetails: Encoder[RunningPackageInformationPackageDetails] = {
     import com.mesosphere.universe.v2.circe.Encoders._ // import implicits at as narrow a scope as possible
-    deriveEncoder[InstalledPackageInformationPackageDetails]
+    deriveEncoder[RunningPackageInformationPackageDetails]
   }
-  implicit val encodePackageInformation: Encoder[InstalledPackageInformation] = deriveEncoder[InstalledPackageInformation]
+  implicit val encodePackageInformation: Encoder[RunningPackageInformation] = deriveEncoder[RunningPackageInformation]
 
   implicit val encodeCapabilitiesResponse: Encoder[CapabilitiesResponse] = deriveEncoder[CapabilitiesResponse]
   implicit val encodeCapability: Encoder[Capability] = deriveEncoder[Capability]

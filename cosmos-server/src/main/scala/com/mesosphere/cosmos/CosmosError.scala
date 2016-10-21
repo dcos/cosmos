@@ -62,7 +62,7 @@ case class PackageFileSchemaMismatch(fileName: String, decodingFailure: Decoding
     Some(JsonObject.singleton("errorMessage", decodingFailure.getMessage().asJson))
   }
 }
-case class PackageAlreadyInstalled() extends CosmosError {
+case class PackageAlreadyRunning() extends CosmosError {
   override val status = Status.Conflict
 }
 
@@ -130,13 +130,13 @@ case class MultipleFrameworkIds(
   frameworkName: String,
   ids: List[String]
 ) extends CosmosError
-case class PackageNotInstalled(packageName: String) extends CosmosError
+case class PackageNotRunning(packageName: String) extends CosmosError
 
 case class JsonSchemaMismatch(errors: Iterable[Json]) extends CosmosError {
   override def getData: Option[JsonObject] = Some(JsonObject.singleton("errors", errors.asJson))
 }
 
-case class UninstallNonExistentAppForPackage(packageName: String, appId: AppId) extends CosmosError
+case class KillNonExistentAppForPackage(packageName: String, appId: AppId) extends CosmosError
 
 case class ServiceUnavailable(
   serviceName: String,
@@ -162,7 +162,7 @@ case class Forbidden(serviceName: String) extends CosmosError with NoStackTrace 
   override val getData: Option[JsonObject] = Some(JsonObject.singleton("serviceName", serviceName.asJson))
 }
 
-case class IncompleteUninstall(packageName: String, causedBy: Throwable) extends CosmosError(causedBy)
+case class IncompleteKill(packageName: String, causedBy: Throwable) extends CosmosError(causedBy)
 case class ZooKeeperStorageError(msg: String) extends CosmosError
 
 case class ConcurrentAccess(causedBy: Throwable) extends CosmosError(causedBy)

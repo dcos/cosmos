@@ -11,13 +11,13 @@ import org.scalatest.FreeSpec
 
 final class LabelSpec extends FreeSpec {
 
-  "label.v1.model.PackageMetadata <=> rpc.v1.model.InstalledPackageInformation" - {
+  "label.v1.model.PackageMetadata <=> rpc.v1.model.RunningPackageInformation" - {
 
     "minimal" in {
       val packageDefinition = TestingPackages.MinimalV3ModelV2PackageDefinition
       val packageMetadata = packageDefinition.as[label.v1.model.PackageMetadata]
 
-      val result = roundTrip[label.v1.model.PackageMetadata, rpc.v1.model.InstalledPackageInformation](
+      val result = roundTrip[label.v1.model.PackageMetadata, rpc.v1.model.RunningPackageInformation](
         packageMetadata
       )
 
@@ -28,7 +28,7 @@ final class LabelSpec extends FreeSpec {
       val packageDefinition = TestingPackages.MaximalV3ModelV2PackageDefinition
       val packageMetadata = packageDefinition.as[label.v1.model.PackageMetadata]
 
-      val result = roundTrip[label.v1.model.PackageMetadata, rpc.v1.model.InstalledPackageInformation](
+      val result = roundTrip[label.v1.model.PackageMetadata, rpc.v1.model.RunningPackageInformation](
         packageMetadata
       )
 

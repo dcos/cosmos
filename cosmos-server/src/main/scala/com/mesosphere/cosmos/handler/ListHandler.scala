@@ -12,7 +12,7 @@ import com.mesosphere.cosmos.internal.model.MarathonAppOps._
 import com.mesosphere.cosmos.label
 import com.mesosphere.cosmos.label.v1.circe.Decoders._
 import com.mesosphere.cosmos.repository.CosmosRepository
-import com.mesosphere.cosmos.rpc.v1.model.{Installation, InstalledPackageInformation, ListRequest, ListResponse}
+import com.mesosphere.cosmos.rpc.v1.model.{Instantiation, ListRequest, ListResponse, RunningPackageInformation}
 import com.mesosphere.cosmos.thirdparty.marathon.model.{AppId, MarathonApp}
 import com.mesosphere.universe.v3.model.PackageDefinition.ReleaseVersion
 import com.netaporter.uri.Uri
@@ -20,7 +20,6 @@ import com.netaporter.uri.dsl.stringToUri
 import com.twitter.bijection.Conversion.asMethod
 import com.twitter.util.{Future, Try}
 import io.circe.jawn.decode
-
 
 private[cosmos] final class ListHandler(
   adminRouter: AdminRouter,
@@ -38,10 +37,10 @@ private[cosmos] final class ListHandler(
     for {
       apps <- getApplications(adminRouter, request)
       repoAssocs <- getRepositoryAssociations(repositories, apps)
-      installs <- getInstallations(repoAssocs)
+      runningPackages <- getInstantiations(repoAssocs)
     } yield {
-      ListResponse(installs.sortBy(install =>
-        (install.packageInformation.packageDefinition.name, install.appId)))
+      ListResponse(runningPackages.sortBy(runningPackage =>
+        (runningPackage.packageInformation.packageDefinition.name, runningPackage.appId)))
     }
   }
 
@@ -81,34 +80,34 @@ private[cosmos] final class ListHandler(
     }
   }
 
-  private[this] def getInstallations(assocs: Seq[(App, Option[CosmosRepository])])
-                                    (implicit session: RequestSession): Future[Seq[Installation]] = {
+  private[this] def getInstantiations(assocs: Seq[(App, Option[CosmosRepository])])(implicit
+    session: RequestSession
+  ): Future[Seq[Instantiation]] = {
     Future.collect {
       assocs map {
         case (app, Some(repo)) =>
           repo
             .getPackageByReleaseVersion(app.pkgName, app.pkgReleaseVersion)
-            .map(_.as[Try[InstalledPackageInformation]])
+            .map(_.as[Try[RunningPackageInformation]])
             .lowerFromTry
             .map { pkgInfo =>
-              Installation(app.id, pkgInfo)
+              Instantiation(app.id, pkgInfo)
             }
-        case (app, None) => Future.value(Installation(app.id, decodeInstalledPackageInformation(app)))
+        case (app, None) => Future.value(Instantiation(app.id, decodeRunningPackageInformation(app)))
       }
     }
   }
 
-  private[this] def decodeInstalledPackageInformation(app: App): InstalledPackageInformation = {
+  private[this] def decodeRunningPackageInformation(app: App): RunningPackageInformation = {
     val pkgMetadata = app.pkgMetadata.getOrElse("")
     val pkgInfo = new String(
       Base64.getDecoder.decode(pkgMetadata),
       StandardCharsets.UTF_8
     )
     decode[label.v1.model.PackageMetadata](pkgInfo) match {
-      case Xor.Left(err) => throw new CirceError(err)
-      case Xor.Right(pkg) => pkg.as[InstalledPackageInformation]
+      case Xor.Left(err) => throw CirceError(err)
+      case Xor.Right(pkg) => pkg.as[RunningPackageInformation]
     }
   }
 
 }
-

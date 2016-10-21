@@ -5,7 +5,7 @@ import com.mesosphere.cosmos.thirdparty.marathon.model.MarathonApp
 import com.twitter.util.Future
 import io.circe.Json
 
-/** The service that packages are installed to; currently defaults to Marathon in DCOS. */
+/** The service that packages are run on; currently defaults to Marathon in DCOS. */
 trait PackageRunner {
 
   /** Execute the package described by the given JSON configuration.

@@ -151,26 +151,26 @@ A v1 render can succeed in the following scenarios:
 1. The package being rendered was published as a Universe package with `packagingVersion` 2.0
 2. The package being rendered was published as a Universe package with `packagingVersion` 3.0 and the package has a marathon template defined
 
-#### `/package/install`
+#### `/package/run`
 
 ```
-Content-Type: application/vnd.dcos.package.install-request+json;charset=utf-8;version=v1
-Accept:       application/vnd.dcos.package.install-response+json;charset=utf-8;version=v1
+Content-Type: application/vnd.dcos.package.run-request+json;charset=utf-8;version=v1
+Accept:       application/vnd.dcos.package.run-response+json;charset=utf-8;version=v1
 ```
-A v1 install can succeed in the following scenarios:
+A v1 run can succeed in the following scenarios:
 
-1. The package being installed was published as a Universe package with `packagingVersion` 2.0
-2. The package being installed was published as a Universe package with `packagingVersion` 3.0 and the package has a marathon template defined
+1. The package being run was published as a Universe package with `packagingVersion` 2.0
+2. The package being run was published as a Universe package with `packagingVersion` 3.0 and the package has a marathon template defined
 
 ```
-Content-Type: application/vnd.dcos.package.install-request+json;charset=utf-8;version=v1
-Accept:       application/vnd.dcos.package.install-response+json;charset=utf-8;version=v2
+Content-Type: application/vnd.dcos.package.run-request+json;charset=utf-8;version=v1
+Accept:       application/vnd.dcos.package.run-response+json;charset=utf-8;version=v2
 ```
-A v2 install can succeed in the following scenarios:
+A v2 run can succeed in the following scenarios:
 
-1. The package being installed was published as a Universe package with `packagingVersion` 2.0
-2. The package being installed was published as a Universe package with `packagingVersion` 3.0 and the package has a marathon template defined
-3. The package being installed was published as a Universe package with `packagingVersion` 3.0 and the package has a `.cli` object defined in it's resource set
+1. The package being run was published as a Universe package with `packagingVersion` 2.0
+2. The package being run was published as a Universe package with `packagingVersion` 3.0 and the package has a marathon template defined
+3. The package being run was published as a Universe package with `packagingVersion` 3.0 and the package has a `.cli` object defined in its resource set
 
 ## Reporting Problems
 

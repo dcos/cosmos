@@ -68,8 +68,8 @@ object TestUtil {
     command = TestingPackages.MaximalV3ModelV3PackageDefinition.command
   )
 
-  val MaximalInstalledPackageInformation  = rpc.v1.model.InstalledPackageInformation(
-    packageDefinition = rpc.v1.model.InstalledPackageInformationPackageDetails(
+  val MaximalRunningPackageInformation  = rpc.v1.model.RunningPackageInformation(
+    packageDefinition = rpc.v1.model.RunningPackageInformationPackageDetails(
       packagingVersion = universe.v2.model.PackagingVersion("3.0"),
       name = TestingPackages.MaximalV2ModelPackageDetails.name,
       version = TestingPackages.MaximalV2ModelPackageDetails.version,
