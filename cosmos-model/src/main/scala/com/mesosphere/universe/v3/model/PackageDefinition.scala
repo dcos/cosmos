@@ -1,9 +1,11 @@
 package com.mesosphere.universe.v3.model
 
+import com.mesosphere.universe.v3.syntax.PackageDefinitionOps._
+import com.twitter.util.Return
+import com.twitter.util.Throw
+import com.twitter.util.Try
 import io.circe.JsonObject
 import java.util.regex.Pattern
-
-import com.twitter.util.{Return, Throw, Try}
 
 sealed abstract class PackageDefinition
 object PackageDefinition {
@@ -38,10 +40,41 @@ object PackageDefinition {
 
   }
 
-  // TODO: This is used in test but not in Cosmos; Fix it to use the new Ordering rules
-  implicit val packageDefinitionOrdering: Ordering[PackageDefinition] = Ordering.by {
-    case v2: V2Package => v2.name -> v2.releaseVersion
-    case v3: V3Package => v3.name -> v3.releaseVersion
+  implicit object packageDefinitionOrdering extends Ordering[PackageDefinition] {
+    override def compare(a: PackageDefinition, b: PackageDefinition): Int = {
+      PackageDefinition.compare(
+        (a.name, a.version, a.releaseVersion),
+        (b.name, b.version, b.releaseVersion)
+      )
+    }
+  }
+
+  def compare(
+    a: (String, Version, ReleaseVersion),
+    b: (String, Version, ReleaseVersion)
+  ): Int = {
+    val (aName, aVersion, aReleaseVersion) = a
+    val (bName, bVersion, bReleaseVersion) = b
+
+    val orderName = aName.compare(bName)
+    if (orderName != 0) {
+      orderName
+    } else {
+      (SemVer(aVersion.toString), SemVer(bVersion.toString)) match {
+        case (Some(_), None) =>
+          // semver is greater than non-semver
+          1
+        case (None, Some(_)) =>
+          // semver is greater than non-semver
+          -1
+        case (Some(aSemver), Some(bSemver)) =>
+          // compare semver
+          aSemver.compare(bSemver)
+        case _ =>
+          // both are non-semver; use release version
+          aReleaseVersion.value.compare(bReleaseVersion.value)
+      }
+    }
   }
 }
 
@@ -68,7 +101,14 @@ case class V2Package(
   resource: Option[V2Resource] = None,
   config: Option[JsonObject] = None,
   command: Option[Command] = None
-) extends PackageDefinition
+) extends PackageDefinition with Ordered[V2Package] {
+  override def compare(that: V2Package): Int = {
+    PackageDefinition.compare(
+      (name, version, releaseVersion),
+      (that.name, that.version, that.releaseVersion)
+    )
+  }
+}
 
 /**
   * Conforms to: https://universe.mesosphere.com/v3/schema/repo#/definitions/v30Package
@@ -94,9 +134,11 @@ case class V3Package(
   resource: Option[V3Resource] = None,
   config: Option[JsonObject] = None,
   command: Option[Command] = None
-) extends PackageDefinition
-
-object V3Package {
-  // TODO: We need to change this Ordering. File a Jira against this. This is used in tests.
-  implicit val v3PackageOrdering: Ordering[V3Package] = Ordering.by(p => p.name -> p.releaseVersion)
+) extends PackageDefinition with Ordered[V3Package] {
+  override def compare(that: V3Package): Int = {
+    PackageDefinition.compare(
+      (name, version, releaseVersion),
+      (that.name, that.version, that.releaseVersion)
+    )
+  }
 }

@@ -180,10 +180,10 @@ object Common {
     Injection.build[PackageCoordinate, String](fwd)(rev)
   }
 
-  implicit val versionToString = Injection.build[model.Version, String] { version =>
+  implicit val versionToString = Injection.build[universe.v3.model.SemVer, String] { version =>
     version.toString
   } { string =>
-    model.Version(string).map(Success(_)).getOrElse(
+    universe.v3.model.SemVer(string).map(Success(_)).getOrElse(
       Failure(new IllegalArgumentException(s"Unable to parse $string as semver"))
     )
   }

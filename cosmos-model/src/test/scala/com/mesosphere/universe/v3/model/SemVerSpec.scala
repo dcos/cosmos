@@ -1,7 +1,5 @@
-package com.mesosphere.cosmos.internal.model
+package com.mesosphere.universe.v3.model
 
-import com.mesosphere.cosmos.converter.Common._
-import com.twitter.bijection.Conversion.asMethod
 import org.scalacheck.Gen
 import org.scalacheck.Arbitrary
 import org.scalatest.FreeSpec
@@ -11,8 +9,8 @@ import scala.util.Random
 import scala.util.Success
 import scala.util.Try
 
-final class VersionSpec extends FreeSpec with PropertyChecks with Matchers {
-  "For all Version => String => Version" in {
+final class SemVerSpec extends FreeSpec with PropertyChecks with Matchers {
+  "For all SemVer => String => SemVer" in {
     val numbers = for (n <- Gen.choose(0, Long.MaxValue)) yield n
     val preReleases = Gen.containerOf[Seq, Either[String, Long]](
       Gen.oneOf(
@@ -24,9 +22,9 @@ final class VersionSpec extends FreeSpec with PropertyChecks with Matchers {
 
     forAll (numbers, numbers, numbers, preReleases, build) {
       (major, minor, patch, preReleases, build) =>
-        val expected = Version(major, minor, patch, preReleases, build)
-        val string = expected.as[String]
-        val Success(actual) = string.as[Try[Version]]
+        val expected = SemVer(major, minor, patch, preReleases, build)
+        val string = expected.toString
+        val actual = SemVer(string).get
 
         actual shouldBe expected
     }
@@ -48,11 +46,9 @@ final class VersionSpec extends FreeSpec with PropertyChecks with Matchers {
       "1.11.11",
       "2",
       "11.11.11"
-    ).map(_.as[Try[Version]].get)
+    ).map(SemVer(_).get)
 
-    val shuffled = Random.shuffle(expected)
-
-    val actual = shuffled.sorted
+    val actual = Random.shuffle(expected).sorted
 
     actual shouldBe expected
   }

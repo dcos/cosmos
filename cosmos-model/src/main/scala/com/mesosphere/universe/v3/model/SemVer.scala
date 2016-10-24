@@ -1,4 +1,4 @@
-package com.mesosphere.cosmos.internal.model
+package com.mesosphere.universe.v3.model
 
 import fastparse.all._
 import fastparse.core.Parsed
@@ -10,13 +10,13 @@ import scala.util.Success
 import scala.util.Try
 
 // Implements relaxed: http://semver.org/#semantic-versioning-200
-final case class Version(
+final case class SemVer(
   major: Long,
   minor: Long,
   patch: Long,
   preReleases: Seq[Either[String, Long]],
   build: Option[String]
-) extends Ordered[Version] {
+) extends Ordered[SemVer] {
 
   override def toString(): String = {
     val preReleasePart = if (preReleases.isEmpty) {
@@ -30,7 +30,7 @@ final case class Version(
     s"$major.$minor.$patch$preReleasePart$buildPart"
   }
 
-  override def compare(that: Version): Int = {
+  override def compare(that: SemVer): Int = {
     // Implements: http://semver.org/#spec-item-11
     val majorOrder = major.compare(that.major)
     if (majorOrder != 0) {
@@ -62,7 +62,7 @@ final case class Version(
   }
 }
 
-object Version {
+object SemVer {
   private[this] val versionParser = {
     val alpha = CharIn(('a' to 'z') ++ ('A' to 'Z')).!
     val digit = CharIn('0' to '9').!
@@ -93,11 +93,11 @@ object Version {
 
     (Start ~ major ~ other ~ other ~ preRelease ~ build ~ End).map {
       case (major, minor, patch, preReleases, build) =>
-        Version(major, minor, patch, preReleases, build)
+        SemVer(major, minor, patch, preReleases, build)
     }
   }
 
-  def apply(value: String): Option[Version] = {
+  def apply(value: String): Option[SemVer] = {
     versionParser.parse(value) match {
       case Parsed.Success(version, _) => Some(version)
       case _ => None

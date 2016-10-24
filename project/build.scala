@@ -291,6 +291,7 @@ object CosmosBuild extends Build {
         Deps.scalaUri
         ++ Deps.circeCore
         ++ Deps.twitterUtilCore
+        ++ Deps.fastparse
     )
 
   lazy val json = Project("cosmos-json", file("cosmos-json"))
@@ -366,7 +367,6 @@ object CosmosBuild extends Build {
           ++ Deps.scalaUri
           ++ Deps.bijectionUtil
           ++ Deps.aws
-          ++ Deps.fastparse
     )
     .dependsOn(
       finch % "compile;test->test",
