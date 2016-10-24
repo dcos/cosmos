@@ -5,13 +5,11 @@ import com.mesosphere.cosmos.PackageNotFound
 import com.mesosphere.cosmos.VersionNotFound
 import com.mesosphere.cosmos.search.searchForPackages
 import com.mesosphere.cosmos.rpc
-import com.mesosphere.cosmos.rpc.v1.syntax._
 import com.mesosphere.universe
 import com.twitter.util.Future
 
 trait LocalPackageCollection {
   // Used by list
-  // TODO: LocalPackageCollection.Package is "Orderable" and is returned in Order.
   def list(): Future[List[rpc.v1.model.LocalPackage]]
 
   // Used by uninstall and render
@@ -77,7 +75,7 @@ object LocalPackageCollection {
     resolveVersion(namedPackages, packageName, packageVersion)
   }
 
-  def resolveVersion(
+  private[this] def resolveVersion(
     packages: List[rpc.v1.model.LocalPackage],
     packageName: String,
     packageVersion: Option[universe.v3.model.PackageDefinition.Version]

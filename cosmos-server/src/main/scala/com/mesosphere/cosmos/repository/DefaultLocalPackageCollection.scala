@@ -18,7 +18,7 @@ final class DefaultLocalPackageCollection(
   objectStorage: PackageObjectStorage
 ) extends LocalPackageCollection {
   override def list(): Future[List[rpc.v1.model.LocalPackage]] = {
-    objectStorage.list()
+    objectStorage.list().map(_.sorted.reverse)
   }
 }
 
