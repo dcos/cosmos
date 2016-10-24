@@ -31,16 +31,20 @@ final class PackageObjectStorage(objectStorage: ObjectStorage) {
       packageDefinition.version
     )
 
-
     val path = s"${packageCoordinate.as[String]}/metadata.json"
 
     val data = packageDefinition.asJson.noSpaces.getBytes(StandardCharsets.UTF_8)
+
+    val mediaType = packageDefinition match {
+      case _: universe.v3.model.V2Package => universe.MediaTypes.universeV2Package
+      case _: universe.v3.model.V3Package => universe.MediaTypes.universeV3Package
+    }
 
     objectStorage.write(
       path,
       new ByteArrayInputStream(data),
       data.length.toLong,
-      MediaTypes.applicationJson // TODO: replace this with the actual media type
+      mediaType
     )
   }
 
@@ -51,7 +55,6 @@ final class PackageObjectStorage(objectStorage: ObjectStorage) {
 
     objectStorage.read(path).flatMap {
       case Some((mediaType, reader)) =>
-        // TODO: Check the media type but for now assume it is the correct type
         Reader.readAll(reader).map { buffer =>
           // TODO: Make this a helper. We use this pattern in a few places.
           Some(

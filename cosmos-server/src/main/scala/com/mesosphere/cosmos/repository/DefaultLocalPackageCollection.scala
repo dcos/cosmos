@@ -49,8 +49,6 @@ object DefaultLocalPackageCollection {
 
     val packageCollection = new DefaultLocalPackageCollection(packageStorage)
 
-
-    // TODO: DescribeResponse is not the correct type as we shouldn't have a selected property
     val addedPackages = Await.result(
       Future.collect(
         Seq(
