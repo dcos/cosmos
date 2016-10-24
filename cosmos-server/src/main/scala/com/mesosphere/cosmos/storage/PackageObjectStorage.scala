@@ -22,7 +22,7 @@ import java.io.InputStream
 import java.nio.charset.StandardCharsets
 import scala.util.Try
 
-final class PackageObjectStorage(objectStorage: ObjectStorage) {
+final class PackageObjectStorage private (objectStorage: ObjectStorage) {
   def writePackageDefinition(
     packageDefinition: universe.v3.model.PackageDefinition
   ): Future[Unit] = {
@@ -121,5 +121,11 @@ final class PackageObjectStorage(objectStorage: ObjectStorage) {
         }
       } map(_.toList)
     }
+  }
+}
+
+object PackageObjectStorage {
+  def apply(objectStorage: ObjectStorage): PackageObjectStorage = {
+    new PackageObjectStorage(objectStorage)
   }
 }
