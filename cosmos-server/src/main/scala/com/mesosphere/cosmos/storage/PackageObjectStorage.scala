@@ -1,13 +1,16 @@
 package com.mesosphere.cosmos.storage
 
 import com.mesosphere.cosmos.CirceError
+import com.mesosphere.cosmos.PackageFileMissing
+import com.mesosphere.cosmos.circe.Encoders.exceptionErrorResponse
 import com.mesosphere.cosmos.converter.Common._
 import com.mesosphere.cosmos.http.MediaTypes
 import com.mesosphere.cosmos.repository.LocalPackageCollection
 import com.mesosphere.cosmos.rpc
-import com.mesosphere.cosmos.rpc.v2.circe.Decoders._
-import com.mesosphere.cosmos.rpc.v2.circe.Encoders._
 import com.mesosphere.universe
+import com.mesosphere.universe.v3.circe.Decoders._
+import com.mesosphere.universe.v3.circe.Encoders._
+import com.mesosphere.universe.v3.syntax.PackageDefinitionOps._
 import com.twitter.bijection.Conversion.asMethod
 import com.twitter.io.Buf.ByteArray
 import com.twitter.io.Reader
@@ -20,9 +23,8 @@ import java.nio.charset.StandardCharsets
 import scala.util.Try
 
 final class PackageObjectStorage(objectStorage: ObjectStorage) {
-  // TODO: Change the type from DescribeResponse; it should not contain selected but publish date
   def writePackageDefinition(
-    packageDefinition: rpc.v2.model.DescribeResponse
+    packageDefinition: universe.v3.model.PackageDefinition
   ): Future[Unit] = {
     val packageCoordinate = rpc.v1.model.PackageCoordinate(
       packageDefinition.name,
@@ -44,7 +46,7 @@ final class PackageObjectStorage(objectStorage: ObjectStorage) {
 
   def readPackageDefinition(
     packageCoordinate: rpc.v1.model.PackageCoordinate
-  ): Future[Option[rpc.v2.model.DescribeResponse]] = {
+  ): Future[Option[universe.v3.model.PackageDefinition]] = {
     val path = s"${packageCoordinate.as[String]}/metadata.json"
 
     objectStorage.read(path).flatMap {
@@ -53,7 +55,7 @@ final class PackageObjectStorage(objectStorage: ObjectStorage) {
         Reader.readAll(reader).map { buffer =>
           // TODO: Make this a helper. We use this pattern in a few places.
           Some(
-            decode[rpc.v2.model.DescribeResponse](
+            decode[universe.v3.model.PackageDefinition](
               new String(
                 ByteArray.Owned.extract(buffer),
                 StandardCharsets.UTF_8
@@ -108,9 +110,8 @@ final class PackageObjectStorage(objectStorage: ObjectStorage) {
                 packageDefinition
               )
             case None =>
-              // TODO: Return the correct error
               rpc.v1.model.Invalid(
-                "Missing metadata.json",
+                exceptionErrorResponse(PackageFileMissing("metadata.json")),
                 packageCoordinate
               )
           }

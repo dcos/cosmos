@@ -55,37 +55,41 @@ object DefaultLocalPackageCollection {
       Future.collect(
         Seq(
           addPackage(
-            rpc.v2.model.DescribeResponse(
+            universe.v3.model.V3Package(
               packagingVersion=universe.v3.model.V3PackagingVersion,
               name="ceph",
               version=universe.v3.model.PackageDefinition.Version("1.1"),
+              releaseVersion=universe.v3.model.PackageDefinition.ReleaseVersion(1).get,
               maintainer="jose@mesosphere.com",
               description="Great object store"
             )
           ),
           addPackage(
-            rpc.v2.model.DescribeResponse(
+            universe.v3.model.V3Package(
               packagingVersion=universe.v3.model.V3PackagingVersion,
               name="ceph",
               version=universe.v3.model.PackageDefinition.Version("1.5"),
+              releaseVersion=universe.v3.model.PackageDefinition.ReleaseVersion(2).get,
               maintainer="jose@mesosphere.com",
               description="Great object store"
             )
           ),
           addPackage(
-            rpc.v2.model.DescribeResponse(
+            universe.v3.model.V3Package(
               packagingVersion=universe.v3.model.V3PackagingVersion,
               name="lambda",
               version=universe.v3.model.PackageDefinition.Version("0.5"),
+              releaseVersion=universe.v3.model.PackageDefinition.ReleaseVersion(2).get,
               maintainer="jose@mesosphere.com",
               description="Great compute framework"
             )
           ),
           addPackage(
-            rpc.v2.model.DescribeResponse(
+            universe.v3.model.V3Package(
               packagingVersion=universe.v3.model.V3PackagingVersion,
               name="lambda",
               version=universe.v3.model.PackageDefinition.Version("0.12"),
+              releaseVersion=universe.v3.model.PackageDefinition.ReleaseVersion(3).get,
               maintainer="jose@mesosphere.com",
               description="Great compute framework"
             )
@@ -167,10 +171,10 @@ object DefaultLocalPackageCollection {
   }
 
   def addPackage(
-    pkg: rpc.v2.model.DescribeResponse
+    metadata: universe.v3.model.PackageDefinition
   )(
     implicit packageStorage: PackageObjectStorage
-  ): Future[rpc.v2.model.DescribeResponse] = {
-    packageStorage.writePackageDefinition(pkg).map(_ => pkg)
+  ): Future[universe.v3.model.PackageDefinition] = {
+    packageStorage.writePackageDefinition(metadata).map(_ => metadata)
   }
 }

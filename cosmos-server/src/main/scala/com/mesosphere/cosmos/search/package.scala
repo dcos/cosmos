@@ -1,6 +1,7 @@
 package com.mesosphere.cosmos
 
 import com.mesosphere.cosmos.rpc.v1.syntax._
+import com.mesosphere.universe.v3.syntax.PackageDefinitionOps._
 import java.util.regex.Pattern
 import scala.util.matching.Regex
 
@@ -26,8 +27,10 @@ package object search {
     regex: Regex
   ): rpc.v1.model.LocalPackage => Boolean = { pkg =>
     regex.findFirstIn(pkg.packageName).isDefined ||
-    pkg.pkg.map(metadata => regex.findFirstIn(metadata.description).isDefined).getOrElse(false) ||
-    pkg.pkg.map(
+    pkg.metadata.map(
+      metadata => regex.findFirstIn(metadata.description).isDefined
+    ).getOrElse(false) ||
+    pkg.metadata.map(
       metadata => metadata.tags.exists(tag => regex.findFirstIn(tag.value).isDefined)
     ).getOrElse(false)
   }
@@ -36,8 +39,10 @@ package object search {
     query: String
   ): rpc.v1.model.LocalPackage => Boolean = { pkg =>
     pkg.packageName.toLowerCase().contains(query) ||
-    pkg.pkg.map(metadata => metadata.description.toLowerCase().contains(query)).getOrElse(false) ||
-    pkg.pkg.map(
+    pkg.metadata.map(
+      metadata => metadata.description.toLowerCase().contains(query)
+    ).getOrElse(false) ||
+    pkg.metadata.map(
       metadata => metadata.tags.exists(tag => tag.value.toLowerCase().contains(query))
     ).getOrElse(false)
   }

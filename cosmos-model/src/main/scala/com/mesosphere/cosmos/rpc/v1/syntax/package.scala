@@ -2,10 +2,11 @@ package com.mesosphere.cosmos.rpc.v1
 
 import com.mesosphere.cosmos.rpc
 import com.mesosphere.universe
+import com.mesosphere.universe.v3.syntax.PackageDefinitionOps._
 
 package object syntax {
   implicit class LocalPackageOps(val value: rpc.v1.model.LocalPackage) extends AnyVal {
-    def pkg: Option[rpc.v2.model.DescribeResponse] = value match {
+    def metadata: Option[universe.v3.model.PackageDefinition] = value match {
       case _: rpc.v1.model.Invalid =>
         None
       case rpc.v1.model.NotInstalled(pkg) =>

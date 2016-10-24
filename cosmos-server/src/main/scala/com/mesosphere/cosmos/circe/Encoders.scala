@@ -5,9 +5,9 @@ import com.mesosphere.cosmos._
 import com.mesosphere.cosmos.finch.{IncompatibleAcceptHeader, RequestError}
 import com.mesosphere.cosmos.http.MediaType
 import com.mesosphere.cosmos.model._
-import com.mesosphere.cosmos.thirdparty.marathon.circe.Encoders._
 import com.mesosphere.cosmos.rpc.v1.circe.Encoders._
 import com.mesosphere.cosmos.rpc.v1.model.ErrorResponse
+import com.mesosphere.cosmos.thirdparty.marathon.circe.Encoders._
 import com.mesosphere.universe.common.circe.Encoders._
 import com.mesosphere.universe.v2.circe.Encoders._
 import com.mesosphere.universe.v3.circe.Encoders._
@@ -15,8 +15,8 @@ import com.mesosphere.universe.v3.model._
 import com.twitter.finagle.http.Status
 import io.circe.HistoryOp.opsToPath
 import io.circe.generic.encoding.DerivedObjectEncoder
-import io.circe.syntax._
 import io.circe.generic.semiauto._
+import io.circe.syntax._
 import io.circe.{DecodingFailure, Encoder, JsonObject, ParsingFailure}
 import io.finch.Error
 import org.jboss.netty.handler.codec.http.HttpMethod
@@ -113,12 +113,16 @@ object Encoders extends LowPriorityImplicits {
 
   implicit val encodeCosmosError: Encoder[CosmosError] = deriveEncoder[CosmosError]
 
-  private[this] def exceptionErrorResponse(t: Throwable): ErrorResponse = t match {
+
+  def exceptionErrorResponse(t: Throwable): ErrorResponse = t match {
     case cerr: io.circe.Error => circeErrorResponse(cerr)
     case Error.NotPresent(item) =>
       ErrorResponse("not_present", s"Item '${item.description}' not present but required")
     case Error.NotParsed(item, typ, cause) =>
-      ErrorResponse("not_parsed", s"Item '${item.description}' unable to be parsed : '${cause.getMessage}'")
+      ErrorResponse(
+        "not_parsed",
+        s"Item '${item.description}' unable to be parsed : '${cause.getMessage}'"
+      )
     case Error.NotValid(item, rule) =>
       ErrorResponse("not_valid", s"Item '${item.description}' deemed invalid by rule: '$rule'")
     case Error.RequestErrors(ts) =>
