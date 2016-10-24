@@ -11,13 +11,12 @@ import io.circe.jawn.decode
 
 private[repository] class DefaultRepositories private[repository](resourceName: String) {
   private val repos: Try[Xor[io.circe.Error, List[PackageRepository]]] = Try {
-    val is = this.getClass.getResourceAsStream(resourceName)
-    if (is == null) {
-      throw new IllegalStateException(s"Unable to load classpath resource: $resourceName")
+    Option(this.getClass.getResourceAsStream(resourceName)) match {
+      case Some(is) =>
+        val json = CharStreams.toString(new InputStreamReader(is))
+        decode[List[PackageRepository]](json)
+      case _ => throw new IllegalStateException(s"Unable to load classpath resource: $resourceName")
     }
-    val json = CharStreams.toString(new InputStreamReader(is))
-
-    decode[List[PackageRepository]](json)
   }
 }
 

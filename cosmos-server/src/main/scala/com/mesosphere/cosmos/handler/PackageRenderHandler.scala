@@ -1,7 +1,7 @@
 package com.mesosphere.cosmos.handler
 
 import cats.data.Xor
-import com.mesosphere.cosmos.{CirceError, JsonSchemaMismatch, ServiceMarathonTemplateNotFound}
+import com.mesosphere.cosmos.{CirceError, JsonSchemaMismatch, MarathonTemplateMustBeJsonObject, ServiceMarathonTemplateNotFound}
 import com.mesosphere.cosmos.finch.EndpointHandler
 import com.mesosphere.cosmos.http.RequestSession
 import com.mesosphere.cosmos.render._
@@ -38,6 +38,7 @@ private[cosmos] final class PackageRenderHandler(
               Future.exception(JsonSchemaMismatch(validationErrors))
             case InvalidLabelSchema(cause) => Future.exception(CirceError(cause))
             case RenderedTemplateNotJson(cause) => Future.exception(CirceError(cause))
+            case RenderedTemplateNotJsonObject => Future.exception(MarathonTemplateMustBeJsonObject)
             case OptionsNotAllowed =>
               val error = Map("message" -> "No schema available to validate the provided options").asJson
               Future.exception(JsonSchemaMismatch(List(error)))

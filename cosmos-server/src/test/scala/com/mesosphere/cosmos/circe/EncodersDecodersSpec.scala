@@ -46,11 +46,11 @@ class EncodersDecodersSpec extends FreeSpec {
     val throwable = new RuntimeException("BOOM!")
 
     "PackageFileMissing" in {
-      assertThrowableDropped(PackageFileMissing(packageName = "kafka", cause = throwable), "cause")
+      assertThrowableDropped(PackageFileMissing(packageName = "kafka", cause = Some(throwable)), "cause")
     }
 
     "CirceError" in {
-      assertThrowableDropped(CirceError(cerr = ParsingFailure("failed", throwable)), "cerr")
+      assertThrowableDropped(CirceError(circeError = ParsingFailure("failed", throwable)), "cerr")
     }
 
     "ServiceUnavailable" in {
@@ -155,12 +155,14 @@ class EncodersDecodersSpec extends FreeSpec {
 
   private[this] def loadAndDecode(resourceName: String): Xor[Error, Repository] = {
     import com.mesosphere.universe.v3.circe.Decoders._
-    val is = this.getClass.getResourceAsStream(resourceName)
-    if (is == null) {
-      throw new IllegalStateException(s"Unable to load classpath resource: $resourceName")
+    Option(this.getClass.getResourceAsStream(resourceName)) match {
+      case Some(is) =>
+        val jsonString = CharStreams.toString(new InputStreamReader(is))
+        is.close()
+        decode[Repository](jsonString)
+      case _ =>
+        throw new IllegalStateException(s"Unable to load classpath resource: $resourceName")
     }
-    val jsonString = CharStreams.toString(new InputStreamReader(is))
-    is.close()
-    decode[Repository](jsonString)
   }
+
 }

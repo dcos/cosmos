@@ -58,10 +58,10 @@ class JsonSchemaSpec extends FreeSpec {
   }
 
   private[this] def classpathJsonString(resourceName: String): String = {
-    val is = this.getClass.getResourceAsStream(resourceName)
-    if (is == null) {
-      throw new IllegalStateException(s"Unable to load classpath resource: $resourceName")
+    Option(this.getClass.getResourceAsStream(resourceName)) match {
+      case Some(is) => Source.fromInputStream(is).mkString
+      case _ => throw new IllegalStateException(s"Unable to load classpath resource: $resourceName")
     }
-    Source.fromInputStream(is).mkString
   }
+
 }

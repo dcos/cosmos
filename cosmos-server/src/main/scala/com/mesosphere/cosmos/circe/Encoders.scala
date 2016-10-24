@@ -111,6 +111,18 @@ object Encoders extends LowPriorityImplicits {
       }
     }
 
+  // Omits fields of type `Option[Throwable]` when encoding objects.
+  // See comment above `dropThrowableFromEncodedObjects` for an explanation.
+  implicit def dropOptionThrowableFromEncodedObjects[K <: Symbol, H <: Option[Throwable], T <: HList](implicit
+    encodeTail: Lazy[DerivedObjectEncoder[T]]
+  ): DerivedObjectEncoder[FieldType[K, H] :: T] = {
+    new DerivedObjectEncoder[FieldType[K, H] :: T] {
+      override def encodeObject(a: FieldType[K, H] :: T): JsonObject = {
+        encodeTail.value.encodeObject(a.tail)
+      }
+    }
+  }
+
   implicit val encodeCosmosError: Encoder[CosmosError] = deriveEncoder[CosmosError]
 
   private[this] def exceptionErrorResponse(t: Throwable): ErrorResponse = t match {
@@ -195,6 +207,7 @@ object Encoders extends LowPriorityImplicits {
     case MarathonAppNotFound(appId) =>
       s"Unable to locate service with marathon appId: '$appId'"
     case CirceError(cerr) => cerr.getMessage
+    case MarathonTemplateMustBeJsonObject => "Rendered Marathon JSON must be a JSON object"
     case JsonSchemaMismatch(_) =>
       "Options JSON failed validation"
     case UnsupportedContentType(supported, actual) =>

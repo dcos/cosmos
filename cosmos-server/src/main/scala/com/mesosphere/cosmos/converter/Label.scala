@@ -2,9 +2,7 @@ package com.mesosphere.cosmos.converter
 
 import com.mesosphere.cosmos.{label, rpc}
 import com.mesosphere.universe
-import com.twitter.bijection.{Bijection, Conversion}
-import io.finch
-import io.finch.internal
+import com.twitter.bijection.Bijection
 
 object Label {
 
