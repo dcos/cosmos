@@ -20,8 +20,8 @@ object MediaTypedRequestDecoders {
   implicit val packageDescribeDecoder: MediaTypedRequestDecoder[DescribeRequest] =
     MediaTypedRequestDecoder(MediaTypedDecoder(MediaTypes.DescribeRequest))
 
-  implicit val packageInstallDecoder: MediaTypedRequestDecoder[InstallRequest] =
-    MediaTypedRequestDecoder(MediaTypedDecoder(MediaTypes.InstallRequest))
+  implicit val packageRunDecoder: MediaTypedRequestDecoder[RunRequest] =
+    MediaTypedRequestDecoder(MediaTypedDecoder(MediaTypes.RunRequest))
 
   implicit val packageRenderDecoder: MediaTypedRequestDecoder[RenderRequest] =
     MediaTypedRequestDecoder(MediaTypedDecoder(MediaTypes.RenderRequest))
@@ -38,7 +38,7 @@ object MediaTypedRequestDecoders {
   implicit val packageSearchDecoder: MediaTypedRequestDecoder[SearchRequest] =
     MediaTypedRequestDecoder(MediaTypedDecoder(MediaTypes.SearchRequest))
 
-  implicit val packageUninstallDecoder: MediaTypedRequestDecoder[UninstallRequest] =
-    MediaTypedRequestDecoder(MediaTypedDecoder(MediaTypes.UninstallRequest))
+  implicit val packageKillDecoder: MediaTypedRequestDecoder[KillRequest] =
+    MediaTypedRequestDecoder(MediaTypedDecoder(MediaTypes.KillRequest))
 
 }

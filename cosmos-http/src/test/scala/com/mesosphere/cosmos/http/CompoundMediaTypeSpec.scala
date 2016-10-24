@@ -27,7 +27,7 @@ class CompoundMediaTypeSpec extends FreeSpec {
       assertResult(expected)(actual.mediaTypes)
     }
 
-    "v1 and v2 install-response" in {
+    "v1 and v2 run-response" in {
       val expected = Set(v1, v2)
 
       val Return(actual) = CompoundMediaTypeParser.parse("application/json;charset=utf-8;version=v2, application/json;charset=utf-8;version=v1")

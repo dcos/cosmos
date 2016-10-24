@@ -224,24 +224,24 @@ object CosmosIntegrationTestClient extends Matchers {
       response
     }
 
-    def packageInstall(request: InstallRequest): InstallResponse = {
-      val Xor.Right(response: InstallResponse) =
-        callEndpoint[InstallRequest, InstallResponse](
-          "package/install",
+    def packageRun(request: RunRequest): RunResponse = {
+      val Xor.Right(response: RunResponse) =
+        callEndpoint[RunRequest, RunResponse](
+          "package/run",
           request,
-          MediaTypes.InstallRequest,
-          MediaTypes.V1InstallResponse
+          MediaTypes.RunRequest,
+          MediaTypes.V1RunResponse
         )
       response
     }
 
-    def packageUninstall(requestuest: UninstallRequest): UninstallResponse = {
-      val Xor.Right(response: UninstallResponse) =
-        callEndpoint[UninstallRequest, UninstallResponse](
-          "package/uninstall",
+    def packageKill(requestuest: KillRequest): KillResponse = {
+      val Xor.Right(response: KillResponse) =
+        callEndpoint[KillRequest, KillResponse](
+          "package/kill",
           requestuest,
-          MediaTypes.UninstallRequest,
-          MediaTypes.UninstallResponse
+          MediaTypes.KillRequest,
+          MediaTypes.KillResponse
         )
       response
     }

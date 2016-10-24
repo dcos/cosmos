@@ -177,12 +177,12 @@ object Encoders extends LowPriorityImplicits {
     case UnableToParseMarathonAsJson(parseError) =>
       "Unable to parse filled-in Marathon template as JSON; there " +
         "may be an error in the package's Marathon template or default " +
-        "configuration options, or in the installation request's options. " +
+        "configuration options, or in the run request's options. " +
         s"Parsing error was: $parseError"
     case PackageFileSchemaMismatch(fileName, _) =>
       s"Package file [$fileName] does not match schema"
-    case PackageAlreadyInstalled() =>
-      "Package is already installed"
+    case PackageAlreadyRunning() =>
+      "Package is already running"
     case MarathonBadResponse(marathonErr) => marathonErr.message
     case MarathonGenericError(marathonStatus) =>
       s"Received response status code ${marathonStatus.code} from Marathon"
@@ -216,22 +216,22 @@ object Encoders extends LowPriorityImplicits {
     case GenericHttpError(method, uri, status) =>
       s"Unexpected down stream http error: ${method.getName} ${uri.toString} ${status.code}"
     case AmbiguousAppId(pkgName, appIds) =>
-      s"Multiple apps named [$pkgName] are installed: [${appIds.mkString(", ")}]"
+      s"Multiple apps named [$pkgName] are running: [${appIds.mkString(", ")}]"
     case MultipleFrameworkIds(pkgName, pkgVersion, fwName, ids) =>
       pkgVersion match {
         case Some(ver) =>
-          s"Uninstalled package [$pkgName] version [$ver]\n" +
+          s"Killed package [$pkgName] version [$ver]\n" +
             s"Unable to shutdown [$pkgName] service framework with name [$fwName] because there are multiple framework " +
             s"ids matching this name: [${ids.mkString(", ")}]"
         case None =>
-          s"Uninstalled package [$pkgName]\n" +
+          s"Killed package [$pkgName]\n" +
             s"Unable to shutdown [$pkgName] service framework with name [$fwName] because there are multiple framework " +
             s"ids matching this name: [${ids.mkString(", ")}]"
       }
-    case PackageNotInstalled(pkgName) =>
-      s"Package [$pkgName] is not installed"
-    case UninstallNonExistentAppForPackage(pkgName, appId) =>
-      s"Package [$pkgName] with id [$appId] is not installed"
+    case PackageNotRunning(pkgName) =>
+      s"Package [$pkgName] is not running"
+    case KillNonExistentAppForPackage(pkgName, appId) =>
+      s"Package [$pkgName] with id [$appId] is not running"
 
     case ServiceUnavailable(serviceName, _) =>
       s"Unable to complete request due to service [$serviceName] unavailability"
@@ -240,8 +240,8 @@ object Encoders extends LowPriorityImplicits {
     case f: Forbidden =>
       f.getMessage
 
-    case IncompleteUninstall(packageName, _) =>
-      s"Incomplete uninstall of package [$packageName] due to Mesos unavailability"
+    case IncompleteKill(packageName, _) =>
+      s"Incomplete kill of package [$packageName] due to Mesos unavailability"
 
     case RepoNameOrUriMissing() =>
       s"Must specify either the name or URI of the repository"

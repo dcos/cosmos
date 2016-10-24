@@ -93,14 +93,14 @@ final class RequestValidatorsSpec extends FreeSpec {
 
     "if the Accept header has multiple values we support" - {
       "include the highest quality Content-Type in the return value" in {
-        val v1String = V1InstallResponse.show + ";q=0.8"
-        val v2String = V2InstallResponse.show + ";q=0.9"
-        val expected = V2InstallResponse
+        val v1String = V1RunResponse.show + ";q=0.8"
+        val v2String = V2RunResponse.show + ";q=0.9"
+        val expected = V2RunResponse
 
         val accept = CompoundMediaTypeParser.parse(Seq(v1String, v2String).mkString(",")).get
         val encoders = Set(
-          MediaTypedEncoder(implicitly[Encoder[Unit]], V1InstallResponse),
-          MediaTypedEncoder(implicitly[Encoder[Unit]], V2InstallResponse)
+          MediaTypedEncoder(implicitly[Encoder[Unit]], V1RunResponse),
+          MediaTypedEncoder(implicitly[Encoder[Unit]], V2RunResponse)
         )
         val produces = DispatchingMediaTypedEncoder(encoders)
         val (_, responseEncoder) = evaluateEndpoint(accept = Some(accept.show), produces = produces).get

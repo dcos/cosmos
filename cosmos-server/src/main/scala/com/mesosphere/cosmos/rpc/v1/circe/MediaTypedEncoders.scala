@@ -29,8 +29,8 @@ object MediaTypedEncoders {
   implicit val packageDescribeV1Encoder: DispatchingMediaTypedEncoder[DescribeResponse] =
     DispatchingMediaTypedEncoder(MediaTypes.V1DescribeResponse)
 
-  implicit val packageInstallV1Encoder: DispatchingMediaTypedEncoder[InstallResponse] =
-    DispatchingMediaTypedEncoder(MediaTypes.V1InstallResponse)
+  implicit val packageRunV1Encoder: DispatchingMediaTypedEncoder[RunResponse] =
+    DispatchingMediaTypedEncoder(MediaTypes.V1RunResponse)
 
   implicit val packageRenderEncoder: DispatchingMediaTypedEncoder[RenderResponse] =
     DispatchingMediaTypedEncoder(MediaTypes.RenderResponse)
@@ -47,7 +47,7 @@ object MediaTypedEncoders {
   implicit val packageSearchEncoder: DispatchingMediaTypedEncoder[SearchResponse] =
     DispatchingMediaTypedEncoder(MediaTypes.SearchResponse)
 
-  implicit val packageUninstallEncoder: DispatchingMediaTypedEncoder[UninstallResponse] =
-    DispatchingMediaTypedEncoder(MediaTypes.UninstallResponse)
+  implicit val packageKillEncoder: DispatchingMediaTypedEncoder[KillResponse] =
+    DispatchingMediaTypedEncoder(MediaTypes.KillResponse)
 
 }
