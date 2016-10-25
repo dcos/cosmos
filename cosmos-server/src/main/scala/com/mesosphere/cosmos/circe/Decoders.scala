@@ -7,10 +7,6 @@ import io.circe.Decoder
 import io.circe.generic.semiauto._
 
 object Decoders {
-
-  implicit val decodeErrorResponse: Decoder[ErrorResponse] = deriveDecoder[ErrorResponse]
-
   implicit val decodeZooKeeperStorageEnvelope: Decoder[ZooKeeperStorageEnvelope] =
     deriveDecoder[ZooKeeperStorageEnvelope]
-
 }

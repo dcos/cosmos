@@ -76,4 +76,33 @@ object Encoders {
 
   implicit val encodePackageCoordinate: Encoder[PackageCoordinate] =
     deriveEncoder[PackageCoordinate]
+
+    /* This encoder converts a LocalPackage into a JSON object. The total number of fields are
+     * enumerated below.
+     *
+     * {
+     *   "status": <String>,
+     *   "metadata": <PackageDefinition>,
+     *   "operation": ..., // TODO: Update this after we merge the PackageOps PR.
+     *   "error": <ErrorResponse>,
+     *   "packageCoordinate": <PackageCoordinate>
+     * }
+     *
+     * The 'status' will always be set while the rest of the properties are optional.
+     */
+  implicit val encodeLocalPackage = new Encoder[LocalPackage] {
+    final override def apply(value: LocalPackage): Json = {
+      val dataField = value.metadata.fold(
+        pc => ("packageCoordinate", pc.asJson),
+        pkg => ("metadata", pkg.asJson)
+      )
+
+      Json.obj(
+        "status" -> Json.fromString(value.getClass.getSimpleName),
+        dataField,
+        "error" -> value.error.asJson,
+        "operation" -> value.operation.asJson
+      )
+    }
+  }
 }

@@ -10,48 +10,42 @@ sealed trait LocalPackage
 object LocalPackage {
   implicit class LocalPackageOps(val value: LocalPackage) extends AnyVal {
     def metadata: Either[PackageCoordinate, universe.v3.model.PackageDefinition] = value match {
-      case Invalid(_, pc) =>
-        Left(pc)
-      case NotInstalled(pkg) =>
-        Right(pkg)
-      case Installed(pkg) =>
-        Right(pkg)
-      case Installing(pkg) =>
-        Right(pkg)
-      case Uninstalling(pkg) =>
-        Right(pkg)
-      case Failed(_, _, pkg) =>
-        Right(pkg)
+      case Invalid(_, pc) => Left(pc)
+      case NotInstalled(pkg) => Right(pkg)
+      case Installed(pkg) => Right(pkg)
+      case Installing(pkg) => Right(pkg)
+      case Uninstalling(data) => data
+      case Failed(_, _, pkg) => Right(pkg)
     }
 
     def packageName: String = value match {
-      case NotInstalled(pkg) =>
-        pkg.name
-      case Installed(pkg) =>
-        pkg.name
-      case Installing(pkg) =>
-        pkg.name
-      case Uninstalling(pkg) =>
-        pkg.name
-      case Failed(_, _, pkg) =>
-        pkg.name
-      case Invalid(_, packageCoordinate) =>
-        packageCoordinate.name
+      case NotInstalled(pkg) => pkg.name
+      case Installed(pkg) => pkg.name
+      case Installing(pkg) => pkg.name
+      case Uninstalling(data) => data.fold(_.name, _.name)
+      case Failed(_, _, pkg) => pkg.name
+      case Invalid(_, packageCoordinate) => packageCoordinate.name
     }
 
     def packageVersion: universe.v3.model.PackageDefinition.Version = value match {
-      case NotInstalled(pkg) =>
-        pkg.version
-      case Installed(pkg) =>
-        pkg.version
-      case Installing(pkg) =>
-        pkg.version
-      case Uninstalling(pkg) =>
-        pkg.version
-      case Failed(_, _, pkg) =>
-        pkg.version
-      case Invalid(_, packageCoordinate) =>
-        packageCoordinate.version
+      case NotInstalled(pkg) => pkg.version
+      case Installed(pkg) => pkg.version
+      case Installing(pkg) => pkg.version
+      case Uninstalling(data) => data.fold(_.version, _.version)
+      case Failed(_, _, pkg) => pkg.version
+      case Invalid(_, packageCoordinate) => packageCoordinate.version
+    }
+
+    def error: Option[ErrorResponse] = value match {
+      case Failed(_, error, _) => Some(error)
+      case Invalid(error, _) => Some(error)
+      case _ => None
+    }
+
+    // TODO: Change this when we merge the PackageOps PR
+    def operation: Option[String] = value match {
+      case Failed(operation, _, _) => Some(operation)
+      case _ => None
     }
   }
 
@@ -113,7 +107,7 @@ final case class Installed(
 ) extends LocalPackage
 
 final case class Uninstalling(
-  metadata: universe.v3.model.PackageDefinition
+  data: Either[PackageCoordinate, universe.v3.model.PackageDefinition]
 ) extends LocalPackage
 
 final case class Failed(
@@ -126,13 +120,3 @@ final case class Invalid(
   error: ErrorResponse,
   packageCoordinate: PackageCoordinate
 ) extends LocalPackage
-
-/* TODO: Talk about the serialized form
- * {
- *   "status": "not-installed",
- *   "pkg": ...,
- *   "operation": ...,
- *   "error": ...,
- *   "packageCoordinate": ...
- * }
- */

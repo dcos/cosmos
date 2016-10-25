@@ -11,18 +11,8 @@ import scala.util.Try
 
 final class SemVerSpec extends FreeSpec with PropertyChecks with Matchers {
   "For all SemVer => String => SemVer" in {
-    val numbers = for (n <- Gen.choose(0, Long.MaxValue)) yield n
-    val preReleases = Gen.containerOf[Seq, Either[String, Long]](
-      Gen.oneOf(
-        numbers.map(Right(_)),
-        Gen.alphaStr.filter(_.nonEmpty).map(Left(_))
-      )
-    )
-    val build = Gen.alphaStr.map(string => if (string.isEmpty) None else Some(string))
 
-    forAll (numbers, numbers, numbers, preReleases, build) {
-      (major, minor, patch, preReleases, build) =>
-        val expected = SemVer(major, minor, patch, preReleases, build)
+    forAll (SemVerSpec.semVerGen) { expected =>
         val string = expected.toString
         val actual = SemVer(string).get
 
@@ -51,5 +41,26 @@ final class SemVerSpec extends FreeSpec with PropertyChecks with Matchers {
     val actual = Random.shuffle(expected).sorted
 
     actual shouldBe expected
+  }
+}
+
+object SemVerSpec {
+  implicit val semVerGen: Gen[SemVer] = {
+    val numbersGen = for (n <- Gen.choose(0, Long.MaxValue)) yield n
+    val preReleasesGen = Gen.containerOf[Seq, Either[String, Long]](
+      Gen.oneOf(
+        numbersGen.map(Right(_)),
+        Gen.alphaStr.filter(_.nonEmpty).map(Left(_))
+      )
+    )
+    val buildGen = Gen.alphaStr.map(string => if (string.isEmpty) None else Some(string))
+
+    for {
+      major <- numbersGen
+      minor <- numbersGen
+      patch <- numbersGen
+      preReleases <- preReleasesGen
+      build <- buildGen
+    } yield SemVer(major, minor, patch, preReleases, build)
   }
 }

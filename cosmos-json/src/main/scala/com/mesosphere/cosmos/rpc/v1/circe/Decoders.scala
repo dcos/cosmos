@@ -64,6 +64,48 @@ object Decoders {
     deriveDecoder[PackageRepositoryDeleteResponse]
   }
 
+  implicit val decodeErrorResponse: Decoder[ErrorResponse] = deriveDecoder[ErrorResponse]
+
   implicit val decodePackageCoordinate: Decoder[PackageCoordinate] =
     deriveDecoder[PackageCoordinate]
+
+  implicit val decodeLocalPackage = new Decoder[LocalPackage] {
+    final override def apply(cursor: HCursor): Decoder.Result[LocalPackage] = {
+      val NotInstalledName = classOf[NotInstalled].getSimpleName
+      val InstallingName = classOf[Installing].getSimpleName
+      val InstalledName = classOf[Installed].getSimpleName
+      val UninstallingName = classOf[Uninstalling].getSimpleName
+      val FailedName = classOf[Failed].getSimpleName
+      val InvalidName = classOf[Invalid].getSimpleName
+
+      cursor.get[String]("status").flatMap {
+        case NotInstalledName =>
+          cursor.get[universe.v3.model.PackageDefinition]("metadata").map(NotInstalled(_))
+        case InstallingName =>
+          cursor.get[universe.v3.model.PackageDefinition]("metadata").map(Installing(_))
+        case InstalledName =>
+          cursor.get[universe.v3.model.PackageDefinition]("metadata").map(Installed(_))
+        case UninstallingName =>
+          val right = cursor.get[universe.v3.model.PackageDefinition]("metadata").map(
+            value => Uninstalling(Right(value))
+          )
+          val left = cursor.get[PackageCoordinate]("packageCoordinate").map(
+            value => Uninstalling(Left(value))
+          )
+
+          right orElse left
+        case FailedName =>
+          for {
+            operation <- cursor.get[String]("operation") // TODO: Update this after PackageOps PR
+            error <- cursor.get[ErrorResponse]("error")
+            metadata <- cursor.get[universe.v3.model.PackageDefinition]("metadata")
+          } yield Failed(operation, error, metadata)
+        case InvalidName =>
+          for {
+            error <- cursor.get[ErrorResponse]("error")
+            packageCoordinate <- cursor.get[PackageCoordinate]("packageCoordinate")
+          } yield Invalid(error, packageCoordinate)
+      }
+    }
+  }
 }

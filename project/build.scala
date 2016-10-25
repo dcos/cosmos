@@ -301,7 +301,9 @@ object CosmosBuild extends Build {
         Deps.scalaUri
         ++ Deps.circe
     )
-    .dependsOn(model)
+    .dependsOn(
+      model % "compile;test->test"
+    )
 
   lazy val bijection = Project("cosmos-bijection", file("cosmos-bijection"))
     .settings(sharedSettings)
@@ -309,7 +311,9 @@ object CosmosBuild extends Build {
       libraryDependencies ++=
         Deps.bijection
     )
-    .dependsOn(model)
+    .dependsOn(
+      model % "compile;test->test"
+    )
 
   lazy val http = Project("cosmos-http", file("cosmos-http"))
     .settings(sharedSettings)
@@ -326,7 +330,7 @@ object CosmosBuild extends Build {
         Deps.finch
     )
     .dependsOn(
-      json,
+      json % "compile;test->test",
       http % "compile;test->test"
     )
 
@@ -345,8 +349,8 @@ object CosmosBuild extends Build {
         Deps.mustache
     )
     .dependsOn(
-      json,
-      jsonschema,
+      json % "compile;test->test",
+      jsonschema % "compile;test->test",
       bijection % "compile;test->test"
     )
 
