@@ -86,32 +86,18 @@ private[cosmos] final class UninstallHandler(
 
     In the future this will probably be revisited once Cosmos is the actual authority on services
     */
-    val f = req.appId match {
-      case Some(appId) =>
-        adminRouter.getAppOption(appId)
-            .map {
-              case Some(appResponse) =>
-                createUninstallOperations(req.packageName, List(appResponse.app))
-              case None =>
-                throw new UninstallNonExistentAppForPackage(req.packageName, appId)
-            }
-      case None =>
-        adminRouter.listApps()
-          .map { marathonApps =>
-            createUninstallOperations(req.packageName, marathonApps.apps)
-          }
-    }
-
-    f.map { uninstallOperations =>
-      req.all match {
-        case Some(true) =>
-          uninstallOperations
-        case _ if uninstallOperations.size > 1 =>
-          throw AmbiguousAppId(req.packageName, uninstallOperations.map(_.appId))
-        case _ => // we've only got one package installed with the specified name, continue with it
-          uninstallOperations
+    getMarathonApps(req.packageName, req.appId)
+      .map(marathonApps => createUninstallOperations(req.packageName, marathonApps))
+      .map { uninstallOperations =>
+        req.all match {
+          case Some(true) =>
+            uninstallOperations
+          case _ if uninstallOperations.size > 1 =>
+            throw AmbiguousAppId(req.packageName, uninstallOperations.map(_.appId))
+          case _ => // we've only got one package installed with the specified name, continue with it
+            uninstallOperations
+        }
       }
-    }
       .flatMap(destroyMarathonAppsAndTearDownFrameworkIfPresent)
       .flatMap { uninstallDetails =>
         Future.collect(
@@ -134,6 +120,20 @@ private[cosmos] final class UninstallHandler(
         }
         rpc.v1.model.UninstallResponse(results.toList)
       }
+  }
+
+  private[this] def getMarathonApps(packageName: String, appId: Option[AppId])(implicit
+    session: RequestSession
+  ): Future[List[MarathonApp]] = {
+    appId match {
+      case Some(id) =>
+        adminRouter.getAppOption(id).map {
+          case Some(appResponse) => List(appResponse.app)
+          case _ => throw UninstallNonExistentAppForPackage(packageName, id)
+        }
+      case None =>
+        adminRouter.listApps().map(_.apps)
+    }
   }
 
   private[this] def createUninstallOperations(requestedPackageName: String, apps: List[MarathonApp]): List[UninstallOperation] = {

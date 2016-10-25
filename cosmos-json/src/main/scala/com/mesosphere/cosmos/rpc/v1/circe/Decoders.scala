@@ -37,7 +37,11 @@ object Decoders {
   implicit val decodeListRequest: Decoder[ListRequest] = deriveDecoder[ListRequest]
   implicit val decodeListResponse: Decoder[ListResponse] = deriveDecoder[ListResponse]
   implicit val decodeInstallation: Decoder[Installation] = deriveDecoder[Installation]
-  implicit val decodeInstalledPackageInformationPackageDetails: Decoder[InstalledPackageInformationPackageDetails] = deriveDecoder[InstalledPackageInformationPackageDetails]
+
+  implicit val decodeInstalledPackageInformationPackageDetails: Decoder[InstalledPackageInformationPackageDetails] = {
+    deriveDecoder[InstalledPackageInformationPackageDetails]
+  }
+
   implicit val decodePackageInformation: Decoder[InstalledPackageInformation] = deriveDecoder[InstalledPackageInformation]
 
   implicit val decodeCapabilitiesResponse: Decoder[CapabilitiesResponse] = deriveDecoder[CapabilitiesResponse]

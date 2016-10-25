@@ -34,28 +34,33 @@ object UniverseConversions {
     Injection.build(fwd)(rev)
   }
 
-  implicit val v3V2PackagingVersionToV2PackagingVersion: Injection[
-    universe.v3.model.V2PackagingVersion.type,
-    universe.v2.model.PackagingVersion
-    ] = Injection.connect[universe.v3.model.V2PackagingVersion.type, String, universe.v2.model.PackagingVersion]
+  implicit val v3V2PackagingVersionToV2PackagingVersion:
+    Injection[universe.v3.model.V2PackagingVersion.type, universe.v2.model.PackagingVersion] = {
+    Injection.connect[universe.v3.model.V2PackagingVersion.type, String, universe.v2.model.PackagingVersion]
+  }
 
-  implicit val v3V3PackagingVersionToV2PackagingVersion: Injection[
-    universe.v3.model.V3PackagingVersion.type,
-    universe.v2.model.PackagingVersion
-    ] = Injection.connect[universe.v3.model.V3PackagingVersion.type, String, universe.v2.model.PackagingVersion]
+  implicit val v3V3PackagingVersionToV2PackagingVersion:
+    Injection[universe.v3.model.V3PackagingVersion.type, universe.v2.model.PackagingVersion] = {
+    Injection.connect[universe.v3.model.V3PackagingVersion.type, String, universe.v2.model.PackagingVersion]
+  }
 
-  implicit val v3PackagingVersionToV2PackagingVersion: Injection[
-    universe.v3.model.PackagingVersion,
-    universe.v2.model.PackagingVersion
-    ] = Injection.connect[universe.v3.model.PackagingVersion, String, universe.v2.model.PackagingVersion]
+  implicit val v3PackagingVersionToV2PackagingVersion:
+    Injection[universe.v3.model.PackagingVersion, universe.v2.model.PackagingVersion] = {
+    Injection.connect[universe.v3.model.PackagingVersion, String, universe.v2.model.PackagingVersion]
+  }
 
   private[this] def packagingVersionSubclassToString[V <: universe.v3.model.PackagingVersion](
     expected: V
   ): Injection[V, String] = {
     val fwd = (version: V) => version.show
     val rev = (version: String) => {
-      if (version == expected.show) Success(expected)
-      else Failure(new IllegalArgumentException(s"Expected value [${expected.show}] for packaging version, but found [$version]"))
+      if (version == expected.show) {
+        Success(expected)
+      } else {
+        val message =
+          s"Expected value [${expected.show}] for packaging version, but found [$version]"
+        Failure(new IllegalArgumentException(message))
+      }
     }
 
     Injection.build(fwd)(rev)
@@ -74,30 +79,30 @@ object UniverseConversions {
     Injection.build(fwd)(rev)
   }
 
-  implicit val v3ReleaseVersionToString: Injection[
-    universe.v3.model.PackageDefinition.ReleaseVersion,
-    String
-    ] = Injection.connect[universe.v3.model.PackageDefinition.ReleaseVersion, Int, String]
+  implicit val v3ReleaseVersionToString:
+    Injection[universe.v3.model.PackageDefinition.ReleaseVersion, String] = {
+    Injection.connect[universe.v3.model.PackageDefinition.ReleaseVersion, Int, String]
+  }
 
-  implicit val v3ReleaseVersionToV2ReleaseVersion: Injection[
-    universe.v3.model.PackageDefinition.ReleaseVersion,
-    universe.v2.model.ReleaseVersion
-    ] = Injection.connect[universe.v3.model.PackageDefinition.ReleaseVersion, String, universe.v2.model.ReleaseVersion]
+  implicit val v3ReleaseVersionToV2ReleaseVersion:
+    Injection[universe.v3.model.PackageDefinition.ReleaseVersion,
+      universe.v2.model.ReleaseVersion] = {
+    Injection.connect[universe.v3.model.PackageDefinition.ReleaseVersion,
+      String,
+      universe.v2.model.ReleaseVersion]
+  }
 
 
-  implicit val v3PackageDefinitionToV2PackageDetails: Conversion[
-    universe.v3.model.PackageDefinition,
-    universe.v2.model.PackageDetails
-    ] =
+  implicit val v3PackageDefinitionToV2PackageDetails:
+    Conversion[universe.v3.model.PackageDefinition, universe.v2.model.PackageDetails] = {
     Conversion.fromFunction {
       case v2Package: universe.v3.model.V2Package => v2Package.as[universe.v2.model.PackageDetails]
       case v3Package: universe.v3.model.V3Package => v3Package.as[universe.v2.model.PackageDetails]
     }
+  }
 
-  implicit val v3V3PackageToV2PackageDetails: Conversion[
-    universe.v3.model.V3Package,
-    universe.v2.model.PackageDetails
-    ] =
+  implicit val v3V3PackageToV2PackageDetails:
+    Conversion[universe.v3.model.V3Package, universe.v2.model.PackageDetails] = {
     Conversion.fromFunction { (pkg: universe.v3.model.V3Package) =>
       universe.v2.model.PackageDetails(
         packagingVersion = pkg.packagingVersion.as[universe.v2.model.PackagingVersion],
@@ -116,11 +121,10 @@ object UniverseConversions {
         licenses = pkg.licenses.as[Option[List[universe.v2.model.License]]]
       )
     }
+  }
 
-  implicit val v3V2PackageToV2PackageDetails: Conversion[
-    universe.v3.model.V2Package,
-    universe.v2.model.PackageDetails
-    ] =
+  implicit val v3V2PackageToV2PackageDetails:
+    Conversion[universe.v3.model.V2Package, universe.v2.model.PackageDetails] = {
     Conversion.fromFunction { (pkg: universe.v3.model.V2Package) =>
       universe.v2.model.PackageDetails(
         packagingVersion = pkg.packagingVersion.as[universe.v2.model.PackagingVersion],
@@ -139,31 +143,29 @@ object UniverseConversions {
         licenses = pkg.licenses.as[Option[List[universe.v2.model.License]]]
       )
     }
+  }
 
-  implicit val v2PackageDetailsVersionToV3PackageDefinitionVersion: Bijection[
-    universe.v2.model.PackageDetailsVersion,
-    universe.v3.model.PackageDefinition.Version
-    ] =
+  implicit val v2PackageDetailsVersionToV3PackageDefinitionVersion:
+    Bijection[universe.v2.model.PackageDetailsVersion,
+      universe.v3.model.PackageDefinition.Version] = {
     Bijection.build {
       x: universe.v2.model.PackageDetailsVersion => universe.v3.model.PackageDefinition.Version(x.toString)
     } {
       x: universe.v3.model.PackageDefinition.Version => universe.v2.model.PackageDetailsVersion(x.toString)
     }
+  }
 
-  implicit val v3PackageDefinitionTagToString: Injection[
-    universe.v3.model.PackageDefinition.Tag,
-    String  // "Tag" in universe.v2.model.PackageDefinition is only a String
-    ] = {
+  implicit val v3PackageDefinitionTagToString:
+    Injection[universe.v3.model.PackageDefinition.Tag,
+      String /* "Tag" in universe.v2.model.PackageDefinition is only a String */] = {
     val fwd = (x: universe.v3.model.PackageDefinition.Tag) => x.value
     val rev = (universe.v3.model.PackageDefinition.Tag.apply _).andThen(BijectionUtils.twitterTryToScalaTry)
 
     Injection.build(fwd)(rev)
   }
 
-  implicit val v3LicenseToV2License: Injection[
-    universe.v3.model.License,
-    universe.v2.model.License
-    ] = {
+  implicit val v3LicenseToV2License:
+    Injection[universe.v3.model.License, universe.v2.model.License] = {
 
     val fwd = (x: universe.v3.model.License) =>
       universe.v2.model.License(
@@ -180,10 +182,7 @@ object UniverseConversions {
   }
 
   implicit val v2CommandToV3Command:
-    Bijection[
-      universe.v2.model.Command,
-      universe.v3.model.Command
-    ] = {
+    Bijection[universe.v2.model.Command, universe.v3.model.Command] = {
     Bijection.build { (x: universe.v2.model.Command) =>
       universe.v3.model.Command(pip = x.pip)
     } { (x: universe.v3.model.Command) =>
@@ -192,10 +191,7 @@ object UniverseConversions {
   }
 
   implicit val v3V2ResourceToV3V3Resource:
-    Injection[
-      universe.v3.model.V2Resource,
-      universe.v3.model.V3Resource
-    ] = {
+    Injection[universe.v3.model.V2Resource, universe.v3.model.V3Resource] = {
     Injection.buildCatchInvert { (value: universe.v3.model.V2Resource) =>
       universe.v3.model.V3Resource(value.assets, value.images)
     } {
@@ -206,10 +202,8 @@ object UniverseConversions {
     }
   }
 
-  implicit val v2ResourceToV3V2Resource: Bijection[
-    universe.v2.model.Resource,
-    universe.v3.model.V2Resource
-    ] =
+  implicit val v2ResourceToV3V2Resource:
+    Bijection[universe.v2.model.Resource, universe.v3.model.V2Resource] = {
     Bijection.build { (value: universe.v2.model.Resource) =>
       universe.v3.model.V2Resource(
         value.assets.as[Option[universe.v3.model.Assets]],
@@ -219,20 +213,18 @@ object UniverseConversions {
         value.assets.as[Option[universe.v2.model.Assets]],
         value.images.as[Option[universe.v2.model.Images]])
     }
+  }
 
-  implicit val v2ResourceToV3V3Resource: Injection[
-    universe.v2.model.Resource,
-    universe.v3.model.V3Resource
-    ] = Injection.connect[
-      universe.v2.model.Resource,
-      universe.v3.model.V2Resource,
-      universe.v3.model.V3Resource
-    ]
+  implicit val v2ResourceToV3V3Resource:
+    Injection[universe.v2.model.Resource, universe.v3.model.V3Resource] = {
+    Injection
+      .connect[universe.v2.model.Resource,
+        universe.v3.model.V2Resource,
+        universe.v3.model.V3Resource]
+  }
 
-  implicit val v2AssetsToV3Assets: Bijection[
-    universe.v2.model.Assets,
-    universe.v3.model.Assets
-    ] =
+  implicit val v2AssetsToV3Assets:
+    Bijection[universe.v2.model.Assets, universe.v3.model.Assets] = {
     Bijection.build { (x: universe.v2.model.Assets) =>
       universe.v3.model.Assets(
         uris = x.uris,
@@ -244,21 +236,19 @@ object UniverseConversions {
         container = x.container.as[Option[universe.v2.model.Container]]
       )
     }
+  }
 
-  implicit val v2ContainerToV3Container: Bijection[
-    universe.v2.model.Container,
-    universe.v3.model.Container
-    ] =
+  implicit val v2ContainerToV3Container:
+    Bijection[universe.v2.model.Container, universe.v3.model.Container] = {
     Bijection.build { (x: universe.v2.model.Container) =>
       universe.v3.model.Container(docker = x.docker)
     } { (x: universe.v3.model.Container) =>
       universe.v2.model.Container(docker = x.docker)
     }
+  }
 
-  implicit val v2ImagesToV3Images: Bijection[
-    universe.v2.model.Images,
-    universe.v3.model.Images
-    ] =
+  implicit val v2ImagesToV3Images:
+    Bijection[universe.v2.model.Images, universe.v3.model.Images] = {
     Bijection.build { (x: universe.v2.model.Images) =>
       universe.v3.model.Images(
         iconSmall = x.iconSmall,
@@ -274,10 +264,9 @@ object UniverseConversions {
         screenshots = x.screenshots
       )
     }
+  }
 
-  implicit val v3ImagesToV2Images: Bijection[
-    universe.v3.model.Images,
-    universe.v2.model.Images
-    ] = v2ImagesToV3Images.inverse
+  implicit val v3ImagesToV2Images:
+    Bijection[universe.v3.model.Images, universe.v2.model.Images] = v2ImagesToV3Images.inverse
 
 }

@@ -5,12 +5,11 @@ import java.net.InetSocketAddress
 import com.mesosphere.cosmos.Uris._
 import com.netaporter.uri.Uri
 import com.twitter.finagle.client.Transporter
-import com.twitter.finagle.http.{Request, Response}
+import com.twitter.finagle.http.{Request, Response, Status}
 import com.twitter.finagle.ssl.Ssl
 import com.twitter.finagle.transport.Transport
 import com.twitter.finagle._
 import com.twitter.util.{Future, Try}
-
 
 object Services {
   def adminRouterClient(uri: Uri): Try[Service[Request, Response]] = {
@@ -68,9 +67,9 @@ object Services {
     override def apply(request: Request, service: Service[Request, Response]): Future[Response] = {
       service(request)
         .map { response =>
-          response.statusCode match {
-            case 401 => throw Unauthorized(serviceName, response.headerMap.get("WWW-Authenticate"))
-            case 403 => throw Forbidden(serviceName)
+          response.status match {
+            case Status.Unauthorized => throw Unauthorized(serviceName, response.headerMap.get("WWW-Authenticate"))
+            case Status.Forbidden => throw Forbidden(serviceName)
             case _ => response
           }
         }
