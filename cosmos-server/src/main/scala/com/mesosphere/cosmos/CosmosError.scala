@@ -17,6 +17,7 @@ import org.jboss.netty.handler.codec.http.HttpMethod
 
 import scala.util.control.NoStackTrace
 
+// scalastyle:off number.of.types
 sealed abstract class CosmosError(causedBy: Option[Throwable] = None) extends RequestError(causedBy) {
 
   def errType: String = this.getClass.getSimpleName
@@ -218,3 +219,5 @@ case class ConversionError(failure: String) extends CosmosError
 case class ServiceMarathonTemplateNotFound(packageName: String, packageVersion: PackageDefinition.Version) extends CosmosError
 
 case class EnvelopeError(msg: String) extends CosmosError
+
+// scalastyle:on number.of.types

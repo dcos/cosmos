@@ -14,58 +14,57 @@ import com.twitter.bijection.twitter_util.UtilBijections._
 import com.twitter.util.{Return, Try}
 
 object Response {
-  implicit val internalV2InstallResponseToV1InstallResponse: Conversion[
-    rpc.v2.model.InstallResponse,
-    Try[rpc.v1.model.InstallResponse]
-  ] = Conversion.fromFunction { (x: rpc.v2.model.InstallResponse) =>
-    Try(x.appId.getOrElse(throw ServiceMarathonTemplateNotFound(x.packageName, x.packageVersion))).map { appId =>
-      rpc.v1.model.InstallResponse(
-        packageName = x.packageName,
-        packageVersion = x.packageVersion.as[universe.v2.model.PackageDetailsVersion],
-        appId = appId
-      )
+  implicit val internalV2InstallResponseToV1InstallResponse:
+    Conversion[rpc.v2.model.InstallResponse, Try[rpc.v1.model.InstallResponse]] = {
+    Conversion.fromFunction { (x: rpc.v2.model.InstallResponse) =>
+      Try(x.appId.getOrElse(throw ServiceMarathonTemplateNotFound(x.packageName, x.packageVersion))).map { appId =>
+        rpc.v1.model.InstallResponse(
+          packageName = x.packageName,
+          packageVersion = x.packageVersion.as[universe.v2.model.PackageDetailsVersion],
+          appId = appId
+        )
+      }
     }
   }
 
-  implicit val internalPackageDefinitionToV1DescribeResponse: Conversion[
-    universe.v3.model.PackageDefinition,
-    Try[rpc.v1.model.DescribeResponse]
-    ] = Conversion.fromFunction { (packageDefinition: universe.v3.model.PackageDefinition) =>
-    Trys.join(
-      Try(packageDefinition.marathon.map(_.v2AppMustacheTemplate).getOrElse(
-        throw ServiceMarathonTemplateNotFound(packageDefinition.name, packageDefinition.version)
-      )),
-      v2Resource(packageDefinition)
-    ).map { case (b64MarathonTemplate, resources) =>
-      rpc.v1.model.DescribeResponse(
-        `package` = universe.v2.model.PackageDetails(
-          packagingVersion = packageDefinition.packagingVersion.as[universe.v2.model.PackagingVersion],
-          name = packageDefinition.name,
-          version = packageDefinition.version.as[universe.v2.model.PackageDetailsVersion],
-          maintainer = packageDefinition.maintainer,
-          description = packageDefinition.description,
-          tags = packageDefinition.tags.as[List[String]],
-          selected = packageDefinition.selected,
-          scm = packageDefinition.scm,
-          website = packageDefinition.website,
-          framework = packageDefinition.framework,
-          preInstallNotes = packageDefinition.preInstallNotes,
-          postInstallNotes = packageDefinition.postInstallNotes,
-          postUninstallNotes = packageDefinition.postUninstallNotes,
-          licenses = packageDefinition.licenses.as[Option[List[universe.v2.model.License]]]
-        ),
-        marathonMustache = new String(ByteBuffers.getBytes(b64MarathonTemplate), StandardCharsets.UTF_8),
-        command = packageDefinition.command.as[Option[universe.v2.model.Command]],
-        config = packageDefinition.config,
-        resource = resources
-      )
+  implicit val internalPackageDefinitionToV1DescribeResponse:
+    Conversion[universe.v3.model.PackageDefinition, Try[rpc.v1.model.DescribeResponse]] = {
+    Conversion.fromFunction { (packageDefinition: universe.v3.model.PackageDefinition) =>
+      Trys.join(
+        Try(packageDefinition.marathon.map(_.v2AppMustacheTemplate).getOrElse(
+          throw ServiceMarathonTemplateNotFound(packageDefinition.name, packageDefinition.version)
+        )),
+        v2Resource(packageDefinition)
+      ).map { case (b64MarathonTemplate, resources) =>
+        rpc.v1.model.DescribeResponse(
+          `package` = universe.v2.model.PackageDetails(
+            packagingVersion = packageDefinition.packagingVersion.as[universe.v2.model.PackagingVersion],
+            name = packageDefinition.name,
+            version = packageDefinition.version.as[universe.v2.model.PackageDetailsVersion],
+            maintainer = packageDefinition.maintainer,
+            description = packageDefinition.description,
+            tags = packageDefinition.tags.as[List[String]],
+            selected = packageDefinition.selected,
+            scm = packageDefinition.scm,
+            website = packageDefinition.website,
+            framework = packageDefinition.framework,
+            preInstallNotes = packageDefinition.preInstallNotes,
+            postInstallNotes = packageDefinition.postInstallNotes,
+            postUninstallNotes = packageDefinition.postUninstallNotes,
+            licenses = packageDefinition.licenses.as[Option[List[universe.v2.model.License]]]
+          ),
+          marathonMustache = new String(ByteBuffers.getBytes(b64MarathonTemplate), StandardCharsets.UTF_8),
+          command = packageDefinition.command.as[Option[universe.v2.model.Command]],
+          config = packageDefinition.config,
+          resource = resources
+        )
+      }
     }
   }
 
-  implicit val internalPackageDefinitionToV2DescribeResponse: Conversion[
-    universe.v3.model.PackageDefinition,
-    rpc.v2.model.DescribeResponse
-    ] = Conversion.fromFunction { (pkg: universe.v3.model.PackageDefinition) =>
+  implicit val internalPackageDefinitionToV2DescribeResponse:
+    Conversion[universe.v3.model.PackageDefinition, rpc.v2.model.DescribeResponse] = {
+    Conversion.fromFunction { (pkg: universe.v3.model.PackageDefinition) =>
       rpc.v2.model.DescribeResponse(
         pkg.packagingVersion,
         pkg.name,
@@ -88,11 +87,11 @@ object Response {
         pkg.command
       )
     }
+  }
 
-  implicit val internalPackageDefinitionToInstalledPackageInformation: Conversion[
-    universe.v3.model.PackageDefinition,
-    Try[rpc.v1.model.InstalledPackageInformation]
-    ] =
+  implicit val internalPackageDefinitionToInstalledPackageInformation:
+    Conversion[universe.v3.model.PackageDefinition,
+      Try[rpc.v1.model.InstalledPackageInformation]] = {
     Conversion.fromFunction {
       case pkg: universe.v3.model.V2Package =>
         Return(rpc.v1.model.InstalledPackageInformation(
@@ -137,8 +136,7 @@ object Response {
           )
         }
     }
-
-
+  }
 
   private[this] def v2Resource(pkg: universe.v3.model.PackageDefinition): Try[Option[universe.v2.model.Resource]] =
     pkg match {

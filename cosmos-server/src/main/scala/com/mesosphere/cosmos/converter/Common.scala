@@ -8,10 +8,9 @@ import com.twitter.bijection.Bijection
 
 object Common {
 
-  implicit val V2BundleToV2Package: Bijection[
-    (V2Bundle, universe.v3.model.PackageDefinition.ReleaseVersion),
-    universe.v3.model.V2Package // TODO Move these "Bundle" objects out of v3 they don't belong there
-    ] = {
+  implicit val V2BundleToV2Package:
+    Bijection[(V2Bundle, universe.v3.model.PackageDefinition.ReleaseVersion),
+      universe.v3.model.V2Package] = {
     def fwd(bundlePair: (V2Bundle, universe.v3.model.PackageDefinition.ReleaseVersion)): universe.v3.model.V2Package = {
       val v2 = bundlePair._1
       val releaseVersion = bundlePair._2
@@ -64,10 +63,9 @@ object Common {
     Bijection.build(fwd)(rev)
   }
 
-  implicit val V3BundleToV3Package: Bijection[
-    (V3Bundle, universe.v3.model.PackageDefinition.ReleaseVersion),
-    universe.v3.model.V3Package
-    ] = {
+  implicit val V3BundleToV3Package:
+    Bijection[(V3Bundle, universe.v3.model.PackageDefinition.ReleaseVersion),
+      universe.v3.model.V3Package] = {
     def fwd(bundlePair: (V3Bundle, universe.v3.model.PackageDefinition.ReleaseVersion)): universe.v3.model.V3Package = {
       val v3 = bundlePair._1
       val releaseVersion = bundlePair._2
@@ -122,10 +120,9 @@ object Common {
     Bijection.build(fwd)(rev)
   }
 
-  implicit val BundleToPackage: Bijection[
-    (BundleDefinition, universe.v3.model.PackageDefinition.ReleaseVersion),
-    universe.v3.model.PackageDefinition
-    ] = {
+  implicit val BundleToPackage:
+    Bijection[(BundleDefinition, universe.v3.model.PackageDefinition.ReleaseVersion),
+      universe.v3.model.PackageDefinition] = {
     def fwd(bundlePair: (BundleDefinition, universe.v3.model.PackageDefinition.ReleaseVersion)): universe.v3.model.PackageDefinition = {
       val (bundle, releaseVersion) = bundlePair
       bundle match {
