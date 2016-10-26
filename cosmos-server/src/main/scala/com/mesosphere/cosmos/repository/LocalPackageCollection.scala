@@ -45,7 +45,7 @@ final class LocalPackageCollection private (objectStorage: PackageObjectStorage)
     packageName: String
   ): Future[List[rpc.v1.model.LocalPackage]] = {
     list().map { packages =>
-      packages.filter(_.packageName == packageName)
+      LocalPackageCollection.packageByPackageName(packages, packageName)
     }
   }
 
@@ -80,6 +80,13 @@ object LocalPackageCollection {
     val namedPackages = packages.filter(pkg => pkg.packageName == packageName)
 
     resolveVersion(namedPackages, packageName, packageVersion)
+  }
+
+  final def packageByPackageName(
+    packages: List[rpc.v1.model.LocalPackage],
+    packageName: String
+  ): List[rpc.v1.model.LocalPackage] = {
+    packages.filter(_.packageName == packageName)
   }
 
   private[this] def resolveVersion(
