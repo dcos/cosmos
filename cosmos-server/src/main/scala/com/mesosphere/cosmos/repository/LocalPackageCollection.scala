@@ -1,5 +1,6 @@
 package com.mesosphere.cosmos.repository
 
+import com.mesosphere.cosmos.storage.PackageObjectStorage
 import com.mesosphere.cosmos.CosmosError
 import com.mesosphere.cosmos.PackageNotFound
 import com.mesosphere.cosmos.VersionNotFound
@@ -8,9 +9,12 @@ import com.mesosphere.cosmos.rpc
 import com.mesosphere.universe
 import com.twitter.util.Future
 
-trait LocalPackageCollection {
+// TODO (devflow) (jsancio): Make sure that we look at the operation store
+final class LocalPackageCollection private (objectStorage: PackageObjectStorage) {
   // Used by list
-  def list(): Future[List[rpc.v1.model.LocalPackage]]
+  final def list(): Future[List[rpc.v1.model.LocalPackage]] = {
+    objectStorage.list().map(_.sorted.reverse)
+  }
 
   // Used by uninstall and render
   // We need this because the user may not always specify the full PackageCoordinate.
@@ -52,6 +56,9 @@ trait LocalPackageCollection {
 }
 
 object LocalPackageCollection {
+  def apply(objectStorage: PackageObjectStorage): LocalPackageCollection = {
+    new LocalPackageCollection(objectStorage)
+  }
 
   def installedPackage(
     packages: List[rpc.v1.model.LocalPackage],

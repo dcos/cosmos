@@ -21,7 +21,7 @@ import org.scalatest.Matchers
 import scala.util.Failure
 import scala.util.Try
 
-final class DefaultLocalPackageCollectionSpec extends FreeSpec with Matchers {
+final class LocalPackageCollectionSpec extends FreeSpec with Matchers {
   implicit val stats = com.twitter.finagle.stats.NullStatsReceiver
 
   def withTempDirectory(testCode: ObjectStorage => Unit): Unit = {
@@ -139,7 +139,7 @@ final class DefaultLocalPackageCollectionSpec extends FreeSpec with Matchers {
 
   "Test all of the read operations" in withTempDirectory { objectStorage =>
     val packageStorage = PackageObjectStorage(objectStorage)
-    val packageCollection = DefaultLocalPackageCollection(packageStorage)
+    val packageCollection = LocalPackageCollection(packageStorage)
 
     val _ = Await.result(
       Future.collect(
