@@ -1,5 +1,6 @@
 package com.mesosphere.cosmos.rpc.v1.circe
 
+import cats.data.Xor
 import com.mesosphere.cosmos.rpc.v1.model._
 import com.mesosphere.cosmos.thirdparty.marathon.circe.Decoders._
 import com.mesosphere.universe
@@ -104,6 +105,13 @@ object Decoders {
           failedDecoder(cursor)
         case InvalidName =>
           invalidDecoder(cursor)
+        case status =>
+          Xor.Left(
+            DecodingFailure(
+              s"'$status' is not a valid status",
+              cursor.history
+            )
+          )
       }
     }
   }
