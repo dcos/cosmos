@@ -1,13 +1,16 @@
 package com.mesosphere.cosmos
 
 import cats.data.Xor
-import com.mesosphere.cosmos.thirdparty.marathon.model.{MarathonApp, MarathonError}
+import com.mesosphere.cosmos.circe.Decoders.decode
+import com.mesosphere.cosmos.http.RequestSession
 import com.mesosphere.cosmos.thirdparty.marathon.circe.Decoders._
+import com.mesosphere.cosmos.thirdparty.marathon.model.{MarathonApp, MarathonError}
 import com.twitter.finagle.http.Status
 import com.twitter.util.Future
-import com.mesosphere.cosmos.http.RequestSession
-import io.circe.jawn.decode
 import io.circe.Json
+import scala.util.Failure
+import scala.util.Success
+import scala.util.Try
 
 /** A [[com.mesosphere.cosmos.PackageRunner]] implementation for Marathon. */
 final class MarathonPackageRunner(adminRouter: AdminRouter) extends PackageRunner {
@@ -18,19 +21,16 @@ final class MarathonPackageRunner(adminRouter: AdminRouter) extends PackageRunne
         response.status match {
           case Status.Conflict => throw PackageAlreadyRunning()
           case status if (400 until 500).contains(status.code) =>
-            decode[MarathonError](response.contentString) match {
-              case Xor.Right(marathonError) =>
+            Try(decode[MarathonError](response.contentString)) match {
+              case Success(marathonError) =>
                 throw new MarathonBadResponse(marathonError)
-              case Xor.Left(parseError) =>
+              case Failure(_) =>
                 throw new MarathonGenericError(status)
             }
           case status if (500 until 600).contains(status.code) =>
             throw MarathonBadGateway(status)
           case _ =>
-            decode[MarathonApp](response.contentString) match {
-              case Xor.Right(appResponse) => appResponse
-              case Xor.Left(parseError) => throw new CirceError(parseError)
-            }
+            decode[MarathonApp](response.contentString)
         }
       }
   }

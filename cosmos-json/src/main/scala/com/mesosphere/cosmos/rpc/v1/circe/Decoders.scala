@@ -69,22 +69,28 @@ object Decoders {
   implicit val decodePackageCoordinate: Decoder[PackageCoordinate] =
     deriveDecoder[PackageCoordinate]
 
-  implicit val decodeLocalPackage = new Decoder[LocalPackage] {
-    final override def apply(cursor: HCursor): Decoder.Result[LocalPackage] = {
-      val NotInstalledName = classOf[NotInstalled].getSimpleName
-      val InstallingName = classOf[Installing].getSimpleName
-      val InstalledName = classOf[Installed].getSimpleName
-      val UninstallingName = classOf[Uninstalling].getSimpleName
-      val FailedName = classOf[Failed].getSimpleName
-      val InvalidName = classOf[Invalid].getSimpleName
+  implicit object decodeLocalPackage extends Decoder[LocalPackage] {
+    private[this] val NotInstalledName = classOf[NotInstalled].getSimpleName
+    private[this] val InstallingName = classOf[Installing].getSimpleName
+    private[this] val InstalledName = classOf[Installed].getSimpleName
+    private[this] val UninstallingName = classOf[Uninstalling].getSimpleName
+    private[this] val FailedName = classOf[Failed].getSimpleName
+    private[this] val InvalidName = classOf[Invalid].getSimpleName
 
+    private[this] val notInstalledDecoder = deriveDecoder[NotInstalled]
+    private[this] val installingDecoder = deriveDecoder[Installing]
+    private[this] val installedDecoder = deriveDecoder[Installed]
+    private[this] val failedDecoder = deriveDecoder[Failed]
+    private[this] val invalidDecoder = deriveDecoder[Invalid]
+
+    final override def apply(cursor: HCursor): Decoder.Result[LocalPackage] = {
       cursor.get[String]("status").flatMap {
         case NotInstalledName =>
-          cursor.get[universe.v3.model.PackageDefinition]("metadata").map(NotInstalled(_))
+          notInstalledDecoder(cursor)
         case InstallingName =>
-          cursor.get[universe.v3.model.PackageDefinition]("metadata").map(Installing(_))
+          installingDecoder(cursor)
         case InstalledName =>
-          cursor.get[universe.v3.model.PackageDefinition]("metadata").map(Installed(_))
+          installedDecoder(cursor)
         case UninstallingName =>
           val right = cursor.get[universe.v3.model.PackageDefinition]("metadata").map(
             value => Uninstalling(Right(value))
@@ -95,16 +101,9 @@ object Decoders {
 
           right orElse left
         case FailedName =>
-          for {
-            operation <- cursor.get[String]("operation") // TODO: Update this after PackageOps PR
-            error <- cursor.get[ErrorResponse]("error")
-            metadata <- cursor.get[universe.v3.model.PackageDefinition]("metadata")
-          } yield Failed(operation, error, metadata)
+          failedDecoder(cursor)
         case InvalidName =>
-          for {
-            error <- cursor.get[ErrorResponse]("error")
-            packageCoordinate <- cursor.get[PackageCoordinate]("packageCoordinate")
-          } yield Invalid(error, packageCoordinate)
+          invalidDecoder(cursor)
       }
     }
   }

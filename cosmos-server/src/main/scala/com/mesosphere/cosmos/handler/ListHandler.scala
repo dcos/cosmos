@@ -1,9 +1,7 @@
 package com.mesosphere.cosmos.handler
 
-import java.nio.charset.StandardCharsets
-import java.util.Base64
 import cats.data.Xor
-import com.mesosphere.cosmos.{AdminRouter, CirceError}
+import com.mesosphere.cosmos.circe.Decoders.decode
 import com.mesosphere.cosmos.converter.Label._
 import com.mesosphere.cosmos.converter.Response._
 import com.mesosphere.cosmos.finch.EndpointHandler
@@ -14,12 +12,14 @@ import com.mesosphere.cosmos.label.v1.circe.Decoders._
 import com.mesosphere.cosmos.repository.CosmosRepository
 import com.mesosphere.cosmos.rpc.v1.model.{Instantiation, ListRequest, ListResponse, RunningPackageInformation}
 import com.mesosphere.cosmos.thirdparty.marathon.model.{AppId, MarathonApp}
+import com.mesosphere.cosmos.{AdminRouter, CirceError}
 import com.mesosphere.universe.v3.model.PackageDefinition.ReleaseVersion
 import com.netaporter.uri.Uri
 import com.netaporter.uri.dsl.stringToUri
 import com.twitter.bijection.Conversion.asMethod
 import com.twitter.util.{Future, Try}
-import io.circe.jawn.decode
+import java.nio.charset.StandardCharsets
+import java.util.Base64
 
 private[cosmos] final class ListHandler(
   adminRouter: AdminRouter,
@@ -93,7 +93,8 @@ private[cosmos] final class ListHandler(
             .map { pkgInfo =>
               Instantiation(app.id, pkgInfo)
             }
-        case (app, None) => Future.value(Instantiation(app.id, decodeRunningPackageInformation(app)))
+        case (app, None) =>
+          Future.value(Instantiation(app.id, decodeRunningPackageInformation(app)))
       }
     }
   }
@@ -104,10 +105,7 @@ private[cosmos] final class ListHandler(
       Base64.getDecoder.decode(pkgMetadata),
       StandardCharsets.UTF_8
     )
-    decode[label.v1.model.PackageMetadata](pkgInfo) match {
-      case Xor.Left(err) => throw CirceError(err)
-      case Xor.Right(pkg) => pkg.as[RunningPackageInformation]
-    }
+    decode[label.v1.model.PackageMetadata](pkgInfo).as[RunningPackageInformation]
   }
 
 }

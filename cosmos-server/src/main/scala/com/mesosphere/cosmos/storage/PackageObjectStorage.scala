@@ -2,6 +2,7 @@ package com.mesosphere.cosmos.storage
 
 import com.mesosphere.cosmos.CirceError
 import com.mesosphere.cosmos.PackageFileMissing
+import com.mesosphere.cosmos.circe.Decoders.decode
 import com.mesosphere.cosmos.circe.Encoders.exceptionErrorResponse
 import com.mesosphere.cosmos.converter.Common._
 import com.mesosphere.cosmos.http.MediaTypes
@@ -15,7 +16,6 @@ import com.twitter.bijection.Conversion.asMethod
 import com.twitter.io.Buf.ByteArray
 import com.twitter.io.Reader
 import com.twitter.util.Future
-import io.circe.jawn.decode
 import io.circe.syntax._
 import java.io.ByteArrayInputStream
 import java.io.InputStream
@@ -56,14 +56,13 @@ final class PackageObjectStorage private (objectStorage: ObjectStorage) {
     objectStorage.read(path).flatMap {
       case Some((mediaType, reader)) =>
         Reader.readAll(reader).map { buffer =>
-          // TODO: Make this a helper. We use this pattern in a few places.
           Some(
             decode[universe.v3.model.PackageDefinition](
               new String(
                 ByteArray.Owned.extract(buffer),
                 StandardCharsets.UTF_8
               )
-            ).valueOr(err => throw new CirceError(err))
+            )
           )
         }
       case None =>

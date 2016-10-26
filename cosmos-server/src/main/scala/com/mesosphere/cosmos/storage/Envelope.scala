@@ -7,7 +7,6 @@ import com.mesosphere.cosmos.http.{MediaType, MediaTypeOps}
 import com.mesosphere.cosmos.model.ZooKeeperStorageEnvelope
 import com.mesosphere.cosmos.{CirceError, EnvelopeError}
 import com.mesosphere.universe.common.ByteBuffers
-import io.circe.jawn.decode
 import io.circe.syntax._
 
 import java.nio.ByteBuffer
@@ -29,30 +28,28 @@ object Envelope {
     implicit val decoder = mediaTypedDecoder.decoder
     val mediaType = mediaTypedDecoder.mediaType
 
-    decode[ZooKeeperStorageEnvelope](new String(data, StandardCharsets.UTF_8))
-      .flatMap { envelope =>
-        val contentType = envelope.metadata
-          .get("Content-Type")
-          .flatMap { s => MediaType.parse(s).toOption }
+    val envelope = decode[ZooKeeperStorageEnvelope](new String(data, StandardCharsets.UTF_8))
 
-        contentType match {
-          case Some(mt) if MediaTypeOps.compatible(mediaType, mt) =>
-            val dataString: String = new String(
-              ByteBuffers.getBytes(envelope.data),
-              StandardCharsets.UTF_8)
-            decode[T](dataString)
-          case Some(mt) =>
-            throw EnvelopeError(
-              s"Error while trying to deserialize data. " +
-                s"Expected Content-Type '${mediaType.show}' actual '${mt.show}'"
-            )
-          case None =>
-            throw EnvelopeError(
-              s"Error while trying to deserialize data. " +
-                s"Content-Type not defined."
-            )
-        }
-      } valueOr { err => throw CirceError(err) }
+    val contentType = envelope.metadata
+      .get("Content-Type")
+      .flatMap(s => MediaType.parse(s).toOption)
+
+    contentType match {
+      case Some(mt) if MediaTypeOps.compatible(mediaType, mt) =>
+       val dataString: String = new String(
+           ByteBuffers.getBytes(envelope.data),
+           StandardCharsets.UTF_8)
+       decode[T](dataString)
+      case Some(mt) =>
+        throw EnvelopeError(
+          s"Error while trying to deserialize data. " +
+          s"Expected Content-Type '${mediaType.show}' actual '${mt.show}'"
+        )
+      case None =>
+        throw EnvelopeError(
+          s"Error while trying to deserialize data. " +
+          s"Content-Type not defined."
+        )
+    }
   }
-
 }

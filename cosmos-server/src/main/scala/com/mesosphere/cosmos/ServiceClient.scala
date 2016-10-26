@@ -2,13 +2,13 @@ package com.mesosphere.cosmos
 
 import cats.data.Xor.{Left, Right}
 import com.mesosphere.cosmos.http.{MediaTypeOps, MediaTypes, RequestSession}
+import com.mesosphere.cosmos.circe.Decoders.decode
 import com.netaporter.uri.Uri
 import com.twitter.finagle.http.RequestConfig.Yes
 import com.twitter.finagle.http.{Request, RequestBuilder, Response, Status}
 import com.twitter.io.Buf
 import com.twitter.util.Future
 import io.circe.Json
-import io.circe.jawn._
 import org.jboss.netty.handler.codec.http.HttpMethod
 
 abstract class ServiceClient(baseUri: Uri) {
@@ -60,10 +60,7 @@ abstract class ServiceClient(baseUri: Uri) {
             case false =>
               throw UnsupportedContentType.forMediaType(List(MediaTypes.applicationJson), Some(mediaType))
             case true =>
-              decode[A](response.contentString) match {
-                case Left(err) => throw CirceError(err)
-                case Right(a) => a
-              }
+              decode[A](response.contentString)
           }
         }.get
       case _ =>

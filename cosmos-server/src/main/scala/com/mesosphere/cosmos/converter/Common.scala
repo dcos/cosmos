@@ -2,6 +2,7 @@ package com.mesosphere.cosmos.converter
 
 import cats.data.Xor
 import com.mesosphere.cosmos._
+import com.mesosphere.cosmos.circe.Decoders.decode
 import com.mesosphere.cosmos.internal.model
 import com.mesosphere.cosmos.rpc.v1.circe.Decoders._
 import com.mesosphere.cosmos.rpc.v1.circe.Encoders._
@@ -10,7 +11,6 @@ import com.mesosphere.universe
 import com.twitter.bijection.Bijection
 import com.twitter.bijection.Conversion.asMethod
 import com.twitter.bijection.Injection
-import io.circe.jawn.decode
 import io.circe.syntax._
 import java.nio.charset.StandardCharsets
 import java.util.Base64
@@ -170,10 +170,7 @@ object Common {
           StandardCharsets.UTF_8
         )
 
-        decode[PackageCoordinate](coordinate) match {
-          case Xor.Left(err) => throw CirceError(err)
-          case Xor.Right(c) => c
-        }
+        decode[PackageCoordinate](coordinate)
       }
     }
 

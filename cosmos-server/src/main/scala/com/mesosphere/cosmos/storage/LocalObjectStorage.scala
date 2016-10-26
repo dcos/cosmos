@@ -1,6 +1,7 @@
 package com.mesosphere.cosmos.storage
 
 import com.mesosphere.cosmos.CirceError
+import com.mesosphere.cosmos.circe.Decoders.decode
 import com.mesosphere.cosmos.http.MediaType
 import com.netaporter.uri.Uri
 import com.twitter.finagle.stats.Stat
@@ -9,7 +10,6 @@ import com.twitter.io.Reader
 import com.twitter.io.StreamIO
 import com.twitter.util.Future
 import com.twitter.util.FuturePool
-import io.circe.jawn.decode
 import io.circe.syntax._
 import java.io.DataInputStream
 import java.io.DataOutputStream
@@ -180,11 +180,7 @@ final class LocalObjectStorage(
         val metadata = {
           val metadataBytes = new Array[Byte](metadataBytesSize)
           inputStream.readFully(metadataBytes)
-          decode[Map[String, String]](
-            new String(metadataBytes, StandardCharsets.UTF_8)
-          ).valueOr { err =>
-            throw CirceError(err)
-          }
+          decode[Map[String, String]](new String(metadataBytes, StandardCharsets.UTF_8))
         }
 
         (metadata, Reader.fromStream(inputStream))
