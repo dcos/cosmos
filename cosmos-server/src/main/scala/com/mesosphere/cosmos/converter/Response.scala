@@ -14,12 +14,12 @@ import com.twitter.bijection.twitter_util.UtilBijections._
 import com.twitter.util.{Return, Try}
 
 object Response {
-  implicit val v2RunResponseToV1RunResponse: Conversion[
-    rpc.v2.model.RunResponse,
-    Try[rpc.v1.model.RunResponse]
-  ] = Conversion.fromFunction { (x: rpc.v2.model.RunResponse) =>
+  implicit val internalV2InstallResponseToV1InstallResponse: Conversion[
+    rpc.v2.model.InstallResponse,
+    Try[rpc.v1.model.InstallResponse]
+  ] = Conversion.fromFunction { (x: rpc.v2.model.InstallResponse) =>
     Try(x.appId.getOrElse(throw ServiceMarathonTemplateNotFound(x.packageName, x.packageVersion))).map { appId =>
-      rpc.v1.model.RunResponse(
+      rpc.v1.model.InstallResponse(
         packageName = x.packageName,
         packageVersion = x.packageVersion.as[universe.v2.model.PackageDetailsVersion],
         appId = appId
@@ -27,7 +27,7 @@ object Response {
     }
   }
 
-  implicit val packageDefinitionToV1DescribeResponse: Conversion[
+  implicit val internalPackageDefinitionToV1DescribeResponse: Conversion[
     universe.v3.model.PackageDefinition,
     Try[rpc.v1.model.DescribeResponse]
     ] = Conversion.fromFunction { (packageDefinition: universe.v3.model.PackageDefinition) =>
@@ -62,7 +62,7 @@ object Response {
     }
   }
 
-  implicit val packageDefinitionToV2DescribeResponse: Conversion[
+  implicit val internalPackageDefinitionToV2DescribeResponse: Conversion[
     universe.v3.model.PackageDefinition,
     rpc.v2.model.DescribeResponse
     ] = Conversion.fromFunction { (pkg: universe.v3.model.PackageDefinition) =>
@@ -89,14 +89,14 @@ object Response {
       )
     }
 
-  implicit val packageDefinitionToRunningPackageInformation: Conversion[
+  implicit val internalPackageDefinitionToInstalledPackageInformation: Conversion[
     universe.v3.model.PackageDefinition,
-    Try[rpc.v1.model.RunningPackageInformation]
+    Try[rpc.v1.model.InstalledPackageInformation]
     ] =
     Conversion.fromFunction {
       case pkg: universe.v3.model.V2Package =>
-        Return(rpc.v1.model.RunningPackageInformation(
-          packageDefinition = rpc.v1.model.RunningPackageInformationPackageDetails(
+        Return(rpc.v1.model.InstalledPackageInformation(
+          packageDefinition = rpc.v1.model.InstalledPackageInformationPackageDetails(
             packagingVersion = pkg.packagingVersion.as[universe.v2.model.PackagingVersion],
             name = pkg.name,
             version = pkg.version.as[universe.v2.model.PackageDetailsVersion],
@@ -116,8 +116,8 @@ object Response {
         ))
       case pkg: universe.v3.model.V3Package =>
         v2Resource(pkg).map { res =>
-          rpc.v1.model.RunningPackageInformation(
-            packageDefinition = rpc.v1.model.RunningPackageInformationPackageDetails(
+          rpc.v1.model.InstalledPackageInformation(
+            packageDefinition = rpc.v1.model.InstalledPackageInformationPackageDetails(
               packagingVersion = pkg.packagingVersion.as[universe.v2.model.PackagingVersion],
               name = pkg.name,
               version = pkg.version.as[universe.v2.model.PackageDetailsVersion],

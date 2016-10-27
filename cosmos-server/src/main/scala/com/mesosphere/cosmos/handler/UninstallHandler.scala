@@ -5,12 +5,12 @@ import com.mesosphere.cosmos.internal.model.MarathonAppOps._
 import com.mesosphere.cosmos.repository.PackageCollection
 import com.mesosphere.cosmos.AdminRouter
 import com.mesosphere.cosmos.AmbiguousAppId
-import com.mesosphere.cosmos.IncompleteKill
+import com.mesosphere.cosmos.IncompleteUninstall
 import com.mesosphere.cosmos.MarathonAppDeleteError
 import com.mesosphere.cosmos.MultipleFrameworkIds
-import com.mesosphere.cosmos.PackageNotRunning
+import com.mesosphere.cosmos.PackageNotInstalled
 import com.mesosphere.cosmos.ServiceUnavailable
-import com.mesosphere.cosmos.KillNonExistentAppForPackage
+import com.mesosphere.cosmos.UninstallNonExistentAppForPackage
 import com.mesosphere.cosmos.finch.EndpointHandler
 import com.mesosphere.cosmos.rpc
 import com.mesosphere.cosmos.thirdparty.marathon.model.{AppId, MarathonApp}
@@ -21,10 +21,10 @@ import com.twitter.bijection.Conversion.asMethod
 import com.twitter.finagle.http.Status
 import com.twitter.util.Future
 
-private[cosmos] final class PackageKillHandler(
+private[cosmos] final class UninstallHandler(
   adminRouter: AdminRouter,
   packageCache: PackageCollection
-) extends EndpointHandler[rpc.v1.model.KillRequest, rpc.v1.model.KillResponse] {
+) extends EndpointHandler[rpc.v1.model.UninstallRequest, rpc.v1.model.UninstallResponse] {
 
   private type FwIds = List[String]
 
@@ -36,10 +36,10 @@ private[cosmos] final class PackageKillHandler(
     }
   }
   private def destroyMarathonAppsAndTearDownFrameworkIfPresent(
-    killOperations: List[KillOperation]
-  )(implicit session: RequestSession): Future[Seq[KillDetails]] = {
+    uninstallOperations: List[UninstallOperation]
+  )(implicit session: RequestSession): Future[Seq[UninstallDetails]] = {
     val fs = for {
-      op <- killOperations
+      op <- uninstallOperations
       appId = op.appId
     } yield {
       destroyMarathonApp(appId) flatMap { _ =>
@@ -47,21 +47,21 @@ private[cosmos] final class PackageKillHandler(
           case Some(fwName) =>
             lookupFrameworkIds(fwName).flatMap {
               case Nil =>
-                Future.value(KillDetails.from(op))
+                Future.value(UninstallDetails.from(op))
               case fwId :: Nil =>
                 adminRouter.tearDownFramework(fwId)
                   .map { _ =>
-                    KillDetails.from(op).copy(frameworkId = Some(fwId))
+                    UninstallDetails.from(op).copy(frameworkId = Some(fwId))
                   }
               case all =>
                 throw MultipleFrameworkIds(op.packageName, op.packageVersion, fwName, all)
             }
               .handle {
                 case su: ServiceUnavailable =>
-                  throw IncompleteKill(op.packageName, su)
+                  throw IncompleteUninstall(op.packageName, su)
               }
           case None =>
-            Future.value(KillDetails.from(op))
+            Future.value(UninstallDetails.from(op))
         }
       }
     }
@@ -71,14 +71,14 @@ private[cosmos] final class PackageKillHandler(
     adminRouter.deleteApp(appId, force = true) map { resp =>
       resp.status match {
         case Status.Ok => MarathonAppDeleteSuccess()
-        case _ => throw MarathonAppDeleteError(appId)
+        case a => throw MarathonAppDeleteError(appId)
       }
     }
   }
 
-  override def apply(req: rpc.v1.model.KillRequest)(implicit
+  override def apply(req: rpc.v1.model.UninstallRequest)(implicit
     session: RequestSession
-  ): Future[rpc.v1.model.KillResponse] = {
+  ): Future[rpc.v1.model.UninstallResponse] = {
     // the following implementation is based on what the current CLI implementation does.
     // I've decided to follow it as close as possible so that we reduce any possible behavioral
     // changes that could have unforeseen consequences.
@@ -89,31 +89,31 @@ private[cosmos] final class PackageKillHandler(
         adminRouter.getAppOption(appId)
             .map {
               case Some(appResponse) =>
-                createKillOperations(req.packageName, List(appResponse.app))
+                createUninstallOperations(req.packageName, List(appResponse.app))
               case None =>
-                throw KillNonExistentAppForPackage(req.packageName, appId)
+                throw new UninstallNonExistentAppForPackage(req.packageName, appId)
             }
       case None =>
         adminRouter.listApps()
           .map { marathonApps =>
-            createKillOperations(req.packageName, marathonApps.apps)
+            createUninstallOperations(req.packageName, marathonApps.apps)
           }
     }
 
-    f.map { killOperations =>
+    f.map { uninstallOperations =>
       req.all match {
         case Some(true) =>
-          killOperations
-        case _ if killOperations.size > 1 =>
-          throw AmbiguousAppId(req.packageName, killOperations.map(_.appId))
-        case _ => // we've only got one package running with the specified name, continue with it
-          killOperations
+          uninstallOperations
+        case _ if uninstallOperations.size > 1 =>
+          throw AmbiguousAppId(req.packageName, uninstallOperations.map(_.appId))
+        case _ => // we've only got one package installed with the specified name, continue with it
+          uninstallOperations
       }
     }
       .flatMap(destroyMarathonAppsAndTearDownFrameworkIfPresent)
-      .flatMap { killDetails =>
+      .flatMap { uninstallDetails =>
         Future.collect(
-          killDetails.map { detail =>
+          uninstallDetails.map { detail =>
             packageCache.getPackageByPackageVersion(detail.packageName, None)
               .map { case (pkg, _) =>
                 detail -> pkg.postUninstallNotes
@@ -123,25 +123,25 @@ private[cosmos] final class PackageKillHandler(
       }
       .map { detailsAndNotes =>
         val results = detailsAndNotes.map { case (detail, postUninstallNotes) =>
-          rpc.v1.model.KillResult(
+          rpc.v1.model.UninstallResult(
             detail.packageName,
             detail.appId,
             detail.packageVersion,
             postUninstallNotes
           )
         }
-        rpc.v1.model.KillResponse(results.toList)
+        rpc.v1.model.UninstallResponse(results.toList)
       }
   }
 
-  private[this] def createKillOperations(requestedPackageName: String, apps: List[MarathonApp]): List[KillOperation] = {
-    val killOperations = for {
+  private[this] def createUninstallOperations(requestedPackageName: String, apps: List[MarathonApp]): List[UninstallOperation] = {
+    val uninstallOperations = for {
       app <- apps
       labels = app.labels
       packageName <- labels.get("DCOS_PACKAGE_NAME")
       if packageName == requestedPackageName
     } yield {
-      KillOperation(
+      UninstallOperation(
         appId = app.id,
         packageName = packageName,
         packageVersion = app.packageVersion.as[Option[universe.v2.model.PackageDetailsVersion]],
@@ -149,33 +149,33 @@ private[cosmos] final class PackageKillHandler(
       )
     }
 
-    if (killOperations.isEmpty) {
-      throw PackageNotRunning(requestedPackageName)
+    if (uninstallOperations.isEmpty) {
+      throw new PackageNotInstalled(requestedPackageName)
     }
-    killOperations
+    uninstallOperations
   }
 
   private case class MarathonAppDeleteSuccess()
-  private case class KillOperation(
+  private case class UninstallOperation(
     appId: AppId,
     packageName: String,
     packageVersion: Option[universe.v2.model.PackageDetailsVersion],
     frameworkName: Option[String]
   )
-  private case class KillDetails(
+  private case class UninstallDetails(
     appId: AppId,
     packageName: String,
     packageVersion: Option[universe.v2.model.PackageDetailsVersion],
     frameworkName: Option[String] = None,
     frameworkId: Option[String] = None
   )
-  private case object KillDetails {
-    def from(killOperation: KillOperation): KillDetails = {
-      KillDetails(
-        appId = killOperation.appId,
-        packageName = killOperation.packageName,
-        packageVersion = killOperation.packageVersion,
-        frameworkName = killOperation.frameworkName
+  private case object UninstallDetails {
+    def from(uninstallOperation: UninstallOperation): UninstallDetails = {
+      UninstallDetails(
+        appId = uninstallOperation.appId,
+        packageName = uninstallOperation.packageName,
+        packageVersion = uninstallOperation.packageVersion,
+        frameworkName = uninstallOperation.frameworkName
       )
     }
   }

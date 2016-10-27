@@ -19,7 +19,7 @@ final class MarathonPackageRunner(adminRouter: AdminRouter) extends PackageRunne
     adminRouter.createApp(renderedConfig)
       .map { response =>
         response.status match {
-          case Status.Conflict => throw PackageAlreadyRunning()
+          case Status.Conflict => throw PackageAlreadyInstalled()
           case status if (400 until 500).contains(status.code) =>
             Try(decode[MarathonError](response.contentString)) match {
               case Success(marathonError) =>

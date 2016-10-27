@@ -44,12 +44,12 @@ class PackageRenderHandlerSpec extends FreeSpec {
           "DCOS_PACKAGE_IS_FRAMEWORK" -> "false".asJson
         ))
       )))
-      val renderRequest = RenderRequest("helloworld", Some(PackageDetailsVersion("0.1.0")))
+      val installRequest = RenderRequest("helloworld", Some(PackageDetailsVersion("0.1.0")))
 
       val request = CosmosClient.requestBuilder("package/render")
         .addHeader("Content-Type", MediaTypes.RenderRequest.show)
         .addHeader("Accept", MediaTypes.RenderResponse.show)
-        .buildPost(Buf.Utf8(renderRequest.asJson.noSpaces))
+        .buildPost(Buf.Utf8(installRequest.asJson.noSpaces))
 
       val response = CosmosClient(request)
 
@@ -70,12 +70,12 @@ class PackageRenderHandlerSpec extends FreeSpec {
         )))
       )
 
-      val renderRequest = RenderRequest("enterprise-security-cli")
+      val installRequest = RenderRequest("enterprise-security-cli")
 
       val request = CosmosClient.requestBuilder("package/render")
         .addHeader("Content-Type", MediaTypes.RenderRequest.show)
         .addHeader("Accept", MediaTypes.RenderResponse.show)
-        .buildPost(Buf.Utf8(renderRequest.asJson.noSpaces))
+        .buildPost(Buf.Utf8(installRequest.asJson.noSpaces))
 
       val response = CosmosClient(request)
 

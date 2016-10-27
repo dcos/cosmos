@@ -27,17 +27,17 @@ object MediaTypedEncoders {
     ))
   }
 
-  implicit val packageRunResponseEncoder: DispatchingMediaTypedEncoder[rpc.v2.model.RunResponse] = {
+  implicit val packageInstallResponseEncoder: DispatchingMediaTypedEncoder[rpc.v2.model.InstallResponse] = {
     DispatchingMediaTypedEncoder(Set(
       MediaTypedEncoder(
-        encoder = rpc.v2.circe.Encoders.encodeV2RunResponse,
-        mediaType = MediaTypes.V2RunResponse
+        encoder = rpc.v2.circe.Encoders.encodeV2InstallResponse,
+        mediaType = MediaTypes.V2InstallResponse
       ),
       MediaTypedEncoder(
-        encoder = rpc.v1.circe.Encoders.encodeRunResponse.contramap { (x: rpc.v2.model.RunResponse) =>
-          x.as[Try[rpc.v1.model.RunResponse]].get()
+        encoder = rpc.v1.circe.Encoders.encodeInstallResponse.contramap { (x: rpc.v2.model.InstallResponse) =>
+          x.as[Try[rpc.v1.model.InstallResponse]].get()
         },
-        mediaType = MediaTypes.V1RunResponse
+        mediaType = MediaTypes.V1InstallResponse
       )
     ))
   }

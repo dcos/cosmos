@@ -2,9 +2,11 @@ package com.mesosphere.cosmos.rpc.v1.model
 
 import com.mesosphere.cosmos.thirdparty.marathon.model.AppId
 import com.mesosphere.universe.v2.model.PackageDetailsVersion
+import io.circe.JsonObject
 
-case class RunResponse(
+case class InstallRequest(
   packageName: String,
-  packageVersion: PackageDetailsVersion,
-  appId: AppId
+  packageVersion: Option[PackageDetailsVersion] = None,
+  options: Option[JsonObject] = None,
+  appId: Option[AppId] = None
 )

@@ -7,7 +7,7 @@ import com.mesosphere.cosmos.repository.DefaultRepositories
 import com.mesosphere.cosmos.rpc.MediaTypes
 import com.mesosphere.cosmos.rpc.v1.circe.Decoders._
 import com.mesosphere.cosmos.rpc.v1.circe.Encoders._
-import com.mesosphere.cosmos.rpc.v1.model.{ErrorResponse, RunRequest, RunResponse}
+import com.mesosphere.cosmos.rpc.v1.model.{ErrorResponse, InstallRequest, InstallResponse}
 import com.mesosphere.cosmos.rpc.v2.circe.Decoders._
 import com.mesosphere.cosmos.test.CosmosIntegrationTestClient
 import com.mesosphere.cosmos.thirdparty.marathon.circe.Encoders._
@@ -26,12 +26,12 @@ import org.scalatest.{BeforeAndAfterAll, FreeSpec, Matchers}
 
 import java.util.{Base64, UUID}
 
-final class PackageRunIntegrationSpec extends FreeSpec with BeforeAndAfterAll {
+final class PackageInstallIntegrationSpec extends FreeSpec with BeforeAndAfterAll {
 
   import CosmosIntegrationTestClient._
-  import PackageRunIntegrationSpec._
+  import PackageInstallIntegrationSpec._
 
-  "The package run endpoint" - {
+  "The package install endpoint" - {
 
     "reports an error if the requested package is not in the cache" in {
       forAll (PackageTable) { (packageName, _) =>
@@ -41,16 +41,16 @@ final class PackageRunIntegrationSpec extends FreeSpec with BeforeAndAfterAll {
           data = Some(JsonObject.singleton("packageName", packageName.asJson))
         )
 
-        runPackageAndAssert(
-          RunRequest(packageName),
-          expectedResult = RunFailure(Status.BadRequest, errorResponse),
-          preRunState = Anything,
-          postRunState = Unchanged
+        installPackageAndAssert(
+          InstallRequest(packageName),
+          expectedResult = InstallFailure(Status.BadRequest, errorResponse),
+          preInstallState = Anything,
+          postInstallState = Unchanged
         )
       }
     }
 
-    "don't run if specified version is not found" in {
+    "don't install if specified version is not found" in {
       forAll (PackageDummyVersionsTable) { (packageName, packageVersion) =>
         val errorMessage = s"Version [$packageVersion] of package [$packageName] not found"
         val errorResponse = ErrorResponse(
@@ -63,61 +63,61 @@ final class PackageRunIntegrationSpec extends FreeSpec with BeforeAndAfterAll {
         )
 
         // TODO This currently relies on test execution order to be correct
-        // Update it to explicitly run a package twice
-        runPackageAndAssert(
-          RunRequest(packageName, packageVersion = Some(packageVersion)),
-          expectedResult = RunFailure(Status.BadRequest, errorResponse),
-          preRunState = NotRunning,
-          postRunState = Unchanged
+        // Update it to explicitly install a package twice
+        installPackageAndAssert(
+          InstallRequest(packageName, packageVersion = Some(packageVersion)),
+          expectedResult = InstallFailure(Status.BadRequest, errorResponse),
+          preInstallState = NotInstalled,
+          postInstallState = Unchanged
         )
       }
     }
 
-    "can successfully run packages from Universe" in {
+    "can successfully install packages from Universe" in {
       forAll (UniversePackagesTable) { (expectedResponse, forceVersion, uriSet, labelsOpt) =>
         val versionOption = if (forceVersion) Some(expectedResponse.packageVersion) else None
 
-        runPackageAndAssert(
-          RunRequest(expectedResponse.packageName, packageVersion = versionOption),
-          expectedResult = RunSuccess(expectedResponse),
-          preRunState = NotRunning,
-          postRunState = Running
+        installPackageAndAssert(
+          InstallRequest(expectedResponse.packageName, packageVersion = versionOption),
+          expectedResult = InstallSuccess(expectedResponse),
+          preInstallState = NotInstalled,
+          postInstallState = Installed
         )
         // TODO Confirm that the correct config was sent to Marathon - see issue #38
         val packageInfo = Await.result(getMarathonApp(expectedResponse.appId))
         assertResult(uriSet)(packageInfo.uris.toSet)
         labelsOpt.foreach(labels => assertResult(labels)(StandardLabels(packageInfo.labels)))
 
-        // Assert that running twice gives us a package already running error
-        runPackageAndAssert(
-          RunRequest(expectedResponse.packageName, packageVersion = versionOption),
-          expectedResult = RunFailure(
+        // Assert that installing twice gives us a package already installed error
+        installPackageAndAssert(
+          InstallRequest(expectedResponse.packageName, packageVersion = versionOption),
+          expectedResult = InstallFailure(
             Status.Conflict,
             ErrorResponse(
-              "PackageAlreadyRunning",
-              "Package is already running",
+              "PackageAlreadyInstalled",
+              "Package is already installed",
               Some(JsonObject.empty)
             ),
             Some(expectedResponse.appId)
           ),
-          preRunState = AlreadyRunning,
-          postRunState = Unchanged
+          preInstallState = AlreadyInstalled,
+          postInstallState = Unchanged
         )
       }
     }
 
     "supports custom app IDs" in {
-      val expectedResponse = RunResponse("cassandra", PackageDetailsVersion("0.2.0-2"), AppId("custom-app-id"))
+      val expectedResponse = InstallResponse("cassandra", PackageDetailsVersion("0.2.0-2"), AppId("custom-app-id"))
 
-      runPackageAndAssert(
-        RunRequest(
+      installPackageAndAssert(
+        InstallRequest(
           packageName = expectedResponse.packageName,
           packageVersion = Some(PackageDetailsVersion("0.2.0-2")),
           appId = Some(expectedResponse.appId)
         ),
-        expectedResult = RunSuccess(expectedResponse),
-        preRunState = NotRunning,
-        postRunState = Running
+        expectedResult = InstallSuccess(expectedResponse),
+        preInstallState = NotInstalled,
+        postInstallState = Installed
       )
     }
 
@@ -146,15 +146,15 @@ final class PackageRunIntegrationSpec extends FreeSpec with BeforeAndAfterAll {
 
       val appId = AppId("chronos-bad-json")
 
-      runPackageAndAssert(
-        RunRequest("chronos", options = Some(badOptions), appId = Some(appId)),
-        expectedResult = RunFailure(Status.BadRequest, errorResponse),
-        preRunState = Anything,
-        postRunState = Unchanged
+      installPackageAndAssert(
+        InstallRequest("chronos", options = Some(badOptions), appId = Some(appId)),
+        expectedResult = InstallFailure(Status.BadRequest, errorResponse),
+        preInstallState = Anything,
+        postInstallState = Unchanged
       )
     }
 
-    "will error if attempting to run a service for a v1 response with no marathon template" in {
+    "will error if attempting to install a service for a v1 response with no marathon template" in {
       val errorResponse = ErrorResponse(
         "ServiceMarathonTemplateNotFound",
         s"Package: [enterprise-security-cli] version: [0.8.0] does not have a " +
@@ -165,17 +165,17 @@ final class PackageRunIntegrationSpec extends FreeSpec with BeforeAndAfterAll {
         )))
       )
 
-      runPackageAndAssert(
-        RunRequest("enterprise-security-cli"),
-        expectedResult = RunFailure(Status.BadRequest, errorResponse),
-        preRunState = Anything,
-        postRunState = Unchanged
+      installPackageAndAssert(
+        InstallRequest("enterprise-security-cli"),
+        expectedResult = InstallFailure(Status.BadRequest, errorResponse),
+        preInstallState = Anything,
+        postInstallState = Unchanged
       )
     }
 
-    "will succeed if attempting to run a service for a v2 response with no marathon template" in {
+    "will succeed if attempting to install a service for a v2 response with no marathon template" in {
       import com.mesosphere.universe.v3.model._
-      val expectedBody = rpc.v2.model.RunResponse(
+      val expectedBody = rpc.v2.model.InstallResponse(
         "enterprise-security-cli",
         universe.v3.model.PackageDefinition.Version("0.8.0"),
         cli = Some(Cli(Some(Platforms(
@@ -193,18 +193,18 @@ final class PackageRunIntegrationSpec extends FreeSpec with BeforeAndAfterAll {
         ))))
       )
 
-      val runRequest = RunRequest("enterprise-security-cli")
+      val installRequest = InstallRequest("enterprise-security-cli")
 
-      val request = CosmosClient.requestBuilder("package/run")
-        .addHeader("Content-Type", MediaTypes.RunRequest.show)
-        .addHeader("Accept", MediaTypes.V2RunResponse.show)
-        .buildPost(Buf.Utf8(runRequest.asJson.noSpaces))
+      val request = CosmosClient.requestBuilder("package/install")
+        .addHeader("Content-Type", MediaTypes.InstallRequest.show)
+        .addHeader("Accept", MediaTypes.V2InstallResponse.show)
+        .buildPost(Buf.Utf8(installRequest.asJson.noSpaces))
 
       val response = CosmosClient(request)
 
       assertResult(Status.Ok)(response.status)
-      assertResult(MediaTypes.V2RunResponse.show)(response.contentType.get)
-      val Xor.Right(actualBody) = decode[rpc.v2.model.RunResponse](response.contentString)
+      assertResult(MediaTypes.V2InstallResponse.show)(response.contentType.get)
+      val Xor.Right(actualBody) = decode[rpc.v2.model.InstallResponse](response.contentString)
       assertResult(expectedBody)(actualBody)
     }
 
@@ -225,61 +225,61 @@ final class PackageRunIntegrationSpec extends FreeSpec with BeforeAndAfterAll {
     Await.result(deletes.flatMap { x => Future.Unit })
   }
 
-  private[cosmos] def runPackageAndAssert(
-    runRequest: RunRequest,
+  private[cosmos] def installPackageAndAssert(
+    installRequest: InstallRequest,
     expectedResult: ExpectedResult,
-    preRunState: PreRunState,
-    postRunState: PostRunState
+    preInstallState: PreInstallState,
+    postInstallState: PostInstallState
   ): Unit = {
-    val appId = expectedResult.appId.getOrElse(AppId(runRequest.packageName))
+    val appId = expectedResult.appId.getOrElse(AppId(installRequest.packageName))
 
-    val packageWasRunning = isAppRunning(appId)
-    preRunState match {
-      case AlreadyRunning => assertResult(true)(packageWasRunning)
-      case NotRunning => assertResult(false)(packageWasRunning)
+    val packageWasInstalled = isAppInstalled(appId)
+    preInstallState match {
+      case AlreadyInstalled => assertResult(true)(packageWasInstalled)
+      case NotInstalled => assertResult(false)(packageWasInstalled)
       case Anything => // Don't care
     }
 
-    val response = runPackage(runRequest)
+    val response = installPackage(installRequest)
 
     assertResult(expectedResult.status)(response.status)
     expectedResult match {
-      case RunSuccess(expectedBody) =>
-        val Xor.Right(actualBody) = decode[RunResponse](response.contentString)
+      case InstallSuccess(expectedBody) =>
+        val Xor.Right(actualBody) = decode[InstallResponse](response.contentString)
         assertResult(expectedBody)(actualBody)
-      case RunFailure(_, expectedBody, _) =>
+      case InstallFailure(_, expectedBody, _) =>
         val Xor.Right(actualBody) = decode[ErrorResponse](response.contentString)
         assertResult(expectedBody)(actualBody)
     }
 
-    val expectedRunning = postRunState match {
-      case Running => true
-      case Unchanged => packageWasRunning
+    val expectedInstalled = postInstallState match {
+      case Installed => true
+      case Unchanged => packageWasInstalled
     }
-    val actuallyRunning = isAppRunning(appId)
-    assertResult(expectedRunning)(actuallyRunning)
+    val actuallyInstalled = isAppInstalled(appId)
+    assertResult(expectedInstalled)(actuallyInstalled)
   }
 
-  private[this] def isAppRunning(appId: AppId): Boolean = {
+  private[this] def isAppInstalled(appId: AppId): Boolean = {
     Await.result {
       adminRouter.getAppOption(appId)
         .map(_.isDefined)
     }
   }
 
-  private[this] def runPackage(
-    runRequest: RunRequest
+  private[this] def installPackage(
+    installRequest: InstallRequest
   ): Response = {
-    val request = CosmosClient.requestBuilder("package/run")
-      .addHeader("Content-Type", MediaTypes.RunRequest.show)
-      .addHeader("Accept", MediaTypes.V1RunResponse.show)
-      .buildPost(Buf.Utf8(runRequest.asJson.noSpaces))
+    val request = CosmosClient.requestBuilder("package/install")
+      .addHeader("Content-Type", MediaTypes.InstallRequest.show)
+      .addHeader("Accept", MediaTypes.V1InstallResponse.show)
+      .buildPost(Buf.Utf8(installRequest.asJson.noSpaces))
     CosmosClient(request)
   }
 
 }
 
-private object PackageRunIntegrationSpec extends Matchers with TableDrivenPropertyChecks {
+private object PackageInstallIntegrationSpec extends Matchers with TableDrivenPropertyChecks {
 
   private val PackageTableRows: Seq[(String, PackageFiles)] = Seq(
     packageTableRow("helloworld2", 1, 512.0, 2),
@@ -332,8 +332,8 @@ private object PackageRunIntegrationSpec extends Matchers with TableDrivenProper
 
   private val UniversePackagesTable = Table(
     ("expected response", "force version", "URI list", "Labels"),
-    (RunResponse("helloworld", PackageDetailsVersion("0.1.0"), AppId("helloworld")), false, Set.empty[String], Some(HelloWorldLabels)),
-    (RunResponse("cassandra", PackageDetailsVersion("0.2.0-1"), AppId("cassandra/dcos")), true, CassandraUris, None)
+    (InstallResponse("helloworld", PackageDetailsVersion("0.1.0"), AppId("helloworld")), false, Set.empty[String], Some(HelloWorldLabels)),
+    (InstallResponse("cassandra", PackageDetailsVersion("0.2.0-1"), AppId("cassandra/dcos")), true, CassandraUris, None)
   )
 
   private def getMarathonApp(appId: AppId)(implicit session: RequestSession): Future[MarathonApp] = {
@@ -393,23 +393,23 @@ private object PackageRunIntegrationSpec extends Matchers with TableDrivenProper
 
 private sealed abstract class ExpectedResult(val status: Status, val appId: Option[AppId])
 
-private case class RunSuccess(body: RunResponse)
+private case class InstallSuccess(body: InstallResponse)
   extends ExpectedResult(Status.Ok, Some(body.appId))
 
-private case class RunFailure(
+private case class InstallFailure(
   override val status: Status,
   body: ErrorResponse,
   override val appId: Option[AppId] = None
 ) extends ExpectedResult(status, appId)
 
-private sealed trait PreRunState
-private case object AlreadyRunning extends PreRunState
-private case object NotRunning extends PreRunState
-private case object Anything extends PreRunState
+private sealed trait PreInstallState
+private case object AlreadyInstalled extends PreInstallState
+private case object NotInstalled extends PreInstallState
+private case object Anything extends PreInstallState
 
-private sealed trait PostRunState
-private case object Running extends PostRunState
-private case object Unchanged extends PostRunState
+private sealed trait PostInstallState
+private case object Installed extends PostInstallState
+private case object Unchanged extends PostInstallState
 
 case class StandardLabels(
   packageMetadata: Json,

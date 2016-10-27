@@ -27,8 +27,8 @@ final class PackageListIntegrationSpec
 
   "The package list endpoint" - {
     "responds with repo and package data for packages whose repositories are in the repo list" in {
-      withRunningPackage("helloworld") { runResponse =>
-        withRunningPackageInListResponse(runResponse) { case Some(Instantiation(_, _)) =>
+      withInstalledPackage("helloworld") { installResponse =>
+        withInstalledPackageInListResponse(installResponse) { case Some(Installation(_, _)) =>
           // Success
         }
       }
@@ -36,8 +36,8 @@ final class PackageListIntegrationSpec
   }
 
   "Issue #251: Package list should include packages whose repositories have been removed" in {
-    val expectedPackageInformation = RunningPackageInformation(
-      RunningPackageInformationPackageDetails(
+    val expectedPackageInformation = InstalledPackageInformation(
+      InstalledPackageInformationPackageDetails(
         packagingVersion = PackagingVersion("2.0"),
         name = "helloworld",
         version = PackageDetailsVersion("0.1.0"),
@@ -51,9 +51,9 @@ final class PackageListIntegrationSpec
         framework = None
       )
     )
-    withRunningPackage("helloworld") { runResponse =>
+    withInstalledPackage("helloworld") { installResponse =>
       withDeletedRepository(helloWorldRepository) {
-        withRunningPackageInListResponse(runResponse) { case Some(Instantiation(_, pkg)) =>
+        withInstalledPackageInListResponse(installResponse) { case Some(Installation(_, pkg)) =>
             assertResult(expectedPackageInformation)(pkg)
           // Success
         }
@@ -61,30 +61,30 @@ final class PackageListIntegrationSpec
     }
   }
 
-  private[this] def withRunningPackage(packageName: String)(f: RunResponse => Unit): Unit = {
-    val Xor.Right(runResponse) = apiClient.callEndpoint[RunRequest, RunResponse](
-      RunPath,
-      RunRequest(packageName, appId = Some(AppId(UUID.randomUUID().toString))),
-      MediaTypes.RunRequest,
-      MediaTypes.V1RunResponse
-    ) withClue "when running package"
+  private[this] def withInstalledPackage(packageName: String)(f: InstallResponse => Unit): Unit = {
+    val Xor.Right(installResponse) = apiClient.callEndpoint[InstallRequest, InstallResponse](
+      "package/install",
+      InstallRequest(packageName, appId = Some(AppId(UUID.randomUUID().toString))),
+      MediaTypes.InstallRequest,
+      MediaTypes.V1InstallResponse
+    ) withClue "when installing package"
 
     try {
-      assertResult(packageName)(runResponse.packageName)
-      f(runResponse)
+      assertResult(packageName)(installResponse.packageName)
+      f(installResponse)
     } finally {
-      val actualKill = apiClient.callEndpoint[KillRequest, KillResponse](
-        "package/kill",
-        KillRequest(runResponse.packageName, appId = Some(runResponse.appId), all = None),
-        MediaTypes.KillRequest,
-        MediaTypes.KillResponse
-      ) withClue "when killing package"
+      val actualUninstall = apiClient.callEndpoint[UninstallRequest, UninstallResponse](
+        "package/uninstall",
+        UninstallRequest(installResponse.packageName, appId = Some(installResponse.appId), all = None),
+        MediaTypes.UninstallRequest,
+        MediaTypes.UninstallResponse
+      ) withClue "when uninstalling package"
 
-      inside (actualKill) {
-        case Xor.Right(KillResponse(List(KillResult(killedPackageName, appId, Some(packageVersion), _)))) =>
-          assertResult(runResponse.appId)(appId)
-          assertResult(runResponse.packageName)(killedPackageName)
-          assertResult(runResponse.packageVersion)(packageVersion)
+      inside (actualUninstall) {
+        case Xor.Right(UninstallResponse(List(UninstallResult(uninstalledPackageName, appId, Some(packageVersion), _)))) =>
+          assertResult(installResponse.appId)(appId)
+          assertResult(installResponse.packageName)(uninstalledPackageName)
+          assertResult(installResponse.packageVersion)(packageVersion)
       }
     }
   }
@@ -119,18 +119,18 @@ final class PackageListIntegrationSpec
     }
   }
 
-  private[this] def withRunningPackageInListResponse(runResponse: RunResponse)(
-    pf: PartialFunction[Option[Instantiation], Unit]
+  private[this] def withInstalledPackageInListResponse(installResponse: InstallResponse)(
+    pf: PartialFunction[Option[Installation], Unit]
   ): Unit = {
     val actualList = apiClient.callEndpoint[ListRequest, ListResponse](
       "package/list",
       ListRequest(),
       MediaTypes.ListRequest,
       MediaTypes.ListResponse
-    ) withClue "when listing running packages"
+    ) withClue "when listing installed packages"
 
     inside (actualList) { case Xor.Right(ListResponse(packages)) =>
-      inside (packages.find(_.appId == runResponse.appId)) { pf }
+      inside (packages.find(_.appId == installResponse.appId)) { pf }
     }
   }
 
@@ -142,14 +142,14 @@ final class PackageListIntegrationSpec
         "zeppelin",
         "jenkins",
         "cassandra")
-      val runResponses = names map packageRun
+      val installResponses = names map packageInstall
       try {
         val packages = packageList().packages.map(app => (app.packageInformation.packageDefinition.name, app.appId))
         val resultNames = packages.map(_._1)
         assert(packages == packages.sorted)
         assert(names.sorted == resultNames.sorted)
       } finally {
-        runResponses.foreach(ir => packageKill(ir))
+        installResponses.foreach(ir => packageUninstall(ir))
       }
     }
   }
@@ -160,38 +160,38 @@ final class PackageListIntegrationSpec
       ListRequest(),
       MediaTypes.ListRequest,
       MediaTypes.ListResponse
-    ) withClue "when listing running packages"
+    ) withClue "when listing installed packages"
 
     listResponse
   }
 
-  private[this] def packageRun(packageName: String): RunResponse = {
-    val Xor.Right(runResponse: RunResponse) = apiClient.callEndpoint[RunRequest, RunResponse](
-      RunPath,
-      RunRequest(packageName, appId = Some(AppId(UUID.randomUUID().toString))),
-      MediaTypes.RunRequest,
-      MediaTypes.V1RunResponse
-    ) withClue "when running package"
+  private[this] def packageInstall(packageName: String): InstallResponse = {
+    val Xor.Right(installResponse: InstallResponse) = apiClient.callEndpoint[InstallRequest, InstallResponse](
+      "package/install",
+      InstallRequest(packageName, appId = Some(AppId(UUID.randomUUID().toString))),
+      MediaTypes.InstallRequest,
+      MediaTypes.V1InstallResponse
+    ) withClue "when installing package"
 
-    assertResult(packageName)(runResponse.packageName)
+    assertResult(packageName)(installResponse.packageName)
 
-    runResponse
+    installResponse
   }
 
-  private[this] def packageKill(runResponse: RunResponse): Unit = {
-    val Xor.Right(killResponse: KillResponse) = apiClient.callEndpoint[KillRequest, KillResponse](
-      KillPath,
-      KillRequest(runResponse.packageName, appId = Some(runResponse.appId), all = None),
-      MediaTypes.KillRequest,
-      MediaTypes.KillResponse
-    ) withClue "when killing package"
+  private[this] def packageUninstall(installResponse: InstallResponse): Unit = {
+    val Xor.Right(uninstallResponse: UninstallResponse) = apiClient.callEndpoint[UninstallRequest, UninstallResponse](
+      "package/uninstall",
+      UninstallRequest(installResponse.packageName, appId = Some(installResponse.appId), all = None),
+      MediaTypes.UninstallRequest,
+      MediaTypes.UninstallResponse
+    ) withClue "when uninstalling package"
 
-    val KillResponse(List(KillResult(killedPackageName, appId, Some(packageVersion), _))) =
-      killResponse
+    val UninstallResponse(List(UninstallResult(uninstalledPackageName, appId, Some(packageVersion), _))) =
+      uninstallResponse
 
-    assertResult(runResponse.appId)(appId)
-    assertResult(runResponse.packageName)(killedPackageName)
-    assertResult(runResponse.packageVersion)(packageVersion)
+    assertResult(installResponse.appId)(appId)
+    assertResult(installResponse.packageName)(uninstalledPackageName)
+    assertResult(installResponse.packageVersion)(packageVersion)
   }
 
 }
@@ -199,7 +199,5 @@ final class PackageListIntegrationSpec
 object PackageListIntegrationSpec {
 
   private val Some(helloWorldRepository) = DefaultRepositories().getOrThrow.find(_.name == "Hello World")
-  private val RunPath: String = "package/run"
-  private val KillPath: String = "package/kill"
 
 }

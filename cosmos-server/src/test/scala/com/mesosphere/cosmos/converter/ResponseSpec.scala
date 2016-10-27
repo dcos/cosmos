@@ -13,7 +13,7 @@ import org.scalatest.FreeSpec
 import org.scalatest.prop.GeneratorDrivenPropertyChecks.forAll
 
 final class ResponseSpec extends FreeSpec {
-  "Conversion[rpc.v2.model.RunResponse,Try[rpc.v1.model.RunResponse]]" - {
+  "Conversion[rpc.v2.model.InstallResponse,Try[rpc.v1.model.InstallResponse]]" - {
     val vstring = "9.87.654.3210"
     val ver = universe.v3.model.PackageDefinition.Version(vstring)
     val name = "ResponseSpec"
@@ -23,20 +23,21 @@ final class ResponseSpec extends FreeSpec {
     val validV2s = for {
       n <- Gen.oneOf(clis)
       c <- Gen.oneOf(notes)
-    } yield rpc.v2.model.RunResponse(name, ver, Some(appid), n, c)
+    } yield (rpc.v2.model.InstallResponse(name, ver, Some(appid), n, c))
     val invalidV2s = for {
       n <- Gen.oneOf(clis)
       c <- Gen.oneOf(notes)
-    } yield rpc.v2.model.RunResponse(name, ver, None, n, c)
+    } yield (rpc.v2.model.InstallResponse(name, ver, None, n, c))
+
 
     "success" in {
-      val v1 = rpc.v1.model.RunResponse(name, ver.as[universe.v2.model.PackageDetailsVersion], appid)
+      val v1 = rpc.v1.model.InstallResponse(name, ver.as[universe.v2.model.PackageDetailsVersion], appid)
 
-      forAll(validV2s) { x => assertResult(Return(v1))(x.as[Try[rpc.v1.model.RunResponse]]) }
+      forAll(validV2s) { x => assertResult(Return(v1))(x.as[Try[rpc.v1.model.InstallResponse]]) }
     }
     "failure" in {
       //expecting failure due to missing marathon mustache
-      forAll(invalidV2s) { x => assertResult(Throw(ServiceMarathonTemplateNotFound(name, ver)))(x.as[Try[rpc.v1.model.RunResponse]]) }
+      forAll(invalidV2s) { x => assertResult(Throw(ServiceMarathonTemplateNotFound(name, ver)))(x.as[Try[rpc.v1.model.InstallResponse]]) }
     }
   }
 

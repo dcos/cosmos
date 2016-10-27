@@ -26,8 +26,8 @@ import io.github.benwhitehead.finch.FinchServer
 import shapeless.HNil
 
 private[cosmos] final class Cosmos(
-  packageKillHandler: EndpointHandler[rpc.v1.model.KillRequest, rpc.v1.model.KillResponse],
-  packageRunHandler: EndpointHandler[rpc.v1.model.RunRequest, rpc.v2.model.RunResponse],
+  uninstallHandler: EndpointHandler[rpc.v1.model.UninstallRequest, rpc.v1.model.UninstallResponse],
+  packageInstallHandler: EndpointHandler[rpc.v1.model.InstallRequest, rpc.v2.model.InstallResponse],
   packageRenderHandler: EndpointHandler[rpc.v1.model.RenderRequest, rpc.v1.model.RenderResponse],
   packageSearchHandler: EndpointHandler[rpc.v1.model.SearchRequest, rpc.v1.model.SearchResponse],
   packageDescribeHandler: EndpointHandler[rpc.v1.model.DescribeRequest, universe.v3.model.PackageDefinition],
@@ -43,12 +43,12 @@ private[cosmos] final class Cosmos(
 
   lazy val logger = org.slf4j.LoggerFactory.getLogger(classOf[Cosmos])
 
-  val packageRun: Endpoint[Json] = {
-    route(post("package" / "run"), packageRunHandler)(RequestValidators.standard)
+  val packageInstall: Endpoint[Json] = {
+    route(post("package" / "install"), packageInstallHandler)(RequestValidators.standard)
   }
 
-  val packageKill: Endpoint[Json] = {
-    route(post("package" / "kill"), packageKillHandler)(RequestValidators.standard)
+  val packageUninstall: Endpoint[Json] = {
+    route(post("package" / "uninstall"), uninstallHandler)(RequestValidators.standard)
   }
 
   val packageDescribe: Endpoint[Json] = {
@@ -98,11 +98,11 @@ private[cosmos] final class Cosmos(
   val service: Service[Request, Response] = {
     val stats = statsReceiver.scope("errorFilter")
 
-    (packageRun
+    (packageInstall
       :+: packageRender
       :+: packageDescribe
       :+: packageSearch
-      :+: packageKill
+      :+: packageUninstall
       :+: packageListVersions
       :+: packageList
       :+: packageListSources
@@ -222,8 +222,8 @@ object Cosmos extends FinchServer {
     )
 
     new Cosmos(
-      new PackageKillHandler(adminRouter, repositories),
-      new PackageRunHandler(repositories, packageRunner),
+      new UninstallHandler(adminRouter, repositories),
+      new PackageInstallHandler(repositories, packageRunner),
       new PackageRenderHandler(repositories),
       new PackageSearchHandler(repositories),
       new PackageDescribeHandler(repositories),

@@ -82,7 +82,7 @@ class PackageDefinitionRendererSpec extends FreeSpec with TableDrivenPropertyChe
       }
     }
 
-    "should happen as part of package run" in {
+    "should happen as part of package install" in {
       forAll (Examples) { (defaultsJson, optionsJson, mergedJson) =>
         val packageName = "options-test"
         val mustacheTemplate = buildMustacheTemplate(mergedJson)

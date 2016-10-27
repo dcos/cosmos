@@ -31,7 +31,7 @@ class RequestErrorsSpec extends FreeSpec {
           Some(0)
         ).asJson
 
-        val req = CosmosClient.requestBuilder("package/run")
+        val req = CosmosClient.requestBuilder("package/install")
           .addHeader("Accept", accept.show)
           .addHeader("Content-Type", MediaTypes.DescribeRequest.show)
           .buildPost(Buf.Utf8(body.noSpaces))
@@ -52,7 +52,7 @@ class RequestErrorsSpec extends FreeSpec {
 
         // assert Accept header error
         assertResult("not_valid")(acceptError.str("type"))
-        val expectedAcceptErrorMessage = "Item 'header 'Accept'' deemed invalid by rule: 'should match one of: application/vnd.dcos.package.run-response+json;charset=utf-8;version=v2, application/vnd.dcos.package.run-response+json;charset=utf-8;version=v1'"
+        val expectedAcceptErrorMessage = "Item 'header 'Accept'' deemed invalid by rule: 'should match one of: application/vnd.dcos.package.install-response+json;charset=utf-8;version=v2, application/vnd.dcos.package.install-response+json;charset=utf-8;version=v1'"
         assertResult(expectedAcceptErrorMessage)(acceptError.str("message"))
         val acceptErrorData = acceptError.obj("data")
         val invalidItem = acceptErrorData.obj("invalidItem")
@@ -60,8 +60,8 @@ class RequestErrorsSpec extends FreeSpec {
         assertResult("Accept")(invalidItem.str("name"))
         
         val expectedAvailable = Set(
-          MediaTypes.V1RunResponse.show,
-          MediaTypes.V2RunResponse.show
+          MediaTypes.V1InstallResponse.show,
+          MediaTypes.V2InstallResponse.show
         )
         val actualAvailable = acceptErrorData.arr("available").map(_.asString.get).toSet
         assertResult(expectedAvailable)(actualAvailable)
@@ -71,7 +71,7 @@ class RequestErrorsSpec extends FreeSpec {
         
         // assert Content-Type header error
         assertResult("not_valid")(contentTypeError.str("type"))
-        val expectedContentTypeErrorMessage = "Item 'header 'Content-Type'' deemed invalid by rule: 'should match application/vnd.dcos.package.run-request+json;charset=utf-8;version=v1'"
+        val expectedContentTypeErrorMessage = "Item 'header 'Content-Type'' deemed invalid by rule: 'should match application/vnd.dcos.package.install-request+json;charset=utf-8;version=v1'"
         assertResult(expectedContentTypeErrorMessage)(contentTypeError.str("message"))
         
         // assert Request body error
@@ -81,7 +81,7 @@ class RequestErrorsSpec extends FreeSpec {
       }
 
       "Missing Accept, Missing Content-Type, Missing body" in {
-        val req = CosmosClient.requestBuilder("package/run")
+        val req = CosmosClient.requestBuilder("package/install")
           .buildPost(Buf.Utf8(""))
 
         val response = CosmosClient(req)

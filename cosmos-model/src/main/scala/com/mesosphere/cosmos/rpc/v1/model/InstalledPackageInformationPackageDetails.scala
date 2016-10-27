@@ -2,7 +2,7 @@ package com.mesosphere.cosmos.rpc.v1.model
 
 import com.mesosphere.universe
 
-case class RunningPackageInformationPackageDetails(
+case class InstalledPackageInformationPackageDetails(
   packagingVersion: universe.v2.model.PackagingVersion,
   name: String,
   version: universe.v2.model.PackageDetailsVersion,

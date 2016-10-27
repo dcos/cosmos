@@ -6,14 +6,14 @@ import com.twitter.bijection.Bijection
 
 object Label {
 
-  implicit val labelV1PackageMetadataToRpcV1RunningPackageInformation: Bijection[
+  implicit val labelV1PackageMetadataToRpcV1InstalledPackageInformation: Bijection[
       label.v1.model.PackageMetadata,
-      rpc.v1.model.RunningPackageInformation
+      rpc.v1.model.InstalledPackageInformation
     ] = Bijection.build(fwd)(rev)
 
   private[this] def fwd(x: label.v1.model.PackageMetadata) = {
-    rpc.v1.model.RunningPackageInformation(
-      rpc.v1.model.RunningPackageInformationPackageDetails(
+    rpc.v1.model.InstalledPackageInformation(
+      rpc.v1.model.InstalledPackageInformationPackageDetails(
         packagingVersion = x.packagingVersion,
         name = x.name,
         version = x.version,
@@ -33,7 +33,7 @@ object Label {
     )
   }
 
-  private[this] def rev(x: rpc.v1.model.RunningPackageInformation) = {
+  private[this] def rev(x: rpc.v1.model.InstalledPackageInformation) = {
     label.v1.model.PackageMetadata(
       packagingVersion = x.packageDefinition.packagingVersion,
       name = x.packageDefinition.name,
