@@ -32,7 +32,9 @@ final class PackageDefinitionSpec extends FreeSpec with PropertyChecks {
     }
 
     "ReleaseVersion.value" in {
-      assertResult(42)(PackageDefinition.ReleaseVersion(42).get.value)
+      forAll (nonNegNum) { n =>
+        assertResult(n)(PackageDefinition.ReleaseVersion(n).get.value)
+      }
     }
 
     "ReleaseVersion$.ordering orders by value" in {

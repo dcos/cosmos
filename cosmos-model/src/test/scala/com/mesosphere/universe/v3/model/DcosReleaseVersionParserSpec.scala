@@ -14,6 +14,7 @@ class DcosReleaseVersionParserSpec extends FreeSpec {
         assertResult(DcosReleaseVersion(Version(1)))(parse)
       }
 
+      // scalastyle:off magic.number
       "10.200.3000.40000.500000-oneMillion" in {
         val Return(parse) = DcosReleaseVersionParser.parse("10.200.3000.40000.500000-oneMillion")
         val expected = DcosReleaseVersion(
@@ -23,6 +24,7 @@ class DcosReleaseVersionParserSpec extends FreeSpec {
         )
         assertResult(expected)(parse)
       }
+      // scalastyle:off magic.number
 
       "1-ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789" in {
         val Return(parse) = DcosReleaseVersionParser.parse("1-ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789")

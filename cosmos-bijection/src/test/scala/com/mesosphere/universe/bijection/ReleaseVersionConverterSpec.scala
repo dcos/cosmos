@@ -56,11 +56,15 @@ final class ReleaseVersionConverterSpec extends FreeSpec {
   ): Unit = {
 
     "always succeed in the forward direction" in {
-      assertResult("42")(universe.v3.model.PackageDefinition.ReleaseVersion(42).get.as[A].as[String])
+      val version = 42
+      assertResult("42") {
+        universe.v3.model.PackageDefinition.ReleaseVersion(version).get.as[A].as[String]
+      }
     }
 
     "succeed in the reverse direction on nonnegative version numbers" in {
-      assertResult(Success(universe.v3.model.PackageDefinition.ReleaseVersion(24).get)) {
+      val version = 24
+      assertResult(Success(universe.v3.model.PackageDefinition.ReleaseVersion(version).get)) {
         "24".as[A].as[Try[universe.v3.model.PackageDefinition.ReleaseVersion]]
       }
     }

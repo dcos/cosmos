@@ -18,8 +18,8 @@ import com.mesosphere.universe.v3.model.{PackageDefinition, Repository}
 final class MultiRepositorySpec extends FreeSpec {
 
   case class TestClient(repos: List[PackageRepository] = Nil, ls: List[PackageDefinition] = Nil) extends UniverseClient {
-    def apply(repo: PackageRepository)(implicit session: RequestSession): Future[Repository] = Future { 
-      Repository(repos.filter( _ == repo).flatMap(_ => ls))
+    def apply(repo: PackageRepository)(implicit session: RequestSession): Future[Repository] = {
+      Future(Repository(repos.filter( _ == repo).flatMap(_ => ls)))
     }
   }
 

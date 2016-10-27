@@ -210,7 +210,7 @@ class PackageDefinitionRendererSpec extends FreeSpec with TableDrivenPropertyChe
       val Xor.Left(err) = PackageDefinitionRenderer.renderMarathonV2App("http://someplace", pkg, None, None)
       assertResult(MissingMarathonV2AppTemplate)(err)
     }
-    
+
     "result in error if options provided but no config defined" in {
       val mustache = """{"id": "{{option.id}}"}"""
       val mustacheBytes = ByteBuffer.wrap(mustache.getBytes(StandardCharsets.UTF_8))

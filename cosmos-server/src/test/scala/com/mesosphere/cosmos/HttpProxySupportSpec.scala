@@ -49,7 +49,7 @@ class HttpProxySupportSpec extends FreeSpec {
           val vars = HttpProxySupport.extractProxyEnvVariables(env)
           assertResult(ProxyEnvVariables(Some("http://hostlocal:8213"), None, None))(vars)
         }
-        
+
       }
 
       "HTTPS" - {
@@ -136,7 +136,7 @@ class HttpProxySupportSpec extends FreeSpec {
         }
 
       }
-      
+
       "Proxy Credentials" - {
 
         val vars = ProxyEnvVariables(Some("http://localhost:3128"), Some("http://hostlocal:8213"), Some("no_proxy_vals"))

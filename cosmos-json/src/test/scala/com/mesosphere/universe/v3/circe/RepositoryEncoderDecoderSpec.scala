@@ -59,7 +59,8 @@ class RepositoryEncoderDecoderSpec extends FreeSpec {
       val parsed = parse(jsonString)
       val Xor.Right(repo) = parsed.flatMap(decodeRepository.decodeJson)
 
-      assertResult(9)(repo.packages.size)
+      val expected = 9
+      assertResult(expected)(repo.packages.size)
 
       val cassandraVersions = repo.packages
         .filter {
@@ -102,7 +103,10 @@ class RepositoryEncoderDecoderSpec extends FreeSpec {
         )
       )
 
-      val expectedErrorMessage = "Expected one of [2.0, 3.0] for packaging version, but found [3.1]: El(DownField(packagingVersion),true,false),El(DownArray,true,false),El(DownField(packages),true,false)"
+      val expectedErrorMessage = "Expected one of [2.0, 3.0] for packaging version, but found " +
+        "[3.1]: El(DownField(packagingVersion),true,false),El(DownArray,true,false)," +
+        "El(DownField(packages),true,false)"
+
       val Xor.Left(decodingFailure) = decodeRepository.decodeJson(json)
 
       assertResult(expectedErrorMessage)(decodingFailure.getMessage())
@@ -123,7 +127,10 @@ class RepositoryEncoderDecoderSpec extends FreeSpec {
         )
       )
 
-      val expectedErrorMessage = "Value 'bad tag' does not conform to expected format ^[^\\s]+$: El(DownArray,true,false),El(DownField(tags),true,false),El(DownArray,true,false),El(DownField(packages),true,false)"
+      val expectedErrorMessage = "Value 'bad tag' does not conform to expected format ^[^\\s]+$: " +
+        "El(DownArray,true,false),El(DownField(tags),true,false),El(DownArray,true,false)," +
+        "El(DownField(packages),true,false)"
+
       val Xor.Left(decodingFailure) = decodeRepository.decodeJson(json)
 
       assertResult(expectedErrorMessage)(decodingFailure.getMessage())
@@ -145,7 +152,10 @@ class RepositoryEncoderDecoderSpec extends FreeSpec {
         )
       )
 
-      val expectedErrorMessage = "Expected integer value >= 0 for release version, but found [-1]: El(DownField(releaseVersion),true,false),El(DownArray,true,false),El(DownField(packages),true,false)"
+      val expectedErrorMessage = "Expected integer value >= 0 for release version, but found " +
+        "[-1]: El(DownField(releaseVersion),true,false),El(DownArray,true,false)," +
+        "El(DownField(packages),true,false)"
+
       val Xor.Left(decodingFailure) = decodeRepository.decodeJson(json)
 
       assertResult(expectedErrorMessage)(decodingFailure.getMessage())
