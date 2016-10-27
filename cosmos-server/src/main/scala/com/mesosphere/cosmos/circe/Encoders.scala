@@ -8,6 +8,7 @@ import com.mesosphere.cosmos.model._
 import com.mesosphere.cosmos.rpc.v1.circe.Encoders._
 import com.mesosphere.cosmos.rpc.v1.model.ErrorResponse
 import com.mesosphere.cosmos.thirdparty.marathon.circe.Encoders._
+import com.mesosphere.cosmos.storage.installqueue._
 import com.mesosphere.universe.common.circe.Encoders._
 import com.mesosphere.universe.v2.circe.Encoders._
 import com.mesosphere.universe.v3.circe.Encoders._
@@ -17,7 +18,7 @@ import io.circe.HistoryOp.opsToPath
 import io.circe.generic.encoding.DerivedObjectEncoder
 import io.circe.generic.semiauto._
 import io.circe.syntax._
-import io.circe.{DecodingFailure, Encoder, JsonObject, ParsingFailure}
+import io.circe.{DecodingFailure, Encoder, Json, JsonObject, ParsingFailure}
 import io.finch.Error
 import org.jboss.netty.handler.codec.http.HttpMethod
 import shapeless._
@@ -53,6 +54,35 @@ object Encoders extends LowPriorityImplicits {
 
   implicit val encodeZooKeeperStorageEnvelope: Encoder[ZooKeeperStorageEnvelope] =
     deriveEncoder[ZooKeeperStorageEnvelope]
+
+  implicit val encodeInstall: Encoder[Install] =
+    deriveEncoder[Install]
+
+  implicit val encodeUniverseInstall: Encoder[UniverseInstall] =
+    deriveEncoder[UniverseInstall]
+
+  implicit val encodeUninstall: Encoder[Uninstall] =
+    deriveEncoder[Uninstall]
+
+  implicit val encodeOperation: Encoder[Operation] =
+    Encoder.instance { operation =>
+      val (json: Json, subclass: String) = operation match {
+        case i: Install => (i.asJson, i.getClass.getSimpleName)
+        case ui: UniverseInstall => (ui.asJson, ui.getClass.getSimpleName)
+        case u: Uninstall => (u.asJson, u.getClass.getSimpleName)
+      }
+
+      json.mapObject(_.add("type", subclass.asJson))
+    }
+
+  implicit val encodeOperationFailure: Encoder[OperationFailure] =
+    deriveEncoder[OperationFailure]
+
+  implicit val encodePendingOperation: Encoder[PendingOperation] =
+    deriveEncoder[PendingOperation]
+
+  implicit val encodeOperationStatus: Encoder[OperationStatus] =
+    deriveEncoder[OperationStatus]
 
   implicit val exceptionEncoder: Encoder[Exception] = {
     Encoder.instance { e => exceptionErrorResponse(e).asJson }
@@ -299,7 +329,7 @@ object Encoders extends LowPriorityImplicits {
     case ConversionError(failure) => failure
     case ServiceMarathonTemplateNotFound(name, PackageDefinition.Version(version)) =>
       s"Package: [$name] version: [$version] does not have a Marathon template defined and can not be rendered"
-     case EnvelopeError(msg) => msg
+    case EnvelopeError(msg) => msg
   }
   // scalastyle:on cyclomatic.complexity method.length
 
