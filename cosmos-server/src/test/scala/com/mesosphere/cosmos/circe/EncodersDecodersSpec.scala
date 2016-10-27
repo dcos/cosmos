@@ -7,7 +7,11 @@ import com.mesosphere.cosmos.http.MediaType
 import com.mesosphere.cosmos.http.MediaTypeSubType
 import com.mesosphere.cosmos.rpc.v1.circe.Decoders._
 import com.mesosphere.cosmos.rpc.v1.model.ErrorResponse
+import com.mesosphere.cosmos.rpc.v1.model.PackageCoordinate
 import com.mesosphere.cosmos.rpc.v1.model.PackageRepository
+import com.mesosphere.cosmos.storage.installqueue._
+import com.mesosphere.universe.test.TestingPackages
+import com.mesosphere.universe.v3.model.PackageDefinition
 import com.mesosphere.universe.v3.model.Repository
 import com.netaporter.uri.Uri
 import io.circe.DecodingFailure
@@ -15,13 +19,14 @@ import io.circe.Error
 import io.circe.Json
 import io.circe.JsonObject
 import io.circe.ParsingFailure
-import io.circe.jawn._
+import io.circe.jawn
 import io.circe.syntax._
 import java.io.InputStreamReader
 import org.scalatest.FreeSpec
 
 class EncodersDecodersSpec extends FreeSpec {
   import Encoders._
+  import Decoders._
 
   "CosmosError" - {
     "RepositoryUriSyntax" in {
@@ -164,10 +169,80 @@ class EncodersDecodersSpec extends FreeSpec {
       case Some(is) =>
         val jsonString = CharStreams.toString(new InputStreamReader(is))
         is.close()
-        decode[Repository](jsonString)
+        jawn.decode[Repository](jsonString)
       case _ =>
         throw new IllegalStateException(s"Unable to load classpath resource: $resourceName")
     }
+  }
+
+  "Operation" - {
+
+    "type field is correct" in {
+      val uninstall: Operation =
+        Uninstall(None)
+      val expectedUninstallJson =
+        Json.obj(
+          "packageDefinition" -> Json.Null,
+          "type" -> "Uninstall".asJson)
+      val actualUninstallJson = uninstall.asJson
+      assertResult(expectedUninstallJson)(actualUninstallJson)
+    }
+
+    "Install => Json => Install" in {
+      val install: Operation =
+        Install(
+          Uri.parse("https://travisbrown.github.io/circe/"),
+          TestingPackages.MinimalV3ModelV3PackageDefinition
+        )
+      val installPrime =
+        decode[Install](install.asJson.noSpaces)
+      assertResult(install)(installPrime)
+    }
+
+    "UniverseInstall => Json => UniverseInstall" in {
+      val universeInstall: Operation =
+        UniverseInstall(
+          TestingPackages.MinimalV3ModelV3PackageDefinition
+        )
+      val universeInstallPrime =
+        decode[UniverseInstall](universeInstall.asJson.noSpaces)
+      assertResult(universeInstall)(universeInstallPrime)
+    }
+
+    "Uninstall => Json => Uninstall" in {
+      val uninstall: Operation =
+        Uninstall(None)
+      val uninstallPrime =
+        decode[Uninstall](uninstall.asJson.noSpaces)
+      assertResult(uninstall)(uninstallPrime)
+    }
+  }
+
+  "OperationFailure" in {
+    val operationFailure =
+      OperationFailure(Uninstall(None), ErrorResponse("foo", "bar"))
+    val operationFailurePrime =
+      decode[OperationFailure](operationFailure.asJson.noSpaces)
+    assertResult(operationFailure)(operationFailurePrime)
+  }
+
+  "PendingOperation" in {
+    val pendingOperation =
+      PendingOperation(
+        PackageCoordinate("foo", PackageDefinition.Version("2")),
+        Uninstall(None),
+        None
+      )
+    val pendingOperationPrime =
+      decode[PendingOperation](pendingOperation.asJson.noSpaces)
+    assertResult(pendingOperation)(pendingOperationPrime)
+  }
+
+  "OperationStatus" in {
+    val operationStatus = OperationStatus(None, None)
+    val operationStatusPrime =
+      decode[OperationStatus](operationStatus.asJson.noSpaces)
+    assertResult(operationStatus)(operationStatusPrime)
   }
 
 }
