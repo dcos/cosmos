@@ -82,6 +82,7 @@ private object PackageSearchSpec extends TableDrivenPropertyChecks {
     name = "cassandra",
     currentVersion = universe.v3.model.PackageDefinition.Version("1.0.6-2.2.5"),
     versions = Map(
+      // scalastyle:off magic.number
       universe.v3.model.PackageDefinition.Version("0.2.0-1") -> universe.v3.model.PackageDefinition.ReleaseVersion(0).get,
       universe.v3.model.PackageDefinition.Version("0.2.0-2") -> universe.v3.model.PackageDefinition.ReleaseVersion(1).get,
       universe.v3.model.PackageDefinition.Version("1.0.5-2.2.5") -> universe.v3.model.PackageDefinition.ReleaseVersion(7).get,
@@ -89,6 +90,7 @@ private object PackageSearchSpec extends TableDrivenPropertyChecks {
       universe.v3.model.PackageDefinition.Version("2.2.5-0.2.0") -> universe.v3.model.PackageDefinition.ReleaseVersion(3).get,
       universe.v3.model.PackageDefinition.Version("1.0.6-2.2.5") -> universe.v3.model.PackageDefinition.ReleaseVersion(8).get,
       universe.v3.model.PackageDefinition.Version("1.0.4-2.2.5") -> universe.v3.model.PackageDefinition.ReleaseVersion(5).get
+      // scalastyle:on magic.number
     ),
     description = "Apache Cassandra running on DC/OS",
     framework = true,
@@ -125,7 +127,9 @@ private object PackageSearchSpec extends TableDrivenPropertyChecks {
     name = "memsql",
     currentVersion = universe.v3.model.PackageDefinition.Version("0.0.1"),
     versions = Map(universe.v3.model.PackageDefinition.Version("0.0.1") -> universe.v3.model.PackageDefinition.ReleaseVersion(0).get),
-    description = "MemSQL running on Apache Mesos. This framework provides the ability to create and manage a set of MemSQL clusters, each running with the MemSQL Ops management tool.",
+    description =
+      "MemSQL running on Apache Mesos. This framework provides the ability to create and manage " +
+        "a set of MemSQL clusters, each running with the MemSQL Ops management tool.",
     framework = true,
     tags = List("mysql", "database", "rdbms").map(universe.v3.model.PackageDefinition.Tag(_).get),
     selected = None,
@@ -141,7 +145,12 @@ private object PackageSearchSpec extends TableDrivenPropertyChecks {
     name = "mysql",
     currentVersion = universe.v3.model.PackageDefinition.Version("5.7.12"),
     versions = Map(universe.v3.model.PackageDefinition.Version("5.7.12") -> universe.v3.model.PackageDefinition.ReleaseVersion(1).get),
-    description = "MySQL is the world's most popular open source database. With its proven performance, reliability and ease-of-use, MySQL has become the leading database choice for web-based applications, covering the entire range from personal projects and websites, via e-commerce and information services, all the way to high profile web properties including Facebook, Twitter, YouTube, Yahoo! and many more.",
+    description =
+      "MySQL is the world's most popular open source database. With its proven performance, " +
+        "reliability and ease-of-use, MySQL has become the leading database choice for " +
+        "web-based applications, covering the entire range from personal projects and websites, " +
+        "via e-commerce and information services, all the way to high profile web properties " +
+        "including Facebook, Twitter, YouTube, Yahoo! and many more.",
     framework = false,
     tags = List("database", "mysql", "sql").map(universe.v3.model.PackageDefinition.Tag(_).get),
     selected = None,

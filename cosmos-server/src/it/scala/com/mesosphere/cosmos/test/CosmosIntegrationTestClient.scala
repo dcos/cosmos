@@ -64,12 +64,8 @@ object CosmosIntegrationTestClient extends Matchers {
 
   implicit val Session = RequestSession(
     sys.env.get("COSMOS_AUTHORIZATION_HEADER").map { token =>
-      // Start as 6 to trim the leading 'token=', then take the first 10 characters
-      val length = token.length
-      val offset = Math.min(length, 6)
-      val start = Math.max(0, offset)
-      val end = offset + Math.min(10, length - offset)
-      val tokenDisplay = token.substring(start, end)
+      val maxDisplayWidth = 10
+      val tokenDisplay = token.stripPrefix("token=").take(maxDisplayWidth)
       CosmosClient.logger.info(s"Loaded authorization token '$tokenDisplay...' from environment")
       Authorization(token)
     }
@@ -136,10 +132,11 @@ object CosmosIntegrationTestClient extends Matchers {
       status: Status = Status.Ok,
       method: String = "POST"
     )(implicit decoder: Decoder[Res], encoder: Encoder[Req]): Xor[ErrorResponse, Res] = {
-      require(method == "POST" || method == "GET")
-      val request =
-        if(method == "POST") buildPost(path, requestBody, requestMediaType, responseMediaType)
-        else buildGet(path, responseMediaType)
+      val request = method match {
+        case "POST" => buildPost(path, requestBody, requestMediaType, responseMediaType)
+        case "GET" => buildGet(path, responseMediaType)
+        case _ => throw new AssertionError(s"Unexpected HTTP method: $method")
+      }
 
       val response = CosmosClient(request)
       assertResult(status)(response.status)

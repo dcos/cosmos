@@ -19,7 +19,7 @@ final class PackageRepositoryIntegrationSpec extends FreeSpec with BeforeAndAfte
   import PackageRepositoryIntegrationSpec._
 
   private val defaultRepos = DefaultRepositories().getOrThrow
-  var originalRepositories: Seq[PackageRepository] = null
+  var originalRepositories: Seq[PackageRepository] = Seq.empty
 
   before {
     originalRepositories = listRepositories()
@@ -79,10 +79,11 @@ final class PackageRepositoryIntegrationSpec extends FreeSpec with BeforeAndAfte
       }
 
       "10" in {
-          val addRequest = PackageRepositoryAddRequest("name", "http://fake.fake", Some(10))
+        val index = 10
+        val addRequest = PackageRepositoryAddRequest("name", "http://fake.fake", Some(index))
 
-          val response = sendAddRequest(addRequest)
-          assertResult(Status.BadRequest)(response.status)
+        val response = sendAddRequest(addRequest)
+        assertResult(Status.BadRequest)(response.status)
       }
     }
 

@@ -11,6 +11,7 @@ import com.mesosphere.universe.v3.model.{DcosReleaseVersion, DcosReleaseVersionP
 import com.mesosphere.universe.v3.syntax.PackageDefinitionOps._
 import com.netaporter.uri.Uri
 import com.netaporter.uri.dsl._
+import com.twitter.finagle.http.Status
 import com.twitter.util.{Await, Throw}
 import org.scalatest.FreeSpec
 
@@ -20,8 +21,10 @@ final class UniverseClientSpec extends FreeSpec {
 
     val universeClient = new DefaultUniverseClient(CosmosIntegrationTestClient.adminRouter)
 
-    val version1Dot8 =
-      DcosReleaseVersion(DcosReleaseVersion.Version(1), List(DcosReleaseVersion.Version(8)))
+    val version1Dot8 = {
+      val (major, minor) = (1, 8)
+      DcosReleaseVersion(DcosReleaseVersion.Version(major), List(DcosReleaseVersion.Version(minor)))
+    }
 
     val baseRepoUri: Uri = "https://downloads.mesosphere.com/universe/dce867e9af73b85172d5a36bf8114c69b3be024e"
 
@@ -102,7 +105,7 @@ final class UniverseClientSpec extends FreeSpec {
 
       assertResult("GET")(method.getName)
       assertResult(repoUri)(uri)
-      assertResult(403)(status.code)
+      assertResult(Status.Forbidden)(status)
     }
 
   }

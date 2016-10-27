@@ -7,6 +7,7 @@ import com.mesosphere.cosmos.rpc.v1.model.PackageRepositoryAddRequest
 import com.mesosphere.cosmos.rpc.v1.circe.Encoders._
 import com.mesosphere.cosmos.test.CosmosIntegrationTestClient._
 import com.netaporter.uri.dsl._
+import com.twitter.finagle.http.Status
 import com.twitter.io.Buf
 import io.circe.{Json, JsonObject}
 import io.circe.jawn._
@@ -37,7 +38,7 @@ class RequestErrorsSpec extends FreeSpec {
           .buildPost(Buf.Utf8(body.noSpaces))
 
         val response = CosmosClient(req)
-        assertResult(400)(response.statusCode)
+        assertResult(Status.BadRequest)(response.status)
         assertResult(MediaTypes.ErrorResponse.show)(response.headerMap("Content-Type"))
         val Xor.Right(obj: JsonObject) = parse(response.contentString).map(jsonToJsonObject)
 
@@ -47,18 +48,21 @@ class RequestErrorsSpec extends FreeSpec {
 
         val errors = obj.obj("data").arr("errors")
         assertResult(3)(errors.size)
-        
+
         val acceptError :: contentTypeError :: bodyError :: Nil = errors.map(jsonToJsonObject)
 
         // assert Accept header error
         assertResult("not_valid")(acceptError.str("type"))
-        val expectedAcceptErrorMessage = "Item 'header 'Accept'' deemed invalid by rule: 'should match one of: application/vnd.dcos.package.install-response+json;charset=utf-8;version=v2, application/vnd.dcos.package.install-response+json;charset=utf-8;version=v1'"
+        val expectedAcceptErrorMessage =
+          "Item 'header 'Accept'' deemed invalid by rule: 'should match one of: " +
+            "application/vnd.dcos.package.install-response+json;charset=utf-8;version=v2, " +
+            "application/vnd.dcos.package.install-response+json;charset=utf-8;version=v1'"
         assertResult(expectedAcceptErrorMessage)(acceptError.str("message"))
         val acceptErrorData = acceptError.obj("data")
         val invalidItem = acceptErrorData.obj("invalidItem")
         assertResult("header")(invalidItem.str("type"))
         assertResult("Accept")(invalidItem.str("name"))
-        
+
         val expectedAvailable = Set(
           MediaTypes.V1InstallResponse.show,
           MediaTypes.V2InstallResponse.show
@@ -68,12 +72,14 @@ class RequestErrorsSpec extends FreeSpec {
         val expectedSpecified = accept.mediaTypes.map(_.show)
         val actualSpecified = acceptErrorData.arr("specified").map(_.asString.get).toSet
         assertResult(expectedSpecified)(actualSpecified)
-        
+
         // assert Content-Type header error
         assertResult("not_valid")(contentTypeError.str("type"))
-        val expectedContentTypeErrorMessage = "Item 'header 'Content-Type'' deemed invalid by rule: 'should match application/vnd.dcos.package.install-request+json;charset=utf-8;version=v1'"
+        val expectedContentTypeErrorMessage =
+          "Item 'header 'Content-Type'' deemed invalid by rule: 'should match " +
+            "application/vnd.dcos.package.install-request+json;charset=utf-8;version=v1'"
         assertResult(expectedContentTypeErrorMessage)(contentTypeError.str("message"))
-        
+
         // assert Request body error
         assertResult("not_parsed")(bodyError.str("type"))
         val expectedBodyErrorMessage = "Item 'body' unable to be parsed : 'Attempt to decode value on failed cursor: El(DownField(packageName),false,false)'"
@@ -85,7 +91,7 @@ class RequestErrorsSpec extends FreeSpec {
           .buildPost(Buf.Utf8(""))
 
         val response = CosmosClient(req)
-        assertResult(400)(response.statusCode)
+        assertResult(Status.BadRequest)(response.status)
         assertResult(MediaTypes.ErrorResponse.show)(response.headerMap("Content-Type"))
         val Xor.Right(obj: JsonObject) = parse(response.contentString).map(jsonToJsonObject)
 
@@ -110,7 +116,7 @@ class RequestErrorsSpec extends FreeSpec {
       }
     }
   }
-  
+
   private[this] def jsonToJsonObject(json: Json): JsonObject = {
     json.asObject.get
   }
