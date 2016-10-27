@@ -54,24 +54,19 @@ object MediaTypeOps {
       x: MediaType,
       y: MediaType
     ): Int = {
-      val compareQValue = QualityValue.qualityValueOrdering.compare(x.qValue, y.qValue)
-      // qvalues with the highest number come first, flip the sign here to get that cheaply
-      if (compareQValue != 0) return -compareQValue
+      val comparisons =
+        // qvalues with the highest number come first, flip the sign here to get that cheaply
+        -QualityValue.qualityValueOrdering.compare(x.qValue, y.qValue) #::
+        Ordering.String.compare(x.`type`, y.`type`) #::
+        Ordering.String.compare(x.subType.value, y.subType.value) #::
+        Ordering.Option[String].compare(x.subType.suffix, y.subType.suffix) #::
+        // the higher the number of parameters the higher priority it should be, flip the sign here to get that cheaply
+        -Ordering.Int.compare(
+          stripPropertiesIgnoredDuringComparison(x.parameters).size,
+          stripPropertiesIgnoredDuringComparison(y.parameters).size) #::
+        Stream.empty
 
-      val compareType = Ordering.String.compare(x.`type`, y.`type`)
-      if (compareType != 0) return compareType
-
-      val compareSubTypeValue = Ordering.String.compare(x.subType.value, y.subType.value)
-      if (compareSubTypeValue != 0) return compareSubTypeValue
-
-      val compareSubTypeSuffix = Ordering.Option[String].compare(x.subType.suffix, y.subType.suffix)
-      if (compareSubTypeSuffix != 0) return compareSubTypeSuffix
-
-      // the higher the number of parameters the higher priority it should be, flip the sign here to get that cheaply
-      -Ordering.Int.compare(
-        stripPropertiesIgnoredDuringComparison(x.parameters).size,
-        stripPropertiesIgnoredDuringComparison(y.parameters).size
-      )
+      comparisons.find(_ != 0).getOrElse(0)
     }
   }
 

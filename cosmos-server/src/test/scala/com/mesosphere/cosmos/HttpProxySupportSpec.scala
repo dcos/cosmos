@@ -49,7 +49,7 @@ class HttpProxySupportSpec extends FreeSpec {
           val vars = HttpProxySupport.extractProxyEnvVariables(env)
           assertResult(ProxyEnvVariables(Some("http://hostlocal:8213"), None, None))(vars)
         }
-        
+
       }
 
       "HTTPS" - {
@@ -136,7 +136,7 @@ class HttpProxySupportSpec extends FreeSpec {
         }
 
       }
-      
+
       "Proxy Credentials" - {
 
         val vars = ProxyEnvVariables(Some("http://localhost:3128"), Some("http://hostlocal:8213"), Some("no_proxy_vals"))
@@ -160,7 +160,7 @@ class HttpProxySupportSpec extends FreeSpec {
           clearSystemProperty("http.nonProxyHosts")
           clearSystemProperty("https.proxyHost")
           clearSystemProperty("https.proxyPort")
-          Authenticator.setDefault(null)
+          Authenticator.setDefault(null)  // scalastyle:ignore null
         }
 
         "are used in Authenticator (http)" - {
@@ -169,9 +169,8 @@ class HttpProxySupportSpec extends FreeSpec {
             override def getRequestingURL: URL = URI.create("http://someplace:123").toURL
           }
 
-          val authentication = auth.getPasswordAuthentication
+          val Some(authentication) = Option(auth.getPasswordAuthentication)
 
-          assert(authentication != null)
           assertResult("test")(authentication.getUserName)
           assertResult("testtest".toCharArray)(authentication.getPassword)
 
@@ -183,9 +182,8 @@ class HttpProxySupportSpec extends FreeSpec {
             override def getRequestingURL: URL = URI.create("https://someplace:123").toURL
           }
 
-          val authentication = auth.getPasswordAuthentication
+          val Some(authentication) = Option(auth.getPasswordAuthentication)
 
-          assert(authentication != null)
           assertResult("foo")(authentication.getUserName)
           assertResult("bar".toCharArray)(authentication.getPassword)
         }
@@ -196,8 +194,8 @@ class HttpProxySupportSpec extends FreeSpec {
             override def getRequestingURL: URL = URI.create("ftp://someplace:123").toURL
           }
 
-          val authentication = auth.getPasswordAuthentication
-          assert(authentication == null)
+          val authentication = Option(auth.getPasswordAuthentication)
+          assert(authentication.isEmpty)
         }
 
         "are not provided when requestorType is not proxy" in {
@@ -205,8 +203,8 @@ class HttpProxySupportSpec extends FreeSpec {
             override def getRequestorType: RequestorType = RequestorType.SERVER
           }
 
-          val authentication = auth.getPasswordAuthentication
-          assert(authentication == null)
+          val authentication = Option(auth.getPasswordAuthentication)
+          assert(authentication.isEmpty)
         }
 
         "are not provided when no user:pass in url" in {
@@ -215,8 +213,8 @@ class HttpProxySupportSpec extends FreeSpec {
             override def getRequestingURL: URL = URI.create("https://someplace:123").toURL
           }
 
-          val authentication = auth.getPasswordAuthentication
-          assert(authentication == null)
+          val authentication = Option(auth.getPasswordAuthentication)
+          assert(authentication.isEmpty)
         }
 
         "are not provided when no password in url" in {
@@ -226,8 +224,8 @@ class HttpProxySupportSpec extends FreeSpec {
             override def getRequestingURL: URL = URI.create("https://someplace:123").toURL
           }
 
-          val authentication = auth.getPasswordAuthentication
-          assert(authentication == null)
+          val authentication = Option(auth.getPasswordAuthentication)
+          assert(authentication.isEmpty)
         }
 
       }

@@ -17,7 +17,8 @@ import org.jboss.netty.handler.codec.http.HttpMethod
 
 import scala.util.control.NoStackTrace
 
-sealed abstract class CosmosError(causedBy: Throwable = null /*java compatibility*/) extends RequestError(causedBy) {
+// scalastyle:off number.of.types
+sealed abstract class CosmosError(causedBy: Option[Throwable] = None) extends RequestError(causedBy) {
 
   def errType: String = this.getClass.getSimpleName
 
@@ -54,7 +55,7 @@ case class VersionNotFound(
   packageVersion: universe.v3.model.PackageDefinition.Version
 ) extends CosmosError
 
-case class PackageFileMissing(packageName: String, cause: Throwable = null) extends CosmosError(cause)
+case class PackageFileMissing(packageName: String, cause: Option[Throwable] = None) extends CosmosError(cause)
 case class PackageFileNotJson(fileName: String, parseError: String) extends CosmosError
 case class UnableToParseMarathonAsJson(parseError: String) extends  CosmosError
 case class PackageFileSchemaMismatch(fileName: String, decodingFailure: DecodingFailure) extends CosmosError {
@@ -82,7 +83,8 @@ case class IndexNotFound(repoUri: Uri) extends CosmosError
 
 case class MarathonAppDeleteError(appId: AppId) extends CosmosError
 case class MarathonAppNotFound(appId: AppId) extends CosmosError
-case class CirceError(cerr: io.circe.Error) extends CosmosError
+case class CirceError(circeError: io.circe.Error) extends CosmosError
+case object MarathonTemplateMustBeJsonObject extends CosmosError
 
 case class UnsupportedContentType(supported: List[MediaType], actual: Option[String] = None) extends CosmosError {
   override def getData: Option[JsonObject] = {
@@ -141,7 +143,7 @@ case class UninstallNonExistentAppForPackage(packageName: String, appId: AppId) 
 case class ServiceUnavailable(
   serviceName: String,
   causedBy: Throwable
-) extends CosmosError(causedBy) {
+) extends CosmosError(Some(causedBy)) {
   override val status = Status.ServiceUnavailable
   override val getData = Some(JsonObject.singleton("serviceName", serviceName.asJson))
 }
@@ -162,10 +164,10 @@ case class Forbidden(serviceName: String) extends CosmosError with NoStackTrace 
   override val getData: Option[JsonObject] = Some(JsonObject.singleton("serviceName", serviceName.asJson))
 }
 
-case class IncompleteUninstall(packageName: String, causedBy: Throwable) extends CosmosError(causedBy)
+case class IncompleteUninstall(packageName: String, causedBy: Throwable) extends CosmosError(Some(causedBy))
 case class ZooKeeperStorageError(msg: String) extends CosmosError
 
-case class ConcurrentAccess(causedBy: Throwable) extends CosmosError(causedBy)
+case class ConcurrentAccess(causedBy: Throwable) extends CosmosError(Some(causedBy))
 
 final case class RepoNameOrUriMissing() extends CosmosError
 
@@ -187,7 +189,7 @@ case class UnsupportedRepositoryUri(uri: Uri) extends CosmosError
 case class RepositoryUriSyntax(
   repository: PackageRepository,
   causedBy: Throwable
-) extends CosmosError(causedBy) {
+) extends CosmosError(Some(causedBy)) {
   override def getData: Option[JsonObject] = {
     Some(JsonObject.singleton("cause", causedBy.getMessage.asJson))
   }
@@ -196,7 +198,7 @@ case class RepositoryUriSyntax(
 case class RepositoryUriConnection(
   repository: PackageRepository,
   causedBy: Throwable
-) extends CosmosError(causedBy) {
+) extends CosmosError(Some(causedBy)) {
   override def getData: Option[JsonObject] = {
     Some(JsonObject.singleton("cause", causedBy.getMessage.asJson))
   }
@@ -217,3 +219,5 @@ case class ConversionError(failure: String) extends CosmosError
 case class ServiceMarathonTemplateNotFound(packageName: String, packageVersion: PackageDefinition.Version) extends CosmosError
 
 case class EnvelopeError(msg: String) extends CosmosError
+
+// scalastyle:on number.of.types

@@ -6,10 +6,10 @@ import com.twitter.bijection.Bijection
 
 object Label {
 
-  implicit val labelV1PackageMetadataToRpcV1InstalledPackageInformation: Bijection[
-      label.v1.model.PackageMetadata,
-      rpc.v1.model.InstalledPackageInformation
-    ] = Bijection.build(fwd)(rev)
+  implicit val labelV1PackageMetadataToRpcV1InstalledPackageInformation:
+    Bijection[label.v1.model.PackageMetadata, rpc.v1.model.InstalledPackageInformation] = {
+    Bijection.build(fwd)(rev)
+  }
 
   private[this] def fwd(x: label.v1.model.PackageMetadata) = {
     rpc.v1.model.InstalledPackageInformation(

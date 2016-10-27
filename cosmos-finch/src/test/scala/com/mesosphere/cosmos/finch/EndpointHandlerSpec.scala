@@ -19,10 +19,11 @@ final class EndpointHandlerSpec extends FreeSpec {
       "so that the business logic of the EndpointHandler can use it" - {
 
         "with value of type Int" in {
-          val context = buildEndpointContext[Int, Int](requestBody = 42)
+          val expected = 42
+          val context = buildEndpointContext[Int, Int](requestBody = expected)
           val result = (new IdentityHandler[Int])(context)
           val responseBody = extractBody[Int](result)
-          assertResult(42)(responseBody)
+          assertResult(expected)(responseBody)
         }
 
         "with value of type String" in {
@@ -61,11 +62,13 @@ final class EndpointHandlerSpec extends FreeSpec {
       "because all responses must be sent in JSON format" - {
 
         "response value of type Int" in {
-          val encoder = MediaTypedEncoder(Encoder.instance[Unit](_ => 42.asJson), TestingMediaTypes.any)
+          val expected = 42
+          val underlying = Encoder.instance[Unit](_ => expected.asJson)
+          val encoder = MediaTypedEncoder(underlying, TestingMediaTypes.any)
           val context = buildEndpointContext[Unit, Unit](requestBody = ())(encoder)
           val result = (new IdentityHandler[Unit])(context)
           val responseBody = extractBody[Int](result)
-          assertResult(42)(responseBody)
+          assertResult(expected)(responseBody)
         }
 
         "response value of type String" in {

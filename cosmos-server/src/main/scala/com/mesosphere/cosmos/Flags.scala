@@ -7,6 +7,7 @@ import com.mesosphere.cosmos.model.ZooKeeperUri
 import com.netaporter.uri.Uri
 import com.twitter.app.GlobalFlag
 
+// scalastyle:off object.name
 object dcosUri extends GlobalFlag[Uri](
   s"The URI where the DCOS Admin Router is located. If this flag is set, " +
     s"${mesosMasterUri.name} and ${marathonUri.name} will be ignored"
@@ -36,3 +37,4 @@ object dataDir extends GlobalFlag[file.Path](
   file.Paths.get("/var/lib/cosmos"),
   help = "Root directory for all cosmos runtime "
 )
+// scalastyle:on object.name

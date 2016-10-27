@@ -10,7 +10,7 @@ object PackageDefinition {
   final case class Version(override val toString: String) extends AnyVal
 
   final class Tag private(val value: String) extends AnyVal {
-    override def toString = value
+    override def toString: String = value
   }
   object Tag {
     val packageDetailsTagRegex = "^[^\\s]+$"
@@ -30,8 +30,12 @@ object PackageDefinition {
   object ReleaseVersion {
 
     def apply(value: Int): Try[ReleaseVersion] = {
-      if (value >= 0) Return(new ReleaseVersion(value))
-      else Throw(new IllegalArgumentException(s"Expected integer value >= 0 for release version, but found [$value]"))
+      if (value >= 0) {
+        Return(new ReleaseVersion(value))
+      } else {
+        val message = s"Expected integer value >= 0 for release version, but found [$value]"
+        Throw(new IllegalArgumentException(message))
+      }
     }
 
     implicit val packageDefinitionReleaseVersionOrdering: Ordering[ReleaseVersion] = Ordering.by(_.value)

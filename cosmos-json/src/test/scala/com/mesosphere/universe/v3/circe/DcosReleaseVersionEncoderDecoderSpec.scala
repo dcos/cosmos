@@ -14,7 +14,9 @@ class DcosReleaseVersionEncoderDecoderSpec extends FreeSpec {
 
   "DcosReleaseVersion" - {
     val str = "2.10.153-beta"
-    val obj = DcosReleaseVersion(Version(2), List(Version(10), Version(153)), Some(Suffix("beta")))
+    val (major, minor, patch) = (2, 10, 153)
+    val subVersions = List(Version(minor), Version(patch))
+    val obj = DcosReleaseVersion(Version(major), subVersions, Some(Suffix("beta")))
     "decode"  in {
       val stringToDecode = s""""$str""""
       val Xor.Right(decoded) = decode[DcosReleaseVersion](stringToDecode)

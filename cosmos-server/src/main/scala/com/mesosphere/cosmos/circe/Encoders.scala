@@ -111,13 +111,25 @@ object Encoders extends LowPriorityImplicits {
       }
     }
 
+  // Omits fields of type `Option[Throwable]` when encoding objects.
+  // See comment above `dropThrowableFromEncodedObjects` for an explanation.
+  implicit def dropOptionThrowableFromEncodedObjects[K <: Symbol, H <: Option[Throwable], T <: HList](implicit
+    encodeTail: Lazy[DerivedObjectEncoder[T]]
+  ): DerivedObjectEncoder[FieldType[K, H] :: T] = {
+    new DerivedObjectEncoder[FieldType[K, H] :: T] {
+      override def encodeObject(a: FieldType[K, H] :: T): JsonObject = {
+        encodeTail.value.encodeObject(a.tail)
+      }
+    }
+  }
+
   implicit val encodeCosmosError: Encoder[CosmosError] = deriveEncoder[CosmosError]
 
   private[this] def exceptionErrorResponse(t: Throwable): ErrorResponse = t match {
-    case cerr: io.circe.Error => circeErrorResponse(cerr)
+    case circeError: io.circe.Error => circeErrorResponse(circeError)
     case Error.NotPresent(item) =>
       ErrorResponse("not_present", s"Item '${item.description}' not present but required")
-    case Error.NotParsed(item, typ, cause) =>
+    case Error.NotParsed(item, _, cause) =>
       ErrorResponse("not_parsed", s"Item '${item.description}' unable to be parsed : '${cause.getMessage}'")
     case Error.NotValid(item, rule) =>
       ErrorResponse("not_valid", s"Item '${item.description}' deemed invalid by rule: '$rule'")
@@ -134,7 +146,7 @@ object Encoders extends LowPriorityImplicits {
       ErrorResponse("unhandled_exception", t.getMessage)
   }
 
-  private[this] def circeErrorResponse(cerr: io.circe.Error): ErrorResponse = cerr match {
+  private[this] def circeErrorResponse(circeError: io.circe.Error): ErrorResponse = circeError match {
     case pf: ParsingFailure =>
       ErrorResponse(
         "json_error",
@@ -159,10 +171,11 @@ object Encoders extends LowPriorityImplicits {
 
   private[this] def msgForRequestError(re: RequestError): String = re match {
     case ce: CosmosError => msgForCosmosError(ce)
-    case IncompatibleAcceptHeader(available, specified) =>
+    case IncompatibleAcceptHeader(available, _) =>
       s"Item 'header 'Accept'' deemed invalid by rule: 'should match one of: ${available.map(_.show).mkString(", ")}'"
   }
 
+  // scalastyle:off cyclomatic.complexity method.length
   private[this] def msgForCosmosError(err: CosmosError): String = err match {
     case ConcurrentPackageUpdateDuringPublish() =>
       "A concurrent update on this package has been performed. Please try again."
@@ -194,7 +207,8 @@ object Encoders extends LowPriorityImplicits {
       s"Error while deleting marathon app '$appId'"
     case MarathonAppNotFound(appId) =>
       s"Unable to locate service with marathon appId: '$appId'"
-    case CirceError(cerr) => cerr.getMessage
+    case CirceError(circeError) => circeError.getMessage
+    case MarathonTemplateMustBeJsonObject => "Rendered Marathon JSON must be a JSON object"
     case JsonSchemaMismatch(_) =>
       "Options JSON failed validation"
     case UnsupportedContentType(supported, actual) =>
@@ -255,7 +269,7 @@ object Encoders extends LowPriorityImplicits {
         case Ior.Left(n) => s"Repository name [$n] is already present in the list"
         case Ior.Right(u) => s"Repository URI [$u] is already present in the list"
       }
-    case RepositoryAddIndexOutOfBounds(attempted, max) =>
+    case RepositoryAddIndexOutOfBounds(attempted, _) =>
       s"Index out of range: $attempted"
     case UnsupportedRepositoryVersion(version) => s"Repository version [$version] is not supported"
     case UnsupportedRepositoryUri(uri) => s"Repository URI [$uri] uses an unsupported scheme. " +
@@ -283,5 +297,6 @@ object Encoders extends LowPriorityImplicits {
       s"Package: [$name] version: [$version] does not have a Marathon template defined and can not be rendered"
      case EnvelopeError(msg) => msg
   }
+  // scalastyle:on cyclomatic.complexity method.length
 
 }

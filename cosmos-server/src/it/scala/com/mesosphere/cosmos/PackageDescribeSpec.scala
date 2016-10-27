@@ -164,10 +164,11 @@ private object PackageDescribeSpec extends TableDrivenPropertyChecks {
     List("dcos<1.0", "git+https://github.com/mesosphere/dcos-helloworld.git#dcos-helloworld=0.1.0")
   )
 
+  val mem = 512
   val HelloworldMustacheDef = MarathonApp(
     id = AppId("helloworld"),
     cpus = 1.0,
-    mem = 512,
+    mem = mem,
     instances = 1,
     cmd = Some("python3 -m http.server {{port}}"),
     container = Some(MarathonAppContainer("DOCKER", Some(MarathonAppContainerDocker("python:3", Some("HOST"))))),

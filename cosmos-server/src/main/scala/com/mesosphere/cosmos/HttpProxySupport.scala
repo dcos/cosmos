@@ -117,11 +117,11 @@ private[cosmos] object HttpProxySupport {
     proxyUri
       .flatMap(Uris.extractHostAndPort(_).toOption)
       .foreach {
-        case ConnectionDetails(h, p, tls) =>
-          if (System.getProperty(hostProperty) == null) {
+        case ConnectionDetails(h, p, _) =>
+          if (Option(System.getProperty(hostProperty)).isEmpty) {
             System.setProperty(hostProperty, h)
           }
-          if (System.getProperty(portProperty) == null) {
+          if (Option(System.getProperty(portProperty)).isEmpty) {
             System.setProperty(portProperty, p.toString)
           }
       }
@@ -132,11 +132,10 @@ private[cosmos] object HttpProxySupport {
       .map { pattern =>
         pattern.replaceAllLiterally(",", "|")
       }
-      .foreach {
-        case pattern =>
-          if (System.getProperty(HttpProxyNoHosts) == null) {
-            System.setProperty(HttpProxyNoHosts, pattern)
-          }
+      .foreach { pattern =>
+        if (Option(System.getProperty(HttpProxyNoHosts)).isEmpty) {
+          System.setProperty(HttpProxyNoHosts, pattern)
+        }
       }
   }
 

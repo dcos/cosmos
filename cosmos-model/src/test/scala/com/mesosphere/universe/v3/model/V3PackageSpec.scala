@@ -14,7 +14,7 @@ class V3PackageSpec extends FreeSpec {
         v3Package("pkg2", Version("1.0"), ReleaseVersion(1).get),
         v3Package("pkg2", Version("2.0"), ReleaseVersion(2).get),
         v3Package("pkg3", Version("1.0"), ReleaseVersion(3).get),
-        v3Package("pkg4", Version("1.0"), ReleaseVersion(4).get),
+        v3Package("pkg4", Version("1.0"), ReleaseVersion(4).get), // scalastyle:ignore magic.number
         v3Package("pkg5", Version("1.0-1"), ReleaseVersion(1).get),
         v3Package("pkg5", Version("2.0-1"), ReleaseVersion(2).get),
         v3Package("pkg5", Version("1.1-1"), ReleaseVersion(3).get)
@@ -30,7 +30,7 @@ class V3PackageSpec extends FreeSpec {
         v3Package("pkg2", Version("2.0"), ReleaseVersion(2).get),
         v3Package("pkg3", Version("1.0"), ReleaseVersion(3).get),
         v3Package("pkg5", Version("1.1-1"), ReleaseVersion(3).get),
-        v3Package("pkg4", Version("1.0"), ReleaseVersion(4).get)
+        v3Package("pkg4", Version("1.0"), ReleaseVersion(4).get) // scalastyle:ignore magic.number
       )
 
       val sorted = list.sorted

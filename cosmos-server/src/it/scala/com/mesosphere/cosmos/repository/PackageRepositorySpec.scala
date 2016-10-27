@@ -26,7 +26,7 @@ final class PackageRepositorySpec
   import PackageRepositorySpec._
 
   // TODO: Move all these into the integration spec
-  var originalRepositories: Seq[PackageRepository] = null
+  var originalRepositories: Seq[PackageRepository] = Seq.empty
 
   before {
     originalRepositories = listRepos().repositories

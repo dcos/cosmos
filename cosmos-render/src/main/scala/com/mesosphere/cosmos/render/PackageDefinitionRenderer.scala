@@ -72,7 +72,7 @@ object PackageDefinitionRenderer {
     (pkgDef.config, options.nonEmpty) match {
       // Success scenarios
       case (None, false) => Xor.Right(())
-      case (Some(schema), false) => Xor.Right(())
+      case (Some(_), false) => Xor.Right(())
       // Failure scenarios
       case (None, true) => Xor.Left(OptionsNotAllowed)
       case (Some(schema), true) =>
@@ -121,7 +121,7 @@ object PackageDefinitionRenderer {
 
     parse(renderedJsonString).map(_.asObject) match {
       case Xor.Left(pe)           => Xor.Left(RenderedTemplateNotJson(pe))
-      case Xor.Right(None)        => Xor.Left(RenderedTemplateNotJson())
+      case Xor.Right(None)        => Xor.Left(RenderedTemplateNotJsonObject)
       case Xor.Right(Some(obj))   => Xor.Right(obj)
     }
   }
@@ -129,7 +129,7 @@ object PackageDefinitionRenderer {
   private[this] def jsonToJava(json: Json): Any = {
     import scala.collection.JavaConverters._
     json.fold(
-      jsonNull = null,
+      jsonNull = null,  // scalastyle:ignore null
       jsonBoolean = identity,
       jsonNumber = n => n.toInt.getOrElse(n.toDouble),
       jsonString = identity,

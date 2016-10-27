@@ -210,7 +210,7 @@ class PackageDefinitionRendererSpec extends FreeSpec with TableDrivenPropertyChe
       val Xor.Left(err) = PackageDefinitionRenderer.renderMarathonV2App("http://someplace", pkg, None, None)
       assertResult(MissingMarathonV2AppTemplate)(err)
     }
-    
+
     "result in error if options provided but no config defined" in {
       val mustache = """{"id": "{{option.id}}"}"""
       val mustacheBytes = ByteBuffer.wrap(mustache.getBytes(StandardCharsets.UTF_8))
@@ -244,7 +244,8 @@ class PackageDefinitionRendererSpec extends FreeSpec with TableDrivenPropertyChe
         marathon = Some(Marathon(mustacheBytes))
       )
 
-      val Xor.Left(RenderedTemplateNotJson(ParsingFailure(_, cause))) = PackageDefinitionRenderer.renderMarathonV2App("http://someplace", pkg, None, None)
+      val Xor.Left(RenderedTemplateNotJson(ParsingFailure(_, cause))) =
+        PackageDefinitionRenderer.renderMarathonV2App("http://someplace", pkg, None, None)
       assert(cause.isInstanceOf[jawn.IncompleteParseException])
     }
 
@@ -261,11 +262,7 @@ class PackageDefinitionRendererSpec extends FreeSpec with TableDrivenPropertyChe
       )
 
       val Xor.Left(err) = PackageDefinitionRenderer.renderMarathonV2App("http://someplace", pkg, None, None)
-      // when the rendered template is valid json, but not a valid json object the transformation
-      // results in a None, not providing us any specific error, so we expect the cause to be 'null'
-      // I realize this isn't great in scala, but we're dealing with exceptions and the java baggage
-      // that come with them.
-      assertResult(RenderedTemplateNotJson(null))(err)
+      assertResult(RenderedTemplateNotJsonObject)(err)
     }
 
     "enforce appId is set to argument passed to argument if Some" in {
@@ -467,10 +464,10 @@ class PackageDefinitionRendererSpec extends FreeSpec with TableDrivenPropertyChe
   }
 
   private[this] def classpathJsonString(resourceName: String): String = {
-    val is = this.getClass.getResourceAsStream(resourceName)
-    if (is == null) {
-      throw new IllegalStateException(s"Unable to load classpath resource: $resourceName")
+    Option(this.getClass.getResourceAsStream(resourceName)) match {
+      case Some(is) => Source.fromInputStream(is).mkString
+      case _ => throw new IllegalStateException(s"Unable to load classpath resource: $resourceName")
     }
-    Source.fromInputStream(is).mkString
   }
+
 }

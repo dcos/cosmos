@@ -245,7 +245,21 @@ object CosmosBuild extends Build {
             <name>Tamar Ben-Shachar</name>
           </developer>
         </developers>
-  )
+  ) ++ org.scalastyle.sbt.ScalastylePlugin.projectSettings
+
+  val scalastyleItSettings = {
+    import org.scalastyle.sbt.ScalastylePlugin._
+
+    Seq(
+      (scalastyleConfig in IntegrationTest) := (scalastyleConfig in scalastyle).value,
+      (scalastyleConfigUrl in IntegrationTest) := None,
+      (scalastyleConfigUrlCacheFile in IntegrationTest) := "scalastyle-it-config.xml",
+      (scalastyleConfigRefreshHours in IntegrationTest) := (scalastyleConfigRefreshHours in scalastyle).value,
+      (scalastyleTarget in IntegrationTest) := target.value / "scalastyle-it-result.xml",
+      (scalastyleFailOnError in IntegrationTest) := (scalastyleFailOnError in scalastyle).value,
+      (scalastyleSources in IntegrationTest) := Seq((scalaSource in IntegrationTest).value)
+    ) ++ Project.inConfig(IntegrationTest)(rawScalastyleSettings())
+  }
 
   private lazy val cosmosIntegrationTestServer = settingKey[CosmosIntegrationTestServer]("cosmos-it-server")
 
@@ -263,7 +277,7 @@ object CosmosBuild extends Build {
     testOptions in IntegrationTest += Tests.Cleanup(() =>
       (cosmosIntegrationTestServer in IntegrationTest).value.cleanup()
     )
-  )
+  ) ++ scalastyleItSettings
 
   lazy val cosmos = Project("cosmos", file("."))
     .settings(sharedSettings)

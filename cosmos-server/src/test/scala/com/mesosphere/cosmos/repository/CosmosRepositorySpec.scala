@@ -95,17 +95,29 @@ final class CosmosRepositorySpec extends FreeSpec {
     "found multiple" in {
       val u = Uri.parse("/uri")
       val rep = C.rpc.v1.model.PackageRepository("test", u)
-      val c = CosmosRepository(rep, client(List(TestingPackages.MinimalV3ModelV2PackageDefinition, TestingPackages.MinimalV3ModelV2PackageDefinition)))
-      assertResult(Return(List(TestingPackages.MinimalV3ModelV2PackageDefinition, TestingPackages.MinimalV3ModelV2PackageDefinition)))(Try(Await.result(c.getPackagesByPackageName("minimal"))))
+      val packages = List(
+        TestingPackages.MinimalV3ModelV2PackageDefinition,
+        TestingPackages.MinimalV3ModelV2PackageDefinition
+      )
+      val c = CosmosRepository(rep, client(packages))
+
+      assertResult(Return(packages))(Try(Await.result(c.getPackagesByPackageName("minimal"))))
       assertResult(Return(Nil))(Try(Await.result(c.getPackagesByPackageName("test"))))
     }
     "found MAXIMAL" in {
       val u = Uri.parse("/uri")
       val rep = C.rpc.v1.model.PackageRepository("test", u)
-      val c = CosmosRepository(rep, client(List(TestingPackages.MinimalV3ModelV2PackageDefinition, TestingPackages.MinimalV3ModelV2PackageDefinition, TestingPackages.MaximalV3ModelV3PackageDefinition)))
+      val minimal = List(
+        TestingPackages.MinimalV3ModelV2PackageDefinition,
+        TestingPackages.MinimalV3ModelV2PackageDefinition
+      )
+      val packages = TestingPackages.MaximalV3ModelV3PackageDefinition :: minimal
+      val c = CosmosRepository(rep, client(packages))
 
-      assertResult(Return(List(TestingPackages.MinimalV3ModelV2PackageDefinition, TestingPackages.MinimalV3ModelV2PackageDefinition)))(Try(Await.result(c.getPackagesByPackageName("minimal"))))
-      assertResult(Return(List(TestingPackages.MaximalV3ModelV3PackageDefinition)))(Try(Await.result(c.getPackagesByPackageName("MAXIMAL"))))
+      assertResult(Return(minimal))(Try(Await.result(c.getPackagesByPackageName("minimal"))))
+      assertResult(Return(List(TestingPackages.MaximalV3ModelV3PackageDefinition))) {
+        Try(Await.result(c.getPackagesByPackageName("MAXIMAL")))
+      }
       assertResult(Return(Nil))(Try(Await.result(c.getPackagesByPackageName("test"))))
     }
   }
@@ -169,8 +181,7 @@ final class CosmosRepositorySpec extends FreeSpec {
                ): C.repository.UniverseClient = {
       new C.repository.UniverseClient {
         def apply(repository: PackageRepository)
-                 (implicit session: RequestSession)
-                 :Future[universe.v3.model.Repository] = Future { 
+                 (implicit session: RequestSession): Future[universe.v3.model.Repository] = Future {
           if (count == 0) {
             count = count + 1
             universe.v3.model.Repository(before)

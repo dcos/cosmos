@@ -47,6 +47,7 @@ private[cosmos] final class PackageInstallHandler(
               Future.exception(JsonSchemaMismatch(validationErrors))
             case InvalidLabelSchema(cause) => Future.exception(CirceError(cause))
             case RenderedTemplateNotJson(cause) => Future.exception(CirceError(cause))
+            case RenderedTemplateNotJsonObject => Future.exception(MarathonTemplateMustBeJsonObject)
             case OptionsNotAllowed =>
               val error = Map("message" -> "No schema available to validate the provided options").asJson
               Future.exception(JsonSchemaMismatch(List(error)))

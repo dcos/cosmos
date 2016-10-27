@@ -121,6 +121,7 @@ class DcosReleaseVersionSpec extends FreeSpec {
       }
     }
 
+    // scalastyle:off magic.number
     "show should render correctly" - {
       "1.0.0-beta" in {
         val test = DcosReleaseVersion(Version(1), List(Version(0), Version(0)), Some(Suffix("beta")))
@@ -163,6 +164,7 @@ class DcosReleaseVersionSpec extends FreeSpec {
         }
       }
     }
+    // scalastyle:on magic.number
 
     "Suffix" - {
       "enforces format constraints" - {

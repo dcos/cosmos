@@ -47,26 +47,14 @@ object DcosReleaseVersion {
   }
 
   implicit val dcosReleaseVersionOrdering: Ordering[DcosReleaseVersion] = new Ordering[DcosReleaseVersion] {
-    override def compare(
-      x: DcosReleaseVersion,
-      y: DcosReleaseVersion
-    ): Int = {
-      val compare1 = Version.versionOrdering.compare(x.version, y.version)
-      if (compare1 != 0) return compare1
+    override def compare(x: DcosReleaseVersion, y: DcosReleaseVersion): Int = {
+      val comparisons =
+        Version.versionOrdering.compare(x.version, y.version) #::
+        x.subVersions.toStream
+          .zipAll(y.subVersions, Version.zero, Version.zero)
+          .map { case (xx, yy) => Version.versionOrdering.compare(xx, yy) }
 
-      val zip =
-        x.subVersions.zipAll(
-          y.subVersions,
-          Version.zero,
-          Version.zero
-        )
-
-      val comparisons = zip.map { case (xx, yy) => Version.versionOrdering.compare(xx, yy) }
-
-      comparisons.find(_ != 0) match {
-        case Some(i) => i
-        case None => 0
-      }
+      comparisons.find(_ != 0).getOrElse(0)
     }
   }
 

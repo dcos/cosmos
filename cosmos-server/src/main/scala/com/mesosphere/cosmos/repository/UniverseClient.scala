@@ -10,7 +10,7 @@ import cats.data.Xor
 import cats.data.Xor.{Left, Right}
 import com.mesosphere.cosmos._
 import com.mesosphere.cosmos.http.MediaTypeOps._
-import com.mesosphere.cosmos.http.{MediaTypeParseError, MediaTypeParser, RequestSession}
+import com.mesosphere.cosmos.http.{MediaType, MediaTypeParseError, MediaTypeParser, RequestSession}
 import com.mesosphere.cosmos.rpc.v1.model.PackageRepository
 import com.mesosphere.universe
 import com.mesosphere.universe.v2.circe.Decoders._
@@ -21,18 +21,21 @@ import com.netaporter.uri.Uri
 import com.twitter.bijection.Conversion.asMethod
 import com.twitter.finagle.stats.{NullStatsReceiver, Stat, StatsReceiver}
 import com.twitter.io.StreamIO
-import com.twitter.util.Future
+import com.twitter.util.{Future, Try => TwitterTry}
 import io.circe.jawn._
 import io.circe.{Decoder, DecodingFailure, Json, JsonObject}
 
+import scala.collection.JavaConverters._
 import scala.io.Source
-import scala.util.{Failure, Success, Try}
+import scala.util.{Failure, Success, Try => ScalaTry}
 
 trait UniverseClient {
   def apply(repository: PackageRepository)(implicit session: RequestSession): Future[universe.v3.model.Repository]
 }
 
 final class DefaultUniverseClient(adminRouter: AdminRouter)(implicit statsReceiver: StatsReceiver = NullStatsReceiver) extends UniverseClient {
+
+  import DefaultUniverseClient._
 
   private[this] val stats = statsReceiver.scope("repositoryFetcher")
   private[this] val fetchScope = stats.scope("fetch")
@@ -45,6 +48,7 @@ final class DefaultUniverseClient(adminRouter: AdminRouter)(implicit statsReceiv
     }
   }
 
+  // scalastyle:off cyclomatic.complexity method.length
   private[repository] def apply(
       repository: PackageRepository,
       dcosReleaseVersion: universe.v3.model.DcosReleaseVersion
@@ -59,36 +63,24 @@ final class DefaultUniverseClient(adminRouter: AdminRouter)(implicit statsReceiv
         conn.setRequestProperty("Accept", MediaTypes.UniverseV3Repository.show)
         conn.setRequestProperty("Accept-Encoding", "gzip")
         conn.setRequestProperty(
-            "User-Agent",
-            s"cosmos/$cosmosVersion dcos/${dcosReleaseVersion.show}"
+          "User-Agent",
+          s"cosmos/$cosmosVersion dcos/${dcosReleaseVersion.show}"
         )
 
         // Handle the response
         Future {
 
           conn.getResponseCode match {
-            case 200 =>
+            case HttpURLConnection.HTTP_OK =>
               fetchScope.scope("status").counter("200").incr()
-              val contentType =
-                Option(conn.getHeaderField("Content-Type")).getOrElse(
-                  throw UnsupportedContentType(
-                    List(MediaTypes.UniverseV3Repository,
-                      MediaTypes.UniverseV2Repository)
-                  )
-                )
-              val parsedContentType = MediaTypeParser
-                .parse(contentType)
-                .handle {
-                  case MediaTypeParseError(msg, cause) =>
-                    throw UnsupportedContentType(
-                      List(MediaTypes.UniverseV3Repository,
-                        MediaTypes.UniverseV2Repository)
-                    )
-                }
-                .get
+              val contentType = parseContentType(Option(conn.getHeaderField("Content-Type"))).get
               val contentEncoding = Option(conn.getHeaderField("Content-Encoding"))
-              (parsedContentType, contentEncoding)
-            case x @ (301 | 302 | 303 | 307 | 308) =>
+              (contentType, contentEncoding)
+            case x @ (HttpURLConnection.HTTP_MOVED_PERM |
+                      HttpURLConnection.HTTP_MOVED_TEMP |
+                      HttpURLConnection.HTTP_SEE_OTHER |
+                      TemporaryRedirect |
+                      PermanentRedirect) =>
               fetchScope.scope("status").counter(x.toString).incr()
               // Different forms of redirect, HttpURLConnection won't follow a redirect across schemes
               val loc = Option(conn.getHeaderField("Location")).map(Uri.parse).flatMap(_.scheme)
@@ -99,46 +91,50 @@ final class DefaultUniverseClient(adminRouter: AdminRouter)(implicit statsReceiv
           }
         } handle {
           case t: IOException => throw RepositoryUriConnection(repository, t)
-        } map {
-          case (contentType, contentEncoding) =>
-            val in = contentEncoding match {
-              case Some("gzip") =>
-                fetchScope.scope("contentEncoding").counter("gzip").incr()
-                new GZIPInputStream(conn.getInputStream)
-              case ce @ Some(_) =>
-                throw UnsupportedContentEncoding(List("gzip"), ce)
-              case _ =>
-                fetchScope.scope("contentEncoding").counter("plain").incr()
-                conn.getInputStream
-            }
-
-            val decodeScope = fetchScope.scope("decode")
-            if (contentType.isCompatibleWith(MediaTypes.UniverseV3Repository)) {
-              val v3Scope = decodeScope.scope("v3")
-              v3Scope.counter("count").incr()
-              Stat.time(v3Scope.stat("histogram")) {
-                decode[universe.v3.model.Repository](
-                  Source.fromInputStream(in).mkString
-                ) match {
-                  case Xor.Left(err)   => throw CirceError(err)
-                  case Xor.Right(repo) => repo
-                }
-              }
-            } else if (contentType.isCompatibleWith(MediaTypes.UniverseV2Repository)) {
-              val v2Scope = decodeScope.scope("v2")
-              v2Scope.counter("count").incr()
-              Stat.time(v2Scope.stat("histogram")) {
-                processUniverseV2(repository.uri, in)
-              }
-            } else {
-              throw UnsupportedContentType.forMediaType(
-                  List(MediaTypes.UniverseV3Repository,
-                       MediaTypes.UniverseV2Repository),
-                  Some(contentType)
-              )
-            }
+        } map { case (contentType, contentEncoding) =>
+          contentEncoding match {
+            case Some("gzip") =>
+              fetchScope.scope("contentEncoding").counter("gzip").incr()
+              (contentType, new GZIPInputStream(conn.getInputStream))
+            case ce@Some(_) =>
+              throw UnsupportedContentEncoding(List("gzip"), ce)
+            case _ =>
+              fetchScope.scope("contentEncoding").counter("plain").incr()
+              (contentType, conn.getInputStream)
+          }
+        } map { case (contentType, bodyInputStream) =>
+          decodeUniverse(contentType, bodyInputStream, repository.uri)
         }
       }
+    }
+  }
+  // scalastyle:on cyclomatic.complexity method.length
+
+  private[this] def decodeUniverse(
+    contentType: MediaType,
+    bodyInputStream: InputStream,
+    repositoryUri: Uri
+  ): universe.v3.model.Repository = {
+    val decodeScope = fetchScope.scope("decode")
+    if (contentType.isCompatibleWith(MediaTypes.UniverseV3Repository)) {
+      val v3Scope = decodeScope.scope("v3")
+      v3Scope.counter("count").incr()
+      Stat.time(v3Scope.stat("histogram")) {
+        decode[universe.v3.model.Repository](
+          Source.fromInputStream(bodyInputStream).mkString
+        ) match {
+          case Xor.Left(err) => throw CirceError(err)
+          case Xor.Right(repo) => repo
+        }
+      }
+    } else if (contentType.isCompatibleWith(MediaTypes.UniverseV2Repository)) {
+      val v2Scope = decodeScope.scope("v2")
+      v2Scope.counter("count").incr()
+      Stat.time(v2Scope.stat("histogram")) {
+        processUniverseV2(repositoryUri, bodyInputStream)
+      }
+    } else {
+      throw UnsupportedContentType.forMediaType(SupportedMediaTypes, Some(contentType))
     }
   }
 
@@ -181,56 +177,12 @@ final class DefaultUniverseClient(adminRouter: AdminRouter)(implicit statsReceiv
       case _ => throw IndexNotFound(sourceUri)
     }
 
-    val packages = universeRepository.packages.mapValues(processPackageFiles)
+    val packageInfos = universeRepository.packages.mapValues(processPackageFiles)
+    val packages = packageInfos.toList.map { case ((_, releaseVersion), packageInfo) =>
+      buildV2Package(packageInfo, releaseVersion)
+    }
 
-    universe.v3.model.Repository(
-        packages.toList.map {
-          case ((packageName, releaseVersion), packageInfo) =>
-            val details = packageInfo.packageDetails.getOrElse(
-                throw PackageFileMissing("package.json"))
-            val marathon = packageInfo.marathonMustache.getOrElse(
-                throw PackageFileMissing("marathon.json.mustache"))
-
-            universe.v3.model.V2Package(
-                universe.v3.model.V2PackagingVersion,
-                details.name,
-                universe.v3.model.PackageDefinition
-                  .Version(details.version.toString),
-                releaseVersion.as[Try[universe.v3.model.PackageDefinition.ReleaseVersion]].get,
-                details.maintainer,
-                details.description,
-                universe.v3.model.Marathon(marathon),
-                details.tags.map {
-                  tag =>
-                    // The format of the tag is enforced by the json schema for universe packagingVersion 2.0 and 3.0
-                    // unfortunately com.mesosphere.universe.v2.model.PackageDetails#tags is a list string due to the
-                    // more formal type not being defined. The likely of this failing is remove, especially when the
-                    // source is universe-server.
-                    universe.v3.model.PackageDefinition.Tag(tag).get
-                },
-                details.selected.orElse(Some(false)),
-                details.scm,
-                details.website,
-                details.framework,
-                details.preInstallNotes,
-                details.postInstallNotes,
-                details.postUninstallNotes,
-                details.licenses.map {
-                  licenses =>
-                    licenses.flatMap {
-                      license =>
-                        v3LicenseToV2License.invert(license) match {
-                          case Success(l) => Some(l)
-                          case Failure(err) => None
-                        }
-                    }
-                },
-                packageInfo.resource.as[Option[universe.v3.model.V2Resource]],
-                packageInfo.config,
-                packageInfo.command.as[Option[universe.v3.model.Command]]
-            )
-        }
-    )
+    universe.v3.model.Repository(packages)
   }
 
   private[this] def processZipEntry(
@@ -238,23 +190,21 @@ final class DefaultUniverseClient(adminRouter: AdminRouter)(implicit statsReceiv
     entryPath: Path,
     buffer: Array[Byte]
   ): V2ZipState = {
-    val repoSubdir = entryPath.getName(2).toString
+    entryPath.asScala.map(_.toString).toList match {
+      case _ :: _ :: "meta" :: "index.json" :: Nil =>
+        val version = processIndex(entryPath, buffer)
+        state.copy(version = state.version.orElse(Some(version)))
+      case _ :: _ :: "packages" :: _ :: packageName :: releaseVersionString :: _ =>
+        val releaseVersion = Integer.parseInt(releaseVersionString)
+        val packageKey = (packageName, releaseVersion)
 
-    if (repoSubdir == "meta" && entryPath.getName(3).toString == "index.json") {
-      val version = processIndex(entryPath, buffer)
-      state.copy(version = state.version.orElse(Some(version)))
-    } else if (repoSubdir == "packages") {
-      val packageName = entryPath.getName(4).toString
-      val releaseVersion = Integer.parseInt(entryPath.getName(5).toString)
-      val packageKey = (packageName, releaseVersion)
+        val packageFiles =
+          state.packages.getOrElse(packageKey, Map.empty) +
+            (entryPath.getFileName.toString -> ((entryPath, buffer)))
 
-      val packageFiles =
-        state.packages.getOrElse(packageKey, Map.empty) +
-          (entryPath.getFileName.toString -> ((entryPath, buffer)))
-
-      state.copy(packages = state.packages + ((packageKey, packageFiles)))
-    } else {
-      state
+        state.copy(packages = state.packages + ((packageKey, packageFiles)))
+      case _ =>
+        state
     }
   }
 
@@ -281,6 +231,55 @@ final class DefaultUniverseClient(adminRouter: AdminRouter)(implicit statsReceiv
       resource = packageFiles.get("resource.json").map { case (entryPath, buffer) =>
         parseAndVerify[universe.v2.model.Resource](entryPath, new String(buffer))
       }
+    )
+  }
+
+  private[this] def buildV2Package(
+    packageInfo: V2PackageInformation,
+    releaseVersion: Int
+  ): universe.v3.model.V2Package = {
+    val details = packageInfo.packageDetails.getOrElse(
+      throw PackageFileMissing("package.json"))
+    val marathon = packageInfo.marathonMustache.getOrElse(
+      throw PackageFileMissing("marathon.json.mustache"))
+
+    universe.v3.model.V2Package(
+      universe.v3.model.V2PackagingVersion,
+      details.name,
+      universe.v3.model.PackageDefinition
+        .Version(details.version.toString),
+      releaseVersion.as[ScalaTry[universe.v3.model.PackageDefinition.ReleaseVersion]].get,
+      details.maintainer,
+      details.description,
+      universe.v3.model.Marathon(marathon),
+      details.tags.map {
+        tag =>
+          // The format of the tag is enforced by the json schema for universe packagingVersion 2.0 and 3.0
+          // unfortunately com.mesosphere.universe.v2.model.PackageDetails#tags is a list string due to the
+          // more formal type not being defined. The likely of this failing is remove, especially when the
+          // source is universe-server.
+          universe.v3.model.PackageDefinition.Tag(tag).get
+      },
+      details.selected.orElse(Some(false)),
+      details.scm,
+      details.website,
+      details.framework,
+      details.preInstallNotes,
+      details.postInstallNotes,
+      details.postUninstallNotes,
+      details.licenses.map {
+        licenses =>
+          licenses.flatMap {
+            license =>
+              v3LicenseToV2License.invert(license) match {
+                case Success(l) => Some(l)
+                case Failure(_) => None
+              }
+          }
+      },
+      packageInfo.resource.as[Option[universe.v3.model.V2Resource]],
+      packageInfo.config,
+      packageInfo.command.as[Option[universe.v3.model.Command]]
     )
   }
 
@@ -317,6 +316,24 @@ final class DefaultUniverseClient(adminRouter: AdminRouter)(implicit statsReceiv
       case Right(right) => right
     }
   }
+}
+
+object DefaultUniverseClient {
+
+  val TemporaryRedirect: Int = 307
+  val PermanentRedirect: Int = 308
+
+  val SupportedMediaTypes: List[MediaType] =
+    List(MediaTypes.UniverseV3Repository, MediaTypes.UniverseV2Repository)
+
+  def parseContentType(header: Option[String]): TwitterTry[MediaType] = {
+    TwitterTry(header.getOrElse(throw UnsupportedContentType(SupportedMediaTypes)))
+      .flatMap(MediaTypeParser.parse)
+      .handle {
+        case MediaTypeParseError(_, _) => throw UnsupportedContentType(SupportedMediaTypes)
+      }
+  }
+
 }
 
 object UniverseClient {

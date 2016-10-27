@@ -11,6 +11,8 @@ import io.circe.{Encoder, Json}
 import io.finch.{Endpoint, Input, Output}
 import org.scalatest.FreeSpec
 
+import scala.util.Random
+
 final class RequestValidatorsSpec extends FreeSpec {
 
   import RequestValidatorsSpec._
@@ -27,6 +29,7 @@ final class RequestValidatorsSpec extends FreeSpec {
 
   }
 
+  // scalastyle:off method.length
   def baseValidator[Req](factory: RequestReaderFactory[Req]): Unit = {
 
     "include the Authorization header in the return value if it was included in the request" - {
@@ -86,7 +89,7 @@ final class RequestValidatorsSpec extends FreeSpec {
             MediaTypedEncoder(Encoder.instance[Int](_ => 1.asJson), TestingMediaTypes.applicationJson)
           ))
           val (_, responseEncoder) = evaluateEndpoint(produces = produces).get
-          assertResult(Json.fromInt(1))(responseEncoder.encoder(42))
+          assertResult(Json.fromInt(1))(responseEncoder.encoder(Random.nextInt()))
         }
       }
     }
@@ -125,12 +128,13 @@ final class RequestValidatorsSpec extends FreeSpec {
 
       val reader = factory(produces)
       val res = reader(Input(request))
-      Try(unpack(res.get._2)).map { context => 
+      Try(unpack(res.get._2)).map { context =>
         (context.session, context.responseEncoder)
       }
     }
 
   }
+  // scalastyle:on method.length
 
 }
 

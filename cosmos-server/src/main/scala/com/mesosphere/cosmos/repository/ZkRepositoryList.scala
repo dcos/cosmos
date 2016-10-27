@@ -154,18 +154,16 @@ private[cosmos] final class ZkRepositoryList(
       case (_, Some(u)) => Some(Ior.Right(u))
       case _ => None
     }
-    duplicates.foreach(d => throw new RepositoryAlreadyPresent(d))
+    duplicates.foreach(d => throw RepositoryAlreadyPresent(d))
 
     index match {
-      case Some(i) if 0 <= i && i < list.size =>
+      case Some(i) if 0 <= i && i <= list.size =>
         val (leftSources, rightSources) = list.splitAt(i)
         leftSources ++ (elem :: rightSources)
-      case Some(i) if i == list.size =>
-        list :+ elem
+      case Some(i) =>
+        throw RepositoryAddIndexOutOfBounds(i, list.size - 1)
       case None =>
         list :+ elem
-      case Some(i) =>
-        throw new RepositoryAddIndexOutOfBounds(i, list.size - 1)
     }
   }
 }

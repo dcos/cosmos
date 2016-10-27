@@ -145,13 +145,38 @@ private[cosmos] final class Cosmos(
 }
 
 object Cosmos extends FinchServer {
-  def service = {
+  def service: Service[Request, Response] = {
     implicit val stats = statsReceiver.scope("cosmos")
-    import com.netaporter.uri.dsl._
 
     HttpProxySupport.configureProxySupport()
 
-    val ar = Try(dcosUri())
+    val boot = configureDcosClients() map { adminRouter =>
+      val zkUri = zookeeperUri()
+      logger.info("Using {} for the ZooKeeper connection", zkUri)
+
+      val marathonPackageRunner = new MarathonPackageRunner(adminRouter)
+
+      val zkClient = zookeeper.Clients.createAndInitialize(
+        zkUri,
+        sys.env.get("ZOOKEEPER_USER").zip(sys.env.get("ZOOKEEPER_SECRET")).headOption
+      )
+      onExit {
+        zkClient.close()
+      }
+
+      val sourcesStorage = new ZkRepositoryList(zkClient)()
+      val packageStorage = new InMemoryPackageStorage()
+
+      val cosmos = Cosmos(adminRouter, marathonPackageRunner, sourcesStorage, packageStorage, UniverseClient(adminRouter))
+      cosmos.service
+    }
+    boot.get
+  }
+
+  private[this] def configureDcosClients(): Try[AdminRouter] = {
+    import com.netaporter.uri.dsl._
+
+    Try(dcosUri())
       .map { dh =>
         val dcosHost: String = Uris.stripTrailingSlash(dh)
         logger.info("Connecting to DCOS Cluster at: {}", dcosHost)
@@ -184,28 +209,6 @@ object Cosmos extends FinchServer {
           new MesosMasterClient(mesosMaster._1, mesosMaster._2)
         )
       }
-
-    val boot = ar map { adminRouter =>
-      val zkUri = zookeeperUri()
-      logger.info("Using {} for the ZooKeeper connection", zkUri)
-
-      val marathonPackageRunner = new MarathonPackageRunner(adminRouter)
-
-      val zkClient = zookeeper.Clients.createAndInitialize(
-        zkUri,
-        sys.env.get("ZOOKEEPER_USER").zip(sys.env.get("ZOOKEEPER_SECRET")).headOption
-      )
-      onExit {
-        zkClient.close()
-      }
-
-      val sourcesStorage = new ZkRepositoryList(zkClient)()
-      val packageStorage = new InMemoryPackageStorage()
-
-      val cosmos = Cosmos(adminRouter, marathonPackageRunner, sourcesStorage, packageStorage, UniverseClient(adminRouter))
-      cosmos.service
-    }
-    boot.get
   }
 
   private[cosmos] def apply(
