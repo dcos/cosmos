@@ -1,5 +1,6 @@
 package com.mesosphere.cosmos.rpc.v1.circe
 
+import cats.data.Xor
 import com.mesosphere.cosmos.rpc.v1.model._
 import com.mesosphere.cosmos.thirdparty.marathon.circe.Decoders._
 import com.mesosphere.universe
@@ -11,7 +12,6 @@ import io.circe._
 import io.circe.generic.semiauto._
 
 object Decoders {
-
   implicit val keyDecodePackageDefinitionVersion: KeyDecoder[universe.v3.model.PackageDefinition.Version] = {
     KeyDecoder.instance { s => Some(universe.v3.model.PackageDefinition.Version(s)) }
   }
@@ -69,6 +69,54 @@ object Decoders {
     deriveDecoder[PackageRepositoryDeleteResponse]
   }
 
+  implicit val decodeErrorResponse: Decoder[ErrorResponse] = deriveDecoder[ErrorResponse]
+
   implicit val decodePackageCoordinate: Decoder[PackageCoordinate] =
     deriveDecoder[PackageCoordinate]
+
+  implicit val decodeLocalPackage: Decoder[LocalPackage] = {
+    val NotInstalledName = classOf[NotInstalled].getSimpleName
+    val InstallingName = classOf[Installing].getSimpleName
+    val InstalledName = classOf[Installed].getSimpleName
+    val UninstallingName = classOf[Uninstalling].getSimpleName
+    val FailedName = classOf[Failed].getSimpleName
+    val InvalidName = classOf[Invalid].getSimpleName
+
+    val notInstalledDecoder = deriveDecoder[NotInstalled]
+    val installingDecoder = deriveDecoder[Installing]
+    val installedDecoder = deriveDecoder[Installed]
+    val failedDecoder = deriveDecoder[Failed]
+    val invalidDecoder = deriveDecoder[Invalid]
+
+    Decoder.instance { cursor =>
+      cursor.get[String]("status").flatMap {
+        case NotInstalledName =>
+          notInstalledDecoder(cursor)
+        case InstallingName =>
+          installingDecoder(cursor)
+        case InstalledName =>
+          installedDecoder(cursor)
+        case UninstallingName =>
+          val right = cursor.get[universe.v3.model.PackageDefinition]("metadata").map(
+            value => Uninstalling(Right(value))
+          )
+          val left = cursor.get[PackageCoordinate]("packageCoordinate").map(
+            value => Uninstalling(Left(value))
+          )
+
+          right orElse left
+        case FailedName =>
+          failedDecoder(cursor)
+        case InvalidName =>
+          invalidDecoder(cursor)
+        case status =>
+          Xor.Left(
+            DecodingFailure(
+              s"'$status' is not a valid status",
+              cursor.history
+            )
+          )
+      }
+    }
+  }
 }

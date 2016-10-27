@@ -1,25 +1,22 @@
 package com.mesosphere.cosmos.storage
 
-import java.io.InputStream
-
-import scala.collection.JavaConverters._
-import scala.collection.breakOut
-
 import com.amazonaws.services.s3.AmazonS3Client
+import com.amazonaws.services.s3.model.AmazonS3Exception
 import com.amazonaws.services.s3.model.CannedAccessControlList
 import com.amazonaws.services.s3.model.ListObjectsRequest
 import com.amazonaws.services.s3.model.ObjectListing
 import com.amazonaws.services.s3.model.ObjectMetadata
 import com.amazonaws.services.s3.model.PutObjectRequest
+import com.mesosphere.cosmos.http.MediaType
 import com.netaporter.uri.Uri
 import com.twitter.finagle.stats.Stat
 import com.twitter.finagle.stats.StatsReceiver
 import com.twitter.io.Reader
 import com.twitter.util.Future
 import com.twitter.util.FuturePool
-
-import com.mesosphere.cosmos.http.MediaType
-
+import java.io.InputStream
+import scala.collection.JavaConverters._
+import scala.collection.breakOut
 
 final class S3ObjectStorage(
   client: AmazonS3Client,
@@ -53,15 +50,22 @@ final class S3ObjectStorage(
     }
   }
 
-  override def read(name: String): Future[(Option[MediaType], Reader)] = {
+  override def read(name: String): Future[Option[(MediaType, Reader)]] = {
     Stat.timeFuture(stats.stat("read")) {
       pool {
-        val result = client.getObject(bucket, fullPath(name))
+        try {
+          val result = client.getObject(bucket, fullPath(name))
 
-        (
-          MediaType.parse(result.getObjectMetadata.getContentType).toOption,
-          Reader.fromStream(result.getObjectContent())
-        )
+          Some(
+            (
+              MediaType.parse(result.getObjectMetadata.getContentType).get,
+              Reader.fromStream(result.getObjectContent())
+            )
+          )
+        } catch {
+          case e: AmazonS3Exception if e.getErrorCode == "NoSuchKey" =>
+          None
+        }
       }
     }
   }
@@ -98,7 +102,9 @@ final class S3ObjectStorage(
           }
         case _ =>
           Future.exception(
-            new IllegalArgumentException("Programming error. Wrong type of ListToken passed to listNext")
+            new IllegalArgumentException(
+              "Programming error. Wrong type of ListToken passed to listNext"
+            )
           )
       }
     }
@@ -120,7 +126,9 @@ final class S3ObjectStorage(
 
     S3ObjectStorage.ObjectList(
       objectListing.getObjectSummaries.asScala.map(sum => relativePath(sum.getKey))(breakOut),
-      objectListing.getCommonPrefixes.asScala.map(relativePath)(breakOut),
+      objectListing.getCommonPrefixes.asScala.map(
+        dir => removeEndingSlash(relativePath(dir))
+      )(breakOut),
       listToken
     )
   }
@@ -136,6 +144,10 @@ final class S3ObjectStorage(
    */
   private[this] def makeStringDirectory(prefix: String): String = {
     if (prefix.endsWith("/")) prefix else prefix + "/"
+  }
+
+  private[this] def removeEndingSlash(value: String): String = {
+    value.stripSuffix("/")
   }
 
   private[this] def relativePath(fullPath: String): String = {

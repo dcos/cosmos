@@ -42,10 +42,9 @@ trait ObjectStorage {
   ): Future[Unit]
 
   /**
-   * Reads an object from the store. If the file doesn't exists an Exception is
-   * returned.
+   * Reads an object from the store. If the file doesn't exists, None is returned.
    */
-  def read(name: String): Future[(Option[MediaType], Reader)]
+  def read(name: String): Future[Option[(MediaType, Reader)]]
 
   /**
    * Deletes the specified object. If attempting to delete an object that does not exist,
