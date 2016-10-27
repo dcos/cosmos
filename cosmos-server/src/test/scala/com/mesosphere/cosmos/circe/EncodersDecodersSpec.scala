@@ -3,19 +3,24 @@ package com.mesosphere.cosmos.circe
 import cats.data.Xor
 import com.google.common.io.CharStreams
 import com.mesosphere.cosmos._
-import com.mesosphere.cosmos.http.{MediaType, MediaTypeSubType}
-import com.mesosphere.cosmos.rpc.v1.model.{ErrorResponse, PackageRepository}
+import com.mesosphere.cosmos.http.MediaType
+import com.mesosphere.cosmos.http.MediaTypeSubType
+import com.mesosphere.cosmos.rpc.v1.circe.Decoders._
+import com.mesosphere.cosmos.rpc.v1.model.ErrorResponse
+import com.mesosphere.cosmos.rpc.v1.model.PackageRepository
 import com.mesosphere.universe.v3.model.Repository
 import com.netaporter.uri.Uri
-import io.circe.syntax._
+import io.circe.DecodingFailure
+import io.circe.Error
+import io.circe.Json
+import io.circe.JsonObject
+import io.circe.ParsingFailure
 import io.circe.jawn._
-import io.circe.{DecodingFailure, Error, Json, JsonObject, ParsingFailure}
+import io.circe.syntax._
+import java.io.InputStreamReader
 import org.scalatest.FreeSpec
 
-import java.io.InputStreamReader
-
 class EncodersDecodersSpec extends FreeSpec {
-  import Decoders._
   import Encoders._
 
   "CosmosError" - {

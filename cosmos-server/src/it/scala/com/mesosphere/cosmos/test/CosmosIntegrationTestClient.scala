@@ -18,7 +18,6 @@ import org.scalatest.Matchers
 import org.slf4j.LoggerFactory
 
 import java.util.concurrent.atomic.AtomicInteger
-import com.mesosphere.cosmos.circe.Decoders._
 import com.mesosphere.cosmos.finch.TestingMediaTypes
 import com.mesosphere.cosmos.internal.circe.Decoders._
 import com.mesosphere.cosmos.internal.circe.Encoders._

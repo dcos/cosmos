@@ -64,13 +64,16 @@ object FinagleStreamingSpec {
   def countBytes(reader: Reader, limit: Long): Future[(Long, Int)] = {
     def loop(runningTotal: Long, maxChunkSize: Int): Future[(Long, Int)] = {
       val remaining = limit - runningTotal
-      if (remaining <= 0) return Future.value((runningTotal, maxChunkSize))
 
-      reader.read(math.min(remaining, Int.MaxValue).toInt).flatMap {
-        case Some(bytes) =>
-          val chunkSize = bytes.length
-          loop(runningTotal + chunkSize, math.max(maxChunkSize, chunkSize))
-        case _ => Future.value((runningTotal, maxChunkSize))
+      if (remaining <= 0) {
+        Future.value((runningTotal, maxChunkSize))
+      } else {
+        reader.read(math.min(remaining, Int.MaxValue).toInt).flatMap {
+          case Some(bytes) =>
+            val chunkSize = bytes.length
+            loop(runningTotal + chunkSize, math.max(maxChunkSize, chunkSize))
+          case _ => Future.value((runningTotal, maxChunkSize))
+        }
       }
     }
 

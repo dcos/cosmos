@@ -2,14 +2,14 @@ package com.mesosphere.cosmos
 
 import cats.data.Xor
 import cats.data.Xor.Right
-import com.mesosphere.cosmos.circe.Decoders._
 import com.mesosphere.cosmos.rpc.MediaTypes
 import com.mesosphere.cosmos.rpc.v1.circe.Encoders._
+import com.mesosphere.cosmos.rpc.v1.circe.Decoders._
 import com.mesosphere.cosmos.rpc.v1.model.{DescribeRequest, ErrorResponse, ListVersionsRequest}
 import com.mesosphere.cosmos.test.CosmosIntegrationTestClient
 import com.mesosphere.cosmos.thirdparty.marathon.model.{AppId, MarathonApp, MarathonAppContainer, MarathonAppContainerDocker}
-import com.mesosphere.universe.v2.circe.Decoders._
 import com.mesosphere.universe.v2.model._
+import com.mesosphere.universe.v2.circe.Decoders._
 import com.twitter.finagle.http._
 import com.twitter.io.Buf
 import io.circe.Json
@@ -164,7 +164,7 @@ private object PackageDescribeSpec extends TableDrivenPropertyChecks {
     List("dcos<1.0", "git+https://github.com/mesosphere/dcos-helloworld.git#dcos-helloworld=0.1.0")
   )
 
-  val mem = 512
+  val mem = 512.0
   val HelloworldMustacheDef = MarathonApp(
     id = AppId("helloworld"),
     cpus = 1.0,

@@ -15,6 +15,7 @@ object CosmosBuild extends Build {
     val bijection = "0.9.2"
     val circe = "0.5.2"
     val curator = "2.9.1"
+    val fastparse = "0.4.1"
     val finch = "0.10.0"
     val finchServer = "0.9.1"
     val guava = "16.0.1"
@@ -63,6 +64,10 @@ object CosmosBuild extends Build {
       ExclusionRule("javax.jms", "jms"),
       ExclusionRule("jline", "jline")
     ))
+
+    val fastparse = Seq(
+      "com.lihaoyi" %% "fastparse" % V.fastparse
+    )
 
     val finch = Seq(
       "com.github.finagle" %% "finch-core" % V.finch
@@ -300,6 +305,7 @@ object CosmosBuild extends Build {
         Deps.scalaUri
         ++ Deps.circeCore
         ++ Deps.twitterUtilCore
+        ++ Deps.fastparse
     )
 
   lazy val json = Project("cosmos-json", file("cosmos-json"))
@@ -309,7 +315,9 @@ object CosmosBuild extends Build {
         Deps.scalaUri
         ++ Deps.circe
     )
-    .dependsOn(model)
+    .dependsOn(
+      model % "compile;test->test"
+    )
 
   lazy val bijection = Project("cosmos-bijection", file("cosmos-bijection"))
     .settings(sharedSettings)
@@ -317,7 +325,9 @@ object CosmosBuild extends Build {
       libraryDependencies ++=
         Deps.bijection
     )
-    .dependsOn(model)
+    .dependsOn(
+      model % "compile;test->test"
+    )
 
   lazy val http = Project("cosmos-http", file("cosmos-http"))
     .settings(sharedSettings)
@@ -334,7 +344,7 @@ object CosmosBuild extends Build {
         Deps.finch
     )
     .dependsOn(
-      json,
+      json % "compile;test->test",
       http % "compile;test->test"
     )
 
@@ -353,8 +363,8 @@ object CosmosBuild extends Build {
         Deps.mustache
     )
     .dependsOn(
-      json,
-      jsonschema,
+      json % "compile;test->test",
+      jsonschema % "compile;test->test",
       bijection % "compile;test->test"
     )
 
