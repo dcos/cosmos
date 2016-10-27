@@ -1,6 +1,7 @@
 package com.mesosphere.cosmos
 
 import com.github.retronym.SbtOneJar._
+import org.scalastyle.sbt.ScalastylePlugin
 import scoverage.ScoverageKeys._
 import sbtfilter.Plugin._
 import sbt.Keys._
@@ -245,7 +246,7 @@ object CosmosBuild extends Build {
             <name>Tamar Ben-Shachar</name>
           </developer>
         </developers>
-  )
+  ) ++ ScalastylePlugin.projectSettings
 
   private lazy val cosmosIntegrationTestServer = settingKey[CosmosIntegrationTestServer]("cosmos-it-server")
 
