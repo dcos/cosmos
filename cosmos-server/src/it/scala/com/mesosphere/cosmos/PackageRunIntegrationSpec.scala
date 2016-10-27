@@ -2,7 +2,6 @@ package com.mesosphere.cosmos
 
 import cats.data.Xor
 import cats.data.Xor.Right
-import com.mesosphere.cosmos.circe.Decoders._
 import com.mesosphere.cosmos.http.RequestSession
 import com.mesosphere.cosmos.repository.DefaultRepositories
 import com.mesosphere.cosmos.rpc.MediaTypes

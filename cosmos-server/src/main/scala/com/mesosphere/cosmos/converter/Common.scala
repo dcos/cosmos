@@ -1,30 +1,30 @@
 package com.mesosphere.cosmos.converter
 
-import java.nio.charset.StandardCharsets
-import java.util.Base64
-
 import cats.data.Xor
 import com.mesosphere.cosmos._
+import com.mesosphere.cosmos.circe.Decoders.decode
 import com.mesosphere.cosmos.internal.model
-import com.mesosphere.cosmos.internal.model.{BundleDefinition, V2Bundle, V3Bundle}
 import com.mesosphere.cosmos.rpc.v1.circe.Decoders._
 import com.mesosphere.cosmos.rpc.v1.circe.Encoders._
 import com.mesosphere.cosmos.rpc.v1.model.PackageCoordinate
 import com.mesosphere.universe
+import com.twitter.bijection.Bijection
 import com.twitter.bijection.Conversion.asMethod
-import com.twitter.bijection.{Bijection, Injection}
-import io.circe.jawn.decode
+import com.twitter.bijection.Injection
 import io.circe.syntax._
-
+import java.nio.charset.StandardCharsets
+import java.util.Base64
+import scala.util.Failure
+import scala.util.Success
 import scala.util.Try
 
 object Common {
 
   implicit val V2BundleToV2Package: Bijection[
-    (V2Bundle, universe.v3.model.PackageDefinition.ReleaseVersion),
+    (model.V2Bundle, universe.v3.model.PackageDefinition.ReleaseVersion),
     universe.v3.model.V2Package // TODO Move these "Bundle" objects out of v3 they don't belong there
     ] = {
-    def fwd(bundlePair: (V2Bundle, universe.v3.model.PackageDefinition.ReleaseVersion)): universe.v3.model.V2Package = {
+    def fwd(bundlePair: (model.V2Bundle, universe.v3.model.PackageDefinition.ReleaseVersion)): universe.v3.model.V2Package = {
       val v2 = bundlePair._1
       val releaseVersion = bundlePair._2
       universe.v3.model.V2Package(
@@ -50,7 +50,7 @@ object Common {
       )
     }
 
-    def rev(v2: universe.v3.model.V2Package): (V2Bundle, universe.v3.model.PackageDefinition.ReleaseVersion) =
+    def rev(v2: universe.v3.model.V2Package): (model.V2Bundle, universe.v3.model.PackageDefinition.ReleaseVersion) =
       (model.V2Bundle(
         v2.packagingVersion,
         v2.name,
@@ -77,10 +77,10 @@ object Common {
   }
 
   implicit val V3BundleToV3Package: Bijection[
-    (V3Bundle, universe.v3.model.PackageDefinition.ReleaseVersion),
+    (model.V3Bundle, universe.v3.model.PackageDefinition.ReleaseVersion),
     universe.v3.model.V3Package
     ] = {
-    def fwd(bundlePair: (V3Bundle, universe.v3.model.PackageDefinition.ReleaseVersion)): universe.v3.model.V3Package = {
+    def fwd(bundlePair: (model.V3Bundle, universe.v3.model.PackageDefinition.ReleaseVersion)): universe.v3.model.V3Package = {
       val v3 = bundlePair._1
       val releaseVersion = bundlePair._2
       universe.v3.model.V3Package(
@@ -107,7 +107,7 @@ object Common {
       )
     }
 
-    def rev(v3: universe.v3.model.V3Package): (V3Bundle, universe.v3.model.PackageDefinition.ReleaseVersion) =
+    def rev(v3: universe.v3.model.V3Package): (model.V3Bundle, universe.v3.model.PackageDefinition.ReleaseVersion) =
       (model.V3Bundle(
         v3.packagingVersion,
         v3.name,
@@ -135,48 +135,53 @@ object Common {
   }
 
   implicit val BundleToPackage: Bijection[
-    (BundleDefinition, universe.v3.model.PackageDefinition.ReleaseVersion),
+    (model.BundleDefinition, universe.v3.model.PackageDefinition.ReleaseVersion),
     universe.v3.model.PackageDefinition
     ] = {
-    def fwd(bundlePair: (BundleDefinition, universe.v3.model.PackageDefinition.ReleaseVersion)): universe.v3.model.PackageDefinition = {
+    def fwd(bundlePair: (model.BundleDefinition, universe.v3.model.PackageDefinition.ReleaseVersion)): universe.v3.model.PackageDefinition = {
       val (bundle, releaseVersion) = bundlePair
       bundle match {
-        case v2: V2Bundle => (v2, releaseVersion).as[universe.v3.model.V2Package]
-        case v3: V3Bundle => (v3, releaseVersion).as[universe.v3.model.V3Package]
+        case v2: model.V2Bundle => (v2, releaseVersion).as[universe.v3.model.V2Package]
+        case v3: model.V3Bundle => (v3, releaseVersion).as[universe.v3.model.V3Package]
       }
     }
 
-    def rev(packageDefinition: universe.v3.model.PackageDefinition): (BundleDefinition, universe.v3.model.PackageDefinition.ReleaseVersion) = {
+    def rev(packageDefinition: universe.v3.model.PackageDefinition): (model.BundleDefinition, universe.v3.model.PackageDefinition.ReleaseVersion) = {
       packageDefinition match {
-        case v2: universe.v3.model.V2Package => v2.as[(V2Bundle, universe.v3.model.PackageDefinition.ReleaseVersion)]
-        case v3: universe.v3.model.V3Package => v3.as[(V3Bundle, universe.v3.model.PackageDefinition.ReleaseVersion)]
+        case v2: universe.v3.model.V2Package => v2.as[(model.V2Bundle, universe.v3.model.PackageDefinition.ReleaseVersion)]
+        case v3: universe.v3.model.V3Package => v3.as[(model.V3Bundle, universe.v3.model.PackageDefinition.ReleaseVersion)]
       }
     }
 
     Bijection.build(fwd)(rev)
   }
 
-  implicit val packageCoordinateToBase64String
-  : Injection[PackageCoordinate, String] = {
+  implicit val packageCoordinateToBase64String: Injection[PackageCoordinate, String] = {
     def fwd(coordinate: PackageCoordinate): String = {
       Base64.getUrlEncoder.encodeToString(
         coordinate.asJson.noSpaces.getBytes(StandardCharsets.UTF_8)
       )
     }
 
-    def rev(str: String): PackageCoordinate = {
-      val coordinate  = new String(
-        Base64.getUrlDecoder.decode(str),
-        StandardCharsets.UTF_8
-      )
+    def rev(str: String): Try[PackageCoordinate] = {
+      Try {
+        val coordinate  = new String(
+          Base64.getUrlDecoder.decode(str),
+          StandardCharsets.UTF_8
+        )
 
-      decode[PackageCoordinate](coordinate) match {
-        case Xor.Left(err) => throw CirceError(err)
-        case Xor.Right(c) => c
+        decode[PackageCoordinate](coordinate)
       }
     }
 
-    Injection.build[PackageCoordinate, String](fwd)(s => Try(rev(s)))
+    Injection.build[PackageCoordinate, String](fwd)(rev)
   }
-  
+
+  implicit val versionToString = Injection.build[universe.v3.model.SemVer, String] { version =>
+    version.toString
+  } { string =>
+    universe.v3.model.SemVer(string).map(Success(_)).getOrElse(
+      Failure(new IllegalArgumentException(s"Unable to parse $string as semver"))
+    )
+  }
 }

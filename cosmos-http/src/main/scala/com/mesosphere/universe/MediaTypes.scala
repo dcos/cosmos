@@ -13,4 +13,15 @@ object MediaTypes {
     Map("charset" -> "utf-8", "version" -> "v3")
   )
 
+  val universeV3Package = MediaType(
+    "application",
+    MediaTypeSubType("vnd.dcos.universe.package", Some("json")),
+    Map("charset" -> "utf-8", "version" -> "v3")
+  )
+
+  val universeV2Package = MediaType(
+    "application",
+    MediaTypeSubType("vnd.dcos.universe.package", Some("json")),
+    Map("charset" -> "utf-8", "version" -> "v2")
+  )
 }
