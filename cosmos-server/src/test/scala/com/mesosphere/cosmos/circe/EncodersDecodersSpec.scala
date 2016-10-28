@@ -29,6 +29,7 @@ import io.circe.ParsingFailure
 import io.circe.jawn
 import io.circe.syntax._
 import java.io.InputStreamReader
+import java.util.UUID
 import org.scalatest.FreeSpec
 
 class EncodersDecodersSpec extends FreeSpec {
@@ -198,7 +199,7 @@ class EncodersDecodersSpec extends FreeSpec {
     "Install => Json => Install" in {
       val install: Operation =
         Install(
-          Uri.parse("https://travisbrown.github.io/circe/"),
+          UUID.fromString("13c825fe-a8b8-46de-aa9b-61c848fb6522"),
           TestingPackages.MinimalV3ModelV3PackageDefinition
         )
       val installPrime =

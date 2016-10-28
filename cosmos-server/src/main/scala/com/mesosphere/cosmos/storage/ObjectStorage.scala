@@ -1,8 +1,13 @@
 package com.mesosphere.cosmos.storage
 
+import com.amazonaws.services.s3.AmazonS3Client
+import com.mesosphere.cosmos.FileUri
+import com.mesosphere.cosmos.ObjectStorageUri
+import com.mesosphere.cosmos.S3Uri
 import com.mesosphere.cosmos.http.MediaType
 import com.mesosphere.cosmos.http.MediaTypes
 import com.netaporter.uri.Uri
+import com.twitter.finagle.stats.StatsReceiver
 import com.twitter.util.Future
 import java.io.InputStream
 
@@ -82,4 +87,12 @@ object ObjectStorage {
     val directories: List[String]
     val listToken: Option[ListToken]
   }
+
+  def fromUri(uri: ObjectStorageUri)(implicit statsReceiver: StatsReceiver): ObjectStorage = {
+    uri match {
+      case S3Uri(s3Uri) => S3ObjectStorage(new AmazonS3Client(), s3Uri)
+      case FileUri(path) => LocalObjectStorage(path)
+    }
+  }
+
 }

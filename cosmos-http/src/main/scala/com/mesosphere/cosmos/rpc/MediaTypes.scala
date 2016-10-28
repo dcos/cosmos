@@ -43,6 +43,9 @@ object MediaTypes {
   val V1ListResponse = vnd("list-response", 1)
   val V2ListResponse = vnd("list-response", 2)
 
+  val AddRequest = vnd("add-request")
+  val AddResponse = vnd("add-response")
+
   val ServiceStartRequest = dcosService("start-request", 1)
   val ServiceStartResponse = dcosService("start-response", 1)
 }

@@ -1,27 +1,27 @@
 package com.mesosphere.cosmos
 
-import com.mesosphere.cosmos.internal.model.{V2Bundle, V3Bundle}
+import com.mesosphere.cosmos.internal.model.V2Bundle
+import com.mesosphere.cosmos.internal.model.V3Bundle
 import com.mesosphere.cosmos.rpc.v1.model._
-import com.mesosphere.cosmos.test.CosmosIntegrationTestClient
-import org.scalatest.FreeSpec
+import com.mesosphere.cosmos.test.CosmosIntegrationTestClient.CosmosClient
 import com.mesosphere.cosmos.test.TestUtil._
 import com.netaporter.uri.Uri
+import org.scalatest.FreeSpec
 
-class PackageStorageIntegrationSpec extends FreeSpec {
-  private[this] val cosmosClient = CosmosIntegrationTestClient.CosmosClient
+final class PackageStorageIntegrationSpec extends FreeSpec {
 
   import PackageStorageIntegrationSpec._
 
   "The user must be able to" - {
     "publish a bundle, and the bundle must be in repo served by the storage" in {
       BundlePackagePairs.foreach { case (bundle, pkg) =>
-        cosmosClient.packagePublish(PublishRequest(bundle))
-        assert(cosmosClient.packageStorageRepository.packages.contains(pkg))
+        CosmosClient.packagePublish(PublishRequest(bundle))
+        assert(CosmosClient.packageStorageRepository.packages.contains(pkg))
       }
     }
 
     "see the bundles published when listing packages" in {
-      val act = cosmosClient.packageRepositoryAdd(
+      val act = CosmosClient.packageRepositoryAdd(
         PackageRepositoryAddRequest(
           name,
           uri,
@@ -35,8 +35,8 @@ class PackageStorageIntegrationSpec extends FreeSpec {
         case v2: V2Bundle => v2.copy(name = uniquePackageName)
         case v3: V3Bundle => v3.copy(name = uniquePackageName)
       }
-      cosmosClient.packagePublish(PublishRequest(uniqueBundle))
-      val pkgNames = cosmosClient.packageSearch(
+      CosmosClient.packagePublish(PublishRequest(uniqueBundle))
+      val pkgNames = CosmosClient.packageSearch(
         SearchRequest(
           Some(uniquePackageName)
         )
@@ -45,7 +45,7 @@ class PackageStorageIntegrationSpec extends FreeSpec {
       assert(pkgNames.contains(uniquePackageName))
       assertResult(uniquePackageName)(pkgNames.head)
 
-      val actr = cosmosClient.packageRepositoryDelete(
+      val actr = CosmosClient.packageRepositoryDelete(
         PackageRepositoryDeleteRequest(
           Some(name), Some(uri)
         )
@@ -59,6 +59,6 @@ class PackageStorageIntegrationSpec extends FreeSpec {
 
 object PackageStorageIntegrationSpec {
   private val name = "InMemoryPackageStore"
-  private val uri = Uri.parse("http://localhost:7070/package/storage/repository")
+  private val uri = Uri.parse(s"${CosmosClient.uri}/package/storage/repository")
   private val exp = PackageRepository(name, uri)
 }

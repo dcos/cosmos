@@ -4,7 +4,6 @@ import _root_.io.circe.Json
 import _root_.io.finch._
 import _root_.io.finch.circe.dropNullKeys._
 import _root_.io.github.benwhitehead.finch.FinchServer
-import com.amazonaws.services.s3.AmazonS3Client
 import com.mesosphere.cosmos.circe.Encoders._
 import com.mesosphere.cosmos.finch.EndpointHandler
 import com.mesosphere.cosmos.finch.FinchExtensions._
@@ -18,24 +17,29 @@ import com.mesosphere.cosmos.repository.ZkRepositoryList
 import com.mesosphere.cosmos.rpc.MediaTypes
 import com.mesosphere.cosmos.rpc.v1.circe.MediaTypedEncoders._
 import com.mesosphere.cosmos.rpc.v1.circe.MediaTypedRequestDecoders._
-import com.mesosphere.cosmos.rpc.v1.model.ServiceStartRequest
-import com.mesosphere.cosmos.rpc.v1.model.ServiceStartResponse
 import com.mesosphere.cosmos.rpc.v2.circe.MediaTypedEncoders._
 import com.mesosphere.cosmos.storage.InMemoryPackageStorage
-import com.mesosphere.cosmos.storage.LocalObjectStorage
+import com.mesosphere.cosmos.storage.ObjectStorage
 import com.mesosphere.cosmos.storage.PackageObjectStorage
-import com.mesosphere.cosmos.storage.PackageStorage
-import com.mesosphere.cosmos.storage.S3ObjectStorage
+import com.mesosphere.cosmos.storage.StagedPackageStorage
+import com.mesosphere.cosmos.storage.installqueue.InstallQueue
 import com.mesosphere.universe
 import com.netaporter.uri.Uri
+import com.twitter.app.Flag
+import com.twitter.conversions.storage.intToStorageUnitableWholeNumber
+import com.twitter.finagle.Http
+import com.twitter.finagle.ListeningServer
 import com.twitter.finagle.Service
 import com.twitter.finagle.http.Request
 import com.twitter.finagle.http.Response
 import com.twitter.finagle.http.Status
+import com.twitter.finagle.netty3.Netty3ListenerTLSConfig
+import com.twitter.finagle.param.Label
+import com.twitter.finagle.ssl.Ssl
 import com.twitter.finagle.stats.NullStatsReceiver
 import com.twitter.finagle.stats.StatsReceiver
 import com.twitter.util.Try
-import shapeless.HNil
+import org.slf4j.Logger
 
 private[cosmos] final class Cosmos(
   uninstallHandler: EndpointHandler[rpc.v1.model.UninstallRequest, rpc.v1.model.UninstallResponse],
@@ -49,12 +53,13 @@ private[cosmos] final class Cosmos(
   addRepositoryHandler: EndpointHandler[rpc.v1.model.PackageRepositoryAddRequest, rpc.v1.model.PackageRepositoryAddResponse],
   deleteRepositoryHandler: EndpointHandler[rpc.v1.model.PackageRepositoryDeleteRequest, rpc.v1.model.PackageRepositoryDeleteResponse],
   packagePublishHandler: EndpointHandler[rpc.v1.model.PublishRequest, rpc.v1.model.PublishResponse],
-  repositoryServeHandler: RepositoryServeHandler,
+  repositoryServeHandler: EndpointHandler[Unit, universe.v3.model.Repository],
   capabilitiesHandler: CapabilitiesHandler,
+  packageAddHandler: EndpointHandler[rpc.v1.model.AddRequest, rpc.v1.model.AddResponse],
   serviceStartHandler: EndpointHandler[rpc.v1.model.ServiceStartRequest, rpc.v1.model.ServiceStartResponse]
 )(implicit statsReceiver: StatsReceiver = NullStatsReceiver) {
 
-  lazy val logger = org.slf4j.LoggerFactory.getLogger(classOf[Cosmos])
+  lazy val logger: Logger = org.slf4j.LoggerFactory.getLogger(classOf[Cosmos])
 
   val packageInstall: Endpoint[Json] = {
     route(post("package" / "install"), packageInstallHandler)(RequestValidators.standard)
@@ -108,41 +113,50 @@ private[cosmos] final class Cosmos(
     route(get("package" / "storage" / "repository"), repositoryServeHandler)(RequestValidators.noBody)
   }
 
+  val packageAdd: Endpoint[Json] = {
+    route(post("package" / "add"), packageAddHandler)(RequestValidators.streamed(rpc.v1.model.AddRequest(_, _)))
+  }
+
   val service: Service[Request, Response] = {
     val stats = statsReceiver.scope("errorFilter")
 
-    (packageInstall
-      :+: packageRender
-      :+: packageDescribe
-      :+: packageSearch
-      :+: packageUninstall
-      :+: packageListVersions
-      :+: packageList
-      :+: packageListSources
-      :+: packageAddSource
-      :+: packageDeleteSource
-      :+: capabilities
-      :+: packagePublish
-      :+: repositoryServe
-    )
-      .handle {
-        case re: RequestError =>
-          stats.counter(s"definedError/${sanitiseClassName(re.getClass)}").incr()
-          val output = Output.failure(re, re.status).withContentType(Some(MediaTypes.ErrorResponse.show))
-          re.getHeaders.foldLeft(output) { case (out, kv) => out.withHeader(kv) }
-        case fe: _root_.io.finch.Error =>
-          stats.counter(s"finchError/${sanitiseClassName(fe.getClass)}").incr()
-          Output.failure(fe, Status.BadRequest).withContentType(Some(MediaTypes.ErrorResponse.show))
-        case e: Exception if !e.isInstanceOf[_root_.io.finch.Error] =>
-          stats.counter(s"unhandledException/${sanitiseClassName(e.getClass)}").incr()
-          logger.warn("Unhandled exception: ", e)
-          Output.failure(e, Status.InternalServerError).withContentType(Some(MediaTypes.ErrorResponse.show))
-        case t: Throwable if !t.isInstanceOf[_root_.io.finch.Error] =>
-          stats.counter(s"unhandledThrowable/${sanitiseClassName(t.getClass)}").incr()
-          logger.warn("Unhandled throwable: ", t)
-          Output.failure(new Exception(t), Status.InternalServerError).withContentType(Some(MediaTypes.ErrorResponse.show))
-      }
-      .toService
+    val endpoints = (
+      // Keep alphabetized
+      capabilities
+        :+: packageAdd
+        :+: packageAddSource
+        :+: packageDeleteSource
+        :+: packageDescribe
+        :+: packageInstall
+        :+: packageList
+        :+: packageListSources
+        :+: packageListVersions
+        :+: packagePublish
+        :+: packageRender
+        :+: packageSearch
+        :+: packageUninstall
+        :+: repositoryServe
+      )
+
+    val api = endpoints.handle {
+      case re: RequestError =>
+        stats.counter(s"definedError/${sanitiseClassName(re.getClass)}").incr()
+        val output = Output.failure(re, re.status).withContentType(Some(MediaTypes.ErrorResponse.show))
+        re.getHeaders.foldLeft(output) { case (out, kv) => out.withHeader(kv) }
+      case fe: _root_.io.finch.Error =>
+        stats.counter(s"finchError/${sanitiseClassName(fe.getClass)}").incr()
+        Output.failure(fe, Status.BadRequest).withContentType(Some(MediaTypes.ErrorResponse.show))
+      case e: Exception if !e.isInstanceOf[_root_.io.finch.Error] =>
+        stats.counter(s"unhandledException/${sanitiseClassName(e.getClass)}").incr()
+        logger.warn("Unhandled exception: ", e)
+        Output.failure(e, Status.InternalServerError).withContentType(Some(MediaTypes.ErrorResponse.show))
+      case t: Throwable if !t.isInstanceOf[_root_.io.finch.Error] =>
+        stats.counter(s"unhandledThrowable/${sanitiseClassName(t.getClass)}").incr()
+        logger.warn("Unhandled throwable: ", t)
+        Output.failure(new Exception(t), Status.InternalServerError).withContentType(Some(MediaTypes.ErrorResponse.show))
+    }
+
+    api.toService
   }
 
   /**
@@ -167,37 +181,57 @@ object Cosmos extends FinchServer {
       val zkUri = zookeeperUri()
       logger.info("Using {} for the ZooKeeper connection", zkUri)
 
-      logger.info("Using {} for the package storage uri", packageStorageUri())
-      val packageObjectStorage: Option[PackageObjectStorage] = packageStorageUri().map {
-        case S3Uri(uri) => PackageObjectStorage(S3ObjectStorage(new AmazonS3Client(), uri))
-        case FileUri(path) => PackageObjectStorage(LocalObjectStorage(path))
-      }
+      val packageObjectStorage = configureObjectStorageFromFlag(addedPackageStorageUri, "added")
+      val stagedPackageStorage = configureObjectStorageFromFlag(stagedPackageStorageUri, "staged")
 
       val marathonPackageRunner = new MarathonPackageRunner(adminRouter)
 
-      val zkClient = zookeeper.Clients.createAndInitialize(
-        zkUri,
-        sys.env.get("ZOOKEEPER_USER").zip(sys.env.get("ZOOKEEPER_SECRET")).headOption
-      )
-      onExit {
-        zkClient.close()
-      }
+      val zkClient = zookeeper.Clients.createAndInitialize(zkUri)
+      onExit(zkClient.close())
 
       val sourcesStorage = new ZkRepositoryList(zkClient)()
-      val packageStorage = new InMemoryPackageStorage()
 
-      val cosmos =
-        Cosmos(
-          adminRouter,
-          marathonPackageRunner,
-          sourcesStorage,
-          packageStorage,
-          UniverseClient(adminRouter),
-          packageObjectStorage
-        )
+      val installQueue = InstallQueue(zkClient)
+      onExit(installQueue.close())
+
+      val cosmos = Cosmos(
+        adminRouter,
+        marathonPackageRunner,
+        sourcesStorage,
+        UniverseClient(adminRouter),
+        installQueue,
+        stagedPackageStorage.map(StagedPackageStorage(_)),
+        packageObjectStorage.map(PackageObjectStorage(_))
+      )
       cosmos.service
     }
     boot.get
+  }
+
+  override def startServer(): Option[ListeningServer] = {
+    config.httpInterface.map { iface =>
+      val name = s"http/$serverName"
+      Http.server
+        .configured(Label(name))
+        .configured(Http.param.MaxRequestSize(config.maxRequestSize.megabytes))
+        .withStreaming(enabled = true)
+        .serve(iface, getService(s"srv/$name"))
+    }
+  }
+
+  // TODO package-add: is this being tested?
+  override def startTlsServer(): Option[ListeningServer] = {
+    config.httpsInterface.map { iface =>
+      val name = s"https/$serverName"
+      val engineFactory = () =>
+        Ssl.server(config.certificatePath, config.keyPath, null, null, null) // scalastyle:ignore null
+      Http.server
+        .configured(Label(name))
+        .configured(Http.param.MaxRequestSize(config.maxRequestSize.megabytes))
+        .withStreaming(enabled = true)
+        .withTls(Netty3ListenerTLSConfig(engineFactory))
+        .serve(iface, getService(s"srv/$name"))
+    }
   }
 
   private[this] def configureDcosClients(): Try[AdminRouter] = {
@@ -238,12 +272,22 @@ object Cosmos extends FinchServer {
       }
   }
 
+  private[this] def configureObjectStorageFromFlag(
+    flag: Flag[Option[ObjectStorageUri]],
+    description: String
+  ): Option[ObjectStorage] = {
+    val flagValue = flag()
+    logger.info(s"Using {} for the $description package storage URI", flagValue)
+    flagValue.map(ObjectStorage.fromUri)
+  }
+
   private[cosmos] def apply(
     adminRouter: AdminRouter,
     packageRunner: PackageRunner,
     sourcesStorage: PackageSourcesStorage,
-    packageStorage: PackageStorage,
     universeClient: UniverseClient,
+    installQueue: InstallQueue,
+    stagedPackageStorage: Option[StagedPackageStorage],
     packageObjectStorage: Option[PackageObjectStorage]
   )(implicit statsReceiver: StatsReceiver = NullStatsReceiver): Cosmos = {
 
@@ -252,12 +296,15 @@ object Cosmos extends FinchServer {
       universeClient
     )
 
-    val serviceStartHandler = packageObjectStorage match {
-      case Some(pkgStore) =>
-        new ServiceStartHandler(LocalPackageCollection(pkgStore), packageRunner)
-      case None =>
-        new NotConfiguredHandler[ServiceStartRequest, ServiceStartResponse]("service start")
+    val packageAddHandler = enableIfSome(stagedPackageStorage, "package add") { storage =>
+      new PackageAddHandler(storage, installQueue)
     }
+
+    val serviceStartHandler = enableIfSome(packageObjectStorage, "service start") { storage =>
+        new ServiceStartHandler(LocalPackageCollection(storage), packageRunner)
+    }
+
+    val packageStorage = new InMemoryPackageStorage()
 
     new Cosmos(
       new UninstallHandler(adminRouter, repositories),
@@ -273,8 +320,15 @@ object Cosmos extends FinchServer {
       new PackagePublishHandler(packageStorage),
       new RepositoryServeHandler(packageStorage),
       new CapabilitiesHandler,
+      packageAddHandler,
       serviceStartHandler
     )(statsReceiver)
+  }
+
+  private[this] def enableIfSome[A, Req, Res](requirement: Option[A], operationName: String)(
+    f: A => EndpointHandler[Req, Res]
+  ): EndpointHandler[Req, Res] = {
+    requirement.fold[EndpointHandler[Req, Res]](new NotConfiguredHandler(operationName))(f)
   }
 
 }

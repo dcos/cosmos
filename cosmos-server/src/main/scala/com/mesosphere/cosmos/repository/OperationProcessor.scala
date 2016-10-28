@@ -37,7 +37,7 @@ final class OperationProcessor private (
 
   private[this] def applyOperation(pending: PendingOperation): Future[Unit] = {
     pending.operation match {
-      case Install(uri, pkg) => installer(uri, pkg)
+      case Install(stagedPackageId, pkg) => installer(stagedPackageId, pkg)
       case UniverseInstall(pkg) => universeInstaller(pkg)
       case Uninstall(pkg) => uninstaller(pending.packageCoordinate, pkg)
     }

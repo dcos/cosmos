@@ -26,6 +26,7 @@ import com.netaporter.uri.Uri
 import com.netaporter.uri.dsl._
 import com.twitter.finagle.Service
 import com.twitter.finagle.SimpleFilter
+import com.twitter.finagle.http.Version.Http11
 import com.twitter.finagle.http._
 import com.twitter.util.Await
 import com.twitter.util.Future
@@ -166,16 +167,30 @@ object CosmosIntegrationTestClient extends Matchers {
       * It also includes the Authorization header if provided by configuration.
       */
     def submit(req: CosmosRequest): Response = {
-      val withPath = RequestBuilder().url(s"$uri/${req.path}")
-      val withAuth = Session.authorization.fold(withPath) { auth =>
-        withPath.setHeader("Authorization", auth.headerValue)
+      val finagleReq = buildRequest(req)
+      Await.result(client(finagleReq))
+    }
+
+    private[this] def buildRequest(cosmosRequest: CosmosRequest): Request = {
+      val pathPrefix = if (cosmosRequest.path.startsWith("/")) "" else "/"
+      val absolutePath = pathPrefix + cosmosRequest.path
+
+      val finagleRequest = cosmosRequest.body match {
+        case NoBody =>
+          Request(absolutePath)
+        case Monolithic(buf) =>
+          val req = Request(Method.Post, absolutePath)
+          req.content = buf
+          req
+        case Chunked(reader) =>
+          Request(Http11, cosmosRequest.method, absolutePath, reader)
       }
 
-      val withContentType = req.contentType.fold(withAuth)(withAuth.addHeader("Content-Type", _))
-      val withAccept = req.accept.fold(withContentType)(withContentType.addHeader("Accept", _))
-      val finagleReq = withAccept.build(req.method, req.body)
-
-      Await.result(client(finagleReq))
+      finagleRequest.headerMap ++= cosmosRequest.customHeaders
+      cosmosRequest.accept.foreach(finagleRequest.accept = _)
+      cosmosRequest.contentType.foreach(finagleRequest.contentType = _)
+      Session.authorization.foreach(auth => finagleRequest.authorization = auth.headerValue)
+      finagleRequest
     }
 
     // Do not relax the visibility on this -- use `submit()` instead; see its Scaladoc for why
@@ -211,12 +226,16 @@ object CosmosIntegrationTestClient extends Matchers {
     }
   }
 
-  object StagedPackageStorageClient {
-    val configuration: ObjectStorageUri = {
-      ObjectStorageUri.parse(
-        getClientProperty("StagedPackageStorageClient", "stagedPackageUri")
-      ).get()
+  object PackageStorageClient {
+
+    val addedUri: ObjectStorageUri = {
+      ObjectStorageUri.parse(getClientProperty("PackageStorageClient", "addedUri")).get()
     }
+
+    val stagedUri: ObjectStorageUri = {
+      ObjectStorageUri.parse(getClientProperty("PackageStorageClient", "stagedUri")).get()
+    }
+
   }
 
   private[this] def getClientProperty(clientName: String, key: String): String = {

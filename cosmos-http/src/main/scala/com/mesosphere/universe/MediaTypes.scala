@@ -24,4 +24,11 @@ object MediaTypes {
     MediaTypeSubType("vnd.dcos.universe.package", Some("json")),
     Map("charset" -> "utf-8", "version" -> "v2")
   )
+
+  val PackageZip: MediaType = MediaType(
+    "application",
+    MediaTypeSubType("vnd.dcos.universe.package", Some("zip")),
+    Map("version" -> "v1")
+  )
+
 }

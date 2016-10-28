@@ -6,14 +6,11 @@ import com.mesosphere.universe.test.TestingPackages._
 import com.netaporter.uri.Uri
 import com.twitter.bijection.Conversion.asMethod
 import com.twitter.bijection.Injection
-import io.circe.JsonObject
-import java.nio.ByteBuffer
-import java.nio.charset.StandardCharsets
 import org.scalatest.FreeSpec
 import org.scalatest.Matchers
 import scala.util.Success
 
-class UniverseConversionsSpec extends FreeSpec with Matchers {
+final class UniverseConversionsSpec extends FreeSpec with Matchers {
 
   "Conversion[universe.v3.model.PackageDefinition, universe.v2.model.PackageDetails]" - {
     "Max v3v3 -> Max v2" in {
@@ -30,89 +27,53 @@ class UniverseConversionsSpec extends FreeSpec with Matchers {
     }
   }
 
-  "Conversion[universe.v3.model.Metadata, universe.v3.model.V3Package]" - {
+  "(Metadata, ReleaseVersion) => V3Package => (Metadata, ReleaseVersion) is the identity fn" - {
 
     "Max metadata" in {
-      val metadata = universe.v3.model.Metadata(
-        PackagingVersion,
-        Name,
-        Version,
-        Maintainer,
-        Description,
-        Tags,
-        Scm,
-        Website,
-        Framework,
-        PreInstallNotes,
-        PostInstallNotes,
-        PostUninstallNotes,
-        Licenses,
-        MinDcosReleaseVersion,
-        Marathon,
-        Resource,
-        Config
-      )
-
-      metadata.as[universe.v3.model.V3Package] should matchPattern {
-        case universe.v3.model.V3Package(
-          PackagingVersion,
-          Name,
-          Version,
-          _,
-          Maintainer,
-          Description,
-          Tags,
-          None,
-          Scm,
-          Website,
-          Framework,
-          PreInstallNotes,
-          PostInstallNotes,
-          PostUninstallNotes,
-          Licenses,
-          MinDcosReleaseVersion,
-          Marathon,
-          Resource,
-          Config,
-          None
-        ) =>
-      }
+      val releaseVersion = universe.v3.model.PackageDefinition.ReleaseVersion(Long.MaxValue).get
+      testCase((MaximalV3ModelMetadata, releaseVersion))
     }
 
     "Min metadata" in {
-      val metadata = universe.v3.model.Metadata(
-        PackagingVersion,
-        Name,
-        Version,
-        Maintainer,
-        Description
-      )
+      val releaseVersion = universe.v3.model.PackageDefinition.ReleaseVersion(0L).get
+      testCase((MinimalV3ModelMetadata, releaseVersion))
+    }
 
-      metadata.as[universe.v3.model.V3Package] should matchPattern {
-        case universe.v3.model.V3Package(
-          PackagingVersion,
-          Name,
-          Version,
-          _,
-          Maintainer,
-          Description,
-          Nil,
-          None,
-          None,
-          None,
-          None,
-          None,
-          None,
-          None,
-          None,
-          None,
-          None,
-          None,
-          None,
-          None
-        ) =>
+    def testCase(
+      value: (universe.v3.model.Metadata, universe.v3.model.PackageDefinition.ReleaseVersion)
+    ): Unit = {
+      assertResult(value) {
+        value
+          .as[universe.v3.model.V3Package]
+          .as[(universe.v3.model.Metadata, universe.v3.model.PackageDefinition.ReleaseVersion)]
       }
     }
+
+  }
+
+  "V3Package => (Metadata, ReleaseVersion) => V3Package is almost the identity function" - {
+
+    "Max V3Package" in {
+      testCase(MaximalV3ModelV3PackageDefinition)
+    }
+
+    "Min V3Package" in {
+      testCase(MinimalV3ModelV3PackageDefinition)
+    }
+
+    def testCase(v3Package: universe.v3.model.V3Package): Unit = {
+      val selected = v3Package.selected
+      val command = v3Package.command
+
+      val roundTrip = v3Package
+        .as[(universe.v3.model.Metadata, universe.v3.model.PackageDefinition.ReleaseVersion)]
+        .as[universe.v3.model.V3Package]
+
+      assert(roundTrip.selected.isEmpty)
+      assert(roundTrip.command.isEmpty)
+      assertResult(v3Package)(roundTrip.copy(selected = selected, command = command))
+    }
+
   }
 
   "Conversion[universe.v3.model.V3Package, universe.v2.model.PackageDetails]" - {

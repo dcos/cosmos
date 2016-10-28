@@ -3,21 +3,29 @@ package com.mesosphere.cosmos.test
 import com.mesosphere.cosmos.http.MediaType
 import com.twitter.finagle.http.Method
 import com.twitter.io.Buf
+import com.twitter.io.Reader
 import io.circe.Encoder
 import io.circe.syntax._
+import java.io.InputStream
 
-case class CosmosRequest(
+case class CosmosRequest private(
   method: Method,
   path: String,
-  body: Option[Buf],
+  accept: Option[String],
   contentType: Option[String],
-  accept: Option[String]
+  customHeaders: Map[String, String] = Map.empty,
+  body: CosmosRequestBody
 )
+
+sealed trait CosmosRequestBody
+case object NoBody extends CosmosRequestBody
+case class Monolithic(data: Buf) extends CosmosRequestBody
+case class Chunked(data: Reader) extends CosmosRequestBody
 
 object CosmosRequest {
 
   def get(path: String, accept: MediaType): CosmosRequest = {
-    CosmosRequest(Method.Get, path, body = None, contentType = None, accept = toHeader(accept))
+    CosmosRequest(Method.Get, path, toHeader(accept), contentType = None, body = NoBody)
   }
 
   def post[A](
@@ -35,7 +43,24 @@ object CosmosRequest {
     contentType: Option[String],
     accept: Option[String]
   ): CosmosRequest = {
-    CosmosRequest(Method.Post, path, Some(Buf.Utf8(body)), contentType, accept)
+    CosmosRequest(Method.Post, path, accept, contentType, body = Monolithic(Buf.Utf8(body)))
+  }
+
+  def post(
+    path: String,
+    body: InputStream,
+    contentType: MediaType,
+    accept: MediaType,
+    customHeaders: Map[String, String]
+  ): CosmosRequest = {
+    CosmosRequest(
+      Method.Post,
+      path,
+      toHeader(accept),
+      toHeader(contentType),
+      customHeaders,
+      body = Chunked(Reader.fromStream(body))
+    )
   }
 
   private[this] def toHeader(mediaType: MediaType): Option[String] = Some(mediaType.show)

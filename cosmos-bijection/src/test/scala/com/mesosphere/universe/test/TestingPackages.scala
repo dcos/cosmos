@@ -14,7 +14,7 @@ object TestingPackages {
   val Version = universe.v3.model.PackageDefinition.Version("9.87.654.3210")
   val Maintainer = "max@mesosphere.io"
   val Description = "A complete package definition"
-  val Marathon = Some(universe.v3.model.Marathon(
+  val MarathonTemplate = Some(universe.v3.model.Marathon(
     v2AppMustacheTemplate = ByteBuffer.wrap("marathon template".getBytes(StandardCharsets.UTF_8))
   ))
   val Tags = List("all", "the", "things").map(
@@ -102,7 +102,7 @@ object TestingPackages {
     PostUninstallNotes,
     Licenses,
     MinDcosReleaseVersion,
-    Marathon,
+    MarathonTemplate,
     Resource,
     Config,
     command = Some(universe.v3.model.Command(
@@ -221,6 +221,34 @@ object TestingPackages {
       iconLarge = Some("large.png"),
       screenshots = Some(List("ooh.png", "aah.png"))
     ))
+  )
+
+  val MaximalV3ModelMetadata = universe.v3.model.Metadata(
+    PackagingVersion,
+    Name,
+    Version,
+    Maintainer,
+    Description,
+    Tags,
+    Scm,
+    Website,
+    Framework,
+    PreInstallNotes,
+    PostInstallNotes,
+    PostUninstallNotes,
+    Licenses,
+    MinDcosReleaseVersion,
+    MarathonTemplate,
+    Resource,
+    Config
+  )
+
+  val MinimalV3ModelMetadata = universe.v3.model.Metadata(
+    PackagingVersion,
+    Name,
+    Version,
+    Maintainer,
+    Description
   )
 
 }

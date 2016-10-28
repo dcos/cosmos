@@ -11,6 +11,7 @@ import com.mesosphere.universe
 import com.netaporter.uri.Uri
 import com.twitter.util.Await
 import com.twitter.util.Future
+import java.util.UUID
 import org.mockito.Mockito.mock
 import org.mockito.Mockito.when
 import org.scalatest.FreeSpec
@@ -26,7 +27,7 @@ final class OperationProcessorSpec extends FreeSpec with Matchers {
         Some(
           PendingOperation(
             packageCoordinate,
-            Install(Uri.parse("http://localhost/some.dcos"), pkg),
+            Install(UUID.fromString("cbe2bca5-a7b2-4d35-ac03-438570b82d8a"), pkg),
             None
           )
         )
@@ -101,7 +102,7 @@ final class OperationProcessorSpec extends FreeSpec with Matchers {
         Some(
           PendingOperation(
             packageCoordinate,
-            Install(Uri.parse("http://localhost/some.dcos"), pkg),
+            Install(UUID.fromString("2d903d9e-3f67-4b12-8c99-1ea774d67b45"), pkg),
             None
           )
         )
@@ -219,7 +220,7 @@ object OperationProcessorSpec {
   }
 
   object SucceedingInstaller extends Installer {
-    def apply(uri: Uri, pkg: universe.v3.model.PackageDefinition): Future[Unit] = Future.Done
+    def apply(id: UUID, pkg: universe.v3.model.PackageDefinition): Future[Unit] = Future.Done
   }
 
   object SucceedingUniverseInstaller extends UniverseInstaller {
