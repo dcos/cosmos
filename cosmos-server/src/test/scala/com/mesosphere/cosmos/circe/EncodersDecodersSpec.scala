@@ -227,11 +227,13 @@ class EncodersDecodersSpec extends FreeSpec {
   }
 
   "PendingOperation" in {
+    val creationTime = 242424L
     val pendingOperation =
       PendingOperation(
         PackageCoordinate("foo", PackageDefinition.Version("2")),
         Uninstall(None),
-        None
+        None,
+        creationTime
       )
     val pendingOperationPrime =
       decode[PendingOperation](pendingOperation.asJson.noSpaces)

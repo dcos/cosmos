@@ -8,5 +8,7 @@ object MediaTypes {
 
   // Storage Media Types
   val RepositoryList = MediaType.vndJson(List("dcos", "package"))("repository.repo-list", 1)
+  val Operation = MediaType.vndJson(List("dcos", "package"))("package-queue.contents", 1)
+  val OperationFailure = MediaType.vndJson(List("dcos", "package"))("package-queue.errors", 1)
 
 }

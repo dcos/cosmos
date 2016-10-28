@@ -10,8 +10,8 @@ import com.twitter.util.Future
 trait ProcessorView {
 
   /** Returns the next operation in the queue. The order of the
-    * elements will be determined by publish time. Earlier published
-    * packages will be at the front of the queue.
+    * elements will be determined by creation time. Earlier created
+    * operations will be at the front of the queue.
     *
     * @return the next pending operation
     */
