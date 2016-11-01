@@ -80,24 +80,10 @@ object CosmosIntegrationTestClient extends Matchers {
     lazy val logger: Logger =
       LoggerFactory.getLogger("com.mesosphere.cosmos.test.CosmosIntegrationTestClient.CosmosClient")
 
-    val property = "com.mesosphere.cosmos.test.CosmosIntegrationTestClient.CosmosClient.uri"
-    private[this] val client = Try {
-        Option(System.getProperty(property))
-          .getOrElse(throw new AssertionError(s"Missing system property '$property' "))
-      }
-      .flatMap { uri =>
-        Services.httpClient("cosmosIntegrationTestClient", uri, RequestLogging)
-      }
-      .get
-
-    def requestBuilder(endpointPath: String): RequestBuilder[Yes, Nothing] = Session match {
-      case RequestSession(Some(auth)) =>
-        RequestBuilder()
-          .url(s"http://localhost:7070/$endpointPath")
-          .setHeader("Authorization", auth.headerValue)
-      case _ =>
-        RequestBuilder()
-          .url(s"http://localhost:7070/$endpointPath")
+    val uri: String = {
+      val property = "com.mesosphere.cosmos.test.CosmosIntegrationTestClient.CosmosClient.uri"
+      Option(System.getProperty(property))
+        .getOrElse(throw new AssertionError(s"Missing system property '$property' "))
     }
 
     def doGet(path: String, accept: MediaType): Response = {
@@ -110,16 +96,7 @@ object CosmosIntegrationTestClient extends Matchers {
       contentType: MediaType,
       accept: MediaType
     )(implicit encoder: Encoder[Req]): Response = {
-      doPost(path, requestBody, contentType.show, accept.show)
-    }
-
-    def doPost[Req](
-      path: String,
-      requestBody: Req,
-      contentType: String,
-      accept: String
-    )(implicit encoder: Encoder[Req]): Response = {
-      val request = buildPost(path, requestBody, contentType, accept)
+      val request = buildPost(path, requestBody, contentType.show, accept.show)
       submit(request)
     }
 
@@ -161,17 +138,6 @@ object CosmosIntegrationTestClient extends Matchers {
           case Xor.Right(errorResponse) => Xor.Left(errorResponse)
         }
       }
-    }
-
-    def packageList(request: ListRequest = ListRequest()): ListResponse = {
-      val Xor.Right(response) =
-        callEndpoint[ListRequest, ListResponse](
-          "package/list",
-          request,
-          MediaTypes.ListRequest,
-          MediaTypes.ListResponse
-        )
-      response
     }
 
     def packageSearch(request: SearchRequest): SearchResponse = {
@@ -230,28 +196,6 @@ object CosmosIntegrationTestClient extends Matchers {
       response
     }
 
-    def packageInstall(request: InstallRequest): InstallResponse = {
-      val Xor.Right(response: InstallResponse) =
-        callEndpoint[InstallRequest, InstallResponse](
-          "package/install",
-          request,
-          MediaTypes.InstallRequest,
-          MediaTypes.V1InstallResponse
-        )
-      response
-    }
-
-    def packageUninstall(request: UninstallRequest): UninstallResponse = {
-      val Xor.Right(response: UninstallResponse) =
-        callEndpoint[UninstallRequest, UninstallResponse](
-          "package/uninstall",
-          request,
-          MediaTypes.UninstallRequest,
-          MediaTypes.UninstallResponse
-        )
-      response
-    }
-
     private[this] def buildGet(
       path: String,
       accept: MediaType
@@ -282,11 +226,24 @@ object CosmosIntegrationTestClient extends Matchers {
       withAccept.buildPost(Buf.Utf8(requestBody))
     }
 
+    private[this] def requestBuilder(endpointPath: String): RequestBuilder[Yes, Nothing] = {
+      val builder = RequestBuilder().url(s"$uri/$endpointPath")
+
+      Session.authorization match {
+        case Some(auth) => builder.setHeader("Authorization", auth.headerValue)
+        case _ => builder
+      }
+    }
+
     private[this] def submit(req: Request): Response = {
       Await.result(client(req))
     }
 
-    private[cosmos] object RequestLogging extends SimpleFilter[Request, Response] {
+    private[this] val client = {
+      Services.httpClient("cosmosIntegrationTestClient", uri, RequestLogging).get
+    }
+
+    private[this] object RequestLogging extends SimpleFilter[Request, Response] {
       val counter = new AtomicInteger()
       override def apply(req: Request, service: Service[Request, Response]): Future[Response] = {
         val c = counter.getAndIncrement

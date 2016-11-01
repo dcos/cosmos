@@ -30,13 +30,13 @@ class RequestErrorsSpec extends FreeSpec {
           "bad",
           "http://bad/repo",
           Some(0)
-        )
+        ).asJson
 
         val response = CosmosClient.doPost(
           path = "package/install",
-          requestBody = body,
-          contentType = MediaTypes.DescribeRequest.show,
-          accept = accept.show
+          requestBody = body.noSpaces,
+          contentType = Some(MediaTypes.DescribeRequest.show),
+          accept = Some(accept.show)
         )
 
         assertResult(Status.BadRequest)(response.status)
