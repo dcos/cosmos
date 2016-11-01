@@ -1,7 +1,8 @@
 package com.mesosphere.cosmos
 
 import cats.data.Xor
-import com.mesosphere.cosmos.repository.{DefaultRepositories, PackageRepositorySpec}
+import com.mesosphere.cosmos.repository.DefaultRepositories
+import com.mesosphere.cosmos.repository.PackageRepositorySpec
 import com.mesosphere.cosmos.rpc.MediaTypes
 import com.mesosphere.cosmos.rpc.v1.circe.Decoders._
 import com.mesosphere.cosmos.rpc.v1.circe.Encoders._
@@ -9,10 +10,9 @@ import com.mesosphere.cosmos.rpc.v1.model._
 import com.mesosphere.cosmos.test.CosmosIntegrationTestClient.CosmosClient
 import com.netaporter.uri.dsl._
 import com.twitter.finagle.http._
-import com.twitter.io.Buf
-import io.circe.syntax._
+import org.scalatest.BeforeAndAfter
+import org.scalatest.FreeSpec
 import org.scalatest.prop.TableDrivenPropertyChecks
-import org.scalatest.{BeforeAndAfter, FreeSpec}
 
 final class PackageRepositoryIntegrationSpec extends FreeSpec with BeforeAndAfter {
 
@@ -148,13 +148,12 @@ private object PackageRepositoryIntegrationSpec extends TableDrivenPropertyCheck
   private def sendAddRequest(
     addRequest: PackageRepositoryAddRequest
   ): Response = {
-    val path = "package/repository/add"
-    val request = CosmosClient.requestBuilder(path)
-      .addHeader("Content-type", MediaTypes.PackageRepositoryAddRequest.show)
-      .addHeader("Accept", MediaTypes.PackageRepositoryAddResponse.show)
-      .buildPost(Buf.Utf8(addRequest.asJson.noSpaces))
-
-    CosmosClient(request)
+    CosmosClient.doPost(
+      path = "package/repository/add",
+      requestBody = addRequest,
+      contentType = MediaTypes.PackageRepositoryAddRequest,
+      accept = MediaTypes.PackageRepositoryAddResponse
+    )
   }
 
 }

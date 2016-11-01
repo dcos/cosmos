@@ -3,15 +3,19 @@ package com.mesosphere.cosmos
 import cats.data.Xor
 import cats.data.Xor.Right
 import com.mesosphere.cosmos.rpc.MediaTypes
-import com.mesosphere.cosmos.rpc.v1.circe.Encoders._
 import com.mesosphere.cosmos.rpc.v1.circe.Decoders._
-import com.mesosphere.cosmos.rpc.v1.model.{DescribeRequest, ErrorResponse, ListVersionsRequest}
-import com.mesosphere.cosmos.test.CosmosIntegrationTestClient
-import com.mesosphere.cosmos.thirdparty.marathon.model.{AppId, MarathonApp, MarathonAppContainer, MarathonAppContainerDocker}
-import com.mesosphere.universe.v2.model._
+import com.mesosphere.cosmos.rpc.v1.circe.Encoders._
+import com.mesosphere.cosmos.rpc.v1.model.DescribeRequest
+import com.mesosphere.cosmos.rpc.v1.model.ErrorResponse
+import com.mesosphere.cosmos.rpc.v1.model.ListVersionsRequest
+import com.mesosphere.cosmos.test.CosmosIntegrationTestClient.CosmosClient
+import com.mesosphere.cosmos.thirdparty.marathon.model.AppId
+import com.mesosphere.cosmos.thirdparty.marathon.model.MarathonApp
+import com.mesosphere.cosmos.thirdparty.marathon.model.MarathonAppContainer
+import com.mesosphere.cosmos.thirdparty.marathon.model.MarathonAppContainerDocker
 import com.mesosphere.universe.v2.circe.Decoders._
+import com.mesosphere.universe.v2.model._
 import com.twitter.finagle.http._
-import com.twitter.io.Buf
 import io.circe.Json
 import io.circe.jawn._
 import io.circe.syntax._
@@ -21,8 +25,6 @@ import org.scalatest.prop.TableDrivenPropertyChecks
 final class PackageDescribeSpec extends FreeSpec with TableDrivenPropertyChecks {
 
   import PackageDescribeSpec._
-
-  val apiClient = CosmosIntegrationTestClient.CosmosClient
 
   "The package describe endpoint" - {
     "returns an error when package w/ version not found" in {
@@ -103,21 +105,23 @@ final class PackageDescribeSpec extends FreeSpec with TableDrivenPropertyChecks 
   private[this] def describeRequest(
     describeRequest: DescribeRequest
   ): Response = {
-    val request = apiClient.requestBuilder(DescribeEndpoint)
-      .addHeader("Content-Type", MediaTypes.DescribeRequest.show)
-      .addHeader("Accept", MediaTypes.V1DescribeResponse.show)
-      .buildPost(Buf.Utf8(describeRequest.asJson.noSpaces))
-    apiClient(request)
+    CosmosClient.doPost(
+      path = DescribeEndpoint,
+      requestBody = describeRequest,
+      contentType = MediaTypes.DescribeRequest,
+      accept = MediaTypes.V1DescribeResponse
+    )
   }
 
   private[this] def listVersionsRequest(
     listVersionsRequest: ListVersionsRequest
   ): Response = {
-    val request = apiClient.requestBuilder(ListVersionsEndpoint)
-      .addHeader("Content-Type", MediaTypes.ListVersionsRequest.show)
-      .addHeader("Accept", MediaTypes.ListVersionsResponse.show)
-      .buildPost(Buf.Utf8(listVersionsRequest.asJson.noSpaces))
-    apiClient(request)
+    CosmosClient.doPost(
+      path = ListVersionsEndpoint,
+      requestBody = listVersionsRequest,
+      contentType = MediaTypes.ListVersionsRequest,
+      accept = MediaTypes.ListVersionsResponse
+    )
   }
 }
 

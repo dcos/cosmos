@@ -2,35 +2,41 @@ package com.mesosphere.cosmos.test
 
 import cats.data.Xor
 import com.mesosphere.cosmos._
-import com.mesosphere.cosmos.http.{Authorization, MediaType, RequestSession}
-import com.mesosphere.cosmos.rpc.MediaTypes
-import com.netaporter.uri.Uri
-import com.netaporter.uri.dsl._
-import com.twitter.finagle.{Service, SimpleFilter}
-import com.twitter.finagle.http.RequestConfig.Yes
-import com.twitter.finagle.http._
-import com.twitter.io.Buf
-import com.twitter.util.{Await, Future, Try}
-import io.circe.jawn._
-import io.circe.syntax._
-import io.circe.{Decoder, Encoder}
-import org.scalatest.Matchers
-import org.slf4j.LoggerFactory
-
-import java.util.concurrent.atomic.AtomicInteger
 import com.mesosphere.cosmos.finch.TestingMediaTypes
+import com.mesosphere.cosmos.http.Authorization
+import com.mesosphere.cosmos.http.MediaType
+import com.mesosphere.cosmos.http.RequestSession
 import com.mesosphere.cosmos.internal.circe.Decoders._
 import com.mesosphere.cosmos.internal.circe.Encoders._
+import com.mesosphere.cosmos.rpc.MediaTypes
 import com.mesosphere.cosmos.rpc.v1.circe.Decoders._
 import com.mesosphere.cosmos.rpc.v1.circe.Encoders._
 import com.mesosphere.cosmos.rpc.v1.model._
 import com.mesosphere.universe.v3.circe.Decoders._
 import com.mesosphere.universe.v3.model.Repository
 import com.mesosphere.universe.{MediaTypes => UMediaTypes}
+import com.netaporter.uri.Uri
+import com.netaporter.uri.dsl._
+import com.twitter.finagle.Service
+import com.twitter.finagle.SimpleFilter
+import com.twitter.finagle.http.RequestConfig.Yes
+import com.twitter.finagle.http._
+import com.twitter.io.Buf
+import com.twitter.util.Await
+import com.twitter.util.Future
+import com.twitter.util.Try
+import io.circe.Decoder
+import io.circe.Encoder
+import io.circe.jawn._
+import io.circe.syntax._
+import java.util.concurrent.atomic.AtomicInteger
+import org.scalatest.Matchers
+import org.slf4j.Logger
+import org.slf4j.LoggerFactory
 
 object CosmosIntegrationTestClient extends Matchers {
 
-  val adminRouter = {
+  val adminRouter: AdminRouter = {
     val property = dcosUri.name
     val ar = Try {
       Option(System.getProperty(property))
@@ -71,7 +77,8 @@ object CosmosIntegrationTestClient extends Matchers {
   )
 
   object CosmosClient {
-    lazy val logger = LoggerFactory.getLogger("com.mesosphere.cosmos.test.CosmosIntegrationTestClient.CosmosClient")
+    lazy val logger: Logger =
+      LoggerFactory.getLogger("com.mesosphere.cosmos.test.CosmosIntegrationTestClient.CosmosClient")
 
     val property = "com.mesosphere.cosmos.test.CosmosIntegrationTestClient.CosmosClient.uri"
     private[this] val client = Try {
@@ -93,34 +100,37 @@ object CosmosIntegrationTestClient extends Matchers {
           .url(s"http://localhost:7070/$endpointPath")
     }
 
-
-    def buildGet(
-      path: String,
-      accept: MediaType
-    ): Request = {
-      requestBuilder(path)
-        .addHeader("Accept", accept.show)
-        .buildGet()
+    def doGet(path: String, accept: MediaType): Response = {
+      submit(buildGet(path, accept))
     }
 
-    def buildPost[Req](
+    def doPost[Req](
       path: String,
       requestBody: Req,
       contentType: MediaType,
       accept: MediaType
-    )(implicit encoder: Encoder[Req]): Request = {
-      requestBuilder(path)
-        .addHeader("Content-type", contentType.show)
-        .addHeader("Accept", accept.show)
-        .buildPost(Buf.Utf8(requestBody.asJson.noSpaces))
+    )(implicit encoder: Encoder[Req]): Response = {
+      doPost(path, requestBody, contentType.show, accept.show)
     }
 
-    def apply(request: Request): Response = {
-      Await.result(submit(request))
+    def doPost[Req](
+      path: String,
+      requestBody: Req,
+      contentType: String,
+      accept: String
+    )(implicit encoder: Encoder[Req]): Response = {
+      val request = buildPost(path, requestBody, contentType, accept)
+      submit(request)
     }
 
-    def submit(req: Request): Future[Response] = {
-      client(req)
+    def doPost(
+      path: String,
+      requestBody: String,
+      contentType: Option[String],
+      accept: Option[String]
+    ): Response = {
+      val request = buildPost(path, requestBody, contentType, accept)
+      submit(request)
     }
 
     def callEndpoint[Req, Res](
@@ -132,12 +142,12 @@ object CosmosIntegrationTestClient extends Matchers {
       method: String = "POST"
     )(implicit decoder: Decoder[Res], encoder: Encoder[Req]): Xor[ErrorResponse, Res] = {
       val request = method match {
-        case "POST" => buildPost(path, requestBody, requestMediaType, responseMediaType)
+        case "POST" => buildPost(path, requestBody, requestMediaType.show, responseMediaType.show)
         case "GET" => buildGet(path, responseMediaType)
         case _ => throw new AssertionError(s"Unexpected HTTP method: $method")
       }
 
-      val response = CosmosClient(request)
+      val response = submit(request)
       assertResult(status)(response.status)
 
       if (response.status.code / 100 == 2) {
@@ -231,15 +241,49 @@ object CosmosIntegrationTestClient extends Matchers {
       response
     }
 
-    def packageUninstall(requestuest: UninstallRequest): UninstallResponse = {
+    def packageUninstall(request: UninstallRequest): UninstallResponse = {
       val Xor.Right(response: UninstallResponse) =
         callEndpoint[UninstallRequest, UninstallResponse](
           "package/uninstall",
-          requestuest,
+          request,
           MediaTypes.UninstallRequest,
           MediaTypes.UninstallResponse
         )
       response
+    }
+
+    private[this] def buildGet(
+      path: String,
+      accept: MediaType
+    ): Request = {
+      requestBuilder(path)
+        .addHeader("Accept", accept.show)
+        .buildGet()
+    }
+
+    private[this] def buildPost[Req](
+      path: String,
+      requestBody: Req,
+      contentType: String,
+      accept: String
+    )(implicit encoder: Encoder[Req]): Request = {
+      buildPost(path, requestBody.asJson.noSpaces, Some(contentType), Some(accept))
+    }
+
+    private[this] def buildPost(
+      path: String,
+      requestBody: String,
+      contentType: Option[String],
+      accept: Option[String]
+    ): Request = {
+      val withPath = requestBuilder(path)
+      val withContentType = contentType.fold(withPath)(withPath.addHeader("Content-Type", _))
+      val withAccept = accept.fold(withContentType)(withContentType.addHeader("Accept", _))
+      withAccept.buildPost(Buf.Utf8(requestBody))
+    }
+
+    private[this] def submit(req: Request): Response = {
+      Await.result(client(req))
     }
 
     private[cosmos] object RequestLogging extends SimpleFilter[Request, Response] {
@@ -255,7 +299,7 @@ object CosmosIntegrationTestClient extends Matchers {
 
       private[this] def fmtHeaders(h: HeaderMap): String = {
         h.map {
-          case ("Authorization", v) => s"Authorization: ****"
+          case ("Authorization", _) => s"Authorization: ****"
           case (k, v) => s"$k: $v"
         } mkString " "
       }

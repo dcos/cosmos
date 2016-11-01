@@ -5,20 +5,18 @@ import com.mesosphere.cosmos.rpc.MediaTypes
 import com.mesosphere.cosmos.rpc.v1.circe.Decoders._
 import com.mesosphere.cosmos.test.CosmosIntegrationTestClient._
 import com.twitter.finagle.http.Status
-import com.twitter.io.Buf
 import io.circe.jawn._
-import io.circe.syntax._
 import org.scalatest.FreeSpec
 
 class ErrorResponseSpec extends FreeSpec {
 
   "An ErrorResponse should be returned as the body when a request can't be parsed" in {
-    val requestString = Map("invalid" -> true).asJson.noSpaces
-    val post = CosmosClient.requestBuilder("package/install")
-      .addHeader("Content-Type", MediaTypes.InstallRequest.show)
-      .addHeader("Accept", MediaTypes.V1InstallResponse.show)
-      .buildPost(Buf.Utf8(requestString))
-    val response = CosmosClient(post)
+    val response = CosmosClient.doPost(
+      path = "package/install",
+      requestBody = Map("invalid" -> true),
+      contentType = MediaTypes.InstallRequest,
+      accept = MediaTypes.V1InstallResponse
+    )
 
     assertResult(Status.BadRequest)(response.status)
     assertResult(MediaTypes.ErrorResponse.show)(response.headerMap("Content-Type"))

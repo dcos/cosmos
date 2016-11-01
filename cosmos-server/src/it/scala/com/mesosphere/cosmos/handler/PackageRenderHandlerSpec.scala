@@ -4,18 +4,22 @@ import cats.data.Xor
 import com.mesosphere.cosmos.rpc.MediaTypes
 import com.mesosphere.cosmos.rpc.v1.circe.Decoders._
 import com.mesosphere.cosmos.rpc.v1.circe.Encoders._
-import com.mesosphere.cosmos.rpc.v1.model.{ErrorResponse, RenderRequest, RenderResponse}
-import com.mesosphere.cosmos.test.CosmosIntegrationTestClient
+import com.mesosphere.cosmos.rpc.v1.model.ErrorResponse
+import com.mesosphere.cosmos.rpc.v1.model.RenderRequest
+import com.mesosphere.cosmos.rpc.v1.model.RenderResponse
+import com.mesosphere.cosmos.test.CosmosIntegrationTestClient.CosmosClient
 import com.mesosphere.universe.v2.model.PackageDetailsVersion
+import com.twitter.finagle.http.Response
 import com.twitter.finagle.http.Status
-import com.twitter.io.Buf
-import io.circe.{Json, JsonObject}
+import io.circe.Json
+import io.circe.JsonObject
 import io.circe.jawn._
 import io.circe.syntax._
 import org.scalatest.FreeSpec
 
 class PackageRenderHandlerSpec extends FreeSpec {
-  import CosmosIntegrationTestClient._
+
+  import PackageRenderHandlerSpec._
 
   "PackageRenderHandler should" - {
 
@@ -53,14 +57,9 @@ class PackageRenderHandlerSpec extends FreeSpec {
           "DCOS_PACKAGE_IS_FRAMEWORK" -> "false".asJson
         ))
       )))
-      val installRequest = RenderRequest("helloworld", Some(PackageDetailsVersion("0.1.0")))
+      val renderRequest = RenderRequest("helloworld", Some(PackageDetailsVersion("0.1.0")))
 
-      val request = CosmosClient.requestBuilder("package/render")
-        .addHeader("Content-Type", MediaTypes.RenderRequest.show)
-        .addHeader("Accept", MediaTypes.RenderResponse.show)
-        .buildPost(Buf.Utf8(installRequest.asJson.noSpaces))
-
-      val response = CosmosClient(request)
+      val response = packageRender(renderRequest)
 
       assertResult(Status.Ok)(response.status)
       assertResult(MediaTypes.RenderResponse.show)(response.contentType.get)
@@ -79,14 +78,9 @@ class PackageRenderHandlerSpec extends FreeSpec {
         )))
       )
 
-      val installRequest = RenderRequest("enterprise-security-cli")
+      val renderRequest = RenderRequest("enterprise-security-cli")
 
-      val request = CosmosClient.requestBuilder("package/render")
-        .addHeader("Content-Type", MediaTypes.RenderRequest.show)
-        .addHeader("Accept", MediaTypes.RenderResponse.show)
-        .buildPost(Buf.Utf8(installRequest.asJson.noSpaces))
-
-      val response = CosmosClient(request)
+      val response = packageRender(renderRequest)
 
       assertResult(Status.BadRequest)(response.status)
       assertResult(MediaTypes.ErrorResponse.show)(response.contentType.get)
@@ -95,4 +89,17 @@ class PackageRenderHandlerSpec extends FreeSpec {
     }
 
   }
+}
+
+object PackageRenderHandlerSpec {
+
+  def packageRender(renderRequest: RenderRequest): Response = {
+    CosmosClient.doPost(
+      path = "package/render",
+      requestBody = renderRequest,
+      contentType = MediaTypes.RenderRequest,
+      accept = MediaTypes.RenderResponse
+    )
+  }
+
 }

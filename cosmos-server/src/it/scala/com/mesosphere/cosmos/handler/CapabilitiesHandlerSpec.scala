@@ -12,14 +12,14 @@ import org.scalatest.FreeSpec
 final class CapabilitiesHandlerSpec extends FreeSpec {
 
   "The capabilities handler should return a document" in {
-    val request = CosmosClient.requestBuilder("capabilities")
-      .setHeader("Accept", MediaTypes.CapabilitiesResponse.show)
-      .buildGet()
-    val response = CosmosClient(request)
-    val responseBody = response.contentString
+    val response = CosmosClient.doGet(
+      path = "capabilities",
+      accept = MediaTypes.CapabilitiesResponse
+    )
+
     assertResult(Status.Ok)(response.status)
     assertResult(MediaTypes.CapabilitiesResponse.show)(response.headerMap("Content-Type"))
-    val Xor.Right(body) = decode[CapabilitiesResponse](responseBody)
+    val Xor.Right(body) = decode[CapabilitiesResponse](response.contentString)
     val expected = CapabilitiesResponse(List(
       Capability("PACKAGE_MANAGEMENT"),
       Capability("SUPPORT_CLUSTER_REPORT"),

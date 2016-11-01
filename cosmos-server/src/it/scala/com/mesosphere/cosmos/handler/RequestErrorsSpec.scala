@@ -30,14 +30,15 @@ class RequestErrorsSpec extends FreeSpec {
           "bad",
           "http://bad/repo",
           Some(0)
-        ).asJson
+        )
 
-        val req = CosmosClient.requestBuilder("package/install")
-          .addHeader("Accept", accept.show)
-          .addHeader("Content-Type", MediaTypes.DescribeRequest.show)
-          .buildPost(Buf.Utf8(body.noSpaces))
+        val response = CosmosClient.doPost(
+          path = "package/install",
+          requestBody = body,
+          contentType = MediaTypes.DescribeRequest.show,
+          accept = accept.show
+        )
 
-        val response = CosmosClient(req)
         assertResult(Status.BadRequest)(response.status)
         assertResult(MediaTypes.ErrorResponse.show)(response.headerMap("Content-Type"))
         val Xor.Right(obj: JsonObject) = parse(response.contentString).map(jsonToJsonObject)
@@ -87,10 +88,13 @@ class RequestErrorsSpec extends FreeSpec {
       }
 
       "Missing Accept, Missing Content-Type, Missing body" in {
-        val req = CosmosClient.requestBuilder("package/install")
-          .buildPost(Buf.Utf8(""))
+        val response = CosmosClient.doPost(
+          path = "package/install",
+          requestBody = "",
+          contentType = None,
+          accept = None
+        )
 
-        val response = CosmosClient(req)
         assertResult(Status.BadRequest)(response.status)
         assertResult(MediaTypes.ErrorResponse.show)(response.headerMap("Content-Type"))
         val Xor.Right(obj: JsonObject) = parse(response.contentString).map(jsonToJsonObject)

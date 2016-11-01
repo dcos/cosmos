@@ -314,13 +314,12 @@ object PackageRepositorySpec extends FreeSpec with TableDrivenPropertyChecks {
 
     assertResult(expectedErrorMessage) {
       val addRequest = PackageRepositoryAddRequest(repository.name, repository.uri)
-      val post = CosmosClient.buildPost(
+      val response = CosmosClient.doPost(
         "package/repository/add",
         addRequest,
         MediaTypes.PackageRepositoryAddRequest,
         MediaTypes.PackageRepositoryAddResponse
       )
-      val response = CosmosClient(post)
       assertResult(Status.BadRequest)(response.status)
       val Xor.Right(err) = decode[ErrorResponse](response.contentString)
       err.message
@@ -365,13 +364,12 @@ object PackageRepositorySpec extends FreeSpec with TableDrivenPropertyChecks {
   }
 
   private def searchPackages(req: SearchRequest): Response = {
-    val request = CosmosClient.buildPost(
+    CosmosClient.doPost(
       "package/search",
       req,
       MediaTypes.SearchRequest,
       MediaTypes.SearchResponse
     )
-    CosmosClient(request)
   }
 
   private[this] def deleteRequestByName(
