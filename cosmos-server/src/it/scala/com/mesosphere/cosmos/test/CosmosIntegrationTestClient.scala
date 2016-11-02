@@ -152,6 +152,14 @@ object CosmosIntegrationTestClient extends Matchers {
       response
     }
 
+    /** Ensures that we create Finagle requests correctly.
+      *
+      * Specifically, prevents confusion around the `uri` parameter of
+      * [[com.twitter.finagle.http.Request.apply()]], which should be the relative path of the
+      * endpoint, and not the full HTTP URI.
+      *
+      * It also includes the Authorization header if provided by configuration.
+      */
     def submit(req: CosmosRequest): Response = {
       val withPath = RequestBuilder().url(s"$uri/${req.path}")
       val withAuth = Session.authorization.fold(withPath) { auth =>
@@ -165,6 +173,7 @@ object CosmosIntegrationTestClient extends Matchers {
       Await.result(client(finagleReq))
     }
 
+    // Do not relax the visibility on this -- use `submit()` instead; see its Scaladoc for why
     private[this] val client = {
       Services.httpClient("cosmosIntegrationTestClient", uri, RequestLogging).get
     }

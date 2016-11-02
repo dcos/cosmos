@@ -319,10 +319,10 @@ object PackageRepositorySpec extends FreeSpec with TableDrivenPropertyChecks {
 
     assertResult(expectedErrorMessage) {
       val request = CosmosRequest.post(
-        path = "package/repository/add",
-        body = PackageRepositoryAddRequest(repository.name, repository.uri),
-        contentType = MediaTypes.PackageRepositoryAddRequest,
-        accept = MediaTypes.PackageRepositoryAddResponse
+        "package/repository/add",
+        PackageRepositoryAddRequest(repository.name, repository.uri),
+        MediaTypes.PackageRepositoryAddRequest,
+        MediaTypes.PackageRepositoryAddResponse
       )
       val response = CosmosClient.submit(request)
       assertResult(Status.BadRequest)(response.status)
@@ -372,10 +372,10 @@ object PackageRepositorySpec extends FreeSpec with TableDrivenPropertyChecks {
 
   private def searchPackages(req: SearchRequest): Response = {
     val request = CosmosRequest.post(
-      path = "package/search",
-      body = req,
-      contentType = MediaTypes.SearchRequest,
-      accept = MediaTypes.SearchResponse
+      "package/search",
+      req,
+      MediaTypes.SearchRequest,
+      MediaTypes.SearchResponse
     )
     CosmosClient.submit(request)
   }

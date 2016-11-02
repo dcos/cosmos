@@ -206,10 +206,10 @@ final class PackageInstallIntegrationSpec extends FreeSpec with BeforeAndAfterAl
       val installRequest = InstallRequest("enterprise-security-cli")
 
       val request = CosmosRequest.post(
-        path = "package/install",
-        body = installRequest,
-        contentType = MediaTypes.InstallRequest,
-        accept = MediaTypes.V2InstallResponse
+        "package/install",
+        installRequest,
+        MediaTypes.InstallRequest,
+        MediaTypes.V2InstallResponse
       )
       val response = CosmosClient.submit(request)
 
@@ -282,10 +282,10 @@ final class PackageInstallIntegrationSpec extends FreeSpec with BeforeAndAfterAl
     installRequest: InstallRequest
   ): Response = {
     val request = CosmosRequest.post(
-      path = "package/install",
-      body = installRequest,
-      contentType = MediaTypes.InstallRequest,
-      accept = MediaTypes.V1InstallResponse
+      "package/install",
+      installRequest,
+      MediaTypes.InstallRequest,
+      MediaTypes.V1InstallResponse
     )
     CosmosClient.submit(request)
   }

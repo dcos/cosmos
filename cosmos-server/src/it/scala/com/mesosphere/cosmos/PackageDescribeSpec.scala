@@ -107,10 +107,10 @@ final class PackageDescribeSpec extends FreeSpec with TableDrivenPropertyChecks 
     describeRequest: DescribeRequest
   ): Response = {
     val request = CosmosRequest.post(
-      path = DescribeEndpoint,
-      body = describeRequest,
-      contentType = MediaTypes.DescribeRequest,
-      accept = MediaTypes.V1DescribeResponse
+      DescribeEndpoint,
+      describeRequest,
+      MediaTypes.DescribeRequest,
+      MediaTypes.V1DescribeResponse
     )
     CosmosClient.submit(request)
   }
@@ -119,10 +119,10 @@ final class PackageDescribeSpec extends FreeSpec with TableDrivenPropertyChecks 
     listVersionsRequest: ListVersionsRequest
   ): Response = {
     val request = CosmosRequest.post(
-      path = ListVersionsEndpoint,
-      body = listVersionsRequest,
-      contentType = MediaTypes.ListVersionsRequest,
-      accept = MediaTypes.ListVersionsResponse
+      ListVersionsEndpoint,
+      listVersionsRequest,
+      MediaTypes.ListVersionsRequest,
+      MediaTypes.ListVersionsResponse
     )
     CosmosClient.submit(request)
   }

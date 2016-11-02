@@ -14,7 +14,7 @@ import org.scalatest.FreeSpec
 final class CapabilitiesHandlerSpec extends FreeSpec {
 
   "The capabilities handler should return a document" in {
-    val request = CosmosRequest.get(path = "capabilities", accept = MediaTypes.CapabilitiesResponse)
+    val request = CosmosRequest.get("capabilities", MediaTypes.CapabilitiesResponse)
     val response = CosmosClient.submit(request)
 
     assertResult(Status.Ok)(response.status)

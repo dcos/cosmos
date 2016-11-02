@@ -96,10 +96,10 @@ object PackageRenderHandlerSpec {
 
   def packageRender(renderRequest: RenderRequest): Response = {
     val request = CosmosRequest.post(
-      path = "package/render",
-      body = renderRequest,
-      contentType = MediaTypes.RenderRequest,
-      accept = MediaTypes.RenderResponse
+      "package/render",
+      renderRequest,
+      MediaTypes.RenderRequest,
+      MediaTypes.RenderResponse
     )
     CosmosClient.submit(request)
   }

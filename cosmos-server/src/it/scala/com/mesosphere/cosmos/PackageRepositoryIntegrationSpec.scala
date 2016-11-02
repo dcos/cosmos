@@ -153,10 +153,10 @@ private object PackageRepositoryIntegrationSpec extends TableDrivenPropertyCheck
     addRequest: PackageRepositoryAddRequest
   ): Response = {
     val request = CosmosRequest.post(
-      path = "package/repository/add",
-      body = addRequest,
-      contentType = MediaTypes.PackageRepositoryAddRequest,
-      accept = MediaTypes.PackageRepositoryAddResponse
+      "package/repository/add",
+      addRequest,
+      MediaTypes.PackageRepositoryAddRequest,
+      MediaTypes.PackageRepositoryAddResponse
     )
     CosmosClient.submit(request)
   }

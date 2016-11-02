@@ -33,10 +33,10 @@ class RequestErrorsSpec extends FreeSpec {
         ).asJson
 
         val request = CosmosRequest.post(
-          path = "package/install",
-          body = body.noSpaces,
-          contentType = Some(MediaTypes.DescribeRequest.show),
-          accept = Some(accept.show)
+          "package/install",
+          body.noSpaces,
+          Some(MediaTypes.DescribeRequest.show),
+          Some(accept.show)
         )
         val response = CosmosClient.submit(request)
 

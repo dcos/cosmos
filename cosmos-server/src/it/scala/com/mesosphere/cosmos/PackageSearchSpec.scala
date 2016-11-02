@@ -47,10 +47,10 @@ final class PackageSearchSpec extends FreeSpec {
     expectedResponse: SearchResponse
   ): Unit = {
     val request = CosmosRequest.post(
-      path = "package/search",
-      body = SearchRequest(Some(query)),
-      contentType = MediaTypes.SearchRequest,
-      accept = MediaTypes.SearchResponse
+      "package/search",
+      SearchRequest(Some(query)),
+      MediaTypes.SearchRequest,
+      MediaTypes.SearchResponse
     )
     val response = CosmosClient.submit(request)
 
