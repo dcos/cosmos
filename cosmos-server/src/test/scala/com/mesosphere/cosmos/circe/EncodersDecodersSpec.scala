@@ -195,7 +195,7 @@ class EncodersDecodersSpec extends FreeSpec {
           TestingPackages.MinimalV3ModelV3PackageDefinition
         )
       val installPrime =
-        decode[Install](install.asJson.noSpaces)
+        decode[Operation](install.asJson.noSpaces)
       assertResult(install)(installPrime)
     }
 
@@ -205,7 +205,7 @@ class EncodersDecodersSpec extends FreeSpec {
           TestingPackages.MinimalV3ModelV3PackageDefinition
         )
       val universeInstallPrime =
-        decode[UniverseInstall](universeInstall.asJson.noSpaces)
+        decode[Operation](universeInstall.asJson.noSpaces)
       assertResult(universeInstall)(universeInstallPrime)
     }
 
@@ -213,7 +213,7 @@ class EncodersDecodersSpec extends FreeSpec {
       val uninstall: Operation =
         Uninstall(None)
       val uninstallPrime =
-        decode[Uninstall](uninstall.asJson.noSpaces)
+        decode[Operation](uninstall.asJson.noSpaces)
       assertResult(uninstall)(uninstallPrime)
     }
   }
@@ -227,24 +227,57 @@ class EncodersDecodersSpec extends FreeSpec {
   }
 
   "PendingOperation" in {
-    val creationTime = 242424L
     val pendingOperation =
       PendingOperation(
         PackageCoordinate("foo", PackageDefinition.Version("2")),
         Uninstall(None),
-        None,
-        creationTime
+        None
       )
     val pendingOperationPrime =
       decode[PendingOperation](pendingOperation.asJson.noSpaces)
     assertResult(pendingOperation)(pendingOperationPrime)
   }
 
-  "OperationStatus" in {
-    val operationStatus = OperationStatus(None, None)
-    val operationStatusPrime =
-      decode[OperationStatus](operationStatus.asJson.noSpaces)
-    assertResult(operationStatus)(operationStatusPrime)
+  "OperationStatus" - {
+    "type field is correct" in {
+      val pending: OperationStatus =
+        Pending(Uninstall(None), None)
+      val expectedJson =
+        Json.obj(
+          "operation" ->
+            Json.obj(
+              "packageDefinition" -> Json.Null,
+              "type" -> "Uninstall".asJson
+            ),
+          "failure" -> Json.Null,
+          "type" -> "Pending".asJson)
+      val actualJson = pending.asJson
+      assertResult(expectedJson)(actualJson)
+    }
+
+    "Pending => Json => Pending" in {
+      val pending: OperationStatus =
+        Pending(
+          Uninstall(None),
+          None
+        )
+      val pendingPrime =
+        decode[OperationStatus](pending.asJson.noSpaces)
+      assertResult(pending)(pendingPrime)
+    }
+
+    "Failed => Json => Failed" in {
+      val failed: OperationStatus =
+        Failed(
+          OperationFailure(
+            Uninstall(None),
+            ErrorResponse("foo", "bar")
+          )
+        )
+      val failedPrime =
+        decode[OperationStatus](failed.asJson.noSpaces)
+      assertResult(failed)(failedPrime)
+    }
   }
 
 }

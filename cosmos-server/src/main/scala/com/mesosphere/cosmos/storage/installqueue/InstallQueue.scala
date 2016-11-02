@@ -1,6 +1,7 @@
 package com.mesosphere.cosmos.storage.installqueue
 
-import com.mesosphere.cosmos.converter.Common._
+import com.mesosphere.cosmos.InstallQueueError
+import com.mesosphere.cosmos.converter.Common.packageCoordinateToBase64String
 import com.mesosphere.cosmos.rpc.v1.model.ErrorResponse
 import com.mesosphere.cosmos.rpc.v1.model.PackageCoordinate
 import com.mesosphere.cosmos.storage.Envelope
@@ -9,7 +10,9 @@ import com.mesosphere.cosmos.storage.v1.circe.MediaTypedEncoders._
 import com.twitter.bijection.Conversion.asMethod
 import com.twitter.util.Future
 import com.twitter.util.Promise
-import java.util
+import com.twitter.util.Return
+import com.twitter.util.Throw
+import com.twitter.util.Try
 import org.apache.curator.framework.CuratorFramework
 import org.apache.curator.framework.api.BackgroundCallback
 import org.apache.curator.framework.api.CuratorEvent
@@ -17,264 +20,295 @@ import org.apache.curator.framework.api.CuratorEventType
 import org.apache.curator.framework.recipes.cache.ChildData
 import org.apache.curator.framework.recipes.cache.TreeCache
 import org.apache.zookeeper.KeeperException
+import org.apache.zookeeper.data.Stat
 import scala.collection.JavaConversions._
-import scala.util.Try
+import scala.collection.mutable.ListBuffer
 
-final class InstallQueue(client: CuratorFramework) extends
+final class InstallQueue private(client: CuratorFramework) extends
   ProcessorView with ProducerView with ReaderView {
+
   import InstallQueue._
 
-  private[this] val logger = org.slf4j.LoggerFactory.getLogger(getClass)
+  private[this] val operationStatusCache = new TreeCache(client, installQueuePath)
+  operationStatusCache.start()
 
-  private[this] val pendingOperationsPath = "/package/pendingOperations"
-  private[this] val failedOperationsPath = "/package/failedOperations"
-
-  private[this] val pendingOperationCache = new TreeCache(client, pendingOperationsPath)
-  pendingOperationCache.start()
-  private[this] val failedOperationCache = new TreeCache(client, failedOperationsPath)
-  failedOperationCache.start()
-
-  /** Returns the next operation in the queue. The order of the
-    * elements will be determined by creation time. Earlier created
-    * operations will be at the front of the queue.
-    *
-    * @return the next pending operation
-    */
   override def next(): Future[Option[PendingOperation]] = {
-    val noFailure = getPendingCoordinates.flatMap { pcs =>
-      Future.collect(pcs.map(getPendingOperationWithoutFailure)).map { ops =>
-        ops.sortBy(_.creationTime).headOption
-      }
-    }
-
-    noFailure.flatMap {
-      case None => Future.value(None)
-      case Some(po) =>
-        val failure: Future[Option[OperationFailure]] = getOperationFailure(po.packageCoordinate)
-        failure.map(of => Some(po.copy(failure = of)))
-    }
-  }
-
-  private[this] def getOperationFailure(pc: PackageCoordinate): Future[Option[OperationFailure]] = {
-    val promise = Promise[Option[OperationFailure]]
-    client.getData.inBackground(
-      handler { case event if event.getType == CuratorEventType.GET_DATA =>
-        val code = KeeperException.Code.get(event.getResultCode)
-        code match {
-          case KeeperException.Code.OK =>
-            promise.setValue(Some(Envelope.decodeData[OperationFailure](event.getData)))
-          case KeeperException.Code.NONODE =>
-            promise.setValue(None)
-          case _ =>
-            promise.setException(KeeperException.create(code, event.getPath))
+    getAllCoordinates.flatMap { coordinates =>
+      Future.collect(coordinates.map(getOperationIfPending)).map { operationsMaybePending =>
+        val pendingOperations = operationsMaybePending.flatten
+        if (pendingOperations.isEmpty) {
+          None
+        } else {
+          Some(pendingOperations.minBy(_.info.getCtime).value)
         }
       }
-    ).forPath(
-      s"$failedOperationsPath/${pc.as[String]}"
-    )
-    promise
+    }
   }
 
-  private[this] def getPendingOperationWithoutFailure(pc: PackageCoordinate): Future[PendingOperation] = {
-    val promise = Promise[PendingOperation]()
-    client.getData.inBackground(
-      handler { case event if event.getType == CuratorEventType.GET_DATA =>
-          val code = KeeperException.Code.get(event.getResultCode)
-          code match {
-            case KeeperException.Code.OK =>
-              promise.setValue(
-                PendingOperation(
-                  pc,
-                  Envelope.decodeData[Operation](event.getData),
-                  None,
-                  event.getStat.getCtime
-                )
-              )
-            case _ =>
-              promise.setException(KeeperException.create(code, event.getPath))
-          }
+  private[this] def getOperationIfPending
+  (
+    packageCoordinate: PackageCoordinate
+  ): Future[Option[Info[PendingOperation]]] = {
+    getOperationStatus(packageCoordinate).map { maybeOperationStatus =>
+      maybeOperationStatus.flatMap {
+        case Info(info, Pending(operation, failure)) =>
+          Some(Info(
+            info,
+            PendingOperation(packageCoordinate, operation, failure)
+          ))
+        case _ => None
       }
-    ).forPath(
-      s"$pendingOperationsPath/${pc.as[String]}"
-    )
-    promise
+    }
   }
 
-  private[this] def getPendingCoordinates: Future[List[PackageCoordinate]] = {
+  private[this] def getAllCoordinates: Future[List[PackageCoordinate]] = {
     val promise = Promise[List[PackageCoordinate]]()
     client.getChildren.inBackground(
-      handler { case event if event.getType == CuratorEventType.CHILDREN =>
+      handler(promise) { case event if event.getType == CuratorEventType.CHILDREN =>
         val code = KeeperException.Code.get(event.getResultCode)
         code match {
           case KeeperException.Code.OK =>
-            val pcs = event.getChildren.toList.map(_.as[Try[PackageCoordinate]].toOption.get) //TODO
-            promise.setValue(pcs)
+            Try(event.getChildren.toList.map(_.as[scala.util.Try[PackageCoordinate]].get))
           case KeeperException.Code.NONODE =>
-            promise.setValue(List())
+            Return(List())
           case _ =>
-            promise.setException(KeeperException.create(code, event.getPath))
+            Throw(KeeperException.create(code, event.getPath))
         }
       }
     ).forPath(
-      pendingOperationsPath
+      installQueuePath
     )
     promise
   }
 
-  /** Signals to the install queue that the operation on the package
-    * failed. This will "move" the package to the error pile.
-    *
-    * @param packageCoordinate The package coordinate of the
-    *                          package on which the operation failed
-    * @param operation         The operation that failed
-    * @param failure           The failure that occurred
-    * @return a future that will complete when state changes has been completed
-    */
-  override def failure(
+  override def failure
+  (
     packageCoordinate: PackageCoordinate,
-    operation: Operation,
-    failure: ErrorResponse
+    error: ErrorResponse
   ): Future[Unit] = {
-    val operationFailure = OperationFailure(operation, failure)
-    val operationPath = s"$pendingOperationsPath/${packageCoordinate.as[String]}"
-    val failurePath = s"$failedOperationsPath/${packageCoordinate.as[String]}"
-
-    val transaction =
-      client.inTransaction()
-        .delete().forPath(operationPath)
-      .and()
-        .create().forPath(failurePath, Envelope.encodeData(operationFailure))
-      .and()
-
-    try {
-      transaction.commit()
-      Future.Unit
-    } catch {
-      case e: KeeperException.NoNodeException =>
-        createFailedOperationsPath().flatMap(_ => this.failure(packageCoordinate, operation, failure))
+    getOperationStatus(packageCoordinate).flatMap {
+      case None =>
+        val message =
+          "Attempted to signal failure on an " +
+            s"operation not in the install queue: $packageCoordinate"
+        Future.exception(InstallQueueError(message))
+      case Some(Info(_, Failed(_))) =>
+        val message =
+          "Attempted to signal failure on an " +
+            s"operation that has failed: $packageCoordinate"
+        Future.exception(InstallQueueError(message))
+      case Some(Info(info, Pending(operation, _))) =>
+        setOperationStatus(
+          packageCoordinate,
+          Failed(OperationFailure(operation, error)),
+          info.getVersion
+        )
     }
   }
 
-  private[this] def createFailedOperationsPath(): Future[Unit] = {
-    val promise = Promise[Unit]()
-    client.create.creatingParentsIfNeeded.inBackground(
-      handler { case event if event.getType == CuratorEventType.CREATE =>
+  private[this] def getOperationStatus
+  (
+    packageCoordinate: PackageCoordinate
+  ): Future[Option[Info[OperationStatus]]] = {
+    val promise = Promise[Option[Info[OperationStatus]]]()
+    client.getData.inBackground(
+      handler(promise) { case event if event.getType == CuratorEventType.GET_DATA =>
         val code = KeeperException.Code.get(event.getResultCode)
         code match {
           case KeeperException.Code.OK =>
-            promise.become(Future.Unit)
-          case KeeperException.Code.NODEEXISTS =>
-            promise.become(Future.Unit)
+            Return(Some(Info(
+              event.getStat,
+              Envelope.decodeData[OperationStatus](event.getData)
+            )))
+          case KeeperException.Code.NONODE =>
+            Return(None)
           case _ =>
-            promise.setException(KeeperException.create(code, event.getPath))
-        }
-      }).forPath(
-      failedOperationsPath
-    )
-    promise
-  }
-
-  /** Signals to the install queue that the operation on the package has
-    * been successful. This will delete the node from the install queue.
-    *
-    * @param packageCoordinate The package coordinate of the package whose
-    *                          operation has succeeded.
-    * @return a future that will complete when state changes have been completed
-    */
-  override def success(packageCoordinate: PackageCoordinate): Future[Unit] = {
-    val promise = Promise[Unit]()
-    val operationPath = s"$pendingOperationsPath/${packageCoordinate.as[String]}"
-    client.delete().inBackground(
-      handler { case event if event.getType == CuratorEventType.DELETE =>
-        val code = KeeperException.Code.get(event.getResultCode)
-        code match {
-          case KeeperException.Code.OK =>
-            promise.setValue(())
-          case _ =>
-            promise.setException(KeeperException.create(code, event.getPath))
+            Throw(KeeperException.create(code, event.getPath))
         }
       }
     ).forPath(
-      operationPath
+      statusPath(packageCoordinate)
     )
     promise
   }
 
-  /** Adds an operation on a package to the install queue. It will return
-    * an object signaling failure when there is already an operation outstanding
-    * on the package coordinate.
-    *
-    * @param packageCoordinate the package coordinate on which the operation
-    *                          should be performed.
-    * @param operation         The operation to be performed
-    * @return Created if the operation was added to the queue, else AlreadyExists
-    *         if the operation was not added to the queue.
-    */
-  override def add(packageCoordinate: PackageCoordinate, operation: Operation): Future[AddResult] = {
+  private[this] def setOperationStatus
+  (
+    packageCoordinate: PackageCoordinate,
+    operationStatus: OperationStatus,
+    version: Int
+  ): Future[Unit] = {
+    val promise = Promise[Unit]()
+    client.setData().withVersion(version).inBackground(
+      handler(promise) { case event if event.getType == CuratorEventType.SET_DATA =>
+        val code = KeeperException.Code.get(event.getResultCode)
+        code match {
+          case KeeperException.Code.OK =>
+            Return(())
+          case _ =>
+            Throw(KeeperException.create(code, event.getPath))
+        }
+      }
+    ).forPath(
+      statusPath(packageCoordinate),
+      Envelope.encodeData(operationStatus)
+    )
+    promise
+  }
+
+  override def success
+  (
+    packageCoordinate: PackageCoordinate
+  ): Future[Unit] = {
+    getOperationStatus(packageCoordinate).flatMap {
+      case None =>
+        val message =
+          "Attempted to signal success on an " +
+            s"operation not in the install queue: $packageCoordinate"
+        Future.exception(InstallQueueError(message))
+      case Some(Info(_, Failed(_))) =>
+        val message =
+          "Attempted to signal success on an " +
+            s"operation that has failed: $packageCoordinate"
+        Future.exception(InstallQueueError(message))
+      case Some(Info(info, Pending(operation, _))) =>
+        deleteOperationStatus(packageCoordinate, info.getVersion)
+    }
+  }
+
+  private[this] def deleteOperationStatus
+  (
+    packageCoordinate: PackageCoordinate,
+    version: Int
+  ): Future[Unit] = {
+    val promise = Promise[Unit]()
+    client.delete().withVersion(version).inBackground(
+      handler(promise) { case event if event.getType == CuratorEventType.DELETE =>
+        val code = KeeperException.Code.get(event.getResultCode)
+        code match {
+          case KeeperException.Code.OK =>
+            Return(())
+          case _ =>
+            Throw(KeeperException.create(code, event.getPath))
+        }
+      }
+    ).forPath(
+      statusPath(packageCoordinate)
+    )
+    promise
+  }
+
+  override def add
+  (
+    packageCoordinate: PackageCoordinate,
+    operation: Operation
+  ): Future[AddResult] = {
+    createOperationStatus(
+      packageCoordinate,
+      Pending(operation, None)
+    ).rescue {
+      case e: KeeperException.NodeExistsException =>
+        setOperationInOperationStatus(packageCoordinate, operation)
+    }
+  }
+
+  private[this] def createOperationStatus
+  (
+    packageCoordinate: PackageCoordinate,
+    operationStatus: OperationStatus
+  ): Future[AddResult] = {
     val promise = Promise[AddResult]()
-    val pkgPath = s"$pendingOperationsPath/${packageCoordinate.as[String]}"
-    client.create.creatingParentsIfNeeded.inBackground(
-        handler { case event if event.getType == CuratorEventType.CREATE =>
-          val code = KeeperException.Code.get(event.getResultCode)
-          code match {
-            case KeeperException.Code.OK =>
-              promise.setValue(Created)
-            case KeeperException.Code.NODEEXISTS =>
-              promise.setValue(AlreadyExists)
-            case _ =>
-              promise.setException(KeeperException.create(code, event.getPath))
-          }
-      }).forPath(
-      pkgPath,
-      Envelope.encodeData(operation)
+    client.create().creatingParentsIfNeeded().inBackground(
+      handler(promise) { case event if event.getType == CuratorEventType.CREATE =>
+        val code = KeeperException.Code.get(event.getResultCode)
+        code match {
+          case KeeperException.Code.OK =>
+            Return(Created)
+          case _ =>
+            Throw(KeeperException.create(code, event.getPath))
+        }
+      }
+    ).forPath(
+      statusPath(packageCoordinate),
+      Envelope.encodeData(operationStatus)
     )
     promise
   }
 
-  /** Shows the status of every package in the install queue.
-    *
-    * @return A map from package coordinate to the state of any pending or
-    *         failed operations associated with that package coordinate
-    */
-  override def viewStatus(): Future[Map[PackageCoordinate, OperationStatus]] = {
-    val pending =
-      Option(pendingOperationCache
-        .getCurrentChildren(pendingOperationsPath))
-        .getOrElse(new util.HashMap[String, ChildData]())
-        .toMap
-        .map { case (encodedPc, data: ChildData) =>
-          val pc = encodedPc.as[Try[PackageCoordinate]].toOption.get //TODO
-          logger.debug("encoded package coordinate: {}", encodedPc)
-          logger.debug("decoded package coordinate: {}", pc)
-          pc -> Some(Envelope.decodeData[Operation](data.getData))}
-        .withDefault(_ => None)
-
-    val failed =
-      Option(failedOperationCache
-        .getCurrentChildren(failedOperationsPath))
-        .getOrElse(new util.HashMap[String, ChildData]())
-        .toMap
-        .map { case (encodedPc, data) =>
-          val pc = encodedPc.as[Try[PackageCoordinate]].toOption.get //TODO
-          logger.debug("encoded package coordinate: {}", encodedPc)
-          logger.debug("decoded package coordinate: {}", pc)
-          pc -> Some(Envelope.decodeData[OperationFailure](data.getData))}
-        .withDefault(_ => None)
-
-    Future.value((failed.keySet ++ pending.keySet)
-      .map(pc => pc -> OperationStatus(pending(pc), failed(pc))).toMap)
+  private[this] def setOperationInOperationStatus
+  (
+    packageCoordinate: PackageCoordinate,
+    operation: Operation
+  ): Future[AddResult] = {
+    getOperationStatus(packageCoordinate).flatMap {
+      case None =>
+        // if we reach this statement, that means there was
+        // an operation pending when the user made the request. The operation has
+        // since completed, but it is not incorrect to return AlreadyExists, because
+        // the request overlaps the existence of a pending operation.
+        Future.value(AlreadyExists)
+      case Some(Info(_, Pending(_, _))) =>
+        Future.value(AlreadyExists)
+      case Some(Info(info, Failed(failure))) =>
+        setOperationStatus(
+          packageCoordinate,
+          Pending(operation, Some(failure)),
+          info.getVersion
+        ).before(Future.value(Created))
+    }
   }
+
+  override def viewStatus(): Future[Map[PackageCoordinate, OperationStatus]] = {
+    def listTryToTryList[A](listTry: List[Try[A]]): Try[List[A]] = {
+      listTry
+        .foldLeft(
+          Try(ListBuffer[A]())
+        ) { (tryOfList, oneTry) =>
+          tryOfList.flatMap { list =>
+            oneTry.map { element =>
+              list :+ element
+            }
+          }
+        }.map(_.toList)
+    }
+
+    val operationStatus =
+      Option(operationStatusCache
+        .getCurrentChildren(installQueuePath))
+        .getOrElse(new java.util.HashMap[String, ChildData]())
+        .toMap
+        .map { case (encodedPackageCoordinate, childData) =>
+          Try(encodedPackageCoordinate.as[scala.util.Try[PackageCoordinate]].get).flatMap {
+            packageCoordinate =>
+              Try(packageCoordinate
+                -> Envelope.decodeData[OperationStatus](childData.getData))
+          }
+        }
+        .toList
+    Future.const(listTryToTryList(operationStatus).map(_.toMap))
+  }
+
 }
 
 object InstallQueue {
+  val installQueuePath = "/packages"
+
+  def statusPath(packageCoordinate: PackageCoordinate): String = {
+    s"$installQueuePath/${packageCoordinate.as[String]}"
+  }
+
   def apply(client: CuratorFramework): InstallQueue = new InstallQueue(client)
 
-  private def handler(handle: PartialFunction[CuratorEvent, Unit]) = {
+  private case class Info[A](info: Stat, value: A)
+
+  private def handler[A](promise: Promise[A])(handle: PartialFunction[CuratorEvent, Try[A]]) = {
     new BackgroundCallback {
       override def processResult(client: CuratorFramework, event: CuratorEvent): Unit = {
-        handle(event)
+        promise.update(handle(event))
       }
     }
   }
+
 }
+
 

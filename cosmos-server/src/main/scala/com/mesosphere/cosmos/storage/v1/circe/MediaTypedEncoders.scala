@@ -5,16 +5,13 @@ import com.mesosphere.cosmos.finch.MediaTypedEncoder
 import com.mesosphere.cosmos.http.MediaTypes
 import com.mesosphere.cosmos.rpc.v1.circe.Encoders._
 import com.mesosphere.cosmos.rpc.v1.model.PackageRepository
-import com.mesosphere.cosmos.storage.installqueue.Operation
-import com.mesosphere.cosmos.storage.installqueue.OperationFailure
+import com.mesosphere.cosmos.storage.installqueue.OperationStatus
+
 
 object MediaTypedEncoders {
   implicit val repositoryListEncoder: MediaTypedEncoder[List[PackageRepository]] =
     MediaTypedEncoder[List[PackageRepository]](MediaTypes.RepositoryList)
 
-  implicit val operationEncoder: MediaTypedEncoder[Operation] =
-    MediaTypedEncoder[Operation](MediaTypes.Operation)
-
-  implicit val operationFailureEncoder: MediaTypedEncoder[OperationFailure] =
-    MediaTypedEncoder[OperationFailure](MediaTypes.OperationFailure)
+  implicit val operationStatusEncoder: MediaTypedEncoder[OperationStatus] =
+    MediaTypedEncoder[OperationStatus](MediaTypes.OperationStatus)
 }
