@@ -19,16 +19,13 @@ import com.netaporter.uri.Uri
 import com.netaporter.uri.dsl._
 import com.twitter.finagle.Service
 import com.twitter.finagle.SimpleFilter
-import com.twitter.finagle.http.RequestConfig.Yes
 import com.twitter.finagle.http._
-import com.twitter.io.Buf
 import com.twitter.util.Await
 import com.twitter.util.Future
 import com.twitter.util.Try
 import io.circe.Decoder
 import io.circe.Encoder
 import io.circe.jawn._
-import io.circe.syntax._
 import java.util.concurrent.atomic.AtomicInteger
 import org.scalatest.Matchers
 import org.slf4j.Logger
@@ -87,7 +84,7 @@ object CosmosIntegrationTestClient extends Matchers {
     }
 
     def doGet(path: String, accept: MediaType): Response = {
-      submit(buildGet(path, accept))
+      submit(CosmosRequest.get(path, accept))
     }
 
     def doPost[Req](
@@ -96,8 +93,7 @@ object CosmosIntegrationTestClient extends Matchers {
       contentType: MediaType,
       accept: MediaType
     )(implicit encoder: Encoder[Req]): Response = {
-      val request = buildPost(path, requestBody, contentType.show, accept.show)
-      submit(request)
+      submit(CosmosRequest.post(path, requestBody, contentType, accept))
     }
 
     def doPost(
@@ -106,8 +102,7 @@ object CosmosIntegrationTestClient extends Matchers {
       contentType: Option[String],
       accept: Option[String]
     ): Response = {
-      val request = buildPost(path, requestBody, contentType, accept)
-      submit(request)
+      submit(CosmosRequest.post(path, requestBody, contentType, accept))
     }
 
     def callEndpoint[Req, Res](
@@ -119,8 +114,8 @@ object CosmosIntegrationTestClient extends Matchers {
       method: String = "POST"
     )(implicit decoder: Decoder[Res], encoder: Encoder[Req]): Xor[ErrorResponse, Res] = {
       val request = method match {
-        case "POST" => buildPost(path, requestBody, requestMediaType.show, responseMediaType.show)
-        case "GET" => buildGet(path, responseMediaType)
+        case "POST" => CosmosRequest.post(path, requestBody, requestMediaType, responseMediaType)
+        case "GET" => CosmosRequest.get(path, responseMediaType)
         case _ => throw new AssertionError(s"Unexpected HTTP method: $method")
       }
 
@@ -196,47 +191,17 @@ object CosmosIntegrationTestClient extends Matchers {
       response
     }
 
-    private[this] def buildGet(
-      path: String,
-      accept: MediaType
-    ): Request = {
-      requestBuilder(path)
-        .addHeader("Accept", accept.show)
-        .buildGet()
-    }
-
-    private[this] def buildPost[Req](
-      path: String,
-      requestBody: Req,
-      contentType: String,
-      accept: String
-    )(implicit encoder: Encoder[Req]): Request = {
-      buildPost(path, requestBody.asJson.noSpaces, Some(contentType), Some(accept))
-    }
-
-    private[this] def buildPost(
-      path: String,
-      requestBody: String,
-      contentType: Option[String],
-      accept: Option[String]
-    ): Request = {
-      val withPath = requestBuilder(path)
-      val withContentType = contentType.fold(withPath)(withPath.addHeader("Content-Type", _))
-      val withAccept = accept.fold(withContentType)(withContentType.addHeader("Accept", _))
-      withAccept.buildPost(Buf.Utf8(requestBody))
-    }
-
-    private[this] def requestBuilder(endpointPath: String): RequestBuilder[Yes, Nothing] = {
-      val builder = RequestBuilder().url(s"$uri/$endpointPath")
-
-      Session.authorization match {
-        case Some(auth) => builder.setHeader("Authorization", auth.headerValue)
-        case _ => builder
+    private[this] def submit(req: CosmosRequest): Response = {
+      val withPath = RequestBuilder().url(s"$uri/${req.path}")
+      val withAuth = Session.authorization.fold(withPath) { auth =>
+        withPath.setHeader("Authorization", auth.headerValue)
       }
-    }
 
-    private[this] def submit(req: Request): Response = {
-      Await.result(client(req))
+      val withContentType = req.contentType.fold(withAuth)(withAuth.addHeader("Content-Type", _))
+      val withAccept = req.accept.fold(withContentType)(withContentType.addHeader("Accept", _))
+      val finagleReq = withAccept.build(req.method, req.body)
+
+      Await.result(client(finagleReq))
     }
 
     private[this] val client = {
