@@ -2,9 +2,7 @@ package com.mesosphere.cosmos.test
 
 import cats.data.Xor
 import com.mesosphere.cosmos._
-import com.mesosphere.cosmos.finch.TestingMediaTypes
 import com.mesosphere.cosmos.http.Authorization
-import com.mesosphere.cosmos.http.MediaType
 import com.mesosphere.cosmos.http.RequestSession
 import com.mesosphere.cosmos.internal.circe.Decoders._
 import com.mesosphere.cosmos.internal.circe.Encoders._
@@ -24,7 +22,6 @@ import com.twitter.util.Await
 import com.twitter.util.Future
 import com.twitter.util.Try
 import io.circe.Decoder
-import io.circe.Encoder
 import io.circe.jawn._
 import java.util.concurrent.atomic.AtomicInteger
 import org.scalatest.Matchers
@@ -83,22 +80,11 @@ object CosmosIntegrationTestClient extends Matchers {
         .getOrElse(throw new AssertionError(s"Missing system property '$property' "))
     }
 
-    def callEndpoint[Req, Res](
-      path: String,
-      requestBody: Req,
-      requestMediaType: MediaType,
-      responseMediaType: MediaType,
-      status: Status = Status.Ok,
-      method: String = "POST"
-    )(implicit decoder: Decoder[Res], encoder: Encoder[Req]): Xor[ErrorResponse, Res] = {
-      val request = method match {
-        case "POST" => CosmosRequest.post(path, requestBody, requestMediaType, responseMediaType)
-        case "GET" => CosmosRequest.get(path, responseMediaType)
-        case _ => throw new AssertionError(s"Unexpected HTTP method: $method")
-      }
-
+    def callEndpoint[Res](request: CosmosRequest, expectedStatus: Status = Status.Ok)(implicit
+      decoder: Decoder[Res]
+    ): ErrorResponse Xor Res = {
       val response = submit(request)
-      assertResult(status)(response.status)
+      assertResult(expectedStatus)(response.status)
 
       if (response.status.code / 100 == 2) {
         decode[Res](response.contentString) match {
@@ -113,59 +99,56 @@ object CosmosIntegrationTestClient extends Matchers {
       }
     }
 
-    def packageSearch(request: SearchRequest): SearchResponse = {
-      val Xor.Right(response) =
-        callEndpoint[SearchRequest, SearchResponse](
-          "package/search",
-          request,
-          MediaTypes.SearchRequest,
-          MediaTypes.SearchResponse
-        )
+    def packageSearch(requestBody: SearchRequest): SearchResponse = {
+      val request = CosmosRequest.post(
+        "package/search",
+        requestBody,
+        MediaTypes.SearchRequest,
+        MediaTypes.SearchResponse
+      )
+      val Xor.Right(response) = callEndpoint[SearchResponse](request)
       response
     }
 
     def packageStorageRepository: Repository = {
-      val Xor.Right(response: Repository) =
-        callEndpoint[Unit, Repository](
-          "package/storage/repository",
-          (),
-          TestingMediaTypes.any,
-          UMediaTypes.UniverseV3Repository,
-          method = "GET"
-        )
+      val request = CosmosRequest.get(
+        "package/storage/repository",
+        UMediaTypes.UniverseV3Repository
+      )
+      val Xor.Right(response) = callEndpoint[Repository](request)
       response
     }
 
-    def packagePublish(request: PublishRequest): PublishResponse = {
-      val Xor.Right(response: PublishResponse) =
-        callEndpoint[PublishRequest, PublishResponse](
-          "package/publish",
-          request,
-          MediaTypes.PublishRequest,
-          MediaTypes.PublishResponse
-        )
+    def packagePublish(requestBody: PublishRequest): PublishResponse = {
+      val request = CosmosRequest.post(
+        "package/publish",
+        requestBody,
+        MediaTypes.PublishRequest,
+        MediaTypes.PublishResponse
+      )
+      val Xor.Right(response) = callEndpoint[PublishResponse](request)
       response
     }
 
-    def packageRepositoryAdd(request: PackageRepositoryAddRequest): PackageRepositoryAddResponse = {
-      val Xor.Right(response: PackageRepositoryAddResponse) =
-        callEndpoint[PackageRepositoryAddRequest, PackageRepositoryAddResponse](
-          "package/repository/add",
-          request,
-          MediaTypes.PackageRepositoryAddRequest,
-          MediaTypes.PackageRepositoryAddResponse
-        )
+    def packageRepositoryAdd(requestBody: PackageRepositoryAddRequest): PackageRepositoryAddResponse = {
+      val request = CosmosRequest.post(
+        "package/repository/add",
+        requestBody,
+        MediaTypes.PackageRepositoryAddRequest,
+        MediaTypes.PackageRepositoryAddResponse
+      )
+      val Xor.Right(response) = callEndpoint[PackageRepositoryAddResponse](request)
       response
     }
 
-    def packageRepositoryDelete(request: PackageRepositoryDeleteRequest): PackageRepositoryDeleteResponse = {
-      val Xor.Right(response: PackageRepositoryDeleteResponse) =
-        callEndpoint[PackageRepositoryDeleteRequest, PackageRepositoryDeleteResponse](
-          "package/repository/delete",
-          request,
-          MediaTypes.PackageRepositoryDeleteRequest,
-          MediaTypes.PackageRepositoryDeleteResponse
-        )
+    def packageRepositoryDelete(requestBody: PackageRepositoryDeleteRequest): PackageRepositoryDeleteResponse = {
+      val request = CosmosRequest.post(
+        "package/repository/delete",
+        requestBody,
+        MediaTypes.PackageRepositoryDeleteRequest,
+        MediaTypes.PackageRepositoryDeleteResponse
+      )
+      val Xor.Right(response) = callEndpoint[PackageRepositoryDeleteResponse](request)
       response
     }
 

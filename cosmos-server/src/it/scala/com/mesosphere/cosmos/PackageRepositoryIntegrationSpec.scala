@@ -113,36 +113,39 @@ final class PackageRepositoryIntegrationSpec extends FreeSpec with BeforeAndAfte
 private object PackageRepositoryIntegrationSpec extends TableDrivenPropertyChecks {
 
   private def listRepositories(): Seq[PackageRepository] = {
-    val Xor.Right(response) = CosmosClient.callEndpoint[PackageRepositoryListRequest, PackageRepositoryListResponse](
+    val request = CosmosRequest.post(
       "package/repository/list",
       PackageRepositoryListRequest(),
       MediaTypes.PackageRepositoryListRequest,
       MediaTypes.PackageRepositoryListResponse
     )
+    val Xor.Right(response) = CosmosClient.callEndpoint[PackageRepositoryListResponse](request)
     response.repositories
   }
 
   private def addRepository(
     source: PackageRepository
   ): PackageRepositoryAddResponse = {
-    val Xor.Right(response) = CosmosClient.callEndpoint[PackageRepositoryAddRequest, PackageRepositoryAddResponse](
+    val request = CosmosRequest.post(
       "package/repository/add",
       PackageRepositoryAddRequest(source.name, source.uri),
       MediaTypes.PackageRepositoryAddRequest,
       MediaTypes.PackageRepositoryAddResponse
     )
+    val Xor.Right(response) = CosmosClient.callEndpoint[PackageRepositoryAddResponse](request)
     response
   }
 
   private def deleteRepository(
     source: PackageRepository
   ): PackageRepositoryDeleteResponse = {
-    val Xor.Right(response) = CosmosClient.callEndpoint[PackageRepositoryDeleteRequest, PackageRepositoryDeleteResponse](
+    val request = CosmosRequest.post(
       "package/repository/delete",
       PackageRepositoryDeleteRequest(name = Some(source.name)),
       MediaTypes.PackageRepositoryDeleteRequest,
       MediaTypes.PackageRepositoryDeleteResponse
     )
+    val Xor.Right(response) = CosmosClient.callEndpoint[PackageRepositoryDeleteResponse](request)
     response
   }
 

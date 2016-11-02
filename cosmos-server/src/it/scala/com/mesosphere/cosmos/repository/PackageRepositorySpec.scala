@@ -336,12 +336,13 @@ object PackageRepositorySpec extends FreeSpec with TableDrivenPropertyChecks {
   }
 
   private def addRepo(addRequest: PackageRepositoryAddRequest): PackageRepositoryAddResponse  = {
-    val Xor.Right(response) = CosmosClient.callEndpoint[PackageRepositoryAddRequest, PackageRepositoryAddResponse](
+    val request = CosmosRequest.post(
       "package/repository/add",
       addRequest,
       MediaTypes.PackageRepositoryAddRequest,
       MediaTypes.PackageRepositoryAddResponse
     )
+    val Xor.Right(response) = CosmosClient.callEndpoint[PackageRepositoryAddResponse](request)
     response
   }
 
@@ -349,22 +350,23 @@ object PackageRepositorySpec extends FreeSpec with TableDrivenPropertyChecks {
     deleteRequest: PackageRepositoryDeleteRequest,
     status: Status = Status.Ok
   ): Xor[ErrorResponse, PackageRepositoryDeleteResponse]  = {
-    CosmosClient.callEndpoint[PackageRepositoryDeleteRequest, PackageRepositoryDeleteResponse](
+    val request = CosmosRequest.post(
       "package/repository/delete",
       deleteRequest,
       MediaTypes.PackageRepositoryDeleteRequest,
-      MediaTypes.PackageRepositoryDeleteResponse,
-      status
+      MediaTypes.PackageRepositoryDeleteResponse
     )
+    CosmosClient.callEndpoint[PackageRepositoryDeleteResponse](request, status)
   }
 
   private def listRepos(): PackageRepositoryListResponse = {
-    val Xor.Right(response) = CosmosClient.callEndpoint[PackageRepositoryListRequest, PackageRepositoryListResponse](
+    val request = CosmosRequest.post(
       "package/repository/list",
       PackageRepositoryListRequest(),
       MediaTypes.PackageRepositoryListRequest,
       MediaTypes.PackageRepositoryListResponse
     )
+    val Xor.Right(response) = CosmosClient.callEndpoint[PackageRepositoryListResponse](request)
     response
   }
 
