@@ -4,6 +4,7 @@ import cats.data.Xor
 import com.mesosphere.cosmos.rpc.MediaTypes
 import com.mesosphere.cosmos.rpc.v1.circe.Decoders._
 import com.mesosphere.cosmos.test.CosmosIntegrationTestClient._
+import com.mesosphere.cosmos.test.CosmosRequest
 import com.twitter.finagle.http.Status
 import io.circe.jawn._
 import org.scalatest.FreeSpec
@@ -11,12 +12,13 @@ import org.scalatest.FreeSpec
 class ErrorResponseSpec extends FreeSpec {
 
   "An ErrorResponse should be returned as the body when a request can't be parsed" in {
-    val response = CosmosClient.doPost(
+    val request = CosmosRequest.post(
       path = "package/install",
-      requestBody = Map("invalid" -> true),
+      body = Map("invalid" -> true),
       contentType = MediaTypes.InstallRequest,
       accept = MediaTypes.V1InstallResponse
     )
+    val response = CosmosClient.submit(request)
 
     assertResult(Status.BadRequest)(response.status)
     assertResult(MediaTypes.ErrorResponse.show)(response.headerMap("Content-Type"))

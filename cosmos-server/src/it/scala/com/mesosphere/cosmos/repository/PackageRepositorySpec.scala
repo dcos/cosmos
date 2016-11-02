@@ -7,15 +7,20 @@ import com.mesosphere.cosmos.rpc.v1.circe.Decoders._
 import com.mesosphere.cosmos.rpc.v1.circe.Encoders._
 import com.mesosphere.cosmos.rpc.v1.model._
 import com.mesosphere.cosmos.test.CosmosIntegrationTestClient._
+import com.mesosphere.cosmos.test.CosmosRequest
 import com.mesosphere.universe.common.circe.Encoders._
 import com.netaporter.uri.Uri
 import com.twitter.finagle.http._
 import io.circe.jawn._
 import io.circe.syntax._
-import io.circe.{Encoder, Json, JsonObject}
+import io.circe.Encoder
+import io.circe.Json
+import io.circe.JsonObject
 import org.scalatest.concurrent.Eventually
 import org.scalatest.prop.TableDrivenPropertyChecks
-import org.scalatest.{AppendedClues, BeforeAndAfter, FreeSpec}
+import org.scalatest.AppendedClues
+import org.scalatest.BeforeAndAfter
+import org.scalatest.FreeSpec
 
 final class PackageRepositorySpec
   extends FreeSpec with BeforeAndAfter with Eventually with AppendedClues {
@@ -313,13 +318,13 @@ object PackageRepositorySpec extends FreeSpec with TableDrivenPropertyChecks {
     val repositoriesBeforeAdd = listRepos()
 
     assertResult(expectedErrorMessage) {
-      val addRequest = PackageRepositoryAddRequest(repository.name, repository.uri)
-      val response = CosmosClient.doPost(
-        "package/repository/add",
-        addRequest,
-        MediaTypes.PackageRepositoryAddRequest,
-        MediaTypes.PackageRepositoryAddResponse
+      val request = CosmosRequest.post(
+        path = "package/repository/add",
+        body = PackageRepositoryAddRequest(repository.name, repository.uri),
+        contentType = MediaTypes.PackageRepositoryAddRequest,
+        accept = MediaTypes.PackageRepositoryAddResponse
       )
+      val response = CosmosClient.submit(request)
       assertResult(Status.BadRequest)(response.status)
       val Xor.Right(err) = decode[ErrorResponse](response.contentString)
       err.message
@@ -364,12 +369,13 @@ object PackageRepositorySpec extends FreeSpec with TableDrivenPropertyChecks {
   }
 
   private def searchPackages(req: SearchRequest): Response = {
-    CosmosClient.doPost(
-      "package/search",
-      req,
-      MediaTypes.SearchRequest,
-      MediaTypes.SearchResponse
+    val request = CosmosRequest.post(
+      path = "package/search",
+      body = req,
+      contentType = MediaTypes.SearchRequest,
+      accept = MediaTypes.SearchResponse
     )
+    CosmosClient.submit(request)
   }
 
   private[this] def deleteRequestByName(

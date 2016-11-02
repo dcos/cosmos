@@ -6,6 +6,7 @@ import com.mesosphere.cosmos.rpc.v1.circe.Decoders._
 import com.mesosphere.cosmos.rpc.v1.model.ErrorResponse
 import com.mesosphere.cosmos.rpc.v1.model.UninstallResponse
 import com.mesosphere.cosmos.test.CosmosIntegrationTestClient
+import com.mesosphere.cosmos.test.CosmosRequest
 import com.mesosphere.cosmos.thirdparty.marathon.model.AppId
 import com.netaporter.uri.dsl._
 import com.twitter.finagle.http.Status
@@ -21,12 +22,13 @@ final class UninstallHandlerSpec extends FreeSpec {
   "The uninstall handler should" - {
     "be able to uninstall a service" in {
       val appId = AppId("cassandra" / "uninstall-test")
-      val installResponse = CosmosClient.doPost(
+      val installRequest = CosmosRequest.post(
         path = "package/install",
-        requestBody = s"""{"packageName":"cassandra", "appId":"${appId.toString}"}""",
+        body = s"""{"packageName":"cassandra", "appId":"${appId.toString}"}""",
         contentType = Some(MediaTypes.InstallRequest.show),
         accept = Some(MediaTypes.V1InstallResponse.show)
       )
+      val installResponse = CosmosClient.submit(installRequest)
       assertResult(Status.Ok)(installResponse.status)
 
       val marathonApp = Await.result(adminRouter.getApp(appId))
@@ -34,12 +36,13 @@ final class UninstallHandlerSpec extends FreeSpec {
 
       //TODO: Assert framework starts up
 
-      val uninstallResponse = CosmosClient.doPost(
+      val uninstallRequest = CosmosRequest.post(
         path = "package/uninstall",
-        requestBody = """{"packageName":"cassandra"}""",
+        body = """{"packageName":"cassandra"}""",
         contentType = Some(MediaTypes.UninstallRequest.show),
         accept = Some(MediaTypes.UninstallResponse.show)
       )
+      val uninstallResponse = CosmosClient.submit(uninstallRequest)
       val uninstallResponseBody = uninstallResponse.contentString
       assertResult(Status.Ok)(uninstallResponse.status)
       assertResult(MediaTypes.UninstallResponse.show)(uninstallResponse.headerMap("Content-Type"))
@@ -50,29 +53,32 @@ final class UninstallHandlerSpec extends FreeSpec {
     "be able to uninstall multiple packages when 'all' is specified" in {
       // install 'helloworld' twice
       val installBody1 = s"""{"packageName":"helloworld", "appId":"${UUID.randomUUID()}"}"""
-      val installResponse1 = CosmosClient.doPost(
+      val installRequest1 = CosmosRequest.post(
         path = "package/install",
-        requestBody = installBody1,
+        body = installBody1,
         contentType = Some(MediaTypes.InstallRequest.show),
         accept = Some(MediaTypes.V1InstallResponse.show)
       )
+      val installResponse1 = CosmosClient.submit(installRequest1)
       assertResult(Status.Ok, s"install failed: $installBody1")(installResponse1.status)
 
       val installBody2 = s"""{"packageName":"helloworld", "appId":"${UUID.randomUUID()}"}"""
-      val installResponse2 = CosmosClient.doPost(
+      val installRequest2 = CosmosRequest.post(
         path = "package/install",
-        requestBody = installBody2,
+        body = installBody2,
         contentType = Some(MediaTypes.InstallRequest.show),
         accept = Some(MediaTypes.V1InstallResponse.show)
       )
+      val installResponse2 = CosmosClient.submit(installRequest2)
       assertResult(Status.Ok, s"install failed: $installBody2")(installResponse2.status)
 
-      val uninstallResponse = CosmosClient.doPost(
+      val uninstallRequest = CosmosRequest.post(
         path = "package/uninstall",
-        requestBody = """{"packageName":"helloworld", "all":true}""",
+        body = """{"packageName":"helloworld", "all":true}""",
         contentType = Some(MediaTypes.UninstallRequest.show),
         accept = Some(MediaTypes.UninstallResponse.show)
       )
+      val uninstallResponse = CosmosClient.submit(uninstallRequest)
       assertResult(Status.Ok)(uninstallResponse.status)
       assertResult(MediaTypes.UninstallResponse.show)(uninstallResponse.headerMap("Content-Type"))
     }
@@ -81,42 +87,46 @@ final class UninstallHandlerSpec extends FreeSpec {
       // install 'helloworld' twice
       val appId1 = UUID.randomUUID()
       val installBody1 = s"""{"packageName":"helloworld", "appId":"$appId1"}"""
-      val installResponse1 = CosmosClient.doPost(
+      val installRequest1 = CosmosRequest.post(
         path = "package/install",
-        requestBody = installBody1,
+        body = installBody1,
         contentType = Some(MediaTypes.InstallRequest.show),
         accept = Some(MediaTypes.V1InstallResponse.show)
       )
+      val installResponse1 = CosmosClient.submit(installRequest1)
       assertResult(Status.Ok, s"install failed: $installBody1")(installResponse1.status)
 
       val appId2 = UUID.randomUUID()
       val installBody2 = s"""{"packageName":"helloworld", "appId":"$appId2"}"""
-      val installResponse2 = CosmosClient.doPost(
+      val installRequest2 = CosmosRequest.post(
         path = "package/install",
-        requestBody = installBody2,
+        body = installBody2,
         contentType = Some(MediaTypes.InstallRequest.show),
         accept = Some(MediaTypes.V1InstallResponse.show)
       )
+      val installResponse2 = CosmosClient.submit(installRequest2)
       assertResult(Status.Ok, s"install failed: $installBody2")(installResponse2.status)
 
-      val uninstallResponse = CosmosClient.doPost(
+      val uninstallRequest = CosmosRequest.post(
         path = "package/uninstall",
-        requestBody = """{"packageName":"helloworld"}""",
+        body = """{"packageName":"helloworld"}""",
         contentType = Some(MediaTypes.UninstallRequest.show),
         accept = Some(MediaTypes.UninstallResponse.show)
       )
+      val uninstallResponse = CosmosClient.submit(uninstallRequest)
       val uninstallResponseBody = uninstallResponse.contentString
       assertResult(Status.BadRequest)(uninstallResponse.status)
       assertResult(MediaTypes.ErrorResponse.show)(uninstallResponse.headerMap("Content-Type"))
       val Xor.Right(err) = decode[ErrorResponse](uninstallResponseBody)
       assertResult(s"Multiple apps named [helloworld] are installed: [/$appId1, /$appId2]")(err.message)
 
-      val cleanupResponse = CosmosClient.doPost(
+      val cleanupRequest = CosmosRequest.post(
         path = "package/uninstall",
-        requestBody = """{"packageName":"helloworld", "all":true}""",
+        body = """{"packageName":"helloworld", "all":true}""",
         contentType = Some(MediaTypes.UninstallRequest.show),
         accept = Some(MediaTypes.UninstallResponse.show)
       )
+      val cleanupResponse = CosmosClient.submit(cleanupRequest)
       assertResult(Status.Ok)(cleanupResponse.status)
     }
   }

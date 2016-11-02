@@ -1,19 +1,19 @@
 package com.mesosphere.cosmos.handler
 
 import cats.data.Xor
-import com.mesosphere.cosmos.rpc.MediaTypes
 import com.mesosphere.cosmos.http.CompoundMediaTypeParser
-import com.mesosphere.cosmos.rpc.v1.model.PackageRepositoryAddRequest
+import com.mesosphere.cosmos.rpc.MediaTypes
 import com.mesosphere.cosmos.rpc.v1.circe.Encoders._
+import com.mesosphere.cosmos.rpc.v1.model.PackageRepositoryAddRequest
 import com.mesosphere.cosmos.test.CosmosIntegrationTestClient._
+import com.mesosphere.cosmos.test.CosmosRequest
 import com.netaporter.uri.dsl._
 import com.twitter.finagle.http.Status
-import com.twitter.io.Buf
-import io.circe.{Json, JsonObject}
 import io.circe.jawn._
 import io.circe.syntax._
+import io.circe.Json
+import io.circe.JsonObject
 import org.scalatest.FreeSpec
-
 import scala.language.implicitConversions
 
 class RequestErrorsSpec extends FreeSpec {
@@ -32,12 +32,13 @@ class RequestErrorsSpec extends FreeSpec {
           Some(0)
         ).asJson
 
-        val response = CosmosClient.doPost(
+        val request = CosmosRequest.post(
           path = "package/install",
-          requestBody = body.noSpaces,
+          body = body.noSpaces,
           contentType = Some(MediaTypes.DescribeRequest.show),
           accept = Some(accept.show)
         )
+        val response = CosmosClient.submit(request)
 
         assertResult(Status.BadRequest)(response.status)
         assertResult(MediaTypes.ErrorResponse.show)(response.headerMap("Content-Type"))
@@ -88,12 +89,13 @@ class RequestErrorsSpec extends FreeSpec {
       }
 
       "Missing Accept, Missing Content-Type, Missing body" in {
-        val response = CosmosClient.doPost(
+        val request = CosmosRequest.post(
           path = "package/install",
-          requestBody = "",
+          body = "",
           contentType = None,
           accept = None
         )
+        val response = CosmosClient.submit(request)
 
         assertResult(Status.BadRequest)(response.status)
         assertResult(MediaTypes.ErrorResponse.show)(response.headerMap("Content-Type"))

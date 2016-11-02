@@ -8,6 +8,7 @@ import com.mesosphere.cosmos.rpc.v1.model.SearchRequest
 import com.mesosphere.cosmos.rpc.v1.model.SearchResponse
 import com.mesosphere.cosmos.rpc.v1.model.SearchResult
 import com.mesosphere.cosmos.test.CosmosIntegrationTestClient.CosmosClient
+import com.mesosphere.cosmos.test.CosmosRequest
 import com.mesosphere.universe
 import com.twitter.finagle.http._
 import io.circe.jawn._
@@ -45,12 +46,13 @@ final class PackageSearchSpec extends FreeSpec {
     status: Status,
     expectedResponse: SearchResponse
   ): Unit = {
-    val response = CosmosClient.doPost(
+    val request = CosmosRequest.post(
       path = "package/search",
-      requestBody = SearchRequest(Some(query)),
+      body = SearchRequest(Some(query)),
       contentType = MediaTypes.SearchRequest,
       accept = MediaTypes.SearchResponse
     )
+    val response = CosmosClient.submit(request)
 
     assertResult(status)(response.status)
     val Right(actualResponse) = decode[SearchResponse](response.contentString)

@@ -8,6 +8,7 @@ import com.mesosphere.cosmos.rpc.v1.model.ErrorResponse
 import com.mesosphere.cosmos.rpc.v1.model.RenderRequest
 import com.mesosphere.cosmos.rpc.v1.model.RenderResponse
 import com.mesosphere.cosmos.test.CosmosIntegrationTestClient.CosmosClient
+import com.mesosphere.cosmos.test.CosmosRequest
 import com.mesosphere.universe.v2.model.PackageDetailsVersion
 import com.twitter.finagle.http.Response
 import com.twitter.finagle.http.Status
@@ -94,12 +95,13 @@ class PackageRenderHandlerSpec extends FreeSpec {
 object PackageRenderHandlerSpec {
 
   def packageRender(renderRequest: RenderRequest): Response = {
-    CosmosClient.doPost(
+    val request = CosmosRequest.post(
       path = "package/render",
-      requestBody = renderRequest,
+      body = renderRequest,
       contentType = MediaTypes.RenderRequest,
       accept = MediaTypes.RenderResponse
     )
+    CosmosClient.submit(request)
   }
 
 }

@@ -8,6 +8,7 @@ import com.mesosphere.cosmos.rpc.v1.circe.Decoders._
 import com.mesosphere.cosmos.rpc.v1.circe.Encoders._
 import com.mesosphere.cosmos.rpc.v1.model._
 import com.mesosphere.cosmos.test.CosmosIntegrationTestClient.CosmosClient
+import com.mesosphere.cosmos.test.CosmosRequest
 import com.netaporter.uri.dsl._
 import com.twitter.finagle.http._
 import org.scalatest.BeforeAndAfter
@@ -148,12 +149,13 @@ private object PackageRepositoryIntegrationSpec extends TableDrivenPropertyCheck
   private def sendAddRequest(
     addRequest: PackageRepositoryAddRequest
   ): Response = {
-    CosmosClient.doPost(
+    val request = CosmosRequest.post(
       path = "package/repository/add",
-      requestBody = addRequest,
+      body = addRequest,
       contentType = MediaTypes.PackageRepositoryAddRequest,
       accept = MediaTypes.PackageRepositoryAddResponse
     )
+    CosmosClient.submit(request)
   }
 
 }

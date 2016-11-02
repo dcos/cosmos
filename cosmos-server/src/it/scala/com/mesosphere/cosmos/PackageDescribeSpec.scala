@@ -9,6 +9,7 @@ import com.mesosphere.cosmos.rpc.v1.model.DescribeRequest
 import com.mesosphere.cosmos.rpc.v1.model.ErrorResponse
 import com.mesosphere.cosmos.rpc.v1.model.ListVersionsRequest
 import com.mesosphere.cosmos.test.CosmosIntegrationTestClient.CosmosClient
+import com.mesosphere.cosmos.test.CosmosRequest
 import com.mesosphere.cosmos.thirdparty.marathon.model.AppId
 import com.mesosphere.cosmos.thirdparty.marathon.model.MarathonApp
 import com.mesosphere.cosmos.thirdparty.marathon.model.MarathonAppContainer
@@ -105,23 +106,25 @@ final class PackageDescribeSpec extends FreeSpec with TableDrivenPropertyChecks 
   private[this] def describeRequest(
     describeRequest: DescribeRequest
   ): Response = {
-    CosmosClient.doPost(
+    val request = CosmosRequest.post(
       path = DescribeEndpoint,
-      requestBody = describeRequest,
+      body = describeRequest,
       contentType = MediaTypes.DescribeRequest,
       accept = MediaTypes.V1DescribeResponse
     )
+    CosmosClient.submit(request)
   }
 
   private[this] def listVersionsRequest(
     listVersionsRequest: ListVersionsRequest
   ): Response = {
-    CosmosClient.doPost(
+    val request = CosmosRequest.post(
       path = ListVersionsEndpoint,
-      requestBody = listVersionsRequest,
+      body = listVersionsRequest,
       contentType = MediaTypes.ListVersionsRequest,
       accept = MediaTypes.ListVersionsResponse
     )
+    CosmosClient.submit(request)
   }
 }
 

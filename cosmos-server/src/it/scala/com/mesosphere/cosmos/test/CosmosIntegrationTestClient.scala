@@ -83,28 +83,6 @@ object CosmosIntegrationTestClient extends Matchers {
         .getOrElse(throw new AssertionError(s"Missing system property '$property' "))
     }
 
-    def doGet(path: String, accept: MediaType): Response = {
-      submit(CosmosRequest.get(path, accept))
-    }
-
-    def doPost[Req](
-      path: String,
-      requestBody: Req,
-      contentType: MediaType,
-      accept: MediaType
-    )(implicit encoder: Encoder[Req]): Response = {
-      submit(CosmosRequest.post(path, requestBody, contentType, accept))
-    }
-
-    def doPost(
-      path: String,
-      requestBody: String,
-      contentType: Option[String],
-      accept: Option[String]
-    ): Response = {
-      submit(CosmosRequest.post(path, requestBody, contentType, accept))
-    }
-
     def callEndpoint[Req, Res](
       path: String,
       requestBody: Req,
@@ -191,7 +169,7 @@ object CosmosIntegrationTestClient extends Matchers {
       response
     }
 
-    private[this] def submit(req: CosmosRequest): Response = {
+    def submit(req: CosmosRequest): Response = {
       val withPath = RequestBuilder().url(s"$uri/${req.path}")
       val withAuth = Session.authorization.fold(withPath) { auth =>
         withPath.setHeader("Authorization", auth.headerValue)
