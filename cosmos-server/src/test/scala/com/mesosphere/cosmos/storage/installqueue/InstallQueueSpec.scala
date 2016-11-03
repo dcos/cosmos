@@ -483,8 +483,13 @@ class InstallQueueSpec extends fixture.FreeSpec {
     "When an operation is added on a failed coordinate," +
       " that coordinate must move to the back of the queue" ignore { testParameters =>
       val (_, installQueue) = testParameters
-      Await.result(installQueue.add(coordinate1, universeInstall))
-      Await.result(installQueue.add(coordinate2, universeInstall))
+      val addOnCoordinate1 =
+        Await.result(installQueue.add(coordinate1, universeInstall))
+      assertResult(Created)(addOnCoordinate1)
+
+      val addOnCoordinate2 =
+        Await.result(installQueue.add(coordinate2, universeInstall))
+      assertResult(Created)(addOnCoordinate2)
 
       val coordinate1Operation = Await.result(installQueue.next())
       assertResult(
@@ -492,7 +497,9 @@ class InstallQueueSpec extends fixture.FreeSpec {
         coordinate1Operation)
 
       Await.result(installQueue.failure(coordinate1, errorResponse1))
-      Await.result(installQueue.add(coordinate1, universeInstall))
+      val addOnCoordinate1AfterFailure =
+        Await.result(installQueue.add(coordinate1, universeInstall))
+      assertResult(Created)(addOnCoordinate1AfterFailure)
 
       val coordinate2Operation = Await.result(installQueue.next())
       assertResult(
