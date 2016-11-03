@@ -248,7 +248,7 @@ final class InstallQueue private(client: CuratorFramework) extends
     )
     promise
   }
-  
+
   private[this] def setOperationInOperationStatus
   (
     packageCoordinate: PackageCoordinate,
