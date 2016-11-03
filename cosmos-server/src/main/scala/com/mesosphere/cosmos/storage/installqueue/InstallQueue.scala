@@ -7,6 +7,7 @@ import com.mesosphere.cosmos.rpc.v1.model.PackageCoordinate
 import com.mesosphere.cosmos.storage.Envelope
 import com.mesosphere.cosmos.storage.v1.circe.MediaTypedDecoders._
 import com.mesosphere.cosmos.storage.v1.circe.MediaTypedEncoders._
+import com.mesosphere.universe.bijection.BijectionUtils
 import com.twitter.bijection.Conversion.asMethod
 import com.twitter.util.Future
 import com.twitter.util.Promise
@@ -22,15 +23,22 @@ import org.apache.curator.framework.recipes.cache.TreeCache
 import org.apache.zookeeper.KeeperException
 import org.apache.zookeeper.data.Stat
 import scala.collection.JavaConversions._
-import scala.collection.mutable.ListBuffer
 
 final class InstallQueue private(client: CuratorFramework) extends
-  ProcessorView with ProducerView with ReaderView {
+  ProcessorView with ProducerView with ReaderView with AutoCloseable {
 
   import InstallQueue._
 
   private[this] val operationStatusCache = new TreeCache(client, installQueuePath)
-  operationStatusCache.start()
+
+  def start(): Unit = {
+    operationStatusCache.start()
+    ()
+  }
+
+  override def close(): Unit = {
+    operationStatusCache.close()
+  }
 
   override def next(): Future[Option[PendingOperation]] = {
     getAllCoordinates.flatMap { coordinates =>
@@ -39,7 +47,11 @@ final class InstallQueue private(client: CuratorFramework) extends
         if (pendingOperations.isEmpty) {
           None
         } else {
-          Some(pendingOperations.minBy(_.info.getCtime).value)
+          // We return the earliest modified pending operations as
+          // determined by the ZooKeeper mzxid. See
+          // https://zookeeper.apache.org/doc/r3.2.2/zookeeperProgrammers.html#sc_timeInZk
+          // for more information
+          Some(pendingOperations.minBy(_.stat.getMzxid).value)
         }
       }
     }
@@ -48,12 +60,12 @@ final class InstallQueue private(client: CuratorFramework) extends
   private[this] def getOperationIfPending
   (
     packageCoordinate: PackageCoordinate
-  ): Future[Option[Info[PendingOperation]]] = {
+  ): Future[Option[WithZkStat[PendingOperation]]] = {
     getOperationStatus(packageCoordinate).map { maybeOperationStatus =>
       maybeOperationStatus.flatMap {
-        case Info(info, Pending(operation, failure)) =>
-          Some(Info(
-            info,
+        case WithZkStat(stat, Pending(operation, failure)) =>
+          Some(WithZkStat(
+            stat,
             PendingOperation(packageCoordinate, operation, failure)
           ))
         case _ => None
@@ -64,16 +76,19 @@ final class InstallQueue private(client: CuratorFramework) extends
   private[this] def getAllCoordinates: Future[List[PackageCoordinate]] = {
     val promise = Promise[List[PackageCoordinate]]()
     client.getChildren.inBackground(
-      handler(promise) { case event if event.getType == CuratorEventType.CHILDREN =>
-        val code = KeeperException.Code.get(event.getResultCode)
-        code match {
-          case KeeperException.Code.OK =>
-            Try(event.getChildren.toList.map(_.as[scala.util.Try[PackageCoordinate]].get))
-          case KeeperException.Code.NONODE =>
-            Return(List())
-          case _ =>
-            Throw(KeeperException.create(code, event.getPath))
-        }
+      handler(promise, CuratorEventType.CHILDREN) {
+        case (KeeperException.Code.OK, event) =>
+          val coordinates =
+            event.getChildren.toList.map { encodedCoordinate =>
+              BijectionUtils.scalaTryToTwitterTry(
+                encodedCoordinate.as[scala.util.Try[PackageCoordinate]]
+              )
+            }
+          Try.collect(coordinates).map(_.toList)
+        case (KeeperException.Code.NONODE, _) =>
+          Return(List())
+        case (code, event) =>
+          Throw(KeeperException.create(code, event.getPath))
       }
     ).forPath(
       installQueuePath
@@ -92,16 +107,16 @@ final class InstallQueue private(client: CuratorFramework) extends
           "Attempted to signal failure on an " +
             s"operation not in the install queue: $packageCoordinate"
         Future.exception(InstallQueueError(message))
-      case Some(Info(_, Failed(_))) =>
+      case Some(WithZkStat(_, Failed(_))) =>
         val message =
           "Attempted to signal failure on an " +
             s"operation that has failed: $packageCoordinate"
         Future.exception(InstallQueueError(message))
-      case Some(Info(info, Pending(operation, _))) =>
+      case Some(WithZkStat(stat, Pending(operation, _))) =>
         setOperationStatus(
           packageCoordinate,
           Failed(OperationFailure(operation, error)),
-          info.getVersion
+          stat.getVersion
         )
     }
   }
@@ -109,22 +124,24 @@ final class InstallQueue private(client: CuratorFramework) extends
   private[this] def getOperationStatus
   (
     packageCoordinate: PackageCoordinate
-  ): Future[Option[Info[OperationStatus]]] = {
-    val promise = Promise[Option[Info[OperationStatus]]]()
+  ): Future[Option[WithZkStat[OperationStatus]]] = {
+    val promise = Promise[Option[WithZkStat[OperationStatus]]]()
     client.getData.inBackground(
-      handler(promise) { case event if event.getType == CuratorEventType.GET_DATA =>
-        val code = KeeperException.Code.get(event.getResultCode)
-        code match {
-          case KeeperException.Code.OK =>
-            Return(Some(Info(
-              event.getStat,
-              Envelope.decodeData[OperationStatus](event.getData)
-            )))
-          case KeeperException.Code.NONODE =>
-            Return(None)
-          case _ =>
-            Throw(KeeperException.create(code, event.getPath))
-        }
+      handler(promise, CuratorEventType.GET_DATA) {
+        case (KeeperException.Code.OK, event) =>
+          Try(Envelope.decodeData[OperationStatus](event.getData))
+            .map { operationStatus =>
+              Some(
+                WithZkStat(
+                  event.getStat,
+                  operationStatus
+                )
+              )
+            }
+        case (KeeperException.Code.NONODE, _) =>
+          Return(None)
+        case (code, event) =>
+          Throw(KeeperException.create(code, event.getPath))
       }
     ).forPath(
       statusPath(packageCoordinate)
@@ -140,14 +157,11 @@ final class InstallQueue private(client: CuratorFramework) extends
   ): Future[Unit] = {
     val promise = Promise[Unit]()
     client.setData().withVersion(version).inBackground(
-      handler(promise) { case event if event.getType == CuratorEventType.SET_DATA =>
-        val code = KeeperException.Code.get(event.getResultCode)
-        code match {
-          case KeeperException.Code.OK =>
-            Return(())
-          case _ =>
-            Throw(KeeperException.create(code, event.getPath))
-        }
+      handler(promise, CuratorEventType.SET_DATA) {
+        case (KeeperException.Code.OK, _) =>
+          Return(())
+        case (code, event) =>
+          Throw(KeeperException.create(code, event.getPath))
       }
     ).forPath(
       statusPath(packageCoordinate),
@@ -166,13 +180,13 @@ final class InstallQueue private(client: CuratorFramework) extends
           "Attempted to signal success on an " +
             s"operation not in the install queue: $packageCoordinate"
         Future.exception(InstallQueueError(message))
-      case Some(Info(_, Failed(_))) =>
+      case Some(WithZkStat(_, Failed(_))) =>
         val message =
           "Attempted to signal success on an " +
             s"operation that has failed: $packageCoordinate"
         Future.exception(InstallQueueError(message))
-      case Some(Info(info, Pending(operation, _))) =>
-        deleteOperationStatus(packageCoordinate, info.getVersion)
+      case Some(WithZkStat(stat, Pending(operation, _))) =>
+        deleteOperationStatus(packageCoordinate, stat.getVersion)
     }
   }
 
@@ -183,14 +197,11 @@ final class InstallQueue private(client: CuratorFramework) extends
   ): Future[Unit] = {
     val promise = Promise[Unit]()
     client.delete().withVersion(version).inBackground(
-      handler(promise) { case event if event.getType == CuratorEventType.DELETE =>
-        val code = KeeperException.Code.get(event.getResultCode)
-        code match {
-          case KeeperException.Code.OK =>
-            Return(())
-          case _ =>
-            Throw(KeeperException.create(code, event.getPath))
-        }
+      handler(promise, CuratorEventType.DELETE) {
+        case (KeeperException.Code.OK, _) =>
+          Return(())
+        case (code, event) =>
+          Throw(KeeperException.create(code, event.getPath))
       }
     ).forPath(
       statusPath(packageCoordinate)
@@ -219,14 +230,11 @@ final class InstallQueue private(client: CuratorFramework) extends
   ): Future[AddResult] = {
     val promise = Promise[AddResult]()
     client.create().creatingParentsIfNeeded().inBackground(
-      handler(promise) { case event if event.getType == CuratorEventType.CREATE =>
-        val code = KeeperException.Code.get(event.getResultCode)
-        code match {
-          case KeeperException.Code.OK =>
-            Return(Created)
-          case _ =>
-            Throw(KeeperException.create(code, event.getPath))
-        }
+      handler(promise, CuratorEventType.CREATE) {
+        case (KeeperException.Code.OK, _) =>
+          Return(Created)
+        case (code, event) =>
+          Throw(KeeperException.create(code, event.getPath))
       }
     ).forPath(
       statusPath(packageCoordinate),
@@ -234,7 +242,7 @@ final class InstallQueue private(client: CuratorFramework) extends
     )
     promise
   }
-
+  
   private[this] def setOperationInOperationStatus
   (
     packageCoordinate: PackageCoordinate,
@@ -242,50 +250,62 @@ final class InstallQueue private(client: CuratorFramework) extends
   ): Future[AddResult] = {
     getOperationStatus(packageCoordinate).flatMap {
       case None =>
-        // if we reach this statement, that means there was
-        // an operation pending when the user made the request. The operation has
-        // since completed, but it is not incorrect to return AlreadyExists, because
-        // the request overlaps the existence of a pending operation.
+        /* if we reach this statement, that means there was
+         * an operation when the user made the request. The operation has
+         * since completed which means that it was pending.
+         * It is correct to return AlreadyExists, because
+         * the request to add overlaps the existence of a pending operation.
+         *
+         * |------------|----------------------------|
+         * |add starts  |                            |
+         * |------------|----------------------------|
+         * |Create      |  Node Exists               |
+         * |            |  Contents = ?              |
+         * |            |.............................
+         * |            |  Node Exists               |
+         * |            |  Contents = Pending        |
+         * |            |                            |
+         * |            |  Note:                     |
+         * |            |  This must be Pending      |
+         * |            |  otherwise node would not  |
+         * |            |  have been deleted         |
+         * |            |                            |
+         * |------------|----------------------------|
+         * |Set         |  Node does not Exists      |
+         * |            |                            |
+         * |            |                            |
+         * |------------|----------------------------|
+         * |add ends    |                            |
+         * |------------|----------------------------|
+         */
         Future.value(AlreadyExists)
-      case Some(Info(_, Pending(_, _))) =>
+      case Some(WithZkStat(_, Pending(_, _))) =>
         Future.value(AlreadyExists)
-      case Some(Info(info, Failed(failure))) =>
+      case Some(WithZkStat(stat, Failed(failure))) =>
         setOperationStatus(
           packageCoordinate,
           Pending(operation, Some(failure)),
-          info.getVersion
+          stat.getVersion
         ).before(Future.value(Created))
     }
   }
 
   override def viewStatus(): Future[Map[PackageCoordinate, OperationStatus]] = {
-    def listTryToTryList[A](listTry: List[Try[A]]): Try[List[A]] = {
-      listTry
-        .foldLeft(
-          Try(ListBuffer[A]())
-        ) { (tryOfList, oneTry) =>
-          tryOfList.flatMap { list =>
-            oneTry.map { element =>
-              list :+ element
-            }
-          }
-        }.map(_.toList)
-    }
-
     val operationStatus =
       Option(operationStatusCache
         .getCurrentChildren(installQueuePath))
         .getOrElse(new java.util.HashMap[String, ChildData]())
         .toMap
         .map { case (encodedPackageCoordinate, childData) =>
-          Try(encodedPackageCoordinate.as[scala.util.Try[PackageCoordinate]].get).flatMap {
-            packageCoordinate =>
-              Try(packageCoordinate
-                -> Envelope.decodeData[OperationStatus](childData.getData))
+          BijectionUtils.scalaTryToTwitterTry(
+            encodedPackageCoordinate.as[scala.util.Try[PackageCoordinate]]).flatMap { coordinate =>
+            Try(Envelope.decodeData[OperationStatus](childData.getData)).map { operationStatus =>
+              coordinate -> operationStatus
+            }
           }
         }
-        .toList
-    Future.const(listTryToTryList(operationStatus).map(_.toMap))
+        .toSeq
+    Future.const(Try.collect(operationStatus).map(_.toMap))
   }
 
 }
@@ -297,14 +317,25 @@ object InstallQueue {
     s"$installQueuePath/${packageCoordinate.as[String]}"
   }
 
-  def apply(client: CuratorFramework): InstallQueue = new InstallQueue(client)
+  def apply(client: CuratorFramework): InstallQueue = {
+    val installQueue = new InstallQueue(client)
+    installQueue.start()
+    installQueue
+  }
 
-  private case class Info[A](info: Stat, value: A)
+  private case class WithZkStat[A](stat: Stat, value: A)
 
-  private def handler[A](promise: Promise[A])(handle: PartialFunction[CuratorEvent, Try[A]]) = {
+  private def handler[A](promise: Promise[A], expectedEventType: CuratorEventType)(
+    handle: (KeeperException.Code, CuratorEvent) => Try[A]
+  ): BackgroundCallback = {
     new BackgroundCallback {
       override def processResult(client: CuratorFramework, event: CuratorEvent): Unit = {
-        promise.update(handle(event))
+        if (event.getType == expectedEventType) {
+          val code = KeeperException.Code.get(event.getResultCode)
+          promise.update(handle(code, event))
+        } else {
+          promise.setException(InstallQueueError("Called handler for incorrect event type"))
+        }
       }
     }
   }

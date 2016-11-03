@@ -21,7 +21,491 @@ class InstallQueueSpec extends fixture.FreeSpec {
   import InstallQueueSpec._
   import InstallQueue._
 
-  case class FixtureParam(client: CuratorFramework, installQueue: InstallQueue)
+  "Producer View" - {
+    "Add an operation " - {
+      "when no parent path exists" ignore { testParameters =>
+        val (client, installQueue) = testParameters
+        val addResult = Await.result(
+          installQueue.add(coordinate1, universeInstall)
+        )
+        assertResult(Created)(addResult)
+
+        checkInstallQueueContents(client, coordinate1, Pending(universeInstall, None))
+      }
+
+      "when the parent path exists but the status does not" ignore { testParameters =>
+        val (client, installQueue) = testParameters
+        createParentPath(client)
+        val addResult = Await.result(
+          installQueue.add(coordinate1, universeInstall)
+        )
+        assertResult(Created)(addResult)
+
+        checkInstallQueueContents(
+          client,
+          coordinate1,
+          Pending(universeInstall, None))
+      }
+
+      "on a coordinate that has a pending operation but no failures" ignore { testParameters =>
+        val (client, installQueue) = testParameters
+        val pendingUniverseInstall = Pending(universeInstall, None)
+
+        insertPackageStatusIntoQueue(
+          client,
+          coordinate1,
+          pendingUniverseInstall)
+
+        val addResult = Await.result(
+          installQueue.add(coordinate1, universeInstall)
+        )
+        assertResult(AlreadyExists)(addResult)
+
+        checkInstallQueueContents(client,
+          coordinate1,
+          pendingUniverseInstall)
+      }
+
+      "on a coordinate that has a failed operation, but no pending operation" ignore { testParameters =>
+        val (client, installQueue) = testParameters
+        insertPackageStatusIntoQueue(
+          client,
+          coordinate1,
+          Failed(OperationFailure(universeInstall, errorResponse1)))
+
+        val addResult = Await.result(
+          installQueue.add(coordinate1, universeInstall)
+        )
+        assertResult(Created)(addResult)
+
+        checkInstallQueueContents(
+          client,
+          coordinate1,
+          Pending(universeInstall, Some(OperationFailure(universeInstall, errorResponse1))))
+      }
+
+      "on a coordinate that has an operation and a failure" ignore { testParameters =>
+        val (client, installQueue) = testParameters
+
+        val pendingUniverseInstallWithFailure =
+          Pending(universeInstall, Some(OperationFailure(universeInstall, errorResponse1)))
+
+        insertPackageStatusIntoQueue(
+          client,
+          coordinate1,
+          pendingUniverseInstallWithFailure)
+
+        val addResult = Await.result(
+          installQueue.add(coordinate1, universeInstall)
+        )
+        assertResult(AlreadyExists)(addResult)
+
+        checkInstallQueueContents(
+          client,
+          coordinate1,
+          pendingUniverseInstallWithFailure)
+      }
+    }
+
+    "Add multiple non-conflicting operations" ignore { testParameters =>
+      val (client, installQueue) = testParameters
+      val addTwoOperations =
+        for {
+          add1 <- installQueue.add(coordinate1, universeInstall)
+          add2 <- installQueue.add(coordinate2, universeInstall)
+        } yield (add1, add2)
+
+      val (add1, add2) = Await.result(addTwoOperations)
+      assertResult(Created)(add1)
+      assertResult(Created)(add2)
+
+      checkInstallQueueContents(client, coordinate1, Pending(universeInstall, None))
+      checkInstallQueueContents(client, coordinate2, Pending(universeInstall, None))
+    }
+  }
+
+  "Processor view" - {
+    "failure" - {
+      "Fail an operation " - {
+        "when no parent path exists" ignore { testParameters =>
+          val (_, installQueue) = testParameters
+          val error = intercept[InstallQueueError](
+            Await.result(
+              installQueue.failure(coordinate1, errorResponse1)
+            )
+          )
+          assertResult(notInQueueFailureMessageCoordinate1)(error.msg)
+        }
+
+        "when the parent path exists but the status does not" ignore { testParameters =>
+          val (client, installQueue) = testParameters
+          createParentPath(client)
+          val error = intercept[InstallQueueError](
+            Await.result(
+              installQueue.failure(coordinate1, errorResponse1)
+            )
+          )
+          assertResult(notInQueueFailureMessageCoordinate1)(error.msg)
+        }
+
+        "on a coordinate that has a pending operation but no failures" ignore { testParameters =>
+          val (client, installQueue) = testParameters
+          insertPackageStatusIntoQueue(client, coordinate1, Pending(universeInstall, None))
+          Await.result(
+            installQueue.failure(coordinate1, errorResponse1)
+          )
+          checkInstallQueueContents(
+            client,
+            coordinate1,
+            Failed(OperationFailure(universeInstall, errorResponse1)))
+        }
+
+        "on a coordinate that has a failed operation, but no pending operation" ignore { testParameters =>
+          val (client, installQueue) = testParameters
+          insertPackageStatusIntoQueue(
+            client,
+            coordinate1,
+            Failed(OperationFailure(universeInstall, errorResponse1)))
+          val error = intercept[InstallQueueError](
+            Await.result(
+              installQueue.failure(coordinate1, errorResponse1)
+            )
+          )
+          assertResult(alreadyFailedFailureMessageCoordinate1)(error.msg)
+        }
+
+        "on a coordinate that has an operation and a failure" ignore { testParameters =>
+          val (client, installQueue) = testParameters
+          insertPackageStatusIntoQueue(
+            client,
+            coordinate1,
+            Pending(universeInstall, Some(OperationFailure(universeInstall, errorResponse1))))
+          Await.result(
+            installQueue.failure(coordinate1, errorResponse2)
+          )
+          checkInstallQueueContents(
+            client,
+            coordinate1,
+            Failed(OperationFailure(universeInstall, errorResponse2)))
+        }
+      }
+
+      "Fail multiple non-conflicting operations" ignore { testParameters =>
+        val (client, installQueue) = testParameters
+        insertPackageStatusIntoQueue(client, coordinate1, Pending(universeInstall, None))
+        insertPackageStatusIntoQueue(client, coordinate2, Pending(universeInstall, None))
+        val failTwoOperations =
+          for {
+            _ <- installQueue.failure(coordinate1, errorResponse1)
+            _ <- installQueue.failure(coordinate2, errorResponse1)
+          } yield ()
+        Await.result(failTwoOperations)
+        checkInstallQueueContents(
+          client,
+          coordinate1,
+          Failed(OperationFailure(universeInstall, errorResponse1)))
+        checkInstallQueueContents(
+          client,
+          coordinate2,
+          Failed(OperationFailure(universeInstall, errorResponse1)))
+      }
+    }
+
+    "success" - {
+      "Success on an operation " - {
+        "when no parent path exists" ignore { testParameters =>
+          val (_, installQueue) = testParameters
+          val error = intercept[InstallQueueError](
+            Await.result(
+              installQueue.success(coordinate1)
+            )
+          )
+          assertResult(notInQueueSuccessMessageCoordinate1)(error.msg)
+        }
+
+        "when the parent path exists but the status does not" ignore { testParameters =>
+          val (client, installQueue) = testParameters
+          createParentPath(client)
+          val error = intercept[InstallQueueError](
+            Await.result(
+              installQueue.success(coordinate1)
+            )
+          )
+          assertResult(notInQueueSuccessMessageCoordinate1)(error.msg)
+        }
+
+        "on a coordinate that has a pending operation but no failures" ignore { testParameters =>
+          val (client, installQueue) = testParameters
+          insertPackageStatusIntoQueue(client, coordinate1, Pending(universeInstall, None))
+          Await.result(
+            installQueue.success(coordinate1)
+          )
+          checkStatusDoesNotExist(client, coordinate1)
+        }
+
+        "on a coordinate that has a failed operation, but no pending operation" ignore { testParameters =>
+          val (client, installQueue) = testParameters
+          insertPackageStatusIntoQueue(
+            client,
+            coordinate1,
+            Failed(OperationFailure(universeInstall, errorResponse1)))
+          val error = intercept[InstallQueueError](
+            Await.result(
+              installQueue.success(coordinate1)
+            )
+          )
+          assertResult(alreadyFailedSuccessMessageCoordinate1)(error.msg)
+        }
+
+        "on a coordinate that has an operation and a failure" ignore { testParameters =>
+          val (client, installQueue) = testParameters
+          insertPackageStatusIntoQueue(
+            client,
+            coordinate1,
+            Pending(universeInstall, Some(OperationFailure(universeInstall, errorResponse1))))
+          Await.result(
+            installQueue.success(coordinate1)
+          )
+          checkStatusDoesNotExist(client, coordinate1)
+        }
+      }
+
+      "Success on multiple non-conflicting operations" ignore { testParameters =>
+        val (client, installQueue) = testParameters
+        insertPackageStatusIntoQueue(client, coordinate1, Pending(universeInstall, None))
+        insertPackageStatusIntoQueue(client, coordinate2, Pending(universeInstall, None))
+        val successOnTwoOperations =
+          for {
+            _ <- installQueue.success(coordinate1)
+            _ <- installQueue.success(coordinate2)
+          } yield ()
+        Await.result(successOnTwoOperations)
+        checkStatusDoesNotExist(client, coordinate1)
+        checkStatusDoesNotExist(client, coordinate2)
+      }
+    }
+
+    "next" - {
+      "Next when " - {
+        "no parent path exists" ignore { testParameters =>
+          val (_, installQueue) = testParameters
+          val nextPendingOperation = Await.result(
+            installQueue.next()
+          )
+          assertResult(None)(nextPendingOperation)
+        }
+
+        "the parent path exists but there are no pending operations" ignore { testParameters =>
+          val (client, installQueue) = testParameters
+          createParentPath(client)
+          val nextPendingOperation = Await.result(
+            installQueue.next()
+          )
+          assertResult(None)(nextPendingOperation)
+        }
+
+        "there is a coordinate that has a pending operation but no failures" ignore { testParameters =>
+          val (client, installQueue) = testParameters
+          insertPackageStatusIntoQueue(
+            client,
+            coordinate1,
+            Pending(universeInstall, None))
+          val nextPendingOperation = Await.result(
+            installQueue.next()
+          )
+          assertResult(
+            Some(PendingOperation(coordinate1, universeInstall, None)))(
+            nextPendingOperation)
+        }
+
+        "there is a coordinate that has a failed operation, but no pending operation" ignore { testParameters =>
+          val (client, installQueue) = testParameters
+          insertPackageStatusIntoQueue(
+            client,
+            coordinate1,
+            Failed(OperationFailure(universeInstall, errorResponse1)))
+          val nextPendingOperation = Await.result(
+            installQueue.next()
+          )
+          assertResult(None)(nextPendingOperation)
+        }
+
+        "there is a coordinate that has an operation and a failure" ignore { testParameters =>
+          val (client, installQueue) = testParameters
+          insertPackageStatusIntoQueue(
+            client,
+            coordinate1,
+            Pending(
+              universeInstall,
+              Some(OperationFailure(
+                universeInstall, errorResponse1))))
+          val nextPendingOperation = Await.result(
+            installQueue.next()
+          )
+          assertResult(
+            Some(PendingOperation(
+              coordinate1,
+              universeInstall,
+              Some(OperationFailure(
+                universeInstall, errorResponse1)))))(
+            nextPendingOperation)
+        }
+
+        "there are multiple pending operations some of which have failed" ignore { testParameters =>
+          val (client, installQueue) = testParameters
+          insertPackageStatusIntoQueue(
+            client,
+            coordinate1,
+            Pending(universeInstall, None))
+          insertPackageStatusIntoQueue(
+            client,
+            coordinate2,
+            Pending(universeInstall, None))
+          insertPackageStatusIntoQueue(
+            client,
+            coordinate3,
+            Failed(OperationFailure(universeInstall, errorResponse1)))
+          insertPackageStatusIntoQueue(
+            client,
+            coordinate4,
+            Failed(OperationFailure(universeInstall, errorResponse2)))
+          insertPackageStatusIntoQueue(
+            client,
+            coordinate5,
+            Pending(universeInstall, Some(OperationFailure(universeInstall, errorResponse1))))
+
+          val n1 = Await.result(installQueue.next())
+          removePackageStatusFromQueue(client, coordinate1)
+
+          val n2 = Await.result(installQueue.next())
+          removePackageStatusFromQueue(client, coordinate2)
+
+          val n3 = Await.result(installQueue.next())
+          removePackageStatusFromQueue(client, coordinate5)
+
+          val n4 = Await.result(installQueue.next())
+          val n5 = Await.result(installQueue.next())
+
+          assertResult(
+            Some(PendingOperation(coordinate1, universeInstall, None)))(
+            n1)
+          assertResult(
+            Some(PendingOperation(coordinate2, universeInstall, None)))(
+            n2)
+          assertResult(
+            Some(PendingOperation(
+              coordinate5,
+              universeInstall,
+              Some(OperationFailure(universeInstall, errorResponse1)))))(
+            n3)
+          assertResult(None)(n4)
+          assertResult(None)(n5)
+        }
+      }
+
+      "Calling next multiple times returns the same operation" ignore { testParameters =>
+        val (client, installQueue) = testParameters
+        insertPackageStatusIntoQueue(
+          client,
+          coordinate1,
+          Pending(universeInstall, None))
+        insertPackageStatusIntoQueue(
+          client,
+          coordinate2,
+          Pending(universeInstall, None))
+        insertPackageStatusIntoQueue(
+          client,
+          coordinate3,
+          Failed(OperationFailure(universeInstall, errorResponse1)))
+        insertPackageStatusIntoQueue(
+          client,
+          coordinate4,
+          Failed(OperationFailure(universeInstall, errorResponse1)))
+        insertPackageStatusIntoQueue(
+          client,
+          coordinate5,
+          Pending(universeInstall, Some(OperationFailure(universeInstall, errorResponse1))))
+
+        val callNextTwice =
+          for {
+            n1 <- installQueue.next()
+            n2 <- installQueue.next()
+          } yield (n1, n2)
+        val (n1, n2) = Await.result(callNextTwice)
+
+        checkInstallQueueContents(client, coordinate1, Pending(universeInstall, None))
+        removePackageStatusFromQueue(client, coordinate1)
+
+        val callNextTwiceAgain =
+          for {
+            n3 <- installQueue.next()
+            n4 <- installQueue.next()
+          } yield (n3, n4)
+        val (n3, n4) = Await.result(callNextTwiceAgain)
+
+        assert(n1 == n2)
+        assert(n3 == n4)
+        assertResult(
+          Some(PendingOperation(coordinate1, universeInstall, None)))(
+          n1)
+        assertResult(
+          Some(PendingOperation(coordinate2, universeInstall, None)))(
+          n3)
+      }
+    }
+  }
+
+  "Reader view" - {
+    "ViewStatus should " +
+      "return all pending and failed operations in the queue" ignore { testParameters =>
+      val (client, installQueue) = testParameters
+      val expectedState = Map(
+        coordinate1 -> Pending(universeInstall, None),
+        coordinate2 -> Pending(universeInstall, None),
+        coordinate3 -> Failed(OperationFailure(universeInstall, errorResponse1)),
+        coordinate4 -> Failed(OperationFailure(universeInstall, errorResponse1)),
+        coordinate5 -> Pending(universeInstall, Some(OperationFailure(universeInstall, errorResponse1)))
+      )
+
+      expectedState.foreach { case (coordinate, status) =>
+        insertPackageStatusIntoQueue(client, coordinate, status)
+      }
+
+      val pollCount = 10
+      val expectedSize = 5
+      val actualState = pollForViewStatus(installQueue, pollCount, expectedSize)
+
+      assertResult(Some(expectedState))(actualState)
+    }
+  }
+
+  "Install Queue" - {
+    "When an operation is added on a failed coordinate," +
+      " that coordinate must move to the back of the queue" ignore { testParameters =>
+      val (_, installQueue) = testParameters
+      Await.result(installQueue.add(coordinate1, universeInstall))
+      Await.result(installQueue.add(coordinate2, universeInstall))
+
+      val coordinate1Operation = Await.result(installQueue.next())
+      assertResult(
+        Some(PendingOperation(coordinate1, universeInstall, None)))(
+        coordinate1Operation)
+
+      Await.result(installQueue.failure(coordinate1, errorResponse1))
+      Await.result(installQueue.add(coordinate1, universeInstall))
+
+      val coordinate2Operation = Await.result(installQueue.next())
+      assertResult(
+        Some(
+          PendingOperation(
+            coordinate2,
+            universeInstall,
+            None)))(
+        coordinate2Operation)
+    }
+  }
+
+  type FixtureParam = (CuratorFramework, InstallQueue)
 
   override def withFixture(test: OneArgTest): Outcome = {
     val path = "/"
@@ -35,7 +519,7 @@ class InstallQueueSpec extends fixture.FreeSpec {
     client.getZookeeperClient.blockUntilConnectedOrTimedOut()
 
     try {
-      withFixture(test.toNoArgTest(FixtureParam(client, InstallQueue(client))))
+      withFixture(test.toNoArgTest((client, InstallQueue(client))))
     } finally {
       try {
         client.delete().deletingChildrenIfNeeded().forPath(installQueuePath)
@@ -48,12 +532,12 @@ class InstallQueueSpec extends fixture.FreeSpec {
 
   private def checkInstallQueueContents
   (
-    f: FixtureParam,
+    client: CuratorFramework,
     packageCoordinate: PackageCoordinate,
     expected: OperationStatus
   ): Unit = {
     val data =
-      f.client
+      client
         .getData
         .forPath(
           statusPath(coordinate1)
@@ -64,11 +548,11 @@ class InstallQueueSpec extends fixture.FreeSpec {
 
   private def insertPackageStatusIntoQueue
   (
-    f: FixtureParam,
+    client: CuratorFramework,
     packageCoordinate: PackageCoordinate,
     contents: OperationStatus
   ): Unit = {
-    f.client
+    client
       .create()
       .creatingParentsIfNeeded()
       .forPath(
@@ -80,10 +564,10 @@ class InstallQueueSpec extends fixture.FreeSpec {
 
   private def removePackageStatusFromQueue
   (
-    f: FixtureParam,
+    client: CuratorFramework,
     packageCoordinate: PackageCoordinate
   ): Unit = {
-    f.client
+    client
       .delete()
       .forPath(
         statusPath(packageCoordinate)
@@ -93,9 +577,9 @@ class InstallQueueSpec extends fixture.FreeSpec {
 
   private def createParentPath
   (
-    f: FixtureParam
+    client: CuratorFramework
   ): Unit = {
-    f.client
+    client
       .create()
       .creatingParentsIfNeeded()
       .forPath(
@@ -106,12 +590,12 @@ class InstallQueueSpec extends fixture.FreeSpec {
 
   private def checkStatusDoesNotExist
   (
-    f: FixtureParam,
+    client: CuratorFramework,
     packageCoordinate: PackageCoordinate
   ): Unit = {
     val stat =
       Option(
-        f.client
+        client
           .checkExists()
           .forPath(
             statusPath(packageCoordinate)
@@ -122,333 +606,34 @@ class InstallQueueSpec extends fixture.FreeSpec {
 
   private def pollForViewStatus
   (
-    f: FixtureParam,
+    installQueue: InstallQueue,
     attempts: Int,
     size: Int
   ): Option[Map[PackageCoordinate, OperationStatus]] = {
     Stream.tabulate(attempts) { _ =>
       val oneSecond = 1000L
       Thread.sleep(oneSecond)
-      Await.result(f.installQueue.viewStatus())
+      Await.result(installQueue.viewStatus())
     }.dropWhile(_.size < size).headOption
-  }
-
-  "Producer View" - {
-    "Add an operation " - {
-      "when no parent path exists" ignore { f =>
-        val addResult = Await.result(
-          f.installQueue.add(coordinate1, operation1)
-        )
-        assertResult(Created)(addResult)
-
-        checkInstallQueueContents(f, coordinate1, statusWithOnlyOperation1)
-      }
-
-      "when the parent path exists but the status does not" ignore { f =>
-        createParentPath(f)
-        val addResult = Await.result(
-          f.installQueue.add(coordinate1, operation1)
-        )
-        assertResult(Created)(addResult)
-
-        checkInstallQueueContents(f, coordinate1, statusWithOnlyOperation1)
-      }
-
-      "on a coordinate that has a pending operation but no failures" ignore { f =>
-        insertPackageStatusIntoQueue(f, coordinate1, statusWithOnlyOperation1)
-
-        val addResult = Await.result(
-          f.installQueue.add(coordinate1, operation1)
-        )
-        assertResult(AlreadyExists)(addResult)
-
-        checkInstallQueueContents(f, coordinate1, statusWithOnlyOperation1)
-      }
-
-      "on a coordinate that has a failed operation, but no pending operation" ignore { f =>
-        insertPackageStatusIntoQueue(f, coordinate1, statusWithOnlyFailure1)
-
-        val addResult = Await.result(
-          f.installQueue.add(coordinate1, operation1)
-        )
-        assertResult(Created)(addResult)
-
-        checkInstallQueueContents(f, coordinate1, statusWithOperation1AndFailure1)
-      }
-
-      "on a coordinate that has an operation and a failure" ignore { f =>
-        insertPackageStatusIntoQueue(f, coordinate1, statusWithOperation1AndFailure1)
-
-        val addResult = Await.result(
-          f.installQueue.add(coordinate1, operation1)
-        )
-        assertResult(AlreadyExists)(addResult)
-
-        checkInstallQueueContents(f, coordinate1, statusWithOperation1AndFailure1)
-      }
-    }
-
-    "Add multiple non-conflicting operations" ignore { f =>
-      val addTwoOperations =
-        for {
-          add1 <- f.installQueue.add(coordinate1, operation1)
-          add2 <- f.installQueue.add(coordinate2, operation1)
-        } yield (add1, add2)
-
-      val (add1, add2) = Await.result(addTwoOperations)
-      assertResult(Created)(add1)
-      assertResult(Created)(add2)
-
-      checkInstallQueueContents(f, coordinate1, statusWithOnlyOperation1)
-      checkInstallQueueContents(f, coordinate2, statusWithOnlyOperation1)
-    }
-  }
-
-  "Processor view" - {
-    "failure" - {
-      "Fail an operation " - {
-        "when no parent path exists" ignore { f =>
-          val error = intercept[InstallQueueError](
-            Await.result(
-              f.installQueue.failure(coordinate1, errorResponse1)
-            )
-          )
-          assertResult(notInQueueFailureMessageCoordinate1)(error.msg)
-        }
-
-        "when the parent path exists but the status does not" ignore { f =>
-          createParentPath(f)
-          val error = intercept[InstallQueueError](
-            Await.result(
-              f.installQueue.failure(coordinate1, errorResponse1)
-            )
-          )
-          assertResult(notInQueueFailureMessageCoordinate1)(error.msg)
-        }
-
-        "on a coordinate that has a pending operation but no failures" ignore { f =>
-          insertPackageStatusIntoQueue(f, coordinate1, statusWithOnlyOperation1)
-          Await.result(
-            f.installQueue.failure(coordinate1, errorResponse1)
-          )
-          checkInstallQueueContents(f, coordinate1, statusWithOnlyFailure1)
-        }
-
-        "on a coordinate that has a failed operation, but no pending operation" ignore { f =>
-          insertPackageStatusIntoQueue(f, coordinate1, statusWithOnlyFailure1)
-          val error = intercept[InstallQueueError](
-            Await.result(
-              f.installQueue.failure(coordinate1, errorResponse1)
-            )
-          )
-          assertResult(alreadyFailedFailureMessageCoordinate1)(error.msg)
-        }
-
-        "on a coordinate that has an operation and a failure" ignore { f =>
-          insertPackageStatusIntoQueue(f, coordinate1, statusWithOperation1AndFailure1)
-          Await.result(
-            f.installQueue.failure(coordinate1, errorResponse1)
-          )
-          checkInstallQueueContents(f, coordinate1, statusWithOnlyFailure1)
-        }
-      }
-
-      "Fail multiple non-conflicting operations" ignore { f =>
-        insertPackageStatusIntoQueue(f, coordinate1, statusWithOnlyOperation1)
-        insertPackageStatusIntoQueue(f, coordinate2, statusWithOnlyOperation1)
-        val failTwoOperations =
-          for {
-            _ <- f.installQueue.failure(coordinate1, errorResponse1)
-            _ <- f.installQueue.failure(coordinate2, errorResponse1)
-          } yield ()
-        Await.result(failTwoOperations)
-        checkInstallQueueContents(f, coordinate1, statusWithOnlyFailure1)
-        checkInstallQueueContents(f, coordinate2, statusWithOnlyFailure1)
-      }
-    }
-
-    "success" - {
-      "Success on an operation " - {
-        "when no parent path exists" ignore { f =>
-          val error = intercept[InstallQueueError](
-            Await.result(
-              f.installQueue.success(coordinate1)
-            )
-          )
-          assertResult(notInQueueSuccessMessageCoordinate1)(error.msg)
-        }
-
-        "when the parent path exists but the status does not" ignore { f =>
-          createParentPath(f)
-          val error = intercept[InstallQueueError](
-            Await.result(
-              f.installQueue.success(coordinate1)
-            )
-          )
-          assertResult(notInQueueSuccessMessageCoordinate1)(error.msg)
-        }
-
-        "on a coordinate that has a pending operation but no failures" ignore { f =>
-          insertPackageStatusIntoQueue(f, coordinate1, statusWithOnlyOperation1)
-          Await.result(
-            f.installQueue.success(coordinate1)
-          )
-          checkStatusDoesNotExist(f, coordinate1)
-        }
-
-        "on a coordinate that has a failed operation, but no pending operation" ignore { f =>
-          insertPackageStatusIntoQueue(f, coordinate1, statusWithOnlyFailure1)
-          val error = intercept[InstallQueueError](
-            Await.result(
-              f.installQueue.success(coordinate1)
-            )
-          )
-          assertResult(alreadyFailedSuccessMessageCoordinate1)(error.msg)
-        }
-
-        "on a coordinate that has an operation and a failure" ignore { f =>
-          insertPackageStatusIntoQueue(f, coordinate1, statusWithOperation1AndFailure1)
-          Await.result(
-            f.installQueue.success(coordinate1)
-          )
-          checkStatusDoesNotExist(f, coordinate1)
-        }
-      }
-
-      "Success on multiple non-conflicting operations" ignore { f =>
-        insertPackageStatusIntoQueue(f, coordinate1, statusWithOnlyOperation1)
-        insertPackageStatusIntoQueue(f, coordinate2, statusWithOnlyOperation1)
-        val successOnTwoOperations =
-          for {
-            _ <- f.installQueue.success(coordinate1)
-            _ <- f.installQueue.success(coordinate2)
-          } yield ()
-        Await.result(successOnTwoOperations)
-        checkStatusDoesNotExist(f, coordinate1)
-        checkStatusDoesNotExist(f, coordinate2)
-      }
-    }
-
-    "next" - {
-      "Next when " - {
-        "no parent path exists" ignore { f =>
-          val nextPendingOperation = Await.result(
-            f.installQueue.next()
-          )
-          assertResult(None)(nextPendingOperation)
-        }
-
-        "the parent path exists but there are no pending operations" ignore { f =>
-          createParentPath(f)
-          val nextPendingOperation = Await.result(
-            f.installQueue.next()
-          )
-          assertResult(None)(nextPendingOperation)
-        }
-
-        "there is a coordinate that has a pending operation but no failures" ignore { f =>
-          insertPackageStatusIntoQueue(f, coordinate1, statusWithOnlyOperation1)
-          val nextPendingOperation = Await.result(
-            f.installQueue.next()
-          )
-          assertResult(Some(pendingOperation1Coordinate1NoFailure))(nextPendingOperation)
-        }
-
-        "there is a coordinate that has a failed operation, but no pending operation" ignore { f =>
-          insertPackageStatusIntoQueue(f, coordinate1, statusWithOnlyFailure1)
-          val nextPendingOperation = Await.result(
-            f.installQueue.next()
-          )
-          assertResult(None)(nextPendingOperation)
-        }
-
-        "there is a coordinate that has an operation and a failure" ignore { f =>
-          insertPackageStatusIntoQueue(f, coordinate1, statusWithOperation1AndFailure1)
-          val nextPendingOperation = Await.result(
-            f.installQueue.next()
-          )
-          assertResult(Some(pendingOperation1Coordinate1Failure1))(nextPendingOperation)
-        }
-
-        "there are multiple pending operations some of which have failed" ignore { f =>
-          insertPackageStatusIntoQueue(f, coordinate1, statusWithOnlyOperation1)
-          insertPackageStatusIntoQueue(f, coordinate2, statusWithOnlyOperation1)
-          insertPackageStatusIntoQueue(f, coordinate3, statusWithOnlyFailure1)
-          insertPackageStatusIntoQueue(f, coordinate4, statusWithOnlyFailure1)
-          insertPackageStatusIntoQueue(f, coordinate5, statusWithOperation1AndFailure1)
-
-          val n1 = Await.result(f.installQueue.next())
-          removePackageStatusFromQueue(f, coordinate1)
-
-          val n2 = Await.result(f.installQueue.next())
-          removePackageStatusFromQueue(f, coordinate2)
-
-          val n3 = Await.result(f.installQueue.next())
-          removePackageStatusFromQueue(f, coordinate5)
-
-          val n4 = Await.result(f.installQueue.next())
-          val n5 = Await.result(f.installQueue.next())
-
-          assertResult(Some(pendingOperation1Coordinate1NoFailure))(n1)
-          assertResult(Some(pendingOperation1Coordinate2NoFailure))(n2)
-          assertResult(Some(pendingOperation1Coordinate5Failure1))(n3)
-          assertResult(None)(n4)
-          assertResult(None)(n5)
-        }
-      }
-    }
-
-  }
-
-  "Reader view" - {
-    "ViewStatus should " +
-      "return all pending and failed operations in the queue" ignore { f =>
-      insertPackageStatusIntoQueue(f, coordinate1, statusWithOnlyOperation1)
-      insertPackageStatusIntoQueue(f, coordinate2, statusWithOnlyOperation1)
-      insertPackageStatusIntoQueue(f, coordinate3, statusWithOnlyFailure1)
-      insertPackageStatusIntoQueue(f, coordinate4, statusWithOnlyFailure1)
-      insertPackageStatusIntoQueue(f, coordinate5, statusWithOperation1AndFailure1)
-
-      val pollCount = 10
-      val expectedSize = 5
-      val actualState = pollForViewStatus(f, pollCount, expectedSize)
-      val expectedState =
-        Some(Map(
-          coordinate1 -> statusWithOnlyOperation1,
-          coordinate2 -> statusWithOnlyOperation1,
-          coordinate3 -> statusWithOnlyFailure1,
-          coordinate4 -> statusWithOnlyFailure1,
-          coordinate5 -> statusWithOperation1AndFailure1
-        ))
-      assertResult(expectedState)(actualState)
-    }
   }
 
 }
 
 object InstallQueueSpec {
   private val coordinate1 =
-    PackageCoordinate("foo", PackageDefinition.Version("3.2.1"))
-  private val operation1 =
-    UniverseInstall(TestingPackages.MinimalV3ModelV3PackageDefinition)
+    PackageCoordinate("coordinate", PackageDefinition.Version("1"))
   private val coordinate2 =
-    PackageCoordinate("foo", PackageDefinition.Version("3.2.3"))
+    PackageCoordinate("coordinate", PackageDefinition.Version("2"))
   private val coordinate3 =
-    PackageCoordinate("bar", PackageDefinition.Version("3.2.3"))
+    PackageCoordinate("coordinate", PackageDefinition.Version("3"))
   private val coordinate4 =
-    PackageCoordinate("baz", PackageDefinition.Version("3.2.3"))
+    PackageCoordinate("coordinate", PackageDefinition.Version("4"))
   private val coordinate5 =
-    PackageCoordinate("link", PackageDefinition.Version("3.2.3"))
+    PackageCoordinate("coordinate", PackageDefinition.Version("5"))
   private val errorResponse1 =
     ErrorResponse("foo", "bar")
-  private val failure1 =
-    OperationFailure(operation1, errorResponse1)
-  private val statusWithOnlyOperation1 =
-    Pending(operation1, None)
-  private val statusWithOperation1AndFailure1 =
-    Pending(operation1, Some(failure1))
-  private val statusWithOnlyFailure1 =
-    Failed(failure1)
+  private val errorResponse2 =
+    ErrorResponse("abc", "def")
   private val notInQueueFailureMessageCoordinate1 =
     s"Attempted to signal failure on an " +
       s"operation not in the install queue: $coordinate1"
@@ -461,12 +646,7 @@ object InstallQueueSpec {
   private val alreadyFailedSuccessMessageCoordinate1 =
     s"Attempted to signal success on an " +
       s"operation that has failed: $coordinate1"
-  private val pendingOperation1Coordinate1NoFailure =
-    PendingOperation(coordinate1, operation1, None)
-  private val pendingOperation1Coordinate2NoFailure =
-    PendingOperation(coordinate2, operation1, None)
-  private val pendingOperation1Coordinate1Failure1 =
-    PendingOperation(coordinate1, operation1, Some(failure1))
-  private val pendingOperation1Coordinate5Failure1 =
-    PendingOperation(coordinate5, operation1, Some(failure1))
+  private val universeInstall =
+    UniverseInstall(TestingPackages.MinimalV3ModelV3PackageDefinition)
+
 }
