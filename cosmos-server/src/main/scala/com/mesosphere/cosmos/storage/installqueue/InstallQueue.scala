@@ -61,6 +61,12 @@ final class InstallQueue private(client: CuratorFramework) extends
   (
     packageCoordinate: PackageCoordinate
   ): Future[Option[WithZkStat[PendingOperation]]] = {
+    // this method exists because we need to associate the package coordinate with
+    // the result of getOperationStatus. This is really unreadable when inlined
+    // because there are many layers of maps. While we are at it, we also
+    // convert the OperationStatus to a PendingOperation, since the PendingOperation
+    // already has a PackageCoordinate field. This is nicer than returning a tuple
+    // of PackageCoordinate ond OperationStatus.
     getOperationStatus(packageCoordinate).map { maybeOperationStatus =>
       maybeOperationStatus.flatMap {
         case WithZkStat(stat, Pending(operation, failure)) =>
