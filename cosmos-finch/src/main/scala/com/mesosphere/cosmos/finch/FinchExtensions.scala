@@ -24,9 +24,9 @@ object FinchExtensions {
     base: Endpoint[HNil],
     handler: EndpointHandler[Req, Res]
   )(
-    requestReader: Endpoint[EndpointContext[Req, Res]]
+    requestValidator: Endpoint[EndpointContext[Req, Res]]
   ): Endpoint[Json] = {
-    (base ? requestReader).apply((context: EndpointContext[Req, Res]) => handler(context))
+    (base ? requestValidator).apply((context: EndpointContext[Req, Res]) => handler(context))
   }
 
 }

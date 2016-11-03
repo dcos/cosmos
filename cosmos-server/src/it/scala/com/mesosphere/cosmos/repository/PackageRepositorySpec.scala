@@ -7,15 +7,20 @@ import com.mesosphere.cosmos.rpc.v1.circe.Decoders._
 import com.mesosphere.cosmos.rpc.v1.circe.Encoders._
 import com.mesosphere.cosmos.rpc.v1.model._
 import com.mesosphere.cosmos.test.CosmosIntegrationTestClient._
+import com.mesosphere.cosmos.test.CosmosRequest
 import com.mesosphere.universe.common.circe.Encoders._
 import com.netaporter.uri.Uri
 import com.twitter.finagle.http._
 import io.circe.jawn._
 import io.circe.syntax._
-import io.circe.{Encoder, Json, JsonObject}
+import io.circe.Encoder
+import io.circe.Json
+import io.circe.JsonObject
 import org.scalatest.concurrent.Eventually
 import org.scalatest.prop.TableDrivenPropertyChecks
-import org.scalatest.{AppendedClues, BeforeAndAfter, FreeSpec}
+import org.scalatest.AppendedClues
+import org.scalatest.BeforeAndAfter
+import org.scalatest.FreeSpec
 
 final class PackageRepositorySpec
   extends FreeSpec with BeforeAndAfter with Eventually with AppendedClues {
@@ -313,14 +318,13 @@ object PackageRepositorySpec extends FreeSpec with TableDrivenPropertyChecks {
     val repositoriesBeforeAdd = listRepos()
 
     assertResult(expectedErrorMessage) {
-      val addRequest = PackageRepositoryAddRequest(repository.name, repository.uri)
-      val post = CosmosClient.buildPost(
+      val request = CosmosRequest.post(
         "package/repository/add",
-        addRequest,
+        PackageRepositoryAddRequest(repository.name, repository.uri),
         MediaTypes.PackageRepositoryAddRequest,
         MediaTypes.PackageRepositoryAddResponse
       )
-      val response = CosmosClient(post)
+      val response = CosmosClient.submit(request)
       assertResult(Status.BadRequest)(response.status)
       val Xor.Right(err) = decode[ErrorResponse](response.contentString)
       err.message
@@ -332,12 +336,13 @@ object PackageRepositorySpec extends FreeSpec with TableDrivenPropertyChecks {
   }
 
   private def addRepo(addRequest: PackageRepositoryAddRequest): PackageRepositoryAddResponse  = {
-    val Xor.Right(response) = CosmosClient.callEndpoint[PackageRepositoryAddRequest, PackageRepositoryAddResponse](
+    val request = CosmosRequest.post(
       "package/repository/add",
       addRequest,
       MediaTypes.PackageRepositoryAddRequest,
       MediaTypes.PackageRepositoryAddResponse
     )
+    val Xor.Right(response) = CosmosClient.callEndpoint[PackageRepositoryAddResponse](request)
     response
   }
 
@@ -345,33 +350,34 @@ object PackageRepositorySpec extends FreeSpec with TableDrivenPropertyChecks {
     deleteRequest: PackageRepositoryDeleteRequest,
     status: Status = Status.Ok
   ): Xor[ErrorResponse, PackageRepositoryDeleteResponse]  = {
-    CosmosClient.callEndpoint[PackageRepositoryDeleteRequest, PackageRepositoryDeleteResponse](
+    val request = CosmosRequest.post(
       "package/repository/delete",
       deleteRequest,
       MediaTypes.PackageRepositoryDeleteRequest,
-      MediaTypes.PackageRepositoryDeleteResponse,
-      status
+      MediaTypes.PackageRepositoryDeleteResponse
     )
+    CosmosClient.callEndpoint[PackageRepositoryDeleteResponse](request, status)
   }
 
   private def listRepos(): PackageRepositoryListResponse = {
-    val Xor.Right(response) = CosmosClient.callEndpoint[PackageRepositoryListRequest, PackageRepositoryListResponse](
+    val request = CosmosRequest.post(
       "package/repository/list",
       PackageRepositoryListRequest(),
       MediaTypes.PackageRepositoryListRequest,
       MediaTypes.PackageRepositoryListResponse
     )
+    val Xor.Right(response) = CosmosClient.callEndpoint[PackageRepositoryListResponse](request)
     response
   }
 
   private def searchPackages(req: SearchRequest): Response = {
-    val request = CosmosClient.buildPost(
+    val request = CosmosRequest.post(
       "package/search",
       req,
       MediaTypes.SearchRequest,
       MediaTypes.SearchResponse
     )
-    CosmosClient(request)
+    CosmosClient.submit(request)
   }
 
   private[this] def deleteRequestByName(

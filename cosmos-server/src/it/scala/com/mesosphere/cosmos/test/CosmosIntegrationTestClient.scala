@@ -2,35 +2,35 @@ package com.mesosphere.cosmos.test
 
 import cats.data.Xor
 import com.mesosphere.cosmos._
-import com.mesosphere.cosmos.http.{Authorization, MediaType, RequestSession}
-import com.mesosphere.cosmos.rpc.MediaTypes
-import com.netaporter.uri.Uri
-import com.netaporter.uri.dsl._
-import com.twitter.finagle.{Service, SimpleFilter}
-import com.twitter.finagle.http.RequestConfig.Yes
-import com.twitter.finagle.http._
-import com.twitter.io.Buf
-import com.twitter.util.{Await, Future, Try}
-import io.circe.jawn._
-import io.circe.syntax._
-import io.circe.{Decoder, Encoder}
-import org.scalatest.Matchers
-import org.slf4j.LoggerFactory
-
-import java.util.concurrent.atomic.AtomicInteger
-import com.mesosphere.cosmos.finch.TestingMediaTypes
+import com.mesosphere.cosmos.http.Authorization
+import com.mesosphere.cosmos.http.RequestSession
 import com.mesosphere.cosmos.internal.circe.Decoders._
 import com.mesosphere.cosmos.internal.circe.Encoders._
+import com.mesosphere.cosmos.rpc.MediaTypes
 import com.mesosphere.cosmos.rpc.v1.circe.Decoders._
 import com.mesosphere.cosmos.rpc.v1.circe.Encoders._
 import com.mesosphere.cosmos.rpc.v1.model._
 import com.mesosphere.universe.v3.circe.Decoders._
 import com.mesosphere.universe.v3.model.Repository
 import com.mesosphere.universe.{MediaTypes => UMediaTypes}
+import com.netaporter.uri.Uri
+import com.netaporter.uri.dsl._
+import com.twitter.finagle.Service
+import com.twitter.finagle.SimpleFilter
+import com.twitter.finagle.http._
+import com.twitter.util.Await
+import com.twitter.util.Future
+import com.twitter.util.Try
+import io.circe.Decoder
+import io.circe.jawn._
+import java.util.concurrent.atomic.AtomicInteger
+import org.scalatest.Matchers
+import org.slf4j.Logger
+import org.slf4j.LoggerFactory
 
 object CosmosIntegrationTestClient extends Matchers {
 
-  val adminRouter = {
+  val adminRouter: AdminRouter = {
     val property = dcosUri.name
     val ar = Try {
       Option(System.getProperty(property))
@@ -71,74 +71,20 @@ object CosmosIntegrationTestClient extends Matchers {
   )
 
   object CosmosClient {
-    lazy val logger = LoggerFactory.getLogger("com.mesosphere.cosmos.test.CosmosIntegrationTestClient.CosmosClient")
+    lazy val logger: Logger =
+      LoggerFactory.getLogger("com.mesosphere.cosmos.test.CosmosIntegrationTestClient.CosmosClient")
 
-    val property = "com.mesosphere.cosmos.test.CosmosIntegrationTestClient.CosmosClient.uri"
-    private[this] val client = Try {
-        Option(System.getProperty(property))
-          .getOrElse(throw new AssertionError(s"Missing system property '$property' "))
-      }
-      .flatMap { uri =>
-        Services.httpClient("cosmosIntegrationTestClient", uri, RequestLogging)
-      }
-      .get
-
-    def requestBuilder(endpointPath: String): RequestBuilder[Yes, Nothing] = Session match {
-      case RequestSession(Some(auth)) =>
-        RequestBuilder()
-          .url(s"http://localhost:7070/$endpointPath")
-          .setHeader("Authorization", auth.headerValue)
-      case _ =>
-        RequestBuilder()
-          .url(s"http://localhost:7070/$endpointPath")
+    val uri: String = {
+      val property = "com.mesosphere.cosmos.test.CosmosIntegrationTestClient.CosmosClient.uri"
+      Option(System.getProperty(property))
+        .getOrElse(throw new AssertionError(s"Missing system property '$property' "))
     }
 
-
-    def buildGet(
-      path: String,
-      accept: MediaType
-    ): Request = {
-      requestBuilder(path)
-        .addHeader("Accept", accept.show)
-        .buildGet()
-    }
-
-    def buildPost[Req](
-      path: String,
-      requestBody: Req,
-      contentType: MediaType,
-      accept: MediaType
-    )(implicit encoder: Encoder[Req]): Request = {
-      requestBuilder(path)
-        .addHeader("Content-type", contentType.show)
-        .addHeader("Accept", accept.show)
-        .buildPost(Buf.Utf8(requestBody.asJson.noSpaces))
-    }
-
-    def apply(request: Request): Response = {
-      Await.result(submit(request))
-    }
-
-    def submit(req: Request): Future[Response] = {
-      client(req)
-    }
-
-    def callEndpoint[Req, Res](
-      path: String,
-      requestBody: Req,
-      requestMediaType: MediaType,
-      responseMediaType: MediaType,
-      status: Status = Status.Ok,
-      method: String = "POST"
-    )(implicit decoder: Decoder[Res], encoder: Encoder[Req]): Xor[ErrorResponse, Res] = {
-      val request = method match {
-        case "POST" => buildPost(path, requestBody, requestMediaType, responseMediaType)
-        case "GET" => buildGet(path, responseMediaType)
-        case _ => throw new AssertionError(s"Unexpected HTTP method: $method")
-      }
-
-      val response = CosmosClient(request)
-      assertResult(status)(response.status)
+    def callEndpoint[Res](request: CosmosRequest, expectedStatus: Status = Status.Ok)(implicit
+      decoder: Decoder[Res]
+    ): ErrorResponse Xor Res = {
+      val response = submit(request)
+      assertResult(expectedStatus)(response.status)
 
       if (response.status.code / 100 == 2) {
         decode[Res](response.contentString) match {
@@ -153,96 +99,86 @@ object CosmosIntegrationTestClient extends Matchers {
       }
     }
 
-    def packageList(request: ListRequest = ListRequest()): ListResponse = {
-      val Xor.Right(response) =
-        callEndpoint[ListRequest, ListResponse](
-          "package/list",
-          request,
-          MediaTypes.ListRequest,
-          MediaTypes.ListResponse
-        )
-      response
-    }
-
-    def packageSearch(request: SearchRequest): SearchResponse = {
-      val Xor.Right(response) =
-        callEndpoint[SearchRequest, SearchResponse](
-          "package/search",
-          request,
-          MediaTypes.SearchRequest,
-          MediaTypes.SearchResponse
-        )
+    def packageSearch(requestBody: SearchRequest): SearchResponse = {
+      val request = CosmosRequest.post(
+        "package/search",
+        requestBody,
+        MediaTypes.SearchRequest,
+        MediaTypes.SearchResponse
+      )
+      val Xor.Right(response) = callEndpoint[SearchResponse](request)
       response
     }
 
     def packageStorageRepository: Repository = {
-      val Xor.Right(response: Repository) =
-        callEndpoint[Unit, Repository](
-          "package/storage/repository",
-          (),
-          TestingMediaTypes.any,
-          UMediaTypes.UniverseV3Repository,
-          method = "GET"
-        )
+      val request = CosmosRequest.get(
+        "package/storage/repository",
+        UMediaTypes.UniverseV3Repository
+      )
+      val Xor.Right(response) = callEndpoint[Repository](request)
       response
     }
 
-    def packagePublish(request: PublishRequest): PublishResponse = {
-      val Xor.Right(response: PublishResponse) =
-        callEndpoint[PublishRequest, PublishResponse](
-          "package/publish",
-          request,
-          MediaTypes.PublishRequest,
-          MediaTypes.PublishResponse
-        )
+    def packagePublish(requestBody: PublishRequest): PublishResponse = {
+      val request = CosmosRequest.post(
+        "package/publish",
+        requestBody,
+        MediaTypes.PublishRequest,
+        MediaTypes.PublishResponse
+      )
+      val Xor.Right(response) = callEndpoint[PublishResponse](request)
       response
     }
 
-    def packageRepositoryAdd(request: PackageRepositoryAddRequest): PackageRepositoryAddResponse = {
-      val Xor.Right(response: PackageRepositoryAddResponse) =
-        callEndpoint[PackageRepositoryAddRequest, PackageRepositoryAddResponse](
-          "package/repository/add",
-          request,
-          MediaTypes.PackageRepositoryAddRequest,
-          MediaTypes.PackageRepositoryAddResponse
-        )
+    def packageRepositoryAdd(requestBody: PackageRepositoryAddRequest): PackageRepositoryAddResponse = {
+      val request = CosmosRequest.post(
+        "package/repository/add",
+        requestBody,
+        MediaTypes.PackageRepositoryAddRequest,
+        MediaTypes.PackageRepositoryAddResponse
+      )
+      val Xor.Right(response) = callEndpoint[PackageRepositoryAddResponse](request)
       response
     }
 
-    def packageRepositoryDelete(request: PackageRepositoryDeleteRequest): PackageRepositoryDeleteResponse = {
-      val Xor.Right(response: PackageRepositoryDeleteResponse) =
-        callEndpoint[PackageRepositoryDeleteRequest, PackageRepositoryDeleteResponse](
-          "package/repository/delete",
-          request,
-          MediaTypes.PackageRepositoryDeleteRequest,
-          MediaTypes.PackageRepositoryDeleteResponse
-        )
+    def packageRepositoryDelete(requestBody: PackageRepositoryDeleteRequest): PackageRepositoryDeleteResponse = {
+      val request = CosmosRequest.post(
+        "package/repository/delete",
+        requestBody,
+        MediaTypes.PackageRepositoryDeleteRequest,
+        MediaTypes.PackageRepositoryDeleteResponse
+      )
+      val Xor.Right(response) = callEndpoint[PackageRepositoryDeleteResponse](request)
       response
     }
 
-    def packageInstall(request: InstallRequest): InstallResponse = {
-      val Xor.Right(response: InstallResponse) =
-        callEndpoint[InstallRequest, InstallResponse](
-          "package/install",
-          request,
-          MediaTypes.InstallRequest,
-          MediaTypes.V1InstallResponse
-        )
-      response
+    /** Ensures that we create Finagle requests correctly.
+      *
+      * Specifically, prevents confusion around the `uri` parameter of
+      * [[com.twitter.finagle.http.Request.apply()]], which should be the relative path of the
+      * endpoint, and not the full HTTP URI.
+      *
+      * It also includes the Authorization header if provided by configuration.
+      */
+    def submit(req: CosmosRequest): Response = {
+      val withPath = RequestBuilder().url(s"$uri/${req.path}")
+      val withAuth = Session.authorization.fold(withPath) { auth =>
+        withPath.setHeader("Authorization", auth.headerValue)
+      }
+
+      val withContentType = req.contentType.fold(withAuth)(withAuth.addHeader("Content-Type", _))
+      val withAccept = req.accept.fold(withContentType)(withContentType.addHeader("Accept", _))
+      val finagleReq = withAccept.build(req.method, req.body)
+
+      Await.result(client(finagleReq))
     }
 
-    def packageUninstall(requestuest: UninstallRequest): UninstallResponse = {
-      val Xor.Right(response: UninstallResponse) =
-        callEndpoint[UninstallRequest, UninstallResponse](
-          "package/uninstall",
-          requestuest,
-          MediaTypes.UninstallRequest,
-          MediaTypes.UninstallResponse
-        )
-      response
+    // Do not relax the visibility on this -- use `submit()` instead; see its Scaladoc for why
+    private[this] val client = {
+      Services.httpClient("cosmosIntegrationTestClient", uri, RequestLogging).get
     }
 
-    private[cosmos] object RequestLogging extends SimpleFilter[Request, Response] {
+    private[this] object RequestLogging extends SimpleFilter[Request, Response] {
       val counter = new AtomicInteger()
       override def apply(req: Request, service: Service[Request, Response]): Future[Response] = {
         val c = counter.getAndIncrement
@@ -255,7 +191,7 @@ object CosmosIntegrationTestClient extends Matchers {
 
       private[this] def fmtHeaders(h: HeaderMap): String = {
         h.map {
-          case ("Authorization", v) => s"Authorization: ****"
+          case ("Authorization", _) => s"Authorization: ****"
           case (k, v) => s"$k: $v"
         } mkString " "
       }

@@ -7,24 +7,34 @@ import com.mesosphere.cosmos.repository.DefaultRepositories
 import com.mesosphere.cosmos.rpc.MediaTypes
 import com.mesosphere.cosmos.rpc.v1.circe.Decoders._
 import com.mesosphere.cosmos.rpc.v1.circe.Encoders._
-import com.mesosphere.cosmos.rpc.v1.model.{ErrorResponse, InstallRequest, InstallResponse}
+import com.mesosphere.cosmos.rpc.v1.model.ErrorResponse
+import com.mesosphere.cosmos.rpc.v1.model.InstallRequest
+import com.mesosphere.cosmos.rpc.v1.model.InstallResponse
 import com.mesosphere.cosmos.rpc.v2.circe.Decoders._
 import com.mesosphere.cosmos.test.CosmosIntegrationTestClient
+import com.mesosphere.cosmos.test.CosmosRequest
 import com.mesosphere.cosmos.thirdparty.marathon.circe.Encoders._
 import com.mesosphere.cosmos.thirdparty.marathon.model._
 import com.mesosphere.universe
-import com.mesosphere.universe.v2.model.{PackageDetails, PackageDetailsVersion, PackageFiles, PackagingVersion}
+import com.mesosphere.universe.v2.model.PackageDetails
+import com.mesosphere.universe.v2.model.PackageDetailsVersion
+import com.mesosphere.universe.v2.model.PackageFiles
+import com.mesosphere.universe.v2.model.PackagingVersion
 import com.netaporter.uri.Uri
 import com.twitter.finagle.http._
-import com.twitter.io.{Buf, Charsets}
-import com.twitter.util.{Await, Future}
+import com.twitter.io.Charsets
+import com.twitter.util.Await
+import com.twitter.util.Future
 import io.circe.jawn._
 import io.circe.syntax._
-import io.circe.{Json, JsonObject}
+import io.circe.Json
+import io.circe.JsonObject
+import java.util.Base64
+import java.util.UUID
 import org.scalatest.prop.TableDrivenPropertyChecks
-import org.scalatest.{BeforeAndAfterAll, FreeSpec, Matchers}
-
-import java.util.{Base64, UUID}
+import org.scalatest.BeforeAndAfterAll
+import org.scalatest.FreeSpec
+import org.scalatest.Matchers
 
 final class PackageInstallIntegrationSpec extends FreeSpec with BeforeAndAfterAll {
 
@@ -195,12 +205,13 @@ final class PackageInstallIntegrationSpec extends FreeSpec with BeforeAndAfterAl
 
       val installRequest = InstallRequest("enterprise-security-cli")
 
-      val request = CosmosClient.requestBuilder("package/install")
-        .addHeader("Content-Type", MediaTypes.InstallRequest.show)
-        .addHeader("Accept", MediaTypes.V2InstallResponse.show)
-        .buildPost(Buf.Utf8(installRequest.asJson.noSpaces))
-
-      val response = CosmosClient(request)
+      val request = CosmosRequest.post(
+        "package/install",
+        installRequest,
+        MediaTypes.InstallRequest,
+        MediaTypes.V2InstallResponse
+      )
+      val response = CosmosClient.submit(request)
 
       assertResult(Status.Ok)(response.status)
       assertResult(MediaTypes.V2InstallResponse.show)(response.contentType.get)
@@ -270,11 +281,13 @@ final class PackageInstallIntegrationSpec extends FreeSpec with BeforeAndAfterAl
   private[this] def installPackage(
     installRequest: InstallRequest
   ): Response = {
-    val request = CosmosClient.requestBuilder("package/install")
-      .addHeader("Content-Type", MediaTypes.InstallRequest.show)
-      .addHeader("Accept", MediaTypes.V1InstallResponse.show)
-      .buildPost(Buf.Utf8(installRequest.asJson.noSpaces))
-    CosmosClient(request)
+    val request = CosmosRequest.post(
+      "package/install",
+      installRequest,
+      MediaTypes.InstallRequest,
+      MediaTypes.V1InstallResponse
+    )
+    CosmosClient.submit(request)
   }
 
 }

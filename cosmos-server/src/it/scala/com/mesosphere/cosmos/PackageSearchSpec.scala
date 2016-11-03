@@ -4,13 +4,14 @@ import cats.data.Xor.Right
 import com.mesosphere.cosmos.rpc.MediaTypes
 import com.mesosphere.cosmos.rpc.v1.circe.Decoders._
 import com.mesosphere.cosmos.rpc.v1.circe.Encoders._
-import com.mesosphere.cosmos.rpc.v1.model.{SearchRequest, SearchResponse, SearchResult}
+import com.mesosphere.cosmos.rpc.v1.model.SearchRequest
+import com.mesosphere.cosmos.rpc.v1.model.SearchResponse
+import com.mesosphere.cosmos.rpc.v1.model.SearchResult
 import com.mesosphere.cosmos.test.CosmosIntegrationTestClient.CosmosClient
+import com.mesosphere.cosmos.test.CosmosRequest
 import com.mesosphere.universe
 import com.twitter.finagle.http._
-import com.twitter.io.Buf
 import io.circe.jawn._
-import io.circe.syntax._
 import org.scalatest.FreeSpec
 import org.scalatest.prop.TableDrivenPropertyChecks
 
@@ -45,11 +46,14 @@ final class PackageSearchSpec extends FreeSpec {
     status: Status,
     expectedResponse: SearchResponse
   ): Unit = {
-    val request = CosmosClient.requestBuilder("package/search")
-      .addHeader("Content-Type", MediaTypes.SearchRequest.show)
-      .addHeader("Accept", MediaTypes.SearchResponse.show)
-      .buildPost(Buf.Utf8(SearchRequest(Some(query)).asJson.noSpaces))
-    val response = CosmosClient(request)
+    val request = CosmosRequest.post(
+      "package/search",
+      SearchRequest(Some(query)),
+      MediaTypes.SearchRequest,
+      MediaTypes.SearchResponse
+    )
+    val response = CosmosClient.submit(request)
+
     assertResult(status)(response.status)
     val Right(actualResponse) = decode[SearchResponse](response.contentString)
     assertResult(expectedResponse)(actualResponse)
