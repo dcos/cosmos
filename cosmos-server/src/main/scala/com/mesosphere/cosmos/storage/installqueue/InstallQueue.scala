@@ -50,7 +50,7 @@ final class InstallQueue private(client: CuratorFramework) extends
           // We return the earliest modified pending operations as
           // determined by the ZooKeeper mzxid. See
           // https://zookeeper.apache.org/doc/r3.2.2/zookeeperProgrammers.html#sc_timeInZk
-          // for more information
+          // for more information.
           Some(pendingOperations.minBy(_.stat.getMzxid).value)
         }
       }
@@ -66,7 +66,7 @@ final class InstallQueue private(client: CuratorFramework) extends
     // because there are many layers of maps. While we are at it, we also
     // convert the OperationStatus to a PendingOperation, since the PendingOperation
     // already has a PackageCoordinate field. This is nicer than returning a tuple
-    // of PackageCoordinate ond OperationStatus.
+    // of PackageCoordinate and OperationStatus.
     getOperationStatus(packageCoordinate).map { maybeOperationStatus =>
       maybeOperationStatus.flatMap {
         case WithZkStat(stat, Pending(operation, failure)) =>
