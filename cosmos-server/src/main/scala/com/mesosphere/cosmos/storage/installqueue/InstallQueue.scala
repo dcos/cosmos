@@ -9,6 +9,8 @@ import com.mesosphere.cosmos.storage.v1.circe.MediaTypedDecoders._
 import com.mesosphere.cosmos.storage.v1.circe.MediaTypedEncoders._
 import com.mesosphere.universe.bijection.BijectionUtils
 import com.twitter.bijection.Conversion.asMethod
+import com.twitter.finagle.stats.Stat.timeFuture
+import com.twitter.finagle.stats.StatsReceiver
 import com.twitter.util.Future
 import com.twitter.util.Promise
 import com.twitter.util.Return
@@ -24,10 +26,15 @@ import org.apache.zookeeper.KeeperException
 import org.apache.zookeeper.data.Stat
 import scala.collection.JavaConversions._
 
-final class InstallQueue private(client: CuratorFramework) extends
-  ProcessorView with ProducerView with ReaderView with AutoCloseable {
+final class InstallQueue private(
+  client: CuratorFramework
+)(
+  implicit statsReceiver: StatsReceiver
+) extends ProcessorView with ProducerView with ReaderView with AutoCloseable {
 
   import InstallQueue._
+
+  private[this] val stats = statsReceiver.scope("InstallQueue")
 
   private[this] val operationStatusCache = new TreeCache(client, installQueuePath)
 
@@ -41,17 +48,19 @@ final class InstallQueue private(client: CuratorFramework) extends
   }
 
   override def next(): Future[Option[PendingOperation]] = {
-    getAllCoordinates.flatMap { coordinates =>
-      Future.collect(coordinates.map(getOperationIfPending)).map { operationsMaybePending =>
-        val pendingOperations = operationsMaybePending.flatten
-        if (pendingOperations.isEmpty) {
-          None
-        } else {
-          // We return the earliest modified pending operations as
-          // determined by the ZooKeeper mzxid. See
-          // https://zookeeper.apache.org/doc/r3.2.2/zookeeperProgrammers.html#sc_timeInZk
-          // for more information.
-          Some(pendingOperations.minBy(_.stat.getMzxid).value)
+    timeFuture(stats.stat("next")) {
+      getAllCoordinates.flatMap { coordinates =>
+        Future.collect(coordinates.map(getOperationIfPending)).map { operationsMaybePending =>
+          val pendingOperations = operationsMaybePending.flatten
+          if (pendingOperations.isEmpty) {
+            None
+          } else {
+            // We return the earliest modified pending operations as
+            // determined by the ZooKeeper mzxid. See
+            // https://zookeeper.apache.org/doc/r3.2.2/zookeeperProgrammers.html#sc_timeInZk
+            // for more information.
+            Some(pendingOperations.minBy(_.stat.getMzxid).value)
+          }
         }
       }
     }
@@ -107,23 +116,25 @@ final class InstallQueue private(client: CuratorFramework) extends
     packageCoordinate: PackageCoordinate,
     error: ErrorResponse
   ): Future[Unit] = {
-    getOperationStatus(packageCoordinate).flatMap {
-      case None =>
-        val message =
-          "Attempted to signal failure on an " +
-            s"operation not in the install queue: $packageCoordinate"
-        Future.exception(InstallQueueError(message))
-      case Some(WithZkStat(_, Failed(_))) =>
-        val message =
-          "Attempted to signal failure on an " +
-            s"operation that has failed: $packageCoordinate"
-        Future.exception(InstallQueueError(message))
-      case Some(WithZkStat(stat, Pending(operation, _))) =>
-        setOperationStatus(
-          packageCoordinate,
-          Failed(OperationFailure(operation, error)),
-          stat.getVersion
-        )
+    timeFuture(stats.stat("failure")) {
+      getOperationStatus(packageCoordinate).flatMap {
+        case None =>
+          val message =
+            "Attempted to signal failure on an " +
+              s"operation not in the install queue: $packageCoordinate"
+          Future.exception(InstallQueueError(message))
+        case Some(WithZkStat(_, Failed(_))) =>
+          val message =
+            "Attempted to signal failure on an " +
+              s"operation that has failed: $packageCoordinate"
+          Future.exception(InstallQueueError(message))
+        case Some(WithZkStat(stat, Pending(operation, _))) =>
+          setOperationStatus(
+            packageCoordinate,
+            Failed(OperationFailure(operation, error)),
+            stat.getVersion
+          )
+      }
     }
   }
 
@@ -180,19 +191,21 @@ final class InstallQueue private(client: CuratorFramework) extends
   (
     packageCoordinate: PackageCoordinate
   ): Future[Unit] = {
-    getOperationStatus(packageCoordinate).flatMap {
-      case None =>
-        val message =
-          "Attempted to signal success on an " +
-            s"operation not in the install queue: $packageCoordinate"
-        Future.exception(InstallQueueError(message))
-      case Some(WithZkStat(_, Failed(_))) =>
-        val message =
-          "Attempted to signal success on an " +
-            s"operation that has failed: $packageCoordinate"
-        Future.exception(InstallQueueError(message))
-      case Some(WithZkStat(stat, Pending(operation, _))) =>
-        deleteOperationStatus(packageCoordinate, stat.getVersion)
+    timeFuture(stats.stat("success")) {
+      getOperationStatus(packageCoordinate).flatMap {
+        case None =>
+          val message =
+            "Attempted to signal success on an " +
+              s"operation not in the install queue: $packageCoordinate"
+          Future.exception(InstallQueueError(message))
+        case Some(WithZkStat(_, Failed(_))) =>
+          val message =
+            "Attempted to signal success on an " +
+              s"operation that has failed: $packageCoordinate"
+          Future.exception(InstallQueueError(message))
+        case Some(WithZkStat(stat, Pending(operation, _))) =>
+          deleteOperationStatus(packageCoordinate, stat.getVersion)
+      }
     }
   }
 
@@ -220,12 +233,14 @@ final class InstallQueue private(client: CuratorFramework) extends
     packageCoordinate: PackageCoordinate,
     operation: Operation
   ): Future[AddResult] = {
-    createOperationStatus(
-      packageCoordinate,
-      Pending(operation, None)
-    ).rescue {
-      case e: KeeperException.NodeExistsException =>
-        setOperationInOperationStatus(packageCoordinate, operation)
+    timeFuture(stats.stat("add")) {
+      createOperationStatus(
+        packageCoordinate,
+        Pending(operation, None)
+      ).rescue {
+        case e: KeeperException.NodeExistsException =>
+          setOperationInOperationStatus(packageCoordinate, operation)
+      }
     }
   }
 
@@ -297,33 +312,36 @@ final class InstallQueue private(client: CuratorFramework) extends
   }
 
   override def viewStatus(): Future[Map[PackageCoordinate, OperationStatus]] = {
-    val operationStatus =
-      Option(operationStatusCache
-        .getCurrentChildren(installQueuePath))
-        .getOrElse(new java.util.HashMap[String, ChildData]())
-        .toMap
-        .map { case (encodedPackageCoordinate, childData) =>
-          BijectionUtils.scalaTryToTwitterTry(
-            encodedPackageCoordinate.as[scala.util.Try[PackageCoordinate]]).flatMap { coordinate =>
-            Try(Envelope.decodeData[OperationStatus](childData.getData)).map { operationStatus =>
-              coordinate -> operationStatus
+    timeFuture(stats.stat("viewStatus")) {
+      val operationStatus =
+        Option(operationStatusCache
+          .getCurrentChildren(installQueuePath))
+          .getOrElse(new java.util.HashMap[String, ChildData]())
+          .toMap
+          .map { case (encodedPackageCoordinate, childData) =>
+            BijectionUtils.scalaTryToTwitterTry(
+              encodedPackageCoordinate.as[scala.util.Try[PackageCoordinate]]).flatMap { coordinate =>
+              Try(Envelope.decodeData[OperationStatus](childData.getData)).map { operationStatus =>
+                coordinate -> operationStatus
+              }
             }
           }
-        }
-        .toSeq
-    Future.const(Try.collect(operationStatus).map(_.toMap))
+          .toSeq
+      Future.const(Try.collect(operationStatus).map(_.toMap))
+    }
   }
 
 }
 
 object InstallQueue {
+
   val installQueuePath = "/packages"
 
   def statusPath(packageCoordinate: PackageCoordinate): String = {
     s"$installQueuePath/${packageCoordinate.as[String]}"
   }
 
-  def apply(client: CuratorFramework): InstallQueue = {
+  def apply(client: CuratorFramework)(implicit statsReceiver: StatsReceiver): InstallQueue = {
     val installQueue = new InstallQueue(client)
     installQueue.start()
     installQueue
