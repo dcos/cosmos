@@ -56,7 +56,26 @@ object Decoders {
   implicit val decodePendingOperation: Decoder[PendingOperation] =
     deriveDecoder[PendingOperation]
 
-  implicit val decodeOperationStatus: Decoder[OperationStatus] =
-    deriveDecoder[OperationStatus]
+  implicit val decodePending: Decoder[Pending] =
+    deriveDecoder[Pending]
+
+  implicit val decodeFailed: Decoder[Failed] =
+    deriveDecoder[Failed]
+
+  implicit val decodeOperationStatus: Decoder[OperationStatus] = {
+    val PendingName = classOf[Pending].getSimpleName
+    val FailedName = classOf[Failed].getSimpleName
+
+    Decoder.instance { (hc: HCursor) =>
+      hc.downField("type").as[String].flatMap {
+        case PendingName => hc.as[Pending]
+        case FailedName => hc.as[Failed]
+        case tp: String => Xor.left(DecodingFailure(
+          s"Encountered unknown type [$tp]" +
+            " while trying to decode OperationStatus", hc.history)
+        )
+      }
+    }
+  }
 
 }

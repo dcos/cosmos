@@ -81,8 +81,23 @@ object Encoders extends LowPriorityImplicits {
   implicit val encodePendingOperation: Encoder[PendingOperation] =
     deriveEncoder[PendingOperation]
 
-  implicit val encodeOperationStatus: Encoder[OperationStatus] =
-    deriveEncoder[OperationStatus]
+  implicit val encodePending: Encoder[Pending] =
+    deriveEncoder[Pending]
+
+  implicit val encodeFailed: Encoder[Failed] =
+    deriveEncoder[Failed]
+
+  implicit val encodeOperationStatus: Encoder[OperationStatus] = {
+    Encoder.instance { operationStatus =>
+      val (json: Json, subclass: String) = operationStatus match {
+        case pending: Pending =>
+          (pending.asJson, pending.getClass.getSimpleName)
+        case failed: Failed =>
+          (failed.asJson, failed.getClass.getSimpleName)
+      }
+      json.mapObject(_.add("type", subclass.asJson))
+    }
+  }
 
   implicit val exceptionEncoder: Encoder[Exception] = {
     Encoder.instance { e => exceptionErrorResponse(e).asJson }
@@ -330,6 +345,7 @@ object Encoders extends LowPriorityImplicits {
     case ServiceMarathonTemplateNotFound(name, PackageDefinition.Version(version)) =>
       s"Package: [$name] version: [$version] does not have a Marathon template defined and can not be rendered"
     case EnvelopeError(msg) => msg
+    case InstallQueueError(msg) => msg
   }
   // scalastyle:on cyclomatic.complexity method.length
 
