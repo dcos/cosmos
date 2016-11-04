@@ -220,4 +220,6 @@ case class ServiceMarathonTemplateNotFound(packageName: String, packageVersion: 
 
 case class EnvelopeError(msg: String) extends CosmosError
 
+case class InstallQueueError(msg: String) extends CosmosError
+
 // scalastyle:on number.of.types
