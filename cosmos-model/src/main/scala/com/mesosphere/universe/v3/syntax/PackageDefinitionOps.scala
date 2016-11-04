@@ -1,11 +1,18 @@
 package com.mesosphere.universe.v3.syntax
 
-import com.mesosphere.universe
+import com.mesosphere.cosmos.rpc.v1.model.PackageCoordinate
 import com.mesosphere.universe.v3.model.PackageDefinition.Tag
 import com.mesosphere.universe.v3.model._
 import io.circe.JsonObject
 
 final class PackageDefinitionOps(val pkgDef: PackageDefinition) extends AnyVal {
+
+  def packageCoordinate: PackageCoordinate = pkgDef match {
+    case v2: V2Package =>
+      PackageCoordinate(v2.name, v2.version)
+    case v3: V3Package =>
+      PackageCoordinate(v3.name, v3.version)
+  }
 
   def packagingVersion: PackagingVersion = pkgDef match {
     case v2: V2Package => v2.packagingVersion
