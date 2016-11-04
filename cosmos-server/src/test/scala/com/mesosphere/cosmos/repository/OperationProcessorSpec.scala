@@ -95,14 +95,13 @@ final class OperationProcessorSpec extends FreeSpec with Matchers {
   }
 
   "Test failure is called on failing install" in {
-    val operation = Install(Uri.parse("http://localhost/some.dcos"), pkg)
     val processorViewMock = mock(classOf[ProcessorView])
     when(processorViewMock.next()).thenReturn(
       Future.value(
         Some(
           PendingOperation(
             packageCoordinate,
-            operation,
+            Install(Uri.parse("http://localhost/some.dcos"), pkg),
             None
           )
         )
@@ -111,7 +110,6 @@ final class OperationProcessorSpec extends FreeSpec with Matchers {
     when(
       processorViewMock.failure(
         packageCoordinate,
-        operation,
         exceptionErrorResponse(installerError)
       )
     ).thenReturn(Future.Done)
@@ -127,14 +125,13 @@ final class OperationProcessorSpec extends FreeSpec with Matchers {
   }
 
   "Test failure is called on failing universe install" in {
-    val operation = UniverseInstall(pkg)
     val processorViewMock = mock(classOf[ProcessorView])
     when(processorViewMock.next()).thenReturn(
       Future.value(
         Some(
           PendingOperation(
             packageCoordinate,
-            operation,
+            UniverseInstall(pkg),
             None
           )
         )
@@ -143,7 +140,6 @@ final class OperationProcessorSpec extends FreeSpec with Matchers {
     when(
       processorViewMock.failure(
         packageCoordinate,
-        operation,
         exceptionErrorResponse(universeInstallerError)
       )
     ).thenReturn(Future.Done)
@@ -159,14 +155,13 @@ final class OperationProcessorSpec extends FreeSpec with Matchers {
   }
 
   "Test failure is called on failing uninstall" in {
-    val operation = Uninstall(Some(pkg))
     val processorViewMock = mock(classOf[ProcessorView])
     when(processorViewMock.next()).thenReturn(
       Future.value(
         Some(
           PendingOperation(
             packageCoordinate,
-            operation,
+            Uninstall(Some(pkg)),
             None
           )
         )
@@ -175,7 +170,6 @@ final class OperationProcessorSpec extends FreeSpec with Matchers {
     when(
       processorViewMock.failure(
         packageCoordinate,
-        operation,
         exceptionErrorResponse(uninstallerError)
       )
     ).thenReturn(Future.Done)

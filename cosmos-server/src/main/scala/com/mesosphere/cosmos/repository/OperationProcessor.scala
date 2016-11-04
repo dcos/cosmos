@@ -26,7 +26,6 @@ final class OperationProcessor private (
           case Throw(err) =>
             processorView.failure(
               pending.packageCoordinate,
-              pending.operation,
               exceptionErrorResponse(err)
             )
         }
