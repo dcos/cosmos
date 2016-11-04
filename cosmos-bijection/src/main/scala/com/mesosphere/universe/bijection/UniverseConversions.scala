@@ -92,6 +92,31 @@ object UniverseConversions {
       universe.v2.model.ReleaseVersion]
   }
 
+  implicit val injection: Conversion[universe.v3.model.Metadata, universe.v3.model.V3Package] =
+    Conversion.fromFunction { (metadata: universe.v3.model.Metadata) =>
+      universe.v3.model.V3Package(
+        packagingVersion=metadata.packagingVersion,
+        name=metadata.name,
+        version=metadata.version,
+        releaseVersion=universe.v3.model.PackageDefinition.ReleaseVersion(0).get, // TODO: use timestamp
+        maintainer=metadata.maintainer,
+        description=metadata.description,
+        tags=metadata.tags,
+        selected=None,
+        scm=metadata.scm,
+        website=metadata.website,
+        framework=metadata.framework,
+        preInstallNotes=metadata.preInstallNotes,
+        postInstallNotes=metadata.postInstallNotes,
+        postUninstallNotes=metadata.postUninstallNotes,
+        licenses=metadata.licenses,
+        minDcosReleaseVersion=metadata.minDcosReleaseVersion,
+        marathon=metadata.marathon,
+        resource=metadata.resource,
+        config=metadata.config,
+        command=None
+      )
+    }
 
   implicit val v3PackageDefinitionToV2PackageDetails:
     Conversion[universe.v3.model.PackageDefinition, universe.v2.model.PackageDetails] = {

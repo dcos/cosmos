@@ -15,7 +15,9 @@ import com.mesosphere.universe.v3.syntax.PackageDefinitionOps._
 import com.twitter.bijection.Conversion.asMethod
 import com.twitter.io.Buf.ByteArray
 import com.twitter.io.Reader
+import com.twitter.io.StreamIO
 import com.twitter.util.Future
+import com.twitter.util.FuturePool
 import io.circe.syntax._
 import java.io.ByteArrayInputStream
 import java.io.InputStream
@@ -23,6 +25,8 @@ import java.nio.charset.StandardCharsets
 import scala.util.Try
 
 final class PackageObjectStorage private (objectStorage: ObjectStorage) {
+  private[this] val pool = FuturePool.interruptibleUnboundedPool
+
   def writePackageDefinition(
     packageDefinition: universe.v3.model.PackageDefinition
   ): Future[Unit] = {
@@ -54,17 +58,17 @@ final class PackageObjectStorage private (objectStorage: ObjectStorage) {
     val path = s"${packageCoordinate.as[String]}/metadata.json"
 
     objectStorage.read(path).flatMap {
-      case Some((mediaType, reader)) =>
-        Reader.readAll(reader).map { buffer =>
+      case Some((mediaType, inputStream)) =>
+        pool {
           Some(
             decode[universe.v3.model.PackageDefinition](
               new String(
-                ByteArray.Owned.extract(buffer),
+                StreamIO.buffer(inputStream).toByteArray,
                 StandardCharsets.UTF_8
               )
             )
           )
-        }
+        }.ensure(inputStream.close())
       case None =>
         Future.value(None)
     }

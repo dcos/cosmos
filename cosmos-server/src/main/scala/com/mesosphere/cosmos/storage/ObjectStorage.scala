@@ -3,7 +3,6 @@ package com.mesosphere.cosmos.storage
 import com.mesosphere.cosmos.http.MediaType
 import com.mesosphere.cosmos.http.MediaTypes
 import com.netaporter.uri.Uri
-import com.twitter.io.Reader
 import com.twitter.util.Future
 import java.io.InputStream
 
@@ -42,7 +41,7 @@ trait ObjectStorage {
   /**
    * Reads an object from the store. If the file doesn't exists, None is returned.
    */
-  def read(name: String): Future[Option[(MediaType, Reader)]]
+  def read(name: String): Future[Option[(MediaType, InputStream)]]
 
   /**
    * Deletes the specified object. If attempting to delete an object that does not exist,

@@ -53,4 +53,5 @@ object Encoders {
   implicit val encodeV3Package: Encoder[V3Package] = deriveEncoder[V3Package]
   implicit val encodeV3Resource: Encoder[V3Resource] = deriveEncoder[V3Resource]
 
+  implicit val encodeMetadata = deriveEncoder[Metadata]
 }

@@ -88,6 +88,8 @@ object Decoders {
   implicit val decodeV3V2PackagingVersion: Decoder[V2PackagingVersion.type] = packagingVersionSubclassToString(V2PackagingVersion)
   implicit val decodeV3V3PackagingVersion: Decoder[V3PackagingVersion.type] = packagingVersionSubclassToString(V3PackagingVersion)
 
+  implicit val decodeMetadata = deriveDecoder[Metadata]
+
   private[this] def packagingVersionSubclassToString[V <: PackagingVersion](expected: V): Decoder[V] =
     Decoder.instance { (c: HCursor) =>
       c.as[String].flatMap {
