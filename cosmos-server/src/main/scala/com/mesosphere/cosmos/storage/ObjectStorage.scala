@@ -1,13 +1,11 @@
 package com.mesosphere.cosmos.storage
 
-import java.io.InputStream
-
+import com.mesosphere.cosmos.http.MediaType
+import com.mesosphere.cosmos.http.MediaTypes
 import com.netaporter.uri.Uri
 import com.twitter.io.Reader
 import com.twitter.util.Future
-
-import com.mesosphere.cosmos.http.MediaType
-import com.mesosphere.cosmos.http.MediaTypes
+import java.io.InputStream
 
 /**
  * General interface for storing and retrieving objects
