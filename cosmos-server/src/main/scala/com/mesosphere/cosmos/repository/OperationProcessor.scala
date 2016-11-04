@@ -6,22 +6,16 @@ import com.mesosphere.cosmos.storage.installqueue.PendingOperation
 import com.mesosphere.cosmos.storage.installqueue.ProcessorView
 import com.mesosphere.cosmos.storage.installqueue.Uninstall
 import com.mesosphere.cosmos.storage.installqueue.UniverseInstall
-import com.twitter.util.Duration
-import com.twitter.util.Future
 import com.twitter.util.Future
 import com.twitter.util.Return
 import com.twitter.util.Throw
-import com.twitter.util.Timer
 
 final class OperationProcessor private (
   processorView: ProcessorView,
   installer: Installer,
   universeInstaller: UniverseInstaller,
   uninstaller: Uninstaller
-)(
-  implicit timer: Timer
 ) {
-  private[this] val logger = org.slf4j.LoggerFactory.getLogger(getClass)
 
   def apply(): Future[Unit] = {
     processorView.next().flatMap {
@@ -37,9 +31,8 @@ final class OperationProcessor private (
             )
         }
       case None =>
-        val duration = Duration.fromSeconds(10) // scalastyle:ignore magic.number
-        logger.info(s"Nothing to do in the processor waiting for $duration")
-        Future.sleep(duration).before(Future.Done)
+        // Nothing to do. Just return.
+        Future.Done
     }
   }
 
@@ -58,8 +51,6 @@ object OperationProcessor {
     installer: Installer,
     universeInstaller: UniverseInstaller,
     uninstaller: Uninstaller
-  )(
-    implicit timer: Timer
   ): OperationProcessor = {
     new OperationProcessor(processorView, installer, universeInstaller, uninstaller)
   }

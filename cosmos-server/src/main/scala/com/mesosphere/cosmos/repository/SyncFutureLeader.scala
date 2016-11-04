@@ -1,7 +1,9 @@
 package com.mesosphere.cosmos.repository
 
 import com.twitter.util.Await
+import com.twitter.util.Duration
 import com.twitter.util.Future
+import com.twitter.util.Timer
 import org.apache.curator.framework.CuratorFramework
 import org.apache.curator.framework.recipes.leader.CancelLeadershipException
 import org.apache.curator.framework.recipes.leader.LeaderSelector
@@ -11,6 +13,8 @@ import org.apache.curator.framework.state.ConnectionState
 final class SyncFutureLeader private (
   curatorClient: CuratorFramework,
   processor: () => Future[Unit]
+)(
+  implicit timer: Timer
 ) extends LeaderSelectorListener with AutoCloseable {
   private[this] val logger = org.slf4j.LoggerFactory.getLogger(getClass)
   private[this] val leaderSelector = new LeaderSelector(
@@ -38,8 +42,14 @@ final class SyncFutureLeader private (
          * the same operation, it is very important that this function doesn't
          * block forever. The return Future should try to terminate as soon as
          * possible.
+         *
+         * The following `join` makes it so that we are doing at most one
+         * operation per 10 sec to reduce possible load on ZooKeeper.
          */
-        processor().onFailure { error =>
+        Future.join(
+          Future.sleep(Duration.fromSeconds(10)), // scalastyle:ignore magic.number
+          processor()
+        ).unit.onFailure { error =>
           logger.error(s"Got a failure from the processor", error)
         }
       }
@@ -64,6 +74,8 @@ object SyncFutureLeader {
   def apply(
     curatorClient: CuratorFramework,
     processor: () => Future[Unit]
+  )(
+    implicit timer: Timer
   ): SyncFutureLeader = {
     new SyncFutureLeader(curatorClient, processor)
   }
