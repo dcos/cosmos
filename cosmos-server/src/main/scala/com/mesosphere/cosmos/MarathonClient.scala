@@ -1,14 +1,14 @@
 package com.mesosphere.cosmos
 
+import _root_.io.circe.Json
 import com.mesosphere.cosmos.http.RequestSession
-import com.mesosphere.cosmos.thirdparty.marathon.model.{AppId, MarathonAppResponse, MarathonAppsResponse}
 import com.mesosphere.cosmos.thirdparty.marathon.circe.Decoders._
+import com.mesosphere.cosmos.thirdparty.marathon.model.{AppId, MarathonAppResponse, MarathonAppsResponse}
 import com.netaporter.uri.Uri
 import com.netaporter.uri.dsl._
 import com.twitter.finagle.Service
 import com.twitter.finagle.http._
 import com.twitter.util.Future
-import io.circe.Json
 import org.jboss.netty.handler.codec.http.HttpMethod
 
 class MarathonClient(

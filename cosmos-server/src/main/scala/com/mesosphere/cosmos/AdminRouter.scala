@@ -1,12 +1,12 @@
 package com.mesosphere.cosmos
 
+import _root_.io.circe.Json
 import com.mesosphere.cosmos.http.RequestSession
 import com.mesosphere.cosmos.thirdparty.adminrouter.model.DcosVersion
 import com.mesosphere.cosmos.thirdparty.marathon.model.{AppId, MarathonAppResponse, MarathonAppsResponse}
 import com.mesosphere.cosmos.thirdparty.mesos.master.model._
 import com.twitter.finagle.http._
 import com.twitter.util.Future
-import io.circe.Json
 
 class AdminRouter(
   adminRouterClient: AdminRouterClient,

@@ -1,5 +1,10 @@
 package com.mesosphere.cosmos.repository
 
+import _root_.io.circe.Encoder
+import _root_.io.circe.Json
+import _root_.io.circe.JsonObject
+import _root_.io.circe.jawn._
+import _root_.io.circe.syntax._
 import cats.data.Xor
 import com.mesosphere.cosmos._
 import com.mesosphere.cosmos.rpc.MediaTypes
@@ -11,16 +16,11 @@ import com.mesosphere.cosmos.test.CosmosRequest
 import com.mesosphere.universe.common.circe.Encoders._
 import com.netaporter.uri.Uri
 import com.twitter.finagle.http._
-import io.circe.jawn._
-import io.circe.syntax._
-import io.circe.Encoder
-import io.circe.Json
-import io.circe.JsonObject
-import org.scalatest.concurrent.Eventually
-import org.scalatest.prop.TableDrivenPropertyChecks
 import org.scalatest.AppendedClues
 import org.scalatest.BeforeAndAfter
 import org.scalatest.FreeSpec
+import org.scalatest.concurrent.Eventually
+import org.scalatest.prop.TableDrivenPropertyChecks
 
 final class PackageRepositorySpec
   extends FreeSpec with BeforeAndAfter with Eventually with AppendedClues {

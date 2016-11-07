@@ -1,7 +1,14 @@
 package com.mesosphere.cosmos.test
 
 import cats.data.Xor
-import com.mesosphere.cosmos._
+import com.mesosphere.cosmos.AdminRouter
+import com.mesosphere.cosmos.AdminRouterClient
+import com.mesosphere.cosmos.MarathonClient
+import com.mesosphere.cosmos.MesosMasterClient
+import com.mesosphere.cosmos.Services
+import com.mesosphere.cosmos.Trys
+import com.mesosphere.cosmos.Uris
+import com.mesosphere.cosmos.dcosUri
 import com.mesosphere.cosmos.http.Authorization
 import com.mesosphere.cosmos.http.RequestSession
 import com.mesosphere.cosmos.internal.circe.Decoders._

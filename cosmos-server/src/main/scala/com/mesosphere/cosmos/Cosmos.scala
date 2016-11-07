@@ -1,16 +1,20 @@
 package com.mesosphere.cosmos
 
+import _root_.io.circe.Json
+import _root_.io.finch._
+import _root_.io.finch.circe.dropNullKeys._
+import _root_.io.github.benwhitehead.finch.FinchServer
 import com.mesosphere.cosmos.circe.Encoders._
-import com.mesosphere.cosmos.finch.{EndpointContext, EndpointHandler, RequestValidators}
 import com.mesosphere.cosmos.finch.FinchExtensions._
 import com.mesosphere.cosmos.finch.RequestError
+import com.mesosphere.cosmos.finch.{EndpointContext, EndpointHandler, RequestValidators}
 import com.mesosphere.cosmos.handler._
-import com.mesosphere.cosmos.rpc.MediaTypes
 import com.mesosphere.cosmos.repository.PackageSourcesStorage
 import com.mesosphere.cosmos.repository.UniverseClient
 import com.mesosphere.cosmos.repository.ZkRepositoryList
-import com.mesosphere.cosmos.rpc.v1.circe.MediaTypedRequestDecoders._
+import com.mesosphere.cosmos.rpc.MediaTypes
 import com.mesosphere.cosmos.rpc.v1.circe.MediaTypedEncoders._
+import com.mesosphere.cosmos.rpc.v1.circe.MediaTypedRequestDecoders._
 import com.mesosphere.cosmos.rpc.v2.circe.MediaTypedEncoders._
 import com.mesosphere.cosmos.storage.{InMemoryPackageStorage, PackageStorage}
 import com.mesosphere.universe
@@ -19,10 +23,6 @@ import com.twitter.finagle.Service
 import com.twitter.finagle.http.{Request, Response, Status}
 import com.twitter.finagle.stats.{NullStatsReceiver, StatsReceiver}
 import com.twitter.util.Try
-import io.circe.Json
-import io.finch._
-import io.finch.circe.dropNullKeys._
-import io.github.benwhitehead.finch.FinchServer
 import shapeless.HNil
 
 private[cosmos] final class Cosmos(
@@ -117,14 +117,14 @@ private[cosmos] final class Cosmos(
           stats.counter(s"definedError/${sanitiseClassName(re.getClass)}").incr()
           val output = Output.failure(re, re.status).withContentType(Some(MediaTypes.ErrorResponse.show))
           re.getHeaders.foldLeft(output) { case (out, kv) => out.withHeader(kv) }
-        case fe: io.finch.Error =>
+        case fe: _root_.io.finch.Error =>
           stats.counter(s"finchError/${sanitiseClassName(fe.getClass)}").incr()
           Output.failure(fe, Status.BadRequest).withContentType(Some(MediaTypes.ErrorResponse.show))
-        case e: Exception if !e.isInstanceOf[io.finch.Error] =>
+        case e: Exception if !e.isInstanceOf[_root_.io.finch.Error] =>
           stats.counter(s"unhandledException/${sanitiseClassName(e.getClass)}").incr()
           logger.warn("Unhandled exception: ", e)
           Output.failure(e, Status.InternalServerError).withContentType(Some(MediaTypes.ErrorResponse.show))
-        case t: Throwable if !t.isInstanceOf[io.finch.Error] =>
+        case t: Throwable if !t.isInstanceOf[_root_.io.finch.Error] =>
           stats.counter(s"unhandledThrowable/${sanitiseClassName(t.getClass)}").incr()
           logger.warn("Unhandled throwable: ", t)
           Output.failure(new Exception(t), Status.InternalServerError).withContentType(Some(MediaTypes.ErrorResponse.show))
