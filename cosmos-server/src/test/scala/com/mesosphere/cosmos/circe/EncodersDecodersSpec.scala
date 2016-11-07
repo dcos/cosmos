@@ -2,7 +2,14 @@ package com.mesosphere.cosmos.circe
 
 import cats.data.Xor
 import com.google.common.io.CharStreams
-import com.mesosphere.cosmos._
+import com.mesosphere.cosmos.CirceError
+import com.mesosphere.cosmos.ConcurrentAccess
+import com.mesosphere.cosmos.CosmosError
+import com.mesosphere.cosmos.IncompleteUninstall
+import com.mesosphere.cosmos.PackageFileMissing
+import com.mesosphere.cosmos.RepositoryUriConnection
+import com.mesosphere.cosmos.RepositoryUriSyntax
+import com.mesosphere.cosmos.ServiceUnavailable
 import com.mesosphere.cosmos.http.MediaType
 import com.mesosphere.cosmos.http.MediaTypeSubType
 import com.mesosphere.cosmos.rpc.v1.circe.Decoders._

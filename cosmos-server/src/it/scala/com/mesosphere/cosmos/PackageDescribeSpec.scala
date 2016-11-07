@@ -1,5 +1,8 @@
 package com.mesosphere.cosmos
 
+import _root_.io.circe.Json
+import _root_.io.circe.jawn._
+import _root_.io.circe.syntax._
 import cats.data.Xor
 import cats.data.Xor.Right
 import com.mesosphere.cosmos.rpc.MediaTypes
@@ -17,9 +20,6 @@ import com.mesosphere.cosmos.thirdparty.marathon.model.MarathonAppContainerDocke
 import com.mesosphere.universe.v2.circe.Decoders._
 import com.mesosphere.universe.v2.model._
 import com.twitter.finagle.http._
-import io.circe.Json
-import io.circe.jawn._
-import io.circe.syntax._
 import org.scalatest.FreeSpec
 import org.scalatest.prop.TableDrivenPropertyChecks
 

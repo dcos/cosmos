@@ -1,5 +1,8 @@
 package com.mesosphere.cosmos
 
+import _root_.io.circe.jawn.decode
+import _root_.io.circe.syntax._
+import _root_.io.circe.{Decoder, Encoder, Printer}
 import cats.data.Xor
 import com.mesosphere.cosmos.handler.PackageSearchHandler
 import com.mesosphere.cosmos.repository.PackageCollection
@@ -13,9 +16,6 @@ import com.mesosphere.universe.v2.circe.Encoders._
 import com.mesosphere.universe.v2.model._
 import com.twitter.bijection.Conversion.asMethod
 import com.twitter.util.{Await, Future}
-import io.circe.jawn.decode
-import io.circe.syntax._
-import io.circe.{Decoder, Encoder, Printer}
 import org.mockito.Mockito._
 import org.scalatest.FreeSpec
 import org.scalatest.mock.MockitoSugar

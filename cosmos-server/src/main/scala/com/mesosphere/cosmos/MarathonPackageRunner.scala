@@ -1,12 +1,12 @@
 package com.mesosphere.cosmos
 
+import _root_.io.circe.Json
 import com.mesosphere.cosmos.circe.Decoders.decode
 import com.mesosphere.cosmos.http.RequestSession
 import com.mesosphere.cosmos.thirdparty.marathon.circe.Decoders._
 import com.mesosphere.cosmos.thirdparty.marathon.model.{MarathonApp, MarathonError}
 import com.twitter.finagle.http.Status
 import com.twitter.util.Future
-import io.circe.Json
 import scala.util.Failure
 import scala.util.Success
 import scala.util.Try

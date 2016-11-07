@@ -1,5 +1,6 @@
 package com.mesosphere.cosmos
 
+import _root_.io.circe.jawn._
 import cats.data.Xor.Right
 import com.mesosphere.cosmos.rpc.MediaTypes
 import com.mesosphere.cosmos.rpc.v1.circe.Decoders._
@@ -11,7 +12,6 @@ import com.mesosphere.cosmos.test.CosmosIntegrationTestClient.CosmosClient
 import com.mesosphere.cosmos.test.CosmosRequest
 import com.mesosphere.universe
 import com.twitter.finagle.http._
-import io.circe.jawn._
 import org.scalatest.FreeSpec
 import org.scalatest.prop.TableDrivenPropertyChecks
 

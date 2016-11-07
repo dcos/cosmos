@@ -2,7 +2,19 @@ package com.mesosphere.cosmos.repository
 
 import cats.data.Xor
 import cats.data.Xor.{Left, Right}
-import com.mesosphere.cosmos._
+import com.mesosphere.cosmos.AdminRouter
+import com.mesosphere.cosmos.BuildProperties
+import com.mesosphere.cosmos.GenericHttpError
+import com.mesosphere.cosmos.IndexNotFound
+import com.mesosphere.cosmos.PackageFileMissing
+import com.mesosphere.cosmos.PackageFileNotJson
+import com.mesosphere.cosmos.PackageFileSchemaMismatch
+import com.mesosphere.cosmos.RepositoryUriConnection
+import com.mesosphere.cosmos.RepositoryUriSyntax
+import com.mesosphere.cosmos.UnsupportedContentEncoding
+import com.mesosphere.cosmos.UnsupportedContentType
+import com.mesosphere.cosmos.UnsupportedRedirect
+import com.mesosphere.cosmos.UnsupportedRepositoryVersion
 import com.mesosphere.cosmos.circe.Decoders.decode
 import com.mesosphere.cosmos.http.MediaTypeOps._
 import com.mesosphere.cosmos.http.{MediaType, MediaTypeParseError, MediaTypeParser, RequestSession}

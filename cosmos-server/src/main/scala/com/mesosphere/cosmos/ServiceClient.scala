@@ -1,14 +1,15 @@
 package com.mesosphere.cosmos
 
+import _root_.io.circe.Json
+import _root_.io.circe.Decoder
 import cats.data.Xor.{Left, Right}
-import com.mesosphere.cosmos.http.{MediaTypeOps, MediaTypes, RequestSession}
 import com.mesosphere.cosmos.circe.Decoders.decode
+import com.mesosphere.cosmos.http.{MediaTypeOps, MediaTypes, RequestSession}
 import com.netaporter.uri.Uri
 import com.twitter.finagle.http.RequestConfig.Yes
 import com.twitter.finagle.http.{Request, RequestBuilder, Response, Status}
 import com.twitter.io.Buf
 import com.twitter.util.Future
-import io.circe.Json
 import org.jboss.netty.handler.codec.http.HttpMethod
 
 abstract class ServiceClient(baseUri: Uri) {
@@ -51,7 +52,7 @@ abstract class ServiceClient(baseUri: Uri) {
     }
   }
 
-  protected def decodeJsonTo[A](response: Response)(implicit d: io.circe.Decoder[A]): A = {
+  protected def decodeJsonTo[A](response: Response)(implicit d: Decoder[A]): A = {
     response.headerMap.get("Content-Type") match {
       case Some(ct) =>
         http.MediaType.parse(ct).map { mediaType =>
@@ -68,7 +69,7 @@ abstract class ServiceClient(baseUri: Uri) {
     }
   }
 
-  protected def decodeTo[A](method: HttpMethod, uri: Uri, response: Response)(implicit d: io.circe.Decoder[A]): Future[A] = {
+  protected def decodeTo[A](method: HttpMethod, uri: Uri, response: Response)(implicit d: Decoder[A]): Future[A] = {
     validateResponseStatus(method, uri, response)
       .map(decodeJsonTo[A])
   }

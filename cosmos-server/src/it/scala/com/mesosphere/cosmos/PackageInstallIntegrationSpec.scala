@@ -1,5 +1,9 @@
 package com.mesosphere.cosmos
 
+import _root_.io.circe.Json
+import _root_.io.circe.JsonObject
+import _root_.io.circe.jawn._
+import _root_.io.circe.syntax._
 import cats.data.Xor
 import cats.data.Xor.Right
 import com.mesosphere.cosmos.http.RequestSession
@@ -25,16 +29,12 @@ import com.twitter.finagle.http._
 import com.twitter.io.Charsets
 import com.twitter.util.Await
 import com.twitter.util.Future
-import io.circe.jawn._
-import io.circe.syntax._
-import io.circe.Json
-import io.circe.JsonObject
 import java.util.Base64
 import java.util.UUID
-import org.scalatest.prop.TableDrivenPropertyChecks
 import org.scalatest.BeforeAndAfterAll
 import org.scalatest.FreeSpec
 import org.scalatest.Matchers
+import org.scalatest.prop.TableDrivenPropertyChecks
 
 final class PackageInstallIntegrationSpec extends FreeSpec with BeforeAndAfterAll {
 

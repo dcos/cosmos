@@ -1,9 +1,9 @@
 package com.mesosphere.cosmos
 
+import _root_.io.circe.Json
 import com.mesosphere.cosmos.http.RequestSession
 import com.mesosphere.cosmos.thirdparty.marathon.model.MarathonApp
 import com.twitter.util.Future
-import io.circe.Json
 
 /** The service that packages are installed to; currently defaults to Marathon in DCOS. */
 trait PackageRunner {

@@ -1,5 +1,7 @@
 package com.mesosphere.cosmos
 
+import _root_.io.circe.syntax._
+import _root_.io.circe.{DecodingFailure, Json, JsonObject}
 import cats.data.Ior
 import com.mesosphere.cosmos.circe.Encoders._
 import com.mesosphere.cosmos.finch.RequestError
@@ -11,8 +13,6 @@ import com.mesosphere.universe.common.circe.Encoders._
 import com.mesosphere.universe.v3.model.PackageDefinition
 import com.netaporter.uri.Uri
 import com.twitter.finagle.http.Status
-import io.circe.syntax._
-import io.circe.{DecodingFailure, Json, JsonObject}
 import org.jboss.netty.handler.codec.http.HttpMethod
 
 import scala.util.control.NoStackTrace
@@ -83,7 +83,7 @@ case class IndexNotFound(repoUri: Uri) extends CosmosError
 
 case class MarathonAppDeleteError(appId: AppId) extends CosmosError
 case class MarathonAppNotFound(appId: AppId) extends CosmosError
-case class CirceError(circeError: io.circe.Error) extends CosmosError
+case class CirceError(circeError: _root_.io.circe.Error) extends CosmosError
 case object MarathonTemplateMustBeJsonObject extends CosmosError
 
 case class UnsupportedContentType(supported: List[MediaType], actual: Option[String] = None) extends CosmosError {
