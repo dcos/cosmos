@@ -2,10 +2,14 @@ package com.mesosphere.universe.bijection
 
 import com.mesosphere.universe
 import com.netaporter.uri.Uri
-import com.twitter.bijection.{Bijection, Conversion, Injection}
+import com.twitter.bijection.Bijection
+import com.twitter.bijection.Conversion
 import com.twitter.bijection.Conversion.asMethod
-
-import scala.util.{Failure, Success, Try}
+import com.twitter.bijection.Injection
+import java.time.Instant
+import scala.util.Failure
+import scala.util.Success
+import scala.util.Try
 
 object UniverseConversions {
 
@@ -72,16 +76,18 @@ object UniverseConversions {
     Bijection.build(fwd)(rev)
   }
 
-  implicit val v3ReleaseVersionToInt: Injection[universe.v3.model.PackageDefinition.ReleaseVersion, Int] = {
+  implicit val v3ReleaseVersionToLong: Injection[universe.v3.model.PackageDefinition.ReleaseVersion, Long] = {
     val fwd = (x: universe.v3.model.PackageDefinition.ReleaseVersion) => x.value
-    val rev = (universe.v3.model.PackageDefinition.ReleaseVersion.apply _).andThen(BijectionUtils.twitterTryToScalaTry)
+    val rev = (universe.v3.model.PackageDefinition.ReleaseVersion.apply _).andThen(
+      BijectionUtils.twitterTryToScalaTry
+    )
 
     Injection.build(fwd)(rev)
   }
 
   implicit val v3ReleaseVersionToString:
     Injection[universe.v3.model.PackageDefinition.ReleaseVersion, String] = {
-    Injection.connect[universe.v3.model.PackageDefinition.ReleaseVersion, Int, String]
+    Injection.connect[universe.v3.model.PackageDefinition.ReleaseVersion, Long, String]
   }
 
   implicit val v3ReleaseVersionToV2ReleaseVersion:
@@ -98,7 +104,9 @@ object UniverseConversions {
         packagingVersion=metadata.packagingVersion,
         name=metadata.name,
         version=metadata.version,
-        releaseVersion=universe.v3.model.PackageDefinition.ReleaseVersion(0).get, // TODO: use timestamp
+        releaseVersion=universe.v3.model.PackageDefinition.ReleaseVersion(
+          Instant.now().getEpochSecond()
+        ).get,
         maintainer=metadata.maintainer,
         description=metadata.description,
         tags=metadata.tags,

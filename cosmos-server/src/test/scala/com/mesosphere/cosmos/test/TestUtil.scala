@@ -88,7 +88,7 @@ object TestUtil {
     resourceDefinition = Some(TestingPackages.MaximalV2Resource)
   )
 
-  val BundlePackagePairs: List[(BundleDefinition, PackageDefinition)] = (0 to 8).map { i =>
+  val BundlePackagePairs: List[(BundleDefinition, PackageDefinition)] = (0L to 8L).map { i =>
     val (b, _) = TestingPackages.MaximalV3ModelV2PackageDefinition.as[(V2Bundle, ReleaseVersion)]
     val bundle = b.copy(name = "ThisIsAUniquelyNamedPackage" + (i / 3))
     val pkg = (bundle, ReleaseVersion(i % 3).get).as[V2Package]

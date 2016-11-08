@@ -49,7 +49,7 @@ object Decoders {
 
   implicit val decodePackageDefinitionReleaseVersion: Decoder[PackageDefinition.ReleaseVersion] =
     Decoder.instance[PackageDefinition.ReleaseVersion] { (c: HCursor) =>
-      c.as[Int].map(PackageDefinition.ReleaseVersion(_)).flatMap {
+      c.as[Long].map(PackageDefinition.ReleaseVersion(_)).flatMap {
         case Return(v) => Xor.Right(v)
         case Throw(e) => Xor.Left(DecodingFailure(e.getMessage, c.history))
       }
