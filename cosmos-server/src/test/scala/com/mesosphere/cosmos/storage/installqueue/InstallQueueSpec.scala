@@ -477,6 +477,20 @@ class InstallQueueSpec extends fixture.FreeSpec {
 
       assertResult(Some(expectedState))(actualState)
     }
+
+    "return an empty map when the parent path has not been created" ignore { testParameters =>
+      val (_, installQueue) = testParameters
+      val status = Await.result(installQueue.viewStatus())
+      assertResult(Map())(status)
+    }
+
+    "return an empty map when the parent path" +
+      " has been created but there are no operations" ignore { testParameters =>
+      val (client, installQueue) = testParameters
+      createParentPath(client)
+      val status = Await.result(installQueue.viewStatus())
+      assertResult(Map())(status)
+    }
   }
 
   "Install Queue" - {
@@ -512,6 +526,7 @@ class InstallQueueSpec extends fixture.FreeSpec {
     }
   }
 
+  private implicit val stats = com.twitter.finagle.stats.NullStatsReceiver
   type FixtureParam = (CuratorFramework, InstallQueue)
 
   override def withFixture(test: OneArgTest): Outcome = {
