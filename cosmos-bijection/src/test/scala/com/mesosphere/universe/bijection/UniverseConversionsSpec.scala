@@ -6,11 +6,14 @@ import com.mesosphere.universe.test.TestingPackages._
 import com.netaporter.uri.Uri
 import com.twitter.bijection.Conversion.asMethod
 import com.twitter.bijection.Injection
+import io.circe.JsonObject
+import java.nio.ByteBuffer
+import java.nio.charset.StandardCharsets
 import org.scalatest.FreeSpec
-
+import org.scalatest.Matchers
 import scala.util.Success
 
-class UniverseConversionsSpec extends FreeSpec {
+class UniverseConversionsSpec extends FreeSpec with Matchers {
 
   "Conversion[universe.v3.model.PackageDefinition, universe.v2.model.PackageDetails]" - {
     "Max v3v3 -> Max v2" in {
@@ -24,6 +27,91 @@ class UniverseConversionsSpec extends FreeSpec {
     }
     "Min v3v2 -> Min v3" in {
       assertResult(MinimalV2ModelPackageDetails)(MinimalV3ModelPackageDefinitionV2.as[universe.v2.model.PackageDetails])
+    }
+  }
+
+  "Conversion[universe.v3.model.Metadata, universe.v3.model.V3Package]" - {
+
+    "Max metadata" in {
+      val metadata = universe.v3.model.Metadata(
+        PackagingVersion,
+        Name,
+        Version,
+        Maintainer,
+        Description,
+        Tags,
+        Scm,
+        Website,
+        Framework,
+        PreInstallNotes,
+        PostInstallNotes,
+        PostUninstallNotes,
+        Licenses,
+        MinDcosReleaseVersion,
+        Marathon,
+        Resource,
+        Config
+      )
+
+      metadata.as[universe.v3.model.V3Package] should matchPattern {
+        case universe.v3.model.V3Package(
+          PackagingVersion,
+          Name,
+          Version,
+          _,
+          Maintainer,
+          Description,
+          Tags,
+          None,
+          Scm,
+          Website,
+          Framework,
+          PreInstallNotes,
+          PostInstallNotes,
+          PostUninstallNotes,
+          Licenses,
+          MinDcosReleaseVersion,
+          Marathon,
+          Resource,
+          Config,
+          None
+        ) =>
+      }
+    }
+
+    "Min metadata" in {
+      val metadata = universe.v3.model.Metadata(
+        PackagingVersion,
+        Name,
+        Version,
+        Maintainer,
+        Description
+      )
+
+      metadata.as[universe.v3.model.V3Package] should matchPattern {
+        case universe.v3.model.V3Package(
+          PackagingVersion,
+          Name,
+          Version,
+          _,
+          Maintainer,
+          Description,
+          Nil,
+          None,
+          None,
+          None,
+          None,
+          None,
+          None,
+          None,
+          None,
+          None,
+          None,
+          None,
+          None,
+          None
+        ) =>
+      }
     }
   }
 
