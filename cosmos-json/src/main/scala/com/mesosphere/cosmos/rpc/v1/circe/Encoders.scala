@@ -1,6 +1,7 @@
 package com.mesosphere.cosmos.rpc.v1.circe
 
 import com.mesosphere.cosmos.rpc.v1.model._
+import com.mesosphere.cosmos.rpc.v2.model.ServiceRunResponse
 import com.mesosphere.cosmos.thirdparty.marathon.circe.Encoders._
 import com.mesosphere.universe
 import com.mesosphere.universe.common.circe.Encoders._
@@ -105,4 +106,7 @@ object Encoders {
       )
     }
   }
+
+  implicit val encodeServiceRunRequest: Encoder[ServiceRunRequest] = deriveEncoder[ServiceRunRequest]
+  implicit val encodeServiceRunResponse: Encoder[ServiceRunResponse] = deriveEncoder[ServiceRunResponse]
 }

@@ -2,6 +2,7 @@ package com.mesosphere.cosmos.rpc.v1.circe
 
 import cats.data.Xor
 import com.mesosphere.cosmos.rpc.v1.model._
+import com.mesosphere.cosmos.rpc.v2.model.ServiceRunResponse
 import com.mesosphere.cosmos.thirdparty.marathon.circe.Decoders._
 import com.mesosphere.universe
 import com.mesosphere.universe.common.circe.Decoders._
@@ -119,4 +120,7 @@ object Decoders {
       }
     }
   }
+
+  implicit val decodeServiceRunRequest: Decoder[ServiceRunRequest] = deriveDecoder[ServiceRunRequest]
+  implicit val decodeServiceRunResponse: Decoder[ServiceRunResponse] = deriveDecoder[ServiceRunResponse]
 }
