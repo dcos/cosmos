@@ -2,7 +2,6 @@ package com.mesosphere.cosmos.rpc.v1.circe
 
 import cats.data.Xor
 import com.mesosphere.cosmos.rpc.v1.model._
-import com.mesosphere.cosmos.rpc.v2.model.ServiceStartResponse
 import com.mesosphere.cosmos.thirdparty.marathon.circe.Decoders._
 import com.mesosphere.universe
 import com.mesosphere.universe.common.circe.Decoders._

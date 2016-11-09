@@ -18,7 +18,7 @@ import com.twitter.util.Future
 private[cosmos] final class ServiceStartHandler(
   localPackageCollection: LocalPackageCollection,
   packageRunner: PackageRunner
-) extends EndpointHandler[rpc.v1.model.ServiceStartRequest, rpc.v2.model.ServiceStartResponse] {
+) extends EndpointHandler[rpc.v1.model.ServiceStartRequest, rpc.v1.model.ServiceStartResponse] {
 
   private[this] def asPackageDefinition(
     localPackage: LocalPackage,
@@ -34,7 +34,7 @@ private[cosmos] final class ServiceStartHandler(
     request: rpc.v1.model.ServiceStartRequest
   )(
     implicit session: RequestSession
-  ): Future[rpc.v2.model.ServiceStartResponse] = {
+  ): Future[rpc.v1.model.ServiceStartResponse] = {
     localPackageCollection
       .getInstalledPackage(
         request.packageName,
@@ -46,7 +46,7 @@ private[cosmos] final class ServiceStartHandler(
           case Xor.Right(renderedMarathonJson) =>
             packageRunner.launch(renderedMarathonJson)
               .map { runnerResponse =>
-                rpc.v2.model.ServiceStartResponse(
+                rpc.v1.model.ServiceStartResponse(
                   packageName = pkg.name,
                   packageVersion = pkg.version,
                   appId = Some(runnerResponse.id)
@@ -54,7 +54,7 @@ private[cosmos] final class ServiceStartHandler(
               }
           case Xor.Left(MissingMarathonV2AppTemplate) =>
             Future {
-              rpc.v2.model.ServiceStartResponse(
+              rpc.v1.model.ServiceStartResponse(
                 packageName = pkg.name,
                 packageVersion = pkg.version,
                 appId = None
