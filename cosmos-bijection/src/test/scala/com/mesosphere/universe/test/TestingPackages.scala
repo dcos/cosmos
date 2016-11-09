@@ -89,7 +89,7 @@ object TestingPackages {
     PackagingVersion,
     Name,
     Version,
-    releaseVersion = universe.v3.model.PackageDefinition.ReleaseVersion(Int.MaxValue).get,
+    releaseVersion = universe.v3.model.PackageDefinition.ReleaseVersion(Long.MaxValue).get,
     Maintainer,
     Description,
     Tags,

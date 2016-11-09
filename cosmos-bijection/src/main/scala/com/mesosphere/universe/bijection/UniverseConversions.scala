@@ -98,7 +98,7 @@ object UniverseConversions {
       universe.v2.model.ReleaseVersion]
   }
 
-  implicit val injection: Conversion[universe.v3.model.Metadata, universe.v3.model.V3Package] =
+  implicit val metadateToV3Package: Conversion[universe.v3.model.Metadata, universe.v3.model.V3Package] =
     Conversion.fromFunction { (metadata: universe.v3.model.Metadata) =>
       universe.v3.model.V3Package(
         packagingVersion=metadata.packagingVersion,
@@ -110,7 +110,7 @@ object UniverseConversions {
         maintainer=metadata.maintainer,
         description=metadata.description,
         tags=metadata.tags,
-        selected=None,
+        selected=None, // Selected package is an Universe concept. Setting to the default value.
         scm=metadata.scm,
         website=metadata.website,
         framework=metadata.framework,
@@ -122,7 +122,7 @@ object UniverseConversions {
         marathon=metadata.marathon,
         resource=metadata.resource,
         config=metadata.config,
-        command=None
+        command=None // Command are not supported in Package.dcos. Setting to the default value.
       )
     }
 
