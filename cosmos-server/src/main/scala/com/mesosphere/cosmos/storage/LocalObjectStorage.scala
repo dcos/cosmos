@@ -6,7 +6,6 @@ import com.mesosphere.cosmos.http.MediaType
 import com.netaporter.uri.Uri
 import com.twitter.finagle.stats.Stat
 import com.twitter.finagle.stats.StatsReceiver
-import com.twitter.io.Reader
 import com.twitter.io.StreamIO
 import com.twitter.util.Future
 import com.twitter.util.FuturePool
@@ -61,13 +60,13 @@ final class LocalObjectStorage(
     }
   }
 
-  override def read(name: String): Future[Option[(MediaType, Reader)]] = {
+  override def read(name: String): Future[Option[(MediaType, InputStream)]] = {
     Stat.timeFuture(stats.stat("read")) {
       pool {
-        readFromFile(path.resolve(name)).map { case (metadata, reader) =>
+        readFromFile(path.resolve(name)).map { case (metadata, inputStream) =>
           (
             MediaType.parse(metadata(LocalObjectStorage.contentTypeKey)).get,
-            reader
+            inputStream
           )
         }
       }
@@ -158,7 +157,7 @@ final class LocalObjectStorage(
   // See writeToFile for information on the file format.
   private[this] def readFromFile(
     absolutePath: Path
-  ): Option[(Map[String, String], Reader)] = {
+  ): Option[(Map[String, String], InputStream)] = {
     val maybeInputStream = try {
       Some(
         new DataInputStream(
@@ -183,7 +182,7 @@ final class LocalObjectStorage(
           decode[Map[String, String]](new String(metadataBytes, StandardCharsets.UTF_8))
         }
 
-        (metadata, Reader.fromStream(inputStream))
+        (metadata, inputStream)
       } catch {
         case NonFatal(e) =>
           inputStream.close()

@@ -25,7 +25,7 @@ final class InMemoryPackageStorage extends PackageStorage {
       case _ => empty
     }
     val oldp = named.get
-    val newp = oldp :+ (packageBundle, PackageDefinition.ReleaseVersion(oldp.size).get).as[PackageDefinition]
+    val newp = oldp :+ (packageBundle, PackageDefinition.ReleaseVersion(oldp.size.toLong).get).as[PackageDefinition]
 
     if (!named.compareAndSet(oldp, newp)) {
       throw ConcurrentPackageUpdateDuringPublish()

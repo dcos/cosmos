@@ -9,83 +9,102 @@ import java.nio.ByteBuffer
 import java.nio.charset.StandardCharsets
 
 object TestingPackages {
-
-  val MaximalV3ModelV3PackageDefinition: universe.v3.model.V3Package = universe.v3.model.V3Package(
-    packagingVersion = universe.v3.model.V3PackagingVersion,
-    name = "MAXIMAL",
-    version = universe.v3.model.PackageDefinition.Version("9.87.654.3210"),
-    releaseVersion = universe.v3.model.PackageDefinition.ReleaseVersion(Int.MaxValue).get,
-    maintainer = "max@mesosphere.io",
-    description = "A complete package definition",
-    marathon = Some(universe.v3.model.Marathon(
-      v2AppMustacheTemplate = ByteBuffer.wrap("marathon template".getBytes(StandardCharsets.UTF_8))
+  val PackagingVersion = universe.v3.model.V3PackagingVersion
+  val Name = "MAXIMAL"
+  val Version = universe.v3.model.PackageDefinition.Version("9.87.654.3210")
+  val Maintainer = "max@mesosphere.io"
+  val Description = "A complete package definition"
+  val Marathon = Some(universe.v3.model.Marathon(
+    v2AppMustacheTemplate = ByteBuffer.wrap("marathon template".getBytes(StandardCharsets.UTF_8))
+  ))
+  val Tags = List("all", "the", "things").map(
+    s => universe.v3.model.PackageDefinition.Tag(s).get
+  )
+  val Scm = Some("git")
+  val Website = Some("mesosphere.com")
+  val Framework = Some(true)
+  val PreInstallNotes = Some("pre-install message")
+  val PostInstallNotes = Some("post-install message")
+  val PostUninstallNotes = Some("post-uninstall message")
+  val Licenses = Some(List(
+    universe.v3.model.License(name = "ABC", url = Uri.parse("http://foobar/a/b/c")),
+    universe.v3.model.License(name = "XYZ", url = Uri.parse("http://foobar/x/y/z"))
+  ))
+  val MinDcosReleaseVersion = Some(universe.v3.model.DcosReleaseVersionParser.parseUnsafe("1.9.99"))
+  val Resource = Some(universe.v3.model.V3Resource(
+    assets = Some(universe.v3.model.Assets(
+      uris = Some(Map(
+        "foo.tar.gz" -> "http://mesosphere.com/foo.tar.gz",
+        "bar.jar"    -> "https://mesosphere.com/bar.jar"
+      )),
+      container = Some(universe.v3.model.Container(Map(
+        "image1" -> "docker/image:1",
+        "image2" -> "docker/image:2"
+      )))
     )),
-    tags = List("all", "the", "things").map(s => universe.v3.model.PackageDefinition.Tag(s).get),
-    selected = Some(true),
-    scm = Some("git"),
-    website = Some("mesosphere.com"),
-    framework = Some(true),
-    preInstallNotes = Some("pre-install message"),
-    postInstallNotes = Some("post-install message"),
-    postUninstallNotes = Some("post-uninstall message"),
-    licenses = Some(List(
-      universe.v3.model.License(name = "ABC", url = Uri.parse("http://foobar/a/b/c")),
-      universe.v3.model.License(name = "XYZ", url = Uri.parse("http://foobar/x/y/z"))
+    images = Some(universe.v3.model.Images(
+      iconSmall = Some("small.png"),
+      iconMedium = Some("medium.png"),
+      iconLarge = Some("large.png"),
+      screenshots = Some(List("ooh.png", "aah.png"))
     )),
-    minDcosReleaseVersion = Some(universe.v3.model.DcosReleaseVersionParser.parseUnsafe("1.9.99")),
-    resource = Some(universe.v3.model.V3Resource(
-      assets = Some(universe.v3.model.Assets(
-        uris = Some(Map(
-          "foo.tar.gz" -> "http://mesosphere.com/foo.tar.gz",
-          "bar.jar"    -> "https://mesosphere.com/bar.jar"
+    cli = Some(universe.v3.model.Cli(
+      binaries = Some(universe.v3.model.Platforms(
+        windows = Some(universe.v3.model.Architectures(
+          `x86-64` = universe.v3.model.Binary(
+            kind = "windows",
+            url = "mesosphere.com/windows.exe",
+            contentHash = List(
+              universe.v3.model.HashInfo("letters", "abcba"),
+              universe.v3.model.HashInfo("numbers", "12321")
+            )
+          )
         )),
-        container = Some(universe.v3.model.Container(Map(
-          "image1" -> "docker/image:1",
-          "image2" -> "docker/image:2"
-        )))
-      )),
-      images = Some(universe.v3.model.Images(
-        iconSmall = Some("small.png"),
-        iconMedium = Some("medium.png"),
-        iconLarge = Some("large.png"),
-        screenshots = Some(List("ooh.png", "aah.png"))
-      )),
-      cli = Some(universe.v3.model.Cli(
-        binaries = Some(universe.v3.model.Platforms(
-          windows = Some(universe.v3.model.Architectures(
-            `x86-64` = universe.v3.model.Binary(
-              kind = "windows",
-              url = "mesosphere.com/windows.exe",
-              contentHash = List(
-                universe.v3.model.HashInfo("letters", "abcba"),
-                universe.v3.model.HashInfo("numbers", "12321")
-              )
+        linux = Some(universe.v3.model.Architectures(
+          `x86-64` = universe.v3.model.Binary(
+            kind = "linux",
+            url = "mesosphere.com/linux",
+            contentHash = List(
+              universe.v3.model.HashInfo("letters", "ijkji"),
+              universe.v3.model.HashInfo("numbers", "13579")
             )
-          )),
-          linux = Some(universe.v3.model.Architectures(
-            `x86-64` = universe.v3.model.Binary(
-              kind = "linux",
-              url = "mesosphere.com/linux",
-              contentHash = List(
-                universe.v3.model.HashInfo("letters", "ijkji"),
-                universe.v3.model.HashInfo("numbers", "13579")
-              )
+          )
+        )),
+        darwin = Some(universe.v3.model.Architectures(
+          `x86-64` = universe.v3.model.Binary(
+            kind = "darwin",
+            url = "mesosphere.com/darwin",
+            contentHash = List(
+              universe.v3.model.HashInfo("letters", "xyzyx"),
+              universe.v3.model.HashInfo("numbers", "02468")
             )
-          )),
-          darwin = Some(universe.v3.model.Architectures(
-            `x86-64` = universe.v3.model.Binary(
-              kind = "darwin",
-              url = "mesosphere.com/darwin",
-              contentHash = List(
-                universe.v3.model.HashInfo("letters", "xyzyx"),
-                universe.v3.model.HashInfo("numbers", "02468")
-              )
-            )
-          ))
+          )
         ))
       ))
-    )),
-    config = Some(JsonObject.fromMap(Map("foo" -> 42.asJson, "bar" -> "baz".asJson))),
+    ))
+  ))
+  val Config = Some(JsonObject.fromMap(Map("foo" -> 42.asJson, "bar" -> "baz".asJson)))
+
+  val MaximalV3ModelV3PackageDefinition: universe.v3.model.V3Package = universe.v3.model.V3Package(
+    PackagingVersion,
+    Name,
+    Version,
+    releaseVersion = universe.v3.model.PackageDefinition.ReleaseVersion(Long.MaxValue).get,
+    Maintainer,
+    Description,
+    Tags,
+    None,
+    Scm,
+    Website,
+    Framework,
+    PreInstallNotes,
+    PostInstallNotes,
+    PostUninstallNotes,
+    Licenses,
+    MinDcosReleaseVersion,
+    Marathon,
+    Resource,
+    Config,
     command = Some(universe.v3.model.Command(
       pip = List("flask", "jinja", "jsonschema")
     ))

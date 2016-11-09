@@ -50,7 +50,7 @@ final class S3ObjectStorage(
     }
   }
 
-  override def read(name: String): Future[Option[(MediaType, Reader)]] = {
+  override def read(name: String): Future[Option[(MediaType, InputStream)]] = {
     Stat.timeFuture(stats.stat("read")) {
       pool {
         try {
@@ -59,7 +59,7 @@ final class S3ObjectStorage(
           Some(
             (
               MediaType.parse(result.getObjectMetadata.getContentType).get,
-              Reader.fromStream(result.getObjectContent())
+              result.getObjectContent()
             )
           )
         } catch {

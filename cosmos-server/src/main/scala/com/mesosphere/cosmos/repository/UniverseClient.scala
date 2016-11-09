@@ -160,7 +160,7 @@ final class DefaultUniverseClient(
 
   private[this] case class V2ZipState(
     version: Option[universe.v2.model.UniverseVersion],
-    packages: Map[(String, Int), Map[String, (Path, Array[Byte])]]
+    packages: Map[(String, Long), Map[String, (Path, Array[Byte])]]
   )
 
   private[this] def processUniverseV2(
@@ -207,7 +207,7 @@ final class DefaultUniverseClient(
         val version = processIndex(entryPath, buffer)
         state.copy(version = state.version.orElse(Some(version)))
       case _ :: _ :: "packages" :: _ :: packageName :: releaseVersionString :: _ =>
-        val releaseVersion = Integer.parseInt(releaseVersionString)
+        val releaseVersion = releaseVersionString.toLong
         val packageKey = (packageName, releaseVersion)
 
         val packageFiles =
@@ -248,7 +248,7 @@ final class DefaultUniverseClient(
 
   private[this] def buildV2Package(
     packageInfo: V2PackageInformation,
-    releaseVersion: Int
+    releaseVersion: Long
   ): universe.v3.model.V2Package = {
     val details = packageInfo.packageDetails.getOrElse(
       throw PackageFileMissing("package.json"))
