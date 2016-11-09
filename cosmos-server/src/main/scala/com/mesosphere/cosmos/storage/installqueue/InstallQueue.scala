@@ -50,7 +50,7 @@ final class InstallQueue private(
   override def next(): Future[Option[PendingOperation]] = {
     timeFuture(stats.stat("next")) {
       getAllCoordinates.flatMap { coordinates =>
-        stats.stat("nodeCount").add(coordinates.length)
+        stats.stat("nodeCount").add(coordinates.length.toFloat)
         Future.collect(coordinates.map(getOperationIfPending)).map { operationsMaybePending =>
           val pendingOperations = operationsMaybePending.flatten
           if (pendingOperations.isEmpty) {
@@ -176,7 +176,7 @@ final class InstallQueue private(
     val promise = Promise[Unit]()
 
     val data = Envelope.encodeData(operationStatus)
-    stats.stat("nodeSize").add(data.length)
+    stats.stat("nodeSize").add(data.length.toFloat)
 
     client.setData().withVersion(version).inBackground(
       handler(promise, CuratorEventType.SET_DATA) {
@@ -257,7 +257,7 @@ final class InstallQueue private(
     val promise = Promise[AddResult]()
 
     val data = Envelope.encodeData(operationStatus)
-    stats.stat("nodeSize").add(data.length)
+    stats.stat("nodeSize").add(data.length.toFloat)
 
     client.create().creatingParentsIfNeeded().inBackground(
       handler(promise, CuratorEventType.CREATE) {
