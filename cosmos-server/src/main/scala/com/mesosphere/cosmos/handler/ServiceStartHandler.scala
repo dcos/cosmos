@@ -15,16 +15,16 @@ import com.twitter.bijection.Conversion.asMethod
 import com.twitter.util.Future
 import _root_.io.circe.syntax._
 
-private[cosmos] final class ServiceRunHandler(
+private[cosmos] final class ServiceStartHandler(
   localPackageCollection: LocalPackageCollection,
   packageRunner: PackageRunner
-) extends EndpointHandler[rpc.v1.model.ServiceRunRequest, rpc.v2.model.ServiceRunResponse] {
+) extends EndpointHandler[rpc.v1.model.ServiceStartRequest, rpc.v2.model.ServiceStartResponse] {
 
   override def apply(
-    request: rpc.v1.model.ServiceRunRequest
+    request: rpc.v1.model.ServiceStartRequest
   )(
     implicit session: RequestSession
-  ): Future[rpc.v2.model.ServiceRunResponse] = {
+  ): Future[rpc.v2.model.ServiceStartResponse] = {
     localPackageCollection
       .getInstalledPackage(
         request.packageName,
@@ -39,7 +39,7 @@ private[cosmos] final class ServiceRunHandler(
           case Xor.Right(renderedMarathonJson) =>
             packageRunner.launch(renderedMarathonJson)
               .map { runnerResponse =>
-                rpc.v2.model.ServiceRunResponse(
+                rpc.v2.model.ServiceStartResponse(
                   packageName = pkg.name,
                   packageVersion = pkg.version,
                   appId = Some(runnerResponse.id)
@@ -59,7 +59,7 @@ private[cosmos] final class ServiceRunHandler(
               Future.exception(JsonSchemaMismatch(List(error)))
             case MissingMarathonV2AppTemplate =>
               Future {
-                rpc.v2.model.ServiceRunResponse(
+                rpc.v2.model.ServiceStartResponse(
                   packageName = pkg.name,
                   packageVersion = pkg.version,
                   appId = None

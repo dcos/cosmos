@@ -5,7 +5,7 @@ import com.mesosphere.cosmos.internal.circe.Encoders._
 import com.mesosphere.cosmos.rpc.MediaTypes
 import com.mesosphere.cosmos.rpc.v1.circe.Encoders._
 import com.mesosphere.cosmos.rpc.v1.model._
-import com.mesosphere.cosmos.rpc.v2.model.ServiceRunResponse
+import com.mesosphere.cosmos.rpc.v2.model.ServiceStartResponse
 import com.mesosphere.universe.v3.circe.Encoders._
 import com.mesosphere.universe.v3.model.Repository
 import com.mesosphere.universe.{MediaTypes => UMediaTypes}
@@ -51,7 +51,7 @@ object MediaTypedEncoders {
   implicit val packageUninstallEncoder: DispatchingMediaTypedEncoder[UninstallResponse] =
     DispatchingMediaTypedEncoder(MediaTypes.UninstallResponse)
 
-  implicit val serviceRunEncoder: DispatchingMediaTypedEncoder[ServiceRunResponse] =
-    DispatchingMediaTypedEncoder(MediaTypes.ServiceRunResponse)
+  implicit val serviceStartEncoder: DispatchingMediaTypedEncoder[ServiceStartResponse] =
+    DispatchingMediaTypedEncoder(MediaTypes.ServiceStartResponse)
 
 }

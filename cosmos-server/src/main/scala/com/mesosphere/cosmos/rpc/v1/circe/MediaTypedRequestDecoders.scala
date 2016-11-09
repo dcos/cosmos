@@ -41,7 +41,7 @@ object MediaTypedRequestDecoders {
   implicit val packageUninstallDecoder: MediaTypedRequestDecoder[UninstallRequest] =
     MediaTypedRequestDecoder(MediaTypedDecoder(MediaTypes.UninstallRequest))
 
-  implicit val serviceRunDecoder: MediaTypedRequestDecoder[ServiceRunRequest] =
-    MediaTypedRequestDecoder(MediaTypedDecoder(MediaTypes.ServiceRunRequest))
+  implicit val serviceStartDecoder: MediaTypedRequestDecoder[ServiceStartRequest] =
+    MediaTypedRequestDecoder(MediaTypedDecoder(MediaTypes.ServiceStartRequest))
 
 }
