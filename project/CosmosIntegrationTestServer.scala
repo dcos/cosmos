@@ -49,10 +49,13 @@ class CosmosIntegrationTestServer(javaHome: Option[String], itResourceDirs: Seq[
       .getOrElse("java")
 
     val dcosUri = systemProperty("com.mesosphere.cosmos.dcosUri").get
-    System.setProperty(
-      "com.mesosphere.cosmos.test.CosmosIntegrationTestClient.CosmosClient.uri",
-      "http://localhost:7070"
-    )
+    val stagedPackageBucket = systemProperty("com.mesosphere.cosmos.stagedPackageBucket").get
+    val stagedPackagePath = systemProperty("com.mesosphere.cosmos.stagedPackagePath").get
+
+    setClientProperty("CosmosClient", "uri", "http://localhost:7070")
+    setClientProperty("ZooKeeperClient", "uri", zkUri)
+    setClientProperty("StagedPackageStorageClient", "bucket", stagedPackageBucket)
+    setClientProperty("StagedPackageStorageClient", "path", stagedPackagePath)
 
     val args = Seq(
       dataDir.map(s => s"-com.mesosphere.cosmos.dataDir=$s")
@@ -70,7 +73,9 @@ class CosmosIntegrationTestServer(javaHome: Option[String], itResourceDirs: Seq[
       classpath,
       "com.simontuffs.onejar.Boot",
       s"-com.mesosphere.cosmos.zookeeperUri=$zkUri",
-      s"-com.mesosphere.cosmos.dcosUri=$dcosUri"
+      s"-com.mesosphere.cosmos.dcosUri=$dcosUri",
+      s"-com.mesosphere.cosmos.stagedPackageBucket=$stagedPackageBucket",
+      s"-com.mesosphere.cosmos.stagedPackagePath=$stagedPackagePath"
     ) ++ args
 
     logger.info("Starting cosmos with command: " + cmd.mkString(" "))
@@ -119,6 +124,11 @@ class CosmosIntegrationTestServer(javaHome: Option[String], itResourceDirs: Seq[
 
       val _ = Files.walkFileTree(Paths.get(dir), visitor)
     }
+  }
+
+  private[this] def setClientProperty(clientName: String, key: String, value: String): Unit = {
+    val property = s"com.mesosphere.cosmos.test.CosmosIntegrationTestClient.$clientName.$key"
+    System.setProperty(property, value)
   }
 
   private[this] def systemProperty(key: String): Option[String] = {
