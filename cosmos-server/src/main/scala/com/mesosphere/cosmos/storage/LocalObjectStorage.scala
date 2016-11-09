@@ -32,6 +32,9 @@ final class LocalObjectStorage(
 
   private[this] val stats = statsReceiver.scope(s"LocalObjectStorage($path)")
 
+  // Create the directory for the root path
+  Files.createDirectories(path)
+
   override def write(
     name: String,
     body: InputStream,
