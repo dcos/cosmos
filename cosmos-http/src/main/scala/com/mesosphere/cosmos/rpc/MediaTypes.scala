@@ -44,5 +44,5 @@ object MediaTypes {
   val V2ListResponse = vnd("list-response", 2)
 
   val ServiceStartRequest = dcosService("start-request", 1)
-  val ServiceStartResponse = dcosService("start-response", 2)
+  val ServiceStartResponse = dcosService("start-response", 1)
 }
