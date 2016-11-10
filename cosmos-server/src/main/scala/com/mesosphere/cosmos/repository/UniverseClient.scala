@@ -83,7 +83,6 @@ final class DefaultUniverseClient(
         )
 
         // Handle the response
-        // TODO: We need to close the connection and inputstream!!!
         Future {
 
           conn.getResponseCode match {
