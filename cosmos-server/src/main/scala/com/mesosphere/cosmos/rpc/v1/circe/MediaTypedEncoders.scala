@@ -50,4 +50,7 @@ object MediaTypedEncoders {
   implicit val packageUninstallEncoder: DispatchingMediaTypedEncoder[UninstallResponse] =
     DispatchingMediaTypedEncoder(MediaTypes.UninstallResponse)
 
+  implicit val serviceStartEncoder: DispatchingMediaTypedEncoder[ServiceStartResponse] =
+    DispatchingMediaTypedEncoder(MediaTypes.ServiceStartResponse)
+
 }

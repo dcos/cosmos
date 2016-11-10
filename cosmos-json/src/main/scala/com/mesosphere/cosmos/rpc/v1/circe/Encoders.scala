@@ -105,4 +105,9 @@ object Encoders {
       )
     }
   }
+
+  implicit val encodeServiceStartRequest: Encoder[ServiceStartRequest] =
+    deriveEncoder[ServiceStartRequest]
+  implicit val encodeServiceStartResponse: Encoder[ServiceStartResponse] =
+    deriveEncoder[ServiceStartResponse]
 }

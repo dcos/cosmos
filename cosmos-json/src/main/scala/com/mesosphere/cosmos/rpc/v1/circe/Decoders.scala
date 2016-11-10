@@ -119,4 +119,7 @@ object Decoders {
       }
     }
   }
+
+  implicit val decodeServiceStartRequest: Decoder[ServiceStartRequest] = deriveDecoder[ServiceStartRequest]
+  implicit val decodeServiceStartResponse: Decoder[ServiceStartResponse] = deriveDecoder[ServiceStartResponse]
 }
