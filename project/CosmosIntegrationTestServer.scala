@@ -21,6 +21,7 @@ class CosmosIntegrationTestServer(javaHome: Option[String], itResourceDirs: Seq[
   private var dataDir: Option[String] = None
   private var zkCluster: Option[TestingCluster] = None
 
+  //scalastyle:off method.length
   def setup(logger: Logger): Unit = {
     val temporaryDirectory = Files.createTempDirectory("cosmos-it-")
     dataDir = Some(temporaryDirectory.toFile.getAbsolutePath)
@@ -39,7 +40,8 @@ class CosmosIntegrationTestServer(javaHome: Option[String], itResourceDirs: Seq[
 
     val zkUri = zkCluster.map { c =>
       val connectString = c.getConnectString
-      val baseZNode = Random.alphanumeric.take(10).mkString
+      val zNodeNameSize = 10
+      val baseZNode = Random.alphanumeric.take(zNodeNameSize).mkString
       s"zk://$connectString/$baseZNode"
     }.get
 
@@ -100,6 +102,7 @@ class CosmosIntegrationTestServer(javaHome: Option[String], itResourceDirs: Seq[
         throw t
     }
   }
+  //scalastyle:on method.length
 
   def cleanup(): Unit = {
     System.setProperties(originalProperties)
@@ -160,7 +163,8 @@ class CosmosIntegrationTestServer(javaHome: Option[String], itResourceDirs: Seq[
       if ((System.currentTimeMillis() - startTimeMillis).millis > timeout) {
         throw new TimeoutException()
       }
-      Thread.sleep(1000)
+      val sleepTime = 1000
+      Thread.sleep(sleepTime)
     }
   }
 
