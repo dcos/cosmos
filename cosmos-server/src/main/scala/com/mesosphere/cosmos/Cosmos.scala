@@ -4,11 +4,14 @@ import _root_.io.circe.Json
 import _root_.io.finch._
 import _root_.io.finch.circe.dropNullKeys._
 import _root_.io.github.benwhitehead.finch.FinchServer
+import com.amazonaws.services.s3.AmazonS3Client
 import com.mesosphere.cosmos.circe.Encoders._
+import com.mesosphere.cosmos.finch.EndpointHandler
 import com.mesosphere.cosmos.finch.FinchExtensions._
 import com.mesosphere.cosmos.finch.RequestError
-import com.mesosphere.cosmos.finch.{EndpointContext, EndpointHandler, RequestValidators}
+import com.mesosphere.cosmos.finch.RequestValidators
 import com.mesosphere.cosmos.handler._
+import com.mesosphere.cosmos.repository.LocalPackageCollection
 import com.mesosphere.cosmos.repository.PackageSourcesStorage
 import com.mesosphere.cosmos.repository.UniverseClient
 import com.mesosphere.cosmos.repository.ZkRepositoryList
@@ -16,13 +19,17 @@ import com.mesosphere.cosmos.rpc.MediaTypes
 import com.mesosphere.cosmos.rpc.v1.circe.MediaTypedEncoders._
 import com.mesosphere.cosmos.rpc.v1.circe.MediaTypedRequestDecoders._
 import com.mesosphere.cosmos.rpc.v2.circe.MediaTypedEncoders._
-import com.mesosphere.cosmos.storage.{InMemoryPackageStorage, PackageStorage}
+import com.mesosphere.cosmos.storage._
 import com.mesosphere.universe
 import com.netaporter.uri.Uri
 import com.twitter.finagle.Service
-import com.twitter.finagle.http.{Request, Response, Status}
-import com.twitter.finagle.stats.{NullStatsReceiver, StatsReceiver}
+import com.twitter.finagle.http.Request
+import com.twitter.finagle.http.Response
+import com.twitter.finagle.http.Status
+import com.twitter.finagle.stats.NullStatsReceiver
+import com.twitter.finagle.stats.StatsReceiver
 import com.twitter.util.Try
+import java.nio.file.Paths
 import shapeless.HNil
 
 private[cosmos] final class Cosmos(
@@ -38,7 +45,8 @@ private[cosmos] final class Cosmos(
   deleteRepositoryHandler: EndpointHandler[rpc.v1.model.PackageRepositoryDeleteRequest, rpc.v1.model.PackageRepositoryDeleteResponse],
   packagePublishHandler: EndpointHandler[rpc.v1.model.PublishRequest, rpc.v1.model.PublishResponse],
   repositoryServeHandler: RepositoryServeHandler,
-  capabilitiesHandler: CapabilitiesHandler
+  capabilitiesHandler: CapabilitiesHandler,
+  serviceStartHandler: EndpointHandler[rpc.v1.model.ServiceStartRequest, rpc.v1.model.ServiceStartResponse]
 )(implicit statsReceiver: StatsReceiver = NullStatsReceiver) {
 
   lazy val logger = org.slf4j.LoggerFactory.getLogger(classOf[Cosmos])
@@ -154,6 +162,12 @@ object Cosmos extends FinchServer {
       val zkUri = zookeeperUri()
       logger.info("Using {} for the ZooKeeper connection", zkUri)
 
+      val objectStorage = (stagedPackageBucket(), stagedPackagePath()) match {
+        case (Some(bucket), Some(path)) => Some(S3ObjectStorage(new AmazonS3Client(), bucket, path))
+        case (None, Some(path)) => Some(LocalObjectStorage(Paths.get(path)))
+        case _ => None
+      }
+
       val marathonPackageRunner = new MarathonPackageRunner(adminRouter)
 
       val zkClient = zookeeper.Clients.createAndInitialize(
@@ -167,7 +181,15 @@ object Cosmos extends FinchServer {
       val sourcesStorage = new ZkRepositoryList(zkClient)()
       val packageStorage = new InMemoryPackageStorage()
 
-      val cosmos = Cosmos(adminRouter, marathonPackageRunner, sourcesStorage, packageStorage, UniverseClient(adminRouter))
+      val cosmos =
+        Cosmos(
+          adminRouter,
+          marathonPackageRunner,
+          sourcesStorage,
+          packageStorage,
+          UniverseClient(adminRouter),
+          objectStorage
+        )
       cosmos.service
     }
     boot.get
@@ -216,13 +238,21 @@ object Cosmos extends FinchServer {
     packageRunner: PackageRunner,
     sourcesStorage: PackageSourcesStorage,
     packageStorage: PackageStorage,
-    universeClient: UniverseClient
+    universeClient: UniverseClient,
+    objectStorage: Option[ObjectStorage]
   )(implicit statsReceiver: StatsReceiver = NullStatsReceiver): Cosmos = {
 
     val repositories = new MultiRepository(
       sourcesStorage,
       universeClient
     )
+
+    val serviceStartHandler = objectStorage match {
+      case Some(objStore) =>
+        new ServiceStartHandler(LocalPackageCollection(PackageObjectStorage(objStore)), packageRunner)
+      case None =>
+        new ServiceStartNotConfiguredHandler
+    }
 
     new Cosmos(
       new UninstallHandler(adminRouter, repositories),
@@ -237,7 +267,8 @@ object Cosmos extends FinchServer {
       new PackageRepositoryDeleteHandler(sourcesStorage),
       new PackagePublishHandler(packageStorage),
       new RepositoryServeHandler(packageStorage),
-      new CapabilitiesHandler
+      new CapabilitiesHandler,
+      serviceStartHandler
     )(statsReceiver)
   }
 
