@@ -55,7 +55,8 @@ object SemVerSpec {
   }
 
   val semVerGen: Gen[SemVer] = Gen.sized { size =>
-    val numbersGen = for (n <- Gen.choose(0, 999999999L)) yield n
+    val maxNumber = 999999999L
+    val numbersGen = for (n <- Gen.choose(0, maxNumber)) yield n
     val preReleasesGen = Gen.containerOfN[Seq, Either[String, Long]](
       (size % 4),
       Gen.oneOf(
