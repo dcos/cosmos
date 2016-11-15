@@ -38,9 +38,35 @@ final class PackageAdderSpec extends FreeSpec with Matchers with PropertyChecks 
     }
   }
 
-  "Test that installing a package that already exists is a noop" in {
-  }
+  "Test that installing a package that already exists is a noop" in TestUtil.withObjectStorage {
+    tempObjectStorage =>
+      TestUtil.withObjectStorage { objectStorage =>
+        forAll(packageDefinitionGen) { expected =>
+          val packageObjectStorage = PackageObjectStorage(objectStorage)
+          val adder = PackageAdder(
+            tempObjectStorage,
+            packageObjectStorage,
+            LocalPackageCollection(packageObjectStorage)
+          )
 
-  "Test that install failure propagates the failure" in {
+          val _ = Await.result(
+            adder(
+              "http://ignored/for/now",
+              expected
+            ) before ( // Install the same package twice
+              adder(
+                "http://ignored/for/now",
+                expected
+              )
+            )
+          )
+
+          val actual = Await.result(
+            packageObjectStorage.readPackageDefinition(expected.packageCoordinate)
+          )
+
+          actual shouldBe Some(expected)
+        }
+      }
   }
 }

@@ -41,7 +41,9 @@ final case class SemVer(
     comparisons.find(_ != 0).getOrElse(0)
   }
 
-  private[this] def comparePreReleases(otherPreReleases: Seq[Either[String, Long]]): Stream[Int] = {
+  private[this] def comparePreReleases(
+    otherPreReleases: Seq[Either[String, Long]]
+  ): Stream[Int] = {
     if (preReleases.isEmpty && otherPreReleases.nonEmpty) {
       1 #:: Stream.empty
     } else if (preReleases.nonEmpty && otherPreReleases.isEmpty) {
