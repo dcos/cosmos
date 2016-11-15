@@ -1,6 +1,8 @@
 package com.mesosphere.cosmos
 
-import java.io.{IOException, OutputStream, PrintStream}
+import java.io.IOException
+import java.io.OutputStream
+import java.io.PrintStream
 import java.net.URL
 import java.nio.file._
 import java.nio.file.attribute.BasicFileAttributes
@@ -51,13 +53,9 @@ class CosmosIntegrationTestServer(javaHome: Option[String], itResourceDirs: Seq[
       .getOrElse("java")
 
     val dcosUri = systemProperty("com.mesosphere.cosmos.dcosUri").get
-    val stagedPackageBucket = systemProperty("com.mesosphere.cosmos.stagedPackageBucket").get
-    val stagedPackagePath = systemProperty("com.mesosphere.cosmos.stagedPackagePath").get
 
     setClientProperty("CosmosClient", "uri", "http://localhost:7070")
     setClientProperty("ZooKeeperClient", "uri", zkUri)
-    setClientProperty("StagedPackageStorageClient", "bucket", stagedPackageBucket)
-    setClientProperty("StagedPackageStorageClient", "path", stagedPackagePath)
 
     val args = Seq(
       dataDir.map(s => s"-com.mesosphere.cosmos.dataDir=$s")
@@ -75,9 +73,7 @@ class CosmosIntegrationTestServer(javaHome: Option[String], itResourceDirs: Seq[
       classpath,
       "com.simontuffs.onejar.Boot",
       s"-com.mesosphere.cosmos.zookeeperUri=$zkUri",
-      s"-com.mesosphere.cosmos.dcosUri=$dcosUri",
-      s"-com.mesosphere.cosmos.stagedPackageBucket=$stagedPackageBucket",
-      s"-com.mesosphere.cosmos.stagedPackagePath=$stagedPackagePath"
+      s"-com.mesosphere.cosmos.dcosUri=$dcosUri"
     ) ++ args
 
     logger.info("Starting cosmos with command: " + cmd.mkString(" "))

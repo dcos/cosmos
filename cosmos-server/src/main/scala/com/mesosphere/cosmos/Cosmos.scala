@@ -161,9 +161,7 @@ object Cosmos extends FinchServer {
       val zkUri = zookeeperUri()
       logger.info("Using {} for the ZooKeeper connection", zkUri)
 
-      val stagingUri = stagedPackageUri()
-      logger.info("Using {} for the staging uri", stagingUri)
-
+      logger.info("Using {} for the staging uri", stagedPackageUri())
       val objectStorage = stagedPackageUri() match {
         case Some(S3Uri(uri)) => Some(S3ObjectStorage(new AmazonS3Client(), uri))
         case Some(FileUri(path)) => Some(LocalObjectStorage(path))

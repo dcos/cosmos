@@ -5,6 +5,7 @@ import com.mesosphere.cosmos.AdminRouter
 import com.mesosphere.cosmos.AdminRouterClient
 import com.mesosphere.cosmos.MarathonClient
 import com.mesosphere.cosmos.MesosMasterClient
+import com.mesosphere.cosmos.ObjectStorageUri
 import com.mesosphere.cosmos.Services
 import com.mesosphere.cosmos.Trys
 import com.mesosphere.cosmos.Uris
@@ -28,7 +29,6 @@ import com.twitter.finagle.SimpleFilter
 import com.twitter.finagle.http._
 import com.twitter.util.Await
 import com.twitter.util.Future
-import com.twitter.util.Return
 import com.twitter.util.Try
 import io.circe.Decoder
 import io.circe.jawn._
@@ -205,26 +205,17 @@ object CosmosIntegrationTestClient extends Matchers {
 
   object ZooKeeperClient {
     val uri: ZooKeeperUri = {
-      getClientProperty("ZooKeeperClient", "uri").flatMap(ZooKeeperUri.parse).get()
+      getClientProperty("ZooKeeperClient", "uri")
+        .flatMap(ZooKeeperUri.parse).get()
     }
   }
 
   object StagedPackageStorageClient {
-
-    val configuration: ObjectStorageConfig = {
-      val path = getClientProperty("StagedPackageStorageClient", "path").get()
-
-      getClientProperty("StagedPackageStorageClient", "bucket") match {
-        case Return(bucket) => S3ObjectStorageConfig(bucket, path)
-        case _ => LocalObjectStorageConfig(path)
-      }
+    val configuration: ObjectStorageUri = {
+      getClientProperty("StagedPackageStorageClient", "stagedPackageUri")
+        .flatMap(ObjectStorageUri.parse).get()
     }
-
   }
-
-  sealed trait ObjectStorageConfig
-  case class S3ObjectStorageConfig(bucket: String, path: String) extends ObjectStorageConfig
-  case class LocalObjectStorageConfig(path: String) extends ObjectStorageConfig
 
   private[this] def getClientProperty(clientName: String, key: String): Try[String] = {
     val property = s"com.mesosphere.cosmos.test.CosmosIntegrationTestClient.$clientName.$key"
