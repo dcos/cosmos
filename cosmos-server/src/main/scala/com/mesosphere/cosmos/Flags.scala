@@ -47,4 +47,9 @@ object stagedPackagePath extends GlobalFlag[Option[String]](
   None,
   "The path where objects are written into staged package storage"
 )
+
+object stagedPackageUri extends GlobalFlag[Option[ObjectStorageUri]](
+  None,
+  "The uri where objects are written into staged package storage"
+)
 // scalastyle:on object.name

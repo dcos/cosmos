@@ -1,6 +1,7 @@
 package com.mesosphere.cosmos.storage
 
 import com.amazonaws.services.s3.AmazonS3Client
+import com.amazonaws.services.s3.AmazonS3URI
 import com.amazonaws.services.s3.model.AmazonS3Exception
 import com.amazonaws.services.s3.model.CannedAccessControlList
 import com.amazonaws.services.s3.model.ListObjectsRequest
@@ -11,22 +12,24 @@ import com.mesosphere.cosmos.http.MediaType
 import com.netaporter.uri.Uri
 import com.twitter.finagle.stats.Stat
 import com.twitter.finagle.stats.StatsReceiver
-import com.twitter.io.Reader
 import com.twitter.util.Future
 import com.twitter.util.FuturePool
 import java.io.InputStream
+
 import scala.collection.JavaConverters._
 import scala.collection.breakOut
 
 final class S3ObjectStorage(
   client: AmazonS3Client,
-  bucket: String,
-  path: String
+  s3Uri: AmazonS3URI
 )(
   implicit statsReceiver: StatsReceiver
 ) extends ObjectStorage {
   // We don't need to make it configurable for now.
   private[this] val pool = FuturePool.interruptibleUnboundedPool
+
+  private[this] val bucket = s3Uri.getBucket
+  private[this] val path = s3Uri.getURI.getPath
 
   private[this] val stats = statsReceiver.scope(s"S3ObjectStorage($bucket, $path)")
 
@@ -162,10 +165,9 @@ final class S3ObjectStorage(
 object S3ObjectStorage {
   def apply(
     client: AmazonS3Client,
-    bucket: String,
-    path: String
+    s3Uri: AmazonS3URI
   )(implicit statsReceiver: StatsReceiver): S3ObjectStorage = {
-    new S3ObjectStorage(client, bucket, path)
+    new S3ObjectStorage(client, s3Uri)
   }
 
   case class ListToken(token: ObjectListing) extends ObjectStorage.ListToken

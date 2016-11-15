@@ -14,4 +14,7 @@ object Flaggables {
 
   implicit val flagOfOptionString: Flaggable[Option[String]] =
     Flaggable.mandatory(Option(_))
+
+  implicit val flagOfOptionObjectStorageUri: Flaggable[Option[ObjectStorageUri]] =
+    Flaggable.mandatory(s => Some(ObjectStorageUri.parse(s).get()))
 }

@@ -29,7 +29,6 @@ import com.twitter.finagle.http.Status
 import com.twitter.finagle.stats.NullStatsReceiver
 import com.twitter.finagle.stats.StatsReceiver
 import com.twitter.util.Try
-import java.nio.file.Paths
 import shapeless.HNil
 
 private[cosmos] final class Cosmos(
@@ -162,10 +161,13 @@ object Cosmos extends FinchServer {
       val zkUri = zookeeperUri()
       logger.info("Using {} for the ZooKeeper connection", zkUri)
 
-      val objectStorage = (stagedPackageBucket(), stagedPackagePath()) match {
-        case (Some(bucket), Some(path)) => Some(S3ObjectStorage(new AmazonS3Client(), bucket, path))
-        case (None, Some(path)) => Some(LocalObjectStorage(Paths.get(path)))
-        case _ => None
+      val stagingUri = stagedPackageUri()
+      logger.info("Using {} for the staging uri", stagingUri)
+
+      val objectStorage = stagedPackageUri() match {
+        case Some(S3Uri(uri)) => Some(S3ObjectStorage(new AmazonS3Client(), uri))
+        case Some(FileUri(path)) => Some(LocalObjectStorage(path))
+        case None => None
       }
 
       val marathonPackageRunner = new MarathonPackageRunner(adminRouter)
