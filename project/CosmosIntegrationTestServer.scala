@@ -1,6 +1,8 @@
 package com.mesosphere.cosmos
 
-import java.io.{IOException, OutputStream, PrintStream}
+import java.io.IOException
+import java.io.OutputStream
+import java.io.PrintStream
 import java.net.URL
 import java.nio.file._
 import java.nio.file.attribute.BasicFileAttributes
@@ -22,24 +24,43 @@ class CosmosIntegrationTestServer(javaHome: Option[String], itResourceDirs: Seq[
   private var zkCluster: Option[TestingCluster] = None
 
   def setup(logger: Logger): Unit = {
-    val temporaryDirectory = Files.createTempDirectory("cosmos-it-")
-    dataDir = Some(temporaryDirectory.toFile.getAbsolutePath)
+    createDataDir()
+    initZkCluster(logger)
+    val cmd: Seq[String] = getCommand
+    runProcess(logger, cmd)
+  }
 
+  def runProcess(logger: Logger, cmd: Seq[String]): Unit = {
+    logger.info("Starting cosmos with command: " + cmd.mkString(" "))
+
+    val run = Process(cmd).run(new ProcessLogger() {
+      override def buffer[T](f: => T): T = logger.buffer(f)
+
+      override def error(s: => String): Unit = logger.info("<<cosmos-server>> " + s)
+
+      override def info(s: => String): Unit = logger.info("<<cosmos-server>> " + s)
+    })
+    val fExitValue = Future(run.exitValue())
+    process = Some(run)
     try {
-      initCuratorTestJavassist()
-      val cluster = new TestingCluster(1)
-      cluster.start()
-      zkCluster = Some(cluster)
+      waitUntilTrue(60.seconds) {
+        if (fExitValue.isCompleted) {
+          throw new IllegalStateException("Cosmos Server has terminated.")
+        }
+        canConnectTo(logger, new URL("http://localhost:9990/admin/ping"))
+      }
     } catch {
-      case cce: CannotCompileException =>
-        // ignore, this appears to be thrown by some runtime bytcode stuff that doesn't actually seem to break things
       case t: Throwable =>
-        logger.info(s"caught throwable: ${t.toString}")
+        cleanup()
+        throw t
     }
+  }
 
+  def getCommand: Seq[String] = {
     val zkUri = zkCluster.map { c =>
       val connectString = c.getConnectString
-      val baseZNode = Random.alphanumeric.take(10).mkString
+      val zNodeNameSize = 10
+      val baseZNode = Random.alphanumeric.take(zNodeNameSize).mkString
       s"zk://$connectString/$baseZNode"
     }.get
 
@@ -49,10 +70,9 @@ class CosmosIntegrationTestServer(javaHome: Option[String], itResourceDirs: Seq[
       .getOrElse("java")
 
     val dcosUri = systemProperty("com.mesosphere.cosmos.dcosUri").get
-    System.setProperty(
-      "com.mesosphere.cosmos.test.CosmosIntegrationTestClient.CosmosClient.uri",
-      "http://localhost:7070"
-    )
+
+    setClientProperty("CosmosClient", "uri", "http://localhost:7070")
+    setClientProperty("ZooKeeperClient", "uri", zkUri)
 
     val args = Seq(
       dataDir.map(s => s"-com.mesosphere.cosmos.dataDir=$s")
@@ -72,28 +92,26 @@ class CosmosIntegrationTestServer(javaHome: Option[String], itResourceDirs: Seq[
       s"-com.mesosphere.cosmos.zookeeperUri=$zkUri",
       s"-com.mesosphere.cosmos.dcosUri=$dcosUri"
     ) ++ args
+    cmd
+  }
 
-    logger.info("Starting cosmos with command: " + cmd.mkString(" "))
-
-    val run = Process(cmd).run(new ProcessLogger() {
-      override def buffer[T](f: => T): T = logger.buffer(f)
-      override def error(s: => String): Unit = logger.info("<<cosmos-server>> " + s)
-      override def info(s: => String): Unit = logger.info("<<cosmos-server>> " + s)
-    })
-    val fExitValue = Future(run.exitValue())
-    process = Some(run)
+  def initZkCluster(logger: Logger): Unit = {
     try {
-      waitUntilTrue(60.seconds) {
-        if (fExitValue.isCompleted) {
-          throw new IllegalStateException("Cosmos Server has terminated.")
-        }
-        canConnectTo(logger, new URL("http://localhost:9990/admin/ping"))
-      }
+      initCuratorTestJavassist()
+      val cluster = new TestingCluster(1)
+      cluster.start()
+      zkCluster = Some(cluster)
     } catch {
+      case cce: CannotCompileException =>
+      // ignore, this appears to be thrown by some runtime bytecode stuff that doesn't actually seem to break things
       case t: Throwable =>
-        cleanup()
-        throw t
+        logger.info(s"caught throwable: ${t.toString}")
     }
+  }
+
+  def createDataDir(): Unit = {
+    val temporaryDirectory = Files.createTempDirectory("cosmos-it-")
+    dataDir = Some(temporaryDirectory.toFile.getAbsolutePath)
   }
 
   def cleanup(): Unit = {
@@ -119,6 +137,11 @@ class CosmosIntegrationTestServer(javaHome: Option[String], itResourceDirs: Seq[
 
       val _ = Files.walkFileTree(Paths.get(dir), visitor)
     }
+  }
+
+  private[this] def setClientProperty(clientName: String, key: String, value: String): Unit = {
+    val property = s"com.mesosphere.cosmos.test.CosmosIntegrationTestClient.$clientName.$key"
+    System.setProperty(property, value)
   }
 
   private[this] def systemProperty(key: String): Option[String] = {
@@ -150,7 +173,8 @@ class CosmosIntegrationTestServer(javaHome: Option[String], itResourceDirs: Seq[
       if ((System.currentTimeMillis() - startTimeMillis).millis > timeout) {
         throw new TimeoutException()
       }
-      Thread.sleep(1000)
+      val sleepTime = 1000
+      Thread.sleep(sleepTime)
     }
   }
 
