@@ -225,7 +225,4 @@ case class InstallQueueError(msg: String) extends CosmosError
 case class NotImplemented(msg: String) extends CosmosError {
   override val status = Status.NotImplemented
 }
-
-case class NotValidObjectStorageUri() extends CosmosError
-
 // scalastyle:on number.of.types

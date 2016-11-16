@@ -351,7 +351,6 @@ object Encoders extends LowPriorityImplicits {
       case EnvelopeError(msg) => msg
       case InstallQueueError(msg) => msg
       case NotImplemented(msg) => msg
-      case NotValidObjectStorageUri() => "The given Uri was not a valid storage Uri"
     }
   }
   // scalastyle:on cyclomatic.complexity method.length
