@@ -23,7 +23,6 @@ import com.mesosphere.cosmos.rpc.v1.model.ServiceStartResponse
 import com.mesosphere.cosmos.rpc.v2.circe.MediaTypedEncoders._
 import com.mesosphere.cosmos.storage.InMemoryPackageStorage
 import com.mesosphere.cosmos.storage.LocalObjectStorage
-import com.mesosphere.cosmos.storage.ObjectStorage
 import com.mesosphere.cosmos.storage.PackageObjectStorage
 import com.mesosphere.cosmos.storage.PackageStorage
 import com.mesosphere.cosmos.storage.S3ObjectStorage
@@ -169,10 +168,9 @@ object Cosmos extends FinchServer {
       logger.info("Using {} for the ZooKeeper connection", zkUri)
 
       logger.info("Using {} for the package storage uri", packageStorageUri())
-      val objectStorage = packageStorageUri() match {
-        case Some(S3Uri(uri)) => Some(S3ObjectStorage(new AmazonS3Client(), uri))
-        case Some(FileUri(path)) => Some(LocalObjectStorage(path))
-        case None => None
+      val packageObjectStorage: Option[PackageObjectStorage] = packageStorageUri().map {
+        case S3Uri(uri) => PackageObjectStorage(S3ObjectStorage(new AmazonS3Client(), uri))
+        case FileUri(path) => PackageObjectStorage(LocalObjectStorage(path))
       }
 
       val marathonPackageRunner = new MarathonPackageRunner(adminRouter)
@@ -195,7 +193,7 @@ object Cosmos extends FinchServer {
           sourcesStorage,
           packageStorage,
           UniverseClient(adminRouter),
-          objectStorage
+          packageObjectStorage
         )
       cosmos.service
     }
@@ -246,7 +244,7 @@ object Cosmos extends FinchServer {
     sourcesStorage: PackageSourcesStorage,
     packageStorage: PackageStorage,
     universeClient: UniverseClient,
-    objectStorage: Option[ObjectStorage]
+    packageObjectStorage: Option[PackageObjectStorage]
   )(implicit statsReceiver: StatsReceiver = NullStatsReceiver): Cosmos = {
 
     val repositories = new MultiRepository(
@@ -254,9 +252,9 @@ object Cosmos extends FinchServer {
       universeClient
     )
 
-    val serviceStartHandler = objectStorage match {
-      case Some(objStore) =>
-        new ServiceStartHandler(LocalPackageCollection(PackageObjectStorage(objStore)), packageRunner)
+    val serviceStartHandler = packageObjectStorage match {
+      case Some(pkgStore) =>
+        new ServiceStartHandler(LocalPackageCollection(pkgStore), packageRunner)
       case None =>
         new NotConfiguredHandler[ServiceStartRequest, ServiceStartResponse]
     }
