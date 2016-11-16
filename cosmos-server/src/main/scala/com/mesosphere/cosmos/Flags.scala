@@ -38,8 +38,8 @@ object dataDir extends GlobalFlag[file.Path](
   help = "Root directory for all cosmos runtime "
 )
 
-object stagedPackageUri extends GlobalFlag[Option[ObjectStorageUri]](
+object packageStorageUri extends GlobalFlag[Option[ObjectStorageUri]](
   None,
-  "The uri where objects are written into staged package storage"
+  "The uri where objects are written for package storage"
 )
 // scalastyle:on object.name
