@@ -84,7 +84,6 @@ final class DefaultUniverseClient(
 
         // Handle the response
         Future {
-
           conn.getResponseCode match {
             case HttpURLConnection.HTTP_OK =>
               fetchScope.scope("status").counter("200").incr()
@@ -118,7 +117,11 @@ final class DefaultUniverseClient(
               (contentType, conn.getInputStream)
           }
         } map { case (contentType, bodyInputStream) =>
-          decodeUniverse(contentType, bodyInputStream, repository.uri)
+          try {
+            decodeUniverse(contentType, bodyInputStream, repository.uri)
+          } finally bodyInputStream.close()
+        } ensure {
+          conn.disconnect()
         }
       }
     }
