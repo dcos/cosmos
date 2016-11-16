@@ -1,7 +1,8 @@
 package com.mesosphere.universe.v3.model
 
-import org.scalacheck.Gen
+import com.mesosphere.Generators
 import org.scalacheck.Arbitrary
+import org.scalacheck.Gen
 import org.scalatest.FreeSpec
 import org.scalatest.Matchers
 import org.scalatest.prop.PropertyChecks
@@ -45,11 +46,6 @@ final class SemVerSpec extends FreeSpec with PropertyChecks with Matchers {
 }
 
 object SemVerSpec {
-  private[this] def sizedString(maxSize: Int): Gen[String] = for {
-    size <- Gen.chooseNum(0, maxSize)
-    array <- Gen.containerOfN[Array, Char](size, Gen.alphaLowerChar)
-  } yield new String(array)
-
   val semVerGen: Gen[SemVer] = {
     val maxNumber = 999999999L
     val numbersGen = Gen.chooseNum(0, maxNumber)
@@ -59,12 +55,14 @@ object SemVerSpec {
         seqSize,
         Gen.oneOf(
           numbersGen.map(Right(_)),
-          sizedString(10).filter(_.nonEmpty).map(Left(_))
+          Generators.maxSizedString(10, Gen.alphaLowerChar).filter(_.nonEmpty).map(Left(_))
         )
       )
     } yield preReleases
 
-    val buildGen = sizedString(10).map(string => if (string.isEmpty) None else Some(string))
+    val buildGen = Generators.maxSizedString(10, Gen.alphaLowerChar).map {
+      string => if (string.isEmpty) None else Some(string)
+    }
 
     for {
       major <- numbersGen

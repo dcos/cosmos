@@ -1,5 +1,6 @@
 package com.mesosphere.universe.v3.model
 
+import com.mesosphere.Generators
 import java.nio.ByteBuffer
 import org.scalacheck.Gen
 import org.scalacheck.Gen.Choose
@@ -58,11 +59,10 @@ final class PackageDefinitionSpec extends FreeSpec with PropertyChecks {
 object PackageDefinitionSpec {
   val nonNegNum: Gen[Long] = Gen.sized(max => implicitly[Choose[Long]].choose(0, max.toLong))
 
-  val packageNameGen: Gen[String] = Gen.sized { size =>
-    for {
-      array <- Gen.containerOfN[Array, Char](size % 65, Gen.oneOf(Gen.numChar, Gen.alphaLowerChar))
-    } yield new String(array)
-  }
+  val packageNameGen: Gen[String] = Generators.maxSizedString(
+    65,
+    Gen.oneOf(Gen.numChar, Gen.alphaLowerChar)
+  )
 
   val releaseVersionGen: Gen[PackageDefinition.ReleaseVersion] = for {
     num <- Gen.posNum[Long]
