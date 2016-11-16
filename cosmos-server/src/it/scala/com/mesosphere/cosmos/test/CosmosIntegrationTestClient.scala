@@ -83,7 +83,7 @@ object CosmosIntegrationTestClient extends Matchers {
     lazy val logger: Logger =
       LoggerFactory.getLogger("com.mesosphere.cosmos.test.CosmosIntegrationTestClient.CosmosClient")
 
-    val uri: String = getClientProperty("CosmosClient", "uri").get()
+    val uri: String = getClientProperty("CosmosClient", "uri")
 
     def callEndpoint[Res](request: CosmosRequest, expectedStatus: Status = Status.Ok)(implicit
       decoder: Decoder[Res]
@@ -205,25 +205,24 @@ object CosmosIntegrationTestClient extends Matchers {
 
   object ZooKeeperClient {
     val uri: ZooKeeperUri = {
-      getClientProperty("ZooKeeperClient", "uri")
-        .flatMap(ZooKeeperUri.parse).get()
+      ZooKeeperUri.parse(
+        getClientProperty("ZooKeeperClient", "uri")
+      ).get()
     }
   }
 
   object StagedPackageStorageClient {
     val configuration: ObjectStorageUri = {
-      getClientProperty("StagedPackageStorageClient", "stagedPackageUri")
-        .flatMap(ObjectStorageUri.parse).get()
+      ObjectStorageUri.parse(
+        getClientProperty("StagedPackageStorageClient", "stagedPackageUri")
+      ).get()
     }
   }
 
-  private[this] def getClientProperty(clientName: String, key: String): Try[String] = {
+  private[this] def getClientProperty(clientName: String, key: String): String = {
     val property = s"com.mesosphere.cosmos.test.CosmosIntegrationTestClient.$clientName.$key"
-
-    Try {
       Option(System.getProperty(property))
         .getOrElse(throw new AssertionError(s"Missing system property '$property' "))
-    }
   }
 
 }
