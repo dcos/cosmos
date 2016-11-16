@@ -59,10 +59,10 @@ final class PackageDefinitionSpec extends FreeSpec with PropertyChecks {
 object PackageDefinitionSpec {
   val nonNegNum: Gen[Long] = Gen.sized(max => implicitly[Choose[Long]].choose(0, max.toLong))
 
-  val packageNameGen: Gen[String] = Generators.maxSizedString(
-    65,
-    Gen.oneOf(Gen.numChar, Gen.alphaLowerChar)
-  )
+  val packageNameGen: Gen[String] = {
+    val maxPackageNameLength = 64
+    Generators.maxSizedString(maxPackageNameLength, Gen.oneOf(Gen.numChar, Gen.alphaLowerChar))
+  }
 
   val releaseVersionGen: Gen[PackageDefinition.ReleaseVersion] = for {
     num <- Gen.posNum[Long]

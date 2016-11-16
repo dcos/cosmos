@@ -48,6 +48,7 @@ final class SemVerSpec extends FreeSpec with PropertyChecks with Matchers {
 object SemVerSpec {
   val semVerGen: Gen[SemVer] = {
     val maxNumber = 999999999L
+    val maxStringLength = 10
     val numbersGen = Gen.chooseNum(0, maxNumber)
     val preReleasesGen = for {
       seqSize <- Gen.chooseNum(0, 3)
@@ -55,12 +56,15 @@ object SemVerSpec {
         seqSize,
         Gen.oneOf(
           numbersGen.map(Right(_)),
-          Generators.maxSizedString(10, Gen.alphaLowerChar).filter(_.nonEmpty).map(Left(_))
+          Generators.maxSizedString(
+            maxStringLength,
+            Gen.alphaLowerChar
+          ).filter(_.nonEmpty).map(Left(_))
         )
       )
     } yield preReleases
 
-    val buildGen = Generators.maxSizedString(10, Gen.alphaLowerChar).map {
+    val buildGen = Generators.maxSizedString(maxStringLength, Gen.alphaLowerChar).map {
       string => if (string.isEmpty) None else Some(string)
     }
 
