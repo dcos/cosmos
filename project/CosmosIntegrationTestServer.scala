@@ -23,23 +23,40 @@ class CosmosIntegrationTestServer(javaHome: Option[String], itResourceDirs: Seq[
   private var dataDir: Option[String] = None
   private var zkCluster: Option[TestingCluster] = None
 
-  //scalastyle:off method.length
   def setup(logger: Logger): Unit = {
-    val temporaryDirectory = Files.createTempDirectory("cosmos-it-")
-    dataDir = Some(temporaryDirectory.toFile.getAbsolutePath)
+    createDataDir()
+    initZkCluster(logger)
+    val cmd: Seq[String] = getCommand
+    runProcess(logger, cmd)
+  }
 
+  def runProcess(logger: Logger, cmd: Seq[String]): Unit = {
+    logger.info("Starting cosmos with command: " + cmd.mkString(" "))
+
+    val run = Process(cmd).run(new ProcessLogger() {
+      override def buffer[T](f: => T): T = logger.buffer(f)
+
+      override def error(s: => String): Unit = logger.info("<<cosmos-server>> " + s)
+
+      override def info(s: => String): Unit = logger.info("<<cosmos-server>> " + s)
+    })
+    val fExitValue = Future(run.exitValue())
+    process = Some(run)
     try {
-      initCuratorTestJavassist()
-      val cluster = new TestingCluster(1)
-      cluster.start()
-      zkCluster = Some(cluster)
+      waitUntilTrue(60.seconds) {
+        if (fExitValue.isCompleted) {
+          throw new IllegalStateException("Cosmos Server has terminated.")
+        }
+        canConnectTo(logger, new URL("http://localhost:9990/admin/ping"))
+      }
     } catch {
-      case cce: CannotCompileException =>
-        // ignore, this appears to be thrown by some runtime bytcode stuff that doesn't actually seem to break things
       case t: Throwable =>
-        logger.info(s"caught throwable: ${t.toString}")
+        cleanup()
+        throw t
     }
+  }
 
+  def getCommand: Seq[String] = {
     val zkUri = zkCluster.map { c =>
       val connectString = c.getConnectString
       val zNodeNameSize = 10
@@ -75,30 +92,27 @@ class CosmosIntegrationTestServer(javaHome: Option[String], itResourceDirs: Seq[
       s"-com.mesosphere.cosmos.zookeeperUri=$zkUri",
       s"-com.mesosphere.cosmos.dcosUri=$dcosUri"
     ) ++ args
+    cmd
+  }
 
-    logger.info("Starting cosmos with command: " + cmd.mkString(" "))
-
-    val run = Process(cmd).run(new ProcessLogger() {
-      override def buffer[T](f: => T): T = logger.buffer(f)
-      override def error(s: => String): Unit = logger.info("<<cosmos-server>> " + s)
-      override def info(s: => String): Unit = logger.info("<<cosmos-server>> " + s)
-    })
-    val fExitValue = Future(run.exitValue())
-    process = Some(run)
+  def initZkCluster(logger: Logger): Unit = {
     try {
-      waitUntilTrue(60.seconds) {
-        if (fExitValue.isCompleted) {
-          throw new IllegalStateException("Cosmos Server has terminated.")
-        }
-        canConnectTo(logger, new URL("http://localhost:9990/admin/ping"))
-      }
+      initCuratorTestJavassist()
+      val cluster = new TestingCluster(1)
+      cluster.start()
+      zkCluster = Some(cluster)
     } catch {
+      case cce: CannotCompileException =>
+      // ignore, this appears to be thrown by some runtime bytecode stuff that doesn't actually seem to break things
       case t: Throwable =>
-        cleanup()
-        throw t
+        logger.info(s"caught throwable: ${t.toString}")
     }
   }
-  //scalastyle:on method.length
+
+  def createDataDir(): Unit = {
+    val temporaryDirectory = Files.createTempDirectory("cosmos-it-")
+    dataDir = Some(temporaryDirectory.toFile.getAbsolutePath)
+  }
 
   def cleanup(): Unit = {
     System.setProperties(originalProperties)
