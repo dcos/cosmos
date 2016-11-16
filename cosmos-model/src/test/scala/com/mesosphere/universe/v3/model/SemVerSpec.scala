@@ -45,29 +45,26 @@ final class SemVerSpec extends FreeSpec with PropertyChecks with Matchers {
 }
 
 object SemVerSpec {
-  private[this] def sizedString(maxSize: Int): Gen[String] = Gen.sized { size =>
-    for {
-      array <- Gen.containerOfN[Array, Char](
-        size % maxSize,
-        Gen.alphaLowerChar
-      )
-    } yield new String(array)
-  }
+  private[this] def sizedString(maxSize: Int): Gen[String] = for {
+    size <- Gen.chooseNum(0, maxSize)
+    array <- Gen.containerOfN[Array, Char](size, Gen.alphaLowerChar)
+  } yield new String(array)
 
-  val semVerGen: Gen[SemVer] = Gen.sized { size =>
+  val semVerGen: Gen[SemVer] = {
     val maxNumber = 999999999L
-    val numbersGen = for (n <- Gen.choose(0, maxNumber)) yield n
-    val preReleasesGen = Gen.containerOfN[Seq, Either[String, Long]](
-      (size % 4),
-      Gen.oneOf(
-        numbersGen.map(Right(_)),
-        sizedString((size % 10) + 1).filter(_.nonEmpty).map(Left(_))
+    val numbersGen = Gen.chooseNum(0, maxNumber)
+    val preReleasesGen = for {
+      seqSize <- Gen.chooseNum(0, 3)
+      preReleases <- Gen.containerOfN[Seq, Either[String, Long]](
+        seqSize,
+        Gen.oneOf(
+          numbersGen.map(Right(_)),
+          sizedString(10).filter(_.nonEmpty).map(Left(_))
+        )
       )
-    )
+    } yield preReleases
 
-    val buildGen = sizedString((size % 10) + 1).map { string =>
-      if (string.isEmpty) None else Some(string)
-    }
+    val buildGen = sizedString(10).map(string => if (string.isEmpty) None else Some(string))
 
     for {
       major <- numbersGen

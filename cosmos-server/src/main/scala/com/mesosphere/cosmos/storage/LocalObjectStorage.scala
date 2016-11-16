@@ -22,8 +22,7 @@ import scala.collection.JavaConverters._
 import scala.collection.breakOut
 import scala.util.control.NonFatal
 
-
-final class LocalObjectStorage(
+final class LocalObjectStorage private (
   path: Path
 )(
   implicit statsReceiver: StatsReceiver
@@ -31,9 +30,6 @@ final class LocalObjectStorage(
   private[this] val pool = FuturePool.interruptibleUnboundedPool
 
   private[this] val stats = statsReceiver.scope(s"LocalObjectStorage($path)")
-
-  // Create the directory for the root path
-  Files.createDirectories(path)
 
   override def write(
     name: String,
@@ -57,7 +53,9 @@ final class LocalObjectStorage(
         if (contentLength != bodySize) {
           // content length doesn't match the size of the input stream. Delete file and notify
           Files.delete(absolutePath)
-          throw new IllegalArgumentException(s"Content length $contentLength doesn't equal size of stream $bodySize")
+          throw new IllegalArgumentException(
+            s"Content length $contentLength doesn't equal size of stream $bodySize"
+          )
         }
       }
     }
@@ -197,6 +195,9 @@ final class LocalObjectStorage(
 
 object LocalObjectStorage {
   def apply(path: Path)(implicit statsReceiver: StatsReceiver): LocalObjectStorage = {
+    // Create the directory for the root path
+    Files.createDirectories(path)
+
     new LocalObjectStorage(path)
   }
 
