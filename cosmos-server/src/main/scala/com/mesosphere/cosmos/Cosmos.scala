@@ -21,7 +21,12 @@ import com.mesosphere.cosmos.rpc.v1.circe.MediaTypedRequestDecoders._
 import com.mesosphere.cosmos.rpc.v1.model.ServiceStartRequest
 import com.mesosphere.cosmos.rpc.v1.model.ServiceStartResponse
 import com.mesosphere.cosmos.rpc.v2.circe.MediaTypedEncoders._
-import com.mesosphere.cosmos.storage._
+import com.mesosphere.cosmos.storage.InMemoryPackageStorage
+import com.mesosphere.cosmos.storage.LocalObjectStorage
+import com.mesosphere.cosmos.storage.ObjectStorage
+import com.mesosphere.cosmos.storage.PackageObjectStorage
+import com.mesosphere.cosmos.storage.PackageStorage
+import com.mesosphere.cosmos.storage.S3ObjectStorage
 import com.mesosphere.universe
 import com.netaporter.uri.Uri
 import com.twitter.finagle.Service
