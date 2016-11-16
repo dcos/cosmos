@@ -1,26 +1,31 @@
 package com.mesosphere.cosmos
 
 import com.amazonaws.services.s3.AmazonS3URI
+import com.netaporter.uri.Uri
 import com.twitter.util.Try
 import com.twitter.util.Throw
-import java.nio.file.{Path, Paths}
+import java.nio.file.Path
+import java.nio.file.Paths
 
 sealed trait ObjectStorageUri
 
 object ObjectStorageUri {
-  def parse(unparsedUri: String): Try[ObjectStorageUri] = {
-    val s3UriStart = "s3://"
-    val fileUriStart = "file://"
-    unparsedUri match {
-      case uri if uri.toLowerCase.startsWith(s3UriStart) =>
-        Try(S3Uri(new AmazonS3URI(uri)))
-      case uri if uri.toLowerCase.startsWith(fileUriStart) =>
-        Try(FileUri(Paths.get(uri.drop(fileUriStart.length))))
+  def parse(uri: String): Try[ObjectStorageUri] = {
+    Try(Uri.parse(uri))
+      .flatMap(uriToObjectStorageUri)
+  }
+
+  def uriToObjectStorageUri(uri: Uri): Try[ObjectStorageUri] = {
+    (uri.scheme, uri.host) match {
+      case (Some("s3"), _) =>
+        Try(S3Uri(new AmazonS3URI(uri.toURI)))
+      case (Some("file"), None) =>
+        Try(FileUri(Paths.get(uri.path)))
       case _ =>
         Throw(
           new IllegalArgumentException(
-            s"The input [$unparsedUri] is not parsable. Uri's must start with "
-              + s"$s3UriStart or $fileUriStart"
+            s"The uri [$uri] is not parsable as an ObjectStorageUri. " +
+              "ObjectStorageUri's must start with file:/// or s3://"
           )
         )
     }
