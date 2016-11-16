@@ -1,6 +1,6 @@
 package com.mesosphere.cosmos.handler
 
-import com.mesosphere.cosmos._
+import com.mesosphere.cosmos.NotImplemented
 import com.mesosphere.cosmos.finch.EndpointHandler
 import com.mesosphere.cosmos.http.RequestSession
 import com.twitter.util.Future
