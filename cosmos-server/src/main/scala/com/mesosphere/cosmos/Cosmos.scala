@@ -18,6 +18,8 @@ import com.mesosphere.cosmos.repository.ZkRepositoryList
 import com.mesosphere.cosmos.rpc.MediaTypes
 import com.mesosphere.cosmos.rpc.v1.circe.MediaTypedEncoders._
 import com.mesosphere.cosmos.rpc.v1.circe.MediaTypedRequestDecoders._
+import com.mesosphere.cosmos.rpc.v1.model.ServiceStartRequest
+import com.mesosphere.cosmos.rpc.v1.model.ServiceStartResponse
 import com.mesosphere.cosmos.rpc.v2.circe.MediaTypedEncoders._
 import com.mesosphere.cosmos.storage._
 import com.mesosphere.universe
@@ -251,7 +253,7 @@ object Cosmos extends FinchServer {
       case Some(objStore) =>
         new ServiceStartHandler(LocalPackageCollection(PackageObjectStorage(objStore)), packageRunner)
       case None =>
-        new ServiceStartNotConfiguredHandler
+        new NotConfiguredHandler[ServiceStartRequest, ServiceStartResponse]
     }
 
     new Cosmos(
