@@ -256,7 +256,7 @@ object Cosmos extends FinchServer {
       case Some(pkgStore) =>
         new ServiceStartHandler(LocalPackageCollection(pkgStore), packageRunner)
       case None =>
-        new NotConfiguredHandler[ServiceStartRequest, ServiceStartResponse]
+        new NotConfiguredHandler[ServiceStartRequest, ServiceStartResponse]("service start")
     }
 
     new Cosmos(
