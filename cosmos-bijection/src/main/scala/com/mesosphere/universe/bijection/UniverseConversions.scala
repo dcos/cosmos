@@ -98,33 +98,32 @@ object UniverseConversions {
       universe.v2.model.ReleaseVersion]
   }
 
-  implicit val metadateToV3Package: Conversion[universe.v3.model.Metadata, universe.v3.model.V3Package] =
-    Conversion.fromFunction { (metadata: universe.v3.model.Metadata) =>
-      universe.v3.model.V3Package(
-        packagingVersion=metadata.packagingVersion,
-        name=metadata.name,
-        version=metadata.version,
-        releaseVersion=universe.v3.model.PackageDefinition.ReleaseVersion(
-          Instant.now().getEpochSecond()
-        ).get,
-        maintainer=metadata.maintainer,
-        description=metadata.description,
-        tags=metadata.tags,
-        selected=None, // Selected package is an Universe concept. Setting to the default value.
-        scm=metadata.scm,
-        website=metadata.website,
-        framework=metadata.framework,
-        preInstallNotes=metadata.preInstallNotes,
-        postInstallNotes=metadata.postInstallNotes,
-        postUninstallNotes=metadata.postUninstallNotes,
-        licenses=metadata.licenses,
-        minDcosReleaseVersion=metadata.minDcosReleaseVersion,
-        marathon=metadata.marathon,
-        resource=metadata.resource,
-        config=metadata.config,
-        command=None // Command are not supported in Package.dcos. Setting to the default value.
-      )
-    }
+  implicit val v3MetadataToV3Package:
+    Conversion[(universe.v3.model.Metadata, universe.v3.model.PackageDefinition.ReleaseVersion),
+      universe.v3.model.V3Package] = Conversion.fromFunction { case (metadata, releaseVersion) =>
+    universe.v3.model.V3Package(
+      packagingVersion=metadata.packagingVersion,
+      name=metadata.name,
+      version=metadata.version,
+      releaseVersion=releaseVersion,
+      maintainer=metadata.maintainer,
+      description=metadata.description,
+      tags=metadata.tags,
+      selected=None, // Selected package is an Universe concept. Setting to the default value.
+      scm=metadata.scm,
+      website=metadata.website,
+      framework=metadata.framework,
+      preInstallNotes=metadata.preInstallNotes,
+      postInstallNotes=metadata.postInstallNotes,
+      postUninstallNotes=metadata.postUninstallNotes,
+      licenses=metadata.licenses,
+      minDcosReleaseVersion=metadata.minDcosReleaseVersion,
+      marathon=metadata.marathon,
+      resource=metadata.resource,
+      config=metadata.config,
+      command=None // Command are not supported in Package.dcos. Setting to the default value.
+    )
+  }
 
   implicit val v3PackageDefinitionToV2PackageDetails:
     Conversion[universe.v3.model.PackageDefinition, universe.v2.model.PackageDetails] = {

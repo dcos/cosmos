@@ -37,4 +37,14 @@ object dataDir extends GlobalFlag[file.Path](
   file.Paths.get("/var/lib/cosmos"),
   help = "Root directory for all cosmos runtime "
 )
+
+object addedPackageStorageUri extends GlobalFlag[Option[ObjectStorageUri]](
+  None,
+  "The URI where the data for successfully added packages is stored"
+)
+
+object stagedPackageStorageUri extends GlobalFlag[Option[ObjectStorageUri]](
+  None,
+  "The URI where packages that are staged for adding are stored"
+)
 // scalastyle:on object.name

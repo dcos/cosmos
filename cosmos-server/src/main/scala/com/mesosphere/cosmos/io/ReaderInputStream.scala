@@ -3,10 +3,6 @@ package com.mesosphere.cosmos.io
 import com.twitter.io.Buf
 import com.twitter.io.Reader
 import com.twitter.util.Await
-import com.twitter.util.Future
-import com.twitter.util.Return
-import com.twitter.util.Throw
-import com.twitter.util.Try
 import java.io.InputStream
 import scala.math.min
 
@@ -82,7 +78,7 @@ final class ReaderInputStream private (reader: Reader) extends InputStream {
       state = Some((buffer, position + 1))
 
       // hint bytes in Java are the two's complement of the integer value
-      (byte & 0xff)
+      byte & 0xff
     case _ =>
       readNextBuffer()
 

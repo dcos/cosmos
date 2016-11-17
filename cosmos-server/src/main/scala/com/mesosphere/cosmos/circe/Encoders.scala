@@ -350,6 +350,7 @@ object Encoders extends LowPriorityImplicits {
         s"Package: [$name] version: [$version] does not have a Marathon template defined and can not be rendered"
       case EnvelopeError(msg) => msg
       case InstallQueueError(msg) => msg
+      case NotImplemented(msg) => msg
     }
   }
   // scalastyle:on cyclomatic.complexity method.length

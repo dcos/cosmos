@@ -1,13 +1,13 @@
 package com.mesosphere.cosmos.storage.installqueue
 
 import com.mesosphere.universe
-import com.netaporter.uri.Uri
+import java.util.UUID
 
 sealed trait Operation
 
 case class Install(
-  uri: Uri,
-  packageDefinition: universe.v3.model.PackageDefinition
+  stagedPackageId: UUID,
+  v3Package: universe.v3.model.V3Package
 ) extends Operation
 
 case class UniverseInstall(

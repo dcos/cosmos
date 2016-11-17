@@ -35,14 +35,15 @@ final class RequestValidatorsSpec extends FreeSpec {
     "include the Authorization header in the return value if it was included in the request" - {
       "to accurately forward the header's state to other services" in {
         val Return((requestSession, _)) = evaluateEndpoint(authorization = Some("53cr37"))
-        assertResult(RequestSession(Some(Authorization("53cr37"))))(requestSession)
+        val RequestSession(Some(Authorization(auth)), _) = requestSession
+        assertResult("53cr37")(auth)
       }
     }
 
     "omit the Authorization header from the return value if it was omitted from the request" - {
       "to accurately forward the header's state to other services" in {
-        val Return((requestSession, _)) = evaluateEndpoint(authorization = None)
-        assertResult(RequestSession(None))(requestSession)
+        val Return((RequestSession(auth, _), _)) = evaluateEndpoint(authorization = None)
+        assertResult(None)(auth)
       }
     }
 

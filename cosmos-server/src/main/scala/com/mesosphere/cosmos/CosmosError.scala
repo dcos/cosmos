@@ -222,4 +222,7 @@ case class EnvelopeError(msg: String) extends CosmosError
 
 case class InstallQueueError(msg: String) extends CosmosError
 
+case class NotImplemented(msg: String) extends CosmosError {
+  override val status = Status.NotImplemented
+}
 // scalastyle:on number.of.types

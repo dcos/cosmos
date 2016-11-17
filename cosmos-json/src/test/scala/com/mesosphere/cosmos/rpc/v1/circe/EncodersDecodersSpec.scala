@@ -2,6 +2,8 @@ package com.mesosphere.cosmos.rpc.v1.circe
 
 import cats.data.Xor
 import com.mesosphere.cosmos.rpc
+import com.mesosphere.cosmos.rpc.v1.model.AddResponse
+import com.mesosphere.universe.v3.circe.Encoders._
 import com.mesosphere.universe.v3.model.PackageDefinitionSpec._
 import io.circe.jawn.decode
 import io.circe.syntax._
@@ -21,6 +23,25 @@ final class EncodersDecodersSpec extends FreeSpec with PropertyChecks with Match
       decode[rpc.v1.model.LocalPackage](string) shouldBe Xor.Right(localPackage)
     }
   }
+
+  "AddResponse" - {
+
+    "encodes to V3Package JSON" in {
+      forAll (v3PackageGen) { v3Package =>
+        assertResult(v3Package.asJson)(new AddResponse(v3Package).asJson)
+      }
+    }
+
+    "decodes from V3Package JSON" in {
+      forAll (v3PackageGen) { v3Package =>
+        assertResult(Xor.Right(v3Package)) {
+          decode[rpc.v1.model.AddResponse](v3Package.asJson.noSpaces).map(_.v3Package)
+        }
+      }
+    }
+
+  }
+
 }
 
 object EncodersDecodersSpec {

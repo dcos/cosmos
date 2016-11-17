@@ -5,6 +5,7 @@ import com.mesosphere.cosmos.AdminRouter
 import com.mesosphere.cosmos.AdminRouterClient
 import com.mesosphere.cosmos.MarathonClient
 import com.mesosphere.cosmos.MesosMasterClient
+import com.mesosphere.cosmos.ObjectStorageUri
 import com.mesosphere.cosmos.Services
 import com.mesosphere.cosmos.Trys
 import com.mesosphere.cosmos.Uris
@@ -13,6 +14,7 @@ import com.mesosphere.cosmos.http.Authorization
 import com.mesosphere.cosmos.http.RequestSession
 import com.mesosphere.cosmos.internal.circe.Decoders._
 import com.mesosphere.cosmos.internal.circe.Encoders._
+import com.mesosphere.cosmos.model.ZooKeeperUri
 import com.mesosphere.cosmos.rpc.MediaTypes
 import com.mesosphere.cosmos.rpc.v1.circe.Decoders._
 import com.mesosphere.cosmos.rpc.v1.circe.Encoders._
@@ -24,6 +26,7 @@ import com.netaporter.uri.Uri
 import com.netaporter.uri.dsl._
 import com.twitter.finagle.Service
 import com.twitter.finagle.SimpleFilter
+import com.twitter.finagle.http.Version.Http11
 import com.twitter.finagle.http._
 import com.twitter.util.Await
 import com.twitter.util.Future
@@ -81,11 +84,7 @@ object CosmosIntegrationTestClient extends Matchers {
     lazy val logger: Logger =
       LoggerFactory.getLogger("com.mesosphere.cosmos.test.CosmosIntegrationTestClient.CosmosClient")
 
-    val uri: String = {
-      val property = "com.mesosphere.cosmos.test.CosmosIntegrationTestClient.CosmosClient.uri"
-      Option(System.getProperty(property))
-        .getOrElse(throw new AssertionError(s"Missing system property '$property' "))
-    }
+    val uri: String = getClientProperty("CosmosClient", "uri")
 
     def callEndpoint[Res](request: CosmosRequest, expectedStatus: Status = Status.Ok)(implicit
       decoder: Decoder[Res]
@@ -168,16 +167,30 @@ object CosmosIntegrationTestClient extends Matchers {
       * It also includes the Authorization header if provided by configuration.
       */
     def submit(req: CosmosRequest): Response = {
-      val withPath = RequestBuilder().url(s"$uri/${req.path}")
-      val withAuth = Session.authorization.fold(withPath) { auth =>
-        withPath.setHeader("Authorization", auth.headerValue)
+      val finagleReq = buildRequest(req)
+      Await.result(client(finagleReq))
+    }
+
+    private[this] def buildRequest(cosmosRequest: CosmosRequest): Request = {
+      val pathPrefix = if (cosmosRequest.path.startsWith("/")) "" else "/"
+      val absolutePath = pathPrefix + cosmosRequest.path
+
+      val finagleRequest = cosmosRequest.body match {
+        case NoBody =>
+          Request(absolutePath)
+        case Monolithic(buf) =>
+          val req = Request(Method.Post, absolutePath)
+          req.content = buf
+          req
+        case Chunked(reader) =>
+          Request(Http11, cosmosRequest.method, absolutePath, reader)
       }
 
-      val withContentType = req.contentType.fold(withAuth)(withAuth.addHeader("Content-Type", _))
-      val withAccept = req.accept.fold(withContentType)(withContentType.addHeader("Accept", _))
-      val finagleReq = withAccept.build(req.method, req.body)
-
-      Await.result(client(finagleReq))
+      finagleRequest.headerMap ++= cosmosRequest.customHeaders
+      cosmosRequest.accept.foreach(finagleRequest.accept = _)
+      cosmosRequest.contentType.foreach(finagleRequest.contentType = _)
+      Session.authorization.foreach(auth => finagleRequest.authorization = auth.headerValue)
+      finagleRequest
     }
 
     // Do not relax the visibility on this -- use `submit()` instead; see its Scaladoc for why
@@ -204,4 +217,31 @@ object CosmosIntegrationTestClient extends Matchers {
       }
     }
   }
+
+  object ZooKeeperClient {
+    val uri: ZooKeeperUri = {
+      ZooKeeperUri.parse(
+        getClientProperty("ZooKeeperClient", "uri")
+      ).get()
+    }
+  }
+
+  object PackageStorageClient {
+
+    val addedUri: ObjectStorageUri = {
+      ObjectStorageUri.parse(getClientProperty("PackageStorageClient", "addedUri")).get()
+    }
+
+    val stagedUri: ObjectStorageUri = {
+      ObjectStorageUri.parse(getClientProperty("PackageStorageClient", "stagedUri")).get()
+    }
+
+  }
+
+  private[this] def getClientProperty(clientName: String, key: String): String = {
+    val property = s"com.mesosphere.cosmos.test.CosmosIntegrationTestClient.$clientName.$key"
+      Option(System.getProperty(property))
+        .getOrElse(throw new AssertionError(s"Missing system property '$property' "))
+  }
+
 }

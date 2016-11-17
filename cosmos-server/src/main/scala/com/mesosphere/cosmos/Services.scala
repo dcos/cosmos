@@ -54,11 +54,11 @@ object Services {
       service(request)
         .rescue {
           case ce: ChannelException =>
-            Future.exception(new ServiceUnavailable(serviceName, ce))
+            Future.exception(ServiceUnavailable(serviceName, ce))
           case e: NoBrokersAvailableException =>
-            Future.exception(new ServiceUnavailable(serviceName, e))
+            Future.exception(ServiceUnavailable(serviceName, e))
           case e: RequestException =>
-            Future.exception(new ServiceUnavailable(serviceName, e))
+            Future.exception(ServiceUnavailable(serviceName, e))
         }
     }
   }
