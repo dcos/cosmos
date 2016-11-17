@@ -15,7 +15,7 @@ final class OperationProcessor private (
   installer: Installer,
   universeInstaller: UniverseInstaller,
   uninstaller: Uninstaller
-) {
+) extends (() => Future[Unit]) {
 
   def apply(): Future[Unit] = {
     processorView.next().flatMap {

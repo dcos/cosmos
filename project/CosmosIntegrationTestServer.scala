@@ -24,7 +24,6 @@ class CosmosIntegrationTestServer(javaHome: Option[String], itResourceDirs: Seq[
   private var zkCluster: Option[TestingCluster] = None
 
   def setup(logger: Logger): Unit = {
-    createDataDir()
     initZkCluster(logger)
     val cmd: Seq[String] = getCommand
     runProcess(logger, cmd)
@@ -70,24 +69,20 @@ class CosmosIntegrationTestServer(javaHome: Option[String], itResourceDirs: Seq[
       .getOrElse("java")
 
     val dcosUri = systemProperty("com.mesosphere.cosmos.dcosUri").get
-    val addedPackagesUri = systemProperty("com.mesosphere.cosmos.addedPackageStorageUri").get
+    val packagesUri = systemProperty("com.mesosphere.cosmos.packageStorageUri").get
     val stagedPackagesUri = systemProperty("com.mesosphere.cosmos.stagedPackageStorageUri").get
 
     setClientProperty("CosmosClient", "uri", "http://localhost:7070")
     setClientProperty("ZooKeeperClient", "uri", zkUri)
-    setClientProperty("PackageStorageClient", "addedUri", addedPackagesUri)
+    setClientProperty("PackageStorageClient", "packagesUri", packagesUri)
     setClientProperty("PackageStorageClient", "stagedUri", stagedPackagesUri)
-
-    val args = Seq(
-      dataDir.map(s => s"-com.mesosphere.cosmos.dataDir=$s")
-    ).flatten
 
     val pathSeparator = System.getProperty("path.separator")
     val classpath =
       s"${itResourceDirs.map(_.getCanonicalPath).mkString("", pathSeparator, pathSeparator)}" +
         s"${oneJarPath.getCanonicalPath}"
 
-    val cmd = Seq(
+    Seq(
       java,
       "-agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=5005",
       "-classpath",
@@ -95,10 +90,9 @@ class CosmosIntegrationTestServer(javaHome: Option[String], itResourceDirs: Seq[
       "com.simontuffs.onejar.Boot",
       s"-com.mesosphere.cosmos.zookeeperUri=$zkUri",
       s"-com.mesosphere.cosmos.dcosUri=$dcosUri",
-      s"-com.mesosphere.cosmos.addedPackageStorageUri=$addedPackagesUri",
+      s"-com.mesosphere.cosmos.packageStorageUri=$packagesUri",
       s"-com.mesosphere.cosmos.stagedPackageStorageUri=$stagedPackagesUri"
-    ) ++ args
-    cmd
+    )
   }
 
   def initZkCluster(logger: Logger): Unit = {
@@ -113,11 +107,6 @@ class CosmosIntegrationTestServer(javaHome: Option[String], itResourceDirs: Seq[
       case t: Throwable =>
         logger.info(s"caught throwable: ${t.toString}")
     }
-  }
-
-  def createDataDir(): Unit = {
-    val temporaryDirectory = Files.createTempDirectory("cosmos-it-")
-    dataDir = Some(temporaryDirectory.toFile.getAbsolutePath)
   }
 
   def cleanup(): Unit = {
