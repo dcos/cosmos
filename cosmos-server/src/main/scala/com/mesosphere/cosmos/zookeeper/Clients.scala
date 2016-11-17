@@ -1,25 +1,27 @@
 package com.mesosphere.cosmos.zookeeper
 
+import com.mesosphere.cosmos.model.ZooKeeperUri
 import java.nio.charset.StandardCharsets
-
-import scala.annotation.tailrec
-import scala.collection.JavaConverters._
-
 import org.apache.curator.framework.CuratorFramework
 import org.apache.curator.framework.CuratorFrameworkFactory
 import org.apache.curator.framework.api.ACLProvider
 import org.apache.curator.retry.ExponentialBackoffRetry
-import org.apache.zookeeper.data.ACL
-import org.apache.zookeeper.data.Id
-
-import com.mesosphere.cosmos.zookeeperUri
-import com.mesosphere.cosmos.model.ZooKeeperUri
+import org.slf4j.Logger
+import scala.annotation.tailrec
+import scala.collection.JavaConverters._
 
 object Clients {
-  val logger = org.slf4j.LoggerFactory.getLogger(getClass)
+  val logger: Logger = org.slf4j.LoggerFactory.getLogger(getClass)
 
   val retries = 3
   val baseSleepTimeMs = 1000
+
+  def createAndInitialize(zkUri: ZooKeeperUri): CuratorFramework = {
+    createAndInitialize(
+      zkUri = zkUri,
+      zkCredentials = sys.env.get("ZOOKEEPER_USER").zip(sys.env.get("ZOOKEEPER_SECRET")).headOption
+    )
+  }
 
   def createAndInitialize(
     zkUri: ZooKeeperUri,
