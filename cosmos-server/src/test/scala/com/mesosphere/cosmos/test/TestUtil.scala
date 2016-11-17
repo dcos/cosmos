@@ -4,6 +4,8 @@ import com.mesosphere.cosmos._
 import com.mesosphere.cosmos.converter.Common._
 import com.mesosphere.cosmos.http.RequestSession
 import com.mesosphere.cosmos.internal.model.{BundleDefinition, V2Bundle}
+import com.mesosphere.cosmos.storage.LocalObjectStorage
+import com.mesosphere.cosmos.storage.ObjectStorage
 import com.mesosphere.universe
 import com.mesosphere.universe.test.TestingPackages
 import com.mesosphere.universe.v3.model.PackageDefinition.ReleaseVersion
@@ -15,6 +17,15 @@ import java.nio.file._
 import java.nio.file.attribute.BasicFileAttributes
 
 object TestUtil {
+
+  def withObjectStorage(testCode: ObjectStorage => Unit): Unit = {
+    implicit val stats = com.twitter.finagle.stats.NullStatsReceiver
+
+    val path = Files.createTempDirectory("cosmos-dlpc-")
+    try {
+      testCode(LocalObjectStorage(path))
+    } finally deleteRecursively(path)
+  }
 
   def deleteRecursively(path: Path): Unit = {
     val visitor = new SimpleFileVisitor[Path] {

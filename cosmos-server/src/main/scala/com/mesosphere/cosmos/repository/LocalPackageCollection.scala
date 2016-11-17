@@ -103,12 +103,12 @@ object LocalPackageCollection {
     }
 
     (packageVersion, packages, optionalPackage) match {
-      case (Some(version), _ :: _, None) =>
-        // Found an Installed package with that name but not with that version
-        throw VersionNotFound(packageName, version)
       case (_, _, Some(pkg)) =>
         // Found the installed package
         pkg
+      case (Some(version), _ :: _, None) =>
+        // Found an Installed package with that name but not with that version
+        throw VersionNotFound(packageName, version)
       case _ =>
         // Didn't find the package
         throw PackageNotFound(packageName)
