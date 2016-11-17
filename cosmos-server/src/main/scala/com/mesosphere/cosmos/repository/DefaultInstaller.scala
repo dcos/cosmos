@@ -6,19 +6,19 @@ import com.mesosphere.cosmos.storage.ObjectStorage
 import com.mesosphere.cosmos.storage.PackageObjectStorage
 import com.mesosphere.universe
 import com.mesosphere.universe.v3.syntax.PackageDefinitionOps._
-import com.netaporter.uri.Uri
 import com.twitter.util.Future
 import com.twitter.util.Return
 import com.twitter.util.Throw
 import com.twitter.util.Try
+import java.util.UUID
 
-final class PackageAdder private (
+final class DefaultInstaller private (
   tempObjectStorage: ObjectStorage,
   packageObjectStorage: PackageObjectStorage,
   localPackageCollection: LocalPackageCollection
-) {
+) extends Installer {
   def apply(
-    uri: Uri,
+    uri: UUID,
     pkg: universe.v3.model.PackageDefinition
   ): Future[Unit] = {
     val packageCoordinate = pkg.packageCoordinate
@@ -38,12 +38,12 @@ final class PackageAdder private (
   }
 }
 
-object PackageAdder {
+object DefaultInstaller {
   def apply(
-  tempObjectStorage: ObjectStorage,
-  packageObjectStorage: PackageObjectStorage,
-  localPackageCollection: LocalPackageCollection
-  ): PackageAdder = new PackageAdder(
+    tempObjectStorage: ObjectStorage,
+    packageObjectStorage: PackageObjectStorage,
+    localPackageCollection: LocalPackageCollection
+  ): DefaultInstaller = new DefaultInstaller(
     tempObjectStorage,
     packageObjectStorage,
     localPackageCollection

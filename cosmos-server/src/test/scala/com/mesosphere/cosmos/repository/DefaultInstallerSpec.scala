@@ -5,18 +5,18 @@ import com.mesosphere.cosmos.test.TestUtil
 import com.mesosphere.universe
 import com.mesosphere.universe.v3.model.PackageDefinitionSpec.packageDefinitionGen
 import com.mesosphere.universe.v3.syntax.PackageDefinitionOps._
-import com.netaporter.uri.dsl._
 import com.twitter.util.Await
+import java.util.UUID
 import org.scalatest.FreeSpec
 import org.scalatest.Matchers
 import org.scalatest.prop.PropertyChecks
 
-final class PackageAdderSpec extends FreeSpec with Matchers with PropertyChecks {
+final class DefaultInstallerSpec extends FreeSpec with Matchers with PropertyChecks {
   "Test that installing new package succeeds" in TestUtil.withObjectStorage { tempObjectStorage =>
     TestUtil.withObjectStorage { objectStorage =>
       forAll(packageDefinitionGen) { expected =>
         val packageObjectStorage = PackageObjectStorage(objectStorage)
-        val adder = PackageAdder(
+        val adder = DefaultInstaller(
           tempObjectStorage,
           packageObjectStorage,
           LocalPackageCollection(packageObjectStorage)
@@ -24,7 +24,7 @@ final class PackageAdderSpec extends FreeSpec with Matchers with PropertyChecks 
 
         val _ = Await.result(
           adder(
-            "http://ignored/for/now",
+            UUID.randomUUID(),
             expected
           )
         )
@@ -43,7 +43,7 @@ final class PackageAdderSpec extends FreeSpec with Matchers with PropertyChecks 
       TestUtil.withObjectStorage { objectStorage =>
         forAll(packageDefinitionGen) { expected =>
           val packageObjectStorage = PackageObjectStorage(objectStorage)
-          val adder = PackageAdder(
+          val adder = DefaultInstaller(
             tempObjectStorage,
             packageObjectStorage,
             LocalPackageCollection(packageObjectStorage)
@@ -51,11 +51,11 @@ final class PackageAdderSpec extends FreeSpec with Matchers with PropertyChecks 
 
           val _ = Await.result(
             adder(
-              "http://ignored/for/now",
+              UUID.randomUUID(),
               expected
             ) before ( // Install the same package twice
               adder(
-                "http://ignored/for/now",
+                UUID.randomUUID(),
                 expected
               )
             )
