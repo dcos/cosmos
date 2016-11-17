@@ -11,11 +11,10 @@ sealed trait ObjectStorageUri
 
 object ObjectStorageUri {
   def parse(uri: String): Try[ObjectStorageUri] = {
-    Try(Uri.parse(uri))
-      .flatMap(uriToObjectStorageUri)
+    Try(Uri.parse(uri)).flatMap(fromUri)
   }
 
-  def uriToObjectStorageUri(uri: Uri): Try[ObjectStorageUri] = {
+  def fromUri(uri: Uri): Try[ObjectStorageUri] = {
     (uri.scheme, uri.host) match {
       case (Some("s3"), _) =>
         Try(S3Uri(new AmazonS3URI(uri.toURI)))
@@ -32,6 +31,10 @@ object ObjectStorageUri {
   }
 }
 
-case class S3Uri(uri: AmazonS3URI) extends ObjectStorageUri
+case class S3Uri(uri: AmazonS3URI) extends ObjectStorageUri {
+  override def toString(): String = uri.toString()
+}
 
-case class FileUri(path: Path) extends ObjectStorageUri
+case class FileUri(path: Path) extends ObjectStorageUri {
+  override def toString(): String = s"file://$path"
+}

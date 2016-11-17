@@ -4,13 +4,20 @@ An [orderly, harmonious, complete](http://www.thefreedictionary.com/cosmos) API 
 
 ## Running tests
 
+### Scala style checks
+This project enforces certain scalastyle rules. To run those check against the code run:
+
+```bash
+sbt scalastyle test:scalastyle it:scalastyle
+```
+
 ### Unit Tests
 There is a suite of unit tests that can be ran by running `sbt clean test`
 
 #### Scoverage
 
-To generate an [scoverage](https://github.com/scoverage/scalac-scoverage-plugin) report for unit tests
-run the following command:
+To generate an [scoverage](https://github.com/scoverage/scalac-scoverage-plugin) report for unit
+tests run the following command:
 
 ```bash
 sbt clean coverage test coverageReport coverageAggregate
@@ -18,7 +25,7 @@ sbt clean coverage test coverageReport coverageAggregate
 
 The generated report can then be found at `target/scala-2.11/scoverage-report/index.html`
 
-_NOTE_: You should never run coverage at the same time as one-jar because the produced one-jar will 
+_NOTE_: You should never run coverage at the same time as one-jar because the produced one-jar will
 contains scoverage instrumented class files and will fail to run.
 
 ### Integration Tests
@@ -41,8 +48,12 @@ for repo caches, and start the Cosmos server.
 
 The test suite will then be configured to interact with this cluster by setting the following
 system property:
+
 ```
 -Dcom.mesosphere.cosmos.test.CosmosIntegrationTestClient.CosmosClient.uri
+-Dcom.mesosphere.cosmos.test.CosmosIntegrationTestClient.PackageStorageClient.packagesUri
+-Dcom.mesosphere.cosmos.test.CosmosIntegrationTestClient.PackageStorageClient.stagedUri
+-Dcom.mesosphere.cosmos.test.CosmosIntegrationTestClient.ZooKeeperClient.uri
 ```
 
 Any system properties that are passed to sbt will be inherited by the test suite, but not the
@@ -52,7 +63,8 @@ Cosmos server.
 
 Cosmos requires a ZooKeeper instance to be available. It looks for one at
 `zk://localhost:2181/cosmos` by default; to override with an alternate `<zk-uri>`, specify the flag
-`-com.mesosphere.cosmos.zookeeperUri=<zk-uri>` on the command line when starting Cosmos (see below).
+`-com.mesosphere.cosmos.zookeeperUri <zk-uri>` on the command line when starting Cosmos (see
+below).
 
 We also need a One-JAR to run Cosmos:
 
@@ -66,7 +78,9 @@ with:
 ```bash
 mkdir /tmp/cosmos
 java -jar cosmos-server/target/scala-2.11/cosmos-server_2.11-<version>-SNAPSHOT-one-jar.jar \
-     -com.mesosphere.cosmos.dcosUri=<dcos-host-url>
+     -com.mesosphere.cosmos.dcosUri <dcos-host-url>
+     -com.mesosphere.cosmos.packageStorageUri file://<absolute-path-to-package-dir>
+     -com.mesosphere.cosmos.stagedPackageStorageUri file://<absolute-path-to-staged-dir>
 ```
 
 It can also be exectued with ZooKeeper authentication with:
@@ -76,7 +90,9 @@ mkdir /tmp/cosmos
 export ZOOKEEPER_USER <user>
 export ZOOKEEPER_SECRET <secret>
 java -jar cosmos-server/target/scala-2.11/cosmos-server_2.11-<version>-SNAPSHOT-one-jar.jar \
-     -com.mesosphere.cosmos.dcosUri=<dcos-host-url>
+     -com.mesosphere.cosmos.dcosUri <dcos-host-url>
+     -com.mesosphere.cosmos.packageStorageUri file://<absolute-path-to-package-dir>
+     -com.mesosphere.cosmos.stagedPackageStorageUri file://<absolute-path-to-staged-dir>
 ```
 
 ## Versions & Compatibility

@@ -295,9 +295,9 @@ object Cosmos extends FinchServer {
       flag: Flag[Option[ObjectStorageUri]],
       description: String
     ): Option[ObjectStorage] = {
-      val flagValue = flag()
-      logger.info(s"Using {} for the $description storage URI", flagValue)
-      flagValue.map(ObjectStorage.fromUri)
+      val value = flag().map(_.toString).getOrElse("None")
+      logger.info(s"Using {} for the $description storage URI", value)
+      flag().map(ObjectStorage.fromUri)
     }
 
     (
@@ -309,17 +309,15 @@ object Cosmos extends FinchServer {
       case (None, None) =>
         None
       case (Some(_), None) =>
-        // TODO: implement this
-        /* Missing staged storage configuration. Staged storage configuration required if
-         * package storage provided.
-         */
-        ???
+        throw new IllegalArgumentException(
+          "Missing staged storage configuration. Staged storage configuration required if " +
+          "package storage provided."
+        )
       case (None, Some(_)) =>
-        // TODO: implement this
-        /* Missing package storage configuration. Package storage configuration required if
-         * stage storage provided.
-         */
-        ???
+        throw new IllegalArgumentException(
+          "Missing package storage configuration. Package storage configuration required if " +
+          "stage storage provided."
+        )
     }
   }
 
