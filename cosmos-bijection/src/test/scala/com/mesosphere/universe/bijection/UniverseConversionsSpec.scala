@@ -1,6 +1,7 @@
 package com.mesosphere.universe.bijection
 
 import com.mesosphere.universe
+import com.mesosphere.universe.bijection.TestUniverseConversions._
 import com.mesosphere.universe.bijection.UniverseConversions._
 import com.mesosphere.universe.test.TestingPackages._
 import com.netaporter.uri.Uri

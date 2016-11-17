@@ -17,7 +17,7 @@ import com.mesosphere.cosmos.test.CosmosIntegrationTestClient.ZooKeeperClient
 import com.mesosphere.cosmos.test.CosmosRequest
 import com.mesosphere.universe
 import com.mesosphere.universe.MediaTypes
-import com.mesosphere.universe.bijection.UniverseConversions._
+import com.mesosphere.universe.bijection.TestUniverseConversions._
 import com.mesosphere.universe.test.TestingPackages
 import com.mesosphere.universe.v3.circe.Encoders._
 import com.twitter.bijection.Conversion.asMethod
