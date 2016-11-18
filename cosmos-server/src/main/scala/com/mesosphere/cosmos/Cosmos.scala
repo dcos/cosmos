@@ -43,7 +43,6 @@ import com.twitter.finagle.param.Label
 import com.twitter.finagle.ssl.Ssl
 import com.twitter.finagle.stats.NullStatsReceiver
 import com.twitter.finagle.stats.StatsReceiver
-import com.twitter.util.Future
 import com.twitter.util.Try
 import org.slf4j.Logger
 

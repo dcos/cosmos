@@ -46,7 +46,7 @@ being forked before the integration suite is ran.
 The test runner will automatically start an in process zk cluster and start the Cosmos server.
 
 The test suite will then be configured to interact with this cluster by setting the following
-system property:
+system properties:
 
 ```
 -Dcom.mesosphere.cosmos.dcosUri
