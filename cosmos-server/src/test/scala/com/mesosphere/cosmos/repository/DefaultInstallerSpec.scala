@@ -1,6 +1,7 @@
 package com.mesosphere.cosmos.repository
 
 import com.mesosphere.cosmos.storage.PackageObjectStorage
+import com.mesosphere.cosmos.storage.StagedPackageStorage
 import com.mesosphere.cosmos.test.TestUtil
 import com.mesosphere.universe
 import com.mesosphere.universe.v3.model.PackageDefinitionSpec.packageDefinitionGen
@@ -17,7 +18,7 @@ final class DefaultInstallerSpec extends FreeSpec with Matchers with PropertyChe
       forAll(packageDefinitionGen) { expected =>
         val packageObjectStorage = PackageObjectStorage(objectStorage)
         val adder = DefaultInstaller(
-          tempObjectStorage,
+          StagedPackageStorage(tempObjectStorage),
           packageObjectStorage,
           LocalPackageCollection(packageObjectStorage)
         )
@@ -44,7 +45,7 @@ final class DefaultInstallerSpec extends FreeSpec with Matchers with PropertyChe
         forAll(packageDefinitionGen) { expected =>
           val packageObjectStorage = PackageObjectStorage(objectStorage)
           val adder = DefaultInstaller(
-            tempObjectStorage,
+            StagedPackageStorage(tempObjectStorage),
             packageObjectStorage,
             LocalPackageCollection(packageObjectStorage)
           )

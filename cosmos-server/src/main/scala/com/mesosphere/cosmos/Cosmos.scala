@@ -10,7 +10,7 @@ import com.mesosphere.cosmos.finch.FinchExtensions._
 import com.mesosphere.cosmos.finch.RequestError
 import com.mesosphere.cosmos.finch.RequestValidators
 import com.mesosphere.cosmos.handler._
-import com.mesosphere.cosmos.repository.Installer
+import com.mesosphere.cosmos.repository.DefaultInstaller
 import com.mesosphere.cosmos.repository.LocalPackageCollection
 import com.mesosphere.cosmos.repository.OperationProcessor
 import com.mesosphere.cosmos.repository.PackageSourcesStorage
@@ -198,12 +198,16 @@ object Cosmos extends FinchServer {
       val installQueue = InstallQueue(zkClient)
       onExit(installQueue.close())
 
-      for ((pkgStorage, stageStorage) <- objectStorages) {
+      for ((pkgStorage, stageStorage, localPackageCollection) <- objectStorages) {
         val processingLeader = SyncFutureLeader(
           zkClient,
           OperationProcessor(
             installQueue,
-            Installer.Noop, // TODO: Replace this with the actual installer
+            DefaultInstaller(
+              stageStorage,
+              pkgStorage,
+              localPackageCollection
+            ),
             UniverseInstaller.Noop,
             Uninstaller.Noop
           )
@@ -217,7 +221,10 @@ object Cosmos extends FinchServer {
         sourcesStorage,
         UniverseClient(adminRouter),
         installQueue,
-        objectStorages
+        objectStorages.map {
+          case (_, stagedStorage, localCollection) =>
+            (localCollection, stagedStorage)
+        }
       )
       cosmos.service
     }
@@ -289,7 +296,7 @@ object Cosmos extends FinchServer {
   }
 
   private[this] def configureObjectStorage(
-  ): Option[(PackageObjectStorage, StagedPackageStorage)] = {
+  ): Option[(PackageObjectStorage, StagedPackageStorage, LocalPackageCollection)] = {
     def fromFlag(
       flag: Flag[Option[ObjectStorageUri]],
       description: String
@@ -304,7 +311,7 @@ object Cosmos extends FinchServer {
       fromFlag(stagedPackageStorageUri, "staged package").map(StagedPackageStorage(_))
     ) match {
       case (Some(pkgStorage), Some(stagedStorage)) =>
-        Some((pkgStorage, stagedStorage))
+        Some((pkgStorage, stagedStorage, LocalPackageCollection(pkgStorage)))
       case (None, None) =>
         None
       case (Some(_), None) =>
@@ -326,7 +333,7 @@ object Cosmos extends FinchServer {
     sourcesStorage: PackageSourcesStorage,
     universeClient: UniverseClient,
     installQueue: InstallQueue,
-    objectStorages: Option[(PackageObjectStorage, StagedPackageStorage)]
+    objectStorages: Option[(LocalPackageCollection, StagedPackageStorage)]
   )(implicit statsReceiver: StatsReceiver = NullStatsReceiver): Cosmos = {
 
     val repositories = new MultiRepository(
@@ -339,8 +346,8 @@ object Cosmos extends FinchServer {
     }
 
     val serviceStartHandler = enableIfSome(objectStorages, "service start") {
-      case (packageStorage, _) =>
-        new ServiceStartHandler(LocalPackageCollection(packageStorage), packageRunner)
+      case (localPackageCollection, _) =>
+        new ServiceStartHandler(localPackageCollection, packageRunner)
     }
 
     val packageStorage = new InMemoryPackageStorage()

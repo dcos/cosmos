@@ -6,11 +6,6 @@ import java.util.UUID
 
 package object repository {
   type Installer = (UUID, universe.v3.model.PackageDefinition) => Future[Unit]
-  object Installer {
-    object Noop extends Installer {
-      def apply(u: UUID, p: universe.v3.model.PackageDefinition): Future[Unit] = Future.Done
-    }
-  }
 
   type UniverseInstaller = universe.v3.model.PackageDefinition => Future[Unit]
   object UniverseInstaller {

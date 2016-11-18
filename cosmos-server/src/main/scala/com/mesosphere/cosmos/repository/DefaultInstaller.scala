@@ -2,7 +2,7 @@ package com.mesosphere.cosmos.repository
 
 import com.mesosphere.cosmos.PackageNotFound
 import com.mesosphere.cosmos.VersionNotFound
-import com.mesosphere.cosmos.storage.ObjectStorage
+import com.mesosphere.cosmos.storage.StagedPackageStorage
 import com.mesosphere.cosmos.storage.PackageObjectStorage
 import com.mesosphere.universe
 import com.mesosphere.universe.v3.syntax.PackageDefinitionOps._
@@ -13,7 +13,7 @@ import com.twitter.util.Try
 import java.util.UUID
 
 final class DefaultInstaller private (
-  tempObjectStorage: ObjectStorage,
+  stageObjectStorage: StagedPackageStorage,
   packageObjectStorage: PackageObjectStorage,
   localPackageCollection: LocalPackageCollection
 ) extends Installer {
@@ -40,11 +40,11 @@ final class DefaultInstaller private (
 
 object DefaultInstaller {
   def apply(
-    tempObjectStorage: ObjectStorage,
+    stageObjectStorage: StagedPackageStorage,
     packageObjectStorage: PackageObjectStorage,
     localPackageCollection: LocalPackageCollection
   ): DefaultInstaller = new DefaultInstaller(
-    tempObjectStorage,
+    stageObjectStorage,
     packageObjectStorage,
     localPackageCollection
   )
