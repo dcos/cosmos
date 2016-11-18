@@ -6,6 +6,7 @@ import _root_.io.circe.jawn._
 import _root_.io.circe.syntax._
 import cats.data.Xor
 import cats.data.Xor.Right
+import com.mesosphere.cosmos.http.CosmosRequest
 import com.mesosphere.cosmos.http.RequestSession
 import com.mesosphere.cosmos.repository.DefaultRepositories
 import com.mesosphere.cosmos.rpc.MediaTypes
@@ -16,7 +17,6 @@ import com.mesosphere.cosmos.rpc.v1.model.InstallRequest
 import com.mesosphere.cosmos.rpc.v1.model.InstallResponse
 import com.mesosphere.cosmos.rpc.v2.circe.Decoders._
 import com.mesosphere.cosmos.test.CosmosIntegrationTestClient
-import com.mesosphere.cosmos.test.CosmosRequest
 import com.mesosphere.cosmos.thirdparty.marathon.circe.Encoders._
 import com.mesosphere.cosmos.thirdparty.marathon.model._
 import com.mesosphere.universe

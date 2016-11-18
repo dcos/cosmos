@@ -1,6 +1,12 @@
 package com.mesosphere.cosmos.rpc.v1.model
 
-import com.twitter.concurrent.AsyncStream
-import com.twitter.io.Buf
+import com.mesosphere.universe
 
-case class AddRequest(packageData: AsyncStream[Buf], packageSize: Long)
+sealed trait AddRequest
+
+case class UniverseAddRequest(
+  packageName: String,
+  packageVersion: Option[universe.v3.model.PackageDefinition.Version]
+) extends AddRequest
+
+case class UploadAddRequest(packageData: Array[Byte]) extends AddRequest

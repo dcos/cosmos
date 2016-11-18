@@ -47,6 +47,9 @@ object MediaType {
   }
 
   def apply(t: String, st: String): MediaType = {
+    // TODO package-add: Enforce validation with a single code path for instantiating MediaType
+    assert(t.nonEmpty, "`type` must not be empty")
+    assert(st.nonEmpty, "`subType` must not be empty")
     MediaType(t, MediaTypeSubType(st))
   }
 

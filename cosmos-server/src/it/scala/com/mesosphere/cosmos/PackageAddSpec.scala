@@ -1,39 +1,40 @@
 package com.mesosphere.cosmos
 
 import _root_.io.circe.syntax._
-import cats.data.Xor
 import com.mesosphere.cosmos.circe.Decoders.decode
-import com.mesosphere.cosmos.rpc.v1.model.AddResponse
+import com.mesosphere.cosmos.converter.Response._
+import com.mesosphere.cosmos.http.CosmosRequest
+import com.mesosphere.cosmos.http.MediaType
+import com.mesosphere.cosmos.rpc.MediaTypes
+import com.mesosphere.cosmos.rpc.v1.circe.Encoders._
+import com.mesosphere.cosmos.rpc.v1.circe.Decoders._
+import com.mesosphere.cosmos.rpc.v2.circe.Decoders._
 import com.mesosphere.cosmos.storage.ObjectStorage
 import com.mesosphere.cosmos.storage.ObjectStorage.ObjectList
 import com.mesosphere.cosmos.storage.PackageObjectStorage
 import com.mesosphere.cosmos.storage.StagedPackageStorage
-import com.mesosphere.cosmos.storage.installqueue.Install
 import com.mesosphere.cosmos.storage.installqueue.InstallQueue
-import com.mesosphere.cosmos.storage.installqueue.PendingOperation
 import com.mesosphere.cosmos.test.CosmosIntegrationTestClient.CosmosClient
 import com.mesosphere.cosmos.test.CosmosIntegrationTestClient.PackageStorageClient
 import com.mesosphere.cosmos.test.CosmosIntegrationTestClient.ZooKeeperClient
-import com.mesosphere.cosmos.test.CosmosRequest
 import com.mesosphere.universe
-import com.mesosphere.universe.MediaTypes
 import com.mesosphere.universe.bijection.TestUniverseConversions._
+import com.mesosphere.universe.bijection.UniverseConversions._
 import com.mesosphere.universe.test.TestingPackages
-import com.mesosphere.universe.v3.circe.Encoders._
 import com.mesosphere.universe.v3.circe.Decoders._
+import com.mesosphere.universe.v3.circe.Encoders._
 import com.mesosphere.universe.v3.syntax.PackageDefinitionOps._
+import com.mesosphere.universe.{MediaTypes => UMediaTypes}
 import com.twitter.bijection.Conversion.asMethod
 import com.twitter.finagle.http.Response
 import com.twitter.finagle.http.Status
 import com.twitter.finagle.stats.NullStatsReceiver
 import com.twitter.finagle.stats.StatsReceiver
-import com.twitter.io.StreamIO
+import com.twitter.io.Buf
 import com.twitter.util.Await
 import com.twitter.util.Future
-import java.io.ByteArrayInputStream
 import java.io.ByteArrayOutputStream
 import java.nio.charset.StandardCharsets
-import java.util.UUID
 import java.util.zip.ZipEntry
 import java.util.zip.ZipOutputStream
 import org.apache.curator.framework.CuratorFramework
@@ -45,7 +46,7 @@ final class PackageAddSpec extends FreeSpec with BeforeAndAfterAll with BeforeAn
 
   import PackageAddSpec._
 
-  "/package/add responds with a 202" - {
+  "/package/add of an uploaded package file" - {
 
     "single package" in {
       assertSuccessfulAdd(TestingPackages.MaximalV3ModelV3PackageDefinition)
@@ -87,6 +88,39 @@ final class PackageAddSpec extends FreeSpec with BeforeAndAfterAll with BeforeAn
     }
   }
 
+  "/package/add of a universe package" - {
+
+    "by name only" in {
+      val addRequest = rpc.v1.model.UniverseAddRequest("cassandra", packageVersion = None)
+      assertSuccessfulUniverseAdd(addRequest)
+    }
+
+    // TODO package-add: Fix this to not use a v2Package
+    "by name and version" ignore {
+      val version = universe.v3.model.PackageDefinition.Version("0.2.0-2")
+      val addRequest = rpc.v1.model.UniverseAddRequest("cassandra", Some(version))
+      assertSuccessfulUniverseAdd(addRequest)
+    }
+
+    def assertSuccessfulUniverseAdd(addRequest: rpc.v1.model.UniverseAddRequest): Unit = {
+      val expectedPackage = describePackage(addRequest.packageName, addRequest.packageVersion)
+
+      val request = packageAddRequest(addRequest)
+      val response = CosmosClient.submit(request)
+
+      assertResult(Status.Accepted)(response.status)
+      assertResult(MediaTypes.AddResponse)(MediaType.parse(response.contentType.get).get())
+      assertResult(expectedPackage) {
+        val decoded = decode[rpc.v1.model.AddResponse](response.contentString)
+        decoded.packageDefinition.as[rpc.v2.model.DescribeResponse]
+      }
+
+      // TODO package-add: Need different assertion
+      //assertInstallOperationInZk(expectedPackage)
+    }
+
+  }
+
   private[this] var zkClient: CuratorFramework = _
   private[this] var installQueue: InstallQueue = _
   private[this] var packageObjectStorage: ObjectStorage = _
@@ -117,6 +151,18 @@ final class PackageAddSpec extends FreeSpec with BeforeAndAfterAll with BeforeAn
     cleanObjectStorage(stagedObjectStorage)
     cleanObjectStorage(packageObjectStorage)
   }
+
+  // TODO package-add: Is this needed anymore?
+  // TODO package-add: Make this similar to the equivalent upload-install assertions
+//  private[this] def assertInstallOperationInZk(expected: rpc.v2.model.DescribeResponse): Unit = {
+//    val PendingOperation(coordinate, operation, failure) = popOperationFromInstallQueue()
+//    val UniverseInstall(packageDefinition) = operation
+//
+//    assertResult(expected.name)(coordinate.name)
+//    assertResult(expected.version)(coordinate.version)
+//    assert(failure.isEmpty)
+//    assertResult(expected)(packageDefinition.as[rpc.v2.model.DescribeResponse])
+//  }
 
   type PackageMetadata = universe.v3.model.Metadata
   type ReleaseVersion = universe.v3.model.PackageDefinition.ReleaseVersion
@@ -188,19 +234,39 @@ final class PackageAddSpec extends FreeSpec with BeforeAndAfterAll with BeforeAn
 
 object PackageAddSpec {
 
-  def packageAddRequest(packageData: Array[Byte]): CosmosRequest = {
-    val packageBytes = new ByteArrayInputStream(packageData)
-
+  def packageAddRequest(packageData: Buf): CosmosRequest = {
     CosmosRequest.post(
       path = "package/add",
-      body = packageBytes,
-      contentType = MediaTypes.PackageZip,
-      accept = MediaTypes.universeV3Package,
-      customHeaders = Map("X-Dcos-Content-Length" -> packageData.length.toString)
+      body = packageData,
+      contentType = UMediaTypes.PackageZip,
+      accept = MediaTypes.AddResponse
     )
   }
 
-  def buildPackage(packageData: universe.v3.model.Metadata): Array[Byte] = {
+  def packageAddRequest(requestBody: rpc.v1.model.UniverseAddRequest): CosmosRequest = {
+    CosmosRequest.post(
+      path = "package/add",
+      body = requestBody,
+      contentType = MediaTypes.AddRequest,
+      accept = MediaTypes.AddResponse
+    )
+  }
+
+  def packageDescribeRequest(
+    packageName: String,
+    packageVersion: Option[universe.v3.model.PackageDefinition.Version]
+  ): CosmosRequest = {
+    val oldVersion = packageVersion.as[Option[universe.v2.model.PackageDetailsVersion]]
+
+    CosmosRequest.post(
+      path = "package/describe",
+      body = rpc.v1.model.DescribeRequest(packageName, oldVersion),
+      contentType = MediaTypes.DescribeRequest,
+      accept = MediaTypes.V2DescribeResponse
+    )
+  }
+
+  def buildPackage(packageData: universe.v3.model.Metadata): Buf = {
     // TODO package-add: Factor out common Zip-handling code into utility methods
     val bytesOut = new ByteArrayOutputStream()
     val packageOut = new ZipOutputStream(bytesOut, StandardCharsets.UTF_8)
@@ -209,7 +275,7 @@ object PackageAddSpec {
     packageOut.closeEntry()
     packageOut.close()
 
-    bytesOut.toByteArray
+    Buf.ByteArray.Owned(bytesOut.toByteArray)
   }
 
   def cleanObjectStorage(storage: ObjectStorage): Unit = {
@@ -234,6 +300,15 @@ object PackageAddSpec {
 
     // TODO package-add: Be more lenient about slashes at beginning and end of paths
     Await.result(storage.list("").flatMap(cleanObjectList))
+  }
+
+  def describePackage(
+    packageName: String,
+    packageVersion: Option[universe.v3.model.PackageDefinition.Version]
+  ): rpc.v2.model.DescribeResponse = {
+    val request = packageDescribeRequest(packageName, packageVersion)
+    val response = CosmosClient.submit(request)
+    decode[rpc.v2.model.DescribeResponse](response.contentString)
   }
 
 }

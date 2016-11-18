@@ -71,8 +71,11 @@ object Encoders {
   implicit val encodePackageRepositoryDeleteResponse: Encoder[PackageRepositoryDeleteResponse] = {
     deriveEncoder[PackageRepositoryDeleteResponse]
   }
+  implicit val encodeUniverseAddRequest: Encoder[UniverseAddRequest] = {
+    deriveEncoder[UniverseAddRequest]
+  }
   implicit val encodeAddResponse: Encoder[AddResponse] = {
-    implicitly[Encoder[universe.v3.model.PackageDefinition]].contramap(_.v3Package)
+    implicitly[Encoder[universe.v3.model.PackageDefinition]].contramap(_.packageDefinition)
   }
 
   implicit val encodeErrorResponse: Encoder[ErrorResponse] = deriveEncoder[ErrorResponse]

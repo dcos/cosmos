@@ -6,7 +6,6 @@ import com.twitter.bijection.Bijection
 import com.twitter.bijection.Conversion
 import com.twitter.bijection.Conversion.asMethod
 import com.twitter.bijection.Injection
-import java.time.Instant
 import scala.util.Failure
 import scala.util.Success
 import scala.util.Try

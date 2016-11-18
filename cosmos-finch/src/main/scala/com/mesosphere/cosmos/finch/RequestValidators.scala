@@ -5,8 +5,7 @@ import com.mesosphere.cosmos.http.Authorization
 import com.mesosphere.cosmos.http.CompoundMediaType
 import com.mesosphere.cosmos.http.MediaType
 import com.mesosphere.cosmos.http.RequestSession
-import com.twitter.concurrent.AsyncStream
-import com.twitter.io.Buf
+import com.twitter.finagle.http.Fields
 import com.twitter.util.Future
 import io.finch._
 import shapeless.::
@@ -26,27 +25,40 @@ object RequestValidators {
     accepts: MediaTypedRequestDecoder[Req],
     produces: DispatchingMediaTypedEncoder[Res]
   ): Endpoint[EndpointContext[Req, Res]] = {
-    val a = baseValidator(produces)
-    val h = header("Content-Type").as[MediaType].should(beTheExpectedType(accepts.mediaTypedDecoder.mediaType))
-    val b = body.as[Req](accepts.decoder, accepts.classTag)
-    val c = a :: h :: b
-    c.map { case authorization :: responseEncoder :: contentType :: req :: HNil =>
-      EndpointContext(req, RequestSession(authorization, Some(contentType)), responseEncoder)
+    val contentTypeRule = beTheExpectedType(accepts.mediaTypedDecoder.mediaType)
+    val contentTypeValidator = header(Fields.ContentType).as[MediaType].should(contentTypeRule)
+
+    val bodyValidator = body.as[Req](accepts.decoder, accepts.classTag)
+
+    val allValidators = baseValidator(produces) :: contentTypeValidator :: bodyValidator
+    allValidators.map {
+      case authorization :: responseEncoder :: contentType :: requestBody :: HNil =>
+        val session = RequestSession(authorization, Some(contentType))
+        EndpointContext(requestBody, session, responseEncoder)
     }
   }
 
-  // TODO package-add: Include standard request validation, e.g. Content-Type/Accept, etc.
-  def streamed[Req, Res](toReq: (AsyncStream[Buf], Long) => Req)(implicit
-    resEncoder: MediaTypedEncoder[Res]
+  // TODO package-add: Unit tests in RequestValidatorsSpec
+  def selectedBody[Req, Res](implicit
+    accepts: DispatchingMediaTypedBodyParser[Req],
+    produces: DispatchingMediaTypedEncoder[Res]
   ): Endpoint[EndpointContext[Req, Res]] = {
-    val sessionValidator = header("Content-Type").as[MediaType].map { contentType =>
-      RequestSession(authorization = None, contentType = Some(contentType))
-    }
+    val contentTypeValidator = header(Fields.ContentType)
+      .as[MediaType]
+      .mapAsync { contentType =>
+        accepts(contentType) match {
+          case Some(bodyParser) => Future.value(contentType :: bodyParser :: HNil)
+          case _ => Future.exception(IncompatibleContentTypeHeader(accepts.mediaTypes, contentType))
+        }
+      }
 
-    val validators = asyncBody :: header("X-Dcos-Content-Length") :: sessionValidator
-    validators.map { case bufStream :: bodySize :: session :: HNil =>
-      // TODO package-add: Better error handling for request data extraction (e.g. toLong)
-      EndpointContext(toReq(bufStream, bodySize.toLong), session, resEncoder)
+    val allValidators = baseValidator(produces) :: contentTypeValidator :: binaryBody
+    allValidators.mapAsync {
+      case authorization :: responseEncoder :: contentType :: bodyParser :: bodyBytes :: HNil =>
+        Future.const(bodyParser(bodyBytes)).map { requestBody =>
+          val session = RequestSession(authorization, Some(contentType))
+          EndpointContext(requestBody, session, responseEncoder)
+        }
     }
   }
 

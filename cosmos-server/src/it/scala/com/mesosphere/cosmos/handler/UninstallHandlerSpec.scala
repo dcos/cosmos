@@ -1,12 +1,12 @@
 package com.mesosphere.cosmos.handler
 
 import cats.data.Xor
+import com.mesosphere.cosmos.http.CosmosRequest
 import com.mesosphere.cosmos.rpc.MediaTypes
 import com.mesosphere.cosmos.rpc.v1.circe.Decoders._
 import com.mesosphere.cosmos.rpc.v1.model.ErrorResponse
 import com.mesosphere.cosmos.rpc.v1.model.UninstallResponse
 import com.mesosphere.cosmos.test.CosmosIntegrationTestClient
-import com.mesosphere.cosmos.test.CosmosRequest
 import com.mesosphere.cosmos.thirdparty.marathon.model.AppId
 import com.netaporter.uri.dsl._
 import com.twitter.finagle.http.Status

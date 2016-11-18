@@ -20,6 +20,7 @@ import com.mesosphere.cosmos.repository.UniverseClient
 import com.mesosphere.cosmos.repository.UniverseInstaller
 import com.mesosphere.cosmos.repository.ZkRepositoryList
 import com.mesosphere.cosmos.rpc.MediaTypes
+import com.mesosphere.cosmos.rpc.v1.circe.MediaTypedBodyParsers._
 import com.mesosphere.cosmos.rpc.v1.circe.MediaTypedEncoders._
 import com.mesosphere.cosmos.rpc.v1.circe.MediaTypedRequestDecoders._
 import com.mesosphere.cosmos.rpc.v2.circe.MediaTypedEncoders._
@@ -119,7 +120,7 @@ private[cosmos] final class Cosmos(
   }
 
   val packageAdd: Endpoint[Json] = {
-    route(post("package" / "add"), packageAddHandler)(RequestValidators.streamed(rpc.v1.model.AddRequest(_, _)))
+    route(post("package" / "add"), packageAddHandler)(RequestValidators.selectedBody)
   }
 
   val service: Service[Request, Response] = {
@@ -340,7 +341,7 @@ object Cosmos extends FinchServer {
     )
 
     val packageAddHandler = enableIfSome(objectStorages, "package add") {
-      case (_, stagedStorage) => new PackageAddHandler(stagedStorage, installQueue)
+      case (_, stagedStorage) => new PackageAddHandler(repositories, stagedStorage, installQueue)
     }
 
     val serviceStartHandler = enableIfSome(objectStorages, "service start") {
