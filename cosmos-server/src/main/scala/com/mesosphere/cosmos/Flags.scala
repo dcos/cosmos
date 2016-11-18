@@ -33,8 +33,6 @@ object zookeeperUri extends GlobalFlag[ZooKeeperUri](
   "The ZooKeeper connection string"
 )
 
-// TODO: File issue to remove dataDir from CI and DC/OS
-
 object packageStorageUri extends GlobalFlag[Option[ObjectStorageUri]](
   None,
   "The URI where packages are stored"
