@@ -43,21 +43,26 @@ being forked before the integration suite is ran.
 
 #### Running the tests
 
-The test runner will automatically start an in process zk cluster, create a temporary directory
-for repo caches, and start the Cosmos server.
+The test runner will automatically start an in process zk cluster and start the Cosmos server.
 
 The test suite will then be configured to interact with this cluster by setting the following
 system property:
 
 ```
--Dcom.mesosphere.cosmos.test.CosmosIntegrationTestClient.CosmosClient.uri
--Dcom.mesosphere.cosmos.test.CosmosIntegrationTestClient.PackageStorageClient.packagesUri
--Dcom.mesosphere.cosmos.test.CosmosIntegrationTestClient.PackageStorageClient.stagedUri
--Dcom.mesosphere.cosmos.test.CosmosIntegrationTestClient.ZooKeeperClient.uri
+-Dcom.mesosphere.cosmos.dcosUri
+-Dcom.mesosphere.cosmos.packageStorageUri
+-Dcom.mesosphere.cosmos.stagedPackageStorageUri
 ```
 
-Any system properties that are passed to sbt will be inherited by the test suite, but not the
-Cosmos server.
+or running the following command:
+
+```bash
+export COSMOS_AUTHORIZATION_HEADER="token=$(http --ignore-stdin <dcos-host-url>/acs/api/v1/auth/login uid=<dcos-user> password=<user-passwod> | jq -r ".token")"
+sbt -Dcom.mesosphere.cosmos.dcosUri=<dcos-host-url> \
+    -Dcom.mesosphere.cosmos.packageStorageUri=file:///tmp/cosmos/packages \
+    -Dcom.mesosphere.cosmos.stagedPackageStorageUri=file:///tmp/cosmos/staged-packages \
+    clean it:test
+```
 
 ## Running Cosmos
 
@@ -78,8 +83,8 @@ with:
 ```bash
 mkdir /tmp/cosmos
 java -jar cosmos-server/target/scala-2.11/cosmos-server_2.11-<version>-SNAPSHOT-one-jar.jar \
-     -com.mesosphere.cosmos.dcosUri <dcos-host-url>
-     -com.mesosphere.cosmos.packageStorageUri file://<absolute-path-to-package-dir>
+     -com.mesosphere.cosmos.dcosUri <dcos-host-url> \
+     -com.mesosphere.cosmos.packageStorageUri file://<absolute-path-to-package-dir> \
      -com.mesosphere.cosmos.stagedPackageStorageUri file://<absolute-path-to-staged-dir>
 ```
 
@@ -90,8 +95,8 @@ mkdir /tmp/cosmos
 export ZOOKEEPER_USER <user>
 export ZOOKEEPER_SECRET <secret>
 java -jar cosmos-server/target/scala-2.11/cosmos-server_2.11-<version>-SNAPSHOT-one-jar.jar \
-     -com.mesosphere.cosmos.dcosUri <dcos-host-url>
-     -com.mesosphere.cosmos.packageStorageUri file://<absolute-path-to-package-dir>
+     -com.mesosphere.cosmos.dcosUri <dcos-host-url> \
+     -com.mesosphere.cosmos.packageStorageUri file://<absolute-path-to-package-dir> \
      -com.mesosphere.cosmos.stagedPackageStorageUri file://<absolute-path-to-staged-dir>
 ```
 
