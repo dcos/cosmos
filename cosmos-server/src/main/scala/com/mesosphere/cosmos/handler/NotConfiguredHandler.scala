@@ -12,6 +12,8 @@ private[cosmos] final class NotConfiguredHandler[Req, Res](operationName: String
   )(implicit session: RequestSession): Future[Res] = {
     Future.exception(
       NotImplemented(
-        s"Cosmos has not been configured to support this operation: $operationName"))
+        s"Cosmos has not been configured to support this operation: $operationName"
+      )
+    )
   }
 }

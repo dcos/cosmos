@@ -33,18 +33,13 @@ object zookeeperUri extends GlobalFlag[ZooKeeperUri](
   "The ZooKeeper connection string"
 )
 
-object dataDir extends GlobalFlag[file.Path](
-  file.Paths.get("/var/lib/cosmos"),
-  help = "Root directory for all cosmos runtime "
-)
-
-object addedPackageStorageUri extends GlobalFlag[Option[ObjectStorageUri]](
+object packageStorageUri extends GlobalFlag[Option[ObjectStorageUri]](
   None,
-  "The URI where the data for successfully added packages is stored"
+  "The URI where packages are stored"
 )
 
 object stagedPackageStorageUri extends GlobalFlag[Option[ObjectStorageUri]](
   None,
-  "The URI where packages that are staged for adding are stored"
+  "The URI where packages are staged before permanent storage"
 )
 // scalastyle:on object.name

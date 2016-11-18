@@ -77,6 +77,8 @@ object SyncFutureLeader {
   )(
     implicit timer: Timer
   ): SyncFutureLeader = {
-    new SyncFutureLeader(curatorClient, processor)
+    val leader = new SyncFutureLeader(curatorClient, processor)
+    leader.start()
+    leader
   }
 }

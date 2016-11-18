@@ -8,12 +8,12 @@ import io.circe.Encoder
 import io.circe.syntax._
 import java.io.InputStream
 
-case class CosmosRequest private(
+case class CosmosRequest private (
   method: Method,
   path: String,
   accept: Option[String],
   contentType: Option[String],
-  customHeaders: Map[String, String] = Map.empty,
+  customHeaders: Map[String, String],
   body: CosmosRequestBody
 )
 
@@ -25,7 +25,7 @@ case class Chunked(data: Reader) extends CosmosRequestBody
 object CosmosRequest {
 
   def get(path: String, accept: MediaType): CosmosRequest = {
-    CosmosRequest(Method.Get, path, toHeader(accept), contentType = None, body = NoBody)
+    CosmosRequest(Method.Get, path, toHeader(accept), None, Map.empty, NoBody)
   }
 
   def post[A](
@@ -43,7 +43,7 @@ object CosmosRequest {
     contentType: Option[String],
     accept: Option[String]
   ): CosmosRequest = {
-    CosmosRequest(Method.Post, path, accept, contentType, body = Monolithic(Buf.Utf8(body)))
+    CosmosRequest(Method.Post, path, accept, contentType, Map.empty, Monolithic(Buf.Utf8(body)))
   }
 
   def post(
@@ -59,7 +59,7 @@ object CosmosRequest {
       toHeader(accept),
       toHeader(contentType),
       customHeaders,
-      body = Chunked(Reader.fromStream(body))
+      Chunked(Reader.fromStream(body))
     )
   }
 

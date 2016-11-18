@@ -202,9 +202,14 @@ object CosmosIntegrationTestClient extends Matchers {
       val counter = new AtomicInteger()
       override def apply(req: Request, service: Service[Request, Response]): Future[Response] = {
         val c = counter.getAndIncrement
-        logger.debug(s"$c -> ${req.method} ${req.path} ${fmtHeaders(req.headerMap)} ${req.contentString}")
+        logger.debug(
+          s"$c -> ${req.method} ${req.path} ${fmtHeaders(req.headerMap)} ${req.contentString}"
+        )
         service(req) map { res =>
-          logger.debug(s"$c <- ${res.status.code} ${res.status.reason} ${fmtHeaders(res.headerMap)} ${res.contentString}")
+          logger.debug(
+            s"$c <- ${res.status.code} ${res.status.reason} " +
+            s"${fmtHeaders(res.headerMap)} ${res.contentString}"
+          )
           res
         }
       }
@@ -229,7 +234,7 @@ object CosmosIntegrationTestClient extends Matchers {
   object PackageStorageClient {
 
     val addedUri: ObjectStorageUri = {
-      ObjectStorageUri.parse(getClientProperty("PackageStorageClient", "addedUri")).get()
+      ObjectStorageUri.parse(getClientProperty("PackageStorageClient", "packagesUri")).get()
     }
 
     val stagedUri: ObjectStorageUri = {
