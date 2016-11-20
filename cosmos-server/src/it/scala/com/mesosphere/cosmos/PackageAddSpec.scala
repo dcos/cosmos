@@ -130,8 +130,11 @@ final class PackageAddSpec extends FreeSpec with BeforeAndAfterAll with BeforeAn
     Await.result {
       installQueue.next().flatMap {
         case Some(operation) =>
-          installQueue.success(operation.packageCoordinate)
-          Future.value(operation)
+          installQueue.success(
+            operation.packageCoordinate
+          ) before (
+            Future.value(operation)
+          )
         case _ => Future.exception(new AssertionError("Pending operation expected"))
       }
     }
