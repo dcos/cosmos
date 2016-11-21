@@ -177,6 +177,7 @@ private[cosmos] final class Cosmos(
 }
 
 object Cosmos extends FinchServer {
+  // scalastyle:off method.length
   def service: Service[Request, Response] = {
     implicit val stats = statsReceiver.scope("cosmos")
 
@@ -230,6 +231,7 @@ object Cosmos extends FinchServer {
     }
     boot.get
   }
+  // scalastyle:on method.length
 
   override def startServer(): Option[ListeningServer] = {
     config.httpInterface.map { iface =>
