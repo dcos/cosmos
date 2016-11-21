@@ -296,6 +296,8 @@ object Cosmos extends FinchServer {
   }
 
   private[this] def configureObjectStorage(
+  )(
+    implicit statsReceiver: StatsReceiver
   ): Option[(PackageObjectStorage, StagedPackageStorage, LocalPackageCollection)] = {
     def fromFlag(
       flag: Flag[Option[ObjectStorageUri]],
@@ -303,7 +305,7 @@ object Cosmos extends FinchServer {
     ): Option[ObjectStorage] = {
       val value = flag().map(_.toString).getOrElse("None")
       logger.info(s"Using {} for the $description storage URI", value)
-      flag().map(ObjectStorage.fromUri)
+      flag().map(uri => ObjectStorage.fromUri(uri)(statsReceiver))
     }
 
     (

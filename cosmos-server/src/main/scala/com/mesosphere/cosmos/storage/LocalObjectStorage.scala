@@ -27,6 +27,8 @@ final class LocalObjectStorage private (
 )(
   implicit statsReceiver: StatsReceiver
 ) extends ObjectStorage {
+  private[this] val logger = org.slf4j.LoggerFactory.getLogger(getClass)
+
   private[this] val pool = FuturePool.interruptibleUnboundedPool
 
   private[this] val stats = statsReceiver.scope(s"LocalObjectStorage($path)")
@@ -39,6 +41,7 @@ final class LocalObjectStorage private (
   ): Future[Unit] = {
     Stat.timeFuture(stats.stat("write")) {
       pool {
+        try{
         val absolutePath = path.resolve(name)
 
         // Create all parent directories
@@ -57,7 +60,19 @@ final class LocalObjectStorage private (
             s"Content length $contentLength doesn't equal size of stream $bodySize"
           )
         }
+        logger.error("Looks like write finished just fine!!!")
+        } catch {
+          case e: Throwable =>
+            logger.error("forced catch...", e)
+            throw e
+        }
       }
+    } onFailure { error =>
+      logger.error("write failed with:", error)
+      logger.error(error.getMessage())
+      logger.error(error.getClass.getName)
+      error.printStackTrace()
+      logger.error("done did....")
     }
   }
 
@@ -71,6 +86,8 @@ final class LocalObjectStorage private (
           )
         }
       }
+    } onFailure { error =>
+      logger.error("read failed with", error)
     }
   }
 
@@ -82,6 +99,8 @@ final class LocalObjectStorage private (
 
         // TODO: To have the same semantic as S3 we need to delete all empty parent directories
       }
+    } onFailure { error =>
+      logger.error("delete failed with", error)
     }
   }
 
@@ -102,6 +121,8 @@ final class LocalObjectStorage private (
           stream.close()
         }
       }
+    } onFailure { error =>
+      logger.error("list failed with", error)
     }
   }
 
