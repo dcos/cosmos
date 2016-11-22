@@ -34,8 +34,6 @@ final class InstallQueue private(
 
   import InstallQueue._
 
-  private[this] val logger = org.slf4j.LoggerFactory.getLogger(getClass)
-
   private[this] val stats = statsReceiver.scope("InstallQueue")
 
   private[this] val operationStatusCache = new TreeCache(client, installQueuePath)
@@ -66,8 +64,6 @@ final class InstallQueue private(
           }
         }
       }
-    } onFailure { error =>
-      logger.error("install queue error failed", error)
     }
   }
 
@@ -140,8 +136,6 @@ final class InstallQueue private(
             stat.getVersion
           )
       }
-    } onFailure { error =>
-      logger.error("install queue error failed", error)
     }
   }
 
@@ -217,8 +211,6 @@ final class InstallQueue private(
         case Some(WithZkStat(stat, Pending(operation, _))) =>
           deleteOperationStatus(packageCoordinate, stat.getVersion)
       }
-    } onFailure { error =>
-      logger.error("install queue error failed", error)
     }
   }
 
@@ -254,8 +246,6 @@ final class InstallQueue private(
         case e: KeeperException.NodeExistsException =>
           setOperationInOperationStatus(packageCoordinate, operation)
       }
-    } onFailure { error =>
-      logger.error("install queue error failed", error)
     }
   }
 
@@ -338,17 +328,15 @@ final class InstallQueue private(
           .getOrElse(new java.util.HashMap[String, ChildData]())
           .toMap
           .map { case (encodedPackageCoordinate, childData) =>
-            BijectionUtils.scalaTryToTwitterTry(
-              encodedPackageCoordinate.as[scala.util.Try[PackageCoordinate]]).flatMap { coordinate =>
-              Try(Envelope.decodeData[OperationStatus](childData.getData)).map { operationStatus =>
-                coordinate -> operationStatus
-              }
-            }
+            for {
+              coordinate <- BijectionUtils.scalaTryToTwitterTry(
+                encodedPackageCoordinate.as[scala.util.Try[PackageCoordinate]]
+              )
+              operationStatus <- Try(Envelope.decodeData[OperationStatus](childData.getData))
+            } yield coordinate -> operationStatus
           }
           .toSeq
       Future.const(Try.collect(operationStatus).map(_.toMap))
-    } onFailure { error =>
-      logger.error("install queue error failed", error)
     }
   }
 
@@ -356,7 +344,7 @@ final class InstallQueue private(
 
 object InstallQueue {
 
-  val installQueuePath = "/packages"
+  val installQueuePath = "/package/task-queue"
 
   def statusPath(packageCoordinate: PackageCoordinate): String = {
     s"$installQueuePath/${packageCoordinate.as[String]}"

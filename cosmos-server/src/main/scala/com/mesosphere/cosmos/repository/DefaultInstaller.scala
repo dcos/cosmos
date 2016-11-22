@@ -19,7 +19,7 @@ final class DefaultInstaller private (
 ) extends Installer {
   def apply(
     uri: UUID,
-    pkg: universe.v3.model.PackageDefinition
+    pkg: universe.v3.model.V3Package
   ): Future[Unit] = {
     val packageCoordinate = pkg.packageCoordinate
     localPackageCollection.getInstalledPackage(

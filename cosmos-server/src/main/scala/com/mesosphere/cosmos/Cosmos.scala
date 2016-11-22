@@ -177,61 +177,11 @@ private[cosmos] final class Cosmos(
 }
 
 object Cosmos extends FinchServer {
-  // scalastyle:off method.length
   def service: Service[Request, Response] = {
-    implicit val stats = statsReceiver.scope("cosmos")
-
     HttpProxySupport.configureProxySupport()
 
-    val boot = configureDcosClients() map { adminRouter =>
-      val zkUri = zookeeperUri()
-      logger.info("Using {} for the ZooKeeper connection", zkUri)
-
-      val objectStorages = configureObjectStorage()
-
-      val marathonPackageRunner = new MarathonPackageRunner(adminRouter)
-
-      val zkClient = zookeeper.Clients.createAndInitialize(zkUri)
-      onExit(zkClient.close())
-
-      val sourcesStorage = new ZkRepositoryList(zkClient)()
-
-      val installQueue = InstallQueue(zkClient)
-      onExit(installQueue.close())
-
-      for ((pkgStorage, stageStorage, localPackageCollection) <- objectStorages) {
-        val processingLeader = SyncFutureLeader(
-          zkClient,
-          OperationProcessor(
-            installQueue,
-            DefaultInstaller(
-              stageStorage,
-              pkgStorage,
-              localPackageCollection
-            ),
-            UniverseInstaller.Noop,
-            Uninstaller.Noop
-          )
-        )
-        onExit(processingLeader.close())
-      }
-
-      val cosmos = Cosmos(
-        adminRouter,
-        marathonPackageRunner,
-        sourcesStorage,
-        UniverseClient(adminRouter),
-        installQueue,
-        objectStorages.map {
-          case (_, stagedStorage, localCollection) =>
-            (localCollection, stagedStorage)
-        }
-      )
-      cosmos.service
-    }
-    boot.get
+    startCosmos(statsReceiver.scope("cosmos"))
   }
-  // scalastyle:on method.length
 
   override def startServer(): Option[ListeningServer] = {
     config.httpInterface.map { iface =>
@@ -257,6 +207,50 @@ object Cosmos extends FinchServer {
         .withTls(Netty3ListenerTLSConfig(engineFactory))
         .serve(iface, getService(s"srv/$name"))
     }
+  }
+
+  private[this] def startCosmos(implicit stats: StatsReceiver): Service[Request, Response] = {
+    val adminRouter = configureDcosClients().get
+
+    val zkUri = zookeeperUri()
+    logger.info("Using {} for the ZooKeeper connection", zkUri)
+
+    val objectStorages = configureObjectStorage()
+
+    val zkClient = zookeeper.Clients.createAndInitialize(zkUri)
+    onExit(zkClient.close())
+
+    val installQueue = InstallQueue(zkClient)
+    onExit(installQueue.close())
+
+    for ((pkgStorage, stageStorage, localPackageCollection) <- objectStorages) {
+      val processingLeader = SyncFutureLeader(
+        zkClient,
+        OperationProcessor(
+          installQueue,
+          DefaultInstaller(
+            stageStorage,
+            pkgStorage,
+            localPackageCollection
+          ),
+          UniverseInstaller.Noop,
+          Uninstaller.Noop
+        )
+      )
+      onExit(processingLeader.close())
+    }
+
+    Cosmos(
+      adminRouter,
+      new MarathonPackageRunner(adminRouter),
+      new ZkRepositoryList(zkClient),
+      UniverseClient(adminRouter),
+      installQueue,
+      objectStorages.map {
+        case (_, stagedStorage, localCollection) =>
+          (localCollection, stagedStorage)
+      }
+    ).service
   }
 
   private[this] def configureDcosClients(): Try[AdminRouter] = {

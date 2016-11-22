@@ -11,9 +11,9 @@ case class Install(
 ) extends Operation
 
 case class UniverseInstall(
-  packageDefinition: universe.v3.model.PackageDefinition
+  packageDefinition: universe.v3.model.V3Package
 ) extends Operation
 
 case class Uninstall(
-  packageDefinition: Option[universe.v3.model.PackageDefinition]
+  packageDefinition: Option[universe.v3.model.V3Package]
 ) extends Operation

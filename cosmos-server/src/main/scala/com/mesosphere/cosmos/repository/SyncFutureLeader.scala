@@ -19,7 +19,7 @@ final class SyncFutureLeader private (
   private[this] val logger = org.slf4j.LoggerFactory.getLogger(getClass)
   private[this] val leaderSelector = new LeaderSelector(
     curatorClient,
-    "/processor/leader",
+    "/package/processor-leader",
     this
   )
 

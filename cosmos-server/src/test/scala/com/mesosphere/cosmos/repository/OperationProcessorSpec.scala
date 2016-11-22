@@ -220,17 +220,17 @@ object OperationProcessorSpec {
   }
 
   object SucceedingInstaller extends Installer {
-    def apply(id: UUID, pkg: universe.v3.model.PackageDefinition): Future[Unit] = Future.Done
+    def apply(id: UUID, pkg: universe.v3.model.V3Package): Future[Unit] = Future.Done
   }
 
   object SucceedingUniverseInstaller extends UniverseInstaller {
-    def apply(pkg: universe.v3.model.PackageDefinition): Future[Unit] = Future.Done
+    def apply(pkg: universe.v3.model.V3Package): Future[Unit] = Future.Done
   }
 
   object SucceedingUninstaller extends Uninstaller {
     def apply(
       pc: rpc.v1.model.PackageCoordinate,
-      pkg: Option[universe.v3.model.PackageDefinition]
+      pkg: Option[universe.v3.model.V3Package]
     ): Future[Unit] = Future.Done
   }
 
