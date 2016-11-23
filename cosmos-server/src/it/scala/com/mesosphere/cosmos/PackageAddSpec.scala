@@ -213,8 +213,17 @@ object PackageAddSpec {
 
   def cleanObjectStorage(storage: ObjectStorage): Unit = {
     def cleanObjectList(objectList: ObjectList): Future[Unit] = {
+      // Delete all of the objects
       Future.join(objectList.objects.map(storage.delete))
         .before {
+          // Delete all of objects in the directories
+          Future.join(
+            objectList.directories.map { directory =>
+              storage.list(directory).flatMap(cleanObjectList)
+            }
+          )
+        }.before {
+          // Continue to the next page
           objectList.listToken match {
             case Some(token) => storage.listNext(token).flatMap(cleanObjectList)
             case _ => Future.Done
