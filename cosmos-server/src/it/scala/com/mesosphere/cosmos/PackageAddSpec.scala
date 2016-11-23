@@ -57,7 +57,7 @@ final class PackageAddSpec extends FreeSpec with BeforeAndAfterAll with BeforeAn
 
       // Adding the package again should not overwrite the existing package
       val newV3Package = expectedV3Package.copy(
-        description=oldMetadata.description + " plus some changes"
+        description=expectedV3Package.description + " plus some changes"
       )
 
       val (metadata, _) = newV3Package.as[(PackageMetadata, ReleaseVersion)]
