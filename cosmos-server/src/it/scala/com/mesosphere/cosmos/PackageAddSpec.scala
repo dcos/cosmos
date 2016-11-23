@@ -50,6 +50,37 @@ final class PackageAddSpec extends FreeSpec with BeforeAndAfterAll with BeforeAn
     "single package" in {
       assertSuccessfulAdd(TestingPackages.MaximalV3ModelV3PackageDefinition)
     }
+
+    "same package coordinate twice" in {
+      val expectedV3Package = TestingPackages.MinimalV3ModelV3PackageDefinition
+      assertSuccessfulAdd(expectedV3Package)
+
+      // Adding the package again should not overwrite the existing package
+      val (oldMetadata, _) = expectedV3Package.as[(PackageMetadata, ReleaseVersion)]
+      val newMetadata = oldMetadata.copy(
+        description=oldMetadata.description + " plus some changes"
+      )
+
+      // Assert that we got the correct response
+      assertSamePackage(
+        expectedV3Package,
+        decodeAndValidateResponse(
+          CosmosClient.submit(packageAddRequest(buildPackage(newMetadata)))
+        )
+      )
+
+      // Assert that the externalized state doesn't change
+      assertSamePackage(
+        expectedV3Package,
+        Await.result(
+          eventualFuture(
+            () => packageStorage.readPackageDefinition(
+              expectedV3Package.packageCoordinate
+            )
+          )
+        )
+      )
+    }
   }
 
   private[this] var zkClient: CuratorFramework = _
@@ -84,13 +115,12 @@ final class PackageAddSpec extends FreeSpec with BeforeAndAfterAll with BeforeAn
 
   private[this] def assertSuccessfulAdd(expectedV3Package: universe.v3.model.V3Package): Unit = {
     val (expectedMetadata, _) = expectedV3Package.as[(PackageMetadata, ReleaseVersion)]
-    val expectedPackageBytes = buildPackage(expectedMetadata)
 
     // Assert that we got the correct response
     assertSamePackage(
       expectedV3Package,
       decodeAndValidateResponse(
-        CosmosClient.submit(packageAddRequest(expectedPackageBytes))
+        CosmosClient.submit(packageAddRequest(buildPackage(expectedMetadata)))
       )
     )
 
