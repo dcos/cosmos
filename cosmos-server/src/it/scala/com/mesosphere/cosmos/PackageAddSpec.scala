@@ -69,6 +69,9 @@ final class PackageAddSpec extends FreeSpec with BeforeAndAfterAll with BeforeAn
         )
       )
 
+      // Wait until the install queue is empty
+      Await.result(eventualFutureNone(installQueue.next))
+
       // Assert that the externalized state doesn't change
       assertSamePackage(
         expectedV3Package,
@@ -84,6 +87,7 @@ final class PackageAddSpec extends FreeSpec with BeforeAndAfterAll with BeforeAn
   }
 
   private[this] var zkClient: CuratorFramework = _
+  private[this] var installQueue: InstallQueue = _
   private[this] var packageObjectStorage: ObjectStorage = _
   private[this] var packageStorage: PackageObjectStorage = _
   private[this] var stagedObjectStorage: ObjectStorage = _
@@ -94,6 +98,8 @@ final class PackageAddSpec extends FreeSpec with BeforeAndAfterAll with BeforeAn
 
     zkClient = zookeeper.Clients.createAndInitialize(ZooKeeperClient.uri)
 
+    installQueue = InstallQueue(zkClient)
+
     packageObjectStorage = ObjectStorage.fromUri(PackageStorageClient.packagesUri)
     packageStorage = PackageObjectStorage(packageObjectStorage)
 
@@ -102,6 +108,7 @@ final class PackageAddSpec extends FreeSpec with BeforeAndAfterAll with BeforeAn
   }
 
   override def afterAll(): Unit = {
+    installQueue.close()
     zkClient.close()
   }
 
@@ -135,6 +142,13 @@ final class PackageAddSpec extends FreeSpec with BeforeAndAfterAll with BeforeAn
         )
       )
     )
+  }
+
+  private[this] def eventualFutureNone(
+    future: () => Future[Option[_]]
+  ): Future[Unit] = future().flatMap {
+    case Some(_) => eventualFutureNone(future)
+    case None => Future.Done
   }
 
   private[this] def eventualFuture[T](
