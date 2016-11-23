@@ -56,16 +56,17 @@ final class PackageAddSpec extends FreeSpec with BeforeAndAfterAll with BeforeAn
       assertSuccessfulAdd(expectedV3Package)
 
       // Adding the package again should not overwrite the existing package
-      val (oldMetadata, _) = expectedV3Package.as[(PackageMetadata, ReleaseVersion)]
-      val newMetadata = oldMetadata.copy(
+      val newV3Package = expectedV3Package.copy(
         description=oldMetadata.description + " plus some changes"
       )
 
+      val (metadata, _) = newV3Package.as[(PackageMetadata, ReleaseVersion)]
+
       // Assert that we got the correct response
       assertSamePackage(
-        expectedV3Package,
+        newV3Package,
         decodeAndValidateResponse(
-          CosmosClient.submit(packageAddRequest(buildPackage(newMetadata)))
+          CosmosClient.submit(packageAddRequest(buildPackage(metadata)))
         )
       )
 
@@ -232,7 +233,6 @@ object PackageAddSpec {
     }
 
     // TODO package-add: Be more lenient about slashes at beginning and end of paths
-    // TODO: support recursing into directories
     Await.result(storage.list("").flatMap(cleanObjectList))
   }
 
