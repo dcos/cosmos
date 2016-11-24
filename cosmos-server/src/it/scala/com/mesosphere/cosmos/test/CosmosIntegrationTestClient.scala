@@ -233,7 +233,7 @@ object CosmosIntegrationTestClient extends Matchers {
 
   object PackageStorageClient {
 
-    val addedUri: ObjectStorageUri = {
+    val packagesUri: ObjectStorageUri = {
       ObjectStorageUri.parse(getClientProperty("PackageStorageClient", "packagesUri")).get()
     }
 

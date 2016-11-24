@@ -328,12 +328,12 @@ final class InstallQueue private(
           .getOrElse(new java.util.HashMap[String, ChildData]())
           .toMap
           .map { case (encodedPackageCoordinate, childData) =>
-            BijectionUtils.scalaTryToTwitterTry(
-              encodedPackageCoordinate.as[scala.util.Try[PackageCoordinate]]).flatMap { coordinate =>
-              Try(Envelope.decodeData[OperationStatus](childData.getData)).map { operationStatus =>
-                coordinate -> operationStatus
-              }
-            }
+            for {
+              coordinate <- BijectionUtils.scalaTryToTwitterTry(
+                encodedPackageCoordinate.as[scala.util.Try[PackageCoordinate]]
+              )
+              operationStatus <- Try(Envelope.decodeData[OperationStatus](childData.getData))
+            } yield coordinate -> operationStatus
           }
           .toSeq
       Future.const(Try.collect(operationStatus).map(_.toMap))
@@ -344,7 +344,7 @@ final class InstallQueue private(
 
 object InstallQueue {
 
-  val installQueuePath = "/packages"
+  val installQueuePath = "/package/task-queue"
 
   def statusPath(packageCoordinate: PackageCoordinate): String = {
     s"$installQueuePath/${packageCoordinate.as[String]}"

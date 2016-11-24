@@ -61,14 +61,13 @@ final class LocalPackageCollectionSpec extends FreeSpec with Matchers {
       maintainer="jose@mesosphere.com",
       description="paas framework"
     ),
-    universe.v3.model.V2Package(
-      packagingVersion=universe.v3.model.V2PackagingVersion,
+    universe.v3.model.V3Package(
+      packagingVersion=universe.v3.model.V3PackagingVersion,
       name="marathon",
       version=universe.v3.model.PackageDefinition.Version("0.8.4"),
       releaseVersion=universe.v3.model.PackageDefinition.ReleaseVersion(3).get,
       maintainer="jose@mesosphere.com",
-      description="paas framework",
-      universe.v3.model.Marathon(ByteBuffer.allocate(0))
+      description="paas framework"
     )
   )
 
@@ -91,14 +90,13 @@ final class LocalPackageCollectionSpec extends FreeSpec with Matchers {
       maintainer="jose@mesosphere.com",
       description="Great object store"
     ),
-    universe.v3.model.V2Package(
-      packagingVersion=universe.v3.model.V2PackagingVersion,
+    universe.v3.model.V3Package(
+      packagingVersion=universe.v3.model.V3PackagingVersion,
       name="ceph",
       version=universe.v3.model.PackageDefinition.Version("0.8.4"),
       releaseVersion=universe.v3.model.PackageDefinition.ReleaseVersion(3).get,
       maintainer="jose@mesosphere.com",
-      description="Great object store",
-      universe.v3.model.Marathon(ByteBuffer.allocate(0))
+      description="Great object store"
     )
   )
 

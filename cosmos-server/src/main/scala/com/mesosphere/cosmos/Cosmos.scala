@@ -10,7 +10,7 @@ import com.mesosphere.cosmos.finch.FinchExtensions._
 import com.mesosphere.cosmos.finch.RequestError
 import com.mesosphere.cosmos.finch.RequestValidators
 import com.mesosphere.cosmos.handler._
-import com.mesosphere.cosmos.repository.Installer
+import com.mesosphere.cosmos.repository.DefaultInstaller
 import com.mesosphere.cosmos.repository.LocalPackageCollection
 import com.mesosphere.cosmos.repository.OperationProcessor
 import com.mesosphere.cosmos.repository.PackageSourcesStorage
@@ -178,50 +178,9 @@ private[cosmos] final class Cosmos(
 
 object Cosmos extends FinchServer {
   def service: Service[Request, Response] = {
-    implicit val stats = statsReceiver.scope("cosmos")
-
     HttpProxySupport.configureProxySupport()
 
-    val boot = configureDcosClients() map { adminRouter =>
-      val zkUri = zookeeperUri()
-      logger.info("Using {} for the ZooKeeper connection", zkUri)
-
-      val objectStorages = configureObjectStorage()
-
-      val marathonPackageRunner = new MarathonPackageRunner(adminRouter)
-
-      val zkClient = zookeeper.Clients.createAndInitialize(zkUri)
-      onExit(zkClient.close())
-
-      val sourcesStorage = new ZkRepositoryList(zkClient)()
-
-      val installQueue = InstallQueue(zkClient)
-      onExit(installQueue.close())
-
-      for ((pkgStorage, stageStorage) <- objectStorages) {
-        val processingLeader = SyncFutureLeader(
-          zkClient,
-          OperationProcessor(
-            installQueue,
-            Installer.Noop, // TODO: Replace this with the actual installer
-            UniverseInstaller.Noop,
-            Uninstaller.Noop
-          )
-        )
-        onExit(processingLeader.close())
-      }
-
-      val cosmos = Cosmos(
-        adminRouter,
-        marathonPackageRunner,
-        sourcesStorage,
-        UniverseClient(adminRouter),
-        installQueue,
-        objectStorages
-      )
-      cosmos.service
-    }
-    boot.get
+    startCosmos(statsReceiver.scope("cosmos"))
   }
 
   override def startServer(): Option[ListeningServer] = {
@@ -248,6 +207,50 @@ object Cosmos extends FinchServer {
         .withTls(Netty3ListenerTLSConfig(engineFactory))
         .serve(iface, getService(s"srv/$name"))
     }
+  }
+
+  private[this] def startCosmos(implicit stats: StatsReceiver): Service[Request, Response] = {
+    val adminRouter = configureDcosClients().get
+
+    val zkUri = zookeeperUri()
+    logger.info("Using {} for the ZooKeeper connection", zkUri)
+
+    val objectStorages = configureObjectStorage()
+
+    val zkClient = zookeeper.Clients.createAndInitialize(zkUri)
+    onExit(zkClient.close())
+
+    val installQueue = InstallQueue(zkClient)
+    onExit(installQueue.close())
+
+    for ((pkgStorage, stageStorage, localPackageCollection) <- objectStorages) {
+      val processingLeader = SyncFutureLeader(
+        zkClient,
+        OperationProcessor(
+          installQueue,
+          DefaultInstaller(
+            stageStorage,
+            pkgStorage,
+            localPackageCollection
+          ),
+          UniverseInstaller.Noop,
+          Uninstaller.Noop
+        )
+      )
+      onExit(processingLeader.close())
+    }
+
+    Cosmos(
+      adminRouter,
+      new MarathonPackageRunner(adminRouter),
+      new ZkRepositoryList(zkClient),
+      UniverseClient(adminRouter),
+      installQueue,
+      objectStorages.map {
+        case (_, stagedStorage, localCollection) =>
+          (localCollection, stagedStorage)
+      }
+    ).service
   }
 
   private[this] def configureDcosClients(): Try[AdminRouter] = {
@@ -289,14 +292,16 @@ object Cosmos extends FinchServer {
   }
 
   private[this] def configureObjectStorage(
-  ): Option[(PackageObjectStorage, StagedPackageStorage)] = {
+  )(
+    implicit statsReceiver: StatsReceiver
+  ): Option[(PackageObjectStorage, StagedPackageStorage, LocalPackageCollection)] = {
     def fromFlag(
       flag: Flag[Option[ObjectStorageUri]],
       description: String
     ): Option[ObjectStorage] = {
       val value = flag().map(_.toString).getOrElse("None")
       logger.info(s"Using {} for the $description storage URI", value)
-      flag().map(ObjectStorage.fromUri)
+      flag().map(uri => ObjectStorage.fromUri(uri)(statsReceiver))
     }
 
     (
@@ -304,7 +309,7 @@ object Cosmos extends FinchServer {
       fromFlag(stagedPackageStorageUri, "staged package").map(StagedPackageStorage(_))
     ) match {
       case (Some(pkgStorage), Some(stagedStorage)) =>
-        Some((pkgStorage, stagedStorage))
+        Some((pkgStorage, stagedStorage, LocalPackageCollection(pkgStorage)))
       case (None, None) =>
         None
       case (Some(_), None) =>
@@ -326,7 +331,7 @@ object Cosmos extends FinchServer {
     sourcesStorage: PackageSourcesStorage,
     universeClient: UniverseClient,
     installQueue: InstallQueue,
-    objectStorages: Option[(PackageObjectStorage, StagedPackageStorage)]
+    objectStorages: Option[(LocalPackageCollection, StagedPackageStorage)]
   )(implicit statsReceiver: StatsReceiver = NullStatsReceiver): Cosmos = {
 
     val repositories = new MultiRepository(
@@ -339,8 +344,8 @@ object Cosmos extends FinchServer {
     }
 
     val serviceStartHandler = enableIfSome(objectStorages, "service start") {
-      case (packageStorage, _) =>
-        new ServiceStartHandler(LocalPackageCollection(packageStorage), packageRunner)
+      case (localPackageCollection, _) =>
+        new ServiceStartHandler(localPackageCollection, packageRunner)
     }
 
     val packageStorage = new InMemoryPackageStorage()

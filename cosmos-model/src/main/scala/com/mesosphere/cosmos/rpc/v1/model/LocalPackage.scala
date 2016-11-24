@@ -94,6 +94,7 @@ object LocalPackage {
   }
 }
 
+// TODO: Replace every instance to PackageDefinition with V3Package
 final case class NotInstalled(
   metadata: universe.v3.model.PackageDefinition
 ) extends LocalPackage

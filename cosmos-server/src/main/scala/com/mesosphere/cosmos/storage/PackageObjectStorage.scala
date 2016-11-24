@@ -11,7 +11,6 @@ import com.mesosphere.cosmos.rpc
 import com.mesosphere.universe
 import com.mesosphere.universe.v3.circe.Decoders._
 import com.mesosphere.universe.v3.circe.Encoders._
-import com.mesosphere.universe.v3.syntax.PackageDefinitionOps._
 import com.twitter.bijection.Conversion.asMethod
 import com.twitter.io.Buf.ByteArray
 import com.twitter.io.Reader
@@ -28,40 +27,33 @@ final class PackageObjectStorage private (objectStorage: ObjectStorage) {
   private[this] val pool = FuturePool.interruptibleUnboundedPool
 
   def writePackageDefinition(
-    packageDefinition: universe.v3.model.PackageDefinition
+    packageDefinition: universe.v3.model.V3Package
   ): Future[Unit] = {
     val packageCoordinate = rpc.v1.model.PackageCoordinate(
       packageDefinition.name,
       packageDefinition.version
     )
 
-    val path = s"${packageCoordinate.as[String]}/metadata.json"
-
     val data = packageDefinition.asJson.noSpaces.getBytes(StandardCharsets.UTF_8)
 
-    val mediaType = packageDefinition match {
-      case _: universe.v3.model.V2Package => universe.MediaTypes.universeV2Package
-      case _: universe.v3.model.V3Package => universe.MediaTypes.universeV3Package
-    }
-
     objectStorage.write(
-      path,
+      s"${packageCoordinate.as[String]}/metadata.json",
       new ByteArrayInputStream(data),
       data.length.toLong,
-      mediaType
+      universe.MediaTypes.universeV3Package
     )
   }
 
   def readPackageDefinition(
     packageCoordinate: rpc.v1.model.PackageCoordinate
-  ): Future[Option[universe.v3.model.PackageDefinition]] = {
+  ): Future[Option[universe.v3.model.V3Package]] = {
     val path = s"${packageCoordinate.as[String]}/metadata.json"
 
     objectStorage.read(path).flatMap {
       case Some((mediaType, inputStream)) =>
         pool {
           Some(
-            decode[universe.v3.model.PackageDefinition](
+            decode[universe.v3.model.V3Package](
               new String(
                 StreamIO.buffer(inputStream).toByteArray,
                 StandardCharsets.UTF_8

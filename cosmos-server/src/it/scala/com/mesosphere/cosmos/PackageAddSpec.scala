@@ -1,12 +1,12 @@
 package com.mesosphere.cosmos
 
-import _root_.io.circe.jawn.decode
 import _root_.io.circe.syntax._
 import cats.data.Xor
-import com.mesosphere.cosmos.rpc.v1.circe.Decoders._
+import com.mesosphere.cosmos.circe.Decoders.decode
 import com.mesosphere.cosmos.rpc.v1.model.AddResponse
 import com.mesosphere.cosmos.storage.ObjectStorage
 import com.mesosphere.cosmos.storage.ObjectStorage.ObjectList
+import com.mesosphere.cosmos.storage.PackageObjectStorage
 import com.mesosphere.cosmos.storage.StagedPackageStorage
 import com.mesosphere.cosmos.storage.installqueue.Install
 import com.mesosphere.cosmos.storage.installqueue.InstallQueue
@@ -20,6 +20,8 @@ import com.mesosphere.universe.MediaTypes
 import com.mesosphere.universe.bijection.TestUniverseConversions._
 import com.mesosphere.universe.test.TestingPackages
 import com.mesosphere.universe.v3.circe.Encoders._
+import com.mesosphere.universe.v3.circe.Decoders._
+import com.mesosphere.universe.v3.syntax.PackageDefinitionOps._
 import com.twitter.bijection.Conversion.asMethod
 import com.twitter.finagle.http.Response
 import com.twitter.finagle.http.Status
@@ -49,29 +51,46 @@ final class PackageAddSpec extends FreeSpec with BeforeAndAfterAll with BeforeAn
       assertSuccessfulAdd(TestingPackages.MaximalV3ModelV3PackageDefinition)
     }
 
-    "identical packages are written to different staging locations" in {
+    "same package coordinate twice" in {
+      val expectedV3Package = TestingPackages.MinimalV3ModelV3PackageDefinition
+      assertSuccessfulAdd(expectedV3Package)
 
-      def addPackageAndGetId(packageData: universe.v3.model.Metadata): UUID = {
-        val packageBytes = buildPackage(packageData)
-        val request = packageAddRequest(packageBytes)
-        val _ = CosmosClient.submit(request)
+      // Adding the package again should not overwrite the existing package
+      val newV3Package = expectedV3Package.copy(
+        description=expectedV3Package.description + " plus some changes"
+      )
 
-        val PendingOperation(_, operation, _) = popOperationFromInstallQueue()
-        val Install(stagedPackageId, _) = operation
+      val (metadata, _) = newV3Package.as[(PackageMetadata, ReleaseVersion)]
 
-        stagedPackageId
-      }
+      // Assert that we got the correct response
+      assertSamePackage(
+        newV3Package,
+        decodeAndValidateResponse(
+          CosmosClient.submit(packageAddRequest(buildPackage(metadata)))
+        )
+      )
 
-      val firstId = addPackageAndGetId(TestingPackages.MinimalV3ModelMetadata)
-      val secondId = addPackageAndGetId(TestingPackages.MinimalV3ModelMetadata)
+      // Wait until the install queue is empty
+      Await.result(eventualFutureNone(installQueue.next))
 
-      assert(firstId != secondId)
+      // Assert that the externalized state doesn't change
+      assertSamePackage(
+        expectedV3Package,
+        Await.result(
+          eventualFuture(
+            () => packageStorage.readPackageDefinition(
+              expectedV3Package.packageCoordinate
+            )
+          )
+        )
+      )
     }
-
   }
 
   private[this] var zkClient: CuratorFramework = _
   private[this] var installQueue: InstallQueue = _
+  private[this] var packageObjectStorage: ObjectStorage = _
+  private[this] var packageStorage: PackageObjectStorage = _
   private[this] var stagedObjectStorage: ObjectStorage = _
   private[this] var stagedPackageStorage: StagedPackageStorage = _
 
@@ -79,7 +98,11 @@ final class PackageAddSpec extends FreeSpec with BeforeAndAfterAll with BeforeAn
     implicit val statsReceiver: StatsReceiver = NullStatsReceiver
 
     zkClient = zookeeper.Clients.createAndInitialize(ZooKeeperClient.uri)
+
     installQueue = InstallQueue(zkClient)
+
+    packageObjectStorage = ObjectStorage.fromUri(PackageStorageClient.packagesUri)
+    packageStorage = PackageObjectStorage(packageObjectStorage)
 
     stagedObjectStorage = ObjectStorage.fromUri(PackageStorageClient.stagedUri)
     stagedPackageStorage = StagedPackageStorage(stagedObjectStorage)
@@ -91,8 +114,8 @@ final class PackageAddSpec extends FreeSpec with BeforeAndAfterAll with BeforeAn
   }
 
   after {
-    cleanInstallQueue(installQueue)
-    cleanStagedPackageStorage(stagedObjectStorage)
+    cleanObjectStorage(stagedObjectStorage)
+    cleanObjectStorage(packageObjectStorage)
   }
 
   type PackageMetadata = universe.v3.model.Metadata
@@ -100,52 +123,49 @@ final class PackageAddSpec extends FreeSpec with BeforeAndAfterAll with BeforeAn
 
   private[this] def assertSuccessfulAdd(expectedV3Package: universe.v3.model.V3Package): Unit = {
     val (expectedMetadata, _) = expectedV3Package.as[(PackageMetadata, ReleaseVersion)]
-    val expectedPackageBytes = buildPackage(expectedMetadata)
-    val request = packageAddRequest(expectedPackageBytes)
-    val response = CosmosClient.submit(request)
 
-    assertValidResponse(response, expectedV3Package)
+    // Assert that we got the correct response
+    assertSamePackage(
+      expectedV3Package,
+      decodeAndValidateResponse(
+        CosmosClient.submit(packageAddRequest(buildPackage(expectedMetadata)))
+      )
+    )
 
-    val PendingOperation(coordinate, operation, failure) = popOperationFromInstallQueue()
-    val Install(stagedPackageId, v3Package) = operation
-
-    assertResult(expectedV3Package.name)(coordinate.name)
-    assertResult(expectedV3Package.version)(coordinate.version)
-    assertSamePackage(expectedV3Package, v3Package)
-    assert(failure.isEmpty)
-
-    assertObjectStorageInExpectedState(stagedPackageId, expectedPackageBytes)
+    // Assert that we externalize the correct state
+    assertSamePackage(
+      expectedV3Package,
+      Await.result(
+        eventualFuture(
+          () => packageStorage.readPackageDefinition(
+            expectedV3Package.packageCoordinate
+          )
+        )
+      )
+    )
   }
 
-  private[this] def assertValidResponse(
-    response: Response,
-    expectedV3Package: universe.v3.model.V3Package
-  ): Unit = {
-    assertResult(Status.Accepted)(response.status)
-    val Xor.Right(addResponse) = decode[AddResponse](response.contentString)
-    assertSamePackage(expectedV3Package, addResponse.v3Package)
+  private[this] def eventualFutureNone(
+    future: () => Future[Option[_]]
+  ): Future[Unit] = future().flatMap {
+    case Some(_) => eventualFutureNone(future)
+    case None => Future.Done
   }
 
-  private[this] def popOperationFromInstallQueue(): PendingOperation = {
-    Await.result {
-      installQueue.next().flatMap {
-        case Some(operation) =>
-          installQueue.success(operation.packageCoordinate)
-          Future.value(operation)
-        case _ => Future.exception(new AssertionError("Pending operation expected"))
-      }
+  private[this] def eventualFuture[T](
+    future: () => Future[Option[T]]
+  ): Future[T] = {
+    future().flatMap {
+      case Some(value) => Future.value(value)
+      case None => eventualFuture(future)
     }
   }
 
-  // TODO package-add: this will no longer work once the processor handles installs
-  private[this] def assertObjectStorageInExpectedState(
-    stagedPackageId: UUID,
-    expectedPackage: Array[Byte]
-  ): Unit = {
-    val (mediaType, inputStream) = Await.result(stagedPackageStorage.get(stagedPackageId))
-    val actualPackage = StreamIO.buffer(inputStream).toByteArray
-    assertResult(MediaTypes.PackageZip)(mediaType)
-    assertResult(expectedPackage)(actualPackage)
+  private[this] def decodeAndValidateResponse(
+    response: Response
+  ): universe.v3.model.V3Package = {
+    assertResult(Status.Accepted)(response.status)
+    decode[universe.v3.model.V3Package](response.contentString)
   }
 
   private[this] def assertSamePackage(
@@ -192,21 +212,19 @@ object PackageAddSpec {
     bytesOut.toByteArray
   }
 
-  def cleanInstallQueue(installQueue: InstallQueue): Unit = {
-    def loop: Future[Unit] = {
-      installQueue.next().flatMap {
-        case Some(operation) => installQueue.success(operation.packageCoordinate).before(loop)
-        case _ => Future.Done
-      }
-    }
-
-    Await.result(loop)
-  }
-
-  def cleanStagedPackageStorage(storage: ObjectStorage): Unit = {
+  def cleanObjectStorage(storage: ObjectStorage): Unit = {
     def cleanObjectList(objectList: ObjectList): Future[Unit] = {
+      // Delete all of the objects
       Future.join(objectList.objects.map(storage.delete))
         .before {
+          // Delete all of objects in the directories
+          Future.join(
+            objectList.directories.map { directory =>
+              storage.list(directory).flatMap(cleanObjectList)
+            }
+          )
+        }.before {
+          // Continue to the next page
           objectList.listToken match {
             case Some(token) => storage.listNext(token).flatMap(cleanObjectList)
             case _ => Future.Done
