@@ -220,6 +220,9 @@ object Cosmos extends FinchServer {
     val zkClient = zookeeper.Clients.createAndInitialize(zkUri)
     onExit(zkClient.close())
 
+    val repoList = ZkRepositoryList(zkClient)
+    onExit(repoList.close())
+
     val installQueue = InstallQueue(zkClient)
     onExit(installQueue.close())
 
@@ -243,7 +246,7 @@ object Cosmos extends FinchServer {
     Cosmos(
       adminRouter,
       new MarathonPackageRunner(adminRouter),
-      new ZkRepositoryList(zkClient),
+      repoList,
       UniverseClient(adminRouter),
       installQueue,
       objectStorages.map {
