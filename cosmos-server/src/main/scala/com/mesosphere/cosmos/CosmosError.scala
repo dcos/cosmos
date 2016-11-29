@@ -225,4 +225,8 @@ case class InstallQueueError(msg: String) extends CosmosError
 case class NotImplemented(msg: String) extends CosmosError {
   override val status = Status.NotImplemented
 }
+
+case class OperationInProgress(coordinate: rpc.v1.model.PackageCoordinate) extends CosmosError {
+  override val status = Status.Conflict
+}
 // scalastyle:on number.of.types

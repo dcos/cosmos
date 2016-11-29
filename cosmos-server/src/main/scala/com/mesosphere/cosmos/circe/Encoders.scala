@@ -223,6 +223,7 @@ object Encoders extends LowPriorityImplicits {
     case IncompatibleAcceptHeader(available, _) =>
       "Item 'header 'Accept'' deemed invalid by rule: 'should match one of: " +
       s"${available.map(_.show).mkString(", ")}'"
+    // TODO package-add: case for IncompatibleContentTypeHeader
   }
 
   // scalastyle:off cyclomatic.complexity method.length
@@ -351,6 +352,7 @@ object Encoders extends LowPriorityImplicits {
       case EnvelopeError(msg) => msg
       case InstallQueueError(msg) => msg
       case NotImplemented(msg) => msg
+      case OperationInProgress(_) => ??? // TODO package-add: Ensure this gets implemented
     }
   }
   // scalastyle:on cyclomatic.complexity method.length

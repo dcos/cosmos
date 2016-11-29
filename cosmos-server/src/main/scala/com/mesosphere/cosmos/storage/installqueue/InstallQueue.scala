@@ -1,6 +1,7 @@
 package com.mesosphere.cosmos.storage.installqueue
 
 import com.mesosphere.cosmos.InstallQueueError
+import com.mesosphere.cosmos.OperationInProgress
 import com.mesosphere.cosmos.converter.Common.packageCoordinateToBase64String
 import com.mesosphere.cosmos.rpc.v1.model.ErrorResponse
 import com.mesosphere.cosmos.rpc.v1.model.PackageCoordinate
@@ -208,7 +209,7 @@ final class InstallQueue private(
             "Attempted to signal success on an " +
               s"operation that has failed: $packageCoordinate"
           Future.exception(InstallQueueError(message))
-        case Some(WithZkStat(stat, Pending(operation, _))) =>
+        case Some(WithZkStat(stat, Pending(_, _))) =>
           deleteOperationStatus(packageCoordinate, stat.getVersion)
       }
     }
@@ -233,17 +234,13 @@ final class InstallQueue private(
     promise
   }
 
-  override def add
-  (
-    packageCoordinate: PackageCoordinate,
-    operation: Operation
-  ): Future[AddResult] = {
+  override def add(packageCoordinate: PackageCoordinate, operation: Operation): Future[Unit] = {
     timeFuture(stats.stat("add")) {
       createOperationStatus(
         packageCoordinate,
         Pending(operation, None)
       ).rescue {
-        case e: KeeperException.NodeExistsException =>
+        case _: KeeperException.NodeExistsException =>
           setOperationInOperationStatus(packageCoordinate, operation)
       }
     }
@@ -253,8 +250,8 @@ final class InstallQueue private(
   (
     packageCoordinate: PackageCoordinate,
     operationStatus: OperationStatus
-  ): Future[AddResult] = {
-    val promise = Promise[AddResult]()
+  ): Future[Unit] = {
+    val promise = Promise[Unit]()
 
     val data = Envelope.encodeData(operationStatus)
     stats.stat("nodeSize").add(data.length.toFloat)
@@ -262,7 +259,7 @@ final class InstallQueue private(
     client.create().creatingParentsIfNeeded().inBackground(
       handler(promise, CuratorEventType.CREATE) {
         case (KeeperException.Code.OK, _) =>
-          Return(Created)
+          Return(())
         case (code, event) =>
           Throw(KeeperException.create(code, event.getPath))
       }
@@ -277,13 +274,13 @@ final class InstallQueue private(
   (
     packageCoordinate: PackageCoordinate,
     operation: Operation
-  ): Future[AddResult] = {
+  ): Future[Unit] = {
     getOperationStatus(packageCoordinate).flatMap {
       case None =>
         /* if we reach this statement, that means there was
          * an operation when the user made the request. The operation has
          * since completed which means that it was pending.
-         * It is correct to return AlreadyExists, because
+         * It is correct to return Throw(OperationInProgress), because
          * the request to add overlaps the existence of a pending operation.
          *
          * |------------|----------------------------|
@@ -301,22 +298,22 @@ final class InstallQueue private(
          * |            |  have been deleted         |
          * |            |                            |
          * |------------|----------------------------|
-         * |Set         |  Node does not Exists      |
+         * |Set         |  Node does not Exist       |
          * |            |                            |
          * |            |                            |
          * |------------|----------------------------|
          * |add ends    |                            |
          * |------------|----------------------------|
          */
-        Future.value(AlreadyExists)
+        Future.exception(OperationInProgress(packageCoordinate))
       case Some(WithZkStat(_, Pending(_, _))) =>
-        Future.value(AlreadyExists)
+        Future.exception(OperationInProgress(packageCoordinate))
       case Some(WithZkStat(stat, Failed(failure))) =>
         setOperationStatus(
           packageCoordinate,
           Pending(operation, Some(failure)),
           stat.getVersion
-        ).before(Future.value(Created))
+        ).before(Future.Unit)
     }
   }
 

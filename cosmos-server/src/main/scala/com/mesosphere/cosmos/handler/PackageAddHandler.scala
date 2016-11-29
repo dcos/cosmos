@@ -12,7 +12,6 @@ import com.mesosphere.cosmos.storage.installqueue.UniverseInstall
 import com.mesosphere.universe
 import com.mesosphere.universe.bijection.UniverseConversions._
 import com.mesosphere.universe.v3.circe.Decoders._
-import com.mesosphere.universe.v3.syntax.PackageDefinitionOps._
 import com.twitter.bijection.Conversion.asMethod
 import com.twitter.finagle.http.Status
 import com.twitter.io.StreamIO
