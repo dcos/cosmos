@@ -1,13 +1,12 @@
 package com.mesosphere.cosmos
 
-import _root_.io.circe.syntax._
 import com.mesosphere.cosmos.circe.Decoders.decode
 import com.mesosphere.cosmos.converter.Response._
 import com.mesosphere.cosmos.http.CosmosRequest
 import com.mesosphere.cosmos.http.MediaType
 import com.mesosphere.cosmos.rpc.MediaTypes
-import com.mesosphere.cosmos.rpc.v1.circe.Encoders._
 import com.mesosphere.cosmos.rpc.v1.circe.Decoders._
+import com.mesosphere.cosmos.rpc.v1.circe.Encoders._
 import com.mesosphere.cosmos.rpc.v2.circe.Decoders._
 import com.mesosphere.cosmos.storage.ObjectStorage
 import com.mesosphere.cosmos.storage.ObjectStorage.ObjectList
@@ -23,21 +22,16 @@ import com.mesosphere.universe.bijection.TestUniverseConversions._
 import com.mesosphere.universe.bijection.UniverseConversions._
 import com.mesosphere.universe.test.TestingPackages
 import com.mesosphere.universe.v3.circe.Decoders._
-import com.mesosphere.universe.v3.circe.Encoders._
 import com.mesosphere.universe.v3.syntax.PackageDefinitionOps._
 import com.mesosphere.universe.{MediaTypes => UMediaTypes}
+import com.mesosphere.universe.{TestUtil => UTestUtil}
 import com.twitter.bijection.Conversion.asMethod
-import com.twitter.finagle.http.Response
 import com.twitter.finagle.http.Status
 import com.twitter.finagle.stats.NullStatsReceiver
 import com.twitter.finagle.stats.StatsReceiver
 import com.twitter.io.Buf
 import com.twitter.util.Await
 import com.twitter.util.Future
-import java.io.ByteArrayOutputStream
-import java.nio.charset.StandardCharsets
-import java.util.zip.ZipEntry
-import java.util.zip.ZipOutputStream
 import org.apache.curator.framework.CuratorFramework
 import org.scalatest.BeforeAndAfter
 import org.scalatest.BeforeAndAfterAll
@@ -61,16 +55,7 @@ final class PackageAddSpec extends FreeSpec with BeforeAndAfterAll with BeforeAn
       val newV3Package = expectedV3Package.copy(
         description=expectedV3Package.description + " plus some changes"
       )
-
-      val (metadata, _) = newV3Package.as[(PackageMetadata, ReleaseVersion)]
-
-      // Assert that we got the correct response
-      assertSamePackage(
-        newV3Package,
-        decodeAndValidateResponse(
-          CosmosClient.submit(packageAddRequest(buildPackage(metadata)))
-        )
-      )
+      assertSuccessfulResponse(newV3Package)
 
       // Wait until the install queue is empty
       Await.result(TestUtil.eventualFutureNone(installQueue.next))
@@ -169,15 +154,7 @@ final class PackageAddSpec extends FreeSpec with BeforeAndAfterAll with BeforeAn
   type ReleaseVersion = universe.v3.model.PackageDefinition.ReleaseVersion
 
   private[this] def assertSuccessfulAdd(expectedV3Package: universe.v3.model.V3Package): Unit = {
-    val (expectedMetadata, _) = expectedV3Package.as[(PackageMetadata, ReleaseVersion)]
-
-    // Assert that we got the correct response
-    assertSamePackage(
-      expectedV3Package,
-      decodeAndValidateResponse(
-        CosmosClient.submit(packageAddRequest(buildPackage(expectedMetadata)))
-      )
-    )
+    assertSuccessfulResponse(expectedV3Package)
 
     // Assert that we externalize the correct state
     assertSamePackage(
@@ -192,11 +169,16 @@ final class PackageAddSpec extends FreeSpec with BeforeAndAfterAll with BeforeAn
     )
   }
 
-  private[this] def decodeAndValidateResponse(
-    response: Response
-  ): universe.v3.model.V3Package = {
+  private[this] def assertSuccessfulResponse(
+    expectedV3Package: universe.v3.model.V3Package
+  ): Unit = {
+    val (expectedMetadata, _) = expectedV3Package.as[(PackageMetadata, ReleaseVersion)]
+
+    val request = packageAddRequest(Buf.ByteArray.Owned(UTestUtil.buildPackage(expectedMetadata)))
+    val response = CosmosClient.submit(request)
     assertResult(Status.Accepted)(response.status)
-    decode[universe.v3.model.V3Package](response.contentString)
+    val actualV3Package = decode[universe.v3.model.V3Package](response.contentString)
+    assertSamePackage(expectedV3Package, actualV3Package)
   }
 
   private[this] def assertSamePackage(
@@ -249,18 +231,6 @@ object PackageAddSpec {
       contentType = MediaTypes.DescribeRequest,
       accept = MediaTypes.V2DescribeResponse
     )
-  }
-
-  def buildPackage(packageData: universe.v3.model.Metadata): Buf = {
-    // TODO package-add: Factor out common Zip-handling code into utility methods
-    val bytesOut = new ByteArrayOutputStream()
-    val packageOut = new ZipOutputStream(bytesOut, StandardCharsets.UTF_8)
-    packageOut.putNextEntry(new ZipEntry("metadata.json"))
-    packageOut.write(packageData.asJson.noSpaces.getBytes(StandardCharsets.UTF_8))
-    packageOut.closeEntry()
-    packageOut.close()
-
-    Buf.ByteArray.Owned(bytesOut.toByteArray)
   }
 
   def cleanObjectStorage(storage: ObjectStorage): Unit = {
