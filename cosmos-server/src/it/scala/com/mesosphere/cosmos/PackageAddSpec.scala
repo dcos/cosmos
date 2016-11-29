@@ -17,6 +17,7 @@ import com.mesosphere.cosmos.storage.installqueue.InstallQueue
 import com.mesosphere.cosmos.test.CosmosIntegrationTestClient.CosmosClient
 import com.mesosphere.cosmos.test.CosmosIntegrationTestClient.PackageStorageClient
 import com.mesosphere.cosmos.test.CosmosIntegrationTestClient.ZooKeeperClient
+import com.mesosphere.cosmos.test.TestUtil
 import com.mesosphere.universe
 import com.mesosphere.universe.bijection.TestUniverseConversions._
 import com.mesosphere.universe.bijection.UniverseConversions._
@@ -72,13 +73,13 @@ final class PackageAddSpec extends FreeSpec with BeforeAndAfterAll with BeforeAn
       )
 
       // Wait until the install queue is empty
-      Await.result(eventualFutureNone(installQueue.next))
+      Await.result(TestUtil.eventualFutureNone(installQueue.next))
 
       // Assert that the externalized state doesn't change
       assertSamePackage(
         expectedV3Package,
         Await.result(
-          eventualFuture(
+          TestUtil.eventualFuture(
             () => packageStorage.readPackageDefinition(
               expectedV3Package.packageCoordinate
             )
@@ -182,29 +183,13 @@ final class PackageAddSpec extends FreeSpec with BeforeAndAfterAll with BeforeAn
     assertSamePackage(
       expectedV3Package,
       Await.result(
-        eventualFuture(
+        TestUtil.eventualFuture(
           () => packageStorage.readPackageDefinition(
             expectedV3Package.packageCoordinate
           )
         )
       )
     )
-  }
-
-  private[this] def eventualFutureNone(
-    future: () => Future[Option[_]]
-  ): Future[Unit] = future().flatMap {
-    case Some(_) => eventualFutureNone(future)
-    case None => Future.Done
-  }
-
-  private[this] def eventualFuture[T](
-    future: () => Future[Option[T]]
-  ): Future[T] = {
-    future().flatMap {
-      case Some(value) => Future.value(value)
-      case None => eventualFuture(future)
-    }
   }
 
   private[this] def decodeAndValidateResponse(

@@ -1,6 +1,5 @@
 package com.mesosphere.cosmos.storage
 
-import com.mesosphere.cosmos.CirceError
 import com.mesosphere.cosmos.circe.Decoders.decode
 import com.mesosphere.cosmos.http.MediaType
 import com.netaporter.uri.Uri
@@ -17,7 +16,9 @@ import java.nio.charset.StandardCharsets
 import java.nio.file.Files
 import java.nio.file.NoSuchFileException
 import java.nio.file.Path
+import java.nio.file.StandardCopyOption
 import java.nio.file.StandardOpenOption
+import java.util.UUID
 import scala.collection.JavaConverters._
 import scala.collection.breakOut
 import scala.util.control.NonFatal
@@ -30,6 +31,10 @@ final class LocalObjectStorage private (
   private[this] val pool = FuturePool.interruptibleUnboundedPool
 
   private[this] val stats = statsReceiver.scope(s"LocalObjectStorage($path)")
+
+  // TODO package-add: Make this a sibling of the storage directory
+  private[this] val scratchDir = path.resolve(".scratch")
+  Files.createDirectories(scratchDir)
 
   override def write(
     name: String,
@@ -129,19 +134,20 @@ final class LocalObjectStorage private (
     body: InputStream,
     absolutePath: Path
   ): (Long, Long) = {
-
-    val metadataBytes = metadata.asJson.noSpaces.getBytes(StandardCharsets.UTF_8)
+    // TODO package-add: Maybe use temp file creation instead? If cross-platform
+    val scratchPath = scratchDir.resolve(UUID.randomUUID().toString)
 
     val outputStream = new DataOutputStream(
       Files.newOutputStream(
-        absolutePath,
-        StandardOpenOption.CREATE,
-        StandardOpenOption.WRITE,
-        StandardOpenOption.TRUNCATE_EXISTING
+        scratchPath,
+        StandardOpenOption.CREATE_NEW,
+        StandardOpenOption.WRITE
       )
     )
 
-    try {
+    val metadataBytes = metadata.asJson.noSpaces.getBytes(StandardCharsets.UTF_8)
+
+    val outputs = try {
       outputStream.writeInt(metadataBytes.length)
       outputStream.write(metadataBytes, 0, metadataBytes.length)
 
@@ -153,6 +159,10 @@ final class LocalObjectStorage private (
     } finally {
       outputStream.close()
     }
+
+    Files.move(scratchPath, absolutePath, StandardCopyOption.ATOMIC_MOVE)
+
+    outputs
   }
 
   // See writeToFile for information on the file format.

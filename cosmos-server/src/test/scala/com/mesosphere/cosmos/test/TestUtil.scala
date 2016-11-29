@@ -11,7 +11,7 @@ import com.mesosphere.universe.test.TestingPackages
 import com.mesosphere.universe.v3.model.PackageDefinition.ReleaseVersion
 import com.mesosphere.universe.v3.model._
 import com.twitter.bijection.Conversion.asMethod
-
+import com.twitter.util.Future
 import java.io.IOException
 import java.nio.file._
 import java.nio.file.attribute.BasicFileAttributes
@@ -19,6 +19,10 @@ import java.nio.file.attribute.BasicFileAttributes
 object TestUtil {
 
   def withObjectStorage(testCode: ObjectStorage => Unit): Unit = {
+    withLocalObjectStorage(testCode)
+  }
+
+  def withLocalObjectStorage(testCode: LocalObjectStorage => Unit): Unit = {
     implicit val stats = com.twitter.finagle.stats.NullStatsReceiver
 
     val path = Files.createTempDirectory("cosmos-dlpc-")
@@ -45,6 +49,22 @@ object TestUtil {
     }
 
     val _ = Files.walkFileTree(path, visitor)
+  }
+
+  def eventualFutureNone(
+    future: () => Future[Option[_]]
+  ): Future[Unit] = future().flatMap {
+    case Some(_) => eventualFutureNone(future)
+    case None => Future.Done
+  }
+
+  def eventualFuture[T](
+    future: () => Future[Option[T]]
+  ): Future[T] = {
+    future().flatMap {
+      case Some(value) => Future.value(value)
+      case None => eventualFuture(future)
+    }
   }
 
   implicit val Anonymous = RequestSession(None)
