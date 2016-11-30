@@ -97,8 +97,9 @@ final class PackageAddSpec extends FreeSpec with BeforeAndAfterAll with BeforeAn
       assertResult(Status.Accepted)(response.status)
       assertResult(MediaTypes.AddResponse)(MediaType.parse(response.contentType.get).get())
       assertResult(expectedPackage) {
-        val decoded = decode[rpc.v1.model.AddResponse](response.contentString)
-        decoded.packageDefinition.as[rpc.v2.model.DescribeResponse]
+        val decoded: universe.v3.model.PackageDefinition =
+          decode[rpc.v1.model.AddResponse](response.contentString).v3Package
+        decoded.as[rpc.v2.model.DescribeResponse]
       }
 
       // TODO package-add: Need different assertion

@@ -72,7 +72,7 @@ object Decoders {
     deriveDecoder[UniverseAddRequest].map(identity)
   }
   implicit val decodeAddResponse: Decoder[AddResponse] = {
-    implicitly[Decoder[universe.v3.model.PackageDefinition]].map(new AddResponse(_))
+    implicitly[Decoder[universe.v3.model.V3Package]].map(new AddResponse(_))
   }
 
   implicit val decodeErrorResponse: Decoder[ErrorResponse] = deriveDecoder[ErrorResponse]

@@ -6,7 +6,6 @@ import com.mesosphere.cosmos.http.CompoundMediaType
 import com.mesosphere.cosmos.http.MediaType
 import com.mesosphere.cosmos.http.RequestSession
 import com.twitter.finagle.http.Fields
-import com.twitter.util.Future
 import io.finch._
 import shapeless.::
 import shapeless.HNil
@@ -45,37 +44,34 @@ object RequestValidators {
   ): Endpoint[EndpointContext[Req, Res]] = {
     val contentTypeValidator = header(Fields.ContentType)
       .as[MediaType]
-      .mapAsync { contentType =>
+      .map { contentType =>
         accepts(contentType) match {
-          case Some(bodyParser) => Future.value(contentType :: bodyParser :: HNil)
-          case _ => Future.exception(IncompatibleContentTypeHeader(accepts.mediaTypes, contentType))
+          case Some(bodyParser) => contentType :: bodyParser :: HNil
+          case _ => throw IncompatibleContentTypeHeader(accepts.mediaTypes, contentType)
         }
       }
 
     val allValidators = baseValidator(produces) :: contentTypeValidator :: binaryBody
-    allValidators.mapAsync {
+    allValidators.map {
       case authorization :: responseEncoder :: contentType :: bodyParser :: bodyBytes :: HNil =>
-        Future.const(bodyParser(bodyBytes)).map { requestBody =>
-          val session = RequestSession(authorization, Some(contentType))
-          EndpointContext(requestBody, session, responseEncoder)
-        }
+        val requestBody = bodyParser(bodyBytes).get  // Exceptions will be caught by Endpoint.map()
+        val session = RequestSession(authorization, Some(contentType))
+        EndpointContext(requestBody, session, responseEncoder)
     }
   }
 
   private[this] def baseValidator[Res](
     produces: DispatchingMediaTypedEncoder[Res]
   ): Endpoint[Option[Authorization] :: MediaTypedEncoder[Res] :: HNil] = {
-    val accept = header("Accept")
-            .as[CompoundMediaType]
-            .mapAsync { accept =>
-              produces(accept) match {
-                case Some(x) =>
-                  Future.value(x)
-                case None =>
-                  Future.exception(IncompatibleAcceptHeader(produces.mediaTypes, accept.mediaTypes))
-              }
-            }
-    val auth = headerOption("Authorization").map(_.map(Authorization))
+    val accept = header(Fields.Accept)
+      .as[CompoundMediaType]
+      .map { accept =>
+        produces(accept) match {
+          case Some(x) => x
+          case None => throw IncompatibleAcceptHeader(produces.mediaTypes, accept.mediaTypes)
+        }
+      }
+    val auth = headerOption(Fields.Authorization).map(_.map(Authorization))
     auth :: accept
   }
 }
