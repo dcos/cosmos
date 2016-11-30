@@ -5,7 +5,8 @@ import com.mesosphere.cosmos.converter.Label._
 import com.mesosphere.cosmos.converter.Response._
 import com.mesosphere.cosmos.finch.EndpointHandler
 import com.mesosphere.cosmos.http.RequestSession
-import com.mesosphere.cosmos.internal.model.MarathonAppOps._
+import com.mesosphere.cosmos.internal.model.MarathonAppOps
+import com.mesosphere.cosmos.internal.model.PackageOrigin
 import com.mesosphere.cosmos.label
 import com.mesosphere.cosmos.label.v1.circe.Decoders._
 import com.mesosphere.cosmos.repository.CosmosRepository
@@ -29,7 +30,7 @@ private[cosmos] final class ListHandler(
   private case class App(id: AppId,
                          pkgName: String,
                          pkgReleaseVersion: ReleaseVersion,
-                         repoUri: String,
+                         repoUri: PackageOrigin,
                          pkgMetadata: Option[String])
 
   override def apply(request: ListRequest)
@@ -70,18 +71,22 @@ private[cosmos] final class ListHandler(
     }
   }
 
-  private[this] def getRepositoryAssociations(repositories: (Uri) => Future[Option[CosmosRepository]],
-                                              apps: Seq[App])
-  : Future[Seq[(App, Option[CosmosRepository])]] = {
+  private[this] def getRepositoryAssociations(
+    repositories: (Uri) => Future[Option[CosmosRepository]],
+    apps: Seq[App]
+  ): Future[Seq[(App, Option[CosmosRepository])]] = {
     Future.collect {
       apps.map { app =>
-        repositories(app.repoUri).map(repo => (app, repo))
+        repositories(app.repoUri.uri).map(repo => (app, repo))
       }
     }
   }
 
-  private[this] def getInstallations(assocs: Seq[(App, Option[CosmosRepository])])
-                                    (implicit session: RequestSession): Future[Seq[Installation]] = {
+  private[this] def getInstallations(
+    assocs: Seq[(App, Option[CosmosRepository])]
+  )(
+    implicit session: RequestSession
+  ): Future[Seq[Installation]] = {
     Future.collect {
       assocs map {
         case (app, Some(repo)) =>
