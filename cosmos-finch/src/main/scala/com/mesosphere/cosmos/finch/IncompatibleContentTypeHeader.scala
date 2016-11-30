@@ -6,7 +6,6 @@ import com.twitter.finagle.http.Status
 import io.circe.JsonObject
 import io.circe.syntax._
 
-// TODO package-add: unify with with IncompatibleAcceptHeader
 case class IncompatibleContentTypeHeader(available: Set[MediaType], specified: MediaType)
   extends RequestError {
   val errType: String = "not_valid"
@@ -23,6 +22,9 @@ case class IncompatibleContentTypeHeader(available: Set[MediaType], specified: M
 
   val getHeaders: Map[String, String] = Map.empty
 
-  override def getMessage: String = s"${getClass.getSimpleName}($available, $specified)"
+  override def getMessage: String = {
+    val validChoices = available.map(_.show).mkString(", ")
+    s"${Fields.ContentType} header was ${specified.show}, but should be one of: $validChoices"
+  }
 
 }

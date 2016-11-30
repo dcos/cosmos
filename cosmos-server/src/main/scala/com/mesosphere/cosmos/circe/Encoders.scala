@@ -2,6 +2,7 @@ package com.mesosphere.cosmos.circe
 
 import cats.data.Ior
 import com.mesosphere.cosmos.CosmosError
+import com.mesosphere.cosmos.finch.IncompatibleContentTypeHeader
 import com.mesosphere.cosmos.finch.{IncompatibleAcceptHeader, RequestError}
 import com.mesosphere.cosmos.http.MediaType
 import com.mesosphere.cosmos.model._
@@ -13,6 +14,7 @@ import com.mesosphere.universe.common.circe.Encoders._
 import com.mesosphere.universe.v2.circe.Encoders._
 import com.mesosphere.universe.v3.circe.Encoders._
 import com.mesosphere.universe.v3.model._
+import com.twitter.finagle.http.Fields
 import com.twitter.finagle.http.Status
 import io.circe.HistoryOp.opsToPath
 import io.circe.generic.encoding.DerivedObjectEncoder
@@ -223,7 +225,9 @@ object Encoders extends LowPriorityImplicits {
     case IncompatibleAcceptHeader(available, _) =>
       "Item 'header 'Accept'' deemed invalid by rule: 'should match one of: " +
       s"${available.map(_.show).mkString(", ")}'"
-    // TODO package-add: case for IncompatibleContentTypeHeader
+    case IncompatibleContentTypeHeader(available, _) =>
+      s"Item 'header ${Fields.ContentType}'' deemed invalid by rule: 'should match one of: " +
+      s"${available.map(_.show).mkString(", ")}'"
   }
 
   // scalastyle:off cyclomatic.complexity method.length
@@ -352,7 +356,8 @@ object Encoders extends LowPriorityImplicits {
       case EnvelopeError(msg) => msg
       case InstallQueueError(msg) => msg
       case NotImplemented(msg) => msg
-      case OperationInProgress(_) => ??? // TODO package-add: Ensure this gets implemented
+      case OperationInProgress(coordinate) =>
+        s"A change to package ${coordinate.name}-${coordinate.version} is already in progress"
     }
   }
   // scalastyle:on cyclomatic.complexity method.length
