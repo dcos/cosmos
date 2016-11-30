@@ -1,19 +1,16 @@
 package com.mesosphere.universe.v3.model
 
 import com.mesosphere.Generators
-import org.scalacheck.Arbitrary
 import org.scalacheck.Gen
 import org.scalatest.FreeSpec
 import org.scalatest.Matchers
 import org.scalatest.prop.PropertyChecks
 import scala.util.Random
-import scala.util.Success
-import scala.util.Try
 
 final class SemVerSpec extends FreeSpec with PropertyChecks with Matchers {
   "For all SemVer => String => SemVer" in {
 
-    forAll (SemVerSpec.semVerGen) { expected =>
+    forAll (SemVerSpec.genSemVer) { expected =>
         val string = expected.toString
         val actual = SemVer(string).get
 
@@ -46,16 +43,16 @@ final class SemVerSpec extends FreeSpec with PropertyChecks with Matchers {
 }
 
 object SemVerSpec {
-  val semVerGen: Gen[SemVer] = {
+  val genSemVer: Gen[SemVer] = {
     val maxNumber = 999999999L
     val maxStringLength = 10
-    val numbersGen = Gen.chooseNum(0, maxNumber)
-    val preReleasesGen = for {
+    val genNumbers = Gen.chooseNum(0, maxNumber)
+    val genPreReleases = for {
       seqSize <- Gen.chooseNum(0, 3)
       preReleases <- Gen.containerOfN[Seq, Either[String, Long]](
         seqSize,
         Gen.oneOf(
-          numbersGen.map(Right(_)),
+          genNumbers.map(Right(_)),
           Generators.maxSizedString(
             maxStringLength,
             Gen.alphaLowerChar
@@ -64,16 +61,16 @@ object SemVerSpec {
       )
     } yield preReleases
 
-    val buildGen = Generators.maxSizedString(maxStringLength, Gen.alphaLowerChar).map {
+    val genBuild = Generators.maxSizedString(maxStringLength, Gen.alphaLowerChar).map {
       string => if (string.isEmpty) None else Some(string)
     }
 
     for {
-      major <- numbersGen
-      minor <- numbersGen
-      patch <- numbersGen
-      preReleases <- preReleasesGen
-      build <- buildGen
+      major <- genNumbers
+      minor <- genNumbers
+      patch <- genNumbers
+      preReleases <- genPreReleases
+      build <- genBuild
     } yield SemVer(major, minor, patch, preReleases, build)
   }
 }

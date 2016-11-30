@@ -73,7 +73,10 @@ final class RequestValidatorsSpec extends FreeSpec with Matchers with PropertyCh
     behave like baseValidator(factory = StandardReaderFactory)
 
     "fail if the Content-Type header is missing" in {
-      val genTestCases = genTestData(actualContentTypeHeader = Some(None))
+      val genTestCases = for {
+        expectedContentTypeHeader <- MediaTypeSpec.genMediaType
+        data <- genTestData(expectedContentTypeHeader, actualContentTypeHeader = None)
+      } yield data
 
       forAll (genTestCases) { data =>
         assertMissingContentType(data.validator, data.request)
@@ -82,8 +85,9 @@ final class RequestValidatorsSpec extends FreeSpec with Matchers with PropertyCh
 
     "fail if the Content-Type header cannot be parsed as a MediaType" in {
       val genTestCases = for {
-        contentType <- Gen.alphaStr
-        data <- genTestData(actualContentTypeHeader = Some(Some(contentType)))
+        expectedContentTypeHeader <- MediaTypeSpec.genMediaType
+        actualContentTypeHeader <- Gen.alphaStr
+        data <- genTestData(expectedContentTypeHeader, Some(actualContentTypeHeader))
       } yield data
 
       forAll (genTestCases) { data =>
@@ -92,7 +96,11 @@ final class RequestValidatorsSpec extends FreeSpec with Matchers with PropertyCh
     }
 
     "include the Content-Type in the session if it was successfully parsed" in {
-      val genTestCases = genTestData()
+      val genTestCases = for {
+        expectedContentTypeHeader <- MediaTypeSpec.genMediaType
+        actualContentTypeHeader = CosmosRequest.toHeader(expectedContentTypeHeader)
+        data <- genTestData(expectedContentTypeHeader, actualContentTypeHeader)
+      } yield data
 
       forAll (genTestCases) { data =>
         assertValidContentType(data.contentType, data.validator, data.request)
@@ -101,8 +109,9 @@ final class RequestValidatorsSpec extends FreeSpec with Matchers with PropertyCh
 
     "fail if the Content-Type header doesn't match what the validator expects" in {
       val genTestCases = for {
-        contentType <- MediaTypeSpec.genMediaType
-        data <- genTestData(actualContentTypeHeader = Some(CosmosRequest.toHeader(contentType)))
+        expectedContentTypeHeader <- MediaTypeSpec.genMediaType
+        actualContentTypeHeader <- MediaTypeSpec.genMediaType.map(CosmosRequest.toHeader)
+        data <- genTestData(expectedContentTypeHeader, actualContentTypeHeader)
       } yield data
 
       forAll (genTestCases) { data =>
@@ -112,37 +121,23 @@ final class RequestValidatorsSpec extends FreeSpec with Matchers with PropertyCh
 
     // TODO package-add: Tests for body validation
 
-    def makeValidator(
-      expectedAcceptHeader: MediaType,
-      expectedContentTypeHeader: MediaType
-    ): Endpoint[EndpointContext[Json, Json]] = {
+    def genTestData(
+      expectedContentTypeHeader: MediaType,
+      actualContentTypeHeader: Option[String]
+    ): Gen[TestData[Json, Json]] = {
       val mediaTypedDecoder = MediaTypedDecoder[Json](expectedContentTypeHeader)
       val accepts = MediaTypedRequestDecoder(mediaTypedDecoder)
-      val produces = DispatchingMediaTypedEncoder[Json](expectedAcceptHeader)
 
-      RequestValidators.standard(accepts, produces)
-    }
-
-    def genTestData(
-      actualContentTypeHeader: Option[Option[String]] = None
-    ): Gen[TestData[Json, Json]] = {
       for {
         acceptHeader <- MediaTypeSpec.genMediaType
-        expectedContentTypeHeader <- MediaTypeSpec.genMediaType
         headers = CosmosRequest.collectHeaders(
           Fields.Accept -> CosmosRequest.toHeader(acceptHeader),
-          Fields.ContentType -> actualContentTypeHeader.getOrElse {
-            CosmosRequest.toHeader(expectedContentTypeHeader)
-          }
+          Fields.ContentType -> actualContentTypeHeader
         )
+        produces = DispatchingMediaTypedEncoder[Json](acceptHeader)
+        validator = RequestValidators.standard(accepts, produces)
         request <- genRequest(headers, Monolithic(Buf.Utf8("{}")))
-      } yield {
-        TestData(
-          expectedContentTypeHeader,
-          makeValidator(acceptHeader, expectedContentTypeHeader),
-          request
-        )
-      }
+      } yield TestData(expectedContentTypeHeader, validator, request)
     }
 
   }
@@ -323,9 +318,9 @@ object RequestValidatorsSpec {
     } yield CosmosRequest(method, path, headers, body)
   }
 
-  def genMethod: Gen[Method] = Gen.alphaStr.map(Method(_))
+  val genMethod: Gen[Method] = Gen.alphaStr.map(Method(_))
 
-  def genPath: Gen[String] = {
+  val genPath: Gen[String] = {
     Gen.listOf(Gen.frequency((10, Gen.alphaNumChar), Gen.freqTuple((1, '/')))).map(_.mkString)
   }
 

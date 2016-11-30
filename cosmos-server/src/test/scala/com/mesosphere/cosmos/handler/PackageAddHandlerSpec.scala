@@ -43,13 +43,13 @@ final class PackageAddHandlerSpec extends FreeSpec with MockitoSugar with Proper
         implicit val session = RequestSession(None, None)
 
         "with package name only" in {
-          forAll(PackageDefinitionSpec.v3PackageGen, genUri) { (packageDef, sourceUri) =>
+          forAll(PackageDefinitionSpec.genV3Package, genUri) { (packageDef, sourceUri) =>
             assertErrorOnPendingOperation(packageDef, sourceUri, None)
           }
         }
 
         "with package name and version" in {
-          forAll(PackageDefinitionSpec.v3PackageGen, genUri) { (packageDef, sourceUri) =>
+          forAll(PackageDefinitionSpec.genV3Package, genUri) { (packageDef, sourceUri) =>
             assertErrorOnPendingOperation(packageDef, sourceUri, Some(packageDef.version))
           }
         }
@@ -133,7 +133,7 @@ object PackageAddHandlerSpec {
   val genUri: Gen[Uri] = arbitrary[String].map(Uri.parse)
 
   val genMetadata: Gen[universe.v3.model.Metadata] = {
-    PackageDefinitionSpec.v3PackageGen.map { v3Package =>
+    PackageDefinitionSpec.genV3Package.map { v3Package =>
       val (metadata, _) = v3Package
         .as[(universe.v3.model.Metadata, universe.v3.model.PackageDefinition.ReleaseVersion)]
       metadata

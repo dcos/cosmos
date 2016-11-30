@@ -3,8 +3,7 @@ package com.mesosphere.cosmos.repository
 import com.mesosphere.cosmos.storage.PackageObjectStorage
 import com.mesosphere.cosmos.storage.StagedPackageStorage
 import com.mesosphere.cosmos.test.TestUtil
-import com.mesosphere.universe
-import com.mesosphere.universe.v3.model.PackageDefinitionSpec.v3PackageGen
+import com.mesosphere.universe.v3.model.PackageDefinitionSpec.genV3Package
 import com.mesosphere.universe.v3.syntax.PackageDefinitionOps._
 import com.twitter.util.Await
 import java.util.UUID
@@ -15,7 +14,7 @@ import org.scalatest.prop.PropertyChecks
 final class DefaultInstallerSpec extends FreeSpec with Matchers with PropertyChecks {
   "Test that installing new package succeeds" in TestUtil.withObjectStorage { tempObjectStorage =>
     TestUtil.withObjectStorage { objectStorage =>
-      forAll(v3PackageGen) { expected =>
+      forAll(genV3Package) { expected =>
         val packageObjectStorage = PackageObjectStorage(objectStorage)
         val adder = DefaultInstaller(
           StagedPackageStorage(tempObjectStorage),
@@ -42,7 +41,7 @@ final class DefaultInstallerSpec extends FreeSpec with Matchers with PropertyChe
   "Test that installing a package that already exists is a noop" in TestUtil.withObjectStorage {
     tempObjectStorage =>
       TestUtil.withObjectStorage { objectStorage =>
-        forAll(v3PackageGen) { expected =>
+        forAll(genV3Package) { expected =>
           val packageObjectStorage = PackageObjectStorage(objectStorage)
           val adder = DefaultInstaller(
             StagedPackageStorage(tempObjectStorage),
