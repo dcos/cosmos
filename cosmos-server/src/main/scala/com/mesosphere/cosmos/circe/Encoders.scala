@@ -230,8 +230,6 @@ object Encoders extends LowPriorityImplicits {
     import com.mesosphere.cosmos._
 
     err match {
-      case ConcurrentPackageUpdateDuringPublish() =>
-        "A concurrent update on this package has been performed. Please try again."
       case PackageNotFound(packageName) =>
         s"Package [$packageName] not found"
       case VersionNotFound(packageName, com.mesosphere.universe.v3.model.PackageDefinition.Version(packageVersion)) =>
