@@ -9,9 +9,6 @@ object MediaTypes {
   private[this] val dcosService = MediaType.vndJson(List("dcos", "service")) _
   private[this] def vnd(kind: String, version: Int = 1) = dcosPackage(kind, version)
 
-  val PublishRequest = vnd("publish-request")
-  val PublishResponse = vnd("publish-response")
-
   val UninstallRequest = vnd("uninstall-request")
   val UninstallResponse = vnd("uninstall-response")
 
