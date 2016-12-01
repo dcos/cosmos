@@ -2,21 +2,13 @@ package com.mesosphere.cosmos.rpc.v1.circe
 
 import com.mesosphere.cosmos.finch.DispatchingMediaTypedEncoder
 import com.mesosphere.cosmos.finch.MediaTypedEncoder
-import com.mesosphere.cosmos.internal.circe.Encoders._
 import com.mesosphere.cosmos.rpc.MediaTypes
 import com.mesosphere.cosmos.rpc.v1.circe.Encoders._
 import com.mesosphere.cosmos.rpc.v1.model._
 import com.mesosphere.universe.v3.circe.Encoders._
-import com.mesosphere.universe.v3.model.Repository
 import com.mesosphere.universe.{MediaTypes => UMediaTypes}
 
 object MediaTypedEncoders {
-
-  implicit val repositoryServeEncoder: DispatchingMediaTypedEncoder[Repository] =
-    DispatchingMediaTypedEncoder(UMediaTypes.UniverseV3Repository)
-
-  implicit val packagePublishEncoder: DispatchingMediaTypedEncoder[PublishResponse] =
-    DispatchingMediaTypedEncoder(MediaTypes.PublishResponse)
 
   implicit val capabilitiesEncoder: DispatchingMediaTypedEncoder[CapabilitiesResponse] =
     DispatchingMediaTypedEncoder(MediaTypes.CapabilitiesResponse)

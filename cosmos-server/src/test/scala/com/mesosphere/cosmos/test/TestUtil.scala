@@ -1,9 +1,7 @@
 package com.mesosphere.cosmos.test
 
 import com.mesosphere.cosmos._
-import com.mesosphere.cosmos.converter.Common._
 import com.mesosphere.cosmos.http.RequestSession
-import com.mesosphere.cosmos.internal.model.{BundleDefinition, V2Bundle}
 import com.mesosphere.cosmos.storage.LocalObjectStorage
 import com.mesosphere.cosmos.storage.ObjectStorage
 import com.mesosphere.universe
@@ -11,7 +9,6 @@ import com.mesosphere.universe.test.TestingPackages
 import com.mesosphere.universe.v3.model.PackageDefinition.ReleaseVersion
 import com.mesosphere.universe.v3.model._
 import com.twitter.bijection.Conversion.asMethod
-
 import java.io.IOException
 import java.nio.file._
 import java.nio.file.attribute.BasicFileAttributes
@@ -98,13 +95,6 @@ object TestUtil {
     ),
     resourceDefinition = Some(TestingPackages.MaximalV2Resource)
   )
-
-  val BundlePackagePairs: List[(BundleDefinition, PackageDefinition)] = (0L to 8L).map { i =>
-    val (b, _) = TestingPackages.MaximalV3ModelV2PackageDefinition.as[(V2Bundle, ReleaseVersion)]
-    val bundle = b.copy(name = "ThisIsAUniquelyNamedPackage" + (i / 3))
-    val pkg = (bundle, ReleaseVersion(i % 3).get).as[V2Package]
-    (bundle, pkg)
-  }.toList
 
   def nameAndRelease(pkg: PackageDefinition): (String, ReleaseVersion) = pkg match {
     case v2: V2Package => (v2.name, v2.releaseVersion)
