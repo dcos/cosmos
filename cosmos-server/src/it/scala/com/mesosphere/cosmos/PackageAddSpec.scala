@@ -5,7 +5,6 @@ import com.mesosphere.cosmos.converter.Response._
 import com.mesosphere.cosmos.http.CosmosRequest
 import com.mesosphere.cosmos.http.MediaType
 import com.mesosphere.cosmos.rpc.MediaTypes
-import com.mesosphere.cosmos.rpc.v1.circe.Decoders._
 import com.mesosphere.cosmos.rpc.v1.circe.Encoders._
 import com.mesosphere.cosmos.rpc.v2.circe.Decoders._
 import com.mesosphere.cosmos.storage.ObjectStorage
@@ -87,7 +86,7 @@ final class PackageAddSpec extends FreeSpec with BeforeAndAfterAll with BeforeAn
       assertResult(Status.Accepted)(response.status)
       assertResult(MediaTypes.AddResponse)(MediaType.parse(response.contentType.get).get())
 
-      val v3Package = decode[rpc.v1.model.AddResponse](response.contentString).v3Package
+      val v3Package = decode[universe.v3.model.V3Package](response.contentString)
       assertResult(expectedPackage) {
         (v3Package: universe.v3.model.PackageDefinition).as[rpc.v2.model.DescribeResponse]
       }
