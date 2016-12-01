@@ -23,7 +23,6 @@ import com.mesosphere.cosmos.rpc.MediaTypes
 import com.mesosphere.cosmos.rpc.v1.circe.MediaTypedEncoders._
 import com.mesosphere.cosmos.rpc.v1.circe.MediaTypedRequestDecoders._
 import com.mesosphere.cosmos.rpc.v2.circe.MediaTypedEncoders._
-import com.mesosphere.cosmos.storage.InMemoryPackageStorage
 import com.mesosphere.cosmos.storage.ObjectStorage
 import com.mesosphere.cosmos.storage.PackageObjectStorage
 import com.mesosphere.cosmos.storage.StagedPackageStorage
@@ -47,31 +46,30 @@ import com.twitter.util.Try
 import org.slf4j.Logger
 
 private[cosmos] final class Cosmos(
-  uninstallHandler: EndpointHandler[rpc.v1.model.UninstallRequest, rpc.v1.model.UninstallResponse],
-  packageInstallHandler: EndpointHandler[rpc.v1.model.InstallRequest, rpc.v2.model.InstallResponse],
-  packageRenderHandler: EndpointHandler[rpc.v1.model.RenderRequest, rpc.v1.model.RenderResponse],
-  packageSearchHandler: EndpointHandler[rpc.v1.model.SearchRequest, rpc.v1.model.SearchResponse],
-  packageDescribeHandler: EndpointHandler[rpc.v1.model.DescribeRequest, universe.v3.model.PackageDefinition],
-  packageListVersionsHandler: EndpointHandler[rpc.v1.model.ListVersionsRequest, rpc.v1.model.ListVersionsResponse],
-  listHandler: EndpointHandler[rpc.v1.model.ListRequest, rpc.v1.model.ListResponse],
-  listRepositoryHandler: EndpointHandler[rpc.v1.model.PackageRepositoryListRequest, rpc.v1.model.PackageRepositoryListResponse],
-  addRepositoryHandler: EndpointHandler[rpc.v1.model.PackageRepositoryAddRequest, rpc.v1.model.PackageRepositoryAddResponse],
-  deleteRepositoryHandler: EndpointHandler[rpc.v1.model.PackageRepositoryDeleteRequest, rpc.v1.model.PackageRepositoryDeleteResponse],
-  packagePublishHandler: EndpointHandler[rpc.v1.model.PublishRequest, rpc.v1.model.PublishResponse],
-  repositoryServeHandler: EndpointHandler[Unit, universe.v3.model.Repository],
   capabilitiesHandler: CapabilitiesHandler,
   packageAddHandler: EndpointHandler[rpc.v1.model.AddRequest, rpc.v1.model.AddResponse],
+  packageDescribeHandler: EndpointHandler[rpc.v1.model.DescribeRequest, universe.v3.model.PackageDefinition],
+  packageInstallHandler: EndpointHandler[rpc.v1.model.InstallRequest, rpc.v2.model.InstallResponse],
+  packageListHandler: EndpointHandler[rpc.v1.model.ListRequest, rpc.v1.model.ListResponse],
+  packageListVersionsHandler: EndpointHandler[rpc.v1.model.ListVersionsRequest, rpc.v1.model.ListVersionsResponse],
+  packageRenderHandler: EndpointHandler[rpc.v1.model.RenderRequest, rpc.v1.model.RenderResponse],
+  packageRepositoryAddHandler: EndpointHandler[rpc.v1.model.PackageRepositoryAddRequest, rpc.v1.model.PackageRepositoryAddResponse],
+  packageRepositoryDeleteHandler: EndpointHandler[rpc.v1.model.PackageRepositoryDeleteRequest, rpc.v1.model.PackageRepositoryDeleteResponse],
+  packageRepositoryListHandler: EndpointHandler[rpc.v1.model.PackageRepositoryListRequest, rpc.v1.model.PackageRepositoryListResponse],
+  packageSearchHandler: EndpointHandler[rpc.v1.model.SearchRequest, rpc.v1.model.SearchResponse],
+  packageUninstallHandler: EndpointHandler[rpc.v1.model.UninstallRequest, rpc.v1.model.UninstallResponse],
   serviceStartHandler: EndpointHandler[rpc.v1.model.ServiceStartRequest, rpc.v1.model.ServiceStartResponse]
 )(implicit statsReceiver: StatsReceiver = NullStatsReceiver) {
 
   lazy val logger: Logger = org.slf4j.LoggerFactory.getLogger(classOf[Cosmos])
 
+  // Package Handlers
   val packageInstall: Endpoint[Json] = {
     route(post("package" / "install"), packageInstallHandler)(RequestValidators.standard)
   }
 
   val packageUninstall: Endpoint[Json] = {
-    route(post("package" / "uninstall"), uninstallHandler)(RequestValidators.standard)
+    route(post("package" / "uninstall"), packageUninstallHandler)(RequestValidators.standard)
   }
 
   val packageDescribe: Endpoint[Json] = {
@@ -91,35 +89,33 @@ private[cosmos] final class Cosmos(
   }
 
   val packageList: Endpoint[Json] = {
-    route(post("package" / "list"), listHandler)(RequestValidators.standard)
+    route(post("package" / "list"), packageListHandler)(RequestValidators.standard)
   }
 
-  val capabilities: Endpoint[Json] = {
-    route(get("capabilities"), capabilitiesHandler)(RequestValidators.noBody)
+  val packageRepositoryList: Endpoint[Json] = {
+    route(post("package" / "repository" / "list"), packageRepositoryListHandler)(RequestValidators.standard)
   }
 
-  val packageListSources: Endpoint[Json] = {
-    route(post("package" / "repository" / "list"), listRepositoryHandler)(RequestValidators.standard)
+  val packageRepositoryAdd: Endpoint[Json] = {
+    route(post("package" / "repository" / "add"), packageRepositoryAddHandler)(RequestValidators.standard)
   }
 
-  val packageAddSource: Endpoint[Json] = {
-    route(post("package" / "repository" / "add"), addRepositoryHandler)(RequestValidators.standard)
-  }
-
-  val packageDeleteSource: Endpoint[Json] = {
-    route(post("package" / "repository" / "delete"), deleteRepositoryHandler)(RequestValidators.standard)
-  }
-
-  val packagePublish: Endpoint[Json] = {
-    route(post("package" / "publish"), packagePublishHandler)(RequestValidators.standard)
-  }
-
-  val repositoryServe: Endpoint[Json] = {
-    route(get("package" / "storage" / "repository"), repositoryServeHandler)(RequestValidators.noBody)
+  val packageRepositoryDelete: Endpoint[Json] = {
+    route(post("package" / "repository" / "delete"), packageRepositoryDeleteHandler)(RequestValidators.standard)
   }
 
   val packageAdd: Endpoint[Json] = {
     route(post("package" / "add"), packageAddHandler)(RequestValidators.streamed(rpc.v1.model.AddRequest(_, _)))
+  }
+
+  // Service Handlers
+  val serviceStart: Endpoint[Json] = {
+    route(post("service" / "start"), serviceStartHandler)(RequestValidators.standard)
+  }
+
+  // Capabilities
+  val capabilities: Endpoint[Json] = {
+    route(get("capabilities"), capabilitiesHandler)(RequestValidators.noBody)
   }
 
   val service: Service[Request, Response] = {
@@ -129,18 +125,17 @@ private[cosmos] final class Cosmos(
       // Keep alphabetized
       capabilities
         :+: packageAdd
-        :+: packageAddSource
-        :+: packageDeleteSource
         :+: packageDescribe
         :+: packageInstall
         :+: packageList
-        :+: packageListSources
         :+: packageListVersions
-        :+: packagePublish
         :+: packageRender
+        :+: packageRepositoryAdd
+        :+: packageRepositoryDelete
+        :+: packageRepositoryList
         :+: packageSearch
         :+: packageUninstall
-        :+: repositoryServe
+        :+: serviceStart
       )
 
     val api = endpoints.handle {
@@ -351,23 +346,19 @@ object Cosmos extends FinchServer {
         new ServiceStartHandler(localPackageCollection, packageRunner)
     }
 
-    val packageStorage = new InMemoryPackageStorage()
-
     new Cosmos(
-      new UninstallHandler(adminRouter, repositories),
-      new PackageInstallHandler(repositories, packageRunner),
-      new PackageRenderHandler(repositories),
-      new PackageSearchHandler(repositories),
-      new PackageDescribeHandler(repositories),
-      new ListVersionsHandler(repositories),
-      new ListHandler(adminRouter, uri => repositories.getRepository(uri)),
-      new PackageRepositoryListHandler(sourcesStorage),
-      new PackageRepositoryAddHandler(sourcesStorage),
-      new PackageRepositoryDeleteHandler(sourcesStorage),
-      new PackagePublishHandler(packageStorage),
-      new RepositoryServeHandler(packageStorage),
       new CapabilitiesHandler,
       packageAddHandler,
+      new PackageDescribeHandler(repositories),
+      new PackageInstallHandler(repositories, packageRunner),
+      new ListHandler(adminRouter, uri => repositories.getRepository(uri)),
+      new ListVersionsHandler(repositories),
+      new PackageRenderHandler(repositories),
+      new PackageRepositoryAddHandler(sourcesStorage),
+      new PackageRepositoryDeleteHandler(sourcesStorage),
+      new PackageRepositoryListHandler(sourcesStorage),
+      new PackageSearchHandler(repositories),
+      new UninstallHandler(adminRouter, repositories),
       serviceStartHandler
     )(statsReceiver)
   }

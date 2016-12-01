@@ -1,15 +1,12 @@
 package com.mesosphere.cosmos.rpc.v1.circe
 
-import com.mesosphere.cosmos.finch.{MediaTypedDecoder, MediaTypedRequestDecoder}
-import com.mesosphere.cosmos.internal.circe.Decoders._
+import com.mesosphere.cosmos.finch.MediaTypedDecoder
+import com.mesosphere.cosmos.finch.MediaTypedRequestDecoder
 import com.mesosphere.cosmos.rpc.MediaTypes
 import com.mesosphere.cosmos.rpc.v1.circe.Decoders._
 import com.mesosphere.cosmos.rpc.v1.model._
 
 object MediaTypedRequestDecoders {
-
-  implicit val packagePublishDecoder: MediaTypedRequestDecoder[PublishRequest] =
-    MediaTypedRequestDecoder(MediaTypedDecoder(MediaTypes.PublishRequest))
 
   implicit val packageListDecoder: MediaTypedRequestDecoder[ListRequest] =
     MediaTypedRequestDecoder(MediaTypedDecoder(MediaTypes.ListRequest))
