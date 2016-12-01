@@ -5,10 +5,8 @@ import _root_.io.circe.jawn._
 import _root_.io.circe.syntax._
 import cats.data.Xor
 import cats.data.Xor.Right
-import com.mesosphere.cosmos.http.HttpRequest
-import com.mesosphere.cosmos.rpc.MediaTypes
+import com.mesosphere.cosmos.http.CosmosRequests
 import com.mesosphere.cosmos.rpc.v1.circe.Decoders._
-import com.mesosphere.cosmos.rpc.v1.circe.Encoders._
 import com.mesosphere.cosmos.rpc.v1.model.DescribeRequest
 import com.mesosphere.cosmos.rpc.v1.model.ErrorResponse
 import com.mesosphere.cosmos.rpc.v1.model.ListVersionsRequest
@@ -63,9 +61,6 @@ final class PackageDescribeSpec extends FreeSpec with TableDrivenPropertyChecks 
     }
   }
 
-  val DescribeEndpoint = "package/describe"
-  val ListVersionsEndpoint = "package/list-versions"
-
   private[cosmos] def describeAndAssertError(
     packageName: String,
     status: Status,
@@ -83,7 +78,8 @@ final class PackageDescribeSpec extends FreeSpec with TableDrivenPropertyChecks 
     status: Status,
     content: Json
   ): Unit = {
-    val response = listVersionsRequest(ListVersionsRequest(packageName, includePackageVersions = true))
+    val request = ListVersionsRequest(packageName, includePackageVersions = true)
+    val response = CosmosClient.submit(CosmosRequests.packageListVersions(request))
     assertResult(status)(response.status)
     assertResult(Xor.Right(content))(parse(response.contentString))
   }
@@ -103,29 +99,10 @@ final class PackageDescribeSpec extends FreeSpec with TableDrivenPropertyChecks 
     assertResult(HelloworldCommandDef)(commandJson)
   }
 
-  private[this] def describeRequest(
-    describeRequest: DescribeRequest
-  ): Response = {
-    val request = HttpRequest.post(
-      DescribeEndpoint,
-      describeRequest,
-      MediaTypes.DescribeRequest,
-      MediaTypes.V1DescribeResponse
-    )
-    CosmosClient.submit(request)
+  private[this] def describeRequest(describeRequest: DescribeRequest): Response = {
+    CosmosClient.submit(CosmosRequests.packageDescribeV1(describeRequest))
   }
 
-  private[this] def listVersionsRequest(
-    listVersionsRequest: ListVersionsRequest
-  ): Response = {
-    val request = HttpRequest.post(
-      ListVersionsEndpoint,
-      listVersionsRequest,
-      MediaTypes.ListVersionsRequest,
-      MediaTypes.ListVersionsResponse
-    )
-    CosmosClient.submit(request)
-  }
 }
 
 private object PackageDescribeSpec extends TableDrivenPropertyChecks {
