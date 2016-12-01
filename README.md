@@ -81,7 +81,6 @@ The jar will be created in the `cosmos-server/target/scala-2.11/` directory. Thi
 with:
 
 ```bash
-mkdir /tmp/cosmos
 java -jar cosmos-server/target/scala-2.11/cosmos-server_2.11-<version>-SNAPSHOT-one-jar.jar \
      -com.mesosphere.cosmos.dcosUri <dcos-host-url> \
      -com.mesosphere.cosmos.packageStorageUri file://<absolute-path-to-package-dir> \
@@ -91,7 +90,6 @@ java -jar cosmos-server/target/scala-2.11/cosmos-server_2.11-<version>-SNAPSHOT-
 It can also be exectued with ZooKeeper authentication with:
 
 ```bash
-mkdir /tmp/cosmos
 export ZOOKEEPER_USER <user>
 export ZOOKEEPER_SECRET <secret>
 java -jar cosmos-server/target/scala-2.11/cosmos-server_2.11-<version>-SNAPSHOT-one-jar.jar \
