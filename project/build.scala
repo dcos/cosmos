@@ -25,7 +25,7 @@ object CosmosBuild extends Build {
     val mustache = "0.9.1"
     val scalaUri = "0.4.11"
     val scalaTest = "2.2.4"
-    val scalaCheck = "1.12.5"
+    val scalaCheck = "1.12.6"
     val twitterUtilCore = "6.30.0"
     val zookeeper = "3.4.6"
     val aws = "1.11.30"

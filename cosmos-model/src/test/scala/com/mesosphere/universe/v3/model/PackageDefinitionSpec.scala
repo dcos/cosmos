@@ -59,23 +59,23 @@ final class PackageDefinitionSpec extends FreeSpec with PropertyChecks {
 object PackageDefinitionSpec {
   val nonNegNum: Gen[Long] = Gen.sized(max => implicitly[Choose[Long]].choose(0, max.toLong))
 
-  val packageNameGen: Gen[String] = {
+  val genPackageName: Gen[String] = {
     val maxPackageNameLength = 64
     Generators.maxSizedString(maxPackageNameLength, Gen.oneOf(Gen.numChar, Gen.alphaLowerChar))
   }
 
-  val releaseVersionGen: Gen[PackageDefinition.ReleaseVersion] = for {
+  val genReleaseVersion: Gen[PackageDefinition.ReleaseVersion] = for {
     num <- Gen.posNum[Long]
   } yield PackageDefinition.ReleaseVersion(num).get
 
-  val versionGen: Gen[PackageDefinition.Version] = for {
-    semver <- SemVerSpec.semVerGen
+  val genVersion: Gen[PackageDefinition.Version] = for {
+    semver <- SemVerSpec.genSemVer
   } yield PackageDefinition.Version(semver.toString)
 
-  val v3PackageGen: Gen[V3Package] = for {
-    name <- packageNameGen
-    version <- versionGen
-    releaseVersion <- releaseVersionGen
+  val genV3Package: Gen[V3Package] = for {
+    name <- genPackageName
+    version <- genVersion
+    releaseVersion <- genReleaseVersion
     maintainer <- Gen.alphaStr
     description <- Gen.alphaStr
   } yield V3Package(
@@ -86,8 +86,8 @@ object PackageDefinitionSpec {
     description=description
   )
 
-  val v2PackageGen: Gen[V2Package] = for {
-    v3package <- v3PackageGen
+  val genV2Package: Gen[V2Package] = for {
+    v3package <- genV3Package
   } yield V2Package(
     name=v3package.name,
     version=v3package.version,
@@ -97,5 +97,5 @@ object PackageDefinitionSpec {
     marathon=Marathon(ByteBuffer.allocate(0))
   )
 
-  val packageDefinitionGen: Gen[PackageDefinition] = Gen.oneOf(v3PackageGen, v2PackageGen)
+  val genPackageDefinition: Gen[PackageDefinition] = Gen.oneOf(genV3Package, genV2Package)
 }

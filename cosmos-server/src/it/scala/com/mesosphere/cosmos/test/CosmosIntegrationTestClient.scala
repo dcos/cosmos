@@ -11,6 +11,7 @@ import com.mesosphere.cosmos.Trys
 import com.mesosphere.cosmos.Uris
 import com.mesosphere.cosmos.dcosUri
 import com.mesosphere.cosmos.http.Authorization
+import com.mesosphere.cosmos.http.CosmosRequest
 import com.mesosphere.cosmos.http.RequestSession
 import com.mesosphere.cosmos.model.ZooKeeperUri
 import com.mesosphere.cosmos.rpc.MediaTypes
@@ -23,7 +24,6 @@ import com.netaporter.uri.Uri
 import com.netaporter.uri.dsl._
 import com.twitter.finagle.Service
 import com.twitter.finagle.SimpleFilter
-import com.twitter.finagle.http.Version.Http11
 import com.twitter.finagle.http._
 import com.twitter.util.Await
 import com.twitter.util.Future
@@ -144,30 +144,15 @@ object CosmosIntegrationTestClient extends Matchers {
       * It also includes the Authorization header if provided by configuration.
       */
     def submit(req: CosmosRequest): Response = {
-      val finagleReq = buildRequest(req)
-      Await.result(client(finagleReq))
-    }
-
-    private[this] def buildRequest(cosmosRequest: CosmosRequest): Request = {
-      val pathPrefix = if (cosmosRequest.path.startsWith("/")) "" else "/"
-      val absolutePath = pathPrefix + cosmosRequest.path
-
-      val finagleRequest = cosmosRequest.body match {
-        case NoBody =>
-          Request(absolutePath)
-        case Monolithic(buf) =>
-          val req = Request(Method.Post, absolutePath)
-          req.content = buf
+      val reqWithAuth = Session.authorization match {
+        case Some(auth) =>
+          req.copy(headers = req.headers + (Fields.Authorization -> auth.headerValue))
+        case _ =>
           req
-        case Chunked(reader) =>
-          Request(Http11, cosmosRequest.method, absolutePath, reader)
       }
 
-      finagleRequest.headerMap ++= cosmosRequest.customHeaders
-      cosmosRequest.accept.foreach(finagleRequest.accept = _)
-      cosmosRequest.contentType.foreach(finagleRequest.contentType = _)
-      Session.authorization.foreach(auth => finagleRequest.authorization = auth.headerValue)
-      finagleRequest
+      val finagleReq = CosmosRequest.toFinagle(reqWithAuth)
+      Await.result(client(finagleReq))
     }
 
     // Do not relax the visibility on this -- use `submit()` instead; see its Scaladoc for why

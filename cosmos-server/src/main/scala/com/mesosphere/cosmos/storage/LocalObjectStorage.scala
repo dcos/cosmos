@@ -1,14 +1,15 @@
 package com.mesosphere.cosmos.storage
 
-import com.mesosphere.cosmos.CirceError
 import com.mesosphere.cosmos.circe.Decoders.decode
 import com.mesosphere.cosmos.http.MediaType
 import com.netaporter.uri.Uri
+import com.twitter.finagle.http.Fields
 import com.twitter.finagle.stats.Stat
 import com.twitter.finagle.stats.StatsReceiver
 import com.twitter.io.StreamIO
 import com.twitter.util.Future
 import com.twitter.util.FuturePool
+import com.twitter.util.Try
 import io.circe.syntax._
 import java.io.DataInputStream
 import java.io.DataOutputStream
@@ -17,19 +18,22 @@ import java.nio.charset.StandardCharsets
 import java.nio.file.Files
 import java.nio.file.NoSuchFileException
 import java.nio.file.Path
+import java.nio.file.StandardCopyOption
 import java.nio.file.StandardOpenOption
 import scala.collection.JavaConverters._
 import scala.collection.breakOut
 import scala.util.control.NonFatal
 
-final class LocalObjectStorage private (
-  path: Path
-)(
-  implicit statsReceiver: StatsReceiver
-) extends ObjectStorage {
-  private[this] val pool = FuturePool.interruptibleUnboundedPool
+/** Implements an object store backed by a local filesystem.
+  *
+  * @param storageDir actual storage location for the objects
+  * @param scratchDir working directory for storage operations (e.g. writes); should be in the same
+  *                   filesystem as `storageDir` so that file moves between them are atomic
+  */
+final class LocalObjectStorage private(storageDir: Path, scratchDir: Path, stats: StatsReceiver)
+  extends ObjectStorage {
 
-  private[this] val stats = statsReceiver.scope(s"LocalObjectStorage($path)")
+  private[this] val pool = FuturePool.interruptibleUnboundedPool
 
   override def write(
     name: String,
@@ -39,13 +43,13 @@ final class LocalObjectStorage private (
   ): Future[Unit] = {
     Stat.timeFuture(stats.stat("write")) {
       pool {
-        val absolutePath = path.resolve(name)
+        val absolutePath = storageDir.resolve(name)
 
         // Create all parent directories
         Files.createDirectories(absolutePath.getParent)
 
         val (_, bodySize) = writeToFile(
-          Map(LocalObjectStorage.contentTypeKey -> contentType.show),
+          Map(Fields.ContentType -> contentType.show),
           body,
           absolutePath
         )
@@ -64,9 +68,9 @@ final class LocalObjectStorage private (
   override def read(name: String): Future[Option[(MediaType, InputStream)]] = {
     Stat.timeFuture(stats.stat("read")) {
       pool {
-        readFromFile(path.resolve(name)).map { case (metadata, inputStream) =>
+        readFromFile(storageDir.resolve(name)).map { case (metadata, inputStream) =>
           (
-            MediaType.parse(metadata(LocalObjectStorage.contentTypeKey)).get,
+            MediaType.parse(metadata(Fields.ContentType)).get,
             inputStream
           )
         }
@@ -78,7 +82,7 @@ final class LocalObjectStorage private (
     Stat.timeFuture(stats.stat("delete")) {
       pool {
         // Drop the boolean. We want to have the same semantic as S3 which succeeds in either case.
-        val _ = Files.deleteIfExists(path.resolve(name))
+        val _ = Files.deleteIfExists(storageDir.resolve(name))
 
         // TODO: To have the same semantic as S3 we need to delete all empty parent directories
       }
@@ -88,15 +92,15 @@ final class LocalObjectStorage private (
   override def list(directory: String): Future[LocalObjectStorage.ObjectList] = {
     Stat.timeFuture(stats.stat("list")) {
       pool {
-        val absolutePath = path.resolve(directory)
+        val absolutePath = storageDir.resolve(directory)
         val stream = Files.newDirectoryStream(absolutePath)
 
         try {
           val (directories, objects) = stream.asScala.partition(path => Files.isDirectory(path))
 
           LocalObjectStorage.ObjectList(
-            objects.map(objectPath => path.relativize(objectPath).toString)(breakOut),
-            directories.map(directoryPath => path.relativize(directoryPath).toString)(breakOut)
+            objects.map(objectPath => storageDir.relativize(objectPath).toString)(breakOut),
+            directories.map(directoryPath => storageDir.relativize(directoryPath).toString)(breakOut)
           )
         } finally {
           stream.close()
@@ -129,19 +133,19 @@ final class LocalObjectStorage private (
     body: InputStream,
     absolutePath: Path
   ): (Long, Long) = {
-
-    val metadataBytes = metadata.asJson.noSpaces.getBytes(StandardCharsets.UTF_8)
+    val scratchPath = Files.createTempFile(scratchDir, "", "")
 
     val outputStream = new DataOutputStream(
       Files.newOutputStream(
-        absolutePath,
-        StandardOpenOption.CREATE,
+        scratchPath,
         StandardOpenOption.WRITE,
         StandardOpenOption.TRUNCATE_EXISTING
       )
     )
 
-    try {
+    val metadataBytes = metadata.asJson.noSpaces.getBytes(StandardCharsets.UTF_8)
+
+    val outputs = try {
       outputStream.writeInt(metadataBytes.length)
       outputStream.write(metadataBytes, 0, metadataBytes.length)
 
@@ -153,6 +157,12 @@ final class LocalObjectStorage private (
     } finally {
       outputStream.close()
     }
+
+    Try(Files.move(scratchPath, absolutePath, StandardCopyOption.ATOMIC_MOVE))
+      .onFailure { _ => val _ = Files.deleteIfExists(scratchPath) }
+      .get()
+
+    outputs
   }
 
   // See writeToFile for information on the file format.
@@ -169,7 +179,7 @@ final class LocalObjectStorage private (
         )
       )
     } catch {
-      case e: NoSuchFileException =>
+      case _: NoSuchFileException =>
         None
     }
 
@@ -194,11 +204,21 @@ final class LocalObjectStorage private (
 }
 
 object LocalObjectStorage {
-  def apply(path: Path)(implicit statsReceiver: StatsReceiver): LocalObjectStorage = {
-    // Create the directory for the root path
-    Files.createDirectories(path)
 
-    new LocalObjectStorage(path)
+  /** Create an object store under the given path.
+    *
+    * @param path the root path for all file operations performed by the store
+    */
+  def apply(path: Path)(implicit statsReceiver: StatsReceiver): LocalObjectStorage = {
+    val storageDir = path.resolve("storage")
+    val scratchDir = path.resolve("scratch")
+    val stats = statsReceiver.scope(s"LocalObjectStorage($path)")
+
+    // Create needed directories before using them
+    Files.createDirectories(storageDir)
+    Files.createDirectories(scratchDir)
+
+    new LocalObjectStorage(storageDir, scratchDir, stats)
   }
 
   case class ObjectList(
@@ -208,5 +228,4 @@ object LocalObjectStorage {
     val listToken = None
   }
 
-  private val contentTypeKey = "Content-Type"
 }

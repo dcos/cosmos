@@ -2,11 +2,11 @@ package com.mesosphere.cosmos.handler
 
 import cats.data.Xor
 import com.mesosphere.cosmos.http.CompoundMediaTypeParser
+import com.mesosphere.cosmos.http.CosmosRequest
 import com.mesosphere.cosmos.rpc.MediaTypes
 import com.mesosphere.cosmos.rpc.v1.circe.Encoders._
 import com.mesosphere.cosmos.rpc.v1.model.PackageRepositoryAddRequest
 import com.mesosphere.cosmos.test.CosmosIntegrationTestClient._
-import com.mesosphere.cosmos.test.CosmosRequest
 import com.netaporter.uri.dsl._
 import com.twitter.finagle.http.Status
 import io.circe.jawn._

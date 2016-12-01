@@ -6,25 +6,25 @@ import com.twitter.finagle.http.Status
 import io.circe.JsonObject
 import io.circe.syntax._
 
-case class IncompatibleAcceptHeader(available: Set[MediaType], specified: Set[MediaType]) extends RequestError {
+case class IncompatibleContentTypeHeader(available: Set[MediaType], specified: MediaType)
+  extends RequestError {
   val errType: String = "not_valid"
   val status: Status = Status.BadRequest
 
   val getData: Option[JsonObject] = Some(JsonObject.fromMap(Map(
     "invalidItem" -> JsonObject.fromMap(Map(
       "type" -> "header".asJson,
-      "name" -> "Accept".asJson
+      "name" -> Fields.ContentType.asJson
     )).asJson,
-    "specified" -> specified.map(_.show).asJson,
+    "specified" -> specified.show.asJson,
     "available" -> available.map(_.show).asJson
   )))
 
   val getHeaders: Map[String, String] = Map.empty
 
   override def getMessage: String = {
-    val specifiedStr = specified.map(_.show).mkString(", ")
-    val availableStr = available.map(_.show).mkString(", ")
-    s"${Fields.Accept} header was [$specifiedStr] but should be one of [$availableStr]"
+    val validChoices = available.map(_.show).mkString(", ")
+    s"${Fields.ContentType} header was ${specified.show}, but should be one of: $validChoices"
   }
 
 }

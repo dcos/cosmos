@@ -1,6 +1,7 @@
 package com.mesosphere.cosmos.storage.installqueue
 
 import com.mesosphere.cosmos.InstallQueueError
+import com.mesosphere.cosmos.OperationInProgress
 import com.mesosphere.cosmos.rpc.v1.model.ErrorResponse
 import com.mesosphere.cosmos.rpc.v1.model.PackageCoordinate
 import com.mesosphere.cosmos.storage.Envelope
@@ -28,7 +29,7 @@ class InstallQueueSpec extends fixture.FreeSpec {
         val addResult = Await.result(
           installQueue.add(coordinate1, universeInstall)
         )
-        assertResult(Created)(addResult)
+        assertResult(())(addResult)
 
         checkInstallQueueContents(client, coordinate1, Pending(universeInstall, None))
       }
@@ -39,7 +40,7 @@ class InstallQueueSpec extends fixture.FreeSpec {
         val addResult = Await.result(
           installQueue.add(coordinate1, universeInstall)
         )
-        assertResult(Created)(addResult)
+        assertResult(())(addResult)
 
         checkInstallQueueContents(
           client,
@@ -56,10 +57,10 @@ class InstallQueueSpec extends fixture.FreeSpec {
           coordinate1,
           pendingUniverseInstall)
 
-        val addResult = Await.result(
-          installQueue.add(coordinate1, universeInstall)
-        )
-        assertResult(AlreadyExists)(addResult)
+        val addResult = intercept[OperationInProgress] {
+          Await.result(installQueue.add(coordinate1, universeInstall))
+        }
+        assertResult(coordinate1)(addResult.coordinate)
 
         checkInstallQueueContents(client,
           coordinate1,
@@ -76,7 +77,7 @@ class InstallQueueSpec extends fixture.FreeSpec {
         val addResult = Await.result(
           installQueue.add(coordinate1, universeInstall)
         )
-        assertResult(Created)(addResult)
+        assertResult(())(addResult)
 
         checkInstallQueueContents(
           client,
@@ -95,10 +96,10 @@ class InstallQueueSpec extends fixture.FreeSpec {
           coordinate1,
           pendingUniverseInstallWithFailure)
 
-        val addResult = Await.result(
-          installQueue.add(coordinate1, universeInstall)
-        )
-        assertResult(AlreadyExists)(addResult)
+        val addResult = intercept[OperationInProgress] {
+          Await.result(installQueue.add(coordinate1, universeInstall))
+        }
+        assertResult(coordinate1)(addResult.coordinate)
 
         checkInstallQueueContents(
           client,
@@ -116,8 +117,8 @@ class InstallQueueSpec extends fixture.FreeSpec {
         } yield (add1, add2)
 
       val (add1, add2) = Await.result(addTwoOperations)
-      assertResult(Created)(add1)
-      assertResult(Created)(add2)
+      assertResult(())(add1)
+      assertResult(())(add2)
 
       checkInstallQueueContents(client, coordinate1, Pending(universeInstall, None))
       checkInstallQueueContents(client, coordinate2, Pending(universeInstall, None))
@@ -499,11 +500,11 @@ class InstallQueueSpec extends fixture.FreeSpec {
       val (_, installQueue) = testParameters
       val addOnCoordinate1 =
         Await.result(installQueue.add(coordinate1, universeInstall))
-      assertResult(Created)(addOnCoordinate1)
+      assertResult(())(addOnCoordinate1)
 
       val addOnCoordinate2 =
         Await.result(installQueue.add(coordinate2, universeInstall))
-      assertResult(Created)(addOnCoordinate2)
+      assertResult(())(addOnCoordinate2)
 
       val coordinate1Operation = Await.result(installQueue.next())
       assertResult(
@@ -513,7 +514,7 @@ class InstallQueueSpec extends fixture.FreeSpec {
       Await.result(installQueue.failure(coordinate1, errorResponse1))
       val addOnCoordinate1AfterFailure =
         Await.result(installQueue.add(coordinate1, universeInstall))
-      assertResult(Created)(addOnCoordinate1AfterFailure)
+      assertResult(())(addOnCoordinate1AfterFailure)
 
       val coordinate2Operation = Await.result(installQueue.next())
       assertResult(
@@ -547,7 +548,7 @@ class InstallQueueSpec extends fixture.FreeSpec {
         client.delete().deletingChildrenIfNeeded().forPath(installQueuePath)
         ()
       } catch {
-        case e: KeeperException.NoNodeException =>
+        case _: KeeperException.NoNodeException =>
       }
     }
   }
