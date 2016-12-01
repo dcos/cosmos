@@ -11,15 +11,13 @@ import com.mesosphere.cosmos.Trys
 import com.mesosphere.cosmos.Uris
 import com.mesosphere.cosmos.dcosUri
 import com.mesosphere.cosmos.http.Authorization
-import com.mesosphere.cosmos.http.CosmosRequest
+import com.mesosphere.cosmos.http.HttpRequest
 import com.mesosphere.cosmos.http.RequestSession
 import com.mesosphere.cosmos.model.ZooKeeperUri
 import com.mesosphere.cosmos.rpc.MediaTypes
 import com.mesosphere.cosmos.rpc.v1.circe.Decoders._
 import com.mesosphere.cosmos.rpc.v1.circe.Encoders._
 import com.mesosphere.cosmos.rpc.v1.model._
-import com.mesosphere.universe.v3.model.Repository
-import com.mesosphere.universe.{MediaTypes => UMediaTypes}
 import com.netaporter.uri.Uri
 import com.netaporter.uri.dsl._
 import com.twitter.finagle.Service
@@ -83,7 +81,7 @@ object CosmosIntegrationTestClient extends Matchers {
 
     val uri: String = getClientProperty("CosmosClient", "uri")
 
-    def callEndpoint[Res](request: CosmosRequest, expectedStatus: Status = Status.Ok)(implicit
+    def callEndpoint[Res](request: HttpRequest, expectedStatus: Status = Status.Ok)(implicit
       decoder: Decoder[Res]
     ): ErrorResponse Xor Res = {
       val response = submit(request)
@@ -103,7 +101,7 @@ object CosmosIntegrationTestClient extends Matchers {
     }
 
     def packageSearch(requestBody: SearchRequest): SearchResponse = {
-      val request = CosmosRequest.post(
+      val request = HttpRequest.post(
         "package/search",
         requestBody,
         MediaTypes.SearchRequest,
@@ -114,7 +112,7 @@ object CosmosIntegrationTestClient extends Matchers {
     }
 
     def packageRepositoryAdd(requestBody: PackageRepositoryAddRequest): PackageRepositoryAddResponse = {
-      val request = CosmosRequest.post(
+      val request = HttpRequest.post(
         "package/repository/add",
         requestBody,
         MediaTypes.PackageRepositoryAddRequest,
@@ -125,7 +123,7 @@ object CosmosIntegrationTestClient extends Matchers {
     }
 
     def packageRepositoryDelete(requestBody: PackageRepositoryDeleteRequest): PackageRepositoryDeleteResponse = {
-      val request = CosmosRequest.post(
+      val request = HttpRequest.post(
         "package/repository/delete",
         requestBody,
         MediaTypes.PackageRepositoryDeleteRequest,
@@ -143,7 +141,7 @@ object CosmosIntegrationTestClient extends Matchers {
       *
       * It also includes the Authorization header if provided by configuration.
       */
-    def submit(req: CosmosRequest): Response = {
+    def submit(req: HttpRequest): Response = {
       val reqWithAuth = Session.authorization match {
         case Some(auth) =>
           req.copy(headers = req.headers + (Fields.Authorization -> auth.headerValue))
@@ -151,7 +149,7 @@ object CosmosIntegrationTestClient extends Matchers {
           req
       }
 
-      val finagleReq = CosmosRequest.toFinagle(reqWithAuth)
+      val finagleReq = HttpRequest.toFinagle(reqWithAuth)
       Await.result(client(finagleReq))
     }
 

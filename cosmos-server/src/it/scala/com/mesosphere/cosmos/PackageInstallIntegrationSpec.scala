@@ -6,7 +6,7 @@ import _root_.io.circe.jawn._
 import _root_.io.circe.syntax._
 import cats.data.Xor
 import cats.data.Xor.Right
-import com.mesosphere.cosmos.http.CosmosRequest
+import com.mesosphere.cosmos.http.HttpRequest
 import com.mesosphere.cosmos.http.RequestSession
 import com.mesosphere.cosmos.repository.DefaultRepositories
 import com.mesosphere.cosmos.rpc.MediaTypes
@@ -205,7 +205,7 @@ final class PackageInstallIntegrationSpec extends FreeSpec with BeforeAndAfterAl
 
       val installRequest = InstallRequest("enterprise-security-cli")
 
-      val request = CosmosRequest.post(
+      val request = HttpRequest.post(
         "package/install",
         installRequest,
         MediaTypes.InstallRequest,
@@ -281,7 +281,7 @@ final class PackageInstallIntegrationSpec extends FreeSpec with BeforeAndAfterAl
   private[this] def installPackage(
     installRequest: InstallRequest
   ): Response = {
-    val request = CosmosRequest.post(
+    val request = HttpRequest.post(
       "package/install",
       installRequest,
       MediaTypes.InstallRequest,

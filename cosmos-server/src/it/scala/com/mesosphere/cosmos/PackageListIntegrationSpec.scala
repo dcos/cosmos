@@ -1,7 +1,7 @@
 package com.mesosphere.cosmos
 
 import cats.data.Xor
-import com.mesosphere.cosmos.http.CosmosRequest
+import com.mesosphere.cosmos.http.HttpRequest
 import com.mesosphere.cosmos.repository.DefaultRepositories
 import com.mesosphere.cosmos.rpc.MediaTypes
 import com.mesosphere.cosmos.rpc.v1.circe.Decoders._
@@ -63,7 +63,7 @@ final class PackageListIntegrationSpec
   }
 
   private[this] def withInstalledPackage(packageName: String)(f: InstallResponse => Unit): Unit = {
-    val request = CosmosRequest.post(
+    val request = HttpRequest.post(
       "package/install",
       InstallRequest(packageName, appId = Some(AppId(UUID.randomUUID().toString))),
       MediaTypes.InstallRequest,
@@ -75,7 +75,7 @@ final class PackageListIntegrationSpec
       assertResult(packageName)(installResponse.packageName)
       f(installResponse)
     } finally {
-      val request = CosmosRequest.post(
+      val request = HttpRequest.post(
         "package/uninstall",
         UninstallRequest(installResponse.packageName, appId = Some(installResponse.appId), all = None),
         MediaTypes.UninstallRequest,
@@ -93,7 +93,7 @@ final class PackageListIntegrationSpec
   }
 
   private[this] def withDeletedRepository(repository: PackageRepository)(action: => Unit): Unit = {
-    val request = CosmosRequest.post(
+    val request = HttpRequest.post(
       "package/repository/delete",
       PackageRepositoryDeleteRequest(name = Some(repository.name)),
       MediaTypes.PackageRepositoryDeleteRequest,
@@ -108,7 +108,7 @@ final class PackageListIntegrationSpec
 
       action
     } finally {
-      val request = CosmosRequest.post(
+      val request = HttpRequest.post(
         "package/repository/add",
         PackageRepositoryAddRequest(repository.name, repository.uri),
         MediaTypes.PackageRepositoryAddRequest,
@@ -127,7 +127,7 @@ final class PackageListIntegrationSpec
   private[this] def withInstalledPackageInListResponse(installResponse: InstallResponse)(
     pf: PartialFunction[Option[Installation], Unit]
   ): Unit = {
-    val request = CosmosRequest.post(
+    val request = HttpRequest.post(
       "package/list",
       ListRequest(),
       MediaTypes.ListRequest,
@@ -161,7 +161,7 @@ final class PackageListIntegrationSpec
   }
 
   private[this] def packageList(): ListResponse = {
-    val request = CosmosRequest.post(
+    val request = HttpRequest.post(
       "package/list",
       ListRequest(),
       MediaTypes.ListRequest,
@@ -173,7 +173,7 @@ final class PackageListIntegrationSpec
   }
 
   private[this] def packageInstall(packageName: String): InstallResponse = {
-    val request = CosmosRequest.post(
+    val request = HttpRequest.post(
       "package/install",
       InstallRequest(packageName, appId = Some(AppId(UUID.randomUUID().toString))),
       MediaTypes.InstallRequest,
@@ -187,7 +187,7 @@ final class PackageListIntegrationSpec
   }
 
   private[this] def packageUninstall(installResponse: InstallResponse): Unit = {
-    val request = CosmosRequest.post(
+    val request = HttpRequest.post(
       "package/uninstall",
       UninstallRequest(installResponse.packageName, appId = Some(installResponse.appId), all = None),
       MediaTypes.UninstallRequest,

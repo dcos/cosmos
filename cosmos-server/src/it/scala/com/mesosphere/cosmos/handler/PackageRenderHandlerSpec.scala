@@ -1,7 +1,7 @@
 package com.mesosphere.cosmos.handler
 
 import cats.data.Xor
-import com.mesosphere.cosmos.http.CosmosRequest
+import com.mesosphere.cosmos.http.HttpRequest
 import com.mesosphere.cosmos.rpc.MediaTypes
 import com.mesosphere.cosmos.rpc.v1.circe.Decoders._
 import com.mesosphere.cosmos.rpc.v1.circe.Encoders._
@@ -95,7 +95,7 @@ class PackageRenderHandlerSpec extends FreeSpec {
 object PackageRenderHandlerSpec {
 
   def packageRender(renderRequest: RenderRequest): Response = {
-    val request = CosmosRequest.post(
+    val request = HttpRequest.post(
       "package/render",
       renderRequest,
       MediaTypes.RenderRequest,

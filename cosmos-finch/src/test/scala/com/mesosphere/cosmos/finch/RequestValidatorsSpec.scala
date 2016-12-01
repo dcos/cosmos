@@ -1,6 +1,14 @@
 package com.mesosphere.cosmos.finch
 
-import com.mesosphere.cosmos.http._
+import com.mesosphere.cosmos.http.Authorization
+import com.mesosphere.cosmos.http.CompoundMediaTypeParser
+import com.mesosphere.cosmos.http.HttpRequest
+import com.mesosphere.cosmos.http.HttpRequestBody
+import com.mesosphere.cosmos.http.MediaType
+import com.mesosphere.cosmos.http.MediaTypeSpec
+import com.mesosphere.cosmos.http.Monolithic
+import com.mesosphere.cosmos.http.NoBody
+import com.mesosphere.cosmos.http.RequestSession
 import com.mesosphere.cosmos.rpc.MediaTypes._
 import com.twitter.finagle.http.Fields
 import com.twitter.finagle.http.Method
@@ -51,7 +59,7 @@ final class RequestValidatorsSpec extends FreeSpec with Matchers with PropertyCh
       DispatchingMediaTypedEncoder(Set(mediaTypedEncoder))
     }
 
-    def forSuccessfulValidation[Res]: (CosmosRequest, Endpoint[EndpointContext[Unit, Res]]) = {
+    def forSuccessfulValidation[Res]: (HttpRequest, Endpoint[EndpointContext[Unit, Res]]) = {
       val accept = TestingMediaTypes.applicationJson
       val request = NoBodyReaderFactory.buildRequest(accept = Some(accept.show), authorization = None)
       val validator = NoBodyReaderFactory(buildProduces[Res](accept))
@@ -59,10 +67,10 @@ final class RequestValidatorsSpec extends FreeSpec with Matchers with PropertyCh
     }
 
     def validate[Req, Res](
-      request: CosmosRequest,
+      request: HttpRequest,
       validator: Endpoint[EndpointContext[Req, Res]]
     ): EndpointContext[Req, Res] = {
-      val Some((_, eval)) = validator(Input(CosmosRequest.toFinagle(request)))
+      val Some((_, eval)) = validator(Input(HttpRequest.toFinagle(request)))
       Await.result(eval.value).value
     }
 
@@ -98,7 +106,7 @@ final class RequestValidatorsSpec extends FreeSpec with Matchers with PropertyCh
     "include the Content-Type in the session if it was successfully parsed" in {
       val genTestCases = for {
         expectedContentTypeHeader <- MediaTypeSpec.genMediaType
-        actualContentTypeHeader = CosmosRequest.toHeader(expectedContentTypeHeader)
+        actualContentTypeHeader = HttpRequest.toHeader(expectedContentTypeHeader)
         data <- genTestData(expectedContentTypeHeader, actualContentTypeHeader)
       } yield data
 
@@ -110,7 +118,7 @@ final class RequestValidatorsSpec extends FreeSpec with Matchers with PropertyCh
     "fail if the Content-Type header doesn't match what the validator expects" in {
       val genTestCases = for {
         expectedContentTypeHeader <- MediaTypeSpec.genMediaType
-        actualContentTypeHeader <- MediaTypeSpec.genMediaType.map(CosmosRequest.toHeader)
+        actualContentTypeHeader <- MediaTypeSpec.genMediaType.map(HttpRequest.toHeader)
         data <- genTestData(expectedContentTypeHeader, actualContentTypeHeader)
       } yield data
 
@@ -130,8 +138,8 @@ final class RequestValidatorsSpec extends FreeSpec with Matchers with PropertyCh
 
       for {
         acceptHeader <- MediaTypeSpec.genMediaType
-        headers = CosmosRequest.collectHeaders(
-          Fields.Accept -> CosmosRequest.toHeader(acceptHeader),
+        headers = HttpRequest.collectHeaders(
+          Fields.Accept -> HttpRequest.toHeader(acceptHeader),
           Fields.ContentType -> actualContentTypeHeader
         )
         produces = DispatchingMediaTypedEncoder[Json](acceptHeader)
@@ -144,7 +152,7 @@ final class RequestValidatorsSpec extends FreeSpec with Matchers with PropertyCh
 
   def assertMissingContentType[Req, Res](
     validator: Endpoint[EndpointContext[Req, Res]],
-    request: CosmosRequest
+    request: HttpRequest
   ): Unit = {
     validate(validator, request) should matchPattern {
       case Throw(NotPresent(HeaderItem(Fields.ContentType))) =>
@@ -153,7 +161,7 @@ final class RequestValidatorsSpec extends FreeSpec with Matchers with PropertyCh
 
   def assertUnparseableContentType[Req, Res](
     validator: Endpoint[EndpointContext[Req, Res]],
-    request: CosmosRequest
+    request: HttpRequest
   ): Unit = {
     whenever (MediaType.parse(request.headers(Fields.ContentType)).isThrow) {
       validate(validator, request) should matchPattern {
@@ -166,7 +174,7 @@ final class RequestValidatorsSpec extends FreeSpec with Matchers with PropertyCh
   def assertValidContentType[Req, Res](
     expectedContentType: MediaType,
     validator: Endpoint[EndpointContext[Req, Res]],
-    request: CosmosRequest
+    request: HttpRequest
   ): Unit = {
     assertResult(expectedContentType) {
       val Return(output) = validate(validator, request)
@@ -178,9 +186,9 @@ final class RequestValidatorsSpec extends FreeSpec with Matchers with PropertyCh
   def assertMismatchedContentType[Req, Res](
     expectedContentType: MediaType,
     validator: Endpoint[EndpointContext[Req, Res]],
-    request: CosmosRequest
+    request: HttpRequest
   ): Unit = {
-    val expected = CosmosRequest.toHeader(expectedContentType)
+    val expected = HttpRequest.toHeader(expectedContentType)
     val actual = request.headers.get(Fields.ContentType)
 
     whenever (expected != actual) {
@@ -308,14 +316,14 @@ object RequestValidatorsSpec {
 
   def genRequest(
     genHeaders: Gen[Map[String, String]],
-    genBody: Gen[CosmosRequestBody]
-  ): Gen[CosmosRequest] = {
+    genBody: Gen[HttpRequestBody]
+  ): Gen[HttpRequest] = {
     for {
       method <- genMethod
       path <- genPath
       headers <- genHeaders
       body <- genBody
-    } yield CosmosRequest(method, path, headers, body)
+    } yield HttpRequest(method, path, headers, body)
   }
 
   val genMethod: Gen[Method] = Gen.alphaStr.map(Method(_))
@@ -326,16 +334,16 @@ object RequestValidatorsSpec {
 
   def validate[Req, Res](
     validator: Endpoint[EndpointContext[Req, Res]],
-    request: CosmosRequest
+    request: HttpRequest
   ): Try[Output[EndpointContext[Req, Res]]] = {
-    val Some((_, eval)) = validator(Input(CosmosRequest.toFinagle(request)))
+    val Some((_, eval)) = validator(Input(HttpRequest.toFinagle(request)))
     Await.result(eval.value.liftToTry)
   }
 
   case class TestData[Req, Res](
     contentType: MediaType,
     validator: Endpoint[EndpointContext[Req, Res]],
-    request: CosmosRequest
+    request: HttpRequest
   )
 
   /** This factory trait is needed because the `Req` type is different for each factory function in
@@ -352,7 +360,7 @@ object RequestValidatorsSpec {
     def buildRequest(
       accept: Option[String],
       authorization: Option[String]
-    ): CosmosRequest
+    ): HttpRequest
 
     final def validate[Res](
       accept: Option[String] = Some(TestingMediaTypes.applicationJson.show),
@@ -361,7 +369,7 @@ object RequestValidatorsSpec {
         MediaTypedEncoder(Encoder.instance[Res](_ => Json.Null), TestingMediaTypes.applicationJson)
       ))
     ): Try[EndpointContext[Req, Res]] = {
-      val request = CosmosRequest.toFinagle(buildRequest(accept, authorization))
+      val request = HttpRequest.toFinagle(buildRequest(accept, authorization))
       val reader = this(produces)
       val Some((_, eval)) = reader(Input(request))
       Await.result(eval.value.liftToTry).map(_.value)
@@ -380,10 +388,10 @@ object RequestValidatorsSpec {
     override def buildRequest(
       accept: Option[String],
       authorization: Option[String]
-    ): CosmosRequest = {
+    ): HttpRequest = {
       val headers =
-        CosmosRequest.collectHeaders(Fields.Accept -> accept, Fields.Authorization -> authorization)
-      CosmosRequest(Method.Get, "what/ever", headers, NoBody)
+        HttpRequest.collectHeaders(Fields.Accept -> accept, Fields.Authorization -> authorization)
+      HttpRequest(Method.Get, "what/ever", headers, NoBody)
     }
 
   }
@@ -402,13 +410,13 @@ object RequestValidatorsSpec {
     override def buildRequest(
       accept: Option[String],
       authorization: Option[String]
-    ): CosmosRequest = {
-      val headers = CosmosRequest.collectHeaders(
+    ): HttpRequest = {
+      val headers = HttpRequest.collectHeaders(
         Fields.Accept -> accept,
         Fields.Authorization -> authorization,
-        Fields.ContentType -> CosmosRequest.toHeader(TestingMediaTypes.applicationJson)
+        Fields.ContentType -> HttpRequest.toHeader(TestingMediaTypes.applicationJson)
       )
-      CosmosRequest(Method.Post, "what/ever", headers, Monolithic(Buf.Utf8(Json.Null.noSpaces)))
+      HttpRequest(Method.Post, "what/ever", headers, Monolithic(Buf.Utf8(Json.Null.noSpaces)))
     }
 
   }

@@ -7,7 +7,7 @@ import _root_.io.circe.jawn._
 import _root_.io.circe.syntax._
 import cats.data.Xor
 import com.mesosphere.cosmos._
-import com.mesosphere.cosmos.http.CosmosRequest
+import com.mesosphere.cosmos.http.HttpRequest
 import com.mesosphere.cosmos.rpc.MediaTypes
 import com.mesosphere.cosmos.rpc.v1.circe.Decoders._
 import com.mesosphere.cosmos.rpc.v1.circe.Encoders._
@@ -318,7 +318,7 @@ object PackageRepositorySpec extends FreeSpec with TableDrivenPropertyChecks {
     val repositoriesBeforeAdd = listRepos()
 
     assertResult(expectedErrorMessage) {
-      val request = CosmosRequest.post(
+      val request = HttpRequest.post(
         "package/repository/add",
         PackageRepositoryAddRequest(repository.name, repository.uri),
         MediaTypes.PackageRepositoryAddRequest,
@@ -336,7 +336,7 @@ object PackageRepositorySpec extends FreeSpec with TableDrivenPropertyChecks {
   }
 
   private def addRepo(addRequest: PackageRepositoryAddRequest): PackageRepositoryAddResponse  = {
-    val request = CosmosRequest.post(
+    val request = HttpRequest.post(
       "package/repository/add",
       addRequest,
       MediaTypes.PackageRepositoryAddRequest,
@@ -350,7 +350,7 @@ object PackageRepositorySpec extends FreeSpec with TableDrivenPropertyChecks {
     deleteRequest: PackageRepositoryDeleteRequest,
     status: Status = Status.Ok
   ): Xor[ErrorResponse, PackageRepositoryDeleteResponse]  = {
-    val request = CosmosRequest.post(
+    val request = HttpRequest.post(
       "package/repository/delete",
       deleteRequest,
       MediaTypes.PackageRepositoryDeleteRequest,
@@ -360,7 +360,7 @@ object PackageRepositorySpec extends FreeSpec with TableDrivenPropertyChecks {
   }
 
   private def listRepos(): PackageRepositoryListResponse = {
-    val request = CosmosRequest.post(
+    val request = HttpRequest.post(
       "package/repository/list",
       PackageRepositoryListRequest(),
       MediaTypes.PackageRepositoryListRequest,
@@ -371,7 +371,7 @@ object PackageRepositorySpec extends FreeSpec with TableDrivenPropertyChecks {
   }
 
   private def searchPackages(req: SearchRequest): Response = {
-    val request = CosmosRequest.post(
+    val request = HttpRequest.post(
       "package/search",
       req,
       MediaTypes.SearchRequest,

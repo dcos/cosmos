@@ -5,7 +5,7 @@ import _root_.io.circe.jawn._
 import _root_.io.circe.syntax._
 import cats.data.Xor
 import cats.data.Xor.Right
-import com.mesosphere.cosmos.http.CosmosRequest
+import com.mesosphere.cosmos.http.HttpRequest
 import com.mesosphere.cosmos.rpc.MediaTypes
 import com.mesosphere.cosmos.rpc.v1.circe.Decoders._
 import com.mesosphere.cosmos.rpc.v1.circe.Encoders._
@@ -106,7 +106,7 @@ final class PackageDescribeSpec extends FreeSpec with TableDrivenPropertyChecks 
   private[this] def describeRequest(
     describeRequest: DescribeRequest
   ): Response = {
-    val request = CosmosRequest.post(
+    val request = HttpRequest.post(
       DescribeEndpoint,
       describeRequest,
       MediaTypes.DescribeRequest,
@@ -118,7 +118,7 @@ final class PackageDescribeSpec extends FreeSpec with TableDrivenPropertyChecks 
   private[this] def listVersionsRequest(
     listVersionsRequest: ListVersionsRequest
   ): Response = {
-    val request = CosmosRequest.post(
+    val request = HttpRequest.post(
       ListVersionsEndpoint,
       listVersionsRequest,
       MediaTypes.ListVersionsRequest,

@@ -2,7 +2,7 @@ package com.mesosphere.cosmos
 
 import com.mesosphere.cosmos.circe.Decoders.decode
 import com.mesosphere.cosmos.converter.Response._
-import com.mesosphere.cosmos.http.CosmosRequest
+import com.mesosphere.cosmos.http.HttpRequest
 import com.mesosphere.cosmos.http.MediaType
 import com.mesosphere.cosmos.rpc.MediaTypes
 import com.mesosphere.cosmos.rpc.v1.circe.Encoders._
@@ -183,8 +183,8 @@ final class PackageAddSpec extends FreeSpec with BeforeAndAfterAll with BeforeAn
 
 object PackageAddSpec {
 
-  def packageAddRequest(packageData: Buf): CosmosRequest = {
-    CosmosRequest.post(
+  def packageAddRequest(packageData: Buf): HttpRequest = {
+    HttpRequest.post(
       path = "package/add",
       body = packageData,
       contentType = UMediaTypes.PackageZip,
@@ -192,8 +192,8 @@ object PackageAddSpec {
     )
   }
 
-  def packageAddRequest(requestBody: rpc.v1.model.UniverseAddRequest): CosmosRequest = {
-    CosmosRequest.post(
+  def packageAddRequest(requestBody: rpc.v1.model.UniverseAddRequest): HttpRequest = {
+    HttpRequest.post(
       path = "package/add",
       body = requestBody,
       contentType = MediaTypes.AddRequest,
@@ -204,10 +204,10 @@ object PackageAddSpec {
   def packageDescribeRequest(
     packageName: String,
     packageVersion: Option[universe.v3.model.PackageDefinition.Version]
-  ): CosmosRequest = {
+  ): HttpRequest = {
     val oldVersion = packageVersion.as[Option[universe.v2.model.PackageDetailsVersion]]
 
-    CosmosRequest.post(
+    HttpRequest.post(
       path = "package/describe",
       body = rpc.v1.model.DescribeRequest(packageName, oldVersion),
       contentType = MediaTypes.DescribeRequest,

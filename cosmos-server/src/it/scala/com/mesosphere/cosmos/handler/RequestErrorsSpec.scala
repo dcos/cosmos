@@ -2,17 +2,17 @@ package com.mesosphere.cosmos.handler
 
 import cats.data.Xor
 import com.mesosphere.cosmos.http.CompoundMediaTypeParser
-import com.mesosphere.cosmos.http.CosmosRequest
+import com.mesosphere.cosmos.http.HttpRequest
 import com.mesosphere.cosmos.rpc.MediaTypes
 import com.mesosphere.cosmos.rpc.v1.circe.Encoders._
 import com.mesosphere.cosmos.rpc.v1.model.PackageRepositoryAddRequest
 import com.mesosphere.cosmos.test.CosmosIntegrationTestClient._
 import com.netaporter.uri.dsl._
 import com.twitter.finagle.http.Status
-import io.circe.jawn._
-import io.circe.syntax._
 import io.circe.Json
 import io.circe.JsonObject
+import io.circe.jawn._
+import io.circe.syntax._
 import org.scalatest.FreeSpec
 import scala.language.implicitConversions
 
@@ -32,7 +32,7 @@ class RequestErrorsSpec extends FreeSpec {
           Some(0)
         ).asJson
 
-        val request = CosmosRequest.post(
+        val request = HttpRequest.post(
           "package/install",
           body.noSpaces,
           Some(MediaTypes.DescribeRequest.show),
@@ -89,7 +89,7 @@ class RequestErrorsSpec extends FreeSpec {
       }
 
       "Missing Accept, Missing Content-Type, Missing body" in {
-        val request = CosmosRequest.post(
+        val request = HttpRequest.post(
           path = "package/install",
           body = "",
           contentType = None,

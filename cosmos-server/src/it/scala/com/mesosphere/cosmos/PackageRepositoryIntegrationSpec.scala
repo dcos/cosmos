@@ -1,7 +1,7 @@
 package com.mesosphere.cosmos
 
 import cats.data.Xor
-import com.mesosphere.cosmos.http.CosmosRequest
+import com.mesosphere.cosmos.http.HttpRequest
 import com.mesosphere.cosmos.repository.DefaultRepositories
 import com.mesosphere.cosmos.repository.PackageRepositorySpec
 import com.mesosphere.cosmos.rpc.MediaTypes
@@ -113,7 +113,7 @@ final class PackageRepositoryIntegrationSpec extends FreeSpec with BeforeAndAfte
 private object PackageRepositoryIntegrationSpec extends TableDrivenPropertyChecks {
 
   private def listRepositories(): Seq[PackageRepository] = {
-    val request = CosmosRequest.post(
+    val request = HttpRequest.post(
       "package/repository/list",
       PackageRepositoryListRequest(),
       MediaTypes.PackageRepositoryListRequest,
@@ -126,7 +126,7 @@ private object PackageRepositoryIntegrationSpec extends TableDrivenPropertyCheck
   private def addRepository(
     source: PackageRepository
   ): PackageRepositoryAddResponse = {
-    val request = CosmosRequest.post(
+    val request = HttpRequest.post(
       "package/repository/add",
       PackageRepositoryAddRequest(source.name, source.uri),
       MediaTypes.PackageRepositoryAddRequest,
@@ -139,7 +139,7 @@ private object PackageRepositoryIntegrationSpec extends TableDrivenPropertyCheck
   private def deleteRepository(
     source: PackageRepository
   ): PackageRepositoryDeleteResponse = {
-    val request = CosmosRequest.post(
+    val request = HttpRequest.post(
       "package/repository/delete",
       PackageRepositoryDeleteRequest(name = Some(source.name)),
       MediaTypes.PackageRepositoryDeleteRequest,
@@ -152,7 +152,7 @@ private object PackageRepositoryIntegrationSpec extends TableDrivenPropertyCheck
   private def sendAddRequest(
     addRequest: PackageRepositoryAddRequest
   ): Response = {
-    val request = CosmosRequest.post(
+    val request = HttpRequest.post(
       "package/repository/add",
       addRequest,
       MediaTypes.PackageRepositoryAddRequest,
