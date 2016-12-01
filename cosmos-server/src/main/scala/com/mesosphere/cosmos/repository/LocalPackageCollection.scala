@@ -7,7 +7,6 @@ import com.mesosphere.cosmos.VersionNotFound
 import com.mesosphere.cosmos.search.searchForPackages
 import com.mesosphere.cosmos.rpc
 import com.mesosphere.universe
-import com.netaporter.uri
 import com.twitter.util.Future
 
 // TODO (devflow) (jsancio): Make sure that we look at the operation store
@@ -57,8 +56,6 @@ final class LocalPackageCollection private (objectStorage: PackageObjectStorage)
 }
 
 object LocalPackageCollection {
-  val Uri: uri.Uri = uri.Uri.parse("urn://cosmos.mesos/repo")
-
   def apply(objectStorage: PackageObjectStorage): LocalPackageCollection = {
     new LocalPackageCollection(objectStorage)
   }

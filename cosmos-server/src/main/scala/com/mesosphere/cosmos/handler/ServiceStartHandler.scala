@@ -5,6 +5,7 @@ import cats.data.Xor
 import com.mesosphere.cosmos._
 import com.mesosphere.cosmos.finch.EndpointHandler
 import com.mesosphere.cosmos.http.RequestSession
+import com.mesosphere.cosmos.internal.model.LocalPackageOrigin
 import com.mesosphere.cosmos.render._
 import com.mesosphere.cosmos.repository.LocalPackageCollection
 import com.mesosphere.cosmos.rpc.v1.model.Installed
@@ -35,14 +36,13 @@ private[cosmos] final class ServiceStartHandler(
   )(
     implicit session: RequestSession
   ): Future[rpc.v1.model.ServiceStartResponse] = {
-    localPackageCollection
-      .getInstalledPackage(
-        request.packageName,
-        request.packageVersion.as[Option[universe.v3.model.PackageDefinition.Version]])
-      .map(asPackageDefinition(_, request.packageName) -> LocalPackageCollection.Uri)
-      .flatMap { case (pkg, sourceUri) =>
-        PackageDefinitionRenderer
-          .renderMarathonV2App(sourceUri, pkg, request.options, request.appId) match {
+    localPackageCollection.getInstalledPackage(
+      request.packageName,
+      request.packageVersion.as[Option[universe.v3.model.PackageDefinition.Version]]
+    ).flatMap { localPackage =>
+      val pkg = asPackageDefinition(localPackage, request.packageName)
+      PackageDefinitionRenderer
+        .renderMarathonV2App(LocalPackageOrigin.uri, pkg, request.options, request.appId) match {
           case Xor.Right(renderedMarathonJson) =>
             packageRunner.launch(renderedMarathonJson)
               .map { runnerResponse =>
@@ -72,7 +72,7 @@ private[cosmos] final class ServiceStartHandler(
             val error = Map("message" -> "No schema available to validate the provided options").asJson
             Future.exception(JsonSchemaMismatch(List(error)))
         }
-      }
+    }
   }
 }
 
