@@ -11,13 +11,13 @@ import com.mesosphere.cosmos.finch.RequestError
 import com.mesosphere.cosmos.finch.RequestValidators
 import com.mesosphere.cosmos.handler._
 import com.mesosphere.cosmos.repository.DefaultInstaller
+import com.mesosphere.cosmos.repository.DefaultUniverseInstaller
 import com.mesosphere.cosmos.repository.LocalPackageCollection
 import com.mesosphere.cosmos.repository.OperationProcessor
 import com.mesosphere.cosmos.repository.PackageSourcesStorage
 import com.mesosphere.cosmos.repository.SyncFutureLeader
 import com.mesosphere.cosmos.repository.Uninstaller
 import com.mesosphere.cosmos.repository.UniverseClient
-import com.mesosphere.cosmos.repository.UniverseInstaller
 import com.mesosphere.cosmos.repository.ZkRepositoryList
 import com.mesosphere.cosmos.rpc.MediaTypes
 import com.mesosphere.cosmos.rpc.v1.circe.MediaTypedBodyParsers._
@@ -229,12 +229,8 @@ object Cosmos extends FinchServer {
         zkClient,
         OperationProcessor(
           installQueue,
-          DefaultInstaller(
-            stageStorage,
-            pkgStorage,
-            localPackageCollection
-          ),
-          UniverseInstaller.Noop,
+          DefaultInstaller(stageStorage, pkgStorage, localPackageCollection),
+          DefaultUniverseInstaller(pkgStorage, localPackageCollection),
           Uninstaller.Noop
         )
       )

@@ -37,12 +37,11 @@ final class PackageAddHandler(
     val packageAndOperation = request match {
       case rpc.v1.model.UniverseAddRequest(packageName, packageVersion) =>
         packageCollection.getPackageByPackageVersion(packageName, packageVersion)
-          .map { case (packageDef, _) =>
-            packageDef match {
-              case v3Package: universe.v3.model.V3Package => (v3Package, UniverseInstall(v3Package))
-              // TODO package-add: Define CosmosError for this case
-              case v2Package: universe.v3.model.V2Package => ???
-            }
+          .map {
+            case (v3Package: universe.v3.model.V3Package, _) =>
+              (v3Package, UniverseInstall(v3Package))
+            case _ =>
+              throw new UnsupportedOperationException("Adding a package with packagingVersion 2.0")
           }
       case rpc.v1.model.UploadAddRequest(packageData) =>
         val packageStream = new ByteArrayInputStream(packageData)

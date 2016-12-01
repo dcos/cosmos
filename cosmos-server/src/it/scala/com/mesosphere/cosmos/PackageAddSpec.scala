@@ -61,16 +61,7 @@ final class PackageAddSpec extends FreeSpec with BeforeAndAfterAll with BeforeAn
       Await.result(TestUtil.eventualFutureNone(installQueue.next))
 
       // Assert that the externalized state doesn't change
-      assertSamePackage(
-        expectedV3Package,
-        Await.result(
-          TestUtil.eventualFuture(
-            () => packageStorage.readPackageDefinition(
-              expectedV3Package.packageCoordinate
-            )
-          )
-        )
-      )
+      assertExternalizedPackage(expectedV3Package)
     }
   }
 
@@ -81,9 +72,8 @@ final class PackageAddSpec extends FreeSpec with BeforeAndAfterAll with BeforeAn
       assertSuccessfulUniverseAdd(addRequest)
     }
 
-    // TODO package-add: Fix this to not use a v2Package
-    "by name and version" ignore {
-      val version = universe.v3.model.PackageDefinition.Version("0.2.0-2")
+    "by name and version" in {
+      val version = universe.v3.model.PackageDefinition.Version("2.2.5-0.2.0")
       val addRequest = rpc.v1.model.UniverseAddRequest("cassandra", Some(version))
       assertSuccessfulUniverseAdd(addRequest)
     }
@@ -96,14 +86,13 @@ final class PackageAddSpec extends FreeSpec with BeforeAndAfterAll with BeforeAn
 
       assertResult(Status.Accepted)(response.status)
       assertResult(MediaTypes.AddResponse)(MediaType.parse(response.contentType.get).get())
+
+      val v3Package = decode[rpc.v1.model.AddResponse](response.contentString).v3Package
       assertResult(expectedPackage) {
-        val decoded: universe.v3.model.PackageDefinition =
-          decode[rpc.v1.model.AddResponse](response.contentString).v3Package
-        decoded.as[rpc.v2.model.DescribeResponse]
+        (v3Package: universe.v3.model.PackageDefinition).as[rpc.v2.model.DescribeResponse]
       }
 
-      // TODO package-add: Need different assertion
-      //assertInstallOperationInZk(expectedPackage)
+      assertExternalizedPackage(v3Package)
     }
 
   }
@@ -139,35 +128,12 @@ final class PackageAddSpec extends FreeSpec with BeforeAndAfterAll with BeforeAn
     cleanObjectStorage(packageObjectStorage)
   }
 
-  // TODO package-add: Is this needed anymore?
-  // TODO package-add: Make this similar to the equivalent upload-install assertions
-//  private[this] def assertInstallOperationInZk(expected: rpc.v2.model.DescribeResponse): Unit = {
-//    val PendingOperation(coordinate, operation, failure) = popOperationFromInstallQueue()
-//    val UniverseInstall(packageDefinition) = operation
-//
-//    assertResult(expected.name)(coordinate.name)
-//    assertResult(expected.version)(coordinate.version)
-//    assert(failure.isEmpty)
-//    assertResult(expected)(packageDefinition.as[rpc.v2.model.DescribeResponse])
-//  }
-
   type PackageMetadata = universe.v3.model.Metadata
   type ReleaseVersion = universe.v3.model.PackageDefinition.ReleaseVersion
 
   private[this] def assertSuccessfulAdd(expectedV3Package: universe.v3.model.V3Package): Unit = {
     assertSuccessfulResponse(expectedV3Package)
-
-    // Assert that we externalize the correct state
-    assertSamePackage(
-      expectedV3Package,
-      Await.result(
-        TestUtil.eventualFuture(
-          () => packageStorage.readPackageDefinition(
-            expectedV3Package.packageCoordinate
-          )
-        )
-      )
-    )
+    assertExternalizedPackage(expectedV3Package)
   }
 
   private[this] def assertSuccessfulResponse(
@@ -182,20 +148,36 @@ final class PackageAddSpec extends FreeSpec with BeforeAndAfterAll with BeforeAn
     assertSamePackage(expectedV3Package, actualV3Package)
   }
 
+  private[this] def assertExternalizedPackage(
+    expectedV3Package: universe.v3.model.V3Package
+  ): Unit = {
+    assertSamePackage(
+      expectedV3Package,
+      Await.result(
+        TestUtil.eventualFuture(
+          () => packageStorage.readPackageDefinition(
+            expectedV3Package.packageCoordinate
+          )
+        )
+      )
+    )
+  }
+
   private[this] def assertSamePackage(
     expected: universe.v3.model.V3Package,
     actual: universe.v3.model.V3Package
   ): Unit = {
+    val normalizedExpected = normalizeV3Package(expected)
+    val normalizedActual = normalizeV3Package(actual)
+    assertResult(normalizedExpected)(normalizedActual)
+  }
+
+  private[this] def normalizeV3Package(
+    v3Package: universe.v3.model.V3Package
+  ): universe.v3.model.V3Package = {
     // TODO package-add: Get release version from creation time in object storage
     val fakeReleaseVersion = universe.v3.model.PackageDefinition.ReleaseVersion(0L).get()
-    val normalizedExpected = expected.copy(
-      command = None,
-      releaseVersion = fakeReleaseVersion,
-      selected = None
-    )
-    val normalizedActual = actual.copy(releaseVersion = fakeReleaseVersion)
-
-    assertResult(normalizedExpected)(normalizedActual)
+    v3Package.copy(command = None, releaseVersion = fakeReleaseVersion, selected = None)
   }
 
 }
