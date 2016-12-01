@@ -9,6 +9,7 @@ import com.twitter.finagle.stats.StatsReceiver
 import com.twitter.io.StreamIO
 import com.twitter.util.Future
 import com.twitter.util.FuturePool
+import com.twitter.util.Try
 import io.circe.syntax._
 import java.io.DataInputStream
 import java.io.DataOutputStream
@@ -157,7 +158,9 @@ final class LocalObjectStorage private(storageDir: Path, scratchDir: Path, stats
       outputStream.close()
     }
 
-    Files.move(scratchPath, absolutePath, StandardCopyOption.ATOMIC_MOVE)
+    Try(Files.move(scratchPath, absolutePath, StandardCopyOption.ATOMIC_MOVE))
+      .onFailure { _ => val _ = Files.deleteIfExists(scratchPath) }
+      .get()
 
     outputs
   }
