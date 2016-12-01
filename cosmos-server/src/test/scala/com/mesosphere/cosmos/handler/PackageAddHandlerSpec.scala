@@ -20,6 +20,8 @@ import com.twitter.bijection.Conversion.asMethod
 import com.twitter.finagle.http.Status
 import com.twitter.util.Await
 import com.twitter.util.Future
+import com.twitter.util.Return
+import com.twitter.util.Try
 import java.io.ByteArrayInputStream
 import java.io.InputStream
 import org.mockito.Matchers._
@@ -130,7 +132,11 @@ final class PackageAddHandlerSpec extends FreeSpec with MockitoSugar with Proper
 
 object PackageAddHandlerSpec {
 
-  val genUri: Gen[Uri] = arbitrary[String].map(Uri.parse)
+  val genUri: Gen[Uri] = {
+    arbitrary[String]
+      .map(s => Try(Uri.parse(s)))
+      .collect { case Return(uri) => uri }
+  }
 
   val genMetadata: Gen[universe.v3.model.Metadata] = {
     PackageDefinitionSpec.genV3Package.map { v3Package =>
