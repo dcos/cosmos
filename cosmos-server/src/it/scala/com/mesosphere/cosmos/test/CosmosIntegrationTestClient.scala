@@ -13,14 +13,11 @@ import com.mesosphere.cosmos.dcosUri
 import com.mesosphere.cosmos.http.Authorization
 import com.mesosphere.cosmos.http.CosmosRequest
 import com.mesosphere.cosmos.http.RequestSession
-import com.mesosphere.cosmos.internal.circe.Decoders._
-import com.mesosphere.cosmos.internal.circe.Encoders._
 import com.mesosphere.cosmos.model.ZooKeeperUri
 import com.mesosphere.cosmos.rpc.MediaTypes
 import com.mesosphere.cosmos.rpc.v1.circe.Decoders._
 import com.mesosphere.cosmos.rpc.v1.circe.Encoders._
 import com.mesosphere.cosmos.rpc.v1.model._
-import com.mesosphere.universe.v3.circe.Decoders._
 import com.mesosphere.universe.v3.model.Repository
 import com.mesosphere.universe.{MediaTypes => UMediaTypes}
 import com.netaporter.uri.Uri
@@ -113,26 +110,6 @@ object CosmosIntegrationTestClient extends Matchers {
         MediaTypes.SearchResponse
       )
       val Xor.Right(response) = callEndpoint[SearchResponse](request)
-      response
-    }
-
-    def packageStorageRepository: Repository = {
-      val request = CosmosRequest.get(
-        "package/storage/repository",
-        UMediaTypes.UniverseV3Repository
-      )
-      val Xor.Right(response) = callEndpoint[Repository](request)
-      response
-    }
-
-    def packagePublish(requestBody: PublishRequest): PublishResponse = {
-      val request = CosmosRequest.post(
-        "package/publish",
-        requestBody,
-        MediaTypes.PublishRequest,
-        MediaTypes.PublishResponse
-      )
-      val Xor.Right(response) = callEndpoint[PublishResponse](request)
       response
     }
 

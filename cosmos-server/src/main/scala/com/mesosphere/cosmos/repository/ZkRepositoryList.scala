@@ -1,31 +1,37 @@
 package com.mesosphere.cosmos.repository
 
 import cats.data.Ior
-import com.mesosphere.cosmos._
+import com.mesosphere.cosmos.ConcurrentAccess
+import com.mesosphere.cosmos.RepositoryAddIndexOutOfBounds
+import com.mesosphere.cosmos.RepositoryAlreadyPresent
+import com.mesosphere.cosmos.RepositoryNotPresent
 import com.mesosphere.cosmos.repository.DefaultRepositories._
 import com.mesosphere.cosmos.rpc.v1.model.PackageRepository
 import com.mesosphere.cosmos.storage.Envelope
 import com.mesosphere.cosmos.storage.v1.circe.MediaTypedDecoders._
 import com.mesosphere.cosmos.storage.v1.circe.MediaTypedEncoders._
 import com.netaporter.uri.Uri
-import com.twitter.finagle.stats.{NullStatsReceiver, Stat, StatsReceiver}
-import com.twitter.util._
+import com.twitter.finagle.stats.Stat
+import com.twitter.finagle.stats.StatsReceiver
+import com.twitter.util.Future
+import com.twitter.util.Promise
 import org.apache.curator.framework.CuratorFramework
-import org.apache.curator.framework.api.{BackgroundCallback, CuratorEvent, CuratorEventType}
+import org.apache.curator.framework.api.BackgroundCallback
+import org.apache.curator.framework.api.CuratorEvent
+import org.apache.curator.framework.api.CuratorEventType
 import org.apache.curator.framework.recipes.cache.NodeCache
 import org.apache.zookeeper.KeeperException
 import org.apache.zookeeper.data.{Stat => ZooKeeperStat}
 
-private[cosmos] final class ZkRepositoryList(
+final class ZkRepositoryList private (
   zkClient: CuratorFramework
-)(implicit
-  statsReceiver: StatsReceiver = NullStatsReceiver
-) extends PackageSourcesStorage {
+)(
+  implicit statsReceiver: StatsReceiver
+) extends PackageSourcesStorage with AutoCloseable {
 
   import ZkRepositoryList._
 
   private[this] val caching = new NodeCache(zkClient, ZkRepositoryList.PackageRepositoriesPath)
-  caching.start()
 
   private[this] val stats = statsReceiver.scope("zkStorage")
 
@@ -63,7 +69,14 @@ private[cosmos] final class ZkRepositoryList(
     Stat.timeFuture(stats.stat("add")) {
       readFromZooKeeper.flatMap {
         case Some((stat, bytes)) =>
-          write(stat, addToList(index, packageRepository, Envelope.decodeData[List[PackageRepository]](bytes)))
+          write(
+            stat,
+            addToList(
+              index,
+              packageRepository,
+              Envelope.decodeData[List[PackageRepository]](bytes)
+            )
+          )
 
         case None =>
           create(addToList(index, packageRepository, DefaultRepos))
@@ -88,6 +101,14 @@ private[cosmos] final class ZkRepositoryList(
         }
       }
     }
+  }
+
+  def start(): Unit = {
+    caching.start()
+  }
+
+  override def close(): Unit = {
+    caching.close()
   }
 
   private[this] def create(
@@ -168,7 +189,17 @@ private[cosmos] final class ZkRepositoryList(
   }
 }
 
-private object ZkRepositoryList {
+object ZkRepositoryList {
+  def apply(
+    zkClient: CuratorFramework
+  )(
+    implicit statsReceiver: StatsReceiver
+  ): ZkRepositoryList = {
+    val repoList = new ZkRepositoryList(zkClient)
+    repoList.start()
+    repoList
+  }
+
   private val PackageRepositoriesPath: String = "/package/repositories"
 
   private[cosmos] def getPredicate(nameOrUri: Ior[String, Uri]): PackageRepository => Boolean = {
@@ -176,7 +207,8 @@ private object ZkRepositoryList {
     def uriPredicate(u: Uri) = (repo: PackageRepository) => repo.uri == u
 
     nameOrUri match {
-      case Ior.Both(n, u) => (repo: PackageRepository) => namePredicate(n)(repo) && uriPredicate(u)(repo)
+      case Ior.Both(n, u) =>
+        (repo: PackageRepository) => namePredicate(n)(repo) && uriPredicate(u)(repo)
       case Ior.Left(n) => namePredicate(n)
       case Ior.Right(u) => uriPredicate(u)
     }
