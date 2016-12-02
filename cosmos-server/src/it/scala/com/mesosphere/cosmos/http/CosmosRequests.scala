@@ -2,12 +2,18 @@ package com.mesosphere.cosmos.http
 
 import com.mesosphere.cosmos.rpc
 import com.mesosphere.cosmos.rpc.v1.circe.Encoders._
+import com.mesosphere.cosmos.rpc.v1.model.PackageRepositoryListRequest
+import com.mesosphere.cosmos.rpc.v1.model.RenderRequest
 import com.mesosphere.universe
 import com.mesosphere.universe.bijection.UniverseConversions._
 import com.twitter.bijection.Conversion.asMethod
 import com.twitter.io.Buf
 
 object CosmosRequests {
+
+  val capabilities: HttpRequest = {
+    HttpRequest.get(path = "capabilities", accept = rpc.MediaTypes.CapabilitiesResponse)
+  }
 
   def packageAdd(packageData: Buf): HttpRequest = {
     HttpRequest.post(
@@ -70,6 +76,24 @@ object CosmosRequests {
     )
   }
 
+  def packageRender(renderRequest: RenderRequest): HttpRequest = {
+    HttpRequest.post(
+      path = "package/render",
+      body = renderRequest,
+      contentType = rpc.MediaTypes.RenderRequest,
+      accept = rpc.MediaTypes.RenderResponse
+    )
+  }
+
+  def packageSearch(searchRequest: rpc.v1.model.SearchRequest): HttpRequest = {
+    HttpRequest.post(
+      path = "package/search",
+      body = searchRequest,
+      contentType = rpc.MediaTypes.SearchRequest,
+      accept = rpc.MediaTypes.SearchResponse
+    )
+  }
+
   def packageRepoAdd(repoAddRequest: rpc.v1.model.PackageRepositoryAddRequest): HttpRequest = {
     HttpRequest.post(
       path = "package/repository/add",
@@ -83,10 +107,19 @@ object CosmosRequests {
     repoDeleteRequest: rpc.v1.model.PackageRepositoryDeleteRequest
   ): HttpRequest = {
     HttpRequest.post(
-      "package/repository/delete",
-      repoDeleteRequest,
-      rpc.MediaTypes.PackageRepositoryDeleteRequest,
-      rpc.MediaTypes.PackageRepositoryDeleteResponse
+      path = "package/repository/delete",
+      body = repoDeleteRequest,
+      contentType = rpc.MediaTypes.PackageRepositoryDeleteRequest,
+      accept = rpc.MediaTypes.PackageRepositoryDeleteResponse
+    )
+  }
+
+  val packageRepoList: HttpRequest = {
+    HttpRequest.post(
+      path = "package/repository/list",
+      body = PackageRepositoryListRequest(),
+      contentType = rpc.MediaTypes.PackageRepositoryListRequest,
+      accept = rpc.MediaTypes.PackageRepositoryListResponse
     )
   }
 

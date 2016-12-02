@@ -1,12 +1,10 @@
 package com.mesosphere.cosmos
 
 import cats.data.Xor
-import com.mesosphere.cosmos.http.HttpRequest
+import com.mesosphere.cosmos.http.CosmosRequests
 import com.mesosphere.cosmos.repository.DefaultRepositories
 import com.mesosphere.cosmos.repository.PackageRepositorySpec
-import com.mesosphere.cosmos.rpc.MediaTypes
 import com.mesosphere.cosmos.rpc.v1.circe.Decoders._
-import com.mesosphere.cosmos.rpc.v1.circe.Encoders._
 import com.mesosphere.cosmos.rpc.v1.model._
 import com.mesosphere.cosmos.test.CosmosIntegrationTestClient.CosmosClient
 import com.netaporter.uri.dsl._
@@ -113,12 +111,7 @@ final class PackageRepositoryIntegrationSpec extends FreeSpec with BeforeAndAfte
 private object PackageRepositoryIntegrationSpec extends TableDrivenPropertyChecks {
 
   private def listRepositories(): Seq[PackageRepository] = {
-    val request = HttpRequest.post(
-      "package/repository/list",
-      PackageRepositoryListRequest(),
-      MediaTypes.PackageRepositoryListRequest,
-      MediaTypes.PackageRepositoryListResponse
-    )
+    val request = CosmosRequests.packageRepoList
     val Xor.Right(response) = CosmosClient.callEndpoint[PackageRepositoryListResponse](request)
     response.repositories
   }
@@ -126,12 +119,8 @@ private object PackageRepositoryIntegrationSpec extends TableDrivenPropertyCheck
   private def addRepository(
     source: PackageRepository
   ): PackageRepositoryAddResponse = {
-    val request = HttpRequest.post(
-      "package/repository/add",
-      PackageRepositoryAddRequest(source.name, source.uri),
-      MediaTypes.PackageRepositoryAddRequest,
-      MediaTypes.PackageRepositoryAddResponse
-    )
+    val repoAddRequest = PackageRepositoryAddRequest(source.name, source.uri)
+    val request = CosmosRequests.packageRepoAdd(repoAddRequest)
     val Xor.Right(response) = CosmosClient.callEndpoint[PackageRepositoryAddResponse](request)
     response
   }
@@ -139,12 +128,8 @@ private object PackageRepositoryIntegrationSpec extends TableDrivenPropertyCheck
   private def deleteRepository(
     source: PackageRepository
   ): PackageRepositoryDeleteResponse = {
-    val request = HttpRequest.post(
-      "package/repository/delete",
-      PackageRepositoryDeleteRequest(name = Some(source.name)),
-      MediaTypes.PackageRepositoryDeleteRequest,
-      MediaTypes.PackageRepositoryDeleteResponse
-    )
+    val repoDeleteRequest = PackageRepositoryDeleteRequest(name = Some(source.name))
+    val request = CosmosRequests.packageRepoDelete(repoDeleteRequest)
     val Xor.Right(response) = CosmosClient.callEndpoint[PackageRepositoryDeleteResponse](request)
     response
   }
@@ -152,12 +137,7 @@ private object PackageRepositoryIntegrationSpec extends TableDrivenPropertyCheck
   private def sendAddRequest(
     addRequest: PackageRepositoryAddRequest
   ): Response = {
-    val request = HttpRequest.post(
-      "package/repository/add",
-      addRequest,
-      MediaTypes.PackageRepositoryAddRequest,
-      MediaTypes.PackageRepositoryAddResponse
-    )
+    val request = CosmosRequests.packageRepoAdd(addRequest)
     CosmosClient.submit(request)
   }
 

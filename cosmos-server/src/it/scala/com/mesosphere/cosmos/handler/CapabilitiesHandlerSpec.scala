@@ -1,7 +1,7 @@
 package com.mesosphere.cosmos.handler
 
 import cats.data.Xor
-import com.mesosphere.cosmos.http.HttpRequest
+import com.mesosphere.cosmos.http.CosmosRequests
 import com.mesosphere.cosmos.rpc.MediaTypes
 import com.mesosphere.cosmos.rpc.v1.circe.Decoders._
 import com.mesosphere.cosmos.rpc.v1.model.CapabilitiesResponse
@@ -14,8 +14,7 @@ import org.scalatest.FreeSpec
 final class CapabilitiesHandlerSpec extends FreeSpec {
 
   "The capabilities handler should return a document" in {
-    val request = HttpRequest.get("capabilities", MediaTypes.CapabilitiesResponse)
-    val response = CosmosClient.submit(request)
+    val response = CosmosClient.submit(CosmosRequests.capabilities)
 
     assertResult(Status.Ok)(response.status)
     assertResult(MediaTypes.CapabilitiesResponse.show)(response.headerMap("Content-Type"))
