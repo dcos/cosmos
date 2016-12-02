@@ -1,11 +1,9 @@
 package com.mesosphere.cosmos
 
 import cats.data.Xor
-import com.mesosphere.cosmos.http.HttpRequest
+import com.mesosphere.cosmos.http.CosmosRequests
 import com.mesosphere.cosmos.repository.DefaultRepositories
-import com.mesosphere.cosmos.rpc.MediaTypes
 import com.mesosphere.cosmos.rpc.v1.circe.Decoders._
-import com.mesosphere.cosmos.rpc.v1.circe.Encoders._
 import com.mesosphere.cosmos.rpc.v1.model._
 import com.mesosphere.cosmos.test.CosmosIntegrationTestClient.CosmosClient
 import com.mesosphere.cosmos.thirdparty.marathon.model.AppId
@@ -63,25 +61,25 @@ final class PackageListIntegrationSpec
   }
 
   private[this] def withInstalledPackage(packageName: String)(f: InstallResponse => Unit): Unit = {
-    val request = HttpRequest.post(
-      "package/install",
-      InstallRequest(packageName, appId = Some(AppId(UUID.randomUUID().toString))),
-      MediaTypes.InstallRequest,
-      MediaTypes.V1InstallResponse
-    )
-    val Xor.Right(installResponse) = CosmosClient.callEndpoint[InstallResponse](request) withClue "when installing package"
+    val installRequest =
+      InstallRequest(packageName, appId = Some(AppId(UUID.randomUUID().toString)))
+    val request = CosmosRequests.packageInstallV1(installRequest)
+    val Xor.Right(installResponse) =
+      CosmosClient.callEndpoint[InstallResponse](request) withClue "when installing package"
 
     try {
       assertResult(packageName)(installResponse.packageName)
       f(installResponse)
     } finally {
-      val request = HttpRequest.post(
-        "package/uninstall",
-        UninstallRequest(installResponse.packageName, appId = Some(installResponse.appId), all = None),
-        MediaTypes.UninstallRequest,
-        MediaTypes.UninstallResponse
+      val uninstallRequest = UninstallRequest(
+        installResponse.packageName,
+        appId = Some(installResponse.appId),
+        all = None
       )
-      val actualUninstall = CosmosClient.callEndpoint[UninstallResponse](request) withClue "when uninstalling package"
+
+      val request = CosmosRequests.packageUninstall(uninstallRequest)
+      val actualUninstall =
+        CosmosClient.callEndpoint[UninstallResponse](request) withClue "when uninstalling package"
 
       inside (actualUninstall) {
         case Xor.Right(UninstallResponse(List(UninstallResult(uninstalledPackageName, appId, Some(packageVersion), _)))) =>
@@ -93,13 +91,10 @@ final class PackageListIntegrationSpec
   }
 
   private[this] def withDeletedRepository(repository: PackageRepository)(action: => Unit): Unit = {
-    val request = HttpRequest.post(
-      "package/repository/delete",
-      PackageRepositoryDeleteRequest(name = Some(repository.name)),
-      MediaTypes.PackageRepositoryDeleteRequest,
-      MediaTypes.PackageRepositoryDeleteResponse
-    )
-    val actualDelete = CosmosClient.callEndpoint[PackageRepositoryDeleteResponse](request) withClue "when deleting repo"
+    val request =
+      CosmosRequests.packageRepoDelete(PackageRepositoryDeleteRequest(name = Some(repository.name)))
+    val actualDelete = CosmosClient.callEndpoint[PackageRepositoryDeleteResponse](request)
+      .withClue("when deleting repo")
 
     try {
       assertResult(Xor.Right(None)) {
@@ -108,13 +103,10 @@ final class PackageListIntegrationSpec
 
       action
     } finally {
-      val request = HttpRequest.post(
-        "package/repository/add",
-        PackageRepositoryAddRequest(repository.name, repository.uri),
-        MediaTypes.PackageRepositoryAddRequest,
-        MediaTypes.PackageRepositoryAddResponse
-      )
-      val actualAdd = CosmosClient.callEndpoint[PackageRepositoryAddResponse](request) withClue "when restoring deleted repo"
+      val repoAddRequest = PackageRepositoryAddRequest(repository.name, repository.uri)
+      val request = CosmosRequests.packageRepoAdd(repoAddRequest)
+      val actualAdd = CosmosClient.callEndpoint[PackageRepositoryAddResponse](request)
+        .withClue("when restoring deleted repo")
 
       inside(actualAdd) { case Xor.Right(PackageRepositoryAddResponse(repositories)) =>
         inside(repositories.find(_.name == repository.name)) { case Some(addedRepository) =>
@@ -127,13 +119,9 @@ final class PackageListIntegrationSpec
   private[this] def withInstalledPackageInListResponse(installResponse: InstallResponse)(
     pf: PartialFunction[Option[Installation], Unit]
   ): Unit = {
-    val request = HttpRequest.post(
-      "package/list",
-      ListRequest(),
-      MediaTypes.ListRequest,
-      MediaTypes.ListResponse
-    )
-    val actualList = CosmosClient.callEndpoint[ListResponse](request) withClue "when listing installed packages"
+    val request = CosmosRequests.packageList(ListRequest())
+    val actualList =
+      CosmosClient.callEndpoint[ListResponse](request) withClue "when listing installed packages"
 
     inside (actualList) { case Xor.Right(ListResponse(packages)) =>
       inside (packages.find(_.appId == installResponse.appId)) { pf }
@@ -161,25 +149,19 @@ final class PackageListIntegrationSpec
   }
 
   private[this] def packageList(): ListResponse = {
-    val request = HttpRequest.post(
-      "package/list",
-      ListRequest(),
-      MediaTypes.ListRequest,
-      MediaTypes.ListResponse
-    )
-    val Xor.Right(listResponse) = CosmosClient.callEndpoint[ListResponse](request) withClue "when listing installed packages"
+    val request = CosmosRequests.packageList(ListRequest())
+    val Xor.Right(listResponse) =
+      CosmosClient.callEndpoint[ListResponse](request) withClue "when listing installed packages"
 
     listResponse
   }
 
   private[this] def packageInstall(packageName: String): InstallResponse = {
-    val request = HttpRequest.post(
-      "package/install",
-      InstallRequest(packageName, appId = Some(AppId(UUID.randomUUID().toString))),
-      MediaTypes.InstallRequest,
-      MediaTypes.V1InstallResponse
-    )
-    val Xor.Right(installResponse: InstallResponse) = CosmosClient.callEndpoint[InstallResponse](request) withClue "when installing package"
+    val installRequest =
+      InstallRequest(packageName, appId = Some(AppId(UUID.randomUUID().toString)))
+    val request = CosmosRequests.packageInstallV1(installRequest)
+    val Xor.Right(installResponse) =
+      CosmosClient.callEndpoint[InstallResponse](request) withClue "when installing package"
 
     assertResult(packageName)(installResponse.packageName)
 
@@ -187,13 +169,11 @@ final class PackageListIntegrationSpec
   }
 
   private[this] def packageUninstall(installResponse: InstallResponse): Unit = {
-    val request = HttpRequest.post(
-      "package/uninstall",
-      UninstallRequest(installResponse.packageName, appId = Some(installResponse.appId), all = None),
-      MediaTypes.UninstallRequest,
-      MediaTypes.UninstallResponse
-    )
-    val Xor.Right(uninstallResponse: UninstallResponse) = CosmosClient.callEndpoint[UninstallResponse](request) withClue "when uninstalling package"
+    val uninstallRequest: UninstallRequest =
+      UninstallRequest(installResponse.packageName, appId = Some(installResponse.appId), all = None)
+    val request = CosmosRequests.packageUninstall(uninstallRequest)
+    val Xor.Right(uninstallResponse) =
+      CosmosClient.callEndpoint[UninstallResponse](request) withClue "when uninstalling package"
 
     val UninstallResponse(List(UninstallResult(uninstalledPackageName, appId, Some(packageVersion), _))) =
       uninstallResponse

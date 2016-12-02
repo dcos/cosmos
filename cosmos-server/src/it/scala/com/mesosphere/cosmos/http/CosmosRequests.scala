@@ -52,12 +52,50 @@ object CosmosRequests {
     packageInstall(installRequest, accept = rpc.MediaTypes.V2InstallResponse)
   }
 
+  def packageList(listRequest: rpc.v1.model.ListRequest): HttpRequest = {
+    HttpRequest.post(
+      "package/list",
+      listRequest,
+      rpc.MediaTypes.ListRequest,
+      rpc.MediaTypes.ListResponse
+    )
+  }
+
   def packageListVersions(listVersionsRequest: rpc.v1.model.ListVersionsRequest): HttpRequest = {
     HttpRequest.post(
       path = "package/list-versions",
       body = listVersionsRequest,
       contentType = rpc.MediaTypes.ListVersionsRequest,
       accept = rpc.MediaTypes.ListVersionsResponse
+    )
+  }
+
+  def packageRepoAdd(repoAddRequest: rpc.v1.model.PackageRepositoryAddRequest): HttpRequest = {
+    HttpRequest.post(
+      path = "package/repository/add",
+      body = repoAddRequest,
+      contentType = rpc.MediaTypes.PackageRepositoryAddRequest,
+      accept = rpc.MediaTypes.PackageRepositoryAddResponse
+    )
+  }
+
+  def packageRepoDelete(
+    repoDeleteRequest: rpc.v1.model.PackageRepositoryDeleteRequest
+  ): HttpRequest = {
+    HttpRequest.post(
+      "package/repository/delete",
+      repoDeleteRequest,
+      rpc.MediaTypes.PackageRepositoryDeleteRequest,
+      rpc.MediaTypes.PackageRepositoryDeleteResponse
+    )
+  }
+
+  def packageUninstall(uninstallRequest: rpc.v1.model.UninstallRequest): HttpRequest = {
+    HttpRequest.post(
+      path = "package/uninstall",
+      body = uninstallRequest,
+      contentType = rpc.MediaTypes.UninstallRequest,
+      accept = rpc.MediaTypes.UninstallResponse
     )
   }
 
