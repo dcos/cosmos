@@ -94,27 +94,29 @@ object CosmosRequests {
     )
   }
 
-  def packageRepoAdd(repoAddRequest: rpc.v1.model.PackageRepositoryAddRequest): HttpRequest = {
+  def packageRepositoryAdd(
+    repositoryAddRequest: rpc.v1.model.PackageRepositoryAddRequest
+  ): HttpRequest = {
     HttpRequest.post(
       path = "package/repository/add",
-      body = repoAddRequest,
+      body = repositoryAddRequest,
       contentType = rpc.MediaTypes.PackageRepositoryAddRequest,
       accept = rpc.MediaTypes.PackageRepositoryAddResponse
     )
   }
 
-  def packageRepoDelete(
-    repoDeleteRequest: rpc.v1.model.PackageRepositoryDeleteRequest
+  def packageRepositoryDelete(
+    repositoryDeleteRequest: rpc.v1.model.PackageRepositoryDeleteRequest
   ): HttpRequest = {
     HttpRequest.post(
       path = "package/repository/delete",
-      body = repoDeleteRequest,
+      body = repositoryDeleteRequest,
       contentType = rpc.MediaTypes.PackageRepositoryDeleteRequest,
       accept = rpc.MediaTypes.PackageRepositoryDeleteResponse
     )
   }
 
-  val packageRepoList: HttpRequest = {
+  val packageRepositoryList: HttpRequest = {
     HttpRequest.post(
       path = "package/repository/list",
       body = PackageRepositoryListRequest(),

@@ -11,12 +11,11 @@ import com.mesosphere.cosmos.Trys
 import com.mesosphere.cosmos.Uris
 import com.mesosphere.cosmos.dcosUri
 import com.mesosphere.cosmos.http.Authorization
+import com.mesosphere.cosmos.http.CosmosRequests
 import com.mesosphere.cosmos.http.HttpRequest
 import com.mesosphere.cosmos.http.RequestSession
 import com.mesosphere.cosmos.model.ZooKeeperUri
-import com.mesosphere.cosmos.rpc.MediaTypes
 import com.mesosphere.cosmos.rpc.v1.circe.Decoders._
-import com.mesosphere.cosmos.rpc.v1.circe.Encoders._
 import com.mesosphere.cosmos.rpc.v1.model._
 import com.netaporter.uri.Uri
 import com.netaporter.uri.dsl._
@@ -101,34 +100,19 @@ object CosmosIntegrationTestClient extends Matchers {
     }
 
     def packageSearch(requestBody: SearchRequest): SearchResponse = {
-      val request = HttpRequest.post(
-        "package/search",
-        requestBody,
-        MediaTypes.SearchRequest,
-        MediaTypes.SearchResponse
-      )
+      val request = CosmosRequests.packageSearch(requestBody)
       val Xor.Right(response) = callEndpoint[SearchResponse](request)
       response
     }
 
     def packageRepositoryAdd(requestBody: PackageRepositoryAddRequest): PackageRepositoryAddResponse = {
-      val request = HttpRequest.post(
-        "package/repository/add",
-        requestBody,
-        MediaTypes.PackageRepositoryAddRequest,
-        MediaTypes.PackageRepositoryAddResponse
-      )
+      val request = CosmosRequests.packageRepositoryAdd(requestBody)
       val Xor.Right(response) = callEndpoint[PackageRepositoryAddResponse](request)
       response
     }
 
     def packageRepositoryDelete(requestBody: PackageRepositoryDeleteRequest): PackageRepositoryDeleteResponse = {
-      val request = HttpRequest.post(
-        "package/repository/delete",
-        requestBody,
-        MediaTypes.PackageRepositoryDeleteRequest,
-        MediaTypes.PackageRepositoryDeleteResponse
-      )
+      val request = CosmosRequests.packageRepositoryDelete(requestBody)
       val Xor.Right(response) = callEndpoint[PackageRepositoryDeleteResponse](request)
       response
     }

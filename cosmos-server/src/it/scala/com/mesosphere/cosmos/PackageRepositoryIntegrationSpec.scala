@@ -111,7 +111,7 @@ final class PackageRepositoryIntegrationSpec extends FreeSpec with BeforeAndAfte
 private object PackageRepositoryIntegrationSpec extends TableDrivenPropertyChecks {
 
   private def listRepositories(): Seq[PackageRepository] = {
-    val request = CosmosRequests.packageRepoList
+    val request = CosmosRequests.packageRepositoryList
     val Xor.Right(response) = CosmosClient.callEndpoint[PackageRepositoryListResponse](request)
     response.repositories
   }
@@ -120,7 +120,7 @@ private object PackageRepositoryIntegrationSpec extends TableDrivenPropertyCheck
     source: PackageRepository
   ): PackageRepositoryAddResponse = {
     val repoAddRequest = PackageRepositoryAddRequest(source.name, source.uri)
-    val request = CosmosRequests.packageRepoAdd(repoAddRequest)
+    val request = CosmosRequests.packageRepositoryAdd(repoAddRequest)
     val Xor.Right(response) = CosmosClient.callEndpoint[PackageRepositoryAddResponse](request)
     response
   }
@@ -129,7 +129,7 @@ private object PackageRepositoryIntegrationSpec extends TableDrivenPropertyCheck
     source: PackageRepository
   ): PackageRepositoryDeleteResponse = {
     val repoDeleteRequest = PackageRepositoryDeleteRequest(name = Some(source.name))
-    val request = CosmosRequests.packageRepoDelete(repoDeleteRequest)
+    val request = CosmosRequests.packageRepositoryDelete(repoDeleteRequest)
     val Xor.Right(response) = CosmosClient.callEndpoint[PackageRepositoryDeleteResponse](request)
     response
   }
@@ -137,7 +137,7 @@ private object PackageRepositoryIntegrationSpec extends TableDrivenPropertyCheck
   private def sendAddRequest(
     addRequest: PackageRepositoryAddRequest
   ): Response = {
-    val request = CosmosRequests.packageRepoAdd(addRequest)
+    val request = CosmosRequests.packageRepositoryAdd(addRequest)
     CosmosClient.submit(request)
   }
 

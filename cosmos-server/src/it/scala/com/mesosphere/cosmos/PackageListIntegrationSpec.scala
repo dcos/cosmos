@@ -91,8 +91,8 @@ final class PackageListIntegrationSpec
   }
 
   private[this] def withDeletedRepository(repository: PackageRepository)(action: => Unit): Unit = {
-    val request =
-      CosmosRequests.packageRepoDelete(PackageRepositoryDeleteRequest(name = Some(repository.name)))
+    val repoDeleteRequest = PackageRepositoryDeleteRequest(name = Some(repository.name))
+    val request = CosmosRequests.packageRepositoryDelete(repoDeleteRequest)
     val actualDelete = CosmosClient.callEndpoint[PackageRepositoryDeleteResponse](request)
       .withClue("when deleting repo")
 
@@ -104,7 +104,7 @@ final class PackageListIntegrationSpec
       action
     } finally {
       val repoAddRequest = PackageRepositoryAddRequest(repository.name, repository.uri)
-      val request = CosmosRequests.packageRepoAdd(repoAddRequest)
+      val request = CosmosRequests.packageRepositoryAdd(repoAddRequest)
       val actualAdd = CosmosClient.callEndpoint[PackageRepositoryAddResponse](request)
         .withClue("when restoring deleted repo")
 
