@@ -2,10 +2,9 @@ package com.mesosphere.cosmos
 
 import com.mesosphere.cosmos.circe.Decoders.decode
 import com.mesosphere.cosmos.converter.Response._
-import com.mesosphere.cosmos.http.CosmosRequest
+import com.mesosphere.cosmos.http.CosmosRequests
 import com.mesosphere.cosmos.http.MediaType
 import com.mesosphere.cosmos.rpc.MediaTypes
-import com.mesosphere.cosmos.rpc.v1.circe.Encoders._
 import com.mesosphere.cosmos.rpc.v2.circe.Decoders._
 import com.mesosphere.cosmos.storage.ObjectStorage
 import com.mesosphere.cosmos.storage.ObjectStorage.ObjectList
@@ -18,11 +17,9 @@ import com.mesosphere.cosmos.test.CosmosIntegrationTestClient.ZooKeeperClient
 import com.mesosphere.cosmos.test.TestUtil
 import com.mesosphere.universe
 import com.mesosphere.universe.bijection.TestUniverseConversions._
-import com.mesosphere.universe.bijection.UniverseConversions._
 import com.mesosphere.universe.test.TestingPackages
 import com.mesosphere.universe.v3.circe.Decoders._
 import com.mesosphere.universe.v3.syntax.PackageDefinitionOps._
-import com.mesosphere.universe.{MediaTypes => UMediaTypes}
 import com.mesosphere.universe.{TestUtil => UTestUtil}
 import com.twitter.bijection.Conversion.asMethod
 import com.twitter.finagle.http.Status
@@ -80,7 +77,7 @@ final class PackageAddSpec extends FreeSpec with BeforeAndAfterAll with BeforeAn
     def assertSuccessfulUniverseAdd(addRequest: rpc.v1.model.UniverseAddRequest): Unit = {
       val expectedPackage = describePackage(addRequest.packageName, addRequest.packageVersion)
 
-      val request = packageAddRequest(addRequest)
+      val request = CosmosRequests.packageAdd(addRequest)
       val response = CosmosClient.submit(request)
 
       assertResult(Status.Accepted)(response.status)
@@ -140,7 +137,8 @@ final class PackageAddSpec extends FreeSpec with BeforeAndAfterAll with BeforeAn
   ): Unit = {
     val (expectedMetadata, _) = expectedV3Package.as[(PackageMetadata, ReleaseVersion)]
 
-    val request = packageAddRequest(Buf.ByteArray.Owned(UTestUtil.buildPackage(expectedMetadata)))
+    val body = Buf.ByteArray.Owned(UTestUtil.buildPackage(expectedMetadata))
+    val request = CosmosRequests.packageAdd(body)
     val response = CosmosClient.submit(request)
     assertResult(Status.Accepted)(response.status)
     val actualV3Package = decode[universe.v3.model.V3Package](response.contentString)
@@ -183,38 +181,6 @@ final class PackageAddSpec extends FreeSpec with BeforeAndAfterAll with BeforeAn
 
 object PackageAddSpec {
 
-  def packageAddRequest(packageData: Buf): CosmosRequest = {
-    CosmosRequest.post(
-      path = "package/add",
-      body = packageData,
-      contentType = UMediaTypes.PackageZip,
-      accept = MediaTypes.AddResponse
-    )
-  }
-
-  def packageAddRequest(requestBody: rpc.v1.model.UniverseAddRequest): CosmosRequest = {
-    CosmosRequest.post(
-      path = "package/add",
-      body = requestBody,
-      contentType = MediaTypes.AddRequest,
-      accept = MediaTypes.AddResponse
-    )
-  }
-
-  def packageDescribeRequest(
-    packageName: String,
-    packageVersion: Option[universe.v3.model.PackageDefinition.Version]
-  ): CosmosRequest = {
-    val oldVersion = packageVersion.as[Option[universe.v2.model.PackageDetailsVersion]]
-
-    CosmosRequest.post(
-      path = "package/describe",
-      body = rpc.v1.model.DescribeRequest(packageName, oldVersion),
-      contentType = MediaTypes.DescribeRequest,
-      accept = MediaTypes.V2DescribeResponse
-    )
-  }
-
   def cleanObjectStorage(storage: ObjectStorage): Unit = {
     def cleanObjectList(objectList: ObjectList): Future[Unit] = {
       // Delete all of the objects
@@ -243,7 +209,7 @@ object PackageAddSpec {
     packageName: String,
     packageVersion: Option[universe.v3.model.PackageDefinition.Version]
   ): rpc.v2.model.DescribeResponse = {
-    val request = packageDescribeRequest(packageName, packageVersion)
+    val request = CosmosRequests.packageDescribeV2(packageName, packageVersion)
     val response = CosmosClient.submit(request)
     decode[rpc.v2.model.DescribeResponse](response.contentString)
   }
