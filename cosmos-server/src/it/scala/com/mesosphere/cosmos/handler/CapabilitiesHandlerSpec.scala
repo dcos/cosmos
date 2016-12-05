@@ -22,7 +22,8 @@ final class CapabilitiesHandlerSpec extends FreeSpec {
     val expected = CapabilitiesResponse(List(
       Capability("PACKAGE_MANAGEMENT"),
       Capability("SUPPORT_CLUSTER_REPORT"),
-      Capability("METRONOME")
+      Capability("METRONOME"),
+      Capability("LOGGING")
     ))
     assertResult(expected)(body)
   }
