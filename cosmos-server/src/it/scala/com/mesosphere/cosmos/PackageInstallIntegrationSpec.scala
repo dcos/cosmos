@@ -6,12 +6,11 @@ import _root_.io.circe.jawn._
 import _root_.io.circe.syntax._
 import cats.data.Xor
 import cats.data.Xor.Right
-import com.mesosphere.cosmos.http.CosmosRequest
+import com.mesosphere.cosmos.http.CosmosRequests
 import com.mesosphere.cosmos.http.RequestSession
 import com.mesosphere.cosmos.repository.DefaultRepositories
 import com.mesosphere.cosmos.rpc.MediaTypes
 import com.mesosphere.cosmos.rpc.v1.circe.Decoders._
-import com.mesosphere.cosmos.rpc.v1.circe.Encoders._
 import com.mesosphere.cosmos.rpc.v1.model.ErrorResponse
 import com.mesosphere.cosmos.rpc.v1.model.InstallRequest
 import com.mesosphere.cosmos.rpc.v1.model.InstallResponse
@@ -204,13 +203,7 @@ final class PackageInstallIntegrationSpec extends FreeSpec with BeforeAndAfterAl
       )
 
       val installRequest = InstallRequest("enterprise-security-cli")
-
-      val request = CosmosRequest.post(
-        "package/install",
-        installRequest,
-        MediaTypes.InstallRequest,
-        MediaTypes.V2InstallResponse
-      )
+      val request = CosmosRequests.packageInstallV2(installRequest)
       val response = CosmosClient.submit(request)
 
       assertResult(Status.Ok)(response.status)
@@ -251,7 +244,8 @@ final class PackageInstallIntegrationSpec extends FreeSpec with BeforeAndAfterAl
       case Anything => // Don't care
     }
 
-    val response = installPackage(installRequest)
+    val request = CosmosRequests.packageInstallV1(installRequest)
+    val response = CosmosClient.submit(request)
 
     assertResult(expectedResult.status)(response.status)
     expectedResult match {
@@ -276,18 +270,6 @@ final class PackageInstallIntegrationSpec extends FreeSpec with BeforeAndAfterAl
       adminRouter.getAppOption(appId)
         .map(_.isDefined)
     }
-  }
-
-  private[this] def installPackage(
-    installRequest: InstallRequest
-  ): Response = {
-    val request = CosmosRequest.post(
-      "package/install",
-      installRequest,
-      MediaTypes.InstallRequest,
-      MediaTypes.V1InstallResponse
-    )
-    CosmosClient.submit(request)
   }
 
 }

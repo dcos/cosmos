@@ -3,26 +3,22 @@ package com.mesosphere.cosmos.http
 import com.twitter.finagle.http.Fields
 import com.twitter.finagle.http.Method
 import com.twitter.finagle.http.Request
-import com.twitter.finagle.http.Version.Http11
 import com.twitter.io.Buf
-import com.twitter.io.Reader
 import io.circe.Encoder
 import io.circe.syntax._
-import java.io.InputStream
 
-case class CosmosRequest(
+case class HttpRequest(
   method: Method,
   path: String,
   headers: Map[String, String],
-  body: CosmosRequestBody
+  body: HttpRequestBody
 )
 
-sealed trait CosmosRequestBody
-case object NoBody extends CosmosRequestBody
-case class Monolithic(data: Buf) extends CosmosRequestBody
-case class Chunked(data: Reader) extends CosmosRequestBody
+sealed trait HttpRequestBody
+case object NoBody extends HttpRequestBody
+case class Monolithic(data: Buf) extends HttpRequestBody
 
-object CosmosRequest {
+object HttpRequest {
 
   def collectHeaders(entries: (String, Option[String])*): Map[String, String] = {
     entries
@@ -30,12 +26,12 @@ object CosmosRequest {
       .toMap
   }
 
-  def get(path: String, accept: MediaType): CosmosRequest = {
+  def get(path: String, accept: MediaType): HttpRequest = {
     get(path, toHeader(accept))
   }
 
-  def get(path: String, accept: Option[String]): CosmosRequest = {
-    CosmosRequest(Method.Get, path, collectHeaders(Fields.Accept -> accept), NoBody)
+  def get(path: String, accept: Option[String]): HttpRequest = {
+    HttpRequest(Method.Get, path, collectHeaders(Fields.Accept -> accept), NoBody)
   }
 
   def post[A](
@@ -43,7 +39,7 @@ object CosmosRequest {
     body: A,
     contentType: MediaType,
     accept: MediaType
-  )(implicit encoder: Encoder[A]): CosmosRequest = {
+  )(implicit encoder: Encoder[A]): HttpRequest = {
     post(path, body.asJson.noSpaces, toHeader(contentType), toHeader(accept))
   }
 
@@ -52,9 +48,9 @@ object CosmosRequest {
     body: String,
     contentType: Option[String],
     accept: Option[String]
-  ): CosmosRequest = {
+  ): HttpRequest = {
     val headers = collectHeaders(Fields.Accept -> accept, Fields.ContentType -> contentType)
-    CosmosRequest(Method.Post, path, headers, Monolithic(Buf.Utf8(body)))
+    HttpRequest(Method.Post, path, headers, Monolithic(Buf.Utf8(body)))
   }
 
   def post(
@@ -62,13 +58,13 @@ object CosmosRequest {
     body: Buf,
     contentType: MediaType,
     accept: MediaType
-  ): CosmosRequest = {
+  ): HttpRequest = {
     val headers =
       collectHeaders(Fields.Accept -> toHeader(accept), Fields.ContentType -> toHeader(contentType))
-    CosmosRequest(Method.Post, path, headers, Monolithic(body))
+    HttpRequest(Method.Post, path, headers, Monolithic(body))
   }
 
-  def toFinagle(cosmosRequest: CosmosRequest): Request = {
+  def toFinagle(cosmosRequest: HttpRequest): Request = {
     val pathPrefix = if (cosmosRequest.path.startsWith("/")) "" else "/"
     val absolutePath = pathPrefix + cosmosRequest.path
 
@@ -80,8 +76,6 @@ object CosmosRequest {
         req.content = buf
         req.contentLength = buf.length.toLong
         req
-      case Chunked(reader) =>
-        Request(Http11, cosmosRequest.method, absolutePath, reader)
     }
 
     finagleRequest.headerMap ++= cosmosRequest.headers

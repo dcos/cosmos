@@ -7,10 +7,8 @@ import _root_.io.circe.jawn._
 import _root_.io.circe.syntax._
 import cats.data.Xor
 import com.mesosphere.cosmos._
-import com.mesosphere.cosmos.http.CosmosRequest
-import com.mesosphere.cosmos.rpc.MediaTypes
+import com.mesosphere.cosmos.http.CosmosRequests
 import com.mesosphere.cosmos.rpc.v1.circe.Decoders._
-import com.mesosphere.cosmos.rpc.v1.circe.Encoders._
 import com.mesosphere.cosmos.rpc.v1.model._
 import com.mesosphere.cosmos.test.CosmosIntegrationTestClient._
 import com.mesosphere.universe.common.circe.Encoders._
@@ -318,12 +316,8 @@ object PackageRepositorySpec extends FreeSpec with TableDrivenPropertyChecks {
     val repositoriesBeforeAdd = listRepos()
 
     assertResult(expectedErrorMessage) {
-      val request = CosmosRequest.post(
-        "package/repository/add",
-        PackageRepositoryAddRequest(repository.name, repository.uri),
-        MediaTypes.PackageRepositoryAddRequest,
-        MediaTypes.PackageRepositoryAddResponse
-      )
+      val repoAddRequest = PackageRepositoryAddRequest(repository.name, repository.uri)
+      val request = CosmosRequests.packageRepositoryAdd(repoAddRequest)
       val response = CosmosClient.submit(request)
       assertResult(Status.BadRequest)(response.status)
       val Xor.Right(err) = decode[ErrorResponse](response.contentString)
@@ -336,12 +330,7 @@ object PackageRepositorySpec extends FreeSpec with TableDrivenPropertyChecks {
   }
 
   private def addRepo(addRequest: PackageRepositoryAddRequest): PackageRepositoryAddResponse  = {
-    val request = CosmosRequest.post(
-      "package/repository/add",
-      addRequest,
-      MediaTypes.PackageRepositoryAddRequest,
-      MediaTypes.PackageRepositoryAddResponse
-    )
+    val request = CosmosRequests.packageRepositoryAdd(addRequest)
     val Xor.Right(response) = CosmosClient.callEndpoint[PackageRepositoryAddResponse](request)
     response
   }
@@ -350,33 +339,18 @@ object PackageRepositorySpec extends FreeSpec with TableDrivenPropertyChecks {
     deleteRequest: PackageRepositoryDeleteRequest,
     status: Status = Status.Ok
   ): Xor[ErrorResponse, PackageRepositoryDeleteResponse]  = {
-    val request = CosmosRequest.post(
-      "package/repository/delete",
-      deleteRequest,
-      MediaTypes.PackageRepositoryDeleteRequest,
-      MediaTypes.PackageRepositoryDeleteResponse
-    )
+    val request = CosmosRequests.packageRepositoryDelete(deleteRequest)
     CosmosClient.callEndpoint[PackageRepositoryDeleteResponse](request, status)
   }
 
   private def listRepos(): PackageRepositoryListResponse = {
-    val request = CosmosRequest.post(
-      "package/repository/list",
-      PackageRepositoryListRequest(),
-      MediaTypes.PackageRepositoryListRequest,
-      MediaTypes.PackageRepositoryListResponse
-    )
+    val request = CosmosRequests.packageRepositoryList
     val Xor.Right(response) = CosmosClient.callEndpoint[PackageRepositoryListResponse](request)
     response
   }
 
   private def searchPackages(req: SearchRequest): Response = {
-    val request = CosmosRequest.post(
-      "package/search",
-      req,
-      MediaTypes.SearchRequest,
-      MediaTypes.SearchResponse
-    )
+    val request = CosmosRequests.packageSearch(req)
     CosmosClient.submit(request)
   }
 
