@@ -24,9 +24,16 @@ final class ServiceStartSpec extends FreeSpec with InstallQueueFixture with Befo
   import ServiceStartSpec._
 
   after {
-    val uninstallRequest =
+    val uninstallCassandra =
       rpc.v1.model.UninstallRequest("cassandra", appId = None, all = Some(true))
-    val _ = CosmosClient.submit(CosmosRequests.packageUninstall(uninstallRequest))
+    val uninstallHelloworld =
+      rpc.v1.model.UninstallRequest("helloworld", appId = None, all = Some(true))
+
+    // Enclose in braces so we can ignore the return values
+    { val _ = CosmosClient.submit(CosmosRequests.packageUninstall(uninstallCassandra)) }
+    { val _ = CosmosClient.submit(CosmosRequests.packageUninstall(uninstallHelloworld)) }
+
+    // TODO package-add: Remove uploaded packages from storage
   }
 
   "The /service/start endpoint" - {
@@ -46,6 +53,28 @@ final class ServiceStartSpec extends FreeSpec with InstallQueueFixture with Befo
       assertResult(packageDef.name)(typedResponse.packageName)
       assertResult(packageDef.version)(typedResponse.packageVersion)
       assert(typedResponse.appId.isEmpty)
+    }
+
+    "can successfully run an uploaded package with a Marathon template" in {
+      val packageDef = TestingPackages.HelloWorldV3Package
+      val uploadResponse = addUploadedPackage(packageDef)
+      assertResult(Status.Accepted)(uploadResponse.status)
+
+      awaitEmptyInstallQueue()
+
+      val startResponse = startService(packageDef.name)
+      assertResult(Status.Ok)(startResponse.status)
+      assertResult(Some(rpc.MediaTypes.ServiceStartResponse.show))(startResponse.contentType)
+
+      val typedResponse = decode[rpc.v1.model.ServiceStartResponse](startResponse.contentString)
+      assertResult(packageDef.name)(typedResponse.packageName)
+      assertResult(packageDef.version)(typedResponse.packageVersion)
+
+      val Some(appId) = typedResponse.appId
+      assertResult("/helloworld")(appId.toString)
+
+      val marathonApp = getMarathonApp(appId)
+      assertResult(appId)(marathonApp.id)
     }
 
     "can successfully run an installed package from Universe with a Marathon template" in {

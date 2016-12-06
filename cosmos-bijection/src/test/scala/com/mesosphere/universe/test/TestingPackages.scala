@@ -2,9 +2,9 @@ package com.mesosphere.universe.test
 
 import com.mesosphere.universe
 import com.netaporter.uri.Uri
+import io.circe.Json
 import io.circe.syntax._
 import io.circe.JsonObject
-
 import java.nio.ByteBuffer
 import java.nio.charset.StandardCharsets
 
@@ -249,6 +249,52 @@ object TestingPackages {
     Version,
     Maintainer,
     Description
+  )
+
+  val HelloWorldMarathonTemplate: ByteBuffer = {
+    val templateText =
+      """
+        |{
+        |  "id": "helloworld",
+        |  "cpus": 1.0,
+        |  "mem": 512,
+        |  "instances": 1,
+        |  "cmd": "python3 -m http.server {{port}}",
+        |  "container": {
+        |    "type": "DOCKER",
+        |    "docker": {
+        |      "image": "python:3",
+        |      "network": "HOST"
+        |    }
+        |  }
+        |}
+      """.stripMargin
+
+    ByteBuffer.wrap(templateText.getBytes(StandardCharsets.UTF_8))
+  }
+
+  val HelloWorldV3Package: universe.v3.model.V3Package = universe.v3.model.V3Package(
+    name = "helloworld",
+    version = universe.v3.model.PackageDefinition.Version("0.1.0"),
+    releaseVersion = universe.v3.model.PackageDefinition.ReleaseVersion(0L).get(),
+    website = Some("https://github.com/mesosphere/dcos-helloworld"),
+    maintainer = "support@mesosphere.io",
+    description = "Example DCOS application package",
+    preInstallNotes = Some("A sample pre-installation message"),
+    postInstallNotes = Some("A sample post-installation message"),
+    tags = List("mesosphere", "example", "subcommand")
+      .map(s => universe.v3.model.PackageDefinition.Tag(s).get()),
+    marathon = Some(universe.v3.model.Marathon(HelloWorldMarathonTemplate)),
+    config = Some(JsonObject.fromMap(Map(
+      "$schema" -> "http://json-schema.org/schema#".asJson,
+      "type" -> "object".asJson,
+      "properties" -> Json.obj(
+        "port" -> Json.obj(
+          "type" -> "integer".asJson,
+          "default" -> 8080.asJson
+        )
+      )
+    )))
   )
 
 }
