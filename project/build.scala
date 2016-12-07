@@ -28,7 +28,7 @@ object CosmosBuild extends Build {
     val scalaCheck = "1.12.6"
     val twitterUtilCore = "6.30.0"
     val zookeeper = "3.4.6"
-    val aws = "1.11.30"
+    val aws = "1.11.63"
   }
 
   object Deps {
@@ -125,7 +125,7 @@ object CosmosBuild extends Build {
     )
 
     val aws = Seq(
-      "com.amazonaws" % "aws-java-sdk" % V.aws
+      "com.amazonaws" % "aws-java-sdk-s3" % V.aws
     ).map(_.excludeAll(
       // Exclude commons-logging; we are using logback
       ExclusionRule("commons-logging", "commons-logging"),
