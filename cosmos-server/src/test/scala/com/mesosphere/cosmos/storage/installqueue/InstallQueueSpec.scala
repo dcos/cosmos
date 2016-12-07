@@ -2,29 +2,46 @@ package com.mesosphere.cosmos.storage.installqueue
 
 import com.mesosphere.cosmos.InstallQueueError
 import com.mesosphere.cosmos.OperationInProgress
+import com.mesosphere.cosmos.model.ZooKeeperUri
 import com.mesosphere.cosmos.rpc.v1.model.ErrorResponse
 import com.mesosphere.cosmos.rpc.v1.model.PackageCoordinate
 import com.mesosphere.cosmos.storage.Envelope
 import com.mesosphere.cosmos.storage.v1.circe.MediaTypedDecoders._
 import com.mesosphere.cosmos.storage.v1.circe.MediaTypedEncoders._
+import com.mesosphere.cosmos.zookeeper.Clients
 import com.mesosphere.universe.test.TestingPackages
 import com.mesosphere.universe.v3.model.PackageDefinition
 import com.twitter.util.Await
 import org.apache.curator.framework.CuratorFramework
-import org.apache.curator.framework.CuratorFrameworkFactory
-import org.apache.curator.retry.ExponentialBackoffRetry
+import org.apache.curator.test.TestingCluster
 import org.apache.zookeeper.KeeperException
+import org.scalatest.BeforeAndAfterAll
 import org.scalatest.Outcome
 import org.scalatest.fixture
 
-class InstallQueueSpec extends fixture.FreeSpec {
+final class InstallQueueSpec extends fixture.FreeSpec with BeforeAndAfterAll {
 
-  import InstallQueueSpec._
   import InstallQueue._
+  import InstallQueueSpec._
+
+  private[this] var zkCluster: TestingCluster = _
+
+  override def beforeAll(): Unit = {
+    super.beforeAll()
+
+    zkCluster = new TestingCluster(1)
+    zkCluster.start()
+  }
+
+  override def afterAll(): Unit = {
+    zkCluster.close()
+
+    super.afterAll()
+  }
 
   "Producer View" - {
     "Add an operation " - {
-      "when no parent path exists" ignore { testParameters =>
+      "when no parent path exists" in { testParameters =>
         val (client, installQueue) = testParameters
         val addResult = Await.result(
           installQueue.add(coordinate1, universeInstall)
@@ -34,7 +51,7 @@ class InstallQueueSpec extends fixture.FreeSpec {
         checkInstallQueueContents(client, coordinate1, Pending(universeInstall, None))
       }
 
-      "when the parent path exists but the status does not" ignore { testParameters =>
+      "when the parent path exists but the status does not" in { testParameters =>
         val (client, installQueue) = testParameters
         createParentPath(client)
         val addResult = Await.result(
@@ -48,7 +65,7 @@ class InstallQueueSpec extends fixture.FreeSpec {
           Pending(universeInstall, None))
       }
 
-      "on a coordinate that has a pending operation but no failures" ignore { testParameters =>
+      "on a coordinate that has a pending operation but no failures" in { testParameters =>
         val (client, installQueue) = testParameters
         val pendingUniverseInstall = Pending(universeInstall, None)
 
@@ -67,7 +84,7 @@ class InstallQueueSpec extends fixture.FreeSpec {
           pendingUniverseInstall)
       }
 
-      "on a coordinate that has a failed operation, but no pending operation" ignore { testParameters =>
+      "on a coordinate that has a failed operation, but no pending operation" in { testParameters =>
         val (client, installQueue) = testParameters
         insertPackageStatusIntoQueue(
           client,
@@ -85,7 +102,7 @@ class InstallQueueSpec extends fixture.FreeSpec {
           Pending(universeInstall, Some(OperationFailure(universeInstall, errorResponse1))))
       }
 
-      "on a coordinate that has an operation and a failure" ignore { testParameters =>
+      "on a coordinate that has an operation and a failure" in { testParameters =>
         val (client, installQueue) = testParameters
 
         val pendingUniverseInstallWithFailure =
@@ -108,7 +125,7 @@ class InstallQueueSpec extends fixture.FreeSpec {
       }
     }
 
-    "Add multiple non-conflicting operations" ignore { testParameters =>
+    "Add multiple non-conflicting operations" in { testParameters =>
       val (client, installQueue) = testParameters
       val addTwoOperations =
         for {
@@ -128,7 +145,7 @@ class InstallQueueSpec extends fixture.FreeSpec {
   "Processor view" - {
     "failure" - {
       "Fail an operation " - {
-        "when no parent path exists" ignore { testParameters =>
+        "when no parent path exists" in { testParameters =>
           val (_, installQueue) = testParameters
           val error = intercept[InstallQueueError](
             Await.result(
@@ -138,7 +155,7 @@ class InstallQueueSpec extends fixture.FreeSpec {
           assertResult(notInQueueFailureMessageCoordinate1)(error.msg)
         }
 
-        "when the parent path exists but the status does not" ignore { testParameters =>
+        "when the parent path exists but the status does not" in { testParameters =>
           val (client, installQueue) = testParameters
           createParentPath(client)
           val error = intercept[InstallQueueError](
@@ -149,7 +166,7 @@ class InstallQueueSpec extends fixture.FreeSpec {
           assertResult(notInQueueFailureMessageCoordinate1)(error.msg)
         }
 
-        "on a coordinate that has a pending operation but no failures" ignore { testParameters =>
+        "on a coordinate that has a pending operation but no failures" in { testParameters =>
           val (client, installQueue) = testParameters
           insertPackageStatusIntoQueue(client, coordinate1, Pending(universeInstall, None))
           Await.result(
@@ -161,7 +178,7 @@ class InstallQueueSpec extends fixture.FreeSpec {
             Failed(OperationFailure(universeInstall, errorResponse1)))
         }
 
-        "on a coordinate that has a failed operation, but no pending operation" ignore { testParameters =>
+        "on a coordinate that has a failed operation, but no pending operation" in { testParameters =>
           val (client, installQueue) = testParameters
           insertPackageStatusIntoQueue(
             client,
@@ -175,7 +192,7 @@ class InstallQueueSpec extends fixture.FreeSpec {
           assertResult(alreadyFailedFailureMessageCoordinate1)(error.msg)
         }
 
-        "on a coordinate that has an operation and a failure" ignore { testParameters =>
+        "on a coordinate that has an operation and a failure" in { testParameters =>
           val (client, installQueue) = testParameters
           insertPackageStatusIntoQueue(
             client,
@@ -191,7 +208,7 @@ class InstallQueueSpec extends fixture.FreeSpec {
         }
       }
 
-      "Fail multiple non-conflicting operations" ignore { testParameters =>
+      "Fail multiple non-conflicting operations" in { testParameters =>
         val (client, installQueue) = testParameters
         insertPackageStatusIntoQueue(client, coordinate1, Pending(universeInstall, None))
         insertPackageStatusIntoQueue(client, coordinate2, Pending(universeInstall, None))
@@ -214,7 +231,7 @@ class InstallQueueSpec extends fixture.FreeSpec {
 
     "success" - {
       "Success on an operation " - {
-        "when no parent path exists" ignore { testParameters =>
+        "when no parent path exists" in { testParameters =>
           val (_, installQueue) = testParameters
           val error = intercept[InstallQueueError](
             Await.result(
@@ -224,7 +241,7 @@ class InstallQueueSpec extends fixture.FreeSpec {
           assertResult(notInQueueSuccessMessageCoordinate1)(error.msg)
         }
 
-        "when the parent path exists but the status does not" ignore { testParameters =>
+        "when the parent path exists but the status does not" in { testParameters =>
           val (client, installQueue) = testParameters
           createParentPath(client)
           val error = intercept[InstallQueueError](
@@ -235,7 +252,7 @@ class InstallQueueSpec extends fixture.FreeSpec {
           assertResult(notInQueueSuccessMessageCoordinate1)(error.msg)
         }
 
-        "on a coordinate that has a pending operation but no failures" ignore { testParameters =>
+        "on a coordinate that has a pending operation but no failures" in { testParameters =>
           val (client, installQueue) = testParameters
           insertPackageStatusIntoQueue(client, coordinate1, Pending(universeInstall, None))
           Await.result(
@@ -244,7 +261,7 @@ class InstallQueueSpec extends fixture.FreeSpec {
           checkStatusDoesNotExist(client, coordinate1)
         }
 
-        "on a coordinate that has a failed operation, but no pending operation" ignore { testParameters =>
+        "on a coordinate that has a failed operation, but no pending operation" in { testParameters =>
           val (client, installQueue) = testParameters
           insertPackageStatusIntoQueue(
             client,
@@ -258,7 +275,7 @@ class InstallQueueSpec extends fixture.FreeSpec {
           assertResult(alreadyFailedSuccessMessageCoordinate1)(error.msg)
         }
 
-        "on a coordinate that has an operation and a failure" ignore { testParameters =>
+        "on a coordinate that has an operation and a failure" in { testParameters =>
           val (client, installQueue) = testParameters
           insertPackageStatusIntoQueue(
             client,
@@ -271,7 +288,7 @@ class InstallQueueSpec extends fixture.FreeSpec {
         }
       }
 
-      "Success on multiple non-conflicting operations" ignore { testParameters =>
+      "Success on multiple non-conflicting operations" in { testParameters =>
         val (client, installQueue) = testParameters
         insertPackageStatusIntoQueue(client, coordinate1, Pending(universeInstall, None))
         insertPackageStatusIntoQueue(client, coordinate2, Pending(universeInstall, None))
@@ -288,7 +305,7 @@ class InstallQueueSpec extends fixture.FreeSpec {
 
     "next" - {
       "Next when " - {
-        "no parent path exists" ignore { testParameters =>
+        "no parent path exists" in { testParameters =>
           val (_, installQueue) = testParameters
           val nextPendingOperation = Await.result(
             installQueue.next()
@@ -296,7 +313,7 @@ class InstallQueueSpec extends fixture.FreeSpec {
           assertResult(None)(nextPendingOperation)
         }
 
-        "the parent path exists but there are no pending operations" ignore { testParameters =>
+        "the parent path exists but there are no pending operations" in { testParameters =>
           val (client, installQueue) = testParameters
           createParentPath(client)
           val nextPendingOperation = Await.result(
@@ -305,7 +322,7 @@ class InstallQueueSpec extends fixture.FreeSpec {
           assertResult(None)(nextPendingOperation)
         }
 
-        "there is a coordinate that has a pending operation but no failures" ignore { testParameters =>
+        "there is a coordinate that has a pending operation but no failures" in { testParameters =>
           val (client, installQueue) = testParameters
           insertPackageStatusIntoQueue(
             client,
@@ -319,7 +336,7 @@ class InstallQueueSpec extends fixture.FreeSpec {
             nextPendingOperation)
         }
 
-        "there is a coordinate that has a failed operation, but no pending operation" ignore { testParameters =>
+        "there is a coordinate that has a failed operation, but no pending operation" in { testParameters =>
           val (client, installQueue) = testParameters
           insertPackageStatusIntoQueue(
             client,
@@ -331,7 +348,7 @@ class InstallQueueSpec extends fixture.FreeSpec {
           assertResult(None)(nextPendingOperation)
         }
 
-        "there is a coordinate that has an operation and a failure" ignore { testParameters =>
+        "there is a coordinate that has an operation and a failure" in { testParameters =>
           val (client, installQueue) = testParameters
           insertPackageStatusIntoQueue(
             client,
@@ -352,7 +369,7 @@ class InstallQueueSpec extends fixture.FreeSpec {
             nextPendingOperation)
         }
 
-        "there are multiple pending operations some of which have failed" ignore { testParameters =>
+        "there are multiple pending operations some of which have failed" in { testParameters =>
           val (client, installQueue) = testParameters
           insertPackageStatusIntoQueue(
             client,
@@ -404,7 +421,7 @@ class InstallQueueSpec extends fixture.FreeSpec {
         }
       }
 
-      "Calling next multiple times returns the same operation" ignore { testParameters =>
+      "Calling next multiple times returns the same operation" in { testParameters =>
         val (client, installQueue) = testParameters
         insertPackageStatusIntoQueue(
           client,
@@ -458,7 +475,7 @@ class InstallQueueSpec extends fixture.FreeSpec {
 
   "Reader view" - {
     "ViewStatus should " +
-      "return all pending and failed operations in the queue" ignore { testParameters =>
+      "return all pending and failed operations in the queue" in { testParameters =>
       val (client, installQueue) = testParameters
       val expectedState = Map(
         coordinate1 -> Pending(universeInstall, None),
@@ -473,20 +490,19 @@ class InstallQueueSpec extends fixture.FreeSpec {
       }
 
       val pollCount = 10
-      val expectedSize = 5
-      val actualState = pollForViewStatus(installQueue, pollCount, expectedSize)
+      val actualState = pollForViewStatus(installQueue, pollCount, expectedState.size)
 
       assertResult(Some(expectedState))(actualState)
     }
 
-    "return an empty map when the parent path has not been created" ignore { testParameters =>
+    "return an empty map when the parent path has not been created" in { testParameters =>
       val (_, installQueue) = testParameters
       val status = Await.result(installQueue.viewStatus())
       assertResult(Map())(status)
     }
 
     "return an empty map when the parent path" +
-      " has been created but there are no operations" ignore { testParameters =>
+      " has been created but there are no operations" in { testParameters =>
       val (client, installQueue) = testParameters
       createParentPath(client)
       val status = Await.result(installQueue.viewStatus())
@@ -496,7 +512,7 @@ class InstallQueueSpec extends fixture.FreeSpec {
 
   "Install Queue" - {
     "When an operation is added on a failed coordinate," +
-      " that coordinate must move to the back of the queue" ignore { testParameters =>
+      " that coordinate must move to the back of the queue" in { testParameters =>
       val (_, installQueue) = testParameters
       val addOnCoordinate1 =
         Await.result(installQueue.add(coordinate1, universeInstall))
@@ -531,14 +547,9 @@ class InstallQueueSpec extends fixture.FreeSpec {
   type FixtureParam = (CuratorFramework, InstallQueue)
 
   override def withFixture(test: OneArgTest): Outcome = {
-    val path = "/"
-    val retries = 10
-    val baseSleepTime = 1000
-    val client = CuratorFrameworkFactory.newClient(
-      path,
-      new ExponentialBackoffRetry(baseSleepTime, retries)
-    )
-    client.start()
+    val namespace = getClass.getSimpleName
+    val zkUri = ZooKeeperUri.parse(s"zk://${zkCluster.getConnectString}/$namespace").get()
+    val client = Clients.createAndInitialize(zkUri)
     client.getZookeeperClient.blockUntilConnectedOrTimedOut()
 
     try {
@@ -550,6 +561,8 @@ class InstallQueueSpec extends fixture.FreeSpec {
       } catch {
         case _: KeeperException.NoNodeException =>
       }
+
+      client.close()
     }
   }
 
