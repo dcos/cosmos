@@ -13,10 +13,9 @@ import com.mesosphere.cosmos.storage.installqueue.UniverseInstall
 import com.mesosphere.universe
 import com.mesosphere.universe.MediaTypes
 import com.mesosphere.universe.TestUtil
-import com.mesosphere.universe.bijection.TestUniverseConversions._
 import com.mesosphere.universe.v3.model.PackageDefinitionSpec
+import com.mesosphere.universe.v3.syntax.PackageDefinitionOps._
 import com.netaporter.uri.Uri
-import com.twitter.bijection.Conversion.asMethod
 import com.twitter.finagle.http.Status
 import com.twitter.util.Await
 import com.twitter.util.Future
@@ -80,9 +79,8 @@ final class PackageAddHandlerSpec extends FreeSpec with MockitoSugar with Proper
       "for upload add requests" in {
         implicit val session = RequestSession(None, Some(MediaTypes.PackageZip))
 
-        forAll(genMetadata) { metadata =>
-          val packageData = TestUtil.buildPackage(metadata)
-          val coordinate = rpc.v1.model.PackageCoordinate(metadata.name, metadata.version)
+        forAll(PackageDefinitionSpec.genV3Package) { v3Package =>
+          val packageData = TestUtil.buildPackage(v3Package)
           val addRequest = rpc.v1.model.UploadAddRequest(packageData)
 
           val handler = buildHandler { (_, stagedObjectStorage, producerView) =>
@@ -95,10 +93,10 @@ final class PackageAddHandlerSpec extends FreeSpec with MockitoSugar with Proper
             }
 
             when(producerView.add(any[rpc.v1.model.PackageCoordinate], any[Operation]))
-              .thenReturn(Future.exception(OperationInProgress(coordinate)))
+              .thenReturn(Future.exception(OperationInProgress(v3Package.packageCoordinate)))
           }
 
-          assertErrorResponse(handler(addRequest), coordinate)
+          assertErrorResponse(handler(addRequest), v3Package.packageCoordinate)
         }
       }
 
@@ -136,14 +134,6 @@ object PackageAddHandlerSpec {
     arbitrary[String]
       .map(s => Try(Uri.parse(s)))
       .collect { case Return(uri) => uri }
-  }
-
-  val genMetadata: Gen[universe.v3.model.Metadata] = {
-    PackageDefinitionSpec.genV3Package.map { v3Package =>
-      val (metadata, _) = v3Package
-        .as[(universe.v3.model.Metadata, universe.v3.model.PackageDefinition.ReleaseVersion)]
-      metadata
-    }
   }
 
 }

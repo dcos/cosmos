@@ -10,13 +10,11 @@ import com.mesosphere.cosmos.storage.ObjectStorage
 import com.mesosphere.cosmos.storage.ObjectStorage.ObjectList
 import com.mesosphere.cosmos.storage.PackageObjectStorage
 import com.mesosphere.cosmos.storage.StagedPackageStorage
-import com.mesosphere.cosmos.storage.installqueue.InstallQueue
 import com.mesosphere.cosmos.test.CosmosIntegrationTestClient.CosmosClient
 import com.mesosphere.cosmos.test.CosmosIntegrationTestClient.PackageStorageClient
-import com.mesosphere.cosmos.test.CosmosIntegrationTestClient.ZooKeeperClient
+import com.mesosphere.cosmos.test.InstallQueueFixture
 import com.mesosphere.cosmos.test.TestUtil
 import com.mesosphere.universe
-import com.mesosphere.universe.bijection.TestUniverseConversions._
 import com.mesosphere.universe.test.TestingPackages
 import com.mesosphere.universe.v3.circe.Decoders._
 import com.mesosphere.universe.v3.syntax.PackageDefinitionOps._
@@ -28,12 +26,12 @@ import com.twitter.finagle.stats.StatsReceiver
 import com.twitter.io.Buf
 import com.twitter.util.Await
 import com.twitter.util.Future
-import org.apache.curator.framework.CuratorFramework
 import org.scalatest.BeforeAndAfter
 import org.scalatest.BeforeAndAfterAll
 import org.scalatest.FreeSpec
 
-final class PackageAddSpec extends FreeSpec with BeforeAndAfterAll with BeforeAndAfter {
+final class PackageAddSpec
+  extends FreeSpec with InstallQueueFixture with BeforeAndAfterAll with BeforeAndAfter {
 
   import PackageAddSpec._
 
@@ -53,8 +51,7 @@ final class PackageAddSpec extends FreeSpec with BeforeAndAfterAll with BeforeAn
       )
       assertSuccessfulResponse(newV3Package)
 
-      // Wait until the install queue is empty
-      Await.result(TestUtil.eventualFutureNone(installQueue.next))
+      awaitEmptyInstallQueue()
 
       // Assert that the externalized state doesn't change
       assertExternalizedPackage(expectedV3Package)
@@ -93,19 +90,14 @@ final class PackageAddSpec extends FreeSpec with BeforeAndAfterAll with BeforeAn
 
   }
 
-  private[this] var zkClient: CuratorFramework = _
-  private[this] var installQueue: InstallQueue = _
   private[this] var packageObjectStorage: ObjectStorage = _
   private[this] var packageStorage: PackageObjectStorage = _
   private[this] var stagedObjectStorage: ObjectStorage = _
   private[this] var stagedPackageStorage: StagedPackageStorage = _
 
   override def beforeAll(): Unit = {
+    super.beforeAll()
     implicit val statsReceiver: StatsReceiver = NullStatsReceiver
-
-    zkClient = zookeeper.Clients.createAndInitialize(ZooKeeperClient.uri)
-
-    installQueue = InstallQueue(zkClient)
 
     packageObjectStorage = ObjectStorage.fromUri(PackageStorageClient.packagesUri)
     packageStorage = PackageObjectStorage(packageObjectStorage)
@@ -114,18 +106,10 @@ final class PackageAddSpec extends FreeSpec with BeforeAndAfterAll with BeforeAn
     stagedPackageStorage = StagedPackageStorage(stagedObjectStorage)
   }
 
-  override def afterAll(): Unit = {
-    installQueue.close()
-    zkClient.close()
-  }
-
   after {
     cleanObjectStorage(stagedObjectStorage)
     cleanObjectStorage(packageObjectStorage)
   }
-
-  type PackageMetadata = universe.v3.model.Metadata
-  type ReleaseVersion = universe.v3.model.PackageDefinition.ReleaseVersion
 
   private[this] def assertSuccessfulAdd(expectedV3Package: universe.v3.model.V3Package): Unit = {
     assertSuccessfulResponse(expectedV3Package)
@@ -135,9 +119,7 @@ final class PackageAddSpec extends FreeSpec with BeforeAndAfterAll with BeforeAn
   private[this] def assertSuccessfulResponse(
     expectedV3Package: universe.v3.model.V3Package
   ): Unit = {
-    val (expectedMetadata, _) = expectedV3Package.as[(PackageMetadata, ReleaseVersion)]
-
-    val body = Buf.ByteArray.Owned(UTestUtil.buildPackage(expectedMetadata))
+    val body = Buf.ByteArray.Owned(UTestUtil.buildPackage(expectedV3Package))
     val request = CosmosRequests.packageAdd(body)
     val response = CosmosClient.submit(request)
     assertResult(Status.Accepted)(response.status)

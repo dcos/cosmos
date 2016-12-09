@@ -134,6 +134,15 @@ object CosmosRequests {
     )
   }
 
+  def serviceStart(startRequest: rpc.v1.model.ServiceStartRequest): HttpRequest = {
+    HttpRequest.post(
+      path = "service/start",
+      body = startRequest,
+      contentType = rpc.MediaTypes.ServiceStartRequest,
+      accept = rpc.MediaTypes.ServiceStartResponse
+    )
+  }
+
   private def packageDescribe(
     describeRequest: rpc.v1.model.DescribeRequest,
     accept: MediaType

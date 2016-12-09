@@ -48,13 +48,6 @@ object TestUtil {
     val _ = Files.walkFileTree(path, visitor)
   }
 
-  def eventualFutureNone(
-    future: () => Future[Option[_]]
-  ): Future[Unit] = future().flatMap {
-    case Some(_) => eventualFutureNone(future)
-    case None => Future.Done
-  }
-
   def eventualFuture[T](
     future: () => Future[Option[T]]
   ): Future[T] = {
