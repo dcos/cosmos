@@ -7,9 +7,12 @@ import scala.util.Left
 import scala.util.Right
 
 sealed trait LocalPackage
+
 object LocalPackage {
+
   implicit class LocalPackageOps(val value: LocalPackage) extends AnyVal {
-    def metadata: Either[PackageCoordinate, universe.v3.model.PackageDefinition] = value match {
+
+    def metadata: Either[PackageCoordinate, universe.v3.model.V3Package] = value match {
       case Invalid(_, pc) => Left(pc)
       case NotInstalled(pkg) => Right(pkg)
       case Installed(pkg) => Right(pkg)
@@ -42,11 +45,11 @@ object LocalPackage {
       case _ => None
     }
 
-    // TODO: Change this when we merge the PackageOps PR
-    def operation: Option[String] = value match {
+    def operation: Option[Operation] = value match {
       case Failed(operation, _, _) => Some(operation)
       case _ => None
     }
+
   }
 
   implicit val localPackageOrdering = new Ordering[LocalPackage] {
@@ -92,29 +95,29 @@ object LocalPackage {
       }
     }
   }
+
 }
 
-// TODO: Replace every instance to PackageDefinition with V3Package
 final case class NotInstalled(
-  metadata: universe.v3.model.PackageDefinition
+  metadata: universe.v3.model.V3Package
 ) extends LocalPackage
 
 final case class Installing(
-  metadata: universe.v3.model.PackageDefinition
+  metadata: universe.v3.model.V3Package
 ) extends LocalPackage
 
 final case class Installed(
-  metadata: universe.v3.model.PackageDefinition
+  metadata: universe.v3.model.V3Package
 ) extends LocalPackage
 
 final case class Uninstalling(
-  data: Either[PackageCoordinate, universe.v3.model.PackageDefinition]
+  data: Either[PackageCoordinate, universe.v3.model.V3Package]
 ) extends LocalPackage
 
 final case class Failed(
-  operation: String, // TODO: Change this when we merge the PackageOps PR
+  operation: Operation,
   error: ErrorResponse,
-  metadata: universe.v3.model.PackageDefinition
+  metadata: universe.v3.model.V3Package
 ) extends LocalPackage
 
 final case class Invalid(

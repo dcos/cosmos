@@ -55,24 +55,41 @@ object EncodersDecodersSpec {
     message <- Gen.alphaStr
   } yield rpc.v1.model.ErrorResponse(tp, message, None)
 
+  implicit val genInstall: Gen[rpc.v1.model.Install] = for {
+    stagedPackageId <- Gen.uuid
+    v3Package <- genV3Package
+  } yield rpc.v1.model.Install(stagedPackageId, v3Package)
+
+  implicit val genUniverseInstall: Gen[rpc.v1.model.UniverseInstall] =
+    genV3Package.map(rpc.v1.model.UniverseInstall)
+
+  implicit val genUninstall: Gen[rpc.v1.model.Uninstall] =
+    Gen.option(genV3Package).map(rpc.v1.model.Uninstall)
+
+  implicit val genOperation: Gen[rpc.v1.model.Operation] = Gen.oneOf(
+    genInstall,
+    genUniverseInstall,
+    genUninstall
+  )
+
   implicit val genNotInstalled: Gen[rpc.v1.model.NotInstalled] =
-    genPackageDefinition.map(rpc.v1.model.NotInstalled(_))
+    genV3Package.map(rpc.v1.model.NotInstalled)
 
   implicit val genInstalling: Gen[rpc.v1.model.Installing] =
-    genPackageDefinition.map(rpc.v1.model.Installing(_))
+    genV3Package.map(rpc.v1.model.Installing)
 
   implicit val genInstalled: Gen[rpc.v1.model.Installed] =
-    genPackageDefinition.map(rpc.v1.model.Installed(_))
+    genV3Package.map(rpc.v1.model.Installed)
 
   implicit val genUninstalling: Gen[rpc.v1.model.Uninstalling] = Gen.oneOf(
     genPackageCoordinate.map(pc => rpc.v1.model.Uninstalling(Left(pc))),
-    genPackageDefinition.map(metadata => rpc.v1.model.Uninstalling(Right(metadata)))
+    genV3Package.map(metadata => rpc.v1.model.Uninstalling(Right(metadata)))
   )
 
   implicit val genFailed: Gen[rpc.v1.model.Failed] = for {
-    operation <- Gen.alphaStr // TODO: Update after PackageOps PR
+    operation <- genOperation
     error <- genErrorResponse
-    metadata <- genPackageDefinition
+    metadata <- genV3Package
   } yield rpc.v1.model.Failed(operation, error, metadata)
 
   implicit val genInvalid: Gen[rpc.v1.model.Invalid] = for {

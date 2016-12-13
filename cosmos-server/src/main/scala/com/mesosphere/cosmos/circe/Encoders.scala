@@ -3,24 +3,37 @@ package com.mesosphere.cosmos.circe
 import cats.data.Ior
 import com.mesosphere.cosmos.CosmosError
 import com.mesosphere.cosmos.finch.IncompatibleContentTypeHeader
-import com.mesosphere.cosmos.finch.{IncompatibleAcceptHeader, RequestError}
+import com.mesosphere.cosmos.finch.IncompatibleAcceptHeader
+import com.mesosphere.cosmos.finch.RequestError
 import com.mesosphere.cosmos.http.MediaType
-import com.mesosphere.cosmos.model._
+import com.mesosphere.cosmos.model.ZooKeeperStorageEnvelope
 import com.mesosphere.cosmos.rpc.v1.circe.Encoders._
 import com.mesosphere.cosmos.rpc.v1.model.ErrorResponse
-import com.mesosphere.cosmos.storage.installqueue._
+import com.mesosphere.cosmos.rpc.v1.model.Install
+import com.mesosphere.cosmos.rpc.v1.model.Operation
+import com.mesosphere.cosmos.rpc.v1.model.Uninstall
+import com.mesosphere.cosmos.rpc.v1.model.UniverseInstall
+import com.mesosphere.cosmos.storage.installqueue.Failed
+import com.mesosphere.cosmos.storage.installqueue.OperationFailure
+import com.mesosphere.cosmos.storage.installqueue.OperationStatus
+import com.mesosphere.cosmos.storage.installqueue.Pending
+import com.mesosphere.cosmos.storage.installqueue.PendingOperation
 import com.mesosphere.cosmos.thirdparty.marathon.circe.Encoders._
+import com.mesosphere.universe
 import com.mesosphere.universe.common.circe.Encoders._
 import com.mesosphere.universe.v2.circe.Encoders._
 import com.mesosphere.universe.v3.circe.Encoders._
-import com.mesosphere.universe.v3.model._
 import com.twitter.finagle.http.Fields
 import com.twitter.finagle.http.Status
 import io.circe.HistoryOp.opsToPath
 import io.circe.generic.encoding.DerivedObjectEncoder
 import io.circe.generic.semiauto._
 import io.circe.syntax._
-import io.circe.{DecodingFailure, Encoder, Json, JsonObject, ParsingFailure}
+import io.circe.DecodingFailure
+import io.circe.Encoder
+import io.circe.Json
+import io.circe.JsonObject
+import io.circe.ParsingFailure
 import io.finch.Error
 import org.jboss.netty.handler.codec.http.HttpMethod
 import shapeless._
@@ -349,7 +362,7 @@ object Encoders extends LowPriorityImplicits {
             s"Unsupported redirect scheme - supported: $supportedMsg"
         }
       case ConversionError(failure) => failure
-      case ServiceMarathonTemplateNotFound(name, PackageDefinition.Version(version)) =>
+      case ServiceMarathonTemplateNotFound(name, universe.v3.model.PackageDefinition.Version(version)) =>
         s"Package: [$name] version: [$version] does not have a Marathon template defined and can not be rendered"
       case EnvelopeError(msg) => msg
       case InstallQueueError(msg) => msg

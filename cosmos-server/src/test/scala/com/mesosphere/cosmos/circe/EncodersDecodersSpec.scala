@@ -14,9 +14,17 @@ import com.mesosphere.cosmos.http.MediaType
 import com.mesosphere.cosmos.http.MediaTypeSubType
 import com.mesosphere.cosmos.rpc.v1.circe.Decoders._
 import com.mesosphere.cosmos.rpc.v1.model.ErrorResponse
+import com.mesosphere.cosmos.rpc.v1.model.Install
+import com.mesosphere.cosmos.rpc.v1.model.Operation
 import com.mesosphere.cosmos.rpc.v1.model.PackageCoordinate
 import com.mesosphere.cosmos.rpc.v1.model.PackageRepository
-import com.mesosphere.cosmos.storage.installqueue._
+import com.mesosphere.cosmos.rpc.v1.model.Uninstall
+import com.mesosphere.cosmos.rpc.v1.model.UniverseInstall
+import com.mesosphere.cosmos.storage.installqueue.Failed
+import com.mesosphere.cosmos.storage.installqueue.OperationFailure
+import com.mesosphere.cosmos.storage.installqueue.OperationStatus
+import com.mesosphere.cosmos.storage.installqueue.Pending
+import com.mesosphere.cosmos.storage.installqueue.PendingOperation
 import com.mesosphere.universe.test.TestingPackages
 import com.mesosphere.universe.v3.model.PackageDefinition
 import com.mesosphere.universe.v3.model.Repository
@@ -33,8 +41,8 @@ import java.util.UUID
 import org.scalatest.FreeSpec
 
 class EncodersDecodersSpec extends FreeSpec {
-  import Encoders._
   import Decoders._
+  import Encoders._
 
   "CosmosError" - {
     "RepositoryUriSyntax" in {
@@ -167,7 +175,6 @@ class EncodersDecodersSpec extends FreeSpec {
   }
 
   private[this] def encodeCirceError(err: io.circe.Error): Json = {
-    import com.mesosphere.cosmos.circe.Encoders._
     err.asInstanceOf[Exception].asJson // up-cast the error so that the implicit matches; io.circe.Error is too specific
   }
 

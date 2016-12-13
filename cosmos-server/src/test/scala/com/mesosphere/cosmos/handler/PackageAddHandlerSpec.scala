@@ -5,11 +5,11 @@ import com.mesosphere.cosmos.http.MediaType
 import com.mesosphere.cosmos.http.RequestSession
 import com.mesosphere.cosmos.repository.PackageCollection
 import com.mesosphere.cosmos.rpc
+import com.mesosphere.cosmos.rpc.v1.model.Operation
+import com.mesosphere.cosmos.rpc.v1.model.UniverseInstall
 import com.mesosphere.cosmos.storage.ObjectStorage
 import com.mesosphere.cosmos.storage.StagedPackageStorage
-import com.mesosphere.cosmos.storage.installqueue.Operation
 import com.mesosphere.cosmos.storage.installqueue.ProducerView
-import com.mesosphere.cosmos.storage.installqueue.UniverseInstall
 import com.mesosphere.universe
 import com.mesosphere.universe.MediaTypes
 import com.mesosphere.universe.TestUtil

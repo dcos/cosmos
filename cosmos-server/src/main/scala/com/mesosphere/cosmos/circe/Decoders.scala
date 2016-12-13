@@ -2,11 +2,16 @@ package com.mesosphere.cosmos.circe
 
 import cats.data.Xor
 import com.mesosphere.cosmos.CirceError
-import com.mesosphere.universe.common.circe.Decoders._
 import com.mesosphere.cosmos.model.ZooKeeperStorageEnvelope
 import com.mesosphere.cosmos.rpc.v1.circe.Decoders._
-import com.mesosphere.universe.common.circe.Decoders._
+import com.mesosphere.cosmos.rpc.v1.model.Install
+import com.mesosphere.cosmos.rpc.v1.model.Operation
+import com.mesosphere.cosmos.rpc.v1.model.Uninstall
+import com.mesosphere.cosmos.rpc.v1.model.UniverseInstall
+import com.mesosphere.cosmos.storage.installqueue.OperationFailure
+import com.mesosphere.cosmos.storage.installqueue.PendingOperation
 import com.mesosphere.cosmos.storage.installqueue._
+import com.mesosphere.universe.common.circe.Decoders._
 import com.mesosphere.universe.v3.circe.Decoders._
 import io.circe.Decoder
 import io.circe.DecodingFailure
@@ -17,7 +22,7 @@ object Decoders {
   def decode[T](value: String)(implicit decoder: Decoder[T]): T = {
     io.circe.jawn.decode[T](value) match {
       case Xor.Right(result) => result
-      case Xor.Left(error) => throw new CirceError(error)
+      case Xor.Left(error) => throw CirceError(error)
     }
   }
 

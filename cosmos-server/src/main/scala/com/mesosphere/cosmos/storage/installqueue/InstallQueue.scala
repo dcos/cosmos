@@ -4,6 +4,7 @@ import com.mesosphere.cosmos.InstallQueueError
 import com.mesosphere.cosmos.OperationInProgress
 import com.mesosphere.cosmos.converter.Common.packageCoordinateToBase64String
 import com.mesosphere.cosmos.rpc.v1.model.ErrorResponse
+import com.mesosphere.cosmos.rpc.v1.model.Operation
 import com.mesosphere.cosmos.rpc.v1.model.PackageCoordinate
 import com.mesosphere.cosmos.storage.Envelope
 import com.mesosphere.cosmos.storage.v1.circe.MediaTypedDecoders._

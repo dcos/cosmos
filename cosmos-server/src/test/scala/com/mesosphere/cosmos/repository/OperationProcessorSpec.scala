@@ -2,13 +2,12 @@ package com.mesosphere.cosmos.repository
 
 import com.mesosphere.cosmos.circe.Encoders.exceptionErrorResponse
 import com.mesosphere.cosmos.rpc
-import com.mesosphere.cosmos.storage.installqueue.Install
+import com.mesosphere.cosmos.rpc.v1.model.Install
+import com.mesosphere.cosmos.rpc.v1.model.Uninstall
+import com.mesosphere.cosmos.rpc.v1.model.UniverseInstall
 import com.mesosphere.cosmos.storage.installqueue.PendingOperation
 import com.mesosphere.cosmos.storage.installqueue.ProcessorView
-import com.mesosphere.cosmos.storage.installqueue.Uninstall
-import com.mesosphere.cosmos.storage.installqueue.UniverseInstall
 import com.mesosphere.universe
-import com.netaporter.uri.Uri
 import com.twitter.util.Await
 import com.twitter.util.Future
 import java.util.UUID

@@ -83,13 +83,15 @@ object Encoders {
   implicit val encodePackageCoordinate: Encoder[PackageCoordinate] =
     deriveEncoder[PackageCoordinate]
 
+  implicit val encodeOperation: Encoder[Operation] = deriveEncoder[Operation]
+
     /* This encoder converts a LocalPackage into a JSON object. The total number of fields are
      * enumerated below.
      *
      * {
      *   "status": <String>,
      *   "metadata": <PackageDefinition>,
-     *   "operation": ..., // TODO: Update this after we merge the PackageOps PR.
+     *   "operation": <Operation>,
      *   "error": <ErrorResponse>,
      *   "packageCoordinate": <PackageCoordinate>
      * }
