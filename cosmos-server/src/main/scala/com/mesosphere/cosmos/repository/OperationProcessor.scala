@@ -1,11 +1,11 @@
 package com.mesosphere.cosmos.repository
 
 import com.mesosphere.cosmos.circe.Encoders.exceptionErrorResponse
-import com.mesosphere.cosmos.rpc.v1.model.Install
-import com.mesosphere.cosmos.rpc.v1.model.Uninstall
-import com.mesosphere.cosmos.rpc.v1.model.UniverseInstall
-import com.mesosphere.cosmos.storage.installqueue.PendingOperation
 import com.mesosphere.cosmos.storage.installqueue.ProcessorView
+import com.mesosphere.cosmos.storage.v1.model.Install
+import com.mesosphere.cosmos.storage.v1.model.PendingOperation
+import com.mesosphere.cosmos.storage.v1.model.Uninstall
+import com.mesosphere.cosmos.storage.v1.model.UniverseInstall
 import com.twitter.util.Future
 import com.twitter.util.Return
 import com.twitter.util.Throw

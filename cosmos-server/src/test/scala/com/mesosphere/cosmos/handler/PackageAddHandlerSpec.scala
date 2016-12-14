@@ -1,19 +1,19 @@
 package com.mesosphere.cosmos.handler
 
+import com.mesosphere.Generators._
 import com.mesosphere.cosmos.OperationInProgress
 import com.mesosphere.cosmos.http.MediaType
 import com.mesosphere.cosmos.http.RequestSession
 import com.mesosphere.cosmos.repository.PackageCollection
 import com.mesosphere.cosmos.rpc
-import com.mesosphere.cosmos.rpc.v1.model.Operation
-import com.mesosphere.cosmos.rpc.v1.model.UniverseInstall
 import com.mesosphere.cosmos.storage.ObjectStorage
 import com.mesosphere.cosmos.storage.StagedPackageStorage
 import com.mesosphere.cosmos.storage.installqueue.ProducerView
+import com.mesosphere.cosmos.storage.v1.model.Operation
+import com.mesosphere.cosmos.storage.v1.model.UniverseInstall
 import com.mesosphere.universe
 import com.mesosphere.universe.MediaTypes
 import com.mesosphere.universe.TestUtil
-import com.mesosphere.universe.v3.model.PackageDefinitionSpec
 import com.mesosphere.universe.v3.syntax.PackageDefinitionOps._
 import com.netaporter.uri.Uri
 import com.twitter.finagle.http.Status
@@ -44,13 +44,13 @@ final class PackageAddHandlerSpec extends FreeSpec with MockitoSugar with Proper
         implicit val session = RequestSession(None, None)
 
         "with package name only" in {
-          forAll(PackageDefinitionSpec.genV3Package, genUri) { (packageDef, sourceUri) =>
+          forAll(genV3Package, genUri) { (packageDef, sourceUri) =>
             assertErrorOnPendingOperation(packageDef, sourceUri, None)
           }
         }
 
         "with package name and version" in {
-          forAll(PackageDefinitionSpec.genV3Package, genUri) { (packageDef, sourceUri) =>
+          forAll(genV3Package, genUri) { (packageDef, sourceUri) =>
             assertErrorOnPendingOperation(packageDef, sourceUri, Some(packageDef.version))
           }
         }
@@ -79,7 +79,7 @@ final class PackageAddHandlerSpec extends FreeSpec with MockitoSugar with Proper
       "for upload add requests" in {
         implicit val session = RequestSession(None, Some(MediaTypes.PackageZip))
 
-        forAll(PackageDefinitionSpec.genV3Package) { v3Package =>
+        forAll(genV3Package) { v3Package =>
           val packageData = TestUtil.buildPackage(v3Package)
           val addRequest = rpc.v1.model.UploadAddRequest(packageData)
 

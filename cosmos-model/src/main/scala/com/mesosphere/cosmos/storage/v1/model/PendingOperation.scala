@@ -1,7 +1,6 @@
-package com.mesosphere.cosmos.storage.installqueue
+package com.mesosphere.cosmos.storage.v1.model
 
 import com.mesosphere.cosmos.rpc
-import com.mesosphere.cosmos.rpc.v1.model.Operation
 
 case class PendingOperation(
   packageCoordinate: rpc.v1.model.PackageCoordinate,

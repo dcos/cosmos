@@ -2,6 +2,7 @@ package com.mesosphere.cosmos.circe
 
 import cats.data.Xor
 import com.google.common.io.CharStreams
+import com.mesosphere.Generators._
 import com.mesosphere.cosmos.CirceError
 import com.mesosphere.cosmos.ConcurrentAccess
 import com.mesosphere.cosmos.CosmosError
@@ -14,17 +15,18 @@ import com.mesosphere.cosmos.http.MediaType
 import com.mesosphere.cosmos.http.MediaTypeSubType
 import com.mesosphere.cosmos.rpc.v1.circe.Decoders._
 import com.mesosphere.cosmos.rpc.v1.model.ErrorResponse
-import com.mesosphere.cosmos.rpc.v1.model.Install
-import com.mesosphere.cosmos.rpc.v1.model.Operation
+import com.mesosphere.cosmos.rpc.v1.model.Failed
+import com.mesosphere.cosmos.rpc.v1.model.Generators._
+import com.mesosphere.cosmos.rpc.v1.model.Installed
+import com.mesosphere.cosmos.rpc.v1.model.Installing
+import com.mesosphere.cosmos.rpc.v1.model.Invalid
+import com.mesosphere.cosmos.rpc.v1.model.LocalPackage
+import com.mesosphere.cosmos.rpc.v1.model.NotInstalled
 import com.mesosphere.cosmos.rpc.v1.model.PackageCoordinate
 import com.mesosphere.cosmos.rpc.v1.model.PackageRepository
-import com.mesosphere.cosmos.rpc.v1.model.Uninstall
-import com.mesosphere.cosmos.rpc.v1.model.UniverseInstall
-import com.mesosphere.cosmos.storage.installqueue.Failed
-import com.mesosphere.cosmos.storage.installqueue.OperationFailure
-import com.mesosphere.cosmos.storage.installqueue.OperationStatus
-import com.mesosphere.cosmos.storage.installqueue.Pending
-import com.mesosphere.cosmos.storage.installqueue.PendingOperation
+import com.mesosphere.cosmos.rpc.v1.model.Uninstalling
+import com.mesosphere.cosmos.storage
+import com.mesosphere.cosmos.storage.v1.circe.Decoders._
 import com.mesosphere.universe.test.TestingPackages
 import com.mesosphere.universe.v3.model.PackageDefinition
 import com.mesosphere.universe.v3.model.Repository
@@ -38,11 +40,15 @@ import io.circe.jawn
 import io.circe.syntax._
 import java.io.InputStreamReader
 import java.util.UUID
+import org.scalacheck.Gen
 import org.scalatest.FreeSpec
+import org.scalatest.Matchers
+import org.scalatest.prop.PropertyChecks
 
-class EncodersDecodersSpec extends FreeSpec {
+class EncodersDecodersSpec extends FreeSpec with PropertyChecks with Matchers {
   import Decoders._
   import Encoders._
+  import EncodersDecodersSpec._
 
   "CosmosError" - {
     "RepositoryUriSyntax" in {
@@ -193,8 +199,8 @@ class EncodersDecodersSpec extends FreeSpec {
   "Operation" - {
 
     "type field is correct" in {
-      val uninstall: Operation =
-        Uninstall(None)
+      val uninstall: storage.v1.model.Operation =
+        storage.v1.model.Uninstall(None)
       val expectedUninstallJson =
         Json.obj(
           "packageDefinition" -> Json.Null,
@@ -204,59 +210,62 @@ class EncodersDecodersSpec extends FreeSpec {
     }
 
     "Install => Json => Install" in {
-      val install: Operation =
-        Install(
+      val install: storage.v1.model.Operation =
+        storage.v1.model.Install(
           UUID.fromString("13c825fe-a8b8-46de-aa9b-61c848fb6522"),
           TestingPackages.MinimalV3ModelV3PackageDefinition
         )
       val installPrime =
-        decode[Operation](install.asJson.noSpaces)
+        decode[storage.v1.model.Operation](install.asJson.noSpaces)
       assertResult(install)(installPrime)
     }
 
     "UniverseInstall => Json => UniverseInstall" in {
-      val universeInstall: Operation =
-        UniverseInstall(
+      val universeInstall: storage.v1.model.Operation =
+        storage.v1.model.UniverseInstall(
           TestingPackages.MinimalV3ModelV3PackageDefinition
         )
       val universeInstallPrime =
-        decode[Operation](universeInstall.asJson.noSpaces)
+        decode[storage.v1.model.Operation](universeInstall.asJson.noSpaces)
       assertResult(universeInstall)(universeInstallPrime)
     }
 
     "Uninstall => Json => Uninstall" in {
-      val uninstall: Operation =
-        Uninstall(None)
+      val uninstall: storage.v1.model.Operation =
+        storage.v1.model.Uninstall(None)
       val uninstallPrime =
-        decode[Operation](uninstall.asJson.noSpaces)
+        decode[storage.v1.model.Operation](uninstall.asJson.noSpaces)
       assertResult(uninstall)(uninstallPrime)
     }
   }
 
   "OperationFailure" in {
     val operationFailure =
-      OperationFailure(Uninstall(None), ErrorResponse("foo", "bar"))
+      storage.v1.model.OperationFailure(
+        storage.v1.model.Uninstall(None),
+        ErrorResponse("foo", "bar")
+      )
     val operationFailurePrime =
-      decode[OperationFailure](operationFailure.asJson.noSpaces)
+      decode[storage.v1.model.OperationFailure](operationFailure.asJson.noSpaces)
     assertResult(operationFailure)(operationFailurePrime)
   }
 
   "PendingOperation" in {
     val pendingOperation =
-      PendingOperation(
+      storage.v1.model.PendingOperation(
         PackageCoordinate("foo", PackageDefinition.Version("2")),
-        Uninstall(None),
+        storage.v1.model.Uninstall(None),
         None
       )
     val pendingOperationPrime =
-      decode[PendingOperation](pendingOperation.asJson.noSpaces)
+      decode[storage.v1.model.PendingOperation](pendingOperation.asJson.noSpaces)
     assertResult(pendingOperation)(pendingOperationPrime)
   }
 
   "OperationStatus" - {
     "type field is correct" in {
-      val pending: OperationStatus =
-        Pending(Uninstall(None), None)
+      val pending: storage.v1.model.OperationStatus =
+        storage.v1.model.PendingStatus(storage.v1.model.Uninstall(None), None)
       val expectedJson =
         Json.obj(
           "operation" ->
@@ -265,34 +274,79 @@ class EncodersDecodersSpec extends FreeSpec {
               "type" -> "Uninstall".asJson
             ),
           "failure" -> Json.Null,
-          "type" -> "Pending".asJson)
+          "type" -> "PendingStatus".asJson)
       val actualJson = pending.asJson
       assertResult(expectedJson)(actualJson)
     }
 
-    "Pending => Json => Pending" in {
-      val pending: OperationStatus =
-        Pending(
-          Uninstall(None),
+    "PendingStatus => Json => PendingStatus" in {
+      val pending: storage.v1.model.OperationStatus =
+        storage.v1.model.PendingStatus(
+          storage.v1.model.Uninstall(None),
           None
         )
       val pendingPrime =
-        decode[OperationStatus](pending.asJson.noSpaces)
+        decode[storage.v1.model.OperationStatus](pending.asJson.noSpaces)
       assertResult(pending)(pendingPrime)
     }
 
-    "Failed => Json => Failed" in {
-      val failed: OperationStatus =
-        Failed(
-          OperationFailure(
-            Uninstall(None),
+    "FailedStatus => Json => FailedStatus" in {
+      val failed: storage.v1.model.OperationStatus =
+        storage.v1.model.FailedStatus(
+          storage.v1.model.OperationFailure(
+            storage.v1.model.Uninstall(None),
             ErrorResponse("foo", "bar")
           )
         )
       val failedPrime =
-        decode[OperationStatus](failed.asJson.noSpaces)
+        decode[storage.v1.model.OperationStatus](failed.asJson.noSpaces)
       assertResult(failed)(failedPrime)
     }
   }
+
+  "For all LocalPackage; LocalPackage => JSON => LocalPackage" in {
+    forAll (genLocalPackage) { localPackage =>
+      val string = localPackage.asJson.noSpaces
+      decode[LocalPackage](string) shouldBe localPackage
+    }
+  }
+
+}
+
+object EncodersDecodersSpec {
+
+  implicit val genNotInstalled: Gen[NotInstalled] =
+    genV3Package.map(NotInstalled)
+
+  implicit val genInstalling: Gen[Installing] =
+    genV3Package.map(Installing)
+
+  implicit val genInstalled: Gen[Installed] =
+    genV3Package.map(Installed)
+
+  implicit val genUninstalling: Gen[Uninstalling] = Gen.oneOf(
+    genPackageCoordinate.map(pc => Uninstalling(Left(pc))),
+    genV3Package.map(metadata => Uninstalling(Right(metadata)))
+  )
+
+  implicit val genFailed: Gen[Failed] = for {
+    operation <- genOperation
+    error <- genErrorResponse
+    metadata <- genV3Package
+  } yield Failed(operation, error, metadata)
+
+  implicit val genInvalid: Gen[Invalid] = for {
+    error <- genErrorResponse
+    pc <- genPackageCoordinate
+  } yield Invalid(error, pc)
+
+  implicit val genLocalPackage: Gen[LocalPackage] = Gen.oneOf(
+    genNotInstalled,
+    genInstalling,
+    genInstalled,
+    genUninstalling,
+    genFailed,
+    genInvalid
+  )
 
 }

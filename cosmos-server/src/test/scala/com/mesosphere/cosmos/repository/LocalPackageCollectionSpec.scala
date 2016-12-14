@@ -3,6 +3,7 @@ package com.mesosphere.cosmos.repository
 import com.mesosphere.cosmos.PackageNotFound
 import com.mesosphere.cosmos.VersionNotFound
 import com.mesosphere.cosmos.rpc
+import com.mesosphere.cosmos.storage
 import com.mesosphere.cosmos.storage.PackageObjectStorage
 import com.mesosphere.cosmos.test.TestUtil
 import com.mesosphere.universe
@@ -190,7 +191,7 @@ final class LocalPackageCollectionSpec extends FreeSpec with Matchers {
     )
 
     val expected010 = rpc.v1.model.Failed(
-      rpc.v1.model.Install(
+      storage.v1.model.Install(
         UUID.fromString("467061c4-ed39-4718-a8b8-0b6756fddb18"),
         package010
       ),

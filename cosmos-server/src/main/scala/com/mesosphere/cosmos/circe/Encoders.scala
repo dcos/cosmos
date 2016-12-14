@@ -9,15 +9,16 @@ import com.mesosphere.cosmos.http.MediaType
 import com.mesosphere.cosmos.model.ZooKeeperStorageEnvelope
 import com.mesosphere.cosmos.rpc.v1.circe.Encoders._
 import com.mesosphere.cosmos.rpc.v1.model.ErrorResponse
-import com.mesosphere.cosmos.rpc.v1.model.Install
-import com.mesosphere.cosmos.rpc.v1.model.Operation
-import com.mesosphere.cosmos.rpc.v1.model.Uninstall
-import com.mesosphere.cosmos.rpc.v1.model.UniverseInstall
-import com.mesosphere.cosmos.storage.installqueue.Failed
-import com.mesosphere.cosmos.storage.installqueue.OperationFailure
-import com.mesosphere.cosmos.storage.installqueue.OperationStatus
-import com.mesosphere.cosmos.storage.installqueue.Pending
-import com.mesosphere.cosmos.storage.installqueue.PendingOperation
+import com.mesosphere.cosmos.rpc.v1.model.LocalPackage
+import com.mesosphere.cosmos.storage.v1.model.FailedStatus
+import com.mesosphere.cosmos.storage.v1.model.Install
+import com.mesosphere.cosmos.storage.v1.model.Operation
+import com.mesosphere.cosmos.storage.v1.model.OperationFailure
+import com.mesosphere.cosmos.storage.v1.model.OperationStatus
+import com.mesosphere.cosmos.storage.v1.model.PendingStatus
+import com.mesosphere.cosmos.storage.v1.model.PendingOperation
+import com.mesosphere.cosmos.storage.v1.model.Uninstall
+import com.mesosphere.cosmos.storage.v1.model.UniverseInstall
 import com.mesosphere.cosmos.thirdparty.marathon.circe.Encoders._
 import com.mesosphere.universe
 import com.mesosphere.universe.common.circe.Encoders._
@@ -96,21 +97,50 @@ object Encoders extends LowPriorityImplicits {
   implicit val encodePendingOperation: Encoder[PendingOperation] =
     deriveEncoder[PendingOperation]
 
-  implicit val encodePending: Encoder[Pending] =
-    deriveEncoder[Pending]
+  implicit val encodePending: Encoder[PendingStatus] =
+    deriveEncoder[PendingStatus]
 
-  implicit val encodeFailed: Encoder[Failed] =
-    deriveEncoder[Failed]
+  implicit val encodeFailedStatus: Encoder[FailedStatus] =
+    deriveEncoder[FailedStatus]
 
   implicit val encodeOperationStatus: Encoder[OperationStatus] = {
     Encoder.instance { operationStatus =>
       val (json: Json, subclass: String) = operationStatus match {
-        case pending: Pending =>
+        case pending: PendingStatus =>
           (pending.asJson, pending.getClass.getSimpleName)
-        case failed: Failed =>
+        case failed: FailedStatus =>
           (failed.asJson, failed.getClass.getSimpleName)
       }
       json.mapObject(_.add("type", subclass.asJson))
+    }
+  }
+
+  /* This encoder converts a LocalPackage into a JSON object. The total number of fields are
+   * enumerated below.
+   *
+   * {
+   *   "status": <String>,
+   *   "metadata": <PackageDefinition>,
+   *   "operation": <Operation>,
+   *   "error": <ErrorResponse>,
+   *   "packageCoordinate": <PackageCoordinate>
+   * }
+   *
+   * The 'status' will always be set while the rest of the properties are optional.
+   */
+  implicit val encodeLocalPackage = new Encoder[LocalPackage] {
+    final override def apply(value: LocalPackage): Json = {
+      val dataField = value.metadata.fold(
+        pc => ("packageCoordinate", pc.asJson),
+        pkg => ("metadata", pkg.asJson)
+      )
+
+      Json.obj(
+        "status" -> Json.fromString(value.getClass.getSimpleName),
+        dataField,
+        "error" -> value.error.asJson,
+        "operation" -> value.operation.asJson
+      )
     }
   }
 

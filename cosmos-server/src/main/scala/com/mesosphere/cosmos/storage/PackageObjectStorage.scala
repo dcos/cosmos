@@ -1,25 +1,19 @@
 package com.mesosphere.cosmos.storage
 
-import com.mesosphere.cosmos.CirceError
 import com.mesosphere.cosmos.PackageFileMissing
 import com.mesosphere.cosmos.circe.Decoders.decode
 import com.mesosphere.cosmos.circe.Encoders.exceptionErrorResponse
 import com.mesosphere.cosmos.converter.Common._
-import com.mesosphere.cosmos.http.MediaTypes
-import com.mesosphere.cosmos.repository.LocalPackageCollection
 import com.mesosphere.cosmos.rpc
 import com.mesosphere.universe
 import com.mesosphere.universe.v3.circe.Decoders._
 import com.mesosphere.universe.v3.circe.Encoders._
 import com.twitter.bijection.Conversion.asMethod
-import com.twitter.io.Buf.ByteArray
-import com.twitter.io.Reader
 import com.twitter.io.StreamIO
 import com.twitter.util.Future
 import com.twitter.util.FuturePool
 import io.circe.syntax._
 import java.io.ByteArrayInputStream
-import java.io.InputStream
 import java.nio.charset.StandardCharsets
 import scala.util.Try
 
@@ -50,7 +44,7 @@ final class PackageObjectStorage private (objectStorage: ObjectStorage) {
     val path = s"${packageCoordinate.as[String]}/metadata.json"
 
     objectStorage.read(path).flatMap {
-      case Some((mediaType, inputStream)) =>
+      case Some((_, inputStream)) =>
         pool {
           Some(
             decode[universe.v3.model.V3Package](
