@@ -11,9 +11,7 @@ import com.mesosphere.cosmos.repository.LocalPackageCollection
 import com.mesosphere.cosmos.rpc.v1.model.Installed
 import com.mesosphere.cosmos.rpc.v1.model.LocalPackage
 import com.mesosphere.universe
-import com.mesosphere.universe.bijection.UniverseConversions._
 import com.mesosphere.universe.v3.syntax.PackageDefinitionOps._
-import com.twitter.bijection.Conversion.asMethod
 import com.twitter.util.Future
 
 private[cosmos] final class ServiceStartHandler(
@@ -36,13 +34,17 @@ private[cosmos] final class ServiceStartHandler(
   )(
     implicit session: RequestSession
   ): Future[rpc.v1.model.ServiceStartResponse] = {
-    localPackageCollection.getInstalledPackage(
-      request.packageName,
-      request.packageVersion.as[Option[universe.v3.model.PackageDefinition.Version]]
-    ).flatMap { localPackage =>
-      val pkg = asPackageDefinition(localPackage, request.packageName)
-      PackageDefinitionRenderer
-        .renderMarathonV2App(LocalPackageOrigin.uri, pkg, request.options, request.appId) match {
+    localPackageCollection.getInstalledPackage(request.packageName, request.packageVersion)
+      .flatMap { localPackage =>
+        val pkg = asPackageDefinition(localPackage, request.packageName)
+        val renderResult = PackageDefinitionRenderer.renderMarathonV2App(
+          LocalPackageOrigin.uri,
+          pkg,
+          request.options,
+          marathonAppId = None
+        )
+
+        renderResult match {
           case Xor.Right(renderedMarathonJson) =>
             packageRunner.launch(renderedMarathonJson)
               .map { runnerResponse =>
@@ -69,11 +71,9 @@ private[cosmos] final class ServiceStartHandler(
           case Xor.Left(RenderedTemplateNotJsonObject) =>
             Future.exception(MarathonTemplateMustBeJsonObject)
           case Xor.Left(OptionsNotAllowed) =>
-            val error = Map("message" -> "No schema available to validate the provided options").asJson
-            Future.exception(JsonSchemaMismatch(List(error)))
+            val message = "No schema available to validate the provided options"
+            Future.exception(JsonSchemaMismatch(List(Map("message" -> message).asJson)))
         }
-    }
+      }
   }
 }
-
-
