@@ -195,8 +195,7 @@ final class LocalPackageCollectionSpec extends FreeSpec with Matchers {
         UUID.fromString("467061c4-ed39-4718-a8b8-0b6756fddb18"),
         package010
       ),
-      rpc.v1.model.ErrorResponse("type", "message", None),
-      package010
+      rpc.v1.model.ErrorResponse("type", "message", None)
     )
 
     val input = List[rpc.v1.model.LocalPackage](

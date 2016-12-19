@@ -19,7 +19,7 @@ object LocalPackage {
       case Installed(pkg) => Right(pkg)
       case Installing(pkg) => Right(pkg)
       case Uninstalling(data) => data
-      case Failed(_, _, pkg) => Right(pkg)
+      case Failed(op, _) => Right(op.v3Package)
     }
 
     def packageName: String = value match {
@@ -27,7 +27,7 @@ object LocalPackage {
       case Installed(pkg) => pkg.name
       case Installing(pkg) => pkg.name
       case Uninstalling(data) => data.fold(_.name, _.name)
-      case Failed(_, _, pkg) => pkg.name
+      case Failed(op, _) => op.v3Package.name
       case Invalid(_, packageCoordinate) => packageCoordinate.name
     }
 
@@ -36,18 +36,18 @@ object LocalPackage {
       case Installed(pkg) => pkg.version
       case Installing(pkg) => pkg.version
       case Uninstalling(data) => data.fold(_.version, _.version)
-      case Failed(_, _, pkg) => pkg.version
+      case Failed(op, _) => op.v3Package.version
       case Invalid(_, packageCoordinate) => packageCoordinate.version
     }
 
     def error: Option[ErrorResponse] = value match {
-      case Failed(_, error, _) => Some(error)
+      case Failed(_, error) => Some(error)
       case Invalid(error, _) => Some(error)
       case _ => None
     }
 
     def operation: Option[Operation] = value match {
-      case Failed(operation, _, _) => Some(operation)
+      case Failed(operation, _) => Some(operation)
       case _ => None
     }
 
@@ -117,8 +117,7 @@ final case class Uninstalling(
 
 final case class Failed(
   operation: Operation,
-  error: ErrorResponse,
-  metadata: universe.v3.model.V3Package
+  error: ErrorResponse
 ) extends LocalPackage
 
 final case class Invalid(

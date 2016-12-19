@@ -26,7 +26,7 @@ object Generators {
     genV3Package.map(storage.v1.model.UniverseInstall)
 
   implicit val genUninstall: Gen[storage.v1.model.Uninstall] =
-    Gen.option(genV3Package).map(storage.v1.model.Uninstall)
+    genV3Package.map(storage.v1.model.Uninstall)
 
   implicit val genOperation: Gen[storage.v1.model.Operation] = Gen.oneOf(
     genInstall,

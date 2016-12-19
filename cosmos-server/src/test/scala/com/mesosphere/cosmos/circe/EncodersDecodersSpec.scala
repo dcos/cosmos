@@ -22,13 +22,12 @@ import com.mesosphere.cosmos.rpc.v1.model.Installing
 import com.mesosphere.cosmos.rpc.v1.model.Invalid
 import com.mesosphere.cosmos.rpc.v1.model.LocalPackage
 import com.mesosphere.cosmos.rpc.v1.model.NotInstalled
-import com.mesosphere.cosmos.rpc.v1.model.PackageCoordinate
 import com.mesosphere.cosmos.rpc.v1.model.PackageRepository
 import com.mesosphere.cosmos.rpc.v1.model.Uninstalling
 import com.mesosphere.cosmos.storage
 import com.mesosphere.cosmos.storage.v1.circe.Decoders._
 import com.mesosphere.universe.test.TestingPackages
-import com.mesosphere.universe.v3.model.PackageDefinition
+import com.mesosphere.universe.v3.circe.Encoders._
 import com.mesosphere.universe.v3.model.Repository
 import com.netaporter.uri.Uri
 import io.circe.DecodingFailure
@@ -199,12 +198,12 @@ class EncodersDecodersSpec extends FreeSpec with PropertyChecks with Matchers {
   "Operation" - {
 
     "type field is correct" in {
-      val uninstall: storage.v1.model.Operation =
-        storage.v1.model.Uninstall(None)
-      val expectedUninstallJson =
-        Json.obj(
-          "packageDefinition" -> Json.Null,
-          "type" -> "Uninstall".asJson)
+      val v3Package = TestingPackages.MinimalV3ModelV3PackageDefinition
+      val uninstall: storage.v1.model.Operation = storage.v1.model.Uninstall(v3Package)
+      val expectedUninstallJson = Json.obj(
+        "v3Package" -> v3Package.asJson,
+        "type" -> "Uninstall".asJson
+      )
       val actualUninstallJson = uninstall.asJson
       assertResult(expectedUninstallJson)(actualUninstallJson)
     }
@@ -232,7 +231,7 @@ class EncodersDecodersSpec extends FreeSpec with PropertyChecks with Matchers {
 
     "Uninstall => Json => Uninstall" in {
       val uninstall: storage.v1.model.Operation =
-        storage.v1.model.Uninstall(None)
+        storage.v1.model.Uninstall(TestingPackages.MinimalV3ModelV3PackageDefinition)
       val uninstallPrime =
         decode[storage.v1.model.Operation](uninstall.asJson.noSpaces)
       assertResult(uninstall)(uninstallPrime)
@@ -242,7 +241,7 @@ class EncodersDecodersSpec extends FreeSpec with PropertyChecks with Matchers {
   "OperationFailure" in {
     val operationFailure =
       storage.v1.model.OperationFailure(
-        storage.v1.model.Uninstall(None),
+        storage.v1.model.Uninstall(TestingPackages.MinimalV3ModelV3PackageDefinition),
         ErrorResponse("foo", "bar")
       )
     val operationFailurePrime =
@@ -253,8 +252,7 @@ class EncodersDecodersSpec extends FreeSpec with PropertyChecks with Matchers {
   "PendingOperation" in {
     val pendingOperation =
       storage.v1.model.PendingOperation(
-        PackageCoordinate("foo", PackageDefinition.Version("2")),
-        storage.v1.model.Uninstall(None),
+        storage.v1.model.Uninstall(TestingPackages.MinimalV3ModelV3PackageDefinition),
         None
       )
     val pendingOperationPrime =
@@ -264,13 +262,15 @@ class EncodersDecodersSpec extends FreeSpec with PropertyChecks with Matchers {
 
   "OperationStatus" - {
     "type field is correct" in {
-      val pending: storage.v1.model.OperationStatus =
-        storage.v1.model.PendingStatus(storage.v1.model.Uninstall(None), None)
+      val pending: storage.v1.model.OperationStatus = storage.v1.model.PendingStatus(
+        storage.v1.model.Uninstall(TestingPackages.MinimalV3ModelV3PackageDefinition),
+        None
+      )
       val expectedJson =
         Json.obj(
           "operation" ->
             Json.obj(
-              "packageDefinition" -> Json.Null,
+              "v3Package" -> TestingPackages.MinimalV3ModelV3PackageDefinition.asJson,
               "type" -> "Uninstall".asJson
             ),
           "failure" -> Json.Null,
@@ -282,7 +282,7 @@ class EncodersDecodersSpec extends FreeSpec with PropertyChecks with Matchers {
     "PendingStatus => Json => PendingStatus" in {
       val pending: storage.v1.model.OperationStatus =
         storage.v1.model.PendingStatus(
-          storage.v1.model.Uninstall(None),
+          storage.v1.model.Uninstall(TestingPackages.MinimalV3ModelV3PackageDefinition),
           None
         )
       val pendingPrime =
@@ -294,7 +294,7 @@ class EncodersDecodersSpec extends FreeSpec with PropertyChecks with Matchers {
       val failed: storage.v1.model.OperationStatus =
         storage.v1.model.FailedStatus(
           storage.v1.model.OperationFailure(
-            storage.v1.model.Uninstall(None),
+            storage.v1.model.Uninstall(TestingPackages.MinimalV3ModelV3PackageDefinition),
             ErrorResponse("foo", "bar")
           )
         )
@@ -332,8 +332,7 @@ object EncodersDecodersSpec {
   implicit val genFailed: Gen[Failed] = for {
     operation <- genOperation
     error <- genErrorResponse
-    metadata <- genV3Package
-  } yield Failed(operation, error, metadata)
+  } yield Failed(operation, error)
 
   implicit val genInvalid: Gen[Invalid] = for {
     error <- genErrorResponse

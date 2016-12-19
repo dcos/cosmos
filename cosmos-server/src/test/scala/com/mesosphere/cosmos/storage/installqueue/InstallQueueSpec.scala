@@ -338,7 +338,7 @@ final class InstallQueueSpec extends fixture.FreeSpec with BeforeAndAfterAll {
             installQueue.next()
           )
           assertResult(
-            Some(PendingOperation(coordinate1, universeInstall, None)))(
+            Some(PendingOperation(universeInstall, None)))(
             nextPendingOperation)
         }
 
@@ -368,7 +368,6 @@ final class InstallQueueSpec extends fixture.FreeSpec with BeforeAndAfterAll {
           )
           assertResult(
             Some(PendingOperation(
-              coordinate1,
               universeInstall,
               Some(OperationFailure(
                 universeInstall, errorResponse1)))))(
@@ -411,14 +410,13 @@ final class InstallQueueSpec extends fixture.FreeSpec with BeforeAndAfterAll {
           val n5 = Await.result(installQueue.next())
 
           assertResult(
-            Some(PendingOperation(coordinate1, universeInstall, None)))(
+            Some(PendingOperation(universeInstall, None)))(
             n1)
           assertResult(
-            Some(PendingOperation(coordinate2, universeInstall, None)))(
+            Some(PendingOperation(universeInstall, None)))(
             n2)
           assertResult(
             Some(PendingOperation(
-              coordinate5,
               universeInstall,
               Some(OperationFailure(universeInstall, errorResponse1)))))(
             n3)
@@ -470,10 +468,10 @@ final class InstallQueueSpec extends fixture.FreeSpec with BeforeAndAfterAll {
         assert(n1 == n2)
         assert(n3 == n4)
         assertResult(
-          Some(PendingOperation(coordinate1, universeInstall, None)))(
+          Some(PendingOperation(universeInstall, None)))(
           n1)
         assertResult(
-          Some(PendingOperation(coordinate2, universeInstall, None)))(
+          Some(PendingOperation(universeInstall, None)))(
           n3)
       }
     }
@@ -530,7 +528,7 @@ final class InstallQueueSpec extends fixture.FreeSpec with BeforeAndAfterAll {
 
       val coordinate1Operation = Await.result(installQueue.next())
       assertResult(
-        Some(PendingOperation(coordinate1, universeInstall, None)))(
+        Some(PendingOperation(universeInstall, None)))(
         coordinate1Operation)
 
       Await.result(installQueue.failure(coordinate1, errorResponse1))
@@ -542,7 +540,6 @@ final class InstallQueueSpec extends fixture.FreeSpec with BeforeAndAfterAll {
       assertResult(
         Some(
           PendingOperation(
-            coordinate2,
             universeInstall,
             None)))(
         coordinate2Operation)

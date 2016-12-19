@@ -39,7 +39,7 @@ final class OperationProcessor private (
     pending.operation match {
       case Install(stagedPackageId, pkg) => installer(stagedPackageId, pkg)
       case UniverseInstall(pkg) => universeInstaller(pkg)
-      case Uninstall(pkg) => uninstaller(pending.packageCoordinate, pkg)
+      case Uninstall(pkg) => uninstaller(pkg)
     }
   }
 }

@@ -89,7 +89,7 @@ final class InstallQueue private(
         case WithZkStat(stat, PendingStatus(operation, failure)) =>
           Some(WithZkStat(
             stat,
-            PendingOperation(packageCoordinate, operation, failure)
+            PendingOperation(operation, failure)
           ))
         case _ => None
       }
