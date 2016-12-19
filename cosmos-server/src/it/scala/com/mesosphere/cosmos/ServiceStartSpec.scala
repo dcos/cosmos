@@ -3,6 +3,7 @@ package com.mesosphere.cosmos
 import com.mesosphere.cosmos.circe.Decoders.decode
 import com.mesosphere.cosmos.http.CosmosRequests
 import com.mesosphere.cosmos.rpc.v1.circe.Decoders._
+import com.mesosphere.cosmos.rpc.v1.model.ErrorResponse
 import com.mesosphere.cosmos.test.CosmosIntegrationTestClient
 import com.mesosphere.cosmos.test.CosmosIntegrationTestClient.CosmosClient
 import com.mesosphere.cosmos.test.CosmosIntegrationTestClient.Session
@@ -26,10 +27,13 @@ final class ServiceStartSpec extends FreeSpec with InstallQueueFixture with Befo
   after {
     val uninstallCassandra =
       rpc.v1.model.UninstallRequest("cassandra", appId = None, all = Some(true))
+    val uninstallLinkerd =
+      rpc.v1.model.UninstallRequest("linkerd", appId = None, all = Some(true))
     val uninstallHelloworld =
       rpc.v1.model.UninstallRequest("helloworld", appId = None, all = Some(true))
 
     CosmosClient.submit(CosmosRequests.packageUninstall(uninstallCassandra))
+    CosmosClient.submit(CosmosRequests.packageUninstall(uninstallLinkerd))
     val _ = CosmosClient.submit(CosmosRequests.packageUninstall(uninstallHelloworld))
 
     // TODO package-add: Remove uploaded packages from storage
@@ -95,6 +99,34 @@ final class ServiceStartSpec extends FreeSpec with InstallQueueFixture with Befo
 
       val marathonApp = getMarathonApp(appId)
       assertResult(appId)(marathonApp.id)
+    }
+
+    "return a ServiceAlreadyStarted when trying to start a service twice" in {
+      val packageName = "linkerd"
+      val addResponse = addUniversePackage(packageName)
+      assertResult(Status.Accepted)(addResponse.status)
+
+      awaitEmptyInstallQueue()
+
+      val startResponse = startService(packageName)
+      assertResult(Status.Ok)(startResponse.status)
+      assertResult(Some(rpc.MediaTypes.ServiceStartResponse.show))(startResponse.contentType)
+
+      val typedResponse = decode[rpc.v1.model.ServiceStartResponse](startResponse.contentString)
+      assertResult(packageName)(typedResponse.packageName)
+
+      val Some(appId) = typedResponse.appId
+      assertResult("/linkerd")(appId.toString)
+
+      val marathonApp = getMarathonApp(appId)
+      assertResult(appId)(marathonApp.id)
+
+      val startAgainResponse = startService(packageName)
+      assertResult(Status.Conflict)(startAgainResponse.status)
+      assertResult(Some(rpc.MediaTypes.ErrorResponse.show))(startAgainResponse.contentType)
+
+      val typedErrorResponse = decode[ErrorResponse](startAgainResponse.contentString)
+      assertResult(classOf[ServiceAlreadyStarted])(typedErrorResponse.`type`)
     }
 
   }
