@@ -118,7 +118,13 @@ final class DefaultUniverseClient(
           }
         } map { case (contentType, bodyInputStream) =>
           try {
-            decodeUniverse(contentType, bodyInputStream, repository.uri)
+            universe.v3.model.Repository(
+              decodeUniverse(
+                contentType,
+                bodyInputStream,
+                repository.uri
+              ).packages.sorted.reverse
+            )
           } finally bodyInputStream.close()
         } ensure {
           conn.disconnect()
