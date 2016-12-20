@@ -40,7 +40,9 @@ object PackageDefinition {
       }
     }
 
-    implicit val packageDefinitionReleaseVersionOrdering: Ordering[ReleaseVersion] = Ordering.by(_.value)
+    implicit val packageDefinitionReleaseVersionOrdering: Ordering[ReleaseVersion] = {
+      Ordering.by(_.value)
+    }
 
   }
 
@@ -64,20 +66,8 @@ object PackageDefinition {
     if (orderName != 0) {
       orderName
     } else {
-      (SemVer(aVersion.toString), SemVer(bVersion.toString)) match {
-        case (Some(_), None) =>
-          // semver is greater than non-semver
-          1
-        case (None, Some(_)) =>
-          // semver is greater than non-semver
-          -1
-        case (Some(aSemver), Some(bSemver)) =>
-          // compare semver
-          aSemver.compare(bSemver)
-        case _ =>
-          // both are non-semver; use release version
-          aReleaseVersion.value.compare(bReleaseVersion.value)
-      }
+      // Use release version
+      aReleaseVersion.value.compare(bReleaseVersion.value)
     }
   }
 }
