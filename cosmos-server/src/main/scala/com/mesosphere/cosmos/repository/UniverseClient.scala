@@ -118,13 +118,7 @@ final class DefaultUniverseClient(
           }
         } map { case (contentType, bodyInputStream) =>
           try {
-            universe.v3.model.Repository(
-              decodeUniverse(
-                contentType,
-                bodyInputStream,
-                repository.uri
-              ).packages.sorted.reverse
-            )
+            decodeAndSortUniverse(contentType, bodyInputStream, repository.uri)
           } finally bodyInputStream.close()
         } ensure {
           conn.disconnect()
@@ -134,13 +128,15 @@ final class DefaultUniverseClient(
   }
   // scalastyle:on cyclomatic.complexity method.length
 
-  private[this] def decodeUniverse(
+  private[this] def decodeAndSortUniverse(
     contentType: MediaType,
     bodyInputStream: InputStream,
     repositoryUri: Uri
   ): universe.v3.model.Repository = {
     val decodeScope = fetchScope.scope("decode")
-    if (contentType.isCompatibleWith(MediaTypes.UniverseV3Repository)) {
+
+    // Decode the packages
+    val repo = if (contentType.isCompatibleWith(MediaTypes.UniverseV3Repository)) {
       val v3Scope = decodeScope.scope("v3")
       v3Scope.counter("count").incr()
       Stat.time(v3Scope.stat("histogram")) {
@@ -157,6 +153,9 @@ final class DefaultUniverseClient(
     } else {
       throw UnsupportedContentType.forMediaType(SupportedMediaTypes, Some(contentType))
     }
+
+    // Sort the packages
+    universe.v3.model.Repository(repo.packages.sorted.reverse)
   }
 
   private[this] case class V2PackageInformation(
