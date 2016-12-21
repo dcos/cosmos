@@ -4,7 +4,9 @@ import cats.data.Xor
 import com.mesosphere.cosmos.JsonSchemaMismatch
 import com.mesosphere.cosmos.CirceError
 import com.mesosphere.cosmos.MarathonTemplateMustBeJsonObject
+import com.mesosphere.cosmos.PackageAlreadyInstalled
 import com.mesosphere.cosmos.PackageRunner
+import com.mesosphere.cosmos.ServiceAlreadyStarted
 import com.mesosphere.cosmos.finch.EndpointHandler
 import com.mesosphere.cosmos.http.RequestSession
 import com.mesosphere.cosmos.render._
@@ -45,27 +47,31 @@ private[cosmos] final class PackageInstallHandler(
                   postInstallNotes = pkg.postInstallNotes,
                   cli = pkg.cli
                 )
-              }
-          case Xor.Left(pdre) => pdre match {
-            case OptionsValidationFailure(validationErrors) =>
-              Future.exception(JsonSchemaMismatch(validationErrors))
-            case InvalidLabelSchema(cause) => Future.exception(CirceError(cause))
-            case RenderedTemplateNotJson(cause) => Future.exception(CirceError(cause))
-            case RenderedTemplateNotJsonObject => Future.exception(MarathonTemplateMustBeJsonObject)
-            case OptionsNotAllowed =>
-              val error = Map("message" -> "No schema available to validate the provided options").asJson
-              Future.exception(JsonSchemaMismatch(List(error)))
-            case MissingMarathonV2AppTemplate =>
-              Future {
-                rpc.v2.model.InstallResponse(
-                  packageName = pkg.name,
-                  packageVersion = pkg.version,
-                  appId = None,
-                  postInstallNotes = pkg.postInstallNotes,
-                  cli = pkg.cli
-                )
-              }
-          }
+              }.handle {
+              case ServiceAlreadyStarted() =>
+                throw PackageAlreadyInstalled()
+            }
+          case Xor.Left(OptionsValidationFailure(validationErrors)) =>
+            Future.exception(JsonSchemaMismatch(validationErrors))
+          case Xor.Left(InvalidLabelSchema(cause)) =>
+            Future.exception(CirceError(cause))
+          case Xor.Left(RenderedTemplateNotJson(cause)) =>
+            Future.exception(CirceError(cause))
+          case Xor.Left(RenderedTemplateNotJsonObject) =>
+            Future.exception(MarathonTemplateMustBeJsonObject)
+          case Xor.Left(OptionsNotAllowed) =>
+            val error = Map("message" -> "No schema available to validate the provided options").asJson
+            Future.exception(JsonSchemaMismatch(List(error)))
+          case Xor.Left(MissingMarathonV2AppTemplate) =>
+            Future {
+              rpc.v2.model.InstallResponse(
+                packageName = pkg.name,
+                packageVersion = pkg.version,
+                appId = None,
+                postInstallNotes = pkg.postInstallNotes,
+                cli = pkg.cli
+              )
+            }
         }
       }
   }

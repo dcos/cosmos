@@ -62,6 +62,9 @@ case class PackageFileSchemaMismatch(fileName: String, decodingFailure: Decoding
 case class PackageAlreadyInstalled() extends CosmosError {
   override val status = Status.Conflict
 }
+case class ServiceAlreadyStarted() extends CosmosError {
+  override val status = Status.Conflict
+}
 
 case class MarathonBadResponse(marathonError: MarathonError) extends CosmosError {
   override def getData: Option[JsonObject] = {
