@@ -12,7 +12,7 @@ case class PackageMetadata(
   maintainer: String,
   description: String,
   tags: List[String] = Nil,
-  selected: Option[Boolean] = None,
+  selected: Option[Boolean] = Some(false),
   scm: Option[String] = None,
   website: Option[String] = None,
   framework: Option[Boolean] = None,
