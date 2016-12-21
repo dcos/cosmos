@@ -4,6 +4,10 @@ import com.mesosphere.universe
 
 /** Copy of [[com.mesosphere.universe.v2.model.PackageDetails]] with additional field `images` from
   * [[com.mesosphere.universe.v2.model.Resource]].
+  *
+  * For the properties `selected` and `framework` we default them to Some(false). This is because
+  * we need to be able to deserialize JSONs that already exists as label in Marathon that may not
+  * include this property but we want to default them to false when they don't exist.
   */
 case class PackageMetadata(
   packagingVersion: universe.v2.model.PackagingVersion,
@@ -15,7 +19,7 @@ case class PackageMetadata(
   selected: Option[Boolean] = Some(false),
   scm: Option[String] = None,
   website: Option[String] = None,
-  framework: Option[Boolean] = None,
+  framework: Option[Boolean] = Some(false),
   preInstallNotes: Option[String] = None,
   postInstallNotes: Option[String] = None,
   postUninstallNotes: Option[String] = None,
