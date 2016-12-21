@@ -102,7 +102,7 @@ final class ServiceStartSpec extends FreeSpec with InstallQueueFixture with Befo
     }
 
     "return a ServiceAlreadyStarted when trying to start a service twice" in {
-      val packageName = "bitbucket"
+      val packageName = "kafka"
       val addResponse = addUniversePackage(packageName)
       assertResult(Status.Accepted)(addResponse.status)
 
@@ -116,7 +116,7 @@ final class ServiceStartSpec extends FreeSpec with InstallQueueFixture with Befo
       assertResult(packageName)(typedResponse.packageName)
 
       val Some(appId) = typedResponse.appId
-      assertResult("/bitbucket")(appId.toString)
+      assertResult("/kafka")(appId.toString)
 
       val marathonApp = getMarathonApp(appId)
       assertResult(appId)(marathonApp.id)
