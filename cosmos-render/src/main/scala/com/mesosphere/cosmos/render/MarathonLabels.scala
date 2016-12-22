@@ -41,11 +41,14 @@ final class MarathonLabels(
     )
   }
 
-  def nonOverridableLabelsJson: JsonObject = JsonObject.fromMap(nonOverridableLabels.mapValues(_.asJson))
+  def nonOverridableLabelsJson: JsonObject =
+    JsonObject.fromMap(nonOverridableLabels.mapValues(_.asJson))
 
   def nonOverridableLabels: Map[String, String] = {
     Seq(
-      commandJson.map(command => MarathonApp.commandLabel -> MarathonLabels.encodeForLabel(command))
+      commandJson.map(
+        command => MarathonApp.commandLabel -> MarathonLabels.encodeForLabel(command)
+      )
     ).flatten.toMap
   }
   private[this] def metadataLabel: String = {

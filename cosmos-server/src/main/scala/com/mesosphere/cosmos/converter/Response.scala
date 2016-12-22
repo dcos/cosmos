@@ -27,7 +27,7 @@ object Response {
     }
   }
 
-  implicit val internalPackageDefinitionToV1DescribeResponse:
+  implicit val v3PackageDefinitionToV1DescribeResponse:
     Conversion[universe.v3.model.PackageDefinition, Try[rpc.v1.model.DescribeResponse]] = {
     Conversion.fromFunction { (packageDefinition: universe.v3.model.PackageDefinition) =>
       Trys.join(
@@ -62,7 +62,7 @@ object Response {
     }
   }
 
-  implicit val internalPackageDefinitionToV2DescribeResponse:
+  implicit val v3PackageDefinitionToV2DescribeResponse:
     Conversion[universe.v3.model.PackageDefinition, rpc.v2.model.DescribeResponse] = {
     Conversion.fromFunction { (pkg: universe.v3.model.PackageDefinition) =>
       rpc.v2.model.DescribeResponse(
@@ -89,7 +89,7 @@ object Response {
     }
   }
 
-  implicit val internalPackageDefinitionToInstalledPackageInformation:
+  implicit val v3PackageDefinitionToInstalledPackageInformation:
     Conversion[universe.v3.model.PackageDefinition,
       Try[rpc.v1.model.InstalledPackageInformation]] = {
     Conversion.fromFunction {
@@ -138,13 +138,16 @@ object Response {
     }
   }
 
-  private[this] def v2Resource(pkg: universe.v3.model.PackageDefinition): Try[Option[universe.v2.model.Resource]] =
-    pkg match {
+  private[this] def v2Resource(
+    pkg: universe.v3.model.PackageDefinition
+  ): Try[Option[universe.v2.model.Resource]] = pkg match {
       case v2: V2Package =>
-        Injection.invert[Option[universe.v2.model.Resource], Option[universe.v3.model.V2Resource]](v2.resource)
-          .as[Try[Option[universe.v2.model.Resource]]]
+        Injection.invert[Option[universe.v2.model.Resource], Option[universe.v3.model.V2Resource]](
+          v2.resource
+        ).as[Try[Option[universe.v2.model.Resource]]]
       case v3: V3Package =>
-        Injection.invert[Option[universe.v2.model.Resource], Option[universe.v3.model.V3Resource]](v3.resource)
-          .as[Try[Option[universe.v2.model.Resource]]]
+        Injection.invert[Option[universe.v2.model.Resource], Option[universe.v3.model.V3Resource]](
+          v3.resource
+        ).as[Try[Option[universe.v2.model.Resource]]]
     }
 }

@@ -13,7 +13,7 @@ import com.mesosphere.cosmos.repository.CosmosRepository
 import com.mesosphere.cosmos.rpc.v1.model.{Installation, InstalledPackageInformation, ListRequest, ListResponse}
 import com.mesosphere.cosmos.thirdparty.marathon.model.{AppId, MarathonApp}
 import com.mesosphere.cosmos.AdminRouter
-import com.mesosphere.universe.v3.model.PackageDefinition.ReleaseVersion
+import com.mesosphere.universe
 import com.netaporter.uri.Uri
 import com.netaporter.uri.dsl.stringToUri
 import com.twitter.bijection.Conversion.asMethod
@@ -27,11 +27,13 @@ private[cosmos] final class ListHandler(
   repositories: (Uri) => Future[Option[CosmosRepository]]
 ) extends EndpointHandler[ListRequest, ListResponse] {
 
-  private case class App(id: AppId,
-                         pkgName: String,
-                         pkgReleaseVersion: ReleaseVersion,
-                         repoUri: PackageOrigin,
-                         pkgMetadata: Option[String])
+  private case class App(
+    id: AppId,
+    pkgName: String,
+    pkgReleaseVersion: universe.v3.model.PackageDefinition.ReleaseVersion,
+    repoUri: PackageOrigin,
+    pkgMetadata: Option[String]
+  )
 
   override def apply(request: ListRequest)
                     (implicit session: RequestSession): Future[ListResponse] = {
@@ -92,8 +94,28 @@ private[cosmos] final class ListHandler(
         case (app, Some(repo)) =>
           repo
             .getPackageByReleaseVersion(app.pkgName, app.pkgReleaseVersion)
-            .map(_.as[Try[InstalledPackageInformation]])
-            .lowerFromTry
+            .map { pkg =>
+              val adjustedPackage: universe.v3.model.PackageDefinition = pkg match {
+                /* Note: The old code dropped CLI information when returning information to the
+                 * client. We will fix this when we move to the new APIs.
+                 *
+                 * The clients expect the both selected and framework to be set.
+                 */
+                case pkg: universe.v3.model.V3Package =>
+                  pkg.copy(
+                    selected=pkg.selected orElse Some(false),
+                    framework=pkg.framework orElse Some(false),
+                    resource=pkg.resource.map(_.copy(cli=None))
+                  )
+                case pkg: universe.v3.model.V2Package =>
+                  pkg.copy(
+                    selected=pkg.selected orElse Some(false),
+                    framework=pkg.framework orElse Some(false)
+                  )
+              }
+
+              adjustedPackage.as[Try[InstalledPackageInformation]]
+            }.lowerFromTry
             .map { pkgInfo =>
               Installation(app.id, pkgInfo)
             }

@@ -45,12 +45,12 @@ class PackageRenderHandlerSpec extends FreeSpec {
               "xsb3dvcmxkLmdpdCNkY29zLWhlbGxvd29ybGQ9MC4xLjAiXX0=").asJson,
           "DCOS_PACKAGE_METADATA" ->
             ("eyJwYWNrYWdpbmdWZXJzaW9uIjoiMi4wIiwibmFtZSI6ImhlbGxvd29ybGQiLCJ2ZXJzaW9uIjoiMC4xLj" +
-              "AiLCJtYWludGFpbmVyIjoic3VwcG9ydEBtZXNvc3BoZXJlLmlvIiwiZGVzY3JpcHRpb24iOiJFeGFtcGx" +
-              "lIERDT1MgYXBwbGljYXRpb24gcGFja2FnZSIsInRhZ3MiOlsibWVzb3NwaGVyZSIsImV4YW1wbGUiLCJz" +
-              "dWJjb21tYW5kIl0sInNlbGVjdGVkIjpmYWxzZSwid2Vic2l0ZSI6Imh0dHBzOi8vZ2l0aHViLmNvbS9tZ" +
-              "XNvc3BoZXJlL2Rjb3MtaGVsbG93b3JsZCIsInByZUluc3RhbGxOb3RlcyI6IkEgc2FtcGxlIHByZS1pbn" +
-              "N0YWxsYXRpb24gbWVzc2FnZSIsInBvc3RJbnN0YWxsTm90ZXMiOiJBIHNhbXBsZSBwb3N0LWluc3RhbGx" +
-              "hdGlvbiBtZXNzYWdlIn0=").asJson,
+             "AiLCJtYWludGFpbmVyIjoic3VwcG9ydEBtZXNvc3BoZXJlLmlvIiwiZGVzY3JpcHRpb24iOiJFeGFtcGxl" +
+             "IERDT1MgYXBwbGljYXRpb24gcGFja2FnZSIsInRhZ3MiOlsibWVzb3NwaGVyZSIsImV4YW1wbGUiLCJzdW" +
+             "Jjb21tYW5kIl0sInNlbGVjdGVkIjpmYWxzZSwid2Vic2l0ZSI6Imh0dHBzOi8vZ2l0aHViLmNvbS9tZXNv" +
+             "c3BoZXJlL2Rjb3MtaGVsbG93b3JsZCIsImZyYW1ld29yayI6ZmFsc2UsInByZUluc3RhbGxOb3RlcyI6Ik" +
+             "Egc2FtcGxlIHByZS1pbnN0YWxsYXRpb24gbWVzc2FnZSIsInBvc3RJbnN0YWxsTm90ZXMiOiJBIHNhbXBs" +
+             "ZSBwb3N0LWluc3RhbGxhdGlvbiBtZXNzYWdlIn0=").asJson,
           "DCOS_PACKAGE_REGISTRY_VERSION" -> "2.0".asJson,
           "DCOS_PACKAGE_VERSION" -> "0.1.0".asJson,
           "DCOS_PACKAGE_NAME" -> "helloworld".asJson,

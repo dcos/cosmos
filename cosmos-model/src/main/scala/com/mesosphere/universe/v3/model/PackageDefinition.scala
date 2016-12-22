@@ -59,8 +59,8 @@ object PackageDefinition {
     a: (String, Version, ReleaseVersion),
     b: (String, Version, ReleaseVersion)
   ): Int = {
-    val (aName, aVersion, aReleaseVersion) = a
-    val (bName, bVersion, bReleaseVersion) = b
+    val (aName, _, aReleaseVersion) = a
+    val (bName, _, bReleaseVersion) = b
 
     val orderName = aName.compare(bName)
     if (orderName != 0) {
