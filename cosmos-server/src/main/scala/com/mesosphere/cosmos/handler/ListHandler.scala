@@ -95,15 +95,23 @@ private[cosmos] final class ListHandler(
           repo
             .getPackageByReleaseVersion(app.pkgName, app.pkgReleaseVersion)
             .map { pkg =>
-              val adjustedPackage = pkg match {
+              val adjustedPackage: universe.v3.model.PackageDefinition = pkg match {
+                /* Note: The old code dropped CLI information when returning information to the
+                 * client. We will fix this when we move to the new APIs.
+                 *
+                 * The clients expect the both selected and framework to be set.
+                 */
                 case pkg: universe.v3.model.V3Package =>
-                  // Note: The old code dropped CLI information when returning information to the
-                  // client. We will fix this when we move to the new APIs.
                   pkg.copy(
+                    selected=pkg.selected orElse Some(false),
+                    framework=pkg.framework orElse Some(false),
                     resource=pkg.resource.map(_.copy(cli=None))
                   )
-                case pkg =>
-                  pkg
+                case pkg: universe.v3.model.V2Package =>
+                  pkg.copy(
+                    selected=pkg.selected orElse Some(false),
+                    framework=pkg.framework orElse Some(false)
+                  )
               }
 
               adjustedPackage.as[Try[InstalledPackageInformation]]
