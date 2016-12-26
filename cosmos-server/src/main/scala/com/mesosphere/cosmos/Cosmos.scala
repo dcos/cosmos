@@ -3,7 +3,6 @@ package com.mesosphere.cosmos
 import _root_.io.circe.Json
 import _root_.io.finch._
 import _root_.io.finch.circe.dropNullKeys._
-import _root_.io.github.benwhitehead.finch.FinchServer
 import com.mesosphere.cosmos.circe.Encoders._
 import com.mesosphere.cosmos.finch.EndpointHandler
 import com.mesosphere.cosmos.finch.FinchExtensions._
@@ -30,6 +29,7 @@ import com.mesosphere.cosmos.storage.StagedPackageStorage
 import com.mesosphere.cosmos.storage.installqueue.InstallQueue
 import com.mesosphere.universe
 import com.netaporter.uri.Uri
+import com.twitter.app.App
 import com.twitter.app.Flag
 import com.twitter.conversions.storage.intToStorageUnitableWholeNumber
 import com.twitter.finagle.Http
@@ -38,13 +38,22 @@ import com.twitter.finagle.Service
 import com.twitter.finagle.http.Request
 import com.twitter.finagle.http.Response
 import com.twitter.finagle.http.Status
-import com.twitter.finagle.netty3.Netty3ListenerTLSConfig
 import com.twitter.finagle.param.Label
 import com.twitter.finagle.ssl.Ssl
 import com.twitter.finagle.stats.NullStatsReceiver
 import com.twitter.finagle.stats.StatsReceiver
+import com.twitter.server.Admin
+import com.twitter.server.AdminHttpServer
+import com.twitter.server.Lifecycle
+import com.twitter.server.Stats
+import com.twitter.util.Await
 import com.twitter.util.Try
+import java.net.InetSocketAddress
+import java.util.logging.Level
+import java.util.logging.LogManager
 import org.slf4j.Logger
+import org.slf4j.bridge.SLF4JBridgeHandler
+
 
 private[cosmos] final class Cosmos(
   capabilitiesHandler: CapabilitiesHandler,
@@ -172,40 +181,64 @@ private[cosmos] final class Cosmos(
 
 }
 
-object Cosmos extends FinchServer {
-  def service: Service[Request, Response] = {
-    HttpProxySupport.configureProxySupport()
+// TODO: Deal with access logs
+// TODO: Deal with TLS
+// TODO: This object is doing too much. This should be a simple def main with most of logic moved to the class above!!!
+object Cosmos
+extends App
+with AdminHttpServer
+with Admin
+with Lifecycle
+with Lifecycle.Warmup
+with Stats {
 
-    startCosmos(statsReceiver.scope("cosmos"))
+  lazy val logger = org.slf4j.LoggerFactory.getLogger(getClass)
+
+  def main(): Unit = {
+    for (httpServer <- startServer) {
+      logger.info(s"HTTP server started on ${httpServer.boundAddress}")
+      closeOnExit(httpServer)
+      Await.result(httpServer)
+    }
+
+    // TODO: Start HTTPS server
   }
 
-  override def startServer(): Option[ListeningServer] = {
-    config.httpInterface.map { iface =>
-      val name = s"http/$serverName"
-      Http.server
-        .configured(Label(name))
-        .configured(Http.param.MaxRequestSize(config.maxRequestSize.megabytes))
-        .withStreaming(enabled = true)
-        .serve(iface, getService(s"srv/$name"))
+  private[this] def startServer(): Option[ListeningServer] = {
+    // TODO: Make default http port configurable
+    Some(new InetSocketAddress("0.0.0.0", 7070)).map { iface =>
+      //.configured(Label(name)) TODO: Add this back when we find out what it is doing.
+      //.configured(Http.param.MaxRequestSize(config.maxRequestSize.megabytes)) TODO: Add this back
+
+      Http
+        .server
+        .serve(iface, startCosmos(NullStatsReceiver)) // TODO: User a better stats receiver
     }
   }
 
   // TODO package-add: is this being tested?
-  override def startTlsServer(): Option[ListeningServer] = {
-    config.httpsInterface.map { iface =>
-      val name = s"https/$serverName"
-      val engineFactory = () =>
-        Ssl.server(config.certificatePath, config.keyPath, null, null, null) // scalastyle:ignore null
-      Http.server
-        .configured(Label(name))
-        .configured(Http.param.MaxRequestSize(config.maxRequestSize.megabytes))
-        .withStreaming(enabled = true)
-        .withTls(Netty3ListenerTLSConfig(engineFactory))
-        .serve(iface, getService(s"srv/$name"))
+  /*
+  private[this] def startTlsServer(): Option[ListeningServer] = {
+    // TODO: Make default https port configurable
+    Option.empty[(String, String, InetSocketAddress)].map {
+      case (certificatePath, keyPath, iface) =>
+        val engineFactory = () =>
+          Ssl.server(certificatePath, keyPath, null, null, null) // scalastyle:ignore null
+
+        //.configured(Label(name)) TODO: Add this back when we find out what it is doing
+        //.configured(Http.param.MaxRequestSize(config.maxRequestSize.megabytes)) TODO: Add this back
+
+        Http
+          .server
+          .withTls(Netty3ListenerTLSConfig(engineFactory))
+          .serve(iface, startCosmos(NullStatsReceiver)) // TODO: User a better stats receiver
     }
   }
+  */
 
   private[this] def startCosmos(implicit stats: StatsReceiver): Service[Request, Response] = {
+    HttpProxySupport.configureProxySupport()
+
     val adminRouter = configureDcosClients().get
 
     val zkUri = zookeeperUri()
@@ -366,4 +399,18 @@ object Cosmos extends FinchServer {
     requirement.fold[EndpointHandler[Req, Res]](new NotConfiguredHandler(operationName))(f)
   }
 
+  // TODO: Logging Configuration. Move this out of here.
+  init {
+    // Turn off Java util logging so that slf4j can configure it
+    LogManager.getLogManager.getLogger("").getHandlers.toList.foreach { l =>
+      l.setLevel(Level.OFF)
+    }
+    org.slf4j.LoggerFactory.getLogger("slf4j-logging").debug("Installing SLF4JLogging")
+    SLF4JBridgeHandler.install()
+  }
+
+  onExit {
+    org.slf4j.LoggerFactory.getLogger("slf4j-logging").debug("Uninstalling SLF4JLogging")
+    SLF4JBridgeHandler.uninstall()
+  }
 }

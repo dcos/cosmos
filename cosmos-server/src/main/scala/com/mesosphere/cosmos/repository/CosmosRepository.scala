@@ -7,13 +7,12 @@ import com.mesosphere.cosmos.rpc
 import com.mesosphere.universe
 import com.mesosphere.universe.v3.syntax.PackageDefinitionOps._
 import com.netaporter.uri.Uri
-import com.twitter.util.Future
-import com.twitter.common.util.{LowResClock, Clock}
 import com.twitter.common.quantity.Amount
 import com.twitter.common.quantity.Time
-
-import java.util.concurrent.atomic.AtomicReference
+import com.twitter.common.util.Clock
+import com.twitter.util.Future
 import java.util.concurrent.TimeUnit
+import java.util.concurrent.atomic.AtomicReference
 import java.util.regex.Pattern
 import scala.util.matching.Regex
 
@@ -30,19 +29,20 @@ trait CosmosRepository extends PackageCollection {
 }
 
 object CosmosRepository {
-  def apply(repository: rpc.v1.model.PackageRepository,
-            universeClient: UniverseClient,
-            clock: Clock = new LowResClock(Amount.of(1L, Time.SECONDS))
-            )
-    : CosmosRepository = {
+  def apply(
+    repository: rpc.v1.model.PackageRepository,
+    universeClient: UniverseClient,
+    clock: Clock = Clock.SYSTEM_CLOCK
+  ): CosmosRepository = {
     new DefaultCosmosRepository(repository, universeClient, clock)
   }
 }
 
-final class DefaultCosmosRepository(
-    override val repository: rpc.v1.model.PackageRepository,
-    universeClient: UniverseClient,
-    clock: Clock = new LowResClock(Amount.of(1L, Time.SECONDS))
+// TODO: Rename DefaultCosmosRepository to CosmosRepository
+private[repository] final class DefaultCosmosRepository (
+  override val repository: rpc.v1.model.PackageRepository,
+  universeClient: UniverseClient,
+  clock: Clock
 )
   extends CosmosRepository {
   private[this] val lastRepository = new AtomicReference(

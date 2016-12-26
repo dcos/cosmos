@@ -16,8 +16,8 @@ object CosmosBuild extends Build {
     val circe = "0.5.2"
     val curator = "2.11.1"
     val fastparse = "0.4.1"
+    val twitterServer = "1.26.0"
     val finch = "0.10.0"
-    val finchServer = "0.9.1"
     val guava = "16.0.1"
     val jsonSchema = "2.2.6"
     val logback = "1.1.3"
@@ -29,6 +29,7 @@ object CosmosBuild extends Build {
     val twitterUtilCore = "6.30.0"
     val zookeeper = "3.4.6"
     val aws = "1.11.63"
+    val slf4j = "1.7.10"
   }
 
   object Deps {
@@ -69,6 +70,10 @@ object CosmosBuild extends Build {
       "com.lihaoyi" %% "fastparse" % V.fastparse
     )
 
+    val twitterServer = Seq(
+      "com.twitter" %% "twitter-server" % V.twitterServer
+    )
+
     val finch = Seq(
       "com.github.finagle" %% "finch-core" % V.finch
     ) ++ Seq(
@@ -77,14 +82,6 @@ object CosmosBuild extends Build {
       ExclusionRule("io.circe", "circe-core"),
       ExclusionRule("io.circe", "circe-jawn"),
       ExclusionRule("io.circe", "circe-jackson")
-    ))
-
-    val finchServer = Seq(
-      "io.github.benwhitehead.finch" %% "finch-server" % V.finchServer
-    ).map(_.excludeAll(
-      // mustache is pulled in for the core application, so we exclude the transitive version
-      // pulled in my twitter-server
-      ExclusionRule("com.github.spullara.mustache.java", "compiler")
     ))
 
     val guava = Seq(
@@ -132,6 +129,18 @@ object CosmosBuild extends Build {
       // Temporary solution for now; the long term solution is to upgrade twitter-server
       ExclusionRule("com.fasterxml.jackson.core")
     ))
+
+    val slf4j = Seq(
+      "org.slf4j" % "slf4j-api" % V.slf4j,
+      "org.slf4j" % "jul-to-slf4j" % V.slf4j,
+      "org.slf4j" % "jcl-over-slf4j" % V.slf4j,
+      "org.slf4j" % "log4j-over-slf4j" % V.slf4j
+    )
+
+    val twitterCommons = Seq(
+      "com.twitter.common" % "util-system-mocks" % "0.0.27",
+      "com.twitter.common" % "quantity" % "0.0.31"
+    )
 
   }
 
@@ -378,13 +387,15 @@ object CosmosBuild extends Build {
     .settings(
       libraryDependencies ++=
         Deps.circe
+          ++ Deps.twitterServer
           ++ Deps.curator
-          ++ Deps.finchServer
           ++ Deps.logback
           ++ Deps.mustache
           ++ Deps.scalaUri
           ++ Deps.bijectionUtil
           ++ Deps.aws
+          ++ Deps.slf4j
+          ++ Deps.twitterCommons
     )
     .dependsOn(
       finch % "compile;test->test",
