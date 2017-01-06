@@ -149,20 +149,21 @@ object Encoders extends LowPriorityImplicits {
    * message, which could contain information that we don't want to surface to users in ordinary
    * error responses. It's better to make a conscious decision to include error data when needed.
    */
-  implicit def dropThrowableFromEncodedObjects[K <: Symbol, H <: Throwable, T <: HList](implicit
-    encodeTail: Lazy[DerivedObjectEncoder[T]]
-  ): DerivedObjectEncoder[FieldType[K, H] :: T] =
+  implicit def dropThrowableFromEncodedObjects[K <: Symbol, H <: Throwable, T <: HList](
+    implicit encodeTail: Lazy[DerivedObjectEncoder[T]]
+  ): Lazy[DerivedObjectEncoder[FieldType[K, H] :: T]] = {
     new DerivedObjectEncoder[FieldType[K, H] :: T] {
       def encodeObject(a: FieldType[K, H] :: T): JsonObject = {
         encodeTail.value.encodeObject(a.tail)
       }
     }
+  }
 
   // Omits fields of type `Option[Throwable]` when encoding objects.
   // See comment above `dropThrowableFromEncodedObjects` for an explanation.
   implicit def dropOptionThrowableFromEncodedObjects[K <: Symbol, H <: Option[Throwable], T <: HList](implicit
     encodeTail: Lazy[DerivedObjectEncoder[T]]
-  ): DerivedObjectEncoder[FieldType[K, H] :: T] = {
+  ): Lazy[DerivedObjectEncoder[FieldType[K, H] :: T]] = {
     new DerivedObjectEncoder[FieldType[K, H] :: T] {
       override def encodeObject(a: FieldType[K, H] :: T): JsonObject = {
         encodeTail.value.encodeObject(a.tail)

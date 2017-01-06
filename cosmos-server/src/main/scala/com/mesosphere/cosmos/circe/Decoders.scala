@@ -1,23 +1,25 @@
 package com.mesosphere.cosmos.circe
 
-import cats.data.Xor
+import cats.syntax.either._
 import com.mesosphere.cosmos.CirceError
-import com.mesosphere.universe.common.circe.Decoders._
 import com.mesosphere.cosmos.model.ZooKeeperStorageEnvelope
 import com.mesosphere.cosmos.rpc.v1.circe.Decoders._
-import com.mesosphere.universe.common.circe.Decoders._
 import com.mesosphere.cosmos.storage.installqueue._
+import com.mesosphere.universe.common.circe.Decoders._
+import com.mesosphere.universe.common.circe.Decoders._
 import com.mesosphere.universe.v3.circe.Decoders._
 import io.circe.Decoder
 import io.circe.DecodingFailure
 import io.circe.HCursor
 import io.circe.generic.semiauto._
+import scala.util.Left
+import scala.util.Right
 
 object Decoders {
   def decode[T](value: String)(implicit decoder: Decoder[T]): T = {
     io.circe.jawn.decode[T](value) match {
-      case Xor.Right(result) => result
-      case Xor.Left(error) => throw new CirceError(error)
+      case Right(result) => result
+      case Left(error) => throw new CirceError(error)
     }
   }
 
@@ -43,7 +45,7 @@ object Decoders {
         case InstallName => hc.as[Install]
         case UniverseInstallName => hc.as[UniverseInstall]
         case UninstallName => hc.as[Uninstall]
-        case tp: String => Xor.left(DecodingFailure(
+        case tp: String => Left(DecodingFailure(
           s"Encountered unknown type [$tp]" +
             " while trying to decode Operation", hc.history))
       }
@@ -70,7 +72,7 @@ object Decoders {
       hc.downField("type").as[String].flatMap {
         case PendingName => hc.as[Pending]
         case FailedName => hc.as[Failed]
-        case tp: String => Xor.left(DecodingFailure(
+        case tp: String => Left(DecodingFailure(
           s"Encountered unknown type [$tp]" +
             " while trying to decode OperationStatus", hc.history)
         )

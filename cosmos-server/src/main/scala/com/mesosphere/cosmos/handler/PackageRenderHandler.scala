@@ -1,7 +1,9 @@
 package com.mesosphere.cosmos.handler
 
-import cats.data.Xor
-import com.mesosphere.cosmos.{CirceError, JsonSchemaMismatch, MarathonTemplateMustBeJsonObject, ServiceMarathonTemplateNotFound}
+import com.mesosphere.cosmos.CirceError
+import com.mesosphere.cosmos.JsonSchemaMismatch
+import com.mesosphere.cosmos.MarathonTemplateMustBeJsonObject
+import com.mesosphere.cosmos.ServiceMarathonTemplateNotFound
 import com.mesosphere.cosmos.finch.EndpointHandler
 import com.mesosphere.cosmos.http.RequestSession
 import com.mesosphere.cosmos.render._
@@ -13,6 +15,8 @@ import com.mesosphere.universe.v3.syntax.PackageDefinitionOps._
 import com.twitter.bijection.Conversion.asMethod
 import com.twitter.util.Future
 import io.circe.syntax._
+import scala.util.Left
+import scala.util.Right
 
 private[cosmos] final class PackageRenderHandler(
   packageCache: PackageCollection
@@ -31,16 +35,19 @@ private[cosmos] final class PackageRenderHandler(
           PackageDefinitionRenderer.renderMarathonV2App(uri, pkg, request.options, request.appId)
 
         packageConfig match {
-          case Xor.Right(json) =>
+          case Right(json) =>
             Future.value(RenderResponse(json))
-          case Xor.Left(pdre) => pdre match {
+          case Left(pdre) => pdre match {
             case OptionsValidationFailure(validationErrors) =>
               Future.exception(JsonSchemaMismatch(validationErrors))
             case InvalidLabelSchema(cause) => Future.exception(CirceError(cause))
             case RenderedTemplateNotJson(cause) => Future.exception(CirceError(cause))
-            case RenderedTemplateNotJsonObject => Future.exception(MarathonTemplateMustBeJsonObject)
+            case RenderedTemplateNotJsonObject =>
+              Future.exception(MarathonTemplateMustBeJsonObject)
             case OptionsNotAllowed =>
-              val error = Map("message" -> "No schema available to validate the provided options").asJson
+              val error = Map(
+                "message" -> "No schema available to validate the provided options"
+              ).asJson
               Future.exception(JsonSchemaMismatch(List(error)))
             case MissingMarathonV2AppTemplate =>
               Future.exception(ServiceMarathonTemplateNotFound(pkg.name, pkg.version))

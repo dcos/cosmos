@@ -1,13 +1,18 @@
 package com.mesosphere.cosmos.finch
 
-import cats.data.Xor
-import com.mesosphere.cosmos.http.{Authorization, MediaType, RequestSession}
+import com.mesosphere.cosmos.http.Authorization
+import com.mesosphere.cosmos.http.MediaType
+import com.mesosphere.cosmos.http.RequestSession
 import com.twitter.finagle.http.Status
-import com.twitter.util.{Await, Future}
+import com.twitter.util.Await
+import com.twitter.util.Future
+import io.circe.Decoder
+import io.circe.Encoder
+import io.circe.Json
 import io.circe.syntax._
-import io.circe.{Decoder, Encoder, Json}
 import io.finch._
 import org.scalatest.FreeSpec
+import scala.util.Right
 
 final class EndpointHandlerSpec extends FreeSpec {
 
@@ -165,7 +170,7 @@ object EndpointHandlerSpec {
 
   def extractBody[A: Decoder](result: Future[Output[Json]]): A = {
     val output = Await.result(result)
-    val Xor.Right(body) = output.value.as[A]
+    val Right(body) = output.value.as[A]
     body
   }
 

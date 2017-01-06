@@ -1,23 +1,27 @@
 package com.mesosphere.cosmos.render
 
-import cats.data.Xor
+import cats.syntax.either._
 import com.github.fge.jsonschema.main.JsonSchemaFactory
 import com.github.mustachejava.DefaultMustacheFactory
 import com.mesosphere.cosmos.jsonschema.JsonSchema
-import com.mesosphere.cosmos.thirdparty.marathon.model.AppId
 import com.mesosphere.cosmos.thirdparty.marathon.circe.Encoders.encodeAppId
+import com.mesosphere.cosmos.thirdparty.marathon.model.AppId
+import com.mesosphere.universe
 import com.mesosphere.universe.common.ByteBuffers
 import com.mesosphere.universe.v3.circe.Encoders._
-import com.mesosphere.universe.v3.model.{PackageDefinition, V2Package, V3Package}
 import com.mesosphere.universe.v3.syntax.PackageDefinitionOps._
 import com.netaporter.uri.Uri
-import io.circe.{Json, JsonObject}
-import io.circe.syntax._
+import io.circe.Json
+import io.circe.JsonObject
 import io.circe.jawn.parse
-
-import java.io.{StringReader, StringWriter}
+import io.circe.syntax._
+import java.io.StringReader
+import java.io.StringWriter
 import java.nio.ByteBuffer
 import java.nio.charset.StandardCharsets
+import scala.util.Either
+import scala.util.Left
+import scala.util.Right
 
 
 object PackageDefinitionRenderer {
@@ -26,15 +30,19 @@ object PackageDefinitionRenderer {
 
   def renderMarathonV2App(
     sourceUri: Uri,
-    pkgDef: PackageDefinition,
+    pkgDef: universe.v3.model.PackageDefinition,
     options: Option[JsonObject],
     marathonAppId: Option[AppId]
-  ): Xor[PackageDefinitionRenderError, Json] = {
+  ): Either[PackageDefinitionRenderError, Json] = {
     pkgDef.marathon match {
-      case None => Xor.Left(MissingMarathonV2AppTemplate)
+      case None => Left(MissingMarathonV2AppTemplate)
       case Some(m) =>
         val defaultOptions = pkgDef.config.map(JsonSchema.extractDefaultsFromSchema)
-        val defaultOptionsAndUserOptions = Seq(defaultOptions, options).flatten.foldLeft(JsonObject.empty)(merge)
+        val defaultOptionsAndUserOptions = Seq(
+          defaultOptions,
+          options
+        ).flatten.foldLeft(JsonObject.empty)(merge)
+
         validateOptionsAgainstSchema(pkgDef, defaultOptionsAndUserOptions).flatMap { _ =>
           // now that we know the users options are valid for the schema, we build up a composite json object
           // to send into the mustache context for rendering. The following seq prepares for the merge
@@ -51,9 +59,15 @@ object PackageDefinitionRenderer {
                 val labels = MarathonLabels(pkgDef, sourceUri)
 
                 val newLabelsAndAppId = Seq(
-                  Some(labels.requiredLabelsJson).map(obj => JsonObject.singleton("labels", Json.fromJsonObject(obj))),
-                  Some(existingLabels).map(obj => JsonObject.singleton("labels", Json.fromJsonObject(obj))),
-                  Some(labels.nonOverridableLabelsJson).map(obj => JsonObject.singleton("labels", Json.fromJsonObject(obj))),
+                  Some(labels.requiredLabelsJson).map(
+                    obj => JsonObject.singleton("labels", Json.fromJsonObject(obj))
+                  ),
+                  Some(existingLabels).map(
+                    obj => JsonObject.singleton("labels", Json.fromJsonObject(obj))
+                  ),
+                  Some(labels.nonOverridableLabelsJson).map(
+                    obj => JsonObject.singleton("labels", Json.fromJsonObject(obj))
+                  ),
                   marathonAppId.map(appIdDoc)
                 ).flatten.foldLeft(JsonObject.empty)(merge)
 
@@ -66,24 +80,28 @@ object PackageDefinitionRenderer {
   }
 
   private[this] def validateOptionsAgainstSchema(
-    pkgDef: PackageDefinition,
+    pkgDef: universe.v3.model.PackageDefinition,
     options: JsonObject
-  ): Xor[PackageDefinitionRenderError, Unit] = {
+  ): Either[PackageDefinitionRenderError, Unit] = {
     (pkgDef.config, options.nonEmpty) match {
       // Success scenarios
-      case (None, false) => Xor.Right(())
-      case (Some(_), false) => Xor.Right(())
+      case (None, false) => Right(())
+      case (Some(_), false) => Right(())
       // Failure scenarios
-      case (None, true) => Xor.Left(OptionsNotAllowed)
+      case (None, true) => Left(OptionsNotAllowed)
       case (Some(schema), true) =>
         JsonSchema.jsonObjectMatchesSchema(options, schema)
           .leftMap(OptionsValidationFailure)
     }
   }
 
-  private[this] def resourceJson(pkgDef: PackageDefinition): Option[JsonObject] = pkgDef match {
-    case v2: V2Package => v2.resource.map(res => JsonObject.singleton("resource", res.asJson))
-    case v3: V3Package => v3.resource.map(res => JsonObject.singleton("resource", res.asJson))
+  private[this] def resourceJson(
+    pkgDef: universe.v3.model.PackageDefinition
+  ): Option[JsonObject] = pkgDef match {
+    case v2: universe.v3.model.V2Package =>
+      v2.resource.map(res => JsonObject.singleton("resource", res.asJson))
+    case v3: universe.v3.model.V3Package =>
+      v3.resource.map(res => JsonObject.singleton("resource", res.asJson))
   }
 
   private[render] def merge(target: JsonObject, fragment: JsonObject): JsonObject = {
@@ -108,7 +126,7 @@ object PackageDefinitionRenderer {
   private[this] def renderTemplate(
     template: ByteBuffer,
     context: JsonObject
-  ): Xor[PackageDefinitionRenderError, JsonObject] = {
+  ): Either[PackageDefinitionRenderError, JsonObject] = {
     val renderedJsonString = {
       val templateString = new String(ByteBuffers.getBytes(template), StandardCharsets.UTF_8)
       val strReader = new StringReader(templateString)
@@ -120,9 +138,9 @@ object PackageDefinitionRenderer {
     }
 
     parse(renderedJsonString).map(_.asObject) match {
-      case Xor.Left(pe)           => Xor.Left(RenderedTemplateNotJson(pe))
-      case Xor.Right(None)        => Xor.Left(RenderedTemplateNotJsonObject)
-      case Xor.Right(Some(obj))   => Xor.Right(obj)
+      case Left(pe)           => Left(RenderedTemplateNotJson(pe))
+      case Right(None)        => Left(RenderedTemplateNotJsonObject)
+      case Right(Some(obj))   => Right(obj)
     }
   }
 
@@ -138,7 +156,7 @@ object PackageDefinitionRenderer {
     )
   }
 
-  private[this] def extractLabels(obj: Json): Xor[PackageDefinitionRenderError, JsonObject] = {
+  private[this] def extractLabels(obj: Json): Either[PackageDefinitionRenderError, JsonObject] = {
     val hasLabels = obj.cursor.fieldSet.exists(_.contains("labels"))
     if (hasLabels) {
       // this is a bit of a sketchy check since marathon could change underneath us, but we want to try and
@@ -149,11 +167,11 @@ object PackageDefinitionRenderer {
       // If marathon ever changes its schema for labels then this code will most likely need a new version with
       // this version left intact for backward compatibility reasons.
       obj.cursor.get[Map[String, String]]("labels") match {
-        case Xor.Left(err) => Xor.Left(InvalidLabelSchema(err))
-        case Xor.Right(m) => Xor.Right(JsonObject.fromMap(m.mapValues(_.asJson)))
+        case Left(err) => Left(InvalidLabelSchema(err))
+        case Right(m) => Right(JsonObject.fromMap(m.mapValues(_.asJson)))
       }
     } else {
-      Xor.right(JsonObject.empty)
+      Right(JsonObject.empty)
     }
   }
 

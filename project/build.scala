@@ -13,7 +13,7 @@ object CosmosBuild extends Build {
 
   object V {
     val bijection = "0.9.4"
-    val circe = "0.5.2"
+    val circe = "0.6.1"
     val curator = "2.11.1"
     val fastparse = "0.4.1"
     val twitterServer = "1.26.0"

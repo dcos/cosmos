@@ -1,13 +1,13 @@
 package com.mesosphere.cosmos.thirdparty.marathon.circe
 
-import cats.data.Xor
-import com.mesosphere.cosmos.thirdparty.marathon.model.AppId
 import com.mesosphere.cosmos.thirdparty.marathon.circe.Decoders._
 import com.mesosphere.cosmos.thirdparty.marathon.circe.Encoders._
+import com.mesosphere.cosmos.thirdparty.marathon.model.AppId
 import io.circe.Json
 import io.circe.jawn.decode
 import io.circe.syntax._
 import org.scalatest.FreeSpec
+import scala.util.Right
 
 class EncodersDecodersSpec extends FreeSpec {
 
@@ -19,7 +19,7 @@ class EncodersDecodersSpec extends FreeSpec {
     }
     "decode" in {
       val id = AppId(absolute)
-      val Xor.Right(decoded) = decode[AppId](relative.asJson.noSpaces)
+      val Right(decoded) = decode[AppId](relative.asJson.noSpaces)
       assertResult(id)(decoded)
     }
   }

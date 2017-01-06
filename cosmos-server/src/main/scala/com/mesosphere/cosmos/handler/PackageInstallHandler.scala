@@ -1,8 +1,7 @@
 package com.mesosphere.cosmos.handler
 
-import cats.data.Xor
-import com.mesosphere.cosmos.JsonSchemaMismatch
 import com.mesosphere.cosmos.CirceError
+import com.mesosphere.cosmos.JsonSchemaMismatch
 import com.mesosphere.cosmos.MarathonTemplateMustBeJsonObject
 import com.mesosphere.cosmos.PackageAlreadyInstalled
 import com.mesosphere.cosmos.PackageRunner
@@ -18,6 +17,8 @@ import com.mesosphere.universe.v3.syntax.PackageDefinitionOps._
 import com.twitter.bijection.Conversion.asMethod
 import com.twitter.util.Future
 import io.circe.syntax._
+import scala.util.Left
+import scala.util.Right
 
 private[cosmos] final class PackageInstallHandler(
   packageCollection: PackageCollection,
@@ -37,7 +38,7 @@ private[cosmos] final class PackageInstallHandler(
           PackageDefinitionRenderer.renderMarathonV2App(sourceUri, pkg, request.options, request.appId)
 
         packageConfig match {
-          case Xor.Right(renderedMarathonJson) =>
+          case Right(renderedMarathonJson) =>
             packageRunner.launch(renderedMarathonJson)
               .map { runnerResponse =>
                 rpc.v2.model.InstallResponse(
@@ -51,18 +52,18 @@ private[cosmos] final class PackageInstallHandler(
               case ServiceAlreadyStarted() =>
                 throw PackageAlreadyInstalled()
             }
-          case Xor.Left(OptionsValidationFailure(validationErrors)) =>
+          case Left(OptionsValidationFailure(validationErrors)) =>
             Future.exception(JsonSchemaMismatch(validationErrors))
-          case Xor.Left(InvalidLabelSchema(cause)) =>
+          case Left(InvalidLabelSchema(cause)) =>
             Future.exception(CirceError(cause))
-          case Xor.Left(RenderedTemplateNotJson(cause)) =>
+          case Left(RenderedTemplateNotJson(cause)) =>
             Future.exception(CirceError(cause))
-          case Xor.Left(RenderedTemplateNotJsonObject) =>
+          case Left(RenderedTemplateNotJsonObject) =>
             Future.exception(MarathonTemplateMustBeJsonObject)
-          case Xor.Left(OptionsNotAllowed) =>
+          case Left(OptionsNotAllowed) =>
             val error = Map("message" -> "No schema available to validate the provided options").asJson
             Future.exception(JsonSchemaMismatch(List(error)))
-          case Xor.Left(MissingMarathonV2AppTemplate) =>
+          case Left(MissingMarathonV2AppTemplate) =>
             Future {
               rpc.v2.model.InstallResponse(
                 packageName = pkg.name,

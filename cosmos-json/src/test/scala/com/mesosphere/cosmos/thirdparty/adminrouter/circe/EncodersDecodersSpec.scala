@@ -1,13 +1,13 @@
 package com.mesosphere.cosmos.thirdparty.adminrouter.circe
 
-import cats.data.Xor
-import com.mesosphere.cosmos.thirdparty.adminrouter.model.DcosVersion
 import com.mesosphere.cosmos.thirdparty.adminrouter.circe.Decoders._
+import com.mesosphere.cosmos.thirdparty.adminrouter.model.DcosVersion
 import com.mesosphere.universe.v3.model.DcosReleaseVersion
 import com.mesosphere.universe.v3.model.DcosReleaseVersion._
 import io.circe.Json
 import io.circe.syntax._
 import org.scalatest.FreeSpec
+import scala.util.Right
 
 class EncodersDecodersSpec extends FreeSpec {
 
@@ -26,7 +26,7 @@ class EncodersDecodersSpec extends FreeSpec {
         "f12bff891be7108962c7c98e530e1f2cd8d4e56b"
       )
 
-      val Xor.Right(actual) = json.as[DcosVersion]
+      val Right(actual) = json.as[DcosVersion]
       assertResult(expected)(actual)
     }
   }

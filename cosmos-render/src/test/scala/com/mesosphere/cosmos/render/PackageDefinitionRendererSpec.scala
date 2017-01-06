@@ -1,19 +1,22 @@
 package com.mesosphere.cosmos.render
 
-import cats.data.Xor
-import com.mesosphere.cosmos.thirdparty.marathon.model.AppId
+import cats.syntax.either._
 import com.mesosphere.cosmos.thirdparty.marathon.circe.Decoders.decodeAppId
+import com.mesosphere.cosmos.thirdparty.marathon.model.AppId
 import com.mesosphere.universe.v3.model._
 import com.netaporter.uri.dsl._
-import io.circe.{Json, JsonObject, ParsingFailure}
+import io.circe.Json
+import io.circe.JsonObject
+import io.circe.ParsingFailure
 import io.circe.jawn._
 import io.circe.syntax._
-import org.scalatest.FreeSpec
-import org.scalatest.prop.TableDrivenPropertyChecks
-
-import scala.io.Source
 import java.nio.ByteBuffer
 import java.nio.charset.StandardCharsets
+import org.scalatest.FreeSpec
+import org.scalatest.prop.TableDrivenPropertyChecks
+import scala.io.Source
+import scala.util.Left
+import scala.util.Right
 
 class PackageDefinitionRendererSpec extends FreeSpec with TableDrivenPropertyChecks {
 
@@ -32,7 +35,7 @@ class PackageDefinitionRendererSpec extends FreeSpec with TableDrivenPropertyChe
       val pd = packageDefinition(mustache)
 
       PackageDefinitionRenderer.renderMarathonV2App("http://someplace", pd, None, None) match {
-        case Xor.Left(InvalidLabelSchema(err)) =>
+        case Left(InvalidLabelSchema(err)) =>
           assertResult("String: El(DownField(idx),true,false),El(DownField(labels),true,false)")(err.getMessage)
         case _ =>
           fail("expected InvalidLabelSchemaError")
@@ -51,8 +54,12 @@ class PackageDefinitionRendererSpec extends FreeSpec with TableDrivenPropertyChe
 
       val pd = packageDefinition(mustache)
 
-      val Xor.Right(some) = PackageDefinitionRenderer.renderMarathonV2App("http://someplace", pd, None, None)
-        .flatMap(_.hcursor.downField("env").downField("some").as[String])
+      val Right(some) = PackageDefinitionRenderer.renderMarathonV2App(
+        "http://someplace",
+        pd,
+        None,
+        None
+      ).right.get.hcursor.downField("env").downField("some").as[String]
 
       assertResult("thing")(some)
     }
@@ -66,9 +73,9 @@ class PackageDefinitionRendererSpec extends FreeSpec with TableDrivenPropertyChe
       )
       val pkg = packageDefinition(json.noSpaces)
 
-      val Xor.Right(rendered) = PackageDefinitionRenderer.renderMarathonV2App("http://someplace", pkg, None, None)
+      val Right(rendered) = PackageDefinitionRenderer.renderMarathonV2App("http://someplace", pkg, None, None)
 
-      val Xor.Right(labels) = rendered.cursor.get[Map[String, String]]("labels")
+      val Right(labels) = rendered.cursor.get[Map[String, String]]("labels")
       assertResult("A")(labels("a"))
       assertResult("B")(labels("b"))
     }
@@ -99,7 +106,7 @@ class PackageDefinitionRendererSpec extends FreeSpec with TableDrivenPropertyChe
           config = Some(buildConfig(Json.fromJsonObject(defaultsJson)))
         )
 
-        val Xor.Right(marathonJson) = PackageDefinitionRenderer.renderMarathonV2App(
+        val Right(marathonJson) = PackageDefinitionRenderer.renderMarathonV2App(
           "http://someplace",
           packageDefinition,
           Some(optionsJson),
@@ -125,7 +132,7 @@ class PackageDefinitionRendererSpec extends FreeSpec with TableDrivenPropertyChe
       "user specified appId" +
       "]" in {
       val s = classpathJsonString("/com/mesosphere/cosmos/render/test-schema.json")
-      val Xor.Right(schema) = parse(s).map(_.asObject.get)
+      val Right(schema) = parse(s).map(_.asObject.get)
 
       val mustache =
         """
@@ -175,23 +182,23 @@ class PackageDefinitionRendererSpec extends FreeSpec with TableDrivenPropertyChe
       ).asObject.get
 
       val appId = AppId("/override")
-      val Xor.Right(rendered) = PackageDefinitionRenderer.renderMarathonV2App(
+      val Right(rendered) = PackageDefinitionRenderer.renderMarathonV2App(
         "http://someplace",
         pkg,
         Some(options),
         Some(appId)
       )
 
-      val Xor.Right(actualAppId) = rendered.cursor.get[AppId]("id")
+      val Right(actualAppId) = rendered.cursor.get[AppId]("id")
       assertResult(appId)(actualAppId)
 
-      val Xor.Right(actualUri) = rendered.cursor.get[String]("uri")
+      val Right(actualUri) = rendered.cursor.get[String]("uri")
       assertResult("http://someplace/blob")(actualUri)
 
-      val Xor.Right(actualDcosPackageName) = rendered.hcursor.downField("labels").get[String]("DCOS_PACKAGE_NAME")
+      val Right(actualDcosPackageName) = rendered.hcursor.downField("labels").get[String]("DCOS_PACKAGE_NAME")
       assertResult("testing-name")(actualDcosPackageName)
 
-      val Xor.Right(actualDcosPackageCommand) = rendered.hcursor.downField("labels").get[String]("DCOS_PACKAGE_COMMAND")
+      val Right(actualDcosPackageCommand) = rendered.hcursor.downField("labels").get[String]("DCOS_PACKAGE_COMMAND")
       assert(actualDcosPackageCommand !== "should-be-overridden-cmd")
     }
 
@@ -207,7 +214,7 @@ class PackageDefinitionRendererSpec extends FreeSpec with TableDrivenPropertyChe
         description = "description"
       )
 
-      val Xor.Left(err) = PackageDefinitionRenderer.renderMarathonV2App("http://someplace", pkg, None, None)
+      val Left(err) = PackageDefinitionRenderer.renderMarathonV2App("http://someplace", pkg, None, None)
       assertResult(MissingMarathonV2AppTemplate)(err)
     }
 
@@ -228,7 +235,7 @@ class PackageDefinitionRendererSpec extends FreeSpec with TableDrivenPropertyChe
         )
       ).asObject.get
 
-      val Xor.Left(err) = PackageDefinitionRenderer.renderMarathonV2App("http://someplace", pkg, Some(options), None)
+      val Left(err) = PackageDefinitionRenderer.renderMarathonV2App("http://someplace", pkg, Some(options), None)
       assertResult(OptionsNotAllowed)(err)
     }
 
@@ -244,7 +251,7 @@ class PackageDefinitionRendererSpec extends FreeSpec with TableDrivenPropertyChe
         marathon = Some(Marathon(mustacheBytes))
       )
 
-      val Xor.Left(RenderedTemplateNotJson(ParsingFailure(_, cause))) =
+      val Left(RenderedTemplateNotJson(ParsingFailure(_, cause))) =
         PackageDefinitionRenderer.renderMarathonV2App("http://someplace", pkg, None, None)
       assert(cause.isInstanceOf[jawn.IncompleteParseException])
     }
@@ -261,7 +268,7 @@ class PackageDefinitionRendererSpec extends FreeSpec with TableDrivenPropertyChe
         marathon = Some(Marathon(mustacheBytes))
       )
 
-      val Xor.Left(err) = PackageDefinitionRenderer.renderMarathonV2App("http://someplace", pkg, None, None)
+      val Left(err) = PackageDefinitionRenderer.renderMarathonV2App("http://someplace", pkg, None, None)
       assertResult(RenderedTemplateNotJsonObject)(err)
     }
 
@@ -289,14 +296,14 @@ class PackageDefinitionRendererSpec extends FreeSpec with TableDrivenPropertyChe
       ).asObject.get
 
       val appId = AppId("/override")
-      val Xor.Right(rendered) = PackageDefinitionRenderer.renderMarathonV2App(
+      val Right(rendered) = PackageDefinitionRenderer.renderMarathonV2App(
         "http://someplace",
         pkg,
         Some(options),
         Some(appId)
       )
 
-      val Xor.Right(actualAppId) = rendered.cursor.get[AppId]("id")
+      val Right(actualAppId) = rendered.cursor.get[AppId]("id")
       assertResult(appId)(actualAppId)
     }
 
@@ -323,9 +330,9 @@ class PackageDefinitionRendererSpec extends FreeSpec with TableDrivenPropertyChe
             ))
           ))
         )
-        val Xor.Right(rendered) = PackageDefinitionRenderer.renderMarathonV2App("http://someplace", pkg, None, None)
+        val Right(rendered) = PackageDefinitionRenderer.renderMarathonV2App("http://someplace", pkg, None, None)
 
-        val Xor.Right(renderedValue) = rendered.cursor.get[String]("some")
+        val Right(renderedValue) = rendered.cursor.get[String]("some")
         assertResult("http://someplace/blob")(renderedValue)
       }
 
@@ -351,9 +358,9 @@ class PackageDefinitionRendererSpec extends FreeSpec with TableDrivenPropertyChe
             ))
           ))
         )
-        val Xor.Right(rendered) = PackageDefinitionRenderer.renderMarathonV2App("http://someplace", pkg, None, None)
+        val Right(rendered) = PackageDefinitionRenderer.renderMarathonV2App("http://someplace", pkg, None, None)
 
-        val Xor.Right(renderedValue) = rendered.cursor.get[String]("some")
+        val Right(renderedValue) = rendered.cursor.get[String]("some")
         assertResult("http://someplace/blob")(renderedValue)
       }
     }

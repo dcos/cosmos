@@ -1,6 +1,5 @@
 package com.mesosphere.universe.v3.circe
 
-import cats.data.Xor
 import com.mesosphere.universe.v3.circe.Decoders._
 import com.mesosphere.universe.v3.circe.Encoders._
 import com.mesosphere.universe.v3.model.DcosReleaseVersion
@@ -9,6 +8,7 @@ import io.circe.Json
 import io.circe.jawn.decode
 import io.circe.syntax._
 import org.scalatest.FreeSpec
+import scala.util.Right
 
 class DcosReleaseVersionEncoderDecoderSpec extends FreeSpec {
 
@@ -19,7 +19,7 @@ class DcosReleaseVersionEncoderDecoderSpec extends FreeSpec {
     val obj = DcosReleaseVersion(Version(major), subVersions, Some(Suffix("beta")))
     "decode"  in {
       val stringToDecode = s""""$str""""
-      val Xor.Right(decoded) = decode[DcosReleaseVersion](stringToDecode)
+      val Right(decoded) = decode[DcosReleaseVersion](stringToDecode)
       assertResult(obj)(decoded)
     }
     "encode" in {
