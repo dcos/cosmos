@@ -36,6 +36,17 @@ object CosmosRepository {
   ): CosmosRepository = {
     new DefaultCosmosRepository(repository, universeClient, clock)
   }
+
+  def createRegex(query: String): Regex = {
+    s"""^${safePattern(query)}$$""".r
+  }
+
+  private[this] def safePattern(query: String): String = {
+      query.split("\\*", -1).map{
+        case "" => ""
+        case v => Pattern.quote(v)
+      }.mkString(".*")
+  }
 }
 
 // TODO: Rename DefaultCosmosRepository to CosmosRepository
@@ -96,7 +107,7 @@ private[repository] final class DefaultCosmosRepository (
     val predicate =
       query.map { value =>
         if (value.contains("*")) {
-          searchRegex(createRegex(value))
+          searchRegex(CosmosRepository.createRegex(value))
         } else {
           searchString(value.toLowerCase())
         }
@@ -162,17 +173,6 @@ private[repository] final class DefaultCosmosRepository (
             lastRepository.set(Some((newRepository, clock.nowMillis)))
         }
     }
-  }
-
-  private[this] def safePattern(query: String): String = {
-      query.split("\\*", -1).map{
-        case "" => ""
-        case v => Pattern.quote(v)
-      }.mkString(".*")
-  }
-
-  private[repository] def createRegex(query: String): Regex = {
-    s"""^${safePattern(query)}$$""".r
   }
 
   private[this] def searchRegex(

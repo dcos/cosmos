@@ -25,9 +25,9 @@ import com.mesosphere.universe.v2.model.PackageFiles
 import com.mesosphere.universe.v2.model.PackagingVersion
 import com.netaporter.uri.Uri
 import com.twitter.finagle.http._
-import com.twitter.io.Charsets
 import com.twitter.util.Await
 import com.twitter.util.Future
+import java.nio.charset.Charset
 import java.util.Base64
 import java.util.UUID
 import org.scalatest.BeforeAndAfterAll
@@ -446,7 +446,7 @@ object StandardLabels {
   }
 
   private[this] def decodeAndParse(encoded: String): Json = {
-    val decoded = new String(Base64.getDecoder.decode(encoded), Charsets.Utf8)
+    val decoded = new String(Base64.getDecoder.decode(encoded), Charset.forName("UTF-8"))
     val Right(parsed) = parse(decoded)
     parsed
   }

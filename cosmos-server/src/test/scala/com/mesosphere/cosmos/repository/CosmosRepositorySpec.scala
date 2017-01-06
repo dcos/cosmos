@@ -122,14 +122,11 @@ final class CosmosRepositorySpec extends FreeSpec {
     }
   }
   "createRegex" in {
-      val u = Uri.parse("/uri")
-      val rep = C.rpc.v1.model.PackageRepository("test", u)
-      val c = new DefaultCosmosRepository(rep, client(List(TestingPackages.MinimalV3ModelV2PackageDefinition)))
-      assertResult("^\\Qminimal\\E$")(c.createRegex("minimal").toString)
-      assertResult("^\\Qmin\\E.*\\Qmal\\E$")(c.createRegex("min*mal").toString)
-      assertResult("^\\Qmini\\E.*\\Q.+\\E$")(c.createRegex("mini*.+").toString)
-      assertResult("^\\Qminimal\\E.*$")(c.createRegex("minimal*").toString)
-      assertResult("^\\Qminimal\\E.*.*$")(c.createRegex("minimal**").toString)
+      assertResult("^\\Qminimal\\E$")(CosmosRepository.createRegex("minimal").toString)
+      assertResult("^\\Qmin\\E.*\\Qmal\\E$")(CosmosRepository.createRegex("min*mal").toString)
+      assertResult("^\\Qmini\\E.*\\Q.+\\E$")(CosmosRepository.createRegex("mini*.+").toString)
+      assertResult("^\\Qminimal\\E.*$")(CosmosRepository.createRegex("minimal*").toString)
+      assertResult("^\\Qminimal\\E.*.*$")(CosmosRepository.createRegex("minimal**").toString)
   }
   "search" - {
     "not found" in {

@@ -12,7 +12,7 @@ object CosmosBuild extends Build {
   lazy val projectVersion = "0.3.0-SNAPSHOT"
 
   object V {
-    val bijection = "0.9.2"
+    val bijection = "0.9.4"
     val circe = "0.5.2"
     val curator = "2.11.1"
     val fastparse = "0.4.1"
