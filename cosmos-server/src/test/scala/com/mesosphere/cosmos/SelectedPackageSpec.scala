@@ -3,7 +3,6 @@ package com.mesosphere.cosmos
 import _root_.io.circe.jawn.decode
 import _root_.io.circe.syntax._
 import _root_.io.circe.{Decoder, Encoder, Printer}
-import cats.data.Xor
 import com.mesosphere.cosmos.handler.PackageSearchHandler
 import com.mesosphere.cosmos.repository.PackageCollection
 import com.mesosphere.cosmos.rpc.v1.circe.Decoders._
@@ -19,6 +18,7 @@ import com.twitter.util.{Await, Future}
 import org.mockito.Mockito._
 import org.scalatest.FreeSpec
 import org.scalatest.mock.MockitoSugar
+import scala.util.Right
 
 final class SelectedPackageSpec extends FreeSpec with MockitoSugar {
 
@@ -108,7 +108,7 @@ final class SelectedPackageSpec extends FreeSpec with MockitoSugar {
       data: A,
       dropNullKeys: Boolean = false
     )(implicit d: Decoder[A], e: Encoder[A]): Unit = {
-      assertResult(Xor.Right(data)) {
+      assertResult(Right(data)) {
         decode[A](Printer.noSpaces.copy(dropNullKeys = dropNullKeys).pretty(data.asJson))
       }
     }

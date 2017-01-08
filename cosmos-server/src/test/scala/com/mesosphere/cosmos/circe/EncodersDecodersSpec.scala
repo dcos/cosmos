@@ -1,6 +1,5 @@
 package com.mesosphere.cosmos.circe
 
-import cats.data.Xor
 import com.google.common.io.CharStreams
 import com.mesosphere.cosmos.CirceError
 import com.mesosphere.cosmos.ConcurrentAccess
@@ -31,6 +30,9 @@ import io.circe.syntax._
 import java.io.InputStreamReader
 import java.util.UUID
 import org.scalatest.FreeSpec
+import scala.util.Either
+import scala.util.Left
+import scala.util.Right
 
 class EncodersDecodersSpec extends FreeSpec {
   import Encoders._
@@ -54,7 +56,7 @@ class EncodersDecodersSpec extends FreeSpec {
       val cause = "original failure message"
       val error = errorConstructor(repo, new Throwable(cause))
 
-      val Xor.Right(roundTripError) = error.asJson.as[ErrorResponse]
+      val Right(roundTripError) = error.asJson.as[ErrorResponse]
       assertResult(errorType)(roundTripError.`type`)
       assertResult(Some(JsonObject.singleton("cause", cause.asJson)))(roundTripError.data)
     }
@@ -110,16 +112,16 @@ class EncodersDecodersSpec extends FreeSpec {
   "Encoder for io.circe.Error" - {
     "DecodingFailure should specify path instead of cursor history" - {
       "when value is valid type but not acceptable" in {
-        val Xor.Left(err: DecodingFailure) = loadAndDecode(
+        val Left(err: DecodingFailure) = loadAndDecode(
           "/com/mesosphere/cosmos/universe_invalid_packagingVersion_value.json"
         )
 
         val encoded = encodeCirceError(err)
         val c = encoded.hcursor
-        val Xor.Right(typ) = c.downField("type").as[String]
-        val Xor.Right(dataType) = c.downField("data").downField("type").as[String]
-        val Xor.Right(reason) = c.downField("data").downField("reason").as[String]
-        val Xor.Right(path) = c.downField("data").downField("path").as[String]
+        val Right(typ) = c.downField("type").as[String]
+        val Right(dataType) = c.downField("data").downField("type").as[String]
+        val Right(reason) = c.downField("data").downField("reason").as[String]
+        val Right(path) = c.downField("data").downField("path").as[String]
         assertResult("json_error")(typ)
         assertResult("decode")(dataType)
         assertResult("Expected one of [2.0, 3.0] for packaging version, but found [1.0]")(reason)
@@ -127,16 +129,16 @@ class EncodersDecodersSpec extends FreeSpec {
       }
 
       "when ByteBuffer value is incorrect type" in {
-        val Xor.Left(err: DecodingFailure) = loadAndDecode(
+        val Left(err: DecodingFailure) = loadAndDecode(
           "/com/mesosphere/cosmos/universe_invalid_byteBuffer.json"
         )
 
         val encoded = encodeCirceError(err)
         val c = encoded.hcursor
-        val Xor.Right(typ) = c.downField("type").as[String]
-        val Xor.Right(dataType) = c.downField("data").downField("type").as[String]
-        val Xor.Right(reason) = c.downField("data").downField("reason").as[String]
-        val Xor.Right(path) = c.downField("data").downField("path").as[String]
+        val Right(typ) = c.downField("type").as[String]
+        val Right(dataType) = c.downField("data").downField("type").as[String]
+        val Right(reason) = c.downField("data").downField("reason").as[String]
+        val Right(path) = c.downField("data").downField("path").as[String]
         assertResult("json_error")(typ)
         assertResult("decode")(dataType)
         assertResult(".packages[0].marathon.v2AppMustacheTemplate")(path)
@@ -147,12 +149,12 @@ class EncodersDecodersSpec extends FreeSpec {
 
     "ParsingFailure should" - {
       "explain where the parsing failure occurred" in {
-        val Xor.Left(err: ParsingFailure) = loadAndDecode("/com/mesosphere/cosmos/repository/malformed.json")
+        val Left(err: ParsingFailure) = loadAndDecode("/com/mesosphere/cosmos/repository/malformed.json")
         val encoded = encodeCirceError(err)
         val c = encoded.hcursor
-        val Xor.Right(typ) = c.downField("type").as[String]
-        val Xor.Right(dataType) = c.downField("data").downField("type").as[String]
-        val Xor.Right(reason) = c.downField("data").downField("reason").as[String]
+        val Right(typ) = c.downField("type").as[String]
+        val Right(dataType) = c.downField("data").downField("type").as[String]
+        val Right(reason) = c.downField("data").downField("reason").as[String]
         assertResult("json_error")(typ)
         assertResult("parse")(dataType)
         assertResult("expected \" got ] (line 1, column 2)")(reason)
@@ -171,7 +173,7 @@ class EncodersDecodersSpec extends FreeSpec {
     err.asInstanceOf[Exception].asJson // up-cast the error so that the implicit matches; io.circe.Error is too specific
   }
 
-  private[this] def loadAndDecode(resourceName: String): Xor[Error, Repository] = {
+  private[this] def loadAndDecode(resourceName: String): Either[Error, Repository] = {
     import com.mesosphere.universe.v3.circe.Decoders._
     Option(this.getClass.getResourceAsStream(resourceName)) match {
       case Some(is) =>

@@ -206,7 +206,7 @@ with Stats {
 
   private[this] def startServer(): Option[ListeningServer] = {
     // TODO: Make default http port configurable
-    Some(new InetSocketAddress("0.0.0.0", 7070)).map { iface =>
+    Some(new InetSocketAddress("0.0.0.0", 7070)).map { iface => // scalastyle:ignore magic.number
       //.configured(Label(name)) TODO: Add this back when we find out what it is doing.
       //.configured(Http.param.MaxRequestSize(config.maxRequestSize.megabytes)) TODO: Add this back
 

@@ -1,6 +1,5 @@
 package com.mesosphere.cosmos.handler
 
-import cats.data.Xor
 import com.mesosphere.cosmos.http.CosmosRequests
 import com.mesosphere.cosmos.rpc.MediaTypes
 import com.mesosphere.cosmos.rpc.v1.circe.Decoders._
@@ -10,6 +9,7 @@ import com.mesosphere.cosmos.test.CosmosIntegrationTestClient._
 import com.twitter.finagle.http.Status
 import io.circe.jawn._
 import org.scalatest.FreeSpec
+import scala.util.Right
 
 final class CapabilitiesHandlerSpec extends FreeSpec {
 
@@ -18,7 +18,7 @@ final class CapabilitiesHandlerSpec extends FreeSpec {
 
     assertResult(Status.Ok)(response.status)
     assertResult(MediaTypes.CapabilitiesResponse.show)(response.headerMap("Content-Type"))
-    val Xor.Right(body) = decode[CapabilitiesResponse](response.contentString)
+    val Right(body) = decode[CapabilitiesResponse](response.contentString)
     val expected = CapabilitiesResponse(List(
       Capability("PACKAGE_MANAGEMENT"),
       Capability("SUPPORT_CLUSTER_REPORT"),

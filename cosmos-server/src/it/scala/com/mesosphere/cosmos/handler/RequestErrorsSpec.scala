@@ -1,6 +1,6 @@
 package com.mesosphere.cosmos.handler
 
-import cats.data.Xor
+import cats.syntax.either._
 import com.mesosphere.cosmos.http.CompoundMediaTypeParser
 import com.mesosphere.cosmos.http.HttpRequest
 import com.mesosphere.cosmos.rpc.MediaTypes
@@ -15,6 +15,7 @@ import io.circe.jawn._
 import io.circe.syntax._
 import org.scalatest.FreeSpec
 import scala.language.implicitConversions
+import scala.util.Right
 
 class RequestErrorsSpec extends FreeSpec {
 
@@ -42,7 +43,7 @@ class RequestErrorsSpec extends FreeSpec {
 
         assertResult(Status.BadRequest)(response.status)
         assertResult(MediaTypes.ErrorResponse.show)(response.headerMap("Content-Type"))
-        val Xor.Right(obj: JsonObject) = parse(response.contentString).map(jsonToJsonObject)
+        val Right(obj: JsonObject) = parse(response.contentString).map(jsonToJsonObject)
 
         val expectedErrorMessage = "Multiple errors while processing request"
         assertResult("multiple_errors")(obj.str("type"))
@@ -99,7 +100,7 @@ class RequestErrorsSpec extends FreeSpec {
 
         assertResult(Status.BadRequest)(response.status)
         assertResult(MediaTypes.ErrorResponse.show)(response.headerMap("Content-Type"))
-        val Xor.Right(obj: JsonObject) = parse(response.contentString).map(jsonToJsonObject)
+        val Right(obj: JsonObject) = parse(response.contentString).map(jsonToJsonObject)
 
         val expectedErrorMessage = "Multiple errors while processing request"
         assertResult("multiple_errors")(obj.str("type"))

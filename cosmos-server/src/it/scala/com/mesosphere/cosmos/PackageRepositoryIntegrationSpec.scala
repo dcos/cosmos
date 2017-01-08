@@ -1,6 +1,5 @@
 package com.mesosphere.cosmos
 
-import cats.data.Xor
 import com.mesosphere.cosmos.http.CosmosRequests
 import com.mesosphere.cosmos.repository.DefaultRepositories
 import com.mesosphere.cosmos.repository.PackageRepositorySpec
@@ -12,6 +11,7 @@ import com.twitter.finagle.http._
 import org.scalatest.BeforeAndAfter
 import org.scalatest.FreeSpec
 import org.scalatest.prop.TableDrivenPropertyChecks
+import scala.util.Right
 
 final class PackageRepositoryIntegrationSpec extends FreeSpec with BeforeAndAfter {
 
@@ -112,7 +112,7 @@ private object PackageRepositoryIntegrationSpec extends TableDrivenPropertyCheck
 
   private def listRepositories(): Seq[PackageRepository] = {
     val request = CosmosRequests.packageRepositoryList
-    val Xor.Right(response) = CosmosClient.callEndpoint[PackageRepositoryListResponse](request)
+    val Right(response) = CosmosClient.callEndpoint[PackageRepositoryListResponse](request)
     response.repositories
   }
 
@@ -121,7 +121,7 @@ private object PackageRepositoryIntegrationSpec extends TableDrivenPropertyCheck
   ): PackageRepositoryAddResponse = {
     val repoAddRequest = PackageRepositoryAddRequest(source.name, source.uri)
     val request = CosmosRequests.packageRepositoryAdd(repoAddRequest)
-    val Xor.Right(response) = CosmosClient.callEndpoint[PackageRepositoryAddResponse](request)
+    val Right(response) = CosmosClient.callEndpoint[PackageRepositoryAddResponse](request)
     response
   }
 
@@ -130,7 +130,7 @@ private object PackageRepositoryIntegrationSpec extends TableDrivenPropertyCheck
   ): PackageRepositoryDeleteResponse = {
     val repoDeleteRequest = PackageRepositoryDeleteRequest(name = Some(source.name))
     val request = CosmosRequests.packageRepositoryDelete(repoDeleteRequest)
-    val Xor.Right(response) = CosmosClient.callEndpoint[PackageRepositoryDeleteResponse](request)
+    val Right(response) = CosmosClient.callEndpoint[PackageRepositoryDeleteResponse](request)
     response
   }
 

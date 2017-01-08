@@ -1,6 +1,5 @@
 package com.mesosphere.cosmos.handler
 
-import cats.data.Xor
 import com.mesosphere.cosmos.http.CosmosRequests
 import com.mesosphere.cosmos.rpc.MediaTypes
 import com.mesosphere.cosmos.rpc.v1.circe.Decoders._
@@ -18,6 +17,7 @@ import com.twitter.util.Await
 import io.circe.jawn._
 import java.util.UUID
 import org.scalatest.FreeSpec
+import scala.util.Right
 
 final class UninstallHandlerSpec extends FreeSpec {
 
@@ -41,7 +41,7 @@ final class UninstallHandlerSpec extends FreeSpec {
       val uninstallResponseBody = uninstallResponse.contentString
       assertResult(Status.Ok)(uninstallResponse.status)
       assertResult(MediaTypes.UninstallResponse.show)(uninstallResponse.headerMap("Content-Type"))
-      val Xor.Right(body) = decode[UninstallResponse](uninstallResponseBody)
+      val Right(body) = decode[UninstallResponse](uninstallResponseBody)
       assert(body.results.flatMap(_.postUninstallNotes).nonEmpty)
     }
 
@@ -80,7 +80,7 @@ final class UninstallHandlerSpec extends FreeSpec {
       val uninstallResponseBody = uninstallResponse.contentString
       assertResult(Status.BadRequest)(uninstallResponse.status)
       assertResult(MediaTypes.ErrorResponse.show)(uninstallResponse.headerMap("Content-Type"))
-      val Xor.Right(err) = decode[ErrorResponse](uninstallResponseBody)
+      val Right(err) = decode[ErrorResponse](uninstallResponseBody)
       val expectedMessage = s"Multiple apps named [helloworld] are installed: [$appId1, $appId2]"
       assertResult(expectedMessage)(err.message)
 

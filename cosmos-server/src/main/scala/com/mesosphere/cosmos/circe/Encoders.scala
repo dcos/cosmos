@@ -9,7 +9,6 @@ import com.mesosphere.cosmos.model._
 import com.mesosphere.cosmos.rpc.v1.circe.Encoders._
 import com.mesosphere.cosmos.rpc.v1.model.ErrorResponse
 import com.mesosphere.cosmos.storage.installqueue._
-import com.mesosphere.cosmos.thirdparty.marathon.circe.Encoders._
 import com.mesosphere.universe.common.circe.Encoders._
 import com.mesosphere.universe.v2.circe.Encoders._
 import com.mesosphere.universe.v3.circe.Encoders._
@@ -23,36 +22,9 @@ import io.circe.syntax._
 import io.circe.{DecodingFailure, Encoder, Json, JsonObject, ParsingFailure}
 import io.finch.Error
 import org.jboss.netty.handler.codec.http.HttpMethod
-import shapeless._
-import shapeless.labelled.FieldType
 
-/*
-  Copied from circe v0.3.0
-  This implicits contained in this trait are no longer present in circe v0.5.0 in favor of a macro.
-  However, we need these rather than the macro so that
-  `com.mesosphere.cosmos.circe.Encoders.dropThrowableFromEncodedObjects` works
- */
-sealed trait LowPriorityImplicits {
-  // https://github.com/travisbrown/circe/blob/v0.3.0/generic/shared/src/main/scala/io/circe/generic/encoding/DerivedObjectEncoder.scala#L10-L13
-  implicit final val encodeHNil: DerivedObjectEncoder[HNil] = new DerivedObjectEncoder[HNil] {
-    final def encodeObject(a: HNil): JsonObject = JsonObject.empty
-  }
 
-  // https://github.com/travisbrown/circe/blob/v0.3.0/generic/shared/src/main/scala/io/circe/generic/encoding/DerivedObjectEncoder.scala#L36-L46
-  implicit final def encodeLabelledHList[K <: Symbol, H, T <: HList](implicit
-    key: Witness.Aux[K],
-    encodeHead: Lazy[Encoder[H]],
-    encodeTail: Lazy[DerivedObjectEncoder[T]]
-  ): DerivedObjectEncoder[FieldType[K, H] :: T] =
-  new DerivedObjectEncoder[FieldType[K, H] :: T] {
-    final def encodeObject(a: FieldType[K, H] :: T): JsonObject = a match {
-      case h :: t =>
-        (key.value.name -> encodeHead.value(h)) +: encodeTail.value.encodeObject(t)
-    }
-  }
-}
-
-object Encoders extends LowPriorityImplicits {
+object Encoders {
 
   implicit val encodeZooKeeperStorageEnvelope: Encoder[ZooKeeperStorageEnvelope] =
     deriveEncoder[ZooKeeperStorageEnvelope]
@@ -113,66 +85,6 @@ object Encoders extends LowPriorityImplicits {
     encodeA: Encoder[A],
     encodeB: Encoder[B]
   ): Encoder[Ior[A, B]] = deriveEncoder[Ior[A, B]]
-
-  /* This method skips all fields of type Throwable when rendering an object as JSON.
-   *
-   * Here's a rough analogy of how it works. Let's say you have some way of converting any case
-   * class into a `List[(String, Any)]` of field names and values in order. You could pretty easily
-   * serialize that `List` into JSON, assuming you have some "magic" encoding function
-   * `encodeValue: Any => Json`:
-   *
-   * def encodeFields(fields: List[(String, Any)]): JsonObject = {
-   *   fields match {
-   *     case (key, value) :: xs => (key, encodeValue(value)) +: encodeFields(xs)
-   *     case Nil                => JsonObject.empty
-   *   }
-   * }
-   *
-   * If you don't want to include values of type `Throwable`, you could update your function:
-   *
-   * def encodeNonThrowableFields(fields: List[(String, Any)]): JsonObject = {
-   *   fields match {
-   *     case (key, value: Throwable) :: xs => encodeFields(xs)
-   *     case (key, value) :: xs            => (key, encodeValue(value)) +: encodeFields(xs)
-   *     case Nil                           => JsonObject.empty
-   *   }
-   * }
-   *
-   * You can think of the method below as defining the first clause of that pattern match. Circe
-   * uses the Shapeless library to convert a case class value into an HList, which corresponds to
-   * the `List[(String, Any)]` in the analogy, except that it's type-safe. More precisely,
-   * `FieldType[K, H] :: T` in the code is the equivalent of `case (key, value: Throwable) :: xs`.
-   * See the `encodeLabelledHList` and `encodeHNil` in Circe's `DerivedObjectEncoder` for the other
-   * two clauses of the "pattern match".
-   *
-   * Why would we want to skip `Throwable`s? Mostly because we don't control what is in the error
-   * message, which could contain information that we don't want to surface to users in ordinary
-   * error responses. It's better to make a conscious decision to include error data when needed.
-   */
-  implicit def dropThrowableFromEncodedObjects[K <: Symbol, H <: Throwable, T <: HList](
-    implicit encodeTail: Lazy[DerivedObjectEncoder[T]]
-  ): Lazy[DerivedObjectEncoder[FieldType[K, H] :: T]] = {
-    new DerivedObjectEncoder[FieldType[K, H] :: T] {
-      def encodeObject(a: FieldType[K, H] :: T): JsonObject = {
-        encodeTail.value.encodeObject(a.tail)
-      }
-    }
-  }
-
-  // Omits fields of type `Option[Throwable]` when encoding objects.
-  // See comment above `dropThrowableFromEncodedObjects` for an explanation.
-  implicit def dropOptionThrowableFromEncodedObjects[K <: Symbol, H <: Option[Throwable], T <: HList](implicit
-    encodeTail: Lazy[DerivedObjectEncoder[T]]
-  ): Lazy[DerivedObjectEncoder[FieldType[K, H] :: T]] = {
-    new DerivedObjectEncoder[FieldType[K, H] :: T] {
-      override def encodeObject(a: FieldType[K, H] :: T): JsonObject = {
-        encodeTail.value.encodeObject(a.tail)
-      }
-    }
-  }
-
-  implicit val encodeCosmosError: Encoder[CosmosError] = deriveEncoder[CosmosError]
-
 
   def exceptionErrorResponse(t: Throwable): ErrorResponse = t match {
     case circeError: io.circe.Error => circeErrorResponse(circeError)
@@ -238,7 +150,10 @@ object Encoders extends LowPriorityImplicits {
     err match {
       case PackageNotFound(packageName) =>
         s"Package [$packageName] not found"
-      case VersionNotFound(packageName, com.mesosphere.universe.v3.model.PackageDefinition.Version(packageVersion)) =>
+      case VersionNotFound(
+        packageName,
+        com.mesosphere.universe.v3.model.PackageDefinition.Version(packageVersion)
+      ) =>
         s"Version [$packageVersion] of package [$packageName] not found"
       case PackageFileMissing(fileName, _) =>
         s"Package file [$fileName] not found"

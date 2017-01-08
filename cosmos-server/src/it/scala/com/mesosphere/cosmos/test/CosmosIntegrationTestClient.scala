@@ -1,6 +1,5 @@
 package com.mesosphere.cosmos.test
 
-import cats.data.Xor
 import com.mesosphere.cosmos.AdminRouter
 import com.mesosphere.cosmos.AdminRouterClient
 import com.mesosphere.cosmos.MarathonClient
@@ -31,6 +30,9 @@ import java.util.concurrent.atomic.AtomicInteger
 import org.scalatest.Matchers
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
+import scala.util.Either
+import scala.util.Left
+import scala.util.Right
 
 object CosmosIntegrationTestClient extends Matchers {
 
@@ -82,38 +84,38 @@ object CosmosIntegrationTestClient extends Matchers {
 
     def callEndpoint[Res](request: HttpRequest, expectedStatus: Status = Status.Ok)(implicit
       decoder: Decoder[Res]
-    ): ErrorResponse Xor Res = {
+    ): Either[ErrorResponse, Res] = {
       val response = submit(request)
       assertResult(expectedStatus)(response.status)
 
       if (response.status.code / 100 == 2) {
         decode[Res](response.contentString) match {
-          case Xor.Left(_) => fail("Could not decode as successful response: " + response.contentString)
-          case Xor.Right(successfulResponse) => Xor.Right(successfulResponse)
+          case Left(_) => fail("Could not decode as successful response: " + response.contentString)
+          case Right(successfulResponse) => Right(successfulResponse)
         }
       } else {
         decode[ErrorResponse](response.contentString) match {
-          case Xor.Left(_) => fail("Could not decode as error response: " + response.contentString)
-          case Xor.Right(errorResponse) => Xor.Left(errorResponse)
+          case Left(_) => fail("Could not decode as error response: " + response.contentString)
+          case Right(errorResponse) => Left(errorResponse)
         }
       }
     }
 
     def packageSearch(requestBody: SearchRequest): SearchResponse = {
       val request = CosmosRequests.packageSearch(requestBody)
-      val Xor.Right(response) = callEndpoint[SearchResponse](request)
+      val Right(response) = callEndpoint[SearchResponse](request)
       response
     }
 
     def packageRepositoryAdd(requestBody: PackageRepositoryAddRequest): PackageRepositoryAddResponse = {
       val request = CosmosRequests.packageRepositoryAdd(requestBody)
-      val Xor.Right(response) = callEndpoint[PackageRepositoryAddResponse](request)
+      val Right(response) = callEndpoint[PackageRepositoryAddResponse](request)
       response
     }
 
     def packageRepositoryDelete(requestBody: PackageRepositoryDeleteRequest): PackageRepositoryDeleteResponse = {
       val request = CosmosRequests.packageRepositoryDelete(requestBody)
-      val Xor.Right(response) = callEndpoint[PackageRepositoryDeleteResponse](request)
+      val Right(response) = callEndpoint[PackageRepositoryDeleteResponse](request)
       response
     }
 

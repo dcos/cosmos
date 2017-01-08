@@ -4,8 +4,6 @@ import _root_.io.circe.Json
 import _root_.io.circe.JsonObject
 import _root_.io.circe.jawn._
 import _root_.io.circe.syntax._
-import cats.data.Xor
-import cats.data.Xor.Right
 import com.mesosphere.cosmos.http.CosmosRequests
 import com.mesosphere.cosmos.http.RequestSession
 import com.mesosphere.cosmos.repository.DefaultRepositories
@@ -34,6 +32,7 @@ import org.scalatest.BeforeAndAfterAll
 import org.scalatest.FreeSpec
 import org.scalatest.Matchers
 import org.scalatest.prop.TableDrivenPropertyChecks
+import scala.util.Right
 
 final class PackageInstallIntegrationSpec extends FreeSpec with BeforeAndAfterAll {
 
@@ -208,7 +207,7 @@ final class PackageInstallIntegrationSpec extends FreeSpec with BeforeAndAfterAl
 
       assertResult(Status.Ok)(response.status)
       assertResult(MediaTypes.V2InstallResponse.show)(response.contentType.get)
-      val Xor.Right(actualBody) = decode[rpc.v2.model.InstallResponse](response.contentString)
+      val Right(actualBody) = decode[rpc.v2.model.InstallResponse](response.contentString)
       assertResult(expectedBody)(actualBody)
     }
 
@@ -250,10 +249,10 @@ final class PackageInstallIntegrationSpec extends FreeSpec with BeforeAndAfterAl
     assertResult(expectedResult.status)(response.status)
     expectedResult match {
       case InstallSuccess(expectedBody) =>
-        val Xor.Right(actualBody) = decode[InstallResponse](response.contentString)
+        val Right(actualBody) = decode[InstallResponse](response.contentString)
         assertResult(expectedBody)(actualBody)
       case InstallFailure(_, expectedBody, _) =>
-        val Xor.Right(actualBody) = decode[ErrorResponse](response.contentString)
+        val Right(actualBody) = decode[ErrorResponse](response.contentString)
         assertResult(expectedBody)(actualBody)
     }
 

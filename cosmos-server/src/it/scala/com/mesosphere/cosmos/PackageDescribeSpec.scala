@@ -3,8 +3,6 @@ package com.mesosphere.cosmos
 import _root_.io.circe.Json
 import _root_.io.circe.jawn.parse
 import _root_.io.circe.syntax._
-import cats.data.Xor
-import cats.data.Xor.Right
 import com.mesosphere.cosmos.circe.Decoders.decode
 import com.mesosphere.cosmos.http.CosmosRequests
 import com.mesosphere.cosmos.rpc.v1.circe.Decoders._
@@ -20,6 +18,7 @@ import com.twitter.finagle.http.Status
 import org.scalatest.FreeSpec
 import org.scalatest.Matchers
 import org.scalatest.prop.TableDrivenPropertyChecks
+import scala.util.Right
 
 final class PackageDescribeSpec
 extends FreeSpec with TableDrivenPropertyChecks with Matchers {
@@ -108,7 +107,7 @@ extends FreeSpec with TableDrivenPropertyChecks with Matchers {
     )
     val response = CosmosClient.submit(CosmosRequests.packageListVersions(request))
     assertResult(status)(response.status)
-    assertResult(Xor.Right(content))(parse(response.contentString))
+    assertResult(Right(content))(parse(response.contentString))
   }
 
   private def describeHelloworld(
