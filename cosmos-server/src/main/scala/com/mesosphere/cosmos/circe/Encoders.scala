@@ -121,7 +121,6 @@ object Encoders {
         )))
       )
     case df: DecodingFailure =>
-      println(s"decoding failure... $df")
       val path = opsToPath(df.history)
       ErrorResponse(
         "json_error",

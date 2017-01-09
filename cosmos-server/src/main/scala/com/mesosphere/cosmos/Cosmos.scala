@@ -191,8 +191,8 @@ private[cosmos] final class Cosmos(
   }
 
   private[this] def jsonToResponse(json: Json): Response = {
-    println("did we get here????")
     val response = Response()
+
     response.content = Buf.Utf8(json.noSpaces)
     // TODO: fix this
     response.contentType = "place-holder"
