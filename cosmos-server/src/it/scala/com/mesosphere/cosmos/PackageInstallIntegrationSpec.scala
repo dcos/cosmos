@@ -308,6 +308,7 @@ private object PackageInstallIntegrationSpec extends Matchers with TableDrivenPr
       "packagingVersion" -> "2.0".asJson,
       "tags" -> List("mesosphere".asJson, "example".asJson, "subcommand".asJson).asJson,
       "selected" -> false.asJson,
+      "framework" -> false.asJson,
       "maintainer" -> "support@mesosphere.io".asJson,
       "version" -> "0.1.0".asJson,
       "preInstallNotes" -> "A sample pre-installation message".asJson
@@ -327,11 +328,25 @@ private object PackageInstallIntegrationSpec extends Matchers with TableDrivenPr
 
   private val UniversePackagesTable = Table(
     ("expected response", "force version", "URI list", "Labels"),
-    (InstallResponse("helloworld", PackageDetailsVersion("0.1.0"), AppId("helloworld")), false, Set.empty[String], Some(HelloWorldLabels)),
-    (InstallResponse("cassandra", PackageDetailsVersion("0.2.0-1"), AppId("cassandra/dcos")), true, CassandraUris, None)
+    (
+      InstallResponse("helloworld", PackageDetailsVersion("0.1.0"), AppId("helloworld")),
+      false,
+      Set.empty[String],
+      Some(HelloWorldLabels)
+    ),
+    (
+      InstallResponse("cassandra", PackageDetailsVersion("0.2.0-1"), AppId("cassandra/dcos")),
+      true,
+      CassandraUris,
+      None
+    )
   )
 
-  private def getMarathonApp(appId: AppId)(implicit session: RequestSession): Future[MarathonApp] = {
+  private def getMarathonApp(
+    appId: AppId
+  )(
+    implicit session: RequestSession
+  ): Future[MarathonApp] = {
     CosmosIntegrationTestClient.adminRouter.getApp(appId)
       .map(_.app)
   }

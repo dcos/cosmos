@@ -295,6 +295,8 @@ object Encoders extends LowPriorityImplicits {
         s"Package file [$fileName] does not match schema"
       case PackageAlreadyInstalled() =>
         "Package is already installed"
+      case ServiceAlreadyStarted() =>
+        "The DC/OS service has already been started"
       case MarathonBadResponse(marathonErr) => marathonErr.message
       case MarathonGenericError(marathonStatus) =>
         s"Received response status code ${marathonStatus.code} from Marathon"

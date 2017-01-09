@@ -82,7 +82,7 @@ final class PackageDefinitionOps(val pkgDef: PackageDefinition) extends AnyVal {
 
   def postInstallNotes: Option[String] = pkgDef match {
     case v2: V2Package => v2.postInstallNotes
-    case v3: V3Package => v3.postUninstallNotes
+    case v3: V3Package => v3.postInstallNotes
   }
 
   def postUninstallNotes: Option[String] = pkgDef match {
