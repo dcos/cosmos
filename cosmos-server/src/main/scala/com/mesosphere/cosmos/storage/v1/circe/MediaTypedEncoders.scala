@@ -5,7 +5,7 @@ import com.mesosphere.cosmos.finch.MediaTypedEncoder
 import com.mesosphere.cosmos.http.MediaTypes
 import com.mesosphere.cosmos.rpc.v1.circe.Encoders._
 import com.mesosphere.cosmos.rpc.v1.model.PackageRepository
-import com.mesosphere.cosmos.storage.installqueue.OperationStatus
+import com.mesosphere.cosmos.storage.v1.model.OperationStatus
 
 
 object MediaTypedEncoders {

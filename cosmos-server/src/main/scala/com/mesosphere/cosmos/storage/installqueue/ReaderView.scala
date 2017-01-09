@@ -1,6 +1,7 @@
 package com.mesosphere.cosmos.storage.installqueue
 
 import com.mesosphere.cosmos.rpc
+import com.mesosphere.cosmos.storage.v1.model.OperationStatus
 import com.twitter.util.Future
 
 /** This will be used by any reader to observe the state of the queue.

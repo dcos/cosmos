@@ -1,9 +1,9 @@
 package com.mesosphere.cosmos.repository
 
+import com.mesosphere.Generators.genV3Package
 import com.mesosphere.cosmos.storage.PackageObjectStorage
 import com.mesosphere.cosmos.storage.StagedPackageStorage
 import com.mesosphere.cosmos.test.TestUtil
-import com.mesosphere.universe.v3.model.PackageDefinitionSpec.genV3Package
 import com.mesosphere.universe.v3.syntax.PackageDefinitionOps._
 import com.twitter.util.Await
 import java.util.UUID

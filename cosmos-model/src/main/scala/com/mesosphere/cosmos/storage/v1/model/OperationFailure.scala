@@ -1,4 +1,4 @@
-package com.mesosphere.cosmos.storage.installqueue
+package com.mesosphere.cosmos.storage.v1.model
 
 import com.mesosphere.cosmos.rpc
 

@@ -8,6 +8,12 @@ import com.mesosphere.cosmos.rpc.v1.model.PackageCoordinate
 import com.mesosphere.cosmos.storage.Envelope
 import com.mesosphere.cosmos.storage.v1.circe.MediaTypedDecoders._
 import com.mesosphere.cosmos.storage.v1.circe.MediaTypedEncoders._
+import com.mesosphere.cosmos.storage.v1.model.FailedStatus
+import com.mesosphere.cosmos.storage.v1.model.OperationFailure
+import com.mesosphere.cosmos.storage.v1.model.OperationStatus
+import com.mesosphere.cosmos.storage.v1.model.PendingStatus
+import com.mesosphere.cosmos.storage.v1.model.PendingOperation
+import com.mesosphere.cosmos.storage.v1.model.UniverseInstall
 import com.mesosphere.cosmos.zookeeper.Clients
 import com.mesosphere.universe.test.TestingPackages
 import com.mesosphere.universe.v3.model.PackageDefinition
@@ -48,7 +54,7 @@ final class InstallQueueSpec extends fixture.FreeSpec with BeforeAndAfterAll {
         )
         assertResult(())(addResult)
 
-        checkInstallQueueContents(client, coordinate1, Pending(universeInstall, None))
+        checkInstallQueueContents(client, coordinate1, PendingStatus(universeInstall, None))
       }
 
       "when the parent path exists but the status does not" in { testParameters =>
@@ -62,12 +68,12 @@ final class InstallQueueSpec extends fixture.FreeSpec with BeforeAndAfterAll {
         checkInstallQueueContents(
           client,
           coordinate1,
-          Pending(universeInstall, None))
+          PendingStatus(universeInstall, None))
       }
 
       "on a coordinate that has a pending operation but no failures" in { testParameters =>
         val (client, installQueue) = testParameters
-        val pendingUniverseInstall = Pending(universeInstall, None)
+        val pendingUniverseInstall = PendingStatus(universeInstall, None)
 
         insertPackageStatusIntoQueue(
           client,
@@ -89,7 +95,7 @@ final class InstallQueueSpec extends fixture.FreeSpec with BeforeAndAfterAll {
         insertPackageStatusIntoQueue(
           client,
           coordinate1,
-          Failed(OperationFailure(universeInstall, errorResponse1)))
+          FailedStatus(OperationFailure(universeInstall, errorResponse1)))
 
         val addResult = Await.result(
           installQueue.add(coordinate1, universeInstall)
@@ -99,14 +105,14 @@ final class InstallQueueSpec extends fixture.FreeSpec with BeforeAndAfterAll {
         checkInstallQueueContents(
           client,
           coordinate1,
-          Pending(universeInstall, Some(OperationFailure(universeInstall, errorResponse1))))
+          PendingStatus(universeInstall, Some(OperationFailure(universeInstall, errorResponse1))))
       }
 
       "on a coordinate that has an operation and a failure" in { testParameters =>
         val (client, installQueue) = testParameters
 
         val pendingUniverseInstallWithFailure =
-          Pending(universeInstall, Some(OperationFailure(universeInstall, errorResponse1)))
+          PendingStatus(universeInstall, Some(OperationFailure(universeInstall, errorResponse1)))
 
         insertPackageStatusIntoQueue(
           client,
@@ -137,8 +143,8 @@ final class InstallQueueSpec extends fixture.FreeSpec with BeforeAndAfterAll {
       assertResult(())(add1)
       assertResult(())(add2)
 
-      checkInstallQueueContents(client, coordinate1, Pending(universeInstall, None))
-      checkInstallQueueContents(client, coordinate2, Pending(universeInstall, None))
+      checkInstallQueueContents(client, coordinate1, PendingStatus(universeInstall, None))
+      checkInstallQueueContents(client, coordinate2, PendingStatus(universeInstall, None))
     }
   }
 
@@ -168,14 +174,14 @@ final class InstallQueueSpec extends fixture.FreeSpec with BeforeAndAfterAll {
 
         "on a coordinate that has a pending operation but no failures" in { testParameters =>
           val (client, installQueue) = testParameters
-          insertPackageStatusIntoQueue(client, coordinate1, Pending(universeInstall, None))
+          insertPackageStatusIntoQueue(client, coordinate1, PendingStatus(universeInstall, None))
           Await.result(
             installQueue.failure(coordinate1, errorResponse1)
           )
           checkInstallQueueContents(
             client,
             coordinate1,
-            Failed(OperationFailure(universeInstall, errorResponse1)))
+            FailedStatus(OperationFailure(universeInstall, errorResponse1)))
         }
 
         "on a coordinate that has a failed operation, but no pending operation" in { testParameters =>
@@ -183,7 +189,7 @@ final class InstallQueueSpec extends fixture.FreeSpec with BeforeAndAfterAll {
           insertPackageStatusIntoQueue(
             client,
             coordinate1,
-            Failed(OperationFailure(universeInstall, errorResponse1)))
+            FailedStatus(OperationFailure(universeInstall, errorResponse1)))
           val error = intercept[InstallQueueError](
             Await.result(
               installQueue.failure(coordinate1, errorResponse1)
@@ -197,21 +203,21 @@ final class InstallQueueSpec extends fixture.FreeSpec with BeforeAndAfterAll {
           insertPackageStatusIntoQueue(
             client,
             coordinate1,
-            Pending(universeInstall, Some(OperationFailure(universeInstall, errorResponse1))))
+            PendingStatus(universeInstall, Some(OperationFailure(universeInstall, errorResponse1))))
           Await.result(
             installQueue.failure(coordinate1, errorResponse2)
           )
           checkInstallQueueContents(
             client,
             coordinate1,
-            Failed(OperationFailure(universeInstall, errorResponse2)))
+            FailedStatus(OperationFailure(universeInstall, errorResponse2)))
         }
       }
 
       "Fail multiple non-conflicting operations" in { testParameters =>
         val (client, installQueue) = testParameters
-        insertPackageStatusIntoQueue(client, coordinate1, Pending(universeInstall, None))
-        insertPackageStatusIntoQueue(client, coordinate2, Pending(universeInstall, None))
+        insertPackageStatusIntoQueue(client, coordinate1, PendingStatus(universeInstall, None))
+        insertPackageStatusIntoQueue(client, coordinate2, PendingStatus(universeInstall, None))
         val failTwoOperations =
           for {
             _ <- installQueue.failure(coordinate1, errorResponse1)
@@ -221,11 +227,11 @@ final class InstallQueueSpec extends fixture.FreeSpec with BeforeAndAfterAll {
         checkInstallQueueContents(
           client,
           coordinate1,
-          Failed(OperationFailure(universeInstall, errorResponse1)))
+          FailedStatus(OperationFailure(universeInstall, errorResponse1)))
         checkInstallQueueContents(
           client,
           coordinate2,
-          Failed(OperationFailure(universeInstall, errorResponse1)))
+          FailedStatus(OperationFailure(universeInstall, errorResponse1)))
       }
     }
 
@@ -254,7 +260,7 @@ final class InstallQueueSpec extends fixture.FreeSpec with BeforeAndAfterAll {
 
         "on a coordinate that has a pending operation but no failures" in { testParameters =>
           val (client, installQueue) = testParameters
-          insertPackageStatusIntoQueue(client, coordinate1, Pending(universeInstall, None))
+          insertPackageStatusIntoQueue(client, coordinate1, PendingStatus(universeInstall, None))
           Await.result(
             installQueue.success(coordinate1)
           )
@@ -266,7 +272,7 @@ final class InstallQueueSpec extends fixture.FreeSpec with BeforeAndAfterAll {
           insertPackageStatusIntoQueue(
             client,
             coordinate1,
-            Failed(OperationFailure(universeInstall, errorResponse1)))
+            FailedStatus(OperationFailure(universeInstall, errorResponse1)))
           val error = intercept[InstallQueueError](
             Await.result(
               installQueue.success(coordinate1)
@@ -280,7 +286,7 @@ final class InstallQueueSpec extends fixture.FreeSpec with BeforeAndAfterAll {
           insertPackageStatusIntoQueue(
             client,
             coordinate1,
-            Pending(universeInstall, Some(OperationFailure(universeInstall, errorResponse1))))
+            PendingStatus(universeInstall, Some(OperationFailure(universeInstall, errorResponse1))))
           Await.result(
             installQueue.success(coordinate1)
           )
@@ -290,8 +296,8 @@ final class InstallQueueSpec extends fixture.FreeSpec with BeforeAndAfterAll {
 
       "Success on multiple non-conflicting operations" in { testParameters =>
         val (client, installQueue) = testParameters
-        insertPackageStatusIntoQueue(client, coordinate1, Pending(universeInstall, None))
-        insertPackageStatusIntoQueue(client, coordinate2, Pending(universeInstall, None))
+        insertPackageStatusIntoQueue(client, coordinate1, PendingStatus(universeInstall, None))
+        insertPackageStatusIntoQueue(client, coordinate2, PendingStatus(universeInstall, None))
         val successOnTwoOperations =
           for {
             _ <- installQueue.success(coordinate1)
@@ -327,12 +333,12 @@ final class InstallQueueSpec extends fixture.FreeSpec with BeforeAndAfterAll {
           insertPackageStatusIntoQueue(
             client,
             coordinate1,
-            Pending(universeInstall, None))
+            PendingStatus(universeInstall, None))
           val nextPendingOperation = Await.result(
             installQueue.next()
           )
           assertResult(
-            Some(PendingOperation(coordinate1, universeInstall, None)))(
+            Some(PendingOperation(universeInstall, None)))(
             nextPendingOperation)
         }
 
@@ -341,7 +347,7 @@ final class InstallQueueSpec extends fixture.FreeSpec with BeforeAndAfterAll {
           insertPackageStatusIntoQueue(
             client,
             coordinate1,
-            Failed(OperationFailure(universeInstall, errorResponse1)))
+            FailedStatus(OperationFailure(universeInstall, errorResponse1)))
           val nextPendingOperation = Await.result(
             installQueue.next()
           )
@@ -353,7 +359,7 @@ final class InstallQueueSpec extends fixture.FreeSpec with BeforeAndAfterAll {
           insertPackageStatusIntoQueue(
             client,
             coordinate1,
-            Pending(
+            PendingStatus(
               universeInstall,
               Some(OperationFailure(
                 universeInstall, errorResponse1))))
@@ -362,7 +368,6 @@ final class InstallQueueSpec extends fixture.FreeSpec with BeforeAndAfterAll {
           )
           assertResult(
             Some(PendingOperation(
-              coordinate1,
               universeInstall,
               Some(OperationFailure(
                 universeInstall, errorResponse1)))))(
@@ -374,23 +379,23 @@ final class InstallQueueSpec extends fixture.FreeSpec with BeforeAndAfterAll {
           insertPackageStatusIntoQueue(
             client,
             coordinate1,
-            Pending(universeInstall, None))
+            PendingStatus(universeInstall, None))
           insertPackageStatusIntoQueue(
             client,
             coordinate2,
-            Pending(universeInstall, None))
+            PendingStatus(universeInstall, None))
           insertPackageStatusIntoQueue(
             client,
             coordinate3,
-            Failed(OperationFailure(universeInstall, errorResponse1)))
+            FailedStatus(OperationFailure(universeInstall, errorResponse1)))
           insertPackageStatusIntoQueue(
             client,
             coordinate4,
-            Failed(OperationFailure(universeInstall, errorResponse2)))
+            FailedStatus(OperationFailure(universeInstall, errorResponse2)))
           insertPackageStatusIntoQueue(
             client,
             coordinate5,
-            Pending(universeInstall, Some(OperationFailure(universeInstall, errorResponse1))))
+            PendingStatus(universeInstall, Some(OperationFailure(universeInstall, errorResponse1))))
 
           val n1 = Await.result(installQueue.next())
           removePackageStatusFromQueue(client, coordinate1)
@@ -405,14 +410,13 @@ final class InstallQueueSpec extends fixture.FreeSpec with BeforeAndAfterAll {
           val n5 = Await.result(installQueue.next())
 
           assertResult(
-            Some(PendingOperation(coordinate1, universeInstall, None)))(
+            Some(PendingOperation(universeInstall, None)))(
             n1)
           assertResult(
-            Some(PendingOperation(coordinate2, universeInstall, None)))(
+            Some(PendingOperation(universeInstall, None)))(
             n2)
           assertResult(
             Some(PendingOperation(
-              coordinate5,
               universeInstall,
               Some(OperationFailure(universeInstall, errorResponse1)))))(
             n3)
@@ -426,23 +430,23 @@ final class InstallQueueSpec extends fixture.FreeSpec with BeforeAndAfterAll {
         insertPackageStatusIntoQueue(
           client,
           coordinate1,
-          Pending(universeInstall, None))
+          PendingStatus(universeInstall, None))
         insertPackageStatusIntoQueue(
           client,
           coordinate2,
-          Pending(universeInstall, None))
+          PendingStatus(universeInstall, None))
         insertPackageStatusIntoQueue(
           client,
           coordinate3,
-          Failed(OperationFailure(universeInstall, errorResponse1)))
+          FailedStatus(OperationFailure(universeInstall, errorResponse1)))
         insertPackageStatusIntoQueue(
           client,
           coordinate4,
-          Failed(OperationFailure(universeInstall, errorResponse1)))
+          FailedStatus(OperationFailure(universeInstall, errorResponse1)))
         insertPackageStatusIntoQueue(
           client,
           coordinate5,
-          Pending(universeInstall, Some(OperationFailure(universeInstall, errorResponse1))))
+          PendingStatus(universeInstall, Some(OperationFailure(universeInstall, errorResponse1))))
 
         val callNextTwice =
           for {
@@ -451,7 +455,7 @@ final class InstallQueueSpec extends fixture.FreeSpec with BeforeAndAfterAll {
           } yield (n1, n2)
         val (n1, n2) = Await.result(callNextTwice)
 
-        checkInstallQueueContents(client, coordinate1, Pending(universeInstall, None))
+        checkInstallQueueContents(client, coordinate1, PendingStatus(universeInstall, None))
         removePackageStatusFromQueue(client, coordinate1)
 
         val callNextTwiceAgain =
@@ -464,10 +468,10 @@ final class InstallQueueSpec extends fixture.FreeSpec with BeforeAndAfterAll {
         assert(n1 == n2)
         assert(n3 == n4)
         assertResult(
-          Some(PendingOperation(coordinate1, universeInstall, None)))(
+          Some(PendingOperation(universeInstall, None)))(
           n1)
         assertResult(
-          Some(PendingOperation(coordinate2, universeInstall, None)))(
+          Some(PendingOperation(universeInstall, None)))(
           n3)
       }
     }
@@ -478,11 +482,11 @@ final class InstallQueueSpec extends fixture.FreeSpec with BeforeAndAfterAll {
       "return all pending and failed operations in the queue" in { testParameters =>
       val (client, installQueue) = testParameters
       val expectedState = Map(
-        coordinate1 -> Pending(universeInstall, None),
-        coordinate2 -> Pending(universeInstall, None),
-        coordinate3 -> Failed(OperationFailure(universeInstall, errorResponse1)),
-        coordinate4 -> Failed(OperationFailure(universeInstall, errorResponse1)),
-        coordinate5 -> Pending(universeInstall, Some(OperationFailure(universeInstall, errorResponse1)))
+        coordinate1 -> PendingStatus(universeInstall, None),
+        coordinate2 -> PendingStatus(universeInstall, None),
+        coordinate3 -> FailedStatus(OperationFailure(universeInstall, errorResponse1)),
+        coordinate4 -> FailedStatus(OperationFailure(universeInstall, errorResponse1)),
+        coordinate5 -> PendingStatus(universeInstall, Some(OperationFailure(universeInstall, errorResponse1)))
       )
 
       expectedState.foreach { case (coordinate, status) =>
@@ -524,7 +528,7 @@ final class InstallQueueSpec extends fixture.FreeSpec with BeforeAndAfterAll {
 
       val coordinate1Operation = Await.result(installQueue.next())
       assertResult(
-        Some(PendingOperation(coordinate1, universeInstall, None)))(
+        Some(PendingOperation(universeInstall, None)))(
         coordinate1Operation)
 
       Await.result(installQueue.failure(coordinate1, errorResponse1))
@@ -536,7 +540,6 @@ final class InstallQueueSpec extends fixture.FreeSpec with BeforeAndAfterAll {
       assertResult(
         Some(
           PendingOperation(
-            coordinate2,
             universeInstall,
             None)))(
         coordinate2Operation)

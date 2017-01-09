@@ -3,13 +3,13 @@ package com.mesosphere.cosmos.repository
 import com.mesosphere.cosmos.PackageNotFound
 import com.mesosphere.cosmos.VersionNotFound
 import com.mesosphere.cosmos.rpc
-import com.mesosphere.cosmos.storage.ObjectStorage
+import com.mesosphere.cosmos.storage
 import com.mesosphere.cosmos.storage.PackageObjectStorage
 import com.mesosphere.cosmos.test.TestUtil
 import com.mesosphere.universe
 import com.twitter.util.Await
 import com.twitter.util.Future
-import java.nio.ByteBuffer
+import java.util.UUID
 import org.scalatest.FreeSpec
 import org.scalatest.Matchers
 import scala.util.Failure
@@ -100,7 +100,7 @@ final class LocalPackageCollectionSpec extends FreeSpec with Matchers {
     )
   )
 
-  val expected = expectedAllMarathon ++ expectedAllGreat
+  val expected: Seq[universe.v3.model.V3Package] = expectedAllMarathon ++ expectedAllGreat
 
   "Test all of the read operations" in TestUtil.withObjectStorage { objectStorage =>
     val packageStorage = PackageObjectStorage(objectStorage)
@@ -114,7 +114,7 @@ final class LocalPackageCollectionSpec extends FreeSpec with Matchers {
 
     // List of all packages
     val actualList = Await.result(packageCollection.list())
-    actualList shouldBe expected.map(rpc.v1.model.Installed(_))
+    actualList shouldBe expected.map(rpc.v1.model.Installed)
 
     // Find latest installed ceph package
     val actualInstalledCeph = Await.result(packageCollection.getInstalledPackage("ceph", None))
@@ -158,15 +158,15 @@ final class LocalPackageCollectionSpec extends FreeSpec with Matchers {
 
     // Find all lambda packages
     val allMarathon = Await.result(packageCollection.getPackageByPackageName("marathon"))
-    allMarathon shouldBe expectedAllMarathon.map(rpc.v1.model.Installed(_))
+    allMarathon shouldBe expectedAllMarathon.map(rpc.v1.model.Installed)
 
     // Search for 'PaaS'")
     val allPaas = Await.result(packageCollection.search(Some("PaaS")))
-    allPaas shouldBe expectedAllMarathon.map(rpc.v1.model.Installed(_))
+    allPaas shouldBe expectedAllMarathon.map(rpc.v1.model.Installed)
 
     // Search for 'great'
     val allGreat = Await.result(packageCollection.search(Some("great")))
-    allGreat shouldBe expectedAllGreat.map(rpc.v1.model.Installed(_))
+    allGreat shouldBe expectedAllGreat.map(rpc.v1.model.Installed)
   }
 
   "We should only return Installed packages" in {
@@ -181,17 +181,21 @@ final class LocalPackageCollectionSpec extends FreeSpec with Matchers {
       )
     )
 
+    val package010 = universe.v3.model.V3Package(
+      packagingVersion=universe.v3.model.V3PackagingVersion,
+      name="lambda",
+      version=universe.v3.model.PackageDefinition.Version("0.10"),
+      releaseVersion=universe.v3.model.PackageDefinition.ReleaseVersion(3).get,
+      maintainer="jose@mesosphere.com",
+      description="Great compute framework"
+    )
+
     val expected010 = rpc.v1.model.Failed(
-      "Install",
-      rpc.v1.model.ErrorResponse("type", "message", None),
-      universe.v3.model.V3Package(
-        packagingVersion=universe.v3.model.V3PackagingVersion,
-        name="lambda",
-        version=universe.v3.model.PackageDefinition.Version("0.10"),
-        releaseVersion=universe.v3.model.PackageDefinition.ReleaseVersion(3).get,
-        maintainer="jose@mesosphere.com",
-        description="Great compute framework"
-      )
+      storage.v1.model.Install(
+        UUID.fromString("467061c4-ed39-4718-a8b8-0b6756fddb18"),
+        package010
+      ),
+      rpc.v1.model.ErrorResponse("type", "message", None)
     )
 
     val input = List[rpc.v1.model.LocalPackage](

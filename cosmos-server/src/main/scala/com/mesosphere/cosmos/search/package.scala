@@ -1,7 +1,6 @@
 package com.mesosphere.cosmos
 
 import cats.syntax.either._
-import com.mesosphere.universe.v3.syntax.PackageDefinitionOps._
 import java.util.regex.Pattern
 import scala.util.matching.Regex
 

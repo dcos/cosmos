@@ -2,13 +2,12 @@ package com.mesosphere.cosmos.repository
 
 import com.mesosphere.cosmos.circe.Encoders.exceptionErrorResponse
 import com.mesosphere.cosmos.rpc
-import com.mesosphere.cosmos.storage.installqueue.Install
-import com.mesosphere.cosmos.storage.installqueue.PendingOperation
 import com.mesosphere.cosmos.storage.installqueue.ProcessorView
-import com.mesosphere.cosmos.storage.installqueue.Uninstall
-import com.mesosphere.cosmos.storage.installqueue.UniverseInstall
+import com.mesosphere.cosmos.storage.v1.model.Install
+import com.mesosphere.cosmos.storage.v1.model.PendingOperation
+import com.mesosphere.cosmos.storage.v1.model.Uninstall
+import com.mesosphere.cosmos.storage.v1.model.UniverseInstall
 import com.mesosphere.universe
-import com.netaporter.uri.Uri
 import com.twitter.util.Await
 import com.twitter.util.Future
 import java.util.UUID
@@ -26,7 +25,6 @@ final class OperationProcessorSpec extends FreeSpec with Matchers {
       Future.value(
         Some(
           PendingOperation(
-            packageCoordinate,
             Install(UUID.fromString("cbe2bca5-a7b2-4d35-ac03-438570b82d8a"), pkg),
             None
           )
@@ -51,7 +49,6 @@ final class OperationProcessorSpec extends FreeSpec with Matchers {
       Future.value(
         Some(
           PendingOperation(
-            packageCoordinate,
             UniverseInstall(pkg),
             None
           )
@@ -76,8 +73,7 @@ final class OperationProcessorSpec extends FreeSpec with Matchers {
       Future.value(
         Some(
           PendingOperation(
-            packageCoordinate,
-            Uninstall(Some(pkg)),
+            Uninstall(pkg),
             None
           )
         )
@@ -101,7 +97,6 @@ final class OperationProcessorSpec extends FreeSpec with Matchers {
       Future.value(
         Some(
           PendingOperation(
-            packageCoordinate,
             Install(UUID.fromString("2d903d9e-3f67-4b12-8c99-1ea774d67b45"), pkg),
             None
           )
@@ -131,7 +126,6 @@ final class OperationProcessorSpec extends FreeSpec with Matchers {
       Future.value(
         Some(
           PendingOperation(
-            packageCoordinate,
             UniverseInstall(pkg),
             None
           )
@@ -161,8 +155,7 @@ final class OperationProcessorSpec extends FreeSpec with Matchers {
       Future.value(
         Some(
           PendingOperation(
-            packageCoordinate,
-            Uninstall(Some(pkg)),
+            Uninstall(pkg),
             None
           )
         )
@@ -219,20 +212,9 @@ object OperationProcessorSpec {
     (packageCoordinate, pkg)
   }
 
-  object SucceedingInstaller extends Installer {
-    def apply(id: UUID, pkg: universe.v3.model.V3Package): Future[Unit] = Future.Done
-  }
-
-  object SucceedingUniverseInstaller extends UniverseInstaller {
-    def apply(pkg: universe.v3.model.V3Package): Future[Unit] = Future.Done
-  }
-
-  object SucceedingUninstaller extends Uninstaller {
-    def apply(
-      pc: rpc.v1.model.PackageCoordinate,
-      pkg: Option[universe.v3.model.V3Package]
-    ): Future[Unit] = Future.Done
-  }
+  val SucceedingInstaller: Installer = (_, _) => Future.Done
+  val SucceedingUniverseInstaller: UniverseInstaller = _ => Future.Done
+  val SucceedingUninstaller: Uninstaller = _ => Future.Done
 
   val installerError = new IllegalArgumentException("Install failed")
   val FailingInstaller: Installer = (_, _) => Future.exception(installerError)
@@ -241,5 +223,5 @@ object OperationProcessorSpec {
   val FailingUniverseInstaller: UniverseInstaller = _ => Future.exception(universeInstallerError)
 
   val uninstallerError = new IllegalArgumentException("Uninstall failed")
-  val FailingUninstaller: Uninstaller = (_, _) => Future.exception(uninstallerError)
+  val FailingUninstaller: Uninstaller = _ => Future.exception(uninstallerError)
 }

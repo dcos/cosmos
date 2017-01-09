@@ -1,9 +1,11 @@
-package com.mesosphere.cosmos.storage.installqueue
+package com.mesosphere.cosmos.storage.v1.model
 
 import com.mesosphere.universe
 import java.util.UUID
 
-sealed trait Operation
+sealed trait Operation {
+  val v3Package: universe.v3.model.V3Package
+}
 
 case class Install(
   stagedPackageId: UUID,
@@ -11,9 +13,9 @@ case class Install(
 ) extends Operation
 
 case class UniverseInstall(
-  packageDefinition: universe.v3.model.V3Package
+  v3Package: universe.v3.model.V3Package
 ) extends Operation
 
 case class Uninstall(
-  packageDefinition: Option[universe.v3.model.V3Package]
+  v3Package: universe.v3.model.V3Package
 ) extends Operation

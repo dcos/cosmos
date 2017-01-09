@@ -1,5 +1,6 @@
 package com.mesosphere.cosmos.rpc.v1.model
 
+import com.mesosphere.cosmos.storage.v1.model.Operation
 import com.mesosphere.universe
 import com.mesosphere.universe.v3.syntax.PackageDefinitionOps._
 import scala.util.Either
@@ -7,15 +8,18 @@ import scala.util.Left
 import scala.util.Right
 
 sealed trait LocalPackage
+
 object LocalPackage {
+
   implicit class LocalPackageOps(val value: LocalPackage) extends AnyVal {
-    def metadata: Either[PackageCoordinate, universe.v3.model.PackageDefinition] = value match {
+
+    def metadata: Either[PackageCoordinate, universe.v3.model.V3Package] = value match {
       case Invalid(_, pc) => Left(pc)
       case NotInstalled(pkg) => Right(pkg)
       case Installed(pkg) => Right(pkg)
       case Installing(pkg) => Right(pkg)
       case Uninstalling(data) => data
-      case Failed(_, _, pkg) => Right(pkg)
+      case Failed(op, _) => Right(op.v3Package)
     }
 
     def packageName: String = value match {
@@ -23,7 +27,7 @@ object LocalPackage {
       case Installed(pkg) => pkg.name
       case Installing(pkg) => pkg.name
       case Uninstalling(data) => data.fold(_.name, _.name)
-      case Failed(_, _, pkg) => pkg.name
+      case Failed(op, _) => op.v3Package.name
       case Invalid(_, packageCoordinate) => packageCoordinate.name
     }
 
@@ -32,21 +36,21 @@ object LocalPackage {
       case Installed(pkg) => pkg.version
       case Installing(pkg) => pkg.version
       case Uninstalling(data) => data.fold(_.version, _.version)
-      case Failed(_, _, pkg) => pkg.version
+      case Failed(op, _) => op.v3Package.version
       case Invalid(_, packageCoordinate) => packageCoordinate.version
     }
 
     def error: Option[ErrorResponse] = value match {
-      case Failed(_, error, _) => Some(error)
+      case Failed(_, error) => Some(error)
       case Invalid(error, _) => Some(error)
       case _ => None
     }
 
-    // TODO: Change this when we merge the PackageOps PR
-    def operation: Option[String] = value match {
-      case Failed(operation, _, _) => Some(operation)
+    def operation: Option[Operation] = value match {
+      case Failed(operation, _) => Some(operation)
       case _ => None
     }
+
   }
 
   implicit val localPackageOrdering = new Ordering[LocalPackage] {
@@ -92,29 +96,28 @@ object LocalPackage {
       }
     }
   }
+
 }
 
-// TODO: Replace every instance to PackageDefinition with V3Package
 final case class NotInstalled(
-  metadata: universe.v3.model.PackageDefinition
+  metadata: universe.v3.model.V3Package
 ) extends LocalPackage
 
 final case class Installing(
-  metadata: universe.v3.model.PackageDefinition
+  metadata: universe.v3.model.V3Package
 ) extends LocalPackage
 
 final case class Installed(
-  metadata: universe.v3.model.PackageDefinition
+  metadata: universe.v3.model.V3Package
 ) extends LocalPackage
 
 final case class Uninstalling(
-  data: Either[PackageCoordinate, universe.v3.model.PackageDefinition]
+  data: Either[PackageCoordinate, universe.v3.model.V3Package]
 ) extends LocalPackage
 
 final case class Failed(
-  operation: String, // TODO: Change this when we merge the PackageOps PR
-  error: ErrorResponse,
-  metadata: universe.v3.model.PackageDefinition
+  operation: Operation,
+  error: ErrorResponse
 ) extends LocalPackage
 
 final case class Invalid(

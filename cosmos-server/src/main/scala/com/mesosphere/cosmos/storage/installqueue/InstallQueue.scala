@@ -8,6 +8,12 @@ import com.mesosphere.cosmos.rpc.v1.model.PackageCoordinate
 import com.mesosphere.cosmos.storage.Envelope
 import com.mesosphere.cosmos.storage.v1.circe.MediaTypedDecoders._
 import com.mesosphere.cosmos.storage.v1.circe.MediaTypedEncoders._
+import com.mesosphere.cosmos.storage.v1.model.FailedStatus
+import com.mesosphere.cosmos.storage.v1.model.Operation
+import com.mesosphere.cosmos.storage.v1.model.OperationFailure
+import com.mesosphere.cosmos.storage.v1.model.OperationStatus
+import com.mesosphere.cosmos.storage.v1.model.PendingStatus
+import com.mesosphere.cosmos.storage.v1.model.PendingOperation
 import com.mesosphere.universe.bijection.BijectionUtils
 import com.twitter.bijection.Conversion.asMethod
 import com.twitter.finagle.stats.Stat.timeFuture
@@ -80,10 +86,10 @@ final class InstallQueue private(
     // of PackageCoordinate and OperationStatus.
     getOperationStatus(packageCoordinate).map { maybeOperationStatus =>
       maybeOperationStatus.flatMap {
-        case WithZkStat(stat, Pending(operation, failure)) =>
+        case WithZkStat(stat, PendingStatus(operation, failure)) =>
           Some(WithZkStat(
             stat,
-            PendingOperation(packageCoordinate, operation, failure)
+            PendingOperation(operation, failure)
           ))
         case _ => None
       }
@@ -125,15 +131,15 @@ final class InstallQueue private(
             "Attempted to signal failure on an " +
               s"operation not in the install queue: $packageCoordinate"
           Future.exception(InstallQueueError(message))
-        case Some(WithZkStat(_, Failed(_))) =>
+        case Some(WithZkStat(_, FailedStatus(_))) =>
           val message =
             "Attempted to signal failure on an " +
               s"operation that has failed: $packageCoordinate"
           Future.exception(InstallQueueError(message))
-        case Some(WithZkStat(stat, Pending(operation, _))) =>
+        case Some(WithZkStat(stat, PendingStatus(operation, _))) =>
           setOperationStatus(
             packageCoordinate,
-            Failed(OperationFailure(operation, error)),
+            FailedStatus(OperationFailure(operation, error)),
             stat.getVersion
           )
       }
@@ -204,12 +210,12 @@ final class InstallQueue private(
             "Attempted to signal success on an " +
               s"operation not in the install queue: $packageCoordinate"
           Future.exception(InstallQueueError(message))
-        case Some(WithZkStat(_, Failed(_))) =>
+        case Some(WithZkStat(_, FailedStatus(_))) =>
           val message =
             "Attempted to signal success on an " +
               s"operation that has failed: $packageCoordinate"
           Future.exception(InstallQueueError(message))
-        case Some(WithZkStat(stat, Pending(_, _))) =>
+        case Some(WithZkStat(stat, PendingStatus(_, _))) =>
           deleteOperationStatus(packageCoordinate, stat.getVersion)
       }
     }
@@ -238,7 +244,7 @@ final class InstallQueue private(
     timeFuture(stats.stat("add")) {
       createOperationStatus(
         packageCoordinate,
-        Pending(operation, None)
+        PendingStatus(operation, None)
       ).rescue {
         case _: KeeperException.NodeExistsException =>
           setOperationInOperationStatus(packageCoordinate, operation)
@@ -306,12 +312,12 @@ final class InstallQueue private(
          * |------------|----------------------------|
          */
         Future.exception(OperationInProgress(packageCoordinate))
-      case Some(WithZkStat(_, Pending(_, _))) =>
+      case Some(WithZkStat(_, PendingStatus(_, _))) =>
         Future.exception(OperationInProgress(packageCoordinate))
-      case Some(WithZkStat(stat, Failed(failure))) =>
+      case Some(WithZkStat(stat, FailedStatus(failure))) =>
         setOperationStatus(
           packageCoordinate,
-          Pending(operation, Some(failure)),
+          PendingStatus(operation, Some(failure)),
           stat.getVersion
         ).before(Future.Unit)
     }
