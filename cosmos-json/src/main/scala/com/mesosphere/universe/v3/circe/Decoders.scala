@@ -87,7 +87,8 @@ object Decoders {
   implicit val decodeV3PackagingVersion: Decoder[PackagingVersion] = Decoder.instance[PackagingVersion] { (c: HCursor) =>
     c.as[String].map(PackagingVersion(_)).flatMap {
       case Return(v) => Right(v)
-      case Throw(e) => Left(DecodingFailure(e.getMessage, c.history))
+      case Throw(e) =>
+        Left(DecodingFailure(e.getMessage, c.history))
     }
   }
 

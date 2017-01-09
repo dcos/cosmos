@@ -1,15 +1,22 @@
 package com.mesosphere.cosmos.finch
 
-import cats.Eval
 import com.mesosphere.cosmos.finch.TestingMediaTypes._
-import com.mesosphere.cosmos.http.{MediaType, RequestSession}
+import com.mesosphere.cosmos.http.MediaType
+import com.mesosphere.cosmos.http.RequestSession
 import com.twitter.finagle.http.RequestBuilder
 import com.twitter.io.Buf
-import com.twitter.util.{Await, Future, Try}
+import com.twitter.util.Await
+import com.twitter.util.Future
+import com.twitter.util.Try
+import io.catbird.util.Rerunnable
 import io.circe.Json
 import io.circe.generic.semiauto
 import io.circe.syntax._
-import io.finch.{/, Endpoint, Input, Output, post}
+import io.finch./
+import io.finch.Endpoint
+import io.finch.Input
+import io.finch.Output
+import io.finch.post
 import org.scalatest.FreeSpec
 
 final class VersionedResponsesSpec extends FreeSpec {
@@ -70,12 +77,12 @@ object VersionedResponsesSpec {
       .setHeader("Content-Type", applicationJson.show)
       .buildPost(Buf.Utf8(body))
 
-    Input(request)
+    Input(request, request.path.split("/"))
   }
 
-  def extractBody[A](result: Option[(Input, Eval[Future[Output[A]]])]): A = {
+  def extractBody[A](result: Option[(Input, Rerunnable[Output[A]])]): A = {
     val Some((_, eval)) = result
-    Await.result(eval.value).value
+    Await.result(eval.run).value
   }
 
   implicit val stringRichDecoder: MediaTypedRequestDecoder[String] =

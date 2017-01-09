@@ -3,6 +3,7 @@ package com.mesosphere.cosmos.finch
 import com.mesosphere.cosmos.http.MediaType
 import com.twitter.util.Throw
 import com.twitter.util.Try
+import com.twitter.io.Buf.ByteArray
 import io.finch.Error
 import io.finch.items
 import java.nio.charset.StandardCharsets
@@ -29,8 +30,7 @@ object DispatchingMediaTypedBodyParser {
   def parserFromDecoder[A](implicit
     accepts: MediaTypedRequestDecoder[A]
   ): Array[Byte] => Try[A] = { bodyBytes =>
-    val bodyString = new String(bodyBytes, StandardCharsets.UTF_8)
-    accepts.decoder(bodyString).rescue { case t =>
+    accepts.decoder(ByteArray.Owned(bodyBytes), StandardCharsets.UTF_8).rescue { case t =>
       Throw(Error.NotParsed(items.BodyItem, accepts.classTag, t))
     }
   }

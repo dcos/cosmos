@@ -176,8 +176,7 @@ object EndpointHandlerSpec {
 
   def extractContentType(result: Future[Output[Json]]): String = {
     val output = Await.result(result)
-    val Some(contentType) = output.contentType
-    contentType
+    output.headers("Content-Type")
   }
 
   implicit def anyMediaTypedEncoder[A](implicit encoder: Encoder[A]): MediaTypedEncoder[A] = {

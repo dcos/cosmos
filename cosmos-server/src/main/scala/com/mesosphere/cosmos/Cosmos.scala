@@ -42,6 +42,7 @@ import com.twitter.finagle.param.Label
 import com.twitter.finagle.ssl.Ssl
 import com.twitter.finagle.stats.NullStatsReceiver
 import com.twitter.finagle.stats.StatsReceiver
+import com.twitter.io.Buf
 import com.twitter.server.Admin
 import com.twitter.server.AdminHttpServer
 import com.twitter.server.Lifecycle
@@ -133,40 +134,70 @@ private[cosmos] final class Cosmos(
 
     val endpoints = (
       // Keep alphabetized
-      capabilities
-        :+: packageAdd
-        :+: packageDescribe
-        :+: packageInstall
-        :+: packageList
-        :+: packageListVersions
-        :+: packageRender
-        :+: packageRepositoryAdd
-        :+: packageRepositoryDelete
-        :+: packageRepositoryList
-        :+: packageSearch
-        :+: packageUninstall
-        :+: serviceStart
+      capabilities.map(jsonToResponse)
+        :+: packageAdd.map(jsonToResponse)
+        :+: packageDescribe.map(jsonToResponse)
+        :+: packageInstall.map(jsonToResponse)
+        :+: packageList.map(jsonToResponse)
+        :+: packageListVersions.map(jsonToResponse)
+        :+: packageRender.map(jsonToResponse)
+        :+: packageRepositoryAdd.map(jsonToResponse)
+        :+: packageRepositoryDelete.map(jsonToResponse)
+        :+: packageRepositoryList.map(jsonToResponse)
+        :+: packageSearch.map(jsonToResponse)
+        :+: packageUninstall.map(jsonToResponse)
+        :+: serviceStart.map(jsonToResponse)
       )
 
     val api = endpoints.handle {
       case re: RequestError =>
         stats.counter(s"definedError/${sanitiseClassName(re.getClass)}").incr()
-        val output = Output.failure(re, re.status).withContentType(Some(MediaTypes.ErrorResponse.show))
+        val output = Output.failure(
+          re,
+          re.status
+        ).withHeader(
+          "Content-Type" -> MediaTypes.ErrorResponse.show
+        )
         re.getHeaders.foldLeft(output) { case (out, kv) => out.withHeader(kv) }
       case fe: _root_.io.finch.Error =>
         stats.counter(s"finchError/${sanitiseClassName(fe.getClass)}").incr()
-        Output.failure(fe, Status.BadRequest).withContentType(Some(MediaTypes.ErrorResponse.show))
+        Output.failure(
+          fe,
+          Status.BadRequest
+        ).withHeader(
+          "Content-Type" -> MediaTypes.ErrorResponse.show
+        )
       case e: Exception if !e.isInstanceOf[_root_.io.finch.Error] =>
         stats.counter(s"unhandledException/${sanitiseClassName(e.getClass)}").incr()
         logger.warn("Unhandled exception: ", e)
-        Output.failure(e, Status.InternalServerError).withContentType(Some(MediaTypes.ErrorResponse.show))
+        Output.failure(
+          e,
+          Status.InternalServerError
+        ).withHeader(
+          "Content-Type" -> MediaTypes.ErrorResponse.show
+        )
       case t: Throwable if !t.isInstanceOf[_root_.io.finch.Error] =>
         stats.counter(s"unhandledThrowable/${sanitiseClassName(t.getClass)}").incr()
         logger.warn("Unhandled throwable: ", t)
-        Output.failure(new Exception(t), Status.InternalServerError).withContentType(Some(MediaTypes.ErrorResponse.show))
+        Output.failure(
+          new Exception(t),
+          Status.InternalServerError
+        ).withHeader(
+          "Content-Type" -> MediaTypes.ErrorResponse.show
+        )
     }
 
     api.toService
+  }
+
+  private[this] def jsonToResponse(json: Json): Response = {
+    println("did we get here????")
+    val response = Response()
+    response.content = Buf.Utf8(json.noSpaces)
+    // TODO: fix this
+    response.contentType = "place-holder"
+
+    response
   }
 
   /**
