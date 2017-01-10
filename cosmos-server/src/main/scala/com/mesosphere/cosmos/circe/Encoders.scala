@@ -35,6 +35,7 @@ import io.circe.generic.encoding.DerivedObjectEncoder
 import io.circe.generic.semiauto._
 import io.circe.syntax._
 import io.finch.Error
+import io.finch.Errors
 import org.jboss.netty.handler.codec.http.HttpMethod
 
 
@@ -140,7 +141,7 @@ object Encoders {
       )
     case Error.NotValid(item, rule) =>
       ErrorResponse("not_valid", s"Item '${item.description}' deemed invalid by rule: '$rule'")
-    case Error.RequestErrors(ts) =>
+    case Errors(ts) =>
       val details = ts.map(exceptionErrorResponse).toList.asJson
       ErrorResponse(
         "multiple_errors",

@@ -76,52 +76,64 @@ private[cosmos] final class Cosmos(
 
   // Package Handlers
   val packageInstall: Endpoint[Json] = {
-    route(post("package" / "install"), packageInstallHandler)(RequestValidators.standard)
+    route(post("package" :: "install"), packageInstallHandler)(RequestValidators.standard)
   }
 
   val packageUninstall: Endpoint[Json] = {
-    route(post("package" / "uninstall"), packageUninstallHandler)(RequestValidators.standard)
+    route(post("package" :: "uninstall"), packageUninstallHandler)(RequestValidators.standard)
   }
 
   val packageDescribe: Endpoint[Json] = {
-    route(post("package" / "describe"), packageDescribeHandler)(RequestValidators.standard)
+    route(post("package" :: "describe"), packageDescribeHandler)(RequestValidators.standard)
   }
 
   val packageRender: Endpoint[Json] = {
-    route(post("package" / "render"), packageRenderHandler)(RequestValidators.standard)
+    route(post("package" :: "render"), packageRenderHandler)(RequestValidators.standard)
   }
 
   val packageListVersions: Endpoint[Json] = {
-    route(post("package" / "list-versions"), packageListVersionsHandler)(RequestValidators.standard)
+    route(
+      post("package" :: "list-versions"),
+      packageListVersionsHandler
+    )(RequestValidators.standard)
   }
 
   val packageSearch: Endpoint[Json] = {
-    route(post("package" / "search"), packageSearchHandler)(RequestValidators.standard)
+    route(post("package" :: "search"), packageSearchHandler)(RequestValidators.standard)
   }
 
   val packageList: Endpoint[Json] = {
-    route(post("package" / "list"), packageListHandler)(RequestValidators.standard)
+    route(post("package" :: "list"), packageListHandler)(RequestValidators.standard)
   }
 
   val packageRepositoryList: Endpoint[Json] = {
-    route(post("package" / "repository" / "list"), packageRepositoryListHandler)(RequestValidators.standard)
+    route(
+      post("package" :: "repository" :: "list"),
+      packageRepositoryListHandler
+    )(RequestValidators.standard)
   }
 
   val packageRepositoryAdd: Endpoint[Json] = {
-    route(post("package" / "repository" / "add"), packageRepositoryAddHandler)(RequestValidators.standard)
+    route(
+      post("package" :: "repository" :: "add"),
+      packageRepositoryAddHandler
+    )(RequestValidators.standard)
   }
 
   val packageRepositoryDelete: Endpoint[Json] = {
-    route(post("package" / "repository" / "delete"), packageRepositoryDeleteHandler)(RequestValidators.standard)
+    route(
+      post("package" :: "repository" :: "delete"),
+      packageRepositoryDeleteHandler
+    )(RequestValidators.standard)
   }
 
   val packageAdd: Endpoint[Json] = {
-    route(post("package" / "add"), packageAddHandler)(RequestValidators.selectedBody)
+    route(post("package" :: "add"), packageAddHandler)(RequestValidators.selectedBody)
   }
 
   // Service Handlers
   val serviceStart: Endpoint[Json] = {
-    route(post("service" / "start"), serviceStartHandler)(RequestValidators.standard)
+    route(post("service" :: "start"), serviceStartHandler)(RequestValidators.standard)
   }
 
   // Capabilities
@@ -187,7 +199,7 @@ private[cosmos] final class Cosmos(
         )
     }
 
-    api.toService
+    api.toServiceAs[Application.Json]
   }
 
   /**

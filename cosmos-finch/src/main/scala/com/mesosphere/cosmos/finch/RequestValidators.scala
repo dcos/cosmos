@@ -27,7 +27,7 @@ object RequestValidators {
     val contentTypeRule = beTheExpectedType(accepts.mediaTypedDecoder.mediaType)
     val contentTypeValidator = header(Fields.ContentType).as[MediaType].should(contentTypeRule)
 
-    val bodyValidator = body.as[Req](accepts.decoder, accepts.classTag)
+    val bodyValidator = body[Req, Application.Json](accepts.decoder, accepts.classTag)
 
     val allValidators = baseValidator(produces) :: contentTypeValidator :: bodyValidator
     allValidators.map {
