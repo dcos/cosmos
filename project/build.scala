@@ -16,7 +16,7 @@ object CosmosBuild extends Build {
     val circe = "0.6.1"
     val curator = "2.11.1"
     val fastparse = "0.4.1"
-    val twitterServer = "1.26.0"
+    val twitterServer = "1.25.0"
     val finch = "0.11.1"
     val guava = "16.0.1"
     val jsonSchema = "2.2.6"
@@ -26,7 +26,7 @@ object CosmosBuild extends Build {
     val scalaUri = "0.4.11"
     val scalaTest = "2.2.4"
     val scalaCheck = "1.12.6"
-    val twitterUtilCore = "6.30.0"
+    val twitterUtilCore = "6.39.0"
     val zookeeper = "3.4.6"
     val aws = "1.11.63"
     val slf4j = "1.7.10"
@@ -75,14 +75,9 @@ object CosmosBuild extends Build {
     )
 
     val finch = Seq(
-      "com.github.finagle" %% "finch-core" % V.finch
-    ) ++ Seq(
+      "com.github.finagle" %% "finch-core" % V.finch,
       "com.github.finagle" %% "finch-circe" % V.finch
-    ).map(_.excludeAll(
-      ExclusionRule("io.circe", "circe-core"),
-      ExclusionRule("io.circe", "circe-jawn"),
-      ExclusionRule("io.circe", "circe-jackson")
-    ))
+    )
 
     val guava = Seq(
       "com.google.guava" % "guava" % V.guava,

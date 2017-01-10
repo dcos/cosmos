@@ -134,19 +134,19 @@ private[cosmos] final class Cosmos(
 
     val endpoints = (
       // Keep alphabetized
-      capabilities.map(jsonToResponse)
-        :+: packageAdd.map(jsonToResponse)
-        :+: packageDescribe.map(jsonToResponse)
-        :+: packageInstall.map(jsonToResponse)
-        :+: packageList.map(jsonToResponse)
-        :+: packageListVersions.map(jsonToResponse)
-        :+: packageRender.map(jsonToResponse)
-        :+: packageRepositoryAdd.map(jsonToResponse)
-        :+: packageRepositoryDelete.map(jsonToResponse)
-        :+: packageRepositoryList.map(jsonToResponse)
-        :+: packageSearch.map(jsonToResponse)
-        :+: packageUninstall.map(jsonToResponse)
-        :+: serviceStart.map(jsonToResponse)
+      capabilities
+        :+: packageAdd
+        :+: packageDescribe
+        :+: packageInstall
+        :+: packageList
+        :+: packageListVersions
+        :+: packageRender
+        :+: packageRepositoryAdd
+        :+: packageRepositoryDelete
+        :+: packageRepositoryList
+        :+: packageSearch
+        :+: packageUninstall
+        :+: serviceStart
       )
 
     val api = endpoints.handle {
@@ -188,16 +188,6 @@ private[cosmos] final class Cosmos(
     }
 
     api.toService
-  }
-
-  private[this] def jsonToResponse(json: Json): Response = {
-    val response = Response()
-
-    response.content = Buf.Utf8(json.noSpaces)
-    // TODO: fix this
-    response.contentType = "place-holder"
-
-    response
   }
 
   /**
@@ -247,7 +237,6 @@ with Stats {
     }
   }
 
-  // TODO package-add: is this being tested?
   /*
   private[this] def startTlsServer(): Option[ListeningServer] = {
     // TODO: Make default https port configurable
