@@ -1,11 +1,10 @@
 package com.mesosphere.cosmos.repository
 
-import com.mesosphere.cosmos.storage.PackageObjectStorage
-import com.mesosphere.cosmos.CosmosError
 import com.mesosphere.cosmos.PackageNotFound
 import com.mesosphere.cosmos.VersionNotFound
-import com.mesosphere.cosmos.search.searchForPackages
 import com.mesosphere.cosmos.rpc
+import com.mesosphere.cosmos.search.searchForPackages
+import com.mesosphere.cosmos.storage.PackageObjectStorage
 import com.mesosphere.universe
 import com.twitter.util.Future
 

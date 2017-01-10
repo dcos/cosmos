@@ -2,6 +2,7 @@ package com.mesosphere.cosmos.rpc.v1.circe
 
 import cats.syntax.either._
 import com.mesosphere.cosmos.rpc.v1.model._
+import com.mesosphere.cosmos.storage.v1.circe.Decoders._
 import com.mesosphere.cosmos.thirdparty.marathon.circe.Decoders._
 import com.mesosphere.universe
 import com.mesosphere.universe.common.circe.Decoders._
@@ -103,7 +104,7 @@ object Decoders {
         case InstalledName =>
           installedDecoder(cursor)
         case UninstallingName =>
-          val right = cursor.get[universe.v3.model.PackageDefinition]("metadata").map(
+          val right = cursor.get[universe.v3.model.V3Package]("metadata").map(
             value => Uninstalling(Right(value))
           )
           val left = cursor.get[PackageCoordinate]("packageCoordinate").map(

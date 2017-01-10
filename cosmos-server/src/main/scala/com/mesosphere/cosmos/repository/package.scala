@@ -18,16 +18,10 @@ package object repository {
     }
   }
 
-  type Uninstaller = (
-    rpc.v1.model.PackageCoordinate,
-    Option[universe.v3.model.V3Package]
-  ) => Future[Unit]
+  type Uninstaller = universe.v3.model.V3Package => Future[Unit]
   object Uninstaller {
     object Noop extends Uninstaller {
-      def apply(
-        pc: rpc.v1.model.PackageCoordinate,
-        p: Option[universe.v3.model.V3Package]
-      ): Future[Unit] = Future.Done
+      def apply(p: universe.v3.model.V3Package): Future[Unit] = Future.Done
     }
   }
 

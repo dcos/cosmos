@@ -1,11 +1,11 @@
 package com.mesosphere.cosmos.repository
 
 import com.mesosphere.cosmos.circe.Encoders.exceptionErrorResponse
-import com.mesosphere.cosmos.storage.installqueue.Install
-import com.mesosphere.cosmos.storage.installqueue.PendingOperation
 import com.mesosphere.cosmos.storage.installqueue.ProcessorView
-import com.mesosphere.cosmos.storage.installqueue.Uninstall
-import com.mesosphere.cosmos.storage.installqueue.UniverseInstall
+import com.mesosphere.cosmos.storage.v1.model.Install
+import com.mesosphere.cosmos.storage.v1.model.PendingOperation
+import com.mesosphere.cosmos.storage.v1.model.Uninstall
+import com.mesosphere.cosmos.storage.v1.model.UniverseInstall
 import com.twitter.util.Future
 import com.twitter.util.Return
 import com.twitter.util.Throw
@@ -39,7 +39,7 @@ final class OperationProcessor private (
     pending.operation match {
       case Install(stagedPackageId, pkg) => installer(stagedPackageId, pkg)
       case UniverseInstall(pkg) => universeInstaller(pkg)
-      case Uninstall(pkg) => uninstaller(pending.packageCoordinate, pkg)
+      case Uninstall(pkg) => uninstaller(pkg)
     }
   }
 }

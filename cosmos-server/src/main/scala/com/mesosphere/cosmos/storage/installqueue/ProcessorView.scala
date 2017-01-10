@@ -2,6 +2,7 @@ package com.mesosphere.cosmos.storage.installqueue
 
 import com.mesosphere.cosmos.rpc
 import com.mesosphere.cosmos.rpc.v1.model.ErrorResponse
+import com.mesosphere.cosmos.storage.v1.model.PendingOperation
 import com.twitter.util.Future
 
 /** This  will be used by the processor to observe the
