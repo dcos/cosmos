@@ -6,7 +6,6 @@ import _root_.io.circe.JsonObject
 import _root_.io.circe.syntax._
 import cats.data.Ior
 import com.mesosphere.cosmos.circe.Encoders._
-import com.mesosphere.cosmos.finch.RequestError
 import com.mesosphere.cosmos.http.MediaType
 import com.mesosphere.cosmos.rpc.v1.circe.Encoders._
 import com.mesosphere.cosmos.rpc.v1.model.PackageRepository
@@ -25,19 +24,19 @@ import scala.util.control.NoStackTrace
 // scalastyle:off number.of.types
 sealed abstract class CosmosError(
   causedBy: Option[Throwable] = None
-) extends RequestError(causedBy) {
+) extends RuntimeException(causedBy.orNull) {
 
-  def errType: String = this.getClass.getSimpleName
+  final val errType: String = this.getClass.getSimpleName
 
-  def status: Status = Status.BadRequest
+  val status: Status = Status.BadRequest
 
-  def getHeaders: Map[String, String] = Map.empty
+  val getHeaders: Map[String, String] = Map.empty
 
-  def getData: Option[JsonObject]
+  val getData: Option[JsonObject]
 }
 
 case class PackageNotFound(packageName: String) extends CosmosError {
-  override def getData: Option[JsonObject] = {
+  override val getData: Option[JsonObject] = {
     Some(
       JsonObject.fromMap(
         Map("packageName" -> packageName.asJson)
@@ -50,7 +49,7 @@ case class VersionNotFound(
   packageName: String,
   packageVersion: universe.v3.model.PackageDefinition.Version
 ) extends CosmosError {
-  override def getData: Option[JsonObject] = {
+  override val getData: Option[JsonObject] = {
     Some(
       JsonObject.fromMap(
         Map(
@@ -66,7 +65,7 @@ case class PackageFileMissing(
   packageName: String,
   cause: Option[Throwable] = None
 ) extends CosmosError(cause) {
-  override def getData: Option[JsonObject] = {
+  override val getData: Option[JsonObject] = {
     Some(
       JsonObject.fromMap(
         Map("packageName" -> packageName.asJson)
@@ -76,7 +75,7 @@ case class PackageFileMissing(
 }
 
 case class PackageFileNotJson(fileName: String, parseError: String) extends CosmosError {
-  override def getData: Option[JsonObject] = {
+  override val getData: Option[JsonObject] = {
     Some(
       JsonObject.fromMap(
         Map(
@@ -89,7 +88,7 @@ case class PackageFileNotJson(fileName: String, parseError: String) extends Cosm
 }
 
 case class UnableToParseMarathonAsJson(parseError: String) extends  CosmosError {
-  override def getData: Option[JsonObject] = {
+  override val getData: Option[JsonObject] = {
     Some(
       JsonObject.fromMap(
         Map("parseError" -> parseError.asJson)
@@ -99,7 +98,7 @@ case class UnableToParseMarathonAsJson(parseError: String) extends  CosmosError 
 }
 
 case class PackageFileSchemaMismatch(fileName: String, decodingFailure: DecodingFailure) extends CosmosError {
-  override def getData: Option[JsonObject] = {
+  override val getData: Option[JsonObject] = {
     Some(JsonObject.singleton("errorMessage", decodingFailure.getMessage().asJson))
   }
 }
@@ -115,14 +114,14 @@ case class ServiceAlreadyStarted() extends CosmosError {
 }
 
 case class MarathonBadResponse(marathonError: MarathonError) extends CosmosError {
-  override def getData: Option[JsonObject] = {
+  override val getData: Option[JsonObject] = {
     marathonError.details.map(details => JsonObject.singleton("errors", details.asJson))
   }
 }
 
 case class MarathonGenericError(marathonStatus: Status) extends CosmosError {
   override val status = Status.InternalServerError
-  override def getData: Option[JsonObject] = {
+  override val getData: Option[JsonObject] = {
     Some(
       JsonObject.fromMap(
         Map("marathonStatus" -> marathonStatus.asJson)
@@ -133,7 +132,7 @@ case class MarathonGenericError(marathonStatus: Status) extends CosmosError {
 
 case class MarathonBadGateway(marathonStatus: Status) extends CosmosError {
   override val status = Status.BadGateway
-  override def getData: Option[JsonObject] = {
+  override val getData: Option[JsonObject] = {
     Some(
       JsonObject.fromMap(
         Map("marathonStatus" -> marathonStatus.asJson)
@@ -143,7 +142,7 @@ case class MarathonBadGateway(marathonStatus: Status) extends CosmosError {
 }
 
 case class IndexNotFound(repoUri: Uri) extends CosmosError {
-  override def getData: Option[JsonObject] = {
+  override val getData: Option[JsonObject] = {
     Some(
       JsonObject.fromMap(
         Map("repoUri" -> repoUri.asJson)
@@ -154,7 +153,7 @@ case class IndexNotFound(repoUri: Uri) extends CosmosError {
 
 
 case class MarathonAppDeleteError(appId: AppId) extends CosmosError {
-  override def getData: Option[JsonObject] = {
+  override val getData: Option[JsonObject] = {
     Some(
       JsonObject.fromMap(
         Map("appId" -> appId.asJson)
@@ -164,7 +163,7 @@ case class MarathonAppDeleteError(appId: AppId) extends CosmosError {
 }
 
 case class MarathonAppNotFound(appId: AppId) extends CosmosError {
-  override def getData: Option[JsonObject] = {
+  override val getData: Option[JsonObject] = {
     Some(
       JsonObject.fromMap(
         Map("appId" -> appId.asJson)
@@ -182,7 +181,7 @@ case object MarathonTemplateMustBeJsonObject extends CosmosError {
 }
 
 case class UnsupportedContentType(supported: List[MediaType], actual: Option[String] = None) extends CosmosError {
-  override def getData: Option[JsonObject] = {
+  override val getData: Option[JsonObject] = {
     Some(JsonObject.fromMap(Map(
       "supported" -> supported.asJson,
       "actual" -> actual.asJson
@@ -200,7 +199,7 @@ object UnsupportedContentType {
 }
 
 case class UnsupportedContentEncoding(supported: List[String], actual: Option[String] = None) extends CosmosError {
-  override def getData: Option[JsonObject] = {
+  override val getData: Option[JsonObject] = {
     Some(JsonObject.fromMap(Map(
       "supported" -> supported.asJson,
       "actual" -> actual.asJson
@@ -209,7 +208,7 @@ case class UnsupportedContentEncoding(supported: List[String], actual: Option[St
 }
 
 case class UnsupportedRedirect(supported: List[String], actual: Option[String] = None) extends CosmosError {
-  override def getData: Option[JsonObject] = {
+  override val getData: Option[JsonObject] = {
     Some(JsonObject.fromMap(Map(
       "supported" -> supported.asJson,
       "actual" -> actual.asJson
@@ -218,7 +217,7 @@ case class UnsupportedRedirect(supported: List[String], actual: Option[String] =
 }
 
 case class GenericHttpError(method: HttpMethod, uri: Uri, override val status: Status) extends CosmosError {
-  override def getData: Option[JsonObject] = {
+  override val getData: Option[JsonObject] = {
     Some(
       JsonObject.fromMap(
         Map(
@@ -238,7 +237,7 @@ object GenericHttpError {
 }
 
 case class AmbiguousAppId(packageName: String, appIds: List[AppId]) extends CosmosError {
-  override def getData: Option[JsonObject] = {
+  override val getData: Option[JsonObject] = {
     Some(
       JsonObject.fromMap(
         Map(
@@ -256,7 +255,7 @@ case class MultipleFrameworkIds(
   frameworkName: String,
   ids: List[String]
 ) extends CosmosError {
-  override def getData: Option[JsonObject] = {
+  override val getData: Option[JsonObject] = {
     Some(
       JsonObject.fromMap(
         Map(
@@ -271,7 +270,7 @@ case class MultipleFrameworkIds(
 }
 
 case class PackageNotInstalled(packageName: String) extends CosmosError {
-  override def getData: Option[JsonObject] = {
+  override val getData: Option[JsonObject] = {
     Some(
       JsonObject.fromMap(
         Map("packageName" -> packageName.asJson)
@@ -281,14 +280,14 @@ case class PackageNotInstalled(packageName: String) extends CosmosError {
 }
 
 case class JsonSchemaMismatch(errors: Iterable[Json]) extends CosmosError {
-  override def getData: Option[JsonObject] = Some(JsonObject.singleton("errors", errors.asJson))
+  override val getData: Option[JsonObject] = Some(JsonObject.singleton("errors", errors.asJson))
 }
 
 case class UninstallNonExistentAppForPackage(
   packageName: String,
   appId: AppId
 ) extends CosmosError {
-  override def getData: Option[JsonObject] = {
+  override val getData: Option[JsonObject] = {
     Some(
       JsonObject.fromMap(
         Map(
@@ -366,7 +365,7 @@ final case class RepoNameOrUriMissing() extends CosmosError {
 }
 
 case class RepositoryAlreadyPresent(nameOrUri: Ior[String, Uri]) extends CosmosError {
-  override def getData: Option[JsonObject] = {
+  override val getData: Option[JsonObject] = {
     val jsonMap = nameOrUri match {
       case Ior.Both(n, u) => Map("name" -> n.asJson, "uri" -> u.asJson)
       case Ior.Left(n) => Map("name" -> n.asJson)
@@ -377,7 +376,7 @@ case class RepositoryAlreadyPresent(nameOrUri: Ior[String, Uri]) extends CosmosE
 }
 
 case class RepositoryAddIndexOutOfBounds(attempted: Int, max: Int) extends CosmosError {
-  override def getData: Option[JsonObject] = {
+  override val getData: Option[JsonObject] = {
     Some(
       JsonObject.fromMap(
         Map(
@@ -392,7 +391,7 @@ case class RepositoryAddIndexOutOfBounds(attempted: Int, max: Int) extends Cosmo
 case class UnsupportedRepositoryVersion(
   version: universe.v2.model.UniverseVersion
 ) extends CosmosError {
-  override def getData: Option[JsonObject] = {
+  override val getData: Option[JsonObject] = {
     Some(
       JsonObject.fromMap(
         Map("version" -> version.asJson)
@@ -402,7 +401,7 @@ case class UnsupportedRepositoryVersion(
 }
 
 case class UnsupportedRepositoryUri(uri: Uri) extends CosmosError {
-  override def getData: Option[JsonObject] = {
+  override val getData: Option[JsonObject] = {
     Some(
       JsonObject.fromMap(
         Map("uri" -> uri.asJson)
@@ -415,7 +414,7 @@ case class RepositoryUriSyntax(
   repository: PackageRepository,
   causedBy: Throwable
 ) extends CosmosError(Some(causedBy)) {
-  override def getData: Option[JsonObject] = {
+  override val getData: Option[JsonObject] = {
     Some(JsonObject.singleton("cause", causedBy.getMessage.asJson))
   }
 }
@@ -424,13 +423,13 @@ case class RepositoryUriConnection(
   repository: PackageRepository,
   causedBy: Throwable
 ) extends CosmosError(Some(causedBy)) {
-  override def getData: Option[JsonObject] = {
+  override val getData: Option[JsonObject] = {
     Some(JsonObject.singleton("cause", causedBy.getMessage.asJson))
   }
 }
 
 case class RepositoryNotPresent(nameOrUri: Ior[String, Uri]) extends CosmosError {
-  override def getData: Option[JsonObject] = {
+  override val getData: Option[JsonObject] = {
     val jsonMap = nameOrUri match {
       case Ior.Both(n, u) => Map("name" -> n.asJson, "uri" -> u.asJson)
       case Ior.Left(n) => Map("name" -> n.asJson)
@@ -441,7 +440,7 @@ case class RepositoryNotPresent(nameOrUri: Ior[String, Uri]) extends CosmosError
 }
 
 case class ConversionError(failure: String) extends CosmosError {
-  override def getData: Option[JsonObject] = {
+  override val getData: Option[JsonObject] = {
     Some(JsonObject.singleton("failure", failure.asJson))
   }
 }
@@ -450,7 +449,7 @@ case class ServiceMarathonTemplateNotFound(
   packageName: String,
   packageVersion: universe.v3.model.PackageDefinition.Version
 ) extends CosmosError {
-  override def getData: Option[JsonObject] = {
+  override val getData: Option[JsonObject] = {
     Some(
       JsonObject.fromMap(
         Map(
@@ -463,13 +462,13 @@ case class ServiceMarathonTemplateNotFound(
 }
 
 case class EnvelopeError(msg: String) extends CosmosError {
-  override def getData: Option[JsonObject] = {
+  override val getData: Option[JsonObject] = {
     Some(JsonObject.singleton("msg", msg.asJson))
   }
 }
 
 case class InstallQueueError(msg: String) extends CosmosError {
-  override def getData: Option[JsonObject] = {
+  override val getData: Option[JsonObject] = {
     Some(JsonObject.singleton("msg", msg.asJson))
   }
 }
@@ -477,7 +476,7 @@ case class InstallQueueError(msg: String) extends CosmosError {
 case class NotImplemented(msg: String) extends CosmosError {
   override val status = Status.NotImplemented
 
-  override def getData: Option[JsonObject] = {
+  override val getData: Option[JsonObject] = {
     Some(JsonObject.singleton("msg", msg.asJson))
   }
 }
@@ -485,7 +484,7 @@ case class NotImplemented(msg: String) extends CosmosError {
 case class OperationInProgress(coordinate: rpc.v1.model.PackageCoordinate) extends CosmosError {
   override val status = Status.Conflict
 
-  override def getData: Option[JsonObject] = {
+  override val getData: Option[JsonObject] = {
     Some(JsonObject.singleton("coordinate", coordinate.asJson))
   }
 }

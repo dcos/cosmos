@@ -2,9 +2,6 @@ package com.mesosphere.cosmos.circe
 
 import cats.data.Ior
 import com.mesosphere.cosmos.CosmosError
-import com.mesosphere.cosmos.finch.IncompatibleAcceptHeader
-import com.mesosphere.cosmos.finch.IncompatibleContentTypeHeader
-import com.mesosphere.cosmos.finch.RequestError
 import com.mesosphere.cosmos.http.MediaType
 import com.mesosphere.cosmos.model.ZooKeeperStorageEnvelope
 import com.mesosphere.cosmos.rpc.v1.circe.Encoders._
@@ -133,14 +130,14 @@ object Encoders {
   def exceptionErrorResponse(t: Throwable): ErrorResponse = t match {
     case circeError: io.circe.Error => circeErrorResponse(circeError)
     case Error.NotPresent(item) =>
-      ErrorResponse("not_present", s"Item '${item.description}' not present but required")
+      ErrorResponse("not_present", s"Item ${item.description} not present but required")
     case Error.NotParsed(item, _, cause) =>
       ErrorResponse(
         "not_parsed",
-        s"Item '${item.description}' unable to be parsed : '${cause.getMessage}'"
+        s"Item '${item.description}' unable to be parsed: ${cause.getMessage}"
       )
     case Error.NotValid(item, rule) =>
-      ErrorResponse("not_valid", s"Item '${item.description}' deemed invalid by rule: '$rule'")
+      ErrorResponse("not_valid", s"Item ${item.description} deemed invalid by rule: $rule")
     case Errors(ts) =>
       val details = ts.map(exceptionErrorResponse).toList.asJson
       ErrorResponse(
@@ -148,8 +145,8 @@ object Encoders {
         "Multiple errors while processing request",
         Some(JsonObject.singleton("errors", details))
       )
-    case ce: RequestError =>
-      ErrorResponse(ce.errType, msgForRequestError(ce), ce.getData)
+    case ce: CosmosError =>
+      ErrorResponse(ce.errType, msgForCosmosError(ce), ce.getData)
     case t: Throwable =>
       ErrorResponse("unhandled_exception", t.getMessage)
   }
@@ -175,16 +172,6 @@ object Encoders {
           "path" -> path.asJson
         )))
       )
-  }
-
-  private[this] def msgForRequestError(re: RequestError): String = re match {
-    case ce: CosmosError => msgForCosmosError(ce)
-    case IncompatibleAcceptHeader(available, _) =>
-      "Item 'header 'Accept'' deemed invalid by rule: 'should match one of: " +
-      s"${available.map(_.show).mkString(", ")}'"
-    case IncompatibleContentTypeHeader(available, _) =>
-      s"Item 'header ${Fields.ContentType}'' deemed invalid by rule: 'should match one of: " +
-      s"${available.map(_.show).mkString(", ")}'"
   }
 
   // scalastyle:off cyclomatic.complexity method.length

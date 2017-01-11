@@ -6,7 +6,6 @@ import _root_.io.finch.circe.dropNullKeys._
 import com.mesosphere.cosmos.circe.Encoders._
 import com.mesosphere.cosmos.finch.EndpointHandler
 import com.mesosphere.cosmos.finch.FinchExtensions._
-import com.mesosphere.cosmos.finch.RequestError
 import com.mesosphere.cosmos.finch.RequestValidators
 import com.mesosphere.cosmos.handler._
 import com.mesosphere.cosmos.repository.DefaultInstaller
@@ -162,7 +161,7 @@ private[cosmos] final class Cosmos(
       )
 
     val api = endpoints.handle {
-      case re: RequestError =>
+      case re: CosmosError =>
         stats.counter(s"definedError/${sanitiseClassName(re.getClass)}").incr()
         val output = Output.failure(
           re,
@@ -171,10 +170,10 @@ private[cosmos] final class Cosmos(
           "Content-Type" -> MediaTypes.ErrorResponse.show
         )
         re.getHeaders.foldLeft(output) { case (out, kv) => out.withHeader(kv) }
-      case fe: _root_.io.finch.Error =>
+      case fe @ (_: _root_.io.finch.Error | _: _root_.io.finch.Errors) =>
         stats.counter(s"finchError/${sanitiseClassName(fe.getClass)}").incr()
         Output.failure(
-          fe,
+          fe.asInstanceOf[Exception], // Must be an Exception based on the types
           Status.BadRequest
         ).withHeader(
           "Content-Type" -> MediaTypes.ErrorResponse.show

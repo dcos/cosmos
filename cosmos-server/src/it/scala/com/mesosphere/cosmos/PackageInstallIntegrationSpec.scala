@@ -104,7 +104,7 @@ final class PackageInstallIntegrationSpec extends FreeSpec with BeforeAndAfterAl
             ErrorResponse(
               "PackageAlreadyInstalled",
               "Package is already installed",
-              Some(JsonObject.empty)
+              None
             ),
             Some(expectedResponse.appId)
           ),
