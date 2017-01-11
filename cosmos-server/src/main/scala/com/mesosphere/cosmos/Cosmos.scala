@@ -38,7 +38,6 @@ import com.twitter.finagle.http.Request
 import com.twitter.finagle.http.Response
 import com.twitter.finagle.http.Status
 import com.twitter.finagle.param.Label
-import com.twitter.finagle.ssl.Ssl
 import com.twitter.finagle.stats.NullStatsReceiver
 import com.twitter.finagle.stats.StatsReceiver
 import com.twitter.io.Buf
@@ -227,18 +226,32 @@ with Stats {
   lazy val logger = org.slf4j.LoggerFactory.getLogger(getClass)
 
   def main(): Unit = {
-    for (httpServer <- startServer) {
+    val maybeHttpServer = startServer()
+    val maybeHttpsServer = startTlsServer()
+
+    // Log and close on exit
+    for (httpServer <- maybeHttpServer) {
       logger.info(s"HTTP server started on ${httpServer.boundAddress}")
       closeOnExit(httpServer)
-      Await.result(httpServer)
     }
 
-    // TODO: Start HTTPS server
+    // Log and close on exit
+    for (httpServer <- maybeHttpsServer) {
+      logger.info(s"HTTPS server started on ${httpServer.boundAddress}")
+      closeOnExit(httpServer)
+    }
+
+    // Wait for the listeners to return
+    for (httpServer <- maybeHttpServer) {
+      Await.result(httpServer)
+    }
+    for (httpServer <- maybeHttpsServer) {
+      Await.result(httpServer)
+    }
   }
 
   private[this] def startServer(): Option[ListeningServer] = {
-    // TODO: Make default http port configurable
-    Some(new InetSocketAddress("0.0.0.0", 7070)).map { iface => // scalastyle:ignore magic.number
+    httpInterface.get.map { iface =>
       //.configured(Label(name)) TODO: Add this back when we find out what it is doing.
       //.configured(Http.param.MaxRequestSize(config.maxRequestSize.megabytes)) TODO: Add this back
 
@@ -248,24 +261,23 @@ with Stats {
     }
   }
 
-  /*
   private[this] def startTlsServer(): Option[ListeningServer] = {
-    // TODO: Make default https port configurable
-    Option.empty[(String, String, InetSocketAddress)].map {
-      case (certificatePath, keyPath, iface) =>
-        val engineFactory = () =>
-          Ssl.server(certificatePath, keyPath, null, null, null) // scalastyle:ignore null
-
+    httpsInterface.get.map { iface =>
         //.configured(Label(name)) TODO: Add this back when we find out what it is doing
         //.configured(Http.param.MaxRequestSize(config.maxRequestSize.megabytes)) TODO: Add this back
 
-        Http
-          .server
-          .withTls(Netty3ListenerTLSConfig(engineFactory))
-          .serve(iface, startCosmos(NullStatsReceiver)) // TODO: User a better stats receiver
+      Http
+        .server
+        .withTransport.tls(
+          certificatePath().toString,
+          keyPath().toString,
+          None,
+          None,
+          None
+        )
+        .serve(iface, startCosmos(NullStatsReceiver)) // TODO: User a better stats receiver
     }
   }
-  */
 
   private[this] def startCosmos(implicit stats: StatsReceiver): Service[Request, Response] = {
     HttpProxySupport.configureProxySupport()
@@ -355,12 +367,12 @@ with Stats {
     implicit statsReceiver: StatsReceiver
   ): Option[(PackageObjectStorage, StagedPackageStorage, LocalPackageCollection)] = {
     def fromFlag(
-      flag: Flag[Option[ObjectStorageUri]],
+      flag: Flag[ObjectStorageUri],
       description: String
     ): Option[ObjectStorage] = {
-      val value = flag().map(_.toString).getOrElse("None")
+      val value = flag.get.map(_.toString).getOrElse("None")
       logger.info(s"Using {} for the $description storage URI", value)
-      flag().map(uri => ObjectStorage.fromUri(uri)(statsReceiver))
+      flag.get.map(uri => ObjectStorage.fromUri(uri)(statsReceiver))
     }
 
     (

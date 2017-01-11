@@ -12,6 +12,6 @@ object Flaggables {
   implicit val flagOfZooKeeperUri: Flaggable[ZooKeeperUri] =
     Flaggable.mandatory(s => ZooKeeperUri.parse(s).get())
 
-  implicit val flagOfOptionObjectStorageUri: Flaggable[Option[ObjectStorageUri]] =
-    Flaggable.mandatory(s => Some(ObjectStorageUri.parse(s).get()))
+  implicit val flagOfObjectStorageUri: Flaggable[ObjectStorageUri] =
+    Flaggable.mandatory(s => ObjectStorageUri.parse(s).get())
 }
