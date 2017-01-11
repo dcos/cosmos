@@ -7,8 +7,9 @@ import java.nio.file.Path
 
 package object finch {
 
+  // scalastyle:off object.name
   object httpInterface extends GlobalFlag[InetSocketAddress](
-    new InetSocketAddress("127.0.0.1", 7070),
+    new InetSocketAddress("127.0.0.1", 7070), //scalastyle:ignore magic.number
     "The TCP Interface and port for the http server {[<hostname/ip>]:port}. (Set to " +
     "empty value to disable)"
   )
@@ -25,4 +26,5 @@ package object finch {
   object keyPath extends GlobalFlag[Path](
     "Path to SSL Key file"
   )
+  // scalastyle:on object.name
 }
