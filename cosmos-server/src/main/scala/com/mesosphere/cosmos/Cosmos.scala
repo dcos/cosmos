@@ -7,6 +7,7 @@ import com.mesosphere.cosmos.circe.Encoders._
 import com.mesosphere.cosmos.finch.EndpointHandler
 import com.mesosphere.cosmos.finch.FinchExtensions._
 import com.mesosphere.cosmos.finch.RequestValidators
+import com.mesosphere.cosmos.flag._
 import com.mesosphere.cosmos.handler._
 import com.mesosphere.cosmos.repository.DefaultInstaller
 import com.mesosphere.cosmos.repository.DefaultUniverseInstaller
@@ -251,7 +252,7 @@ with Stats {
   }
 
   private[this] def startServer(): Option[ListeningServer] = {
-    httpInterface.get.map { iface =>
+    getHttpInterface.map { iface =>
       //.configured(Label(name)) TODO: Add this back when we find out what it is doing.
       //.configured(Http.param.MaxRequestSize(config.maxRequestSize.megabytes)) TODO: Add this back
 
@@ -262,15 +263,15 @@ with Stats {
   }
 
   private[this] def startTlsServer(): Option[ListeningServer] = {
-    httpsInterface.get.map { iface =>
+    getHttpsInterface.map { iface =>
         //.configured(Label(name)) TODO: Add this back when we find out what it is doing
         //.configured(Http.param.MaxRequestSize(config.maxRequestSize.megabytes)) TODO: Add this back
 
       Http
         .server
         .withTransport.tls(
-          certificatePath().toString,
-          keyPath().toString,
+          getCertificatePath.get.toString,
+          getKeyPath.get.toString,
           None,
           None,
           None
