@@ -179,7 +179,7 @@ private[cosmos] final class Cosmos(
         ).withHeader(
           Fields.ContentType -> MediaTypes.ErrorResponse.show
         )
-      case e: Exception if !e.isInstanceOf[_root_.io.finch.Error] =>
+      case e: Exception =>
         stats.counter(s"unhandledException/${sanitiseClassName(e.getClass)}").incr()
         logger.warn("Unhandled exception: ", e)
         Output.failure(
@@ -188,7 +188,7 @@ private[cosmos] final class Cosmos(
         ).withHeader(
           Fields.ContentType -> MediaTypes.ErrorResponse.show
         )
-      case t: Throwable if !t.isInstanceOf[_root_.io.finch.Error] =>
+      case t: Throwable =>
         stats.counter(s"unhandledThrowable/${sanitiseClassName(t.getClass)}").incr()
         logger.warn("Unhandled throwable: ", t)
         Output.failure(

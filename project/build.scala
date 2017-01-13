@@ -12,24 +12,24 @@ object CosmosBuild extends Build {
   lazy val projectVersion = "0.3.0-SNAPSHOT"
 
   object V {
+    val aws = "1.11.63"
     val bijection = "0.9.4"
     val circe = "0.6.1"
     val curator = "2.11.1"
     val fastparse = "0.4.1"
-    val twitterServer = "1.25.0"
     val finch = "0.11.1"
     val guava = "16.0.1"
     val jsonSchema = "2.2.6"
     val logback = "1.1.3"
     val mockito = "1.10.19"
     val mustache = "0.9.1"
-    val scalaUri = "0.4.11"
-    val scalaTest = "2.2.4"
     val scalaCheck = "1.12.6"
+    val scalaTest = "2.2.4"
+    val scalaUri = "0.4.11"
+    val slf4j = "1.7.10"
+    val twitterServer = "1.25.0"
     val twitterUtilCore = "6.39.0"
     val zookeeper = "3.4.6"
-    val aws = "1.11.63"
-    val slf4j = "1.7.10"
   }
 
   object Deps {

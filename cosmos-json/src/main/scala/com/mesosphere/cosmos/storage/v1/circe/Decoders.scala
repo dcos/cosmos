@@ -17,7 +17,6 @@ import io.circe.DecodingFailure
 import io.circe.HCursor
 import io.circe.generic.semiauto._
 import scala.util.Left
-import scala.util.Right
 
 object Decoders {
 

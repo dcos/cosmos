@@ -84,20 +84,28 @@ object Decoders {
 
   implicit val decodeV3V3Resource: Decoder[V3Resource] = deriveDecoder[V3Resource]
 
-  implicit val decodeV3PackagingVersion: Decoder[PackagingVersion] = Decoder.instance[PackagingVersion] { (c: HCursor) =>
-    c.as[String].map(PackagingVersion(_)).flatMap {
-      case Return(v) => Right(v)
-      case Throw(e) =>
-        Left(DecodingFailure(e.getMessage, c.history))
+  implicit val decodeV3PackagingVersion: Decoder[PackagingVersion] = {
+    Decoder.instance[PackagingVersion] { (c: HCursor) =>
+      c.as[String].map(PackagingVersion(_)).flatMap {
+        case Return(v) => Right(v)
+        case Throw(e) => Left(DecodingFailure(e.getMessage, c.history))
+      }
     }
   }
 
-  implicit val decodeV3V2PackagingVersion: Decoder[V2PackagingVersion.type] = packagingVersionSubclassToString(V2PackagingVersion)
-  implicit val decodeV3V3PackagingVersion: Decoder[V3PackagingVersion.type] = packagingVersionSubclassToString(V3PackagingVersion)
+  implicit val decodeV3V2PackagingVersion: Decoder[V2PackagingVersion.type] = {
+    packagingVersionSubclassToString(V2PackagingVersion)
+  }
+
+  implicit val decodeV3V3PackagingVersion: Decoder[V3PackagingVersion.type] = {
+    packagingVersionSubclassToString(V3PackagingVersion)
+  }
 
   implicit val decodeMetadata: Decoder[Metadata] = deriveDecoder[Metadata]
 
-  private[this] def packagingVersionSubclassToString[V <: PackagingVersion](expected: V): Decoder[V] =
+  private[this] def packagingVersionSubclassToString[V <: PackagingVersion](
+    expected: V
+  ): Decoder[V] = {
     Decoder.instance { (c: HCursor) =>
       c.as[String].flatMap {
         case expected.show => Right(expected)
@@ -107,5 +115,6 @@ object Decoders {
         ))
       }
     }
+  }
 
 }
