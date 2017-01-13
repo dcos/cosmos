@@ -8,7 +8,7 @@ import com.mesosphere.cosmos.ObjectStorageUri
 import com.mesosphere.cosmos.Services
 import com.mesosphere.cosmos.Trys
 import com.mesosphere.cosmos.Uris
-import com.mesosphere.cosmos.dcosUri
+import com.mesosphere.cosmos.flag.dcosUri
 import com.mesosphere.cosmos.http.Authorization
 import com.mesosphere.cosmos.http.CosmosRequests
 import com.mesosphere.cosmos.http.HttpRequest

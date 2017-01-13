@@ -3,6 +3,7 @@ package com.mesosphere.cosmos.finch
 import com.mesosphere.cosmos.finch.TestingMediaTypes._
 import com.mesosphere.cosmos.http.MediaType
 import com.mesosphere.cosmos.http.RequestSession
+import com.twitter.finagle.http.Fields
 import com.twitter.finagle.http.RequestBuilder
 import com.twitter.io.Buf
 import com.twitter.util.Await
@@ -73,8 +74,8 @@ object VersionedResponsesSpec {
   def buildInput(acceptHeader: MediaType, body: String): Input = {
     val request = RequestBuilder()
       .url(s"http://some.host/${endpointPath.mkString("/")}")
-      .setHeader("Accept", acceptHeader.show)
-      .setHeader("Content-Type", applicationJson.show)
+      .setHeader(Fields.Accept, acceptHeader.show)
+      .setHeader(Fields.ContentType, applicationJson.show)
       .buildPost(Buf.Utf8(body))
 
     Input(request, request.path.split("/"))

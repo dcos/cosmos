@@ -4,6 +4,7 @@ import com.mesosphere.cosmos.http.HttpRequest
 import com.mesosphere.cosmos.rpc.MediaTypes
 import com.mesosphere.cosmos.rpc.v1.circe.Decoders._
 import com.mesosphere.cosmos.test.CosmosIntegrationTestClient._
+import com.twitter.finagle.http.Fields
 import com.twitter.finagle.http.Status
 import io.circe.jawn._
 import org.scalatest.FreeSpec
@@ -21,7 +22,7 @@ class ErrorResponseSpec extends FreeSpec {
     val response = CosmosClient.submit(request)
 
     assertResult(Status.BadRequest)(response.status)
-    assertResult(MediaTypes.ErrorResponse.show)(response.headerMap("Content-Type"))
+    assertResult(MediaTypes.ErrorResponse.show)(response.headerMap(Fields.ContentType))
     val Right(err) = decode[ErrorResponse](response.contentString)
     val msg = err.message
     assert(msg.contains("body"))

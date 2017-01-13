@@ -27,6 +27,7 @@ import com.mesosphere.universe.v2.circe.Decoders._
 import com.mesosphere.universe.v3.circe.Decoders._
 import com.netaporter.uri.Uri
 import com.twitter.bijection.Conversion.asMethod
+import com.twitter.finagle.http.Fields
 import com.twitter.finagle.stats.NullStatsReceiver
 import com.twitter.finagle.stats.Stat
 import com.twitter.finagle.stats.StatsReceiver
@@ -103,8 +104,8 @@ final class DefaultUniverseClient(
           conn.getResponseCode match {
             case HttpURLConnection.HTTP_OK =>
               fetchScope.scope("status").counter("200").incr()
-              val contentType = parseContentType(Option(conn.getHeaderField("Content-Type"))).get
-              val contentEncoding = Option(conn.getHeaderField("Content-Encoding"))
+              val contentType = parseContentType(Option(conn.getHeaderField(Fields.ContentType))).get
+              val contentEncoding = Option(conn.getHeaderField(Fields.ContentEncoding))
               (contentType, contentEncoding)
             case x @ (HttpURLConnection.HTTP_MOVED_PERM |
                       HttpURLConnection.HTTP_MOVED_TEMP |

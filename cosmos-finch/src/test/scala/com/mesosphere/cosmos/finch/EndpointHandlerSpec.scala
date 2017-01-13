@@ -4,6 +4,7 @@ import com.mesosphere.cosmos.http.Authorization
 import com.mesosphere.cosmos.http.MediaType
 import com.mesosphere.cosmos.http.RequestSession
 import com.twitter.finagle.http.Status
+import com.twitter.finagle.http.Fields
 import com.twitter.util.Await
 import com.twitter.util.Future
 import io.circe.Decoder
@@ -176,7 +177,7 @@ object EndpointHandlerSpec {
 
   def extractContentType(result: Future[Output[Json]]): String = {
     val output = Await.result(result)
-    output.headers("Content-Type")
+    output.headers(Fields.ContentType)
   }
 
   implicit def anyMediaTypedEncoder[A](implicit encoder: Encoder[A]): MediaTypedEncoder[A] = {

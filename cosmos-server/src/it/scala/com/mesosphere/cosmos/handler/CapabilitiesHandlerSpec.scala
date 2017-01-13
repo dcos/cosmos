@@ -6,6 +6,7 @@ import com.mesosphere.cosmos.rpc.v1.circe.Decoders._
 import com.mesosphere.cosmos.rpc.v1.model.CapabilitiesResponse
 import com.mesosphere.cosmos.rpc.v1.model.Capability
 import com.mesosphere.cosmos.test.CosmosIntegrationTestClient._
+import com.twitter.finagle.http.Fields
 import com.twitter.finagle.http.Status
 import io.circe.jawn._
 import org.scalatest.FreeSpec
@@ -17,7 +18,7 @@ final class CapabilitiesHandlerSpec extends FreeSpec {
     val response = CosmosClient.submit(CosmosRequests.capabilities)
 
     assertResult(Status.Ok)(response.status)
-    assertResult(MediaTypes.CapabilitiesResponse.show)(response.headerMap("Content-Type"))
+    assertResult(MediaTypes.CapabilitiesResponse.show)(response.headerMap(Fields.ContentType))
     val Right(body) = decode[CapabilitiesResponse](response.contentString)
     val expected = CapabilitiesResponse(List(
       Capability("PACKAGE_MANAGEMENT"),

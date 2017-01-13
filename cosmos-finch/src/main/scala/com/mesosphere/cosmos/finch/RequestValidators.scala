@@ -48,7 +48,7 @@ object RequestValidators {
         accepts(contentType) match {
           case Some(bodyParser) => contentType :: bodyParser :: HNil
           case _ =>
-            throw RequestError.incompatibleContentTypeHeader(accepts.mediaTypes, contentType)
+            throw incompatibleContentTypeHeader(accepts.mediaTypes, contentType)
         }
       }
 
@@ -70,7 +70,7 @@ object RequestValidators {
         produces(accept) match {
           case Some(x) => x
           case None =>
-            throw RequestError.incompatibleAcceptHeader(produces.mediaTypes, accept.mediaTypes)
+            throw incompatibleAcceptHeader(produces.mediaTypes, accept.mediaTypes)
         }
       }
     val auth = headerOption(Fields.Authorization).map(_.map(Authorization))

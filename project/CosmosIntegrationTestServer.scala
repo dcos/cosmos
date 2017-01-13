@@ -8,13 +8,12 @@ import java.nio.file._
 import java.nio.file.attribute.BasicFileAttributes
 import java.util.Properties
 import javassist.CannotCompileException
-
 import org.apache.curator.test.TestingCluster
 import sbt._
-
 import scala.concurrent.ExecutionContext.Implicits.global
+import scala.concurrent.Future
+import scala.concurrent.TimeoutException
 import scala.concurrent.duration._
-import scala.concurrent.{Future, TimeoutException}
 import scala.util.Random
 
 class CosmosIntegrationTestServer(javaHome: Option[String], itResourceDirs: Seq[File], oneJarPath: File) {

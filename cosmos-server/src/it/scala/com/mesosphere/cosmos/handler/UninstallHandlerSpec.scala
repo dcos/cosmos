@@ -12,6 +12,7 @@ import com.mesosphere.cosmos.test.CosmosIntegrationTestClient.CosmosClient
 import com.mesosphere.cosmos.thirdparty.marathon.model.AppId
 import com.netaporter.uri.dsl._
 import com.twitter.finagle.http.Response
+import com.twitter.finagle.http.Fields
 import com.twitter.finagle.http.Status
 import com.twitter.util.Await
 import io.circe.jawn._
@@ -40,7 +41,7 @@ final class UninstallHandlerSpec extends FreeSpec {
       val uninstallResponse = submitUninstallRequest(uninstallRequest)
       val uninstallResponseBody = uninstallResponse.contentString
       assertResult(Status.Ok)(uninstallResponse.status)
-      assertResult(MediaTypes.UninstallResponse.show)(uninstallResponse.headerMap("Content-Type"))
+      assertResult(MediaTypes.UninstallResponse.show)(uninstallResponse.headerMap(Fields.ContentType))
       val Right(body) = decode[UninstallResponse](uninstallResponseBody)
       assert(body.results.flatMap(_.postUninstallNotes).nonEmpty)
     }
@@ -60,7 +61,7 @@ final class UninstallHandlerSpec extends FreeSpec {
       val uninstallRequest = UninstallRequest("helloworld", appId = None, all = Some(true))
       val uninstallResponse = submitUninstallRequest(uninstallRequest)
       assertResult(Status.Ok)(uninstallResponse.status)
-      assertResult(MediaTypes.UninstallResponse.show)(uninstallResponse.headerMap("Content-Type"))
+      assertResult(MediaTypes.UninstallResponse.show)(uninstallResponse.headerMap(Fields.ContentType))
     }
 
     "error when multiple packages are installed and no appId is specified and all isn't set" in {
@@ -79,7 +80,7 @@ final class UninstallHandlerSpec extends FreeSpec {
       val uninstallResponse = submitUninstallRequest(uninstallRequest)
       val uninstallResponseBody = uninstallResponse.contentString
       assertResult(Status.BadRequest)(uninstallResponse.status)
-      assertResult(MediaTypes.ErrorResponse.show)(uninstallResponse.headerMap("Content-Type"))
+      assertResult(MediaTypes.ErrorResponse.show)(uninstallResponse.headerMap(Fields.ContentType))
       val Right(err) = decode[ErrorResponse](uninstallResponseBody)
       val expectedMessage = s"Multiple apps named [helloworld] are installed: [$appId1, $appId2]"
       assertResult(expectedMessage)(err.message)

@@ -8,6 +8,7 @@ import com.mesosphere.cosmos.rpc.v1.circe.Encoders._
 import com.mesosphere.cosmos.rpc.v1.model.PackageRepositoryAddRequest
 import com.mesosphere.cosmos.test.CosmosIntegrationTestClient._
 import com.netaporter.uri.dsl._
+import com.twitter.finagle.http.Fields
 import com.twitter.finagle.http.Status
 import io.circe.Json
 import io.circe.JsonObject
@@ -42,7 +43,7 @@ class RequestErrorsSpec extends FreeSpec {
         val response = CosmosClient.submit(request)
 
         assertResult(Status.BadRequest)(response.status)
-        assertResult(MediaTypes.ErrorResponse.show)(response.headerMap("Content-Type"))
+        assertResult(MediaTypes.ErrorResponse.show)(response.headerMap(Fields.ContentType))
         val Right(obj: JsonObject) = parse(response.contentString).map(jsonToJsonObject)
 
         val expectedErrorMessage = "Multiple errors while processing request"
@@ -89,7 +90,7 @@ class RequestErrorsSpec extends FreeSpec {
         val response = CosmosClient.submit(request)
 
         assertResult(Status.BadRequest)(response.status)
-        assertResult(MediaTypes.ErrorResponse.show)(response.headerMap("Content-Type"))
+        assertResult(MediaTypes.ErrorResponse.show)(response.headerMap(Fields.ContentType))
         val Right(obj: JsonObject) = parse(response.contentString).map(jsonToJsonObject)
 
         val expectedErrorMessage = "Multiple errors while processing request"

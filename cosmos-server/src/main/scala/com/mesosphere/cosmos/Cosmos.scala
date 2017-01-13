@@ -37,6 +37,7 @@ import com.twitter.finagle.ListeningServer
 import com.twitter.finagle.Service
 import com.twitter.finagle.http.Request
 import com.twitter.finagle.http.Response
+import com.twitter.finagle.http.Fields
 import com.twitter.finagle.http.Status
 import com.twitter.finagle.param.Label
 import com.twitter.finagle.stats.NullStatsReceiver
@@ -167,7 +168,7 @@ private[cosmos] final class Cosmos(
           re,
           re.status
         ).withHeader(
-          "Content-Type" -> MediaTypes.ErrorResponse.show
+          Fields.ContentType -> MediaTypes.ErrorResponse.show
         )
         re.getHeaders.foldLeft(output) { case (out, kv) => out.withHeader(kv) }
       case fe @ (_: _root_.io.finch.Error | _: _root_.io.finch.Errors) =>
@@ -176,7 +177,7 @@ private[cosmos] final class Cosmos(
           fe.asInstanceOf[Exception], // Must be an Exception based on the types
           Status.BadRequest
         ).withHeader(
-          "Content-Type" -> MediaTypes.ErrorResponse.show
+          Fields.ContentType -> MediaTypes.ErrorResponse.show
         )
       case e: Exception if !e.isInstanceOf[_root_.io.finch.Error] =>
         stats.counter(s"unhandledException/${sanitiseClassName(e.getClass)}").incr()
@@ -185,7 +186,7 @@ private[cosmos] final class Cosmos(
           e,
           Status.InternalServerError
         ).withHeader(
-          "Content-Type" -> MediaTypes.ErrorResponse.show
+          Fields.ContentType -> MediaTypes.ErrorResponse.show
         )
       case t: Throwable if !t.isInstanceOf[_root_.io.finch.Error] =>
         stats.counter(s"unhandledThrowable/${sanitiseClassName(t.getClass)}").incr()
@@ -194,7 +195,7 @@ private[cosmos] final class Cosmos(
           new Exception(t),
           Status.InternalServerError
         ).withHeader(
-          "Content-Type" -> MediaTypes.ErrorResponse.show
+          Fields.ContentType -> MediaTypes.ErrorResponse.show
         )
     }
 

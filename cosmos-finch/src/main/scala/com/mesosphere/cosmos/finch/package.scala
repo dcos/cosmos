@@ -1,13 +1,11 @@
-package com.mesosphere.cosmos.finch
+package com.mesosphere.cosmos
 
 import com.mesosphere.cosmos.http.MediaType
 import com.twitter.finagle.http.Fields
-import com.twitter.finagle.http.Status
-import io.circe.JsonObject
 import io.finch.Error
 import io.finch.items.HeaderItem
 
-object RequestError {
+package object finch {
   def incompatibleContentTypeHeader(
     available: Set[MediaType],
     specified: MediaType
