@@ -35,10 +35,11 @@ import com.twitter.conversions.storage.intToStorageUnitableWholeNumber
 import com.twitter.finagle.Http
 import com.twitter.finagle.ListeningServer
 import com.twitter.finagle.Service
+import com.twitter.finagle.http.Fields
 import com.twitter.finagle.http.Request
 import com.twitter.finagle.http.Response
-import com.twitter.finagle.http.Fields
 import com.twitter.finagle.http.Status
+import com.twitter.finagle.http.filter.LoggingFilter
 import com.twitter.finagle.param.Label
 import com.twitter.finagle.stats.NullStatsReceiver
 import com.twitter.finagle.stats.StatsReceiver
@@ -209,7 +210,6 @@ private[cosmos] final class Cosmos(
 
 }
 
-// TODO: Deal with access logs
 object Cosmos
 extends App
 with AdminHttpServer
@@ -222,10 +222,9 @@ with Logging {
   lazy val logger = org.slf4j.LoggerFactory.getLogger(getClass)
 
   def main(): Unit = {
-    implicit val stats = statsReceiver
-
-    val maybeHttpServer = startServer()
-    val maybeHttpsServer = startTlsServer()
+    val service = startCosmos()(statsReceiver)
+    val maybeHttpServer = startServer(service)
+    val maybeHttpsServer = startTlsServer(service)
 
     // Log and close on exit
     for (httpServer <- maybeHttpServer) {
@@ -248,19 +247,18 @@ with Logging {
     }
   }
 
-  private[this] def startServer()(implicit stats: StatsReceiver): Option[ListeningServer] = {
-    import com.twitter.finagle.tracing.ConsoleTracer
-
+  private[this] def startServer(service: Service[Request, Response]): Option[ListeningServer] = {
     getHttpInterface.map { iface =>
       Http
         .server
         .configured(Label("http"))
-        .withTracer(ConsoleTracer)
-        .serve(iface, startCosmos())
+        .serve(iface, service)
     }
   }
 
-  private[this] def startTlsServer()(implicit stats: StatsReceiver): Option[ListeningServer] = {
+  private[this] def startTlsServer(
+    service: Service[Request, Response]
+  ): Option[ListeningServer] = {
     getHttpsInterface.map { iface =>
       Http
         .server
@@ -272,7 +270,7 @@ with Logging {
           None,
           None
         )
-        .serve(iface, startCosmos())
+        .serve(iface, service)
     }
   }
 
@@ -308,17 +306,19 @@ with Logging {
       onExit(processingLeader.close())
     }
 
-    Cosmos(
-      adminRouter,
-      new MarathonPackageRunner(adminRouter),
-      repoList,
-      UniverseClient(adminRouter),
-      installQueue,
-      objectStorages.map {
-        case (_, stagedStorage, localCollection) =>
-          (localCollection, stagedStorage)
-      }
-    ).service
+    LoggingFilter.andThen(
+      Cosmos(
+        adminRouter,
+        new MarathonPackageRunner(adminRouter),
+        repoList,
+        UniverseClient(adminRouter),
+        installQueue,
+        objectStorages.map {
+          case (_, stagedStorage, localCollection) =>
+            (localCollection, stagedStorage)
+        }
+      ).service
+    )
   }
 
   private[this] def configureDcosClients(): Try[AdminRouter] = {
