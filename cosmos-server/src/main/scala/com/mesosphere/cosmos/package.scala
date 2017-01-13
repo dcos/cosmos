@@ -35,11 +35,12 @@ package object cosmos {
       _root_.io.github.benwhitehead.finch.keyPath.getWithDefault
     )
   }
-
 }
 
+/* A flag's name is the fully-qualified classname. GlobalFlag doesn't support package object. We
+ * must instead use regular package declarations
+ */
 package cosmos {
-
   // scalastyle:off object.name
   object dcosUri extends GlobalFlag[Uri](
     s"The URI where the DCOS Admin Router is located. If this flag is set, " +

@@ -5,8 +5,7 @@ import com.twitter.app.GlobalFlag
 import java.net.InetSocketAddress
 import java.nio.file.Path
 
-package object finch {
-
+package finch {
   // scalastyle:off object.name
   object httpInterface extends GlobalFlag[InetSocketAddress](
     new InetSocketAddress("127.0.0.1", 7070), //scalastyle:ignore magic.number
