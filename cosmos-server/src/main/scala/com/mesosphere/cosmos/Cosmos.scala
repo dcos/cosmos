@@ -3,6 +3,7 @@ package com.mesosphere.cosmos
 import _root_.io.circe.Json
 import _root_.io.finch._
 import _root_.io.finch.circe.dropNullKeys._
+import com.mesosphere.cosmos.app.Logging
 import com.mesosphere.cosmos.circe.Encoders._
 import com.mesosphere.cosmos.finch.EndpointHandler
 import com.mesosphere.cosmos.finch.FinchExtensions._
@@ -41,18 +42,13 @@ import com.twitter.finagle.http.Status
 import com.twitter.finagle.param.Label
 import com.twitter.finagle.stats.NullStatsReceiver
 import com.twitter.finagle.stats.StatsReceiver
-import com.twitter.io.Buf
 import com.twitter.server.Admin
 import com.twitter.server.AdminHttpServer
 import com.twitter.server.Lifecycle
 import com.twitter.server.Stats
 import com.twitter.util.Await
 import com.twitter.util.Try
-import java.net.InetSocketAddress
-import java.util.logging.Level
-import java.util.logging.LogManager
 import org.slf4j.Logger
-import org.slf4j.bridge.SLF4JBridgeHandler
 
 
 private[cosmos] final class Cosmos(
@@ -214,19 +210,20 @@ private[cosmos] final class Cosmos(
 }
 
 // TODO: Deal with access logs
-// TODO: Deal with TLS
-// TODO: This object is doing too much. This should be a simple def main with most of logic moved to the class above!!!
 object Cosmos
 extends App
 with AdminHttpServer
 with Admin
 with Lifecycle
 with Lifecycle.Warmup
-with Stats {
+with Stats
+with Logging {
 
   lazy val logger = org.slf4j.LoggerFactory.getLogger(getClass)
 
   def main(): Unit = {
+    implicit val stats = statsReceiver
+
     val maybeHttpServer = startServer()
     val maybeHttpsServer = startTlsServer()
 
@@ -251,24 +248,23 @@ with Stats {
     }
   }
 
-  private[this] def startServer(): Option[ListeningServer] = {
-    getHttpInterface.map { iface =>
-      //.configured(Label(name)) TODO: Add this back when we find out what it is doing.
-      //.configured(Http.param.MaxRequestSize(config.maxRequestSize.megabytes)) TODO: Add this back
+  private[this] def startServer()(implicit stats: StatsReceiver): Option[ListeningServer] = {
+    import com.twitter.finagle.tracing.ConsoleTracer
 
+    getHttpInterface.map { iface =>
       Http
         .server
-        .serve(iface, startCosmos(NullStatsReceiver)) // TODO: User a better stats receiver
+        .configured(Label("http"))
+        .withTracer(ConsoleTracer)
+        .serve(iface, startCosmos())
     }
   }
 
-  private[this] def startTlsServer(): Option[ListeningServer] = {
+  private[this] def startTlsServer()(implicit stats: StatsReceiver): Option[ListeningServer] = {
     getHttpsInterface.map { iface =>
-        //.configured(Label(name)) TODO: Add this back when we find out what it is doing
-        //.configured(Http.param.MaxRequestSize(config.maxRequestSize.megabytes)) TODO: Add this back
-
       Http
         .server
+        .configured(Label("https"))
         .withTransport.tls(
           getCertificatePath.get.toString,
           getKeyPath.get.toString,
@@ -276,11 +272,11 @@ with Stats {
           None,
           None
         )
-        .serve(iface, startCosmos(NullStatsReceiver)) // TODO: User a better stats receiver
+        .serve(iface, startCosmos())
     }
   }
 
-  private[this] def startCosmos(implicit stats: StatsReceiver): Service[Request, Response] = {
+  private[this] def startCosmos()(implicit stats: StatsReceiver): Service[Request, Response] = {
     HttpProxySupport.configureProxySupport()
 
     val adminRouter = configureDcosClients().get
@@ -441,20 +437,5 @@ with Stats {
     f: A => EndpointHandler[Req, Res]
   ): EndpointHandler[Req, Res] = {
     requirement.fold[EndpointHandler[Req, Res]](new NotConfiguredHandler(operationName))(f)
-  }
-
-  // TODO: Logging Configuration. Move this out of here.
-  init {
-    // Turn off Java util logging so that slf4j can configure it
-    LogManager.getLogManager.getLogger("").getHandlers.toList.foreach { l =>
-      l.setLevel(Level.OFF)
-    }
-    org.slf4j.LoggerFactory.getLogger("slf4j-logging").debug("Installing SLF4JLogging")
-    SLF4JBridgeHandler.install()
-  }
-
-  onExit {
-    org.slf4j.LoggerFactory.getLogger("slf4j-logging").debug("Uninstalling SLF4JLogging")
-    SLF4JBridgeHandler.uninstall()
   }
 }
