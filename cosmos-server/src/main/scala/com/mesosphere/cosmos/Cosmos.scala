@@ -7,7 +7,6 @@ import com.mesosphere.cosmos.circe.Encoders._
 import com.mesosphere.cosmos.finch.EndpointHandler
 import com.mesosphere.cosmos.finch.FinchExtensions._
 import com.mesosphere.cosmos.finch.RequestValidators
-import com.mesosphere.cosmos.flag._
 import com.mesosphere.cosmos.handler._
 import com.mesosphere.cosmos.repository.DefaultInstaller
 import com.mesosphere.cosmos.repository.DefaultUniverseInstaller
