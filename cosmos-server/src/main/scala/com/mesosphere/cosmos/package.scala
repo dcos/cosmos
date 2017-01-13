@@ -13,7 +13,6 @@ package object cosmos {
   implicit val globalTimer: Timer = new ScheduledThreadPoolTimer()
 
   def getHttpInterface: Option[InetSocketAddress] = {
-    // TODO: file issue to remove this when we change DC/OS to using this flag directly
     httpInterface.getWithDefault.orElse(
       _root_.io.github.benwhitehead.finch.httpInterface.getWithDefault
     )

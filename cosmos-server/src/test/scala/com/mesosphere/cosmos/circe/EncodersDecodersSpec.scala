@@ -125,7 +125,7 @@ class EncodersDecodersSpec extends FreeSpec with PropertyChecks with Matchers {
 
   "Encoder for io.circe.Error" - {
     "DecodingFailure should specify path instead of cursor history" - {
-      "when value is valid type but not acceptable" taggedAs Tag("TODO: file issue") ignore {
+      "when value is valid type but not acceptable" taggedAs Tag("ISSUE: DCOS-13221") ignore {
         val Left(err: DecodingFailure) = loadAndDecode(
           "/com/mesosphere/cosmos/universe_invalid_packagingVersion_value.json"
         )
@@ -142,7 +142,7 @@ class EncodersDecodersSpec extends FreeSpec with PropertyChecks with Matchers {
         assertResult(".packages[0].packagingVersion")(path)
       }
 
-      "when ByteBuffer value is incorrect type" taggedAs Tag("TODO: file issue") ignore {
+      "when ByteBuffer value is incorrect type" taggedAs Tag("ISSUE: DCOS-13221") ignore {
         val Left(err: DecodingFailure) = loadAndDecode(
           "/com/mesosphere/cosmos/universe_invalid_byteBuffer.json"
         )

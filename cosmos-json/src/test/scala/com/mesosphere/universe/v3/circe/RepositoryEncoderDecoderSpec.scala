@@ -46,7 +46,9 @@ class RepositoryEncoderDecoderSpec extends FreeSpec {
       ))
 
       val json = repo.asJson
-      val inputStream = this.getClass.getResourceAsStream("/com/mesosphere/universe/v3/circe/expected-encoded-repo.json")
+      val inputStream = this.getClass.getResourceAsStream(
+        "/com/mesosphere/universe/v3/circe/expected-encoded-repo.json"
+      )
       val jsonString = Source.fromInputStream(inputStream, "UTF-8").mkString
       val Right(expected) = parse(jsonString)
 
@@ -88,7 +90,7 @@ class RepositoryEncoderDecoderSpec extends FreeSpec {
       assertResult(expectedCassandraVersions)(cassandraVersions)
     }
 
-    "decode error when package has unsupported packagingVersion" taggedAs ScalaTestTag("TODO: file issue") ignore {
+    "decode error when package has unsupported packagingVersion" taggedAs ScalaTestTag("ISSUE: DCOS-13221") ignore {
       val json = Json.obj(
         "packages" -> Json.arr(
           Json.obj(
@@ -112,7 +114,7 @@ class RepositoryEncoderDecoderSpec extends FreeSpec {
       assertResult(expectedErrorMessage)(decodingFailure.getMessage())
     }
 
-    "decode error when package has unsupported tag format" taggedAs ScalaTestTag("TODO: file issue") ignore {
+    "decode error when package has unsupported tag format" taggedAs ScalaTestTag("ISSUE: DCOS-13221") ignore {
       val json = Json.obj(
         "packages" -> Json.arr(
           Json.obj(
@@ -136,7 +138,7 @@ class RepositoryEncoderDecoderSpec extends FreeSpec {
       assertResult(expectedErrorMessage)(decodingFailure.getMessage())
     }
 
-    "decode error when package has unsupported releaseVersion value" taggedAs ScalaTestTag("TODO: file issue") ignore {
+    "decode error when package has unsupported releaseVersion value" taggedAs ScalaTestTag("ISSUE: DCOS-13221") ignore {
       val releaseVersion = -1
       val json = Json.obj(
         "packages" -> Json.arr(
