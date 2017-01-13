@@ -1,9 +1,9 @@
 package com.mesosphere.cosmos.finch
 
 import com.mesosphere.cosmos.finch.TestingMediaTypes._
+import com.mesosphere.cosmos.http.HttpRequest
 import com.mesosphere.cosmos.http.MediaType
 import com.mesosphere.cosmos.http.RequestSession
-import com.twitter.finagle.http.Fields
 import com.twitter.finagle.http.RequestBuilder
 import com.twitter.io.Buf
 import com.twitter.util.Await
@@ -72,13 +72,14 @@ object VersionedResponsesSpec {
   val endpointPath: Seq[String] = Seq("package", "foobar")
 
   def buildInput(acceptHeader: MediaType, body: String): Input = {
-    val request = RequestBuilder()
-      .url(s"http://some.host/${endpointPath.mkString("/")}")
-      .setHeader(Fields.Accept, acceptHeader.show)
-      .setHeader(Fields.ContentType, applicationJson.show)
-      .buildPost(Buf.Utf8(body))
-
-    Input(request, request.path.split("/"))
+    HttpRequest.toFinchInput(
+      HttpRequest.post(
+        s"http://some.host/${endpointPath.mkString("/")}",
+        Buf.Utf8(body),
+        applicationJson,
+        acceptHeader
+      )
+    )
   }
 
   def extractBody[A](result: Option[(Input, Rerunnable[Output[A]])]): A = {

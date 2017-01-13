@@ -70,8 +70,7 @@ final class RequestValidatorsSpec extends FreeSpec with Matchers with PropertyCh
       request: HttpRequest,
       validator: Endpoint[EndpointContext[Req, Res]]
     ): EndpointContext[Req, Res] = {
-      val finagleRequest = HttpRequest.toFinagle(request)
-      val Some((_, eval)) = validator(Input(finagleRequest, finagleRequest.path.split("/")))
+      val Some((_, eval)) = validator(HttpRequest.toFinchInput(request))
       Await.result(eval.run).value
     }
 
@@ -155,7 +154,7 @@ final class RequestValidatorsSpec extends FreeSpec with Matchers with PropertyCh
     validator: Endpoint[EndpointContext[Req, Res]],
     request: HttpRequest
   ): Unit = {
-    validateOuput(validator, request) should matchPattern {
+    validateOutput(validator, request) should matchPattern {
       case Throw(NotPresent(HeaderItem(Fields.ContentType))) =>
     }
   }
@@ -165,7 +164,7 @@ final class RequestValidatorsSpec extends FreeSpec with Matchers with PropertyCh
     request: HttpRequest
   ): Unit = {
     whenever (MediaType.parse(request.headers(Fields.ContentType)).isThrow) {
-      validateOuput(validator, request) should matchPattern {
+      validateOutput(validator, request) should matchPattern {
         case Throw(NotParsed(HeaderItem(Fields.ContentType), _, _)) =>
         case Throw(NotValid(HeaderItem(Fields.ContentType), _)) =>
       }
@@ -178,7 +177,7 @@ final class RequestValidatorsSpec extends FreeSpec with Matchers with PropertyCh
     request: HttpRequest
   ): Unit = {
     assertResult(expectedContentType) {
-      val Return(output) = validateOuput(validator, request)
+      val Return(output) = validateOutput(validator, request)
       val RequestSession(_, Some(contentType)) = output.value.session
       contentType
     }
@@ -193,7 +192,7 @@ final class RequestValidatorsSpec extends FreeSpec with Matchers with PropertyCh
     val actual = request.headers.get(Fields.ContentType)
 
     whenever (expected != actual) {
-      validateOuput(validator, request) should matchPattern {
+      validateOutput(validator, request) should matchPattern {
         case Throw(NotValid(HeaderItem(Fields.ContentType), _)) =>
       }
     }
@@ -333,12 +332,11 @@ object RequestValidatorsSpec {
     Gen.listOf(Gen.frequency((10, Gen.alphaNumChar), Gen.freqTuple((1, '/')))).map(_.mkString)
   }
 
-  def validateOuput[Req, Res](
+  def validateOutput[Req, Res](
     validator: Endpoint[EndpointContext[Req, Res]],
     request: HttpRequest
   ): Try[Output[EndpointContext[Req, Res]]] = {
-    val finagleRequest = HttpRequest.toFinagle(request)
-    val Some((_, eval)) = validator(Input(finagleRequest, finagleRequest.path.split("/")))
+    val Some((_, eval)) = validator(HttpRequest.toFinchInput(request))
     Await.result(eval.run.liftToTry)
   }
 
@@ -371,9 +369,8 @@ object RequestValidatorsSpec {
         MediaTypedEncoder(Encoder.instance[Res](_ => Json.Null), TestingMediaTypes.applicationJson)
       ))
     ): Try[EndpointContext[Req, Res]] = {
-      val request = HttpRequest.toFinagle(buildRequest(accept, authorization))
       val reader = this(produces)
-      val Some((_, eval)) = reader(Input(request, request.path.split("/")))
+      val Some((_, eval)) = reader(HttpRequest.toFinchInput(buildRequest(accept, authorization)))
       Await.result(eval.run.liftToTry).map(_.value)
     }
 
