@@ -17,52 +17,21 @@ import java.util.regex.Pattern
 import scala.util.matching.Regex
 
 /** A repository of packages that can be installed on DCOS. */
-trait CosmosRepository extends PackageCollection {
-
-  def repository: rpc.v1.model.PackageRepository
+final class CosmosRepository (
+  val repository: rpc.v1.model.PackageRepository,
+  universeClient: UniverseClient,
+  clock: Clock
+) extends PackageCollection {
+  private[this] val lastRepository = new AtomicReference(
+    Option.empty[(universe.v3.model.Repository, Long)]
+  )
 
   def getPackageByReleaseVersion(
     packageName: String,
     releaseVersion: universe.v3.model.PackageDefinition.ReleaseVersion
-  )(implicit session: RequestSession): Future[universe.v3.model.PackageDefinition]
-
-}
-
-object CosmosRepository {
-  def apply(
-    repository: rpc.v1.model.PackageRepository,
-    universeClient: UniverseClient,
-    clock: Clock = Clock.SYSTEM_CLOCK
-  ): CosmosRepository = {
-    new DefaultCosmosRepository(repository, universeClient, clock)
-  }
-
-  def createRegex(query: String): Regex = {
-    s"""^${safePattern(query)}$$""".r
-  }
-
-  private[this] def safePattern(query: String): String = {
-      query.split("\\*", -1).map{
-        case "" => ""
-        case v => Pattern.quote(v)
-      }.mkString(".*")
-  }
-}
-
-// TODO: Rename DefaultCosmosRepository to CosmosRepository
-private[repository] final class DefaultCosmosRepository (
-  override val repository: rpc.v1.model.PackageRepository,
-  universeClient: UniverseClient,
-  clock: Clock
-)
-  extends CosmosRepository {
-  private[this] val lastRepository = new AtomicReference(
-      Option.empty[(universe.v3.model.Repository, Long)])
-
-  override def getPackageByReleaseVersion(
-      packageName: String,
-      releaseVersion: universe.v3.model.PackageDefinition.ReleaseVersion
-  )(implicit session: RequestSession): Future[universe.v3.model.PackageDefinition] = {
+  )(
+    implicit session: RequestSession
+  ): Future[universe.v3.model.PackageDefinition] = {
     synchronizedUpdate().map { internalRepository =>
       internalRepository.packages.find { pkg =>
         pkg.name == packageName && pkg.releaseVersion == releaseVersion
@@ -73,9 +42,11 @@ private[repository] final class DefaultCosmosRepository (
   }
 
   override def getPackageByPackageVersion(
-      packageName: String,
-      packageVersion: Option[universe.v3.model.PackageDefinition.Version]
-  )(implicit session: RequestSession): Future[(universe.v3.model.PackageDefinition, Uri)] = {
+    packageName: String,
+    packageVersion: Option[universe.v3.model.PackageDefinition.Version]
+  )(
+    implicit session: RequestSession
+  ): Future[(universe.v3.model.PackageDefinition, Uri)] = {
     synchronizedUpdate().map { internalRepository =>
       val ns = internalRepository.packages.filter { pkg =>
         pkg.name == packageName
@@ -93,8 +64,10 @@ private[repository] final class DefaultCosmosRepository (
   }
 
   override def getPackagesByPackageName(
-      packageName: String
-  )(implicit session: RequestSession): Future[List[universe.v3.model.PackageDefinition]] = {
+    packageName: String
+  )(
+    implicit session: RequestSession
+  ): Future[List[universe.v3.model.PackageDefinition]] = {
     synchronizedUpdate().map { internalRepository =>
       internalRepository.packages.filter(_.name == packageName)
     }
@@ -102,8 +75,10 @@ private[repository] final class DefaultCosmosRepository (
 
   // TODO (devflow) (jsancio): Refactor this to use the generic search when we change the API
   override def search(
-      query: Option[String]
-  )(implicit session: RequestSession): Future[List[rpc.v1.model.SearchResult]] = {
+    query: Option[String]
+  )(
+    implicit session: RequestSession
+  ): Future[List[rpc.v1.model.SearchResult]] = {
     val predicate =
       query.map { value =>
         if (value.contains("*")) {
@@ -187,5 +162,26 @@ private[repository] final class DefaultCosmosRepository (
     pkg.name.toLowerCase().contains(query) ||
     pkg.description.toLowerCase().contains(query) ||
     pkg.tags.exists(tag => tag.value.toLowerCase().contains(query))
+  }
+}
+
+object CosmosRepository {
+  def apply(
+    repository: rpc.v1.model.PackageRepository,
+    universeClient: UniverseClient,
+    clock: Clock = Clock.SYSTEM_CLOCK
+  ): CosmosRepository = {
+    new CosmosRepository(repository, universeClient, clock)
+  }
+
+  def createRegex(query: String): Regex = {
+    s"""^${safePattern(query)}$$""".r
+  }
+
+  private[this] def safePattern(query: String): String = {
+      query.split("\\*", -1).map{
+        case "" => ""
+        case v => Pattern.quote(v)
+      }.mkString(".*")
   }
 }
