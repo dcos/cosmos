@@ -13,8 +13,8 @@ package object cosmos {
   implicit val globalTimer: Timer = new ScheduledThreadPoolTimer()
 
   def getHttpInterface: Option[InetSocketAddress] = {
-    httpInterface.getWithDefault.orElse(
-      _root_.io.github.benwhitehead.finch.httpInterface.getWithDefault
+    httpInterface().orElse(
+      _root_.io.github.benwhitehead.finch.httpInterface()
     )
   }
 
@@ -75,7 +75,8 @@ package cosmos {
     "The URI where packages are staged before permanent storage"
   )
 
-  object httpInterface extends GlobalFlag[InetSocketAddress](
+  object httpInterface extends GlobalFlag[Option[InetSocketAddress]](
+    None,
     "The TCP Interface and port for the http server {[<hostname/ip>]:port}. (Set to " +
     "empty value to disable)"
   )
