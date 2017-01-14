@@ -1,16 +1,23 @@
 package com.mesosphere.cosmos
 
-import _root_.io.circe.Json
 import _root_.io.circe.Decoder
-import cats.data.Xor.{Left, Right}
+import _root_.io.circe.Json
 import com.mesosphere.cosmos.circe.Decoders.decode
-import com.mesosphere.cosmos.http.{MediaTypeOps, MediaTypes, RequestSession}
+import com.mesosphere.cosmos.http.MediaTypeOps
+import com.mesosphere.cosmos.http.MediaTypes
+import com.mesosphere.cosmos.http.RequestSession
 import com.netaporter.uri.Uri
+import com.twitter.finagle.http.Request
+import com.twitter.finagle.http.RequestBuilder
 import com.twitter.finagle.http.RequestConfig.Yes
-import com.twitter.finagle.http.{Request, RequestBuilder, Response, Status}
+import com.twitter.finagle.http.Response
+import com.twitter.finagle.http.Fields
+import com.twitter.finagle.http.Status
 import com.twitter.io.Buf
 import com.twitter.util.Future
 import org.jboss.netty.handler.codec.http.HttpMethod
+import scala.util.Left
+import scala.util.Right
 
 abstract class ServiceClient(baseUri: Uri) {
 
@@ -19,27 +26,27 @@ abstract class ServiceClient(baseUri: Uri) {
 
   protected def get(uri: Uri)(implicit session: RequestSession): Request = {
     baseRequestBuilder(uri)
-      .setHeader("Accept", MediaTypes.applicationJson.show)
+      .setHeader(Fields.Accept, MediaTypes.applicationJson.show)
       .buildGet
   }
 
   protected def post(uri: Uri, jsonBody: Json)(implicit session: RequestSession): Request = {
     baseRequestBuilder(uri)
-      .setHeader("Accept", MediaTypes.applicationJson.show)
-      .setHeader("Content-Type", MediaTypes.applicationJson.show)
+      .setHeader(Fields.Accept, MediaTypes.applicationJson.show)
+      .setHeader(Fields.ContentType, MediaTypes.applicationJson.show)
       .buildPost(Buf.Utf8(jsonBody.noSpaces))
   }
 
   protected def postForm(uri: Uri, postBody: String)(implicit session: RequestSession): Request = {
     baseRequestBuilder(uri)
-      .setHeader("Accept", MediaTypes.applicationJson.show)
-      .setHeader("Content-Type", "application/x-www-form-urlencoded; charset=utf-8")
+      .setHeader(Fields.Accept, MediaTypes.applicationJson.show)
+      .setHeader(Fields.ContentType, "application/x-www-form-urlencoded; charset=utf-8")
       .buildPost(Buf.Utf8(postBody))
   }
 
   protected def delete(uri: Uri)(implicit session: RequestSession): Request = {
     baseRequestBuilder(uri)
-      .setHeader("Accept", MediaTypes.applicationJson.show)
+      .setHeader(Fields.Accept, MediaTypes.applicationJson.show)
       .buildDelete()
   }
 
@@ -53,7 +60,7 @@ abstract class ServiceClient(baseUri: Uri) {
   }
 
   protected def decodeJsonTo[A](response: Response)(implicit d: Decoder[A]): A = {
-    response.headerMap.get("Content-Type") match {
+    response.headerMap.get(Fields.ContentType) match {
       case Some(ct) =>
         http.MediaType.parse(ct).map { mediaType =>
           // Marathon and Mesos don't specify 'charset=utf-8' on it's json, so we are lax in our comparison here.

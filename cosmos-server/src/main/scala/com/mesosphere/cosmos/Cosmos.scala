@@ -3,11 +3,10 @@ package com.mesosphere.cosmos
 import _root_.io.circe.Json
 import _root_.io.finch._
 import _root_.io.finch.circe.dropNullKeys._
-import _root_.io.github.benwhitehead.finch.FinchServer
+import com.mesosphere.cosmos.app.Logging
 import com.mesosphere.cosmos.circe.Encoders._
 import com.mesosphere.cosmos.finch.EndpointHandler
 import com.mesosphere.cosmos.finch.FinchExtensions._
-import com.mesosphere.cosmos.finch.RequestError
 import com.mesosphere.cosmos.finch.RequestValidators
 import com.mesosphere.cosmos.handler._
 import com.mesosphere.cosmos.repository.DefaultInstaller
@@ -30,21 +29,28 @@ import com.mesosphere.cosmos.storage.StagedPackageStorage
 import com.mesosphere.cosmos.storage.installqueue.InstallQueue
 import com.mesosphere.universe
 import com.netaporter.uri.Uri
+import com.twitter.app.App
 import com.twitter.app.Flag
 import com.twitter.conversions.storage.intToStorageUnitableWholeNumber
 import com.twitter.finagle.Http
 import com.twitter.finagle.ListeningServer
 import com.twitter.finagle.Service
+import com.twitter.finagle.http.Fields
 import com.twitter.finagle.http.Request
 import com.twitter.finagle.http.Response
 import com.twitter.finagle.http.Status
-import com.twitter.finagle.netty3.Netty3ListenerTLSConfig
+import com.twitter.finagle.http.filter.LoggingFilter
 import com.twitter.finagle.param.Label
-import com.twitter.finagle.ssl.Ssl
 import com.twitter.finagle.stats.NullStatsReceiver
 import com.twitter.finagle.stats.StatsReceiver
+import com.twitter.server.Admin
+import com.twitter.server.AdminHttpServer
+import com.twitter.server.Lifecycle
+import com.twitter.server.Stats
+import com.twitter.util.Await
 import com.twitter.util.Try
 import org.slf4j.Logger
+
 
 private[cosmos] final class Cosmos(
   capabilitiesHandler: CapabilitiesHandler,
@@ -66,52 +72,64 @@ private[cosmos] final class Cosmos(
 
   // Package Handlers
   val packageInstall: Endpoint[Json] = {
-    route(post("package" / "install"), packageInstallHandler)(RequestValidators.standard)
+    route(post("package" :: "install"), packageInstallHandler)(RequestValidators.standard)
   }
 
   val packageUninstall: Endpoint[Json] = {
-    route(post("package" / "uninstall"), packageUninstallHandler)(RequestValidators.standard)
+    route(post("package" :: "uninstall"), packageUninstallHandler)(RequestValidators.standard)
   }
 
   val packageDescribe: Endpoint[Json] = {
-    route(post("package" / "describe"), packageDescribeHandler)(RequestValidators.standard)
+    route(post("package" :: "describe"), packageDescribeHandler)(RequestValidators.standard)
   }
 
   val packageRender: Endpoint[Json] = {
-    route(post("package" / "render"), packageRenderHandler)(RequestValidators.standard)
+    route(post("package" :: "render"), packageRenderHandler)(RequestValidators.standard)
   }
 
   val packageListVersions: Endpoint[Json] = {
-    route(post("package" / "list-versions"), packageListVersionsHandler)(RequestValidators.standard)
+    route(
+      post("package" :: "list-versions"),
+      packageListVersionsHandler
+    )(RequestValidators.standard)
   }
 
   val packageSearch: Endpoint[Json] = {
-    route(post("package" / "search"), packageSearchHandler)(RequestValidators.standard)
+    route(post("package" :: "search"), packageSearchHandler)(RequestValidators.standard)
   }
 
   val packageList: Endpoint[Json] = {
-    route(post("package" / "list"), packageListHandler)(RequestValidators.standard)
+    route(post("package" :: "list"), packageListHandler)(RequestValidators.standard)
   }
 
   val packageRepositoryList: Endpoint[Json] = {
-    route(post("package" / "repository" / "list"), packageRepositoryListHandler)(RequestValidators.standard)
+    route(
+      post("package" :: "repository" :: "list"),
+      packageRepositoryListHandler
+    )(RequestValidators.standard)
   }
 
   val packageRepositoryAdd: Endpoint[Json] = {
-    route(post("package" / "repository" / "add"), packageRepositoryAddHandler)(RequestValidators.standard)
+    route(
+      post("package" :: "repository" :: "add"),
+      packageRepositoryAddHandler
+    )(RequestValidators.standard)
   }
 
   val packageRepositoryDelete: Endpoint[Json] = {
-    route(post("package" / "repository" / "delete"), packageRepositoryDeleteHandler)(RequestValidators.standard)
+    route(
+      post("package" :: "repository" :: "delete"),
+      packageRepositoryDeleteHandler
+    )(RequestValidators.standard)
   }
 
   val packageAdd: Endpoint[Json] = {
-    route(post("package" / "add"), packageAddHandler)(RequestValidators.selectedBody)
+    route(post("package" :: "add"), packageAddHandler)(RequestValidators.selectedBody)
   }
 
   // Service Handlers
   val serviceStart: Endpoint[Json] = {
-    route(post("service" / "start"), serviceStartHandler)(RequestValidators.standard)
+    route(post("service" :: "start"), serviceStartHandler)(RequestValidators.standard)
   }
 
   // Capabilities
@@ -140,24 +158,44 @@ private[cosmos] final class Cosmos(
       )
 
     val api = endpoints.handle {
-      case re: RequestError =>
+      case re: CosmosError =>
         stats.counter(s"definedError/${sanitiseClassName(re.getClass)}").incr()
-        val output = Output.failure(re, re.status).withContentType(Some(MediaTypes.ErrorResponse.show))
+        val output = Output.failure(
+          re,
+          re.status
+        ).withHeader(
+          Fields.ContentType -> MediaTypes.ErrorResponse.show
+        )
         re.getHeaders.foldLeft(output) { case (out, kv) => out.withHeader(kv) }
-      case fe: _root_.io.finch.Error =>
+      case fe @ (_: _root_.io.finch.Error | _: _root_.io.finch.Errors) =>
         stats.counter(s"finchError/${sanitiseClassName(fe.getClass)}").incr()
-        Output.failure(fe, Status.BadRequest).withContentType(Some(MediaTypes.ErrorResponse.show))
-      case e: Exception if !e.isInstanceOf[_root_.io.finch.Error] =>
+        Output.failure(
+          fe.asInstanceOf[Exception], // Must be an Exception based on the types
+          Status.BadRequest
+        ).withHeader(
+          Fields.ContentType -> MediaTypes.ErrorResponse.show
+        )
+      case e: Exception =>
         stats.counter(s"unhandledException/${sanitiseClassName(e.getClass)}").incr()
         logger.warn("Unhandled exception: ", e)
-        Output.failure(e, Status.InternalServerError).withContentType(Some(MediaTypes.ErrorResponse.show))
-      case t: Throwable if !t.isInstanceOf[_root_.io.finch.Error] =>
+        Output.failure(
+          e,
+          Status.InternalServerError
+        ).withHeader(
+          Fields.ContentType -> MediaTypes.ErrorResponse.show
+        )
+      case t: Throwable =>
         stats.counter(s"unhandledThrowable/${sanitiseClassName(t.getClass)}").incr()
         logger.warn("Unhandled throwable: ", t)
-        Output.failure(new Exception(t), Status.InternalServerError).withContentType(Some(MediaTypes.ErrorResponse.show))
+        Output.failure(
+          new Exception(t),
+          Status.InternalServerError
+        ).withHeader(
+          Fields.ContentType -> MediaTypes.ErrorResponse.show
+        )
     }
 
-    api.toService
+    api.toServiceAs[Application.Json]
   }
 
   /**
@@ -172,40 +210,73 @@ private[cosmos] final class Cosmos(
 
 }
 
-object Cosmos extends FinchServer {
-  def service: Service[Request, Response] = {
+object Cosmos
+extends App
+with AdminHttpServer
+with Admin
+with Lifecycle
+with Lifecycle.Warmup
+with Stats
+with Logging {
+
+  lazy val logger = org.slf4j.LoggerFactory.getLogger(getClass)
+
+  def main(): Unit = {
+    val service = startCosmos()(statsReceiver)
+    val maybeHttpServer = startServer(service)
+    val maybeHttpsServer = startTlsServer(service)
+
+    // Log and close on exit
+    for (httpServer <- maybeHttpServer) {
+      logger.info(s"HTTP server started on ${httpServer.boundAddress}")
+      closeOnExit(httpServer)
+    }
+
+    // Log and close on exit
+    for (httpServer <- maybeHttpsServer) {
+      logger.info(s"HTTPS server started on ${httpServer.boundAddress}")
+      closeOnExit(httpServer)
+    }
+
+    // Wait for the listeners to return
+    for (httpServer <- maybeHttpServer) {
+      Await.result(httpServer)
+    }
+    for (httpServer <- maybeHttpsServer) {
+      Await.result(httpServer)
+    }
+  }
+
+  private[this] def startServer(service: Service[Request, Response]): Option[ListeningServer] = {
+    getHttpInterface.map { iface =>
+      Http
+        .server
+        .configured(Label("http"))
+        .serve(iface, service)
+    }
+  }
+
+  private[this] def startTlsServer(
+    service: Service[Request, Response]
+  ): Option[ListeningServer] = {
+    getHttpsInterface.map { iface =>
+      Http
+        .server
+        .configured(Label("https"))
+        .withTransport.tls(
+          getCertificatePath.get.toString,
+          getKeyPath.get.toString,
+          None,
+          None,
+          None
+        )
+        .serve(iface, service)
+    }
+  }
+
+  private[this] def startCosmos()(implicit stats: StatsReceiver): Service[Request, Response] = {
     HttpProxySupport.configureProxySupport()
 
-    startCosmos(statsReceiver.scope("cosmos"))
-  }
-
-  override def startServer(): Option[ListeningServer] = {
-    config.httpInterface.map { iface =>
-      val name = s"http/$serverName"
-      Http.server
-        .configured(Label(name))
-        .configured(Http.param.MaxRequestSize(config.maxRequestSize.megabytes))
-        .withStreaming(enabled = true)
-        .serve(iface, getService(s"srv/$name"))
-    }
-  }
-
-  // TODO package-add: is this being tested?
-  override def startTlsServer(): Option[ListeningServer] = {
-    config.httpsInterface.map { iface =>
-      val name = s"https/$serverName"
-      val engineFactory = () =>
-        Ssl.server(config.certificatePath, config.keyPath, null, null, null) // scalastyle:ignore null
-      Http.server
-        .configured(Label(name))
-        .configured(Http.param.MaxRequestSize(config.maxRequestSize.megabytes))
-        .withStreaming(enabled = true)
-        .withTls(Netty3ListenerTLSConfig(engineFactory))
-        .serve(iface, getService(s"srv/$name"))
-    }
-  }
-
-  private[this] def startCosmos(implicit stats: StatsReceiver): Service[Request, Response] = {
     val adminRouter = configureDcosClients().get
 
     val zkUri = zookeeperUri()
@@ -235,17 +306,19 @@ object Cosmos extends FinchServer {
       onExit(processingLeader.close())
     }
 
-    Cosmos(
-      adminRouter,
-      new MarathonPackageRunner(adminRouter),
-      repoList,
-      UniverseClient(adminRouter),
-      installQueue,
-      objectStorages.map {
-        case (_, stagedStorage, localCollection) =>
-          (localCollection, stagedStorage)
-      }
-    ).service
+    LoggingFilter.andThen(
+      Cosmos(
+        adminRouter,
+        new MarathonPackageRunner(adminRouter),
+        repoList,
+        UniverseClient(adminRouter),
+        installQueue,
+        objectStorages.map {
+          case (_, stagedStorage, localCollection) =>
+            (localCollection, stagedStorage)
+        }
+      ).service
+    )
   }
 
   private[this] def configureDcosClients(): Try[AdminRouter] = {
@@ -291,12 +364,12 @@ object Cosmos extends FinchServer {
     implicit statsReceiver: StatsReceiver
   ): Option[(PackageObjectStorage, StagedPackageStorage, LocalPackageCollection)] = {
     def fromFlag(
-      flag: Flag[Option[ObjectStorageUri]],
+      flag: Flag[ObjectStorageUri],
       description: String
     ): Option[ObjectStorage] = {
-      val value = flag().map(_.toString).getOrElse("None")
+      val value = flag.get.map(_.toString).getOrElse("None")
       logger.info(s"Using {} for the $description storage URI", value)
-      flag().map(uri => ObjectStorage.fromUri(uri)(statsReceiver))
+      flag.get.map(uri => ObjectStorage.fromUri(uri)(statsReceiver))
     }
 
     (
@@ -365,5 +438,4 @@ object Cosmos extends FinchServer {
   ): EndpointHandler[Req, Res] = {
     requirement.fold[EndpointHandler[Req, Res]](new NotConfiguredHandler(operationName))(f)
   }
-
 }

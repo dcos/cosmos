@@ -1,6 +1,5 @@
 package com.mesosphere.cosmos.handler
 
-import cats.data.Xor
 import com.mesosphere.cosmos.http.CosmosRequests
 import com.mesosphere.cosmos.rpc.MediaTypes
 import com.mesosphere.cosmos.rpc.v1.circe.Decoders._
@@ -16,6 +15,7 @@ import io.circe.JsonObject
 import io.circe.jawn._
 import io.circe.syntax._
 import org.scalatest.FreeSpec
+import scala.util.Right
 
 class PackageRenderHandlerSpec extends FreeSpec {
 
@@ -63,7 +63,7 @@ class PackageRenderHandlerSpec extends FreeSpec {
 
       assertResult(Status.Ok)(response.status)
       assertResult(MediaTypes.RenderResponse.show)(response.contentType.get)
-      val Xor.Right(actualBody) = decode[RenderResponse](response.contentString)
+      val Right(actualBody) = decode[RenderResponse](response.contentString)
       assertResult(expectedBody)(actualBody)
     }
 
@@ -84,7 +84,7 @@ class PackageRenderHandlerSpec extends FreeSpec {
 
       assertResult(Status.BadRequest)(response.status)
       assertResult(MediaTypes.ErrorResponse.show)(response.contentType.get)
-      val Xor.Right(actualBody) = decode[ErrorResponse](response.contentString)
+      val Right(actualBody) = decode[ErrorResponse](response.contentString)
       assertResult(expectedBody)(actualBody)
     }
 

@@ -1,14 +1,18 @@
 package com.mesosphere.cosmos.jsonschema
 
-import cats.data.Xor
 import com.fasterxml.jackson.databind.JsonNode
 import com.fasterxml.jackson.databind.node.JsonNodeFactory
-import com.github.fge.jsonschema.main.{JsonSchemaFactory, JsonValidator}
+import com.github.fge.jsonschema.main.JsonSchemaFactory
+import com.github.fge.jsonschema.main.JsonValidator
+import io.circe.Decoder
+import io.circe.Encoder
+import io.circe.Json
+import io.circe.JsonObject
 import io.circe.jawn.parse
 import io.circe.syntax._
-import io.circe.{Decoder, Encoder, Json, JsonObject}
-
 import scala.collection.JavaConverters._
+import scala.util.Left
+import scala.util.Right
 
 object JsonSchema {
 
@@ -21,16 +25,18 @@ object JsonSchema {
     * @param document   The document to validation
     * @param schema     The schema to validate against
     * @param jsf        The configured factory used to acquire the validator used for the validation.
-    * @return           Returns an [[cats.data.Xor Xor]] representing the result of validating `document` against `schema`.
-    *                   [[cats.data.Xor.Left Xor.Left[ValidationErrors] ]] Will be returned containing all validation
-    *                   failures if they occur. [[cats.data.Xor.Right Xor.Right[Unit] ]] Will be returned if no validation failures occur.
+    * @return           Returns an [[scala.util.Either Either]] representing the result of validating
+    *                   `document` against `schema`. [[scala.util.Left Left[ValidationErrors] ]]
+    *                   will be returned containing all validation failures if they occur.
+    *                   [[scala.util.Right Right[Unit] ]] Will be returned if no validation
+    *                   failures occur.
     */
   def jsonObjectMatchesSchema(
     document: JsonObject,
     schema: JsonObject
   )(
     implicit jsf: JsonSchemaFactory
-  ): Xor[ValidationErrors, Unit] = {
+  ): Either[ValidationErrors, Unit] = {
     jsonMatchesSchema(Json.fromJsonObject(document), Json.fromJsonObject(schema))
   }
 
@@ -39,24 +45,26 @@ object JsonSchema {
     * @param document   The document to validation
     * @param schema     The schema to validate against
     * @param jsf        The configured factory used to acquire the validator used for the validation.
-    * @return           Returns an [[cats.data.Xor Xor]] representing the result of validating `document` against `schema`.
-    *                   [[cats.data.Xor.Left Xor.Left[ValidationErrors] ]] Will be returned containing all validation
-    *                   failures if they occur. [[cats.data.Xor.Right Xor.Right[Unit] ]] Will be returned if no validation failures occur.
+    * @return           Returns an [[scala.util.Either Either]] representing the result of
+    *                   validating `document` against `schema`.
+    *                   [[scala.util.Left Left[ValidationErrors] ]] will be returned containing
+    *                   all validation failures if they occur. [[scala.util.Right Right[Unit] ]]
+    *                   will be returned if no validation failures occur.
     */
   def jsonMatchesSchema(
     document: Json,
     schema: Json
   )(
     implicit jsf: JsonSchemaFactory
-  ): Xor[Iterable[Json], Unit] = {
-    val Xor.Right(documentNode) = document.as[JsonNode]
-    val Xor.Right(schemaNode) = schema.as[JsonNode]
+  ): Either[Iterable[Json], Unit] = {
+    val Right(documentNode) = document.as[JsonNode]
+    val Right(schemaNode) = schema.as[JsonNode]
 
     val validationErrors = jsf.getValidator.validate(schemaNode, documentNode)
     if (validationErrors.isSuccess) {
-      Xor.right[ValidationErrors, Unit](())
+      Right[ValidationErrors, Unit](())
     } else {
-      Xor.Left(
+      Left(
         validationErrors
           .asScala
           .map { message =>
@@ -69,8 +77,9 @@ object JsonSchema {
   }
 
   /**
-    * Traverse a json schema `schema` and create a document representing all the default property values defined in the
-    * schema. If the schema has nested properties, the nesting will be preserved.
+    * Traverse a json schema `schema` and create a document representing all the default property
+    * values defined in the schema. If the schema has nested properties, the nesting will be
+    * preserved.
     * @param schema The schema to extract default property values from
     * @return       A document representing each property with its corresponding default value
     */
@@ -110,12 +119,12 @@ object JsonSchema {
     implicit val JsonNodeEncoder: Encoder[JsonNode] = Encoder.instance(jsonNodeToCirceJson)
 
     implicit val JsonNodeDecoder: Decoder[JsonNode] = Decoder.instance { hcursor =>
-      Xor.Right(circeJsonToJsonNode(hcursor.top))
+      Right(circeJsonToJsonNode(hcursor.top))
     }
 
     private[this] def jsonNodeToCirceJson(node: JsonNode): Json = {
       // Inefficient, but good enough for now
-      val Xor.Right(json) = parse(node.toString)
+      val Right(json) = parse(node.toString)
       json
     }
 

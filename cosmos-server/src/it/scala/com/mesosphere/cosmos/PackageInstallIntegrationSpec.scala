@@ -4,8 +4,6 @@ import _root_.io.circe.Json
 import _root_.io.circe.JsonObject
 import _root_.io.circe.jawn._
 import _root_.io.circe.syntax._
-import cats.data.Xor
-import cats.data.Xor.Right
 import com.mesosphere.cosmos.http.CosmosRequests
 import com.mesosphere.cosmos.http.RequestSession
 import com.mesosphere.cosmos.repository.DefaultRepositories
@@ -25,15 +23,16 @@ import com.mesosphere.universe.v2.model.PackageFiles
 import com.mesosphere.universe.v2.model.PackagingVersion
 import com.netaporter.uri.Uri
 import com.twitter.finagle.http._
-import com.twitter.io.Charsets
 import com.twitter.util.Await
 import com.twitter.util.Future
+import java.nio.charset.StandardCharsets
 import java.util.Base64
 import java.util.UUID
 import org.scalatest.BeforeAndAfterAll
 import org.scalatest.FreeSpec
 import org.scalatest.Matchers
 import org.scalatest.prop.TableDrivenPropertyChecks
+import scala.util.Right
 
 final class PackageInstallIntegrationSpec extends FreeSpec with BeforeAndAfterAll {
 
@@ -105,7 +104,7 @@ final class PackageInstallIntegrationSpec extends FreeSpec with BeforeAndAfterAl
             ErrorResponse(
               "PackageAlreadyInstalled",
               "Package is already installed",
-              Some(JsonObject.empty)
+              None
             ),
             Some(expectedResponse.appId)
           ),
@@ -208,7 +207,7 @@ final class PackageInstallIntegrationSpec extends FreeSpec with BeforeAndAfterAl
 
       assertResult(Status.Ok)(response.status)
       assertResult(MediaTypes.V2InstallResponse.show)(response.contentType.get)
-      val Xor.Right(actualBody) = decode[rpc.v2.model.InstallResponse](response.contentString)
+      val Right(actualBody) = decode[rpc.v2.model.InstallResponse](response.contentString)
       assertResult(expectedBody)(actualBody)
     }
 
@@ -250,10 +249,10 @@ final class PackageInstallIntegrationSpec extends FreeSpec with BeforeAndAfterAl
     assertResult(expectedResult.status)(response.status)
     expectedResult match {
       case InstallSuccess(expectedBody) =>
-        val Xor.Right(actualBody) = decode[InstallResponse](response.contentString)
+        val Right(actualBody) = decode[InstallResponse](response.contentString)
         assertResult(expectedBody)(actualBody)
       case InstallFailure(_, expectedBody, _) =>
-        val Xor.Right(actualBody) = decode[ErrorResponse](response.contentString)
+        val Right(actualBody) = decode[ErrorResponse](response.contentString)
         assertResult(expectedBody)(actualBody)
     }
 
@@ -446,7 +445,7 @@ object StandardLabels {
   }
 
   private[this] def decodeAndParse(encoded: String): Json = {
-    val decoded = new String(Base64.getDecoder.decode(encoded), Charsets.Utf8)
+    val decoded = new String(Base64.getDecoder.decode(encoded), StandardCharsets.UTF_8)
     val Right(parsed) = parse(decoded)
     parsed
   }

@@ -1,7 +1,6 @@
 package com.mesosphere.cosmos
 
 import _root_.io.circe.jawn._
-import cats.data.Xor.Right
 import com.mesosphere.cosmos.http.CosmosRequests
 import com.mesosphere.cosmos.rpc.v1.circe.Decoders._
 import com.mesosphere.cosmos.rpc.v1.model.SearchRequest
@@ -12,6 +11,7 @@ import com.mesosphere.universe
 import com.twitter.finagle.http._
 import org.scalatest.FreeSpec
 import org.scalatest.prop.TableDrivenPropertyChecks
+import scala.util.Right
 
 final class PackageSearchSpec extends FreeSpec {
 

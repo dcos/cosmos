@@ -12,23 +12,24 @@ object CosmosBuild extends Build {
   lazy val projectVersion = "0.3.0-SNAPSHOT"
 
   object V {
-    val bijection = "0.9.2"
-    val circe = "0.5.2"
+    val aws = "1.11.63"
+    val bijection = "0.9.4"
+    val circe = "0.6.1"
     val curator = "2.11.1"
     val fastparse = "0.4.1"
-    val finch = "0.10.0"
-    val finchServer = "0.9.1"
+    val finch = "0.11.1"
     val guava = "16.0.1"
     val jsonSchema = "2.2.6"
     val logback = "1.1.3"
     val mockito = "1.10.19"
     val mustache = "0.9.1"
-    val scalaUri = "0.4.11"
-    val scalaTest = "2.2.4"
     val scalaCheck = "1.12.6"
-    val twitterUtilCore = "6.30.0"
+    val scalaTest = "2.2.4"
+    val scalaUri = "0.4.11"
+    val slf4j = "1.7.10"
+    val twitterServer = "1.25.0"
+    val twitterUtilCore = "6.39.0"
     val zookeeper = "3.4.6"
-    val aws = "1.11.63"
   }
 
   object Deps {
@@ -69,23 +70,14 @@ object CosmosBuild extends Build {
       "com.lihaoyi" %% "fastparse" % V.fastparse
     )
 
-    val finch = Seq(
-      "com.github.finagle" %% "finch-core" % V.finch
-    ) ++ Seq(
-      "com.github.finagle" %% "finch-circe" % V.finch
-    ).map(_.excludeAll(
-      ExclusionRule("io.circe", "circe-core"),
-      ExclusionRule("io.circe", "circe-jawn"),
-      ExclusionRule("io.circe", "circe-jackson")
-    ))
+    val twitterServer = Seq(
+      "com.twitter" %% "twitter-server" % V.twitterServer
+    )
 
-    val finchServer = Seq(
-      "io.github.benwhitehead.finch" %% "finch-server" % V.finchServer
-    ).map(_.excludeAll(
-      // mustache is pulled in for the core application, so we exclude the transitive version
-      // pulled in my twitter-server
-      ExclusionRule("com.github.spullara.mustache.java", "compiler")
-    ))
+    val finch = Seq(
+      "com.github.finagle" %% "finch-core" % V.finch,
+      "com.github.finagle" %% "finch-circe" % V.finch
+    )
 
     val guava = Seq(
       "com.google.guava" % "guava" % V.guava,
@@ -133,6 +125,18 @@ object CosmosBuild extends Build {
       ExclusionRule("com.fasterxml.jackson.core")
     ))
 
+    val slf4j = Seq(
+      "org.slf4j" % "slf4j-api" % V.slf4j,
+      "org.slf4j" % "jul-to-slf4j" % V.slf4j,
+      "org.slf4j" % "jcl-over-slf4j" % V.slf4j,
+      "org.slf4j" % "log4j-over-slf4j" % V.slf4j
+    )
+
+    val twitterCommons = Seq(
+      "com.twitter.common" % "util-system-mocks" % "0.0.27",
+      "com.twitter.common" % "quantity" % "0.0.31"
+    )
+
   }
 
   val teamcityVersion = sys.env.get("TEAMCITY_VERSION")
@@ -149,28 +153,7 @@ object CosmosBuild extends Build {
     externalResolvers := Seq(
       Resolver.mavenLocal,
       DefaultMavenRepository,
-      "finch-server" at "https://storage.googleapis.com/benwhitehead_me/maven/public",
       "Twitter Maven" at "https://maven.twttr.com"
-      // Twitter maven has stability issues make sure it's LAST, it's needed for two transitive dependencies
-      // [warn]  ::::::::::::::::::::::::::::::::::::::::::::::
-      // [warn]  ::          UNRESOLVED DEPENDENCIES         ::
-      // [warn]  ::::::::::::::::::::::::::::::::::::::::::::::
-      // [warn]  :: com.twitter.common#metrics;0.0.37: not found
-      // [warn]  :: org.apache.thrift#libthrift;0.5.0: not found
-      // [warn]  ::::::::::::::::::::::::::::::::::::::::::::::
-      // [warn]
-      // [warn]  Note: Unresolved dependencies path:
-      // [warn]          com.twitter.common:metrics:0.0.37
-      // [warn]            +- com.twitter:finagle-stats_2.11:6.31.0
-      // [warn]            +- io.github.benwhitehead.finch:finch-server_2.11:0.9.0
-      // [warn]            +- com.mesosphere.cosmos:cosmos-server_2.11:0.2.0-SNAPSHOT
-      // [warn]          org.apache.thrift:libthrift:0.5.0
-      // [warn]            +- com.twitter:finagle-thrift_2.11:6.31.0
-      // [warn]            +- com.twitter:finagle-zipkin_2.11:6.31.0
-      // [warn]            +- com.twitter:twitter-server_2.11:1.16.0
-      // [warn]            +- io.github.benwhitehead.finch:finch-server_2.11:0.9.0
-      // [warn]            +- com.mesosphere.cosmos:cosmos-server_2.11:0.2.0-SNAPSHOT
-      //
     ),
 
     libraryDependencies ++= Deps.mockito ++ Deps.scalaTest ++ Deps.scalaCheck,
@@ -378,13 +361,15 @@ object CosmosBuild extends Build {
     .settings(
       libraryDependencies ++=
         Deps.circe
+          ++ Deps.twitterServer
           ++ Deps.curator
-          ++ Deps.finchServer
           ++ Deps.logback
           ++ Deps.mustache
           ++ Deps.scalaUri
           ++ Deps.bijectionUtil
           ++ Deps.aws
+          ++ Deps.slf4j
+          ++ Deps.twitterCommons
     )
     .dependsOn(
       finch % "compile;test->test",

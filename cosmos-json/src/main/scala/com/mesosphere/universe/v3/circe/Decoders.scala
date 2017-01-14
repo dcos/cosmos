@@ -1,14 +1,20 @@
 package com.mesosphere.universe.v3.circe
 
-import cats.data.Xor
+import cats.syntax.either._
 import com.mesosphere.universe
 import com.mesosphere.universe.common.circe.Decoders._
 import com.mesosphere.universe.v3.model._
-import com.twitter.util.{Return, Throw, Try}
+import com.twitter.util.Return
+import com.twitter.util.Throw
+import com.twitter.util.Try
+import io.circe.Decoder
+import io.circe.DecodingFailure
+import io.circe.HCursor
 import io.circe.generic.semiauto._
-import io.circe.{Decoder, DecodingFailure, HCursor}
-
-import scala.util.{Failure, Success}
+import scala.util.Failure
+import scala.util.Left
+import scala.util.Right
+import scala.util.Success
 
 object Decoders {
 
@@ -40,18 +46,18 @@ object Decoders {
   implicit val decodePackageDefinitionTag: Decoder[PackageDefinition.Tag] =
     Decoder.instance[PackageDefinition.Tag] { (c: HCursor) =>
       c.as[String].map(PackageDefinition.Tag(_)).flatMap {
-        case Return(r) => Xor.Right(r)
+        case Return(r) => Right(r)
         case Throw(ex) =>
           val msg = ex.getMessage.replaceAllLiterally("assertion failed: ", "")
-          Xor.Left(DecodingFailure(msg, c.history))
+          Left(DecodingFailure(msg, c.history))
       }
     }
 
   implicit val decodePackageDefinitionReleaseVersion: Decoder[PackageDefinition.ReleaseVersion] =
     Decoder.instance[PackageDefinition.ReleaseVersion] { (c: HCursor) =>
       c.as[Long].map(PackageDefinition.ReleaseVersion(_)).flatMap {
-        case Return(v) => Xor.Right(v)
-        case Throw(e) => Xor.Left(DecodingFailure(e.getMessage, c.history))
+        case Return(v) => Right(v)
+        case Throw(e) => Left(DecodingFailure(e.getMessage, c.history))
       }
     }
 
@@ -78,27 +84,37 @@ object Decoders {
 
   implicit val decodeV3V3Resource: Decoder[V3Resource] = deriveDecoder[V3Resource]
 
-  implicit val decodeV3PackagingVersion: Decoder[PackagingVersion] = Decoder.instance[PackagingVersion] { (c: HCursor) =>
-    c.as[String].map(PackagingVersion(_)).flatMap {
-      case Return(v) => Xor.Right(v)
-      case Throw(e) => Xor.Left(DecodingFailure(e.getMessage, c.history))
+  implicit val decodeV3PackagingVersion: Decoder[PackagingVersion] = {
+    Decoder.instance[PackagingVersion] { (c: HCursor) =>
+      c.as[String].map(PackagingVersion(_)).flatMap {
+        case Return(v) => Right(v)
+        case Throw(e) => Left(DecodingFailure(e.getMessage, c.history))
+      }
     }
   }
 
-  implicit val decodeV3V2PackagingVersion: Decoder[V2PackagingVersion.type] = packagingVersionSubclassToString(V2PackagingVersion)
-  implicit val decodeV3V3PackagingVersion: Decoder[V3PackagingVersion.type] = packagingVersionSubclassToString(V3PackagingVersion)
+  implicit val decodeV3V2PackagingVersion: Decoder[V2PackagingVersion.type] = {
+    packagingVersionSubclassToString(V2PackagingVersion)
+  }
+
+  implicit val decodeV3V3PackagingVersion: Decoder[V3PackagingVersion.type] = {
+    packagingVersionSubclassToString(V3PackagingVersion)
+  }
 
   implicit val decodeMetadata: Decoder[Metadata] = deriveDecoder[Metadata]
 
-  private[this] def packagingVersionSubclassToString[V <: PackagingVersion](expected: V): Decoder[V] =
+  private[this] def packagingVersionSubclassToString[V <: PackagingVersion](
+    expected: V
+  ): Decoder[V] = {
     Decoder.instance { (c: HCursor) =>
       c.as[String].flatMap {
-        case expected.show => Xor.Right(expected)
-        case x => Xor.Left(DecodingFailure(
+        case expected.show => Right(expected)
+        case x => Left(DecodingFailure(
           s"Expected value [${expected.show}] for packaging version, but found [$x]",
           c.history
         ))
       }
     }
+  }
 
 }

@@ -9,12 +9,6 @@
     </encoder>
   </appender>
 
-  <appender name="access-log" class="ch.qos.logback.core.ConsoleAppender">
-    <encoder>
-      <pattern>%msg%n</pattern>
-    </encoder>
-  </appender>
-
   <appender name="NOEXCEPTION" class="ch.qos.logback.core.ConsoleAppender">
     <encoder>
       <pattern>%d{HH:mm:ss.SSS} %-5level [%thread] %logger{36} - %msg%nopex%n</pattern>
@@ -32,10 +26,6 @@
   </logger>
   <logger name="org.apache.zookeeper.ClientCnxn" level="error" additivity="false">
     <appender-ref ref="NOEXCEPTION"/>
-  </logger>
-
-  <logger name="access-log" level="trace" additivity="false">
-    <appender-ref ref="access-log"/>
   </logger>
 
   <root level="info">

@@ -1,6 +1,6 @@
 package com.mesosphere.cosmos.rpc.v1.circe
 
-import cats.data.Xor
+import cats.syntax.either._
 import com.mesosphere.cosmos.rpc.v1.model._
 import com.mesosphere.cosmos.storage.v1.circe.Decoders._
 import com.mesosphere.cosmos.thirdparty.marathon.circe.Decoders._
@@ -10,6 +10,7 @@ import com.mesosphere.universe.v2.circe.Decoders._
 import com.mesosphere.universe.v3.circe.Decoders._
 import io.circe._
 import io.circe.generic.semiauto._
+import scala.util.Left
 
 object Decoders {
   implicit val keyDecodePackageDefinitionVersion: KeyDecoder[universe.v3.model.PackageDefinition.Version] = {
@@ -116,7 +117,7 @@ object Decoders {
         case InvalidName =>
           invalidDecoder(cursor)
         case status =>
-          Xor.Left(
+          Left(
             DecodingFailure(
               s"'$status' is not a valid status",
               cursor.history

@@ -1,8 +1,13 @@
 package com.mesosphere.cosmos.finch
 
-import com.mesosphere.cosmos.http.{CompoundMediaType, CompoundMediaTypeParser, MediaType, MediaTypeOps}
+import com.mesosphere.cosmos.http.CompoundMediaType
+import com.mesosphere.cosmos.http.CompoundMediaTypeParser
+import com.mesosphere.cosmos.http.MediaType
+import com.mesosphere.cosmos.http.MediaTypeOps
 import io.circe.Json
-import io.finch.{DecodeRequest, Endpoint, ValidationRule}
+import io.finch.DecodeEntity
+import io.finch.Endpoint
+import io.finch.ValidationRule
 import shapeless.HNil
 
 object FinchExtensions {
@@ -12,12 +17,12 @@ object FinchExtensions {
       MediaTypeOps.compatible(expected, actual)
     }
 
-  implicit val decodeMediaType: DecodeRequest[MediaType] = {
-    DecodeRequest.instance(s => MediaType.parse(s))
+  implicit val decodeMediaType: DecodeEntity[MediaType] = {
+    DecodeEntity.instance(s => MediaType.parse(s))
   }
 
-  implicit val decodeCompoundMediaType: DecodeRequest[CompoundMediaType] = {
-    DecodeRequest.instance(s => CompoundMediaTypeParser.parse(s))
+  implicit val decodeCompoundMediaType: DecodeEntity[CompoundMediaType] = {
+    DecodeEntity.instance(s => CompoundMediaTypeParser.parse(s))
   }
 
   def route[Req, Res](
@@ -26,7 +31,7 @@ object FinchExtensions {
   )(
     requestValidator: Endpoint[EndpointContext[Req, Res]]
   ): Endpoint[Json] = {
-    (base ? requestValidator).apply((context: EndpointContext[Req, Res]) => handler(context))
+    (base :: requestValidator).apply((context: EndpointContext[Req, Res]) => handler(context))
   }
 
 }

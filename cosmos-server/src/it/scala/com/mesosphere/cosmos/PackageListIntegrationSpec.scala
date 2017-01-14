@@ -1,6 +1,6 @@
 package com.mesosphere.cosmos
 
-import cats.data.Xor
+import cats.syntax.either._
 import com.mesosphere.cosmos.http.CosmosRequests
 import com.mesosphere.cosmos.repository.DefaultRepositories
 import com.mesosphere.cosmos.rpc.v1.circe.Decoders._
@@ -14,6 +14,7 @@ import org.scalatest.AppendedClues
 import org.scalatest.FreeSpec
 import org.scalatest.Inside
 import org.scalatest.concurrent.Eventually
+import scala.util.Right
 
 final class PackageListIntegrationSpec
   extends FreeSpec with Inside with AppendedClues with Eventually {
@@ -64,7 +65,7 @@ final class PackageListIntegrationSpec
     val installRequest =
       InstallRequest(packageName, appId = Some(AppId(UUID.randomUUID().toString)))
     val request = CosmosRequests.packageInstallV1(installRequest)
-    val Xor.Right(installResponse) =
+    val Right(installResponse) =
       CosmosClient.callEndpoint[InstallResponse](request) withClue "when installing package"
 
     try {
@@ -82,7 +83,7 @@ final class PackageListIntegrationSpec
         CosmosClient.callEndpoint[UninstallResponse](request) withClue "when uninstalling package"
 
       inside (actualUninstall) {
-        case Xor.Right(UninstallResponse(List(UninstallResult(uninstalledPackageName, appId, Some(packageVersion), _)))) =>
+        case Right(UninstallResponse(List(UninstallResult(uninstalledPackageName, appId, Some(packageVersion), _)))) =>
           assertResult(installResponse.appId)(appId)
           assertResult(installResponse.packageName)(uninstalledPackageName)
           assertResult(installResponse.packageVersion)(packageVersion)
@@ -97,7 +98,7 @@ final class PackageListIntegrationSpec
       .withClue("when deleting repo")
 
     try {
-      assertResult(Xor.Right(None)) {
+      assertResult(Right(None)) {
         actualDelete.map(_.repositories.find(_.name == repository.name))
       }
 
@@ -108,7 +109,7 @@ final class PackageListIntegrationSpec
       val actualAdd = CosmosClient.callEndpoint[PackageRepositoryAddResponse](request)
         .withClue("when restoring deleted repo")
 
-      inside(actualAdd) { case Xor.Right(PackageRepositoryAddResponse(repositories)) =>
+      inside(actualAdd) { case Right(PackageRepositoryAddResponse(repositories)) =>
         inside(repositories.find(_.name == repository.name)) { case Some(addedRepository) =>
           assertResult(repository)(addedRepository)
         }
@@ -123,7 +124,7 @@ final class PackageListIntegrationSpec
     val actualList =
       CosmosClient.callEndpoint[ListResponse](request) withClue "when listing installed packages"
 
-    inside (actualList) { case Xor.Right(ListResponse(packages)) =>
+    inside (actualList) { case Right(ListResponse(packages)) =>
       inside (packages.find(_.appId == installResponse.appId)) { pf }
     }
   }
@@ -150,7 +151,7 @@ final class PackageListIntegrationSpec
 
   private[this] def packageList(): ListResponse = {
     val request = CosmosRequests.packageList(ListRequest())
-    val Xor.Right(listResponse) =
+    val Right(listResponse) =
       CosmosClient.callEndpoint[ListResponse](request) withClue "when listing installed packages"
 
     listResponse
@@ -160,7 +161,7 @@ final class PackageListIntegrationSpec
     val installRequest =
       InstallRequest(packageName, appId = Some(AppId(UUID.randomUUID().toString)))
     val request = CosmosRequests.packageInstallV1(installRequest)
-    val Xor.Right(installResponse) =
+    val Right(installResponse) =
       CosmosClient.callEndpoint[InstallResponse](request) withClue "when installing package"
 
     assertResult(packageName)(installResponse.packageName)
@@ -172,7 +173,7 @@ final class PackageListIntegrationSpec
     val uninstallRequest: UninstallRequest =
       UninstallRequest(installResponse.packageName, appId = Some(installResponse.appId), all = None)
     val request = CosmosRequests.packageUninstall(uninstallRequest)
-    val Xor.Right(uninstallResponse) =
+    val Right(uninstallResponse) =
       CosmosClient.callEndpoint[UninstallResponse](request) withClue "when uninstalling package"
 
     val UninstallResponse(List(UninstallResult(uninstalledPackageName, appId, Some(packageVersion), _))) =

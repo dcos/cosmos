@@ -7,13 +7,12 @@ import com.mesosphere.cosmos.rpc
 import com.mesosphere.universe
 import com.mesosphere.universe.v3.syntax.PackageDefinitionOps._
 import com.netaporter.uri.Uri
-import com.twitter.util.Future
-import com.twitter.common.util.{LowResClock, Clock}
 import com.twitter.common.quantity.Amount
 import com.twitter.common.quantity.Time
-
-import java.util.concurrent.atomic.AtomicReference
+import com.twitter.common.util.Clock
+import com.twitter.util.Future
 import java.util.concurrent.TimeUnit
+import java.util.concurrent.atomic.AtomicReference
 import java.util.regex.Pattern
 import scala.util.matching.Regex
 
@@ -30,19 +29,31 @@ trait CosmosRepository extends PackageCollection {
 }
 
 object CosmosRepository {
-  def apply(repository: rpc.v1.model.PackageRepository,
-            universeClient: UniverseClient,
-            clock: Clock = new LowResClock(Amount.of(1L, Time.SECONDS))
-            )
-    : CosmosRepository = {
+  def apply(
+    repository: rpc.v1.model.PackageRepository,
+    universeClient: UniverseClient,
+    clock: Clock = Clock.SYSTEM_CLOCK
+  ): CosmosRepository = {
     new DefaultCosmosRepository(repository, universeClient, clock)
+  }
+
+  def createRegex(query: String): Regex = {
+    s"""^${safePattern(query)}$$""".r
+  }
+
+  private[this] def safePattern(query: String): String = {
+      query.split("\\*", -1).map{
+        case "" => ""
+        case v => Pattern.quote(v)
+      }.mkString(".*")
   }
 }
 
-final class DefaultCosmosRepository(
-    override val repository: rpc.v1.model.PackageRepository,
-    universeClient: UniverseClient,
-    clock: Clock = new LowResClock(Amount.of(1L, Time.SECONDS))
+// TODO: Rename DefaultCosmosRepository to CosmosRepository
+private[repository] final class DefaultCosmosRepository (
+  override val repository: rpc.v1.model.PackageRepository,
+  universeClient: UniverseClient,
+  clock: Clock
 )
   extends CosmosRepository {
   private[this] val lastRepository = new AtomicReference(
@@ -96,7 +107,7 @@ final class DefaultCosmosRepository(
     val predicate =
       query.map { value =>
         if (value.contains("*")) {
-          searchRegex(createRegex(value))
+          searchRegex(CosmosRepository.createRegex(value))
         } else {
           searchString(value.toLowerCase())
         }
@@ -162,17 +173,6 @@ final class DefaultCosmosRepository(
             lastRepository.set(Some((newRepository, clock.nowMillis)))
         }
     }
-  }
-
-  private[this] def safePattern(query: String): String = {
-      query.split("\\*", -1).map{
-        case "" => ""
-        case v => Pattern.quote(v)
-      }.mkString(".*")
-  }
-
-  private[repository] def createRegex(query: String): Regex = {
-    s"""^${safePattern(query)}$$""".r
   }
 
   private[this] def searchRegex(

@@ -27,7 +27,7 @@ object RequestValidators {
     val contentTypeRule = beTheExpectedType(accepts.mediaTypedDecoder.mediaType)
     val contentTypeValidator = header(Fields.ContentType).as[MediaType].should(contentTypeRule)
 
-    val bodyValidator = body.as[Req](accepts.decoder, accepts.classTag)
+    val bodyValidator = body[Req, Application.Json](accepts.decoder, accepts.classTag)
 
     val allValidators = baseValidator(produces) :: contentTypeValidator :: bodyValidator
     allValidators.map {
@@ -47,7 +47,8 @@ object RequestValidators {
       .map { contentType =>
         accepts(contentType) match {
           case Some(bodyParser) => contentType :: bodyParser :: HNil
-          case _ => throw IncompatibleContentTypeHeader(accepts.mediaTypes, contentType)
+          case _ =>
+            throw incompatibleContentTypeHeader(accepts.mediaTypes, contentType)
         }
       }
 
@@ -68,7 +69,8 @@ object RequestValidators {
       .map { accept =>
         produces(accept) match {
           case Some(x) => x
-          case None => throw IncompatibleAcceptHeader(produces.mediaTypes, accept.mediaTypes)
+          case None =>
+            throw incompatibleAcceptHeader(produces.mediaTypes, accept.mediaTypes)
         }
       }
     val auth = headerOption(Fields.Authorization).map(_.map(Authorization))

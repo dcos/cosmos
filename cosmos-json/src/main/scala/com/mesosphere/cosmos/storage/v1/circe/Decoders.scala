@@ -1,14 +1,14 @@
 package com.mesosphere.cosmos.storage.v1.circe
 
-import cats.data.Xor
+import cats.syntax.either._
 import com.mesosphere.cosmos.rpc.v1.circe.Decoders._
 import com.mesosphere.cosmos.storage.v1.model.FailedStatus
 import com.mesosphere.cosmos.storage.v1.model.Install
 import com.mesosphere.cosmos.storage.v1.model.Operation
 import com.mesosphere.cosmos.storage.v1.model.OperationFailure
 import com.mesosphere.cosmos.storage.v1.model.OperationStatus
-import com.mesosphere.cosmos.storage.v1.model.PendingStatus
 import com.mesosphere.cosmos.storage.v1.model.PendingOperation
+import com.mesosphere.cosmos.storage.v1.model.PendingStatus
 import com.mesosphere.cosmos.storage.v1.model.Uninstall
 import com.mesosphere.cosmos.storage.v1.model.UniverseInstall
 import com.mesosphere.universe.v3.circe.Decoders._
@@ -16,6 +16,7 @@ import io.circe.Decoder
 import io.circe.DecodingFailure
 import io.circe.HCursor
 import io.circe.generic.semiauto._
+import scala.util.Left
 
 object Decoders {
 
@@ -38,7 +39,7 @@ object Decoders {
         case InstallName => hc.as[Install]
         case UniverseInstallName => hc.as[UniverseInstall]
         case UninstallName => hc.as[Uninstall]
-        case tp: String => Xor.left(DecodingFailure(
+        case tp: String => Left(DecodingFailure(
           s"Encountered unknown type [$tp]" +
             " while trying to decode Operation", hc.history))
       }
@@ -65,7 +66,7 @@ object Decoders {
       hc.downField("type").as[String].flatMap {
         case PendingName => hc.as[PendingStatus]
         case FailedName => hc.as[FailedStatus]
-        case tp: String => Xor.left(DecodingFailure(
+        case tp: String => Left(DecodingFailure(
           s"Encountered unknown type [$tp]" +
             " while trying to decode OperationStatus", hc.history)
         )

@@ -1,8 +1,9 @@
 package com.mesosphere.universe.common.circe
 
+import cats.syntax.either._
 import com.netaporter.uri.Uri
-import io.circe.{Decoder, DecodingFailure}
-
+import io.circe.Decoder
+import io.circe.DecodingFailure
 import java.nio.ByteBuffer
 import java.util.Base64
 

@@ -1,9 +1,12 @@
 package com.mesosphere.universe.v2.circe
 
+import cats.syntax.either._
 import com.mesosphere.universe.common.circe.Decoders._
 import com.mesosphere.universe.v2.model._
+import io.circe.Decoder
+import io.circe.HCursor
+import io.circe.KeyDecoder
 import io.circe.generic.semiauto._
-import io.circe.{Decoder, HCursor, KeyDecoder}
 
 object Decoders {
   implicit val decodeV2License: Decoder[License] = deriveDecoder[License]

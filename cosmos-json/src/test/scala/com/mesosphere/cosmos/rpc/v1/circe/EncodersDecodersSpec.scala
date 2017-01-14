@@ -1,6 +1,6 @@
 package com.mesosphere.cosmos.rpc.v1.circe
 
-import cats.data.Xor
+import cats.syntax.either._
 import com.mesosphere.Generators._
 import com.mesosphere.cosmos.rpc
 import com.mesosphere.cosmos.rpc.v1.model.AddResponse
@@ -10,6 +10,8 @@ import io.circe.syntax._
 import org.scalatest.FreeSpec
 import org.scalatest.Matchers
 import org.scalatest.prop.PropertyChecks
+import scala.util.Left
+import scala.util.Right
 
 final class EncodersDecodersSpec extends FreeSpec with PropertyChecks with Matchers {
   import Decoders._
@@ -25,7 +27,7 @@ final class EncodersDecodersSpec extends FreeSpec with PropertyChecks with Match
 
     "decodes from V3Package JSON" in {
       forAll (genV3Package) { v3Package =>
-        assertResult(Xor.Right(v3Package)) {
+        assertResult(Right(v3Package)) {
           decode[rpc.v1.model.AddResponse](v3Package.asJson.noSpaces).map(_.v3Package)
         }
       }

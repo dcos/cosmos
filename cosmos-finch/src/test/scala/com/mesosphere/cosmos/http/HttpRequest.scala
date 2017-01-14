@@ -6,6 +6,7 @@ import com.twitter.finagle.http.Request
 import com.twitter.io.Buf
 import io.circe.Encoder
 import io.circe.syntax._
+import io.finch.Input
 
 case class HttpRequest(
   method: Method,
@@ -80,6 +81,15 @@ object HttpRequest {
 
     finagleRequest.headerMap ++= cosmosRequest.headers
     finagleRequest
+  }
+
+  def toFinchInput(cosmosRequest: HttpRequest): Input = {
+    val finagleRequest = toFinagle(cosmosRequest)
+
+    Input(
+      finagleRequest,
+      finagleRequest.path.split("/")
+    )
   }
 
   def toHeader(mediaType: MediaType): Option[String] = Some(mediaType.show)

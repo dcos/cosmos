@@ -5,7 +5,6 @@ import _root_.io.circe.Json
 import _root_.io.circe.JsonObject
 import _root_.io.circe.jawn._
 import _root_.io.circe.syntax._
-import cats.data.Xor
 import com.mesosphere.cosmos._
 import com.mesosphere.cosmos.http.CosmosRequests
 import com.mesosphere.cosmos.rpc.v1.circe.Decoders._
@@ -19,6 +18,9 @@ import org.scalatest.BeforeAndAfter
 import org.scalatest.FreeSpec
 import org.scalatest.concurrent.Eventually
 import org.scalatest.prop.TableDrivenPropertyChecks
+import scala.util.Either
+import scala.util.Left
+import scala.util.Right
 
 final class PackageRepositorySpec
   extends FreeSpec with BeforeAndAfter with Eventually with AppendedClues {
@@ -101,7 +103,7 @@ final class PackageRepositorySpec
         setStorageState(startingSources)
 
         scenario.foreach { assertion =>
-          assertResult(Xor.Right(PackageRepositoryDeleteResponse(assertion.responseList))) {
+          assertResult(Right(PackageRepositoryDeleteResponse(assertion.responseList))) {
             deleteRepo(assertion.request)
           }
         }
@@ -109,7 +111,7 @@ final class PackageRepositorySpec
     }
 
     "should respond with an error when neither name nor uri are specified" in {
-      val Xor.Left(errorResponse) = deleteRepo(PackageRepositoryDeleteRequest(), status = Status.BadRequest)
+      val Left(errorResponse) = deleteRepo(PackageRepositoryDeleteRequest(), status = Status.BadRequest)
       assertResult(classOf[RepoNameOrUriMissing].getSimpleName)(errorResponse.`type`)
     }
   }
@@ -125,7 +127,7 @@ final class PackageRepositorySpec
     def assertUnsupportedVersion(): Unit = {
       val response = searchPackages(SearchRequest(None))
       assertResult(Status.BadRequest)(response.status)
-      val Xor.Right(err) = decode[ErrorResponse](response.contentString)
+      val Right(err) = decode[ErrorResponse](response.contentString)
       assertResult(expectedMsg)(err.message)
     }
 
@@ -192,7 +194,7 @@ final class PackageRepositorySpec
       def assertBadRequest(): Unit = {
         val response = searchPackages(SearchRequest(None))
         assertResult(Status.BadRequest)(response.status)
-        val Xor.Right(err) = decode[ErrorResponse](response.contentString)
+        val Right(err) = decode[ErrorResponse](response.contentString)
         assertResult(expectedMsg)(err.message)
       }
 
@@ -247,7 +249,7 @@ final class PackageRepositorySpec
     }
 
     def assertDeleteAbsentRepo(request: PackageRepositoryDeleteRequest): Unit = {
-      val Xor.Left(errorResponse) =
+      val Left(errorResponse) =
         deleteRepo(request, status = Status.BadRequest) withClue "when deleting a repo"
       val errorData = optionToJsonMap("name", request.name) ++ optionToJsonMap("uri", request.uri)
 
@@ -320,7 +322,7 @@ object PackageRepositorySpec extends FreeSpec with TableDrivenPropertyChecks {
       val request = CosmosRequests.packageRepositoryAdd(repoAddRequest)
       val response = CosmosClient.submit(request)
       assertResult(Status.BadRequest)(response.status)
-      val Xor.Right(err) = decode[ErrorResponse](response.contentString)
+      val Right(err) = decode[ErrorResponse](response.contentString)
       err.message
     }
 
@@ -331,21 +333,21 @@ object PackageRepositorySpec extends FreeSpec with TableDrivenPropertyChecks {
 
   private def addRepo(addRequest: PackageRepositoryAddRequest): PackageRepositoryAddResponse  = {
     val request = CosmosRequests.packageRepositoryAdd(addRequest)
-    val Xor.Right(response) = CosmosClient.callEndpoint[PackageRepositoryAddResponse](request)
+    val Right(response) = CosmosClient.callEndpoint[PackageRepositoryAddResponse](request)
     response
   }
 
   private def deleteRepo(
     deleteRequest: PackageRepositoryDeleteRequest,
     status: Status = Status.Ok
-  ): Xor[ErrorResponse, PackageRepositoryDeleteResponse]  = {
+  ): Either[ErrorResponse, PackageRepositoryDeleteResponse]  = {
     val request = CosmosRequests.packageRepositoryDelete(deleteRequest)
     CosmosClient.callEndpoint[PackageRepositoryDeleteResponse](request, status)
   }
 
   private def listRepos(): PackageRepositoryListResponse = {
     val request = CosmosRequests.packageRepositoryList
-    val Xor.Right(response) = CosmosClient.callEndpoint[PackageRepositoryListResponse](request)
+    val Right(response) = CosmosClient.callEndpoint[PackageRepositoryListResponse](request)
     response
   }
 

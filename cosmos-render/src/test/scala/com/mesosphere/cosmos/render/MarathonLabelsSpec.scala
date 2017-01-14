@@ -1,6 +1,6 @@
 package com.mesosphere.cosmos.render
 
-import cats.data.Xor
+import cats.syntax.either._
 import com.mesosphere.cosmos.label
 import com.mesosphere.cosmos.label.v1.circe.Decoders._
 import com.mesosphere.cosmos.thirdparty.marathon.model.MarathonApp
@@ -14,8 +14,9 @@ import com.netaporter.uri.Uri
 import com.twitter.bijection.Conversion.asMethod
 import io.circe.Decoder
 import org.scalatest.FreeSpec
-
-import scala.util.{Success, Try}
+import scala.util.Right
+import scala.util.Success
+import scala.util.Try
 
 final class MarathonLabelsSpec extends FreeSpec {
 
@@ -54,7 +55,7 @@ final class MarathonLabelsSpec extends FreeSpec {
 
   private[this] def decodeRequiredLabel[A: Decoder](labels: MarathonLabels, label: String): A = {
     val base64Json = labels.requiredLabels(MarathonApp.metadataLabel)
-    val Xor.Right(data) = JsonUtil.decode64[A](base64Json)
+    val Right(data) = JsonUtil.decode64[A](base64Json)
     data
   }
 
