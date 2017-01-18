@@ -18,4 +18,8 @@ object Decoders {
     )
   }
 
+  implicit def decodeListA[A](implicit decoder: Decoder[A]): Decoder[List[A]] = {
+    Decoder.decodeCanBuildFrom[A, List]
+  }
+
 }
