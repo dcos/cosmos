@@ -12,6 +12,7 @@ import com.mesosphere.cosmos.storage.v1.model.UniverseInstall
 import com.mesosphere.universe
 import com.mesosphere.universe.bijection.UniverseConversions._
 import com.mesosphere.universe.v3.circe.Decoders._
+import com.mesosphere.universe.v3.syntax.PackageDefinitionOps._
 import com.twitter.bijection.Conversion.asMethod
 import com.twitter.finagle.http.Status
 import com.twitter.io.StreamIO
@@ -34,12 +35,12 @@ final class PackageAddHandler(
   override def apply(request: rpc.v1.model.AddRequest)(implicit
     session: RequestSession
   ): Future[rpc.v1.model.AddResponse] = {
-    val packageAndOperation = request match {
+    val futureOperation = request match {
       case rpc.v1.model.UniverseAddRequest(packageName, packageVersion) =>
         packageCollection.getPackageByPackageVersion(packageName, packageVersion)
           .map {
             case (v3Package: universe.v3.model.V3Package, _) =>
-              (v3Package, UniverseInstall(v3Package))
+              UniverseInstall(v3Package)
             case _ =>
               throw new UnsupportedOperationException("Adding a package with packagingVersion 2.0")
           }
@@ -51,15 +52,16 @@ final class PackageAddHandler(
         for {
           stagedPackageId <- stagedPackageStorage.put(packageStream, packageSize, contentType)
           v3Package <- readPackageDefinitionFromStorage(stagedPackageId)
-        } yield (v3Package, Install(stagedPackageId, v3Package))
+        } yield {
+          Install(stagedPackageId, v3Package)
+        }
     }
 
     for {
-      (v3Package, operation) <- packageAndOperation
-      packageCoordinate = rpc.v1.model.PackageCoordinate(v3Package.name, v3Package.version)
-      _ <- producerView.add(packageCoordinate, operation)
+      operation <- futureOperation
+      _ <- producerView.add(operation.v3Package.packageCoordinate, operation)
     } yield {
-      new rpc.v1.model.AddResponse(v3Package)
+      new rpc.v1.model.AddResponse(operation.v3Package)
     }
   }
 
@@ -82,19 +84,21 @@ final class PackageAddHandler(
   private[this] def extractPackageMetadata(
     packageZip: ZipInputStream
   ): Try[universe.v3.model.Metadata] = {
+    // TODO package-add: Factor out common Zip-handling code into utility methods
+    // TODO package-add: Test cases for files with unexpected content
     Try {
-      // TODO package-add: Factor out common Zip-handling code into utility methods
-      Iterator
-        .continually(Option(packageZip.getNextEntry()))
-        .takeWhile(_.isDefined)
-        .flatten
-        // TODO package-add: Test cases for files with unexpected content
-        .filter(_.getName == "metadata.json")
-        .map { _ =>
-          val metadataBytes = StreamIO.buffer(packageZip).toByteArray
-          decode[universe.v3.model.Metadata](new String(metadataBytes, StandardCharsets.UTF_8))
+      while({
+        val zipEntry = Option(packageZip.getNextEntry)
+        if (zipEntry.isEmpty) {
+          throw new Error("metadata.json not found in zip file")
         }
-        .next()
+        !zipEntry.map(_.getName).contains("matadata.json")
+      }){}
+
+      val metadataBytes = StreamIO.buffer(packageZip).toByteArray
+      decode[universe.v3.model.Metadata](
+        new String(metadataBytes, StandardCharsets.UTF_8)
+      )
     } ensure packageZip.close()
   }
 
