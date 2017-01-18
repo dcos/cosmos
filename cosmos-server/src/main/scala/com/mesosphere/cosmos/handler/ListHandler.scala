@@ -1,5 +1,7 @@
 package com.mesosphere.cosmos.handler
 
+import com.mesosphere.cosmos.AdminRouter
+import com.mesosphere.cosmos.PackageNotFound
 import com.mesosphere.cosmos.circe.Decoders.decode
 import com.mesosphere.cosmos.converter.Label._
 import com.mesosphere.cosmos.converter.Response._
@@ -10,14 +12,14 @@ import com.mesosphere.cosmos.internal.model.PackageOrigin
 import com.mesosphere.cosmos.label
 import com.mesosphere.cosmos.label.v1.circe.Decoders._
 import com.mesosphere.cosmos.repository.CosmosRepository
-import com.mesosphere.cosmos.rpc.v1.model.{Installation, InstalledPackageInformation, ListRequest, ListResponse}
-import com.mesosphere.cosmos.thirdparty.marathon.model.{AppId, MarathonApp}
-import com.mesosphere.cosmos.AdminRouter
+import com.mesosphere.cosmos.rpc
+import com.mesosphere.cosmos.thirdparty
 import com.mesosphere.universe
 import com.netaporter.uri.Uri
 import com.netaporter.uri.dsl.stringToUri
 import com.twitter.bijection.Conversion.asMethod
-import com.twitter.util.{Future, Try}
+import com.twitter.util.Future
+import com.twitter.util.Try
 import java.nio.charset.StandardCharsets
 import java.util.Base64
 
@@ -25,32 +27,39 @@ import java.util.Base64
 private[cosmos] final class ListHandler(
   adminRouter: AdminRouter,
   repositories: (Uri) => Future[Option[CosmosRepository]]
-) extends EndpointHandler[ListRequest, ListResponse] {
+) extends EndpointHandler[rpc.v1.model.ListRequest, rpc.v1.model.ListResponse] {
 
   private case class App(
-    id: AppId,
+    id: thirdparty.marathon.model.AppId,
     pkgName: String,
     pkgReleaseVersion: universe.v3.model.PackageDefinition.ReleaseVersion,
     repoUri: PackageOrigin,
     pkgMetadata: Option[String]
   )
 
-  override def apply(request: ListRequest)
-                    (implicit session: RequestSession): Future[ListResponse] = {
+  override def apply(
+    request: rpc.v1.model.ListRequest
+  )(
+    implicit session: RequestSession
+  ): Future[rpc.v1.model.ListResponse] = {
     for {
       apps <- getApplications(adminRouter, request)
       repoAssocs <- getRepositoryAssociations(repositories, apps)
       installs <- getInstallations(repoAssocs)
     } yield {
-      ListResponse(installs.sortBy(install =>
+      rpc.v1.model.ListResponse(installs.sortBy(install =>
         (install.packageInformation.packageDefinition.name, install.appId)))
     }
   }
 
-  private[this] def getApplications(adminRouter: AdminRouter, request: ListRequest)
-                                   (implicit session: RequestSession): Future[Seq[App]] = {
+  private[this] def getApplications(
+    adminRouter: AdminRouter,
+    request: rpc.v1.model.ListRequest
+  )(
+    implicit session: RequestSession
+  ): Future[Seq[App]] = {
 
-    def satisfiesRequest(app: MarathonApp): Boolean = {
+    def satisfiesRequest(app: thirdparty.marathon.model.MarathonApp): Boolean = {
       // corner case: packageReleaseVersion will be None if parsing the label fails
       (app.packageReleaseVersion, app.packageName, app.packageRepository) match {
         case (Some(_), Some(pkgName), Some(_)) =>
@@ -88,9 +97,9 @@ private[cosmos] final class ListHandler(
     assocs: Seq[(App, Option[CosmosRepository])]
   )(
     implicit session: RequestSession
-  ): Future[Seq[Installation]] = {
+  ): Future[Seq[rpc.v1.model.Installation]] = {
     Future.collect {
-      assocs map {
+      assocs.map {
         case (app, Some(repo)) =>
           repo
             .getPackageByReleaseVersion(app.pkgName, app.pkgReleaseVersion)
@@ -114,24 +123,32 @@ private[cosmos] final class ListHandler(
                   )
               }
 
-              adjustedPackage.as[Try[InstalledPackageInformation]]
+              adjustedPackage.as[Try[rpc.v1.model.InstalledPackageInformation]]
             }.lowerFromTry
-            .map { pkgInfo =>
-              Installation(app.id, pkgInfo)
+            .handle {
+              case PackageNotFound(_) =>
+                /* If for some reason the package is not part of the repo anymore we should use
+                 * the information stored with the application
+                 */
+                decodeInstalledPackageInformation(app)
+            }.map { pkgInfo =>
+              rpc.v1.model.Installation(app.id, pkgInfo)
             }
         case (app, None) =>
-          Future.value(Installation(app.id, decodeInstalledPackageInformation(app)))
+          Future.value(rpc.v1.model.Installation(app.id, decodeInstalledPackageInformation(app)))
       }
     }
   }
 
-  private[this] def decodeInstalledPackageInformation(app: App): InstalledPackageInformation = {
+  private[this] def decodeInstalledPackageInformation(
+    app: App
+  ): rpc.v1.model.InstalledPackageInformation = {
     val pkgMetadata = app.pkgMetadata.getOrElse("")
     val pkgInfo = new String(
       Base64.getDecoder.decode(pkgMetadata),
       StandardCharsets.UTF_8
     )
-    decode[label.v1.model.PackageMetadata](pkgInfo).as[InstalledPackageInformation]
+    decode[label.v1.model.PackageMetadata](pkgInfo).as[rpc.v1.model.InstalledPackageInformation]
   }
 
 }
