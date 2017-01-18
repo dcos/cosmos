@@ -10,7 +10,6 @@ import io.circe.syntax._
 import java.nio.ByteBuffer
 import java.nio.charset.StandardCharsets
 import org.scalatest.FreeSpec
-import org.scalatest.{Tag => ScalaTestTag}
 import scala.io.Source
 import scala.util.Left
 import scala.util.Right
@@ -90,7 +89,7 @@ class RepositoryEncoderDecoderSpec extends FreeSpec {
       assertResult(expectedCassandraVersions)(cassandraVersions)
     }
 
-    "decode error when package has unsupported packagingVersion" taggedAs ScalaTestTag("ISSUE: DCOS-13221") ignore {
+    "decode error when package has unsupported packagingVersion" in {
       val json = Json.obj(
         "packages" -> Json.arr(
           Json.obj(
@@ -114,7 +113,7 @@ class RepositoryEncoderDecoderSpec extends FreeSpec {
       assertResult(expectedErrorMessage)(decodingFailure.getMessage())
     }
 
-    "decode error when package has unsupported tag format" taggedAs ScalaTestTag("ISSUE: DCOS-13221") ignore {
+    "decode error when package has unsupported tag format" in {
       val json = Json.obj(
         "packages" -> Json.arr(
           Json.obj(
@@ -138,7 +137,7 @@ class RepositoryEncoderDecoderSpec extends FreeSpec {
       assertResult(expectedErrorMessage)(decodingFailure.getMessage())
     }
 
-    "decode error when package has unsupported releaseVersion value" taggedAs ScalaTestTag("ISSUE: DCOS-13221") ignore {
+    "decode error when package has unsupported releaseVersion value" in {
       val releaseVersion = -1
       val json = Json.obj(
         "packages" -> Json.arr(

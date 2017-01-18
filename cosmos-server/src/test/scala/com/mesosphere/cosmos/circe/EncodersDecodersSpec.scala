@@ -41,7 +41,6 @@ import java.util.UUID
 import org.scalacheck.Gen
 import org.scalatest.FreeSpec
 import org.scalatest.Matchers
-import org.scalatest.Tag
 import org.scalatest.prop.PropertyChecks
 import scala.util.Either
 import scala.util.Left
@@ -125,7 +124,7 @@ class EncodersDecodersSpec extends FreeSpec with PropertyChecks with Matchers {
 
   "Encoder for io.circe.Error" - {
     "DecodingFailure should specify path instead of cursor history" - {
-      "when value is valid type but not acceptable" taggedAs Tag("ISSUE: DCOS-13221") ignore {
+      "when value is valid type but not acceptable" in {
         val Left(err: DecodingFailure) = loadAndDecode(
           "/com/mesosphere/cosmos/universe_invalid_packagingVersion_value.json"
         )
@@ -142,7 +141,7 @@ class EncodersDecodersSpec extends FreeSpec with PropertyChecks with Matchers {
         assertResult(".packages[0].packagingVersion")(path)
       }
 
-      "when ByteBuffer value is incorrect type" taggedAs Tag("ISSUE: DCOS-13221") ignore {
+      "when ByteBuffer value is incorrect type" in {
         val Left(err: DecodingFailure) = loadAndDecode(
           "/com/mesosphere/cosmos/universe_invalid_byteBuffer.json"
         )

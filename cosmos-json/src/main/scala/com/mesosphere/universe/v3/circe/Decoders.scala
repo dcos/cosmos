@@ -43,6 +43,7 @@ object Decoders {
   implicit val decodePackageDefinitionVersion: Decoder[PackageDefinition.Version] = {
     Decoder.decodeString.map(PackageDefinition.Version)
   }
+
   implicit val decodePackageDefinitionTag: Decoder[PackageDefinition.Tag] =
     Decoder.instance[PackageDefinition.Tag] { (c: HCursor) =>
       c.as[String].map(PackageDefinition.Tag(_)).flatMap {
@@ -52,6 +53,10 @@ object Decoders {
           Left(DecodingFailure(msg, c.history))
       }
     }
+
+  implicit val decodeListOfTag: Decoder[List[PackageDefinition.Tag]] = {
+    Decoder.decodeCanBuildFrom[PackageDefinition.Tag, List]
+  }
 
   implicit val decodePackageDefinitionReleaseVersion: Decoder[PackageDefinition.ReleaseVersion] =
     Decoder.instance[PackageDefinition.ReleaseVersion] { (c: HCursor) =>
@@ -68,6 +73,10 @@ object Decoders {
         case V3PackagingVersion => hc.as[V3Package]
       }
     }
+  }
+
+  implicit val decodeListOfPackageDefinition: Decoder[List[PackageDefinition]] = {
+    Decoder.decodeCanBuildFrom[PackageDefinition, List]
   }
 
   implicit val decodeRepository: Decoder[Repository] = deriveDecoder[Repository]
