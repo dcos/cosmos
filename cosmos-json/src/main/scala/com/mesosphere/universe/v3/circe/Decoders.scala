@@ -43,6 +43,7 @@ object Decoders {
   implicit val decodePackageDefinitionVersion: Decoder[PackageDefinition.Version] = {
     Decoder.decodeString.map(PackageDefinition.Version)
   }
+
   implicit val decodePackageDefinitionTag: Decoder[PackageDefinition.Tag] =
     Decoder.instance[PackageDefinition.Tag] { (c: HCursor) =>
       c.as[String].map(PackageDefinition.Tag(_)).flatMap {

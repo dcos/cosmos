@@ -18,4 +18,9 @@ object Decoders {
     )
   }
 
+  // Work around for Circe issue https://github.com/circe/circe/issues/549
+  implicit def decodeListA[A](implicit decoder: Decoder[A]): Decoder[List[A]] = {
+    Decoder.decodeCanBuildFrom[A, List]
+  }
+
 }
