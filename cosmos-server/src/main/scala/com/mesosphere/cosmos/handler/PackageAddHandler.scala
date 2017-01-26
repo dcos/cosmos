@@ -92,7 +92,7 @@ final class PackageAddHandler(
         if (zipEntry.isEmpty) {
           throw new Error("metadata.json not found in zip file")
         }
-        !zipEntry.map(_.getName).contains("matadata.json")
+        !zipEntry.map(_.getName).contains("metadata.json")
       }){}
 
       val metadataBytes = StreamIO.buffer(packageZip).toByteArray
