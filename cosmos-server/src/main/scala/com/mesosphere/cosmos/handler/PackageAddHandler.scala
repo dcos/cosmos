@@ -84,21 +84,19 @@ final class PackageAddHandler(
   private[this] def extractPackageMetadata(
     packageZip: ZipInputStream
   ): Try[universe.v3.model.Metadata] = {
-    // TODO package-add: Factor out common Zip-handling code into utility methods
-    // TODO package-add: Test cases for files with unexpected content
     Try {
-      while({
-        val zipEntry = Option(packageZip.getNextEntry)
-        if (zipEntry.isEmpty) {
-          throw new Error("metadata.json not found in zip file")
+      // TODO package-add: Factor out common Zip-handling code into utility methods
+      Iterator
+        .continually(Option(packageZip.getNextEntry()))
+        .takeWhile(_.isDefined)
+        .flatten
+        // TODO package-add: Test cases for files with unexpected content
+        .filter(_.getName == "metadata.json")
+        .map { _ =>
+          val metadataBytes = StreamIO.buffer(packageZip).toByteArray
+          decode[universe.v3.model.Metadata](new String(metadataBytes, StandardCharsets.UTF_8))
         }
-        !zipEntry.map(_.getName).contains("metadata.json")
-      }){}
-
-      val metadataBytes = StreamIO.buffer(packageZip).toByteArray
-      decode[universe.v3.model.Metadata](
-        new String(metadataBytes, StandardCharsets.UTF_8)
-      )
+        .next()
     } ensure packageZip.close()
   }
 
