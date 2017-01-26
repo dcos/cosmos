@@ -85,23 +85,27 @@ final class LocalObjectStorage private(storageDir: Path, scratchDir: Path, stats
       pool {
         val fullName = storageDir.resolve(name)
         if (Files.exists(fullName)) {
-          val pathsToDelete =
-            Iterator
-              .iterate(fullName)(_.getParent)
-              .takeWhile(_ != storageDir)
-              .toList
-
-          pathsToDelete.foldLeft(Try(())) { (status, path) =>
-            status.map{ _ =>
-              Files.deleteIfExists(path)
-              ()
-            }
-          }.handle {
-            case _: DirectoryNotEmptyException => ()
-          }.get()
+          deleteFileAndEmptyParents(fullName)
         }
       }
     }
+  }
+
+  private[this] def deleteFileAndEmptyParents(fullName: Path): Unit = {
+    val pathsToDelete =
+      Iterator
+        .iterate(fullName)(_.getParent)
+        .takeWhile(_ != storageDir)
+        .toList
+
+    pathsToDelete.foldLeft(Try(())) { (status, path) =>
+      status.map { _ =>
+        Files.deleteIfExists(path)
+        ()
+      }
+    }.handle {
+      case _: DirectoryNotEmptyException => ()
+    }.get()
   }
 
   override def list(directory: String): Future[LocalObjectStorage.ObjectList] = {
