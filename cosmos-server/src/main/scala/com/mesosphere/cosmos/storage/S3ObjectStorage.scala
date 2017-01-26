@@ -16,7 +16,6 @@ import com.twitter.finagle.stats.StatsReceiver
 import com.twitter.util.Future
 import com.twitter.util.FuturePool
 import java.io.InputStream
-
 import scala.collection.JavaConverters._
 import scala.collection.breakOut
 
