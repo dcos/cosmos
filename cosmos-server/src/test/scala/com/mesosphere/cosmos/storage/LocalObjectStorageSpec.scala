@@ -97,15 +97,13 @@ final class LocalObjectStorageSpec extends FreeSpec with PropertyChecks {
     }
   }
 
-  "write() must not change the case of paths" in {
+  "write() and read() must be case sensitive" in {
     val name1 = "B/nR/xyharPhq"
-    val name2 = "b/5nRzknggv/ilygo3oj"
     val badName1 = "b/nR/xyharphq"
     TestUtil.withLocalObjectStorage { localStorage =>
       Await.result {
         for {
           _ <- localStorage.write(name1, Array[Byte]())
-          _ <- localStorage.write(name2, Array[Byte]())
           itemAtBadName <- localStorage.readAsArray(badName1)
           _ <- Future(assertResult(None)(itemAtBadName))
         } yield ()
