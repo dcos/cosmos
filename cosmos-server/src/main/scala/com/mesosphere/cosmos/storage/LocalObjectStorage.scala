@@ -127,9 +127,9 @@ final class LocalObjectStorage private(storageDir: Path, scratchDir: Path, stats
     )
   }
 
-  override def getUrl(name: String): Option[Uri] = None
+  override def getUrl(name: String): Future[Option[Uri]] = Future.value(None)
 
-  def getCreationTime(name: String): Future[Option[Long]] = {
+  override def getCreationTime(name: String): Future[Option[Long]] = {
     pool {
       val absolutePath = storageDir.resolve(name)
       val attr = Try {

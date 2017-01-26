@@ -4,6 +4,7 @@ import com.amazonaws.services.s3.AmazonS3Client
 import com.amazonaws.services.s3.AmazonS3URI
 import com.amazonaws.services.s3.model.AmazonS3Exception
 import com.amazonaws.services.s3.model.CannedAccessControlList
+import com.amazonaws.services.s3.model.GetObjectMetadataRequest
 import com.amazonaws.services.s3.model.ListObjectsRequest
 import com.amazonaws.services.s3.model.ObjectListing
 import com.amazonaws.services.s3.model.ObjectMetadata
@@ -15,6 +16,7 @@ import com.twitter.finagle.stats.StatsReceiver
 import com.twitter.util.Future
 import com.twitter.util.FuturePool
 import java.io.InputStream
+
 import scala.collection.JavaConverters._
 import scala.collection.breakOut
 
@@ -61,7 +63,7 @@ final class S3ObjectStorage(
           Some(
             (
               MediaType.parse(result.getObjectMetadata.getContentType).get,
-              result.getObjectContent()
+              result.getObjectContent
             )
           )
         } catch {
@@ -112,16 +114,33 @@ final class S3ObjectStorage(
     }
   }
 
-  override def getUrl(name: String): Option[Uri] = {
+  override def getUrl(name: String): Future[Option[Uri]] = Future.value {
     Some(Uri(client.getUrl(bucket, fullPath(name)).toURI))
   }
 
+  override def getCreationTime(name: String): Future[Option[Long]] = {
+    Stat.timeFuture(stats.stat("getCreationTime")) {
+      pool {
+        try {
+          Some(
+            client
+              .getObjectMetadata(new GetObjectMetadataRequest(bucket, fullPath(name)))
+              .getLastModified
+              .getTime
+          )
+        } catch {
+          case e: AmazonS3Exception if e.getErrorCode == "NoSuchKey" =>
+            None
+        }
+      }
+    }
+  }
 
   private[this] def convertListResult(
     objectListing: ObjectListing
   ): S3ObjectStorage.ObjectList = {
     val listToken = if (objectListing.isTruncated) {
-      Some(new S3ObjectStorage.ListToken(objectListing))
+      Some(S3ObjectStorage.ListToken(objectListing))
     } else {
       None
     }
@@ -159,6 +178,7 @@ final class S3ObjectStorage(
       fullPath
     }
   }
+
 }
 
 object S3ObjectStorage {
