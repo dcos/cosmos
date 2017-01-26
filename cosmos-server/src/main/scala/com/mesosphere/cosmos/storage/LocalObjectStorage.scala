@@ -22,6 +22,7 @@ import java.nio.file.Path
 import java.nio.file.StandardCopyOption
 import java.nio.file.StandardOpenOption
 import java.nio.file.attribute.BasicFileAttributes
+import java.time.Instant
 import scala.collection.JavaConverters._
 import scala.collection.breakOut
 import scala.util.control.NonFatal
@@ -136,13 +137,13 @@ final class LocalObjectStorage private(storageDir: Path, scratchDir: Path, stats
 
   override def getUrl(name: String): Option[Uri] = None
 
-  override def getCreationTime(name: String): Future[Option[Long]] = {
+  override def getCreationTime(name: String): Future[Option[Instant]] = {
     pool {
       val absolutePath = storageDir.resolve(name)
       val attr = Try {
         Files.readAttributes(absolutePath, classOf[BasicFileAttributes])
       }
-      attr.toOption.map(_.creationTime().toMillis)
+      attr.toOption.map(_.creationTime().toInstant)
     }
   }
 

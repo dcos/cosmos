@@ -16,6 +16,8 @@ import com.twitter.finagle.stats.StatsReceiver
 import com.twitter.util.Future
 import com.twitter.util.FuturePool
 import java.io.InputStream
+import java.time.Instant
+
 import scala.collection.JavaConverters._
 import scala.collection.breakOut
 
@@ -117,15 +119,16 @@ final class S3ObjectStorage(
     Some(Uri(client.getUrl(bucket, fullPath(name)).toURI))
   }
 
-  override def getCreationTime(name: String): Future[Option[Long]] = {
+  override def getCreationTime(name: String): Future[Option[Instant]] = {
     Stat.timeFuture(stats.stat("getCreationTime")) {
       pool {
         try {
           Some(
-            client
-              .getObjectMetadata(new GetObjectMetadataRequest(bucket, fullPath(name)))
-              .getLastModified
-              .getTime
+            Instant.ofEpochMilli(
+              client
+                .getObjectMetadata(new GetObjectMetadataRequest(bucket, fullPath(name)))
+                .getLastModified.getTime
+            )
           )
         } catch {
           case e: AmazonS3Exception if e.getErrorCode == "NoSuchKey" =>

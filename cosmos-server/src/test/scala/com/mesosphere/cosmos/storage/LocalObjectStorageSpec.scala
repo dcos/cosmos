@@ -7,6 +7,7 @@ import com.twitter.io.StreamIO
 import com.twitter.util.Await
 import com.twitter.util.Future
 import java.io.ByteArrayInputStream
+import java.time.Instant
 import org.scalacheck.Arbitrary.arbitrary
 import org.scalacheck.Gen
 import org.scalatest.FreeSpec
@@ -145,14 +146,14 @@ final class LocalObjectStorageSpec extends FreeSpec with PropertyChecks {
     forAll(genPath, arbitrary[Array[Byte]]) { (path, dataToWrite) =>
       TestUtil.withLocalObjectStorage { localStorage =>
         Await.result {
-          val twoSeconds = 2000
+          val tolerance = 2L
           for {
-            timeBefore <- Future(System.currentTimeMillis() - twoSeconds)
+            timeBefore <- Future(Instant.now().minusSeconds(tolerance))
             _ <- localStorage.write(path, dataToWrite)
             creationTime <- localStorage.getCreationTime(path)
-            timeAfter <- Future(System.currentTimeMillis() + twoSeconds)
+            timeAfter <- Future(Instant.now().plusSeconds(tolerance))
             _ <- Future(assert(
-              timeBefore < creationTime.get && creationTime.get < timeAfter,
+              timeBefore.isBefore(creationTime.get) && timeAfter.isAfter(creationTime.get),
               List(timeBefore, creationTime, timeAfter)
             ))
           } yield ()

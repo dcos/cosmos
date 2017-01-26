@@ -10,6 +10,7 @@ import com.netaporter.uri.Uri
 import com.twitter.finagle.stats.StatsReceiver
 import com.twitter.util.Future
 import java.io.InputStream
+import java.time.Instant
 
 /**
  * General interface for storing and retrieving objects
@@ -76,7 +77,7 @@ trait ObjectStorage {
     * Gets the creation time of the object in the store. Returns None if the object does not
     * exist.
     */
-  def getCreationTime(name: String): Future[Option[Long]]
+  def getCreationTime(name: String): Future[Option[Instant]]
 }
 
 object ObjectStorage {
