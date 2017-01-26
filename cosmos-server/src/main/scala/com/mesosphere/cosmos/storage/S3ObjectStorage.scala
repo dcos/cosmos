@@ -113,7 +113,7 @@ final class S3ObjectStorage(
     }
   }
 
-  override def getUrl(name: String): Future[Option[Uri]] = Future.value {
+  override def getUrl(name: String): Option[Uri] = {
     Some(Uri(client.getUrl(bucket, fullPath(name)).toURI))
   }
 

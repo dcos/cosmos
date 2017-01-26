@@ -135,7 +135,7 @@ final class LocalObjectStorageSpec extends FreeSpec with PropertyChecks {
         Await.result {
           for {
             _ <- localStorage.write(path, dataToWrite)
-            url <- localStorage.getUrl(path)
+            url <- Future(localStorage.getUrl(path))
             _ <- Future(assertResult(None)(url))
           } yield ()
         }

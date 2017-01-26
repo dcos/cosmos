@@ -70,7 +70,7 @@ trait ObjectStorage {
   /**
    * Get the URL for an object if the backing store supports it.
    */
-  def getUrl(name: String): Future[Option[Uri]]
+  def getUrl(name: String): Option[Uri]
 
   /**
     * Gets the creation time of the object in the store. Returns None if the object does not

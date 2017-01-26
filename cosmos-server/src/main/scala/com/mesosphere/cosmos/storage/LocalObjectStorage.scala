@@ -134,7 +134,7 @@ final class LocalObjectStorage private(storageDir: Path, scratchDir: Path, stats
     )
   }
 
-  override def getUrl(name: String): Future[Option[Uri]] = Future.value(None)
+  override def getUrl(name: String): Option[Uri] = None
 
   override def getCreationTime(name: String): Future[Option[Long]] = {
     pool {
