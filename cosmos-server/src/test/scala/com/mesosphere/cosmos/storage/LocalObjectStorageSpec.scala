@@ -219,7 +219,7 @@ object LocalObjectStorageSpec {
     }
   }
 
-  implicit class ObjectStorageNoStreams(objectStorage: LocalObjectStorage) {
+  implicit class ObjectStorageNoStreams(val objectStorage: LocalObjectStorage) extends AnyVal {
 
     def write(name: String, content: Array[Byte], mediaType: Option[MediaType] = None): Future[Unit] = {
       val body = new ByteArrayInputStream(content)
