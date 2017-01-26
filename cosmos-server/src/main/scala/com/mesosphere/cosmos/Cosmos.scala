@@ -27,6 +27,7 @@ import com.mesosphere.cosmos.storage.ObjectStorage
 import com.mesosphere.cosmos.storage.PackageObjectStorage
 import com.mesosphere.cosmos.storage.StagedPackageStorage
 import com.mesosphere.cosmos.storage.installqueue.InstallQueue
+import com.mesosphere.cosmos.storage.installqueue.ReaderView
 import com.mesosphere.universe
 import com.netaporter.uri.Uri
 import com.twitter.app.App
@@ -282,8 +283,6 @@ with Logging {
     val zkUri = zookeeperUri()
     logger.info("Using {} for the ZooKeeper connection", zkUri)
 
-    val objectStorages = configureObjectStorage()
-
     val zkClient = zookeeper.Clients.createAndInitialize(zkUri)
     onExit(zkClient.close())
 
@@ -292,6 +291,8 @@ with Logging {
 
     val installQueue = InstallQueue(zkClient)
     onExit(installQueue.close())
+
+    val objectStorages = configureObjectStorage(installQueue)
 
     for ((pkgStorage, stageStorage, localPackageCollection) <- objectStorages) {
       val processingLeader = SyncFutureLeader(
@@ -360,6 +361,7 @@ with Logging {
   }
 
   private[this] def configureObjectStorage(
+    installQueue: ReaderView
   )(
     implicit statsReceiver: StatsReceiver
   ): Option[(PackageObjectStorage, StagedPackageStorage, LocalPackageCollection)] = {
@@ -377,7 +379,7 @@ with Logging {
       fromFlag(stagedPackageStorageUri, "staged package").map(StagedPackageStorage(_))
     ) match {
       case (Some(pkgStorage), Some(stagedStorage)) =>
-        Some((pkgStorage, stagedStorage, LocalPackageCollection(pkgStorage)))
+        Some((pkgStorage, stagedStorage, LocalPackageCollection(pkgStorage, installQueue)))
       case (None, None) =>
         None
       case (Some(_), None) =>

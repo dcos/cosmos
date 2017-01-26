@@ -5,14 +5,37 @@ import com.mesosphere.cosmos.VersionNotFound
 import com.mesosphere.cosmos.rpc
 import com.mesosphere.cosmos.search.searchForPackages
 import com.mesosphere.cosmos.storage.PackageObjectStorage
+import com.mesosphere.cosmos.storage.installqueue.ReaderView
+import com.mesosphere.cosmos.storage
 import com.mesosphere.universe
 import com.twitter.util.Future
 
-// TODO (devflow) (jsancio): Make sure that we look at the operation store
-final class LocalPackageCollection private (objectStorage: PackageObjectStorage) {
+final class LocalPackageCollection private (
+  objectStorage: PackageObjectStorage,
+  installQueue: ReaderView
+) {
+
   // Used by list
   final def list(): Future[List[rpc.v1.model.LocalPackage]] = {
-    objectStorage.list().map(_.sorted.reverse)
+    for {
+      operatingPackages <- installQueue.viewStatus()
+      storedPackages <- objectStorage.list()
+    } yield {
+      val pendingLocalPackages = operatingPackages.mapValues(
+        LocalPackageCollection.operationStatusToLocalPackage
+      )
+
+      val result = storedPackages.foldLeft(pendingLocalPackages) { (acc, pkg) =>
+        if (acc.contains(pkg.packageCoordinate)) {
+          // Operation queue takes precedence over object storage in the case of conflict
+          acc
+        } else {
+          acc + (pkg.packageCoordinate -> pkg)
+        }
+      }
+
+      result.values.toList.sorted.reverse
+    }
   }
 
   // Used by uninstall and render
@@ -55,8 +78,11 @@ final class LocalPackageCollection private (objectStorage: PackageObjectStorage)
 }
 
 object LocalPackageCollection {
-  def apply(objectStorage: PackageObjectStorage): LocalPackageCollection = {
-    new LocalPackageCollection(objectStorage)
+  def apply(
+    objectStorage: PackageObjectStorage,
+    installQueue: ReaderView
+  ): LocalPackageCollection = {
+    new LocalPackageCollection(objectStorage, installQueue)
   }
 
   def installedPackage(
@@ -109,5 +135,18 @@ object LocalPackageCollection {
         // Didn't find the package
         throw PackageNotFound(packageName)
     }
+  }
+
+  def operationStatusToLocalPackage(
+    status: storage.v1.model.OperationStatus
+  ): rpc.v1.model.LocalPackage = status match {
+    case storage.v1.model.PendingStatus(storage.v1.model.Install(_, pkg), _) =>
+      rpc.v1.model.Installing(pkg)
+    case storage.v1.model.PendingStatus(storage.v1.model.UniverseInstall(pkg), _) =>
+      rpc.v1.model.Installing(pkg)
+    case storage.v1.model.PendingStatus(storage.v1.model.Uninstall(pkg), _) =>
+      rpc.v1.model.Uninstalling(Right(pkg))
+    case storage.v1.model.FailedStatus(storage.v1.model.OperationFailure(ops, error)) =>
+      rpc.v1.model.Failed(ops, error)
   }
 }
