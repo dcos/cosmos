@@ -92,7 +92,10 @@ final class LocalObjectStorage private(storageDir: Path, scratchDir: Path, stats
               .toList
 
           pathsToDelete.foldLeft(Try(())) { (status, path) =>
-            status.map{ _ => Files.deleteIfExists(path); ()}
+            status.map{ _ =>
+              Files.deleteIfExists(path)
+              ()
+            }
           }.handle {
             case _: DirectoryNotEmptyException => ()
           }.get()
