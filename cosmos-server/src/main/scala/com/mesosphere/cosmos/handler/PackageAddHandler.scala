@@ -42,6 +42,7 @@ final class PackageAddHandler(
             case (v3Package: universe.v3.model.V3Package, _) =>
               UniverseInstall(v3Package)
             case _ =>
+              // TODO: This returns a 500 we should create a different error that makes it a 4xx
               throw new UnsupportedOperationException("Adding a package with packagingVersion 2.0")
           }
       case rpc.v1.model.UploadAddRequest(packageData) =>
