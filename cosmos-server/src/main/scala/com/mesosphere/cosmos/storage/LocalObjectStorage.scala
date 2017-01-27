@@ -136,10 +136,16 @@ final class LocalObjectStorage private(storageDir: Path, scratchDir: Path, stats
   override def getCreationTime(name: String): Future[Option[Instant]] = {
     pool {
       val absolutePath = storageDir.resolve(name)
-      val attr = Try {
-        Files.readAttributes(absolutePath, classOf[BasicFileAttributes])
+      try {
+        val creationTime =
+          Files
+          .readAttributes(absolutePath, classOf[BasicFileAttributes])
+          .creationTime
+          .toInstant
+        Some(creationTime)
+      } catch {
+        case _: NoSuchFileException => None
       }
-      attr.toOption.map(_.creationTime().toInstant)
     }
   }
 

@@ -142,7 +142,7 @@ final class LocalObjectStorageSpec extends FreeSpec with PropertyChecks {
     }
   }
 
-  "getCreationTime returns the time the object was created" in {
+  "getCreationTime() returns the time the object was created" in {
     forAll(genPath, arbitrary[Array[Byte]]) { (path, dataToWrite) =>
       TestUtil.withLocalObjectStorage { localStorage =>
         Await.result {
@@ -156,6 +156,19 @@ final class LocalObjectStorageSpec extends FreeSpec with PropertyChecks {
               timeBefore.isBefore(creationTime.get) && timeAfter.isAfter(creationTime.get),
               List(timeBefore, creationTime, timeAfter)
             ))
+          } yield ()
+        }
+      }
+    }
+  }
+
+  "getCreationTime() return none in the file does not exist" in {
+    forAll(genPath) { path =>
+      TestUtil.withLocalObjectStorage { localStorage =>
+        Await.result {
+          for {
+            creationTime <- localStorage.getCreationTime(path)
+            _ <- Future(assertResult(None)(creationTime))
           } yield ()
         }
       }
