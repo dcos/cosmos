@@ -1,11 +1,14 @@
 package com.mesosphere.cosmos.repository
 
 import com.mesosphere.Generators.genV3Package
+import com.mesosphere.cosmos.rpc
+import com.mesosphere.cosmos.storage
 import com.mesosphere.cosmos.storage.PackageObjectStorage
 import com.mesosphere.cosmos.storage.StagedPackageStorage
 import com.mesosphere.cosmos.test.TestUtil
 import com.mesosphere.universe.v3.syntax.PackageDefinitionOps._
 import com.twitter.util.Await
+import com.twitter.util.Future
 import java.util.UUID
 import org.scalatest.FreeSpec
 import org.scalatest.Matchers
@@ -19,7 +22,7 @@ final class DefaultInstallerSpec extends FreeSpec with Matchers with PropertyChe
         val adder = DefaultInstaller(
           StagedPackageStorage(tempObjectStorage),
           packageObjectStorage,
-          LocalPackageCollection(packageObjectStorage)
+          LocalPackageCollection(packageObjectStorage, TestUtil.EmptyReaderView)
         )
 
         val _ = Await.result(
@@ -46,7 +49,7 @@ final class DefaultInstallerSpec extends FreeSpec with Matchers with PropertyChe
           val adder = DefaultInstaller(
             StagedPackageStorage(tempObjectStorage),
             packageObjectStorage,
-            LocalPackageCollection(packageObjectStorage)
+            LocalPackageCollection(packageObjectStorage, TestUtil.EmptyReaderView)
           )
 
           val _ = Await.result(

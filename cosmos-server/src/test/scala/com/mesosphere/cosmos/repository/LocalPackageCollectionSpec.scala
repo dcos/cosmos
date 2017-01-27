@@ -104,7 +104,7 @@ final class LocalPackageCollectionSpec extends FreeSpec with Matchers {
 
   "Test all of the read operations" in TestUtil.withObjectStorage { objectStorage =>
     val packageStorage = PackageObjectStorage(objectStorage)
-    val packageCollection = LocalPackageCollection(packageStorage)
+    val packageCollection = LocalPackageCollection(packageStorage, TestUtil.EmptyReaderView)
 
     val _ = Await.result(
       Future.collect(
