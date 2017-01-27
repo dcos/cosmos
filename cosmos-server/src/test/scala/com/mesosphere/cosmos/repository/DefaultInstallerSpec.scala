@@ -21,8 +21,7 @@ final class DefaultInstallerSpec extends FreeSpec with Matchers with PropertyChe
         val packageObjectStorage = PackageObjectStorage(objectStorage)
         val adder = DefaultInstaller(
           StagedPackageStorage(tempObjectStorage),
-          packageObjectStorage,
-          LocalPackageCollection(packageObjectStorage, TestUtil.EmptyReaderView)
+          packageObjectStorage
         )
 
         val _ = Await.result(
@@ -48,8 +47,7 @@ final class DefaultInstallerSpec extends FreeSpec with Matchers with PropertyChe
           val packageObjectStorage = PackageObjectStorage(objectStorage)
           val adder = DefaultInstaller(
             StagedPackageStorage(tempObjectStorage),
-            packageObjectStorage,
-            LocalPackageCollection(packageObjectStorage, TestUtil.EmptyReaderView)
+            packageObjectStorage
           )
 
           val _ = Await.result(

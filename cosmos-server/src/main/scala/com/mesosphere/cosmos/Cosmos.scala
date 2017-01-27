@@ -294,13 +294,13 @@ with Logging {
 
     val objectStorages = configureObjectStorage(installQueue)
 
-    for ((pkgStorage, stageStorage, localPackageCollection) <- objectStorages) {
+    for ((pkgStorage, stageStorage, _) <- objectStorages) {
       val processingLeader = SyncFutureLeader(
         zkClient,
         OperationProcessor(
           installQueue,
-          DefaultInstaller(stageStorage, pkgStorage, localPackageCollection),
-          DefaultUniverseInstaller(pkgStorage, localPackageCollection),
+          DefaultInstaller(stageStorage, pkgStorage),
+          DefaultUniverseInstaller(pkgStorage),
           Uninstaller.Noop
         )
       )
