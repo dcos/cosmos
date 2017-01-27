@@ -97,16 +97,12 @@ final class LocalObjectStorage private(storageDir: Path, scratchDir: Path, stats
       Iterator
         .iterate(fullName)(_.getParent)
         .takeWhile(_ != storageDir)
-        .toList
 
-    pathsToDelete.foldLeft(Try(())) { (status, path) =>
-      status.map { _ =>
-        Files.deleteIfExists(path)
-        ()
-      }
-    }.handle {
+    try {
+      pathsToDelete.foreach(Files.deleteIfExists)
+    } catch {
       case _: DirectoryNotEmptyException => ()
-    }.get()
+    }
   }
 
   override def list(directory: String): Future[LocalObjectStorage.ObjectList] = {
