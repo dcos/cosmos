@@ -185,7 +185,6 @@ object LocalObjectStorageSpec {
 
   def isValidPath(s: String): Boolean =
     s.nonEmpty &&
-      !s.forall(_ == '/') &&
       !s.startsWith("/") &&
       !s.contains("//") &&
       !s.endsWith("/")
