@@ -25,14 +25,9 @@ final class LocalPackageCollection private (
         LocalPackageCollection.operationStatusToLocalPackage
       )
 
-      val result = storedPackages.foldLeft(pendingLocalPackages) { (acc, pkg) =>
-        if (acc.contains(pkg.packageCoordinate)) {
-          // Operation queue takes precedence over object storage in the case of conflict
-          acc
-        } else {
-          acc + (pkg.packageCoordinate -> pkg)
-        }
-      }
+      // Operation queue takes precedence over object storage in the case of conflict
+      val result = storedPackages.map(pkg => pkg.packageCoordinate -> pkg).toMap ++
+        pendingLocalPackages
 
       result.values.toList.sorted.reverse
     }
