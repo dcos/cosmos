@@ -2,7 +2,6 @@ package com.mesosphere.cosmos
 
 import com.mesosphere.cosmos.storage.PackageObjectStorage
 import com.mesosphere.universe
-import com.mesosphere.universe.v3.syntax.PackageDefinitionOps._
 import com.twitter.util.Future
 import com.twitter.util.Return
 import com.twitter.util.Throw
@@ -27,14 +26,18 @@ package object repository {
 
   // TODO package-add: Need tests for error cases
   def installV3Package(
-    localPackageCollection: LocalPackageCollection,
     packageObjectStorage: PackageObjectStorage
-  )(pkg: universe.v3.model.V3Package): Future[Unit] = {
-    val packageCoordinate = pkg.packageCoordinate
-    localPackageCollection.getInstalledPackage(
-      packageCoordinate.name,
-      Some(packageCoordinate.version)
-    ).transform {
+  )(
+    pkg: universe.v3.model.V3Package
+  ): Future[Unit] = {
+
+    packageObjectStorage.list().map { packages =>
+      LocalPackageCollection.installedPackage(
+        packages,
+        pkg.name,
+        Some(pkg.version)
+      )
+    }.transform {
       case Throw(VersionNotFound(_, _)) | Throw(PackageNotFound(_)) =>
         // Put the PackageDefinition in the package object storage.
         packageObjectStorage.writePackageDefinition(pkg)

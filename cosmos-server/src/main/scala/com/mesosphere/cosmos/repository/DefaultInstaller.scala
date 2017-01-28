@@ -8,11 +8,10 @@ import java.util.UUID
 
 final class DefaultInstaller private (
   stageObjectStorage: StagedPackageStorage,
-  packageObjectStorage: PackageObjectStorage,
-  localPackageCollection: LocalPackageCollection
+  packageObjectStorage: PackageObjectStorage
 ) extends Installer {
 
-  private[this] val install = installV3Package(localPackageCollection, packageObjectStorage) _
+  private[this] val install = installV3Package(packageObjectStorage) _
 
   def apply(uri: UUID, pkg: universe.v3.model.V3Package): Future[Unit] = install(pkg)
 
@@ -21,11 +20,9 @@ final class DefaultInstaller private (
 object DefaultInstaller {
   def apply(
     stageObjectStorage: StagedPackageStorage,
-    packageObjectStorage: PackageObjectStorage,
-    localPackageCollection: LocalPackageCollection
+    packageObjectStorage: PackageObjectStorage
   ): DefaultInstaller = new DefaultInstaller(
     stageObjectStorage,
-    packageObjectStorage,
-    localPackageCollection
+    packageObjectStorage
   )
 }

@@ -3,15 +3,21 @@ package com.mesosphere.cosmos.rpc.v1.model
 import com.mesosphere.cosmos.storage.v1.model.Operation
 import com.mesosphere.universe
 import com.mesosphere.universe.v3.syntax.PackageDefinitionOps._
-import scala.util.Either
-import scala.util.Left
-import scala.util.Right
 
 sealed trait LocalPackage
 
 object LocalPackage {
 
   implicit class LocalPackageOps(val value: LocalPackage) extends AnyVal {
+    def packageCoordinate: PackageCoordinate = value match {
+      case Invalid(_, pc) => pc
+      case NotInstalled(pkg) => pkg.packageCoordinate
+      case Installed(pkg) => pkg.packageCoordinate
+      case Installing(pkg) => pkg.packageCoordinate
+      case Uninstalling(Left(pc)) => pc
+      case Uninstalling(Right(pkg)) => pkg.packageCoordinate
+      case Failed(op, _) => op.v3Package.packageCoordinate
+    }
 
     def metadata: Either[PackageCoordinate, universe.v3.model.V3Package] = value match {
       case Invalid(_, pc) => Left(pc)
@@ -115,6 +121,7 @@ final case class Uninstalling(
   data: Either[PackageCoordinate, universe.v3.model.V3Package]
 ) extends LocalPackage
 
+// TODO: We shouldn't return Operation. It contains stagedPackageId which is useless to the client
 final case class Failed(
   operation: Operation,
   error: ErrorResponse
