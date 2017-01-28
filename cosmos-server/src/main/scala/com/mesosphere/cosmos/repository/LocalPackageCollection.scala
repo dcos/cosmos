@@ -132,7 +132,7 @@ object LocalPackageCollection {
     }
   }
 
-  def operationStatusToLocalPackage(
+  private def operationStatusToLocalPackage(
     status: storage.v1.model.OperationStatus
   ): rpc.v1.model.LocalPackage = status match {
     case storage.v1.model.PendingStatus(storage.v1.model.Install(_, pkg), _) =>
