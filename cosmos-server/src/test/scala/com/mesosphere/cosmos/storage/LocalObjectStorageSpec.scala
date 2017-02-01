@@ -142,7 +142,8 @@ final class LocalObjectStorageSpec extends FreeSpec with PropertyChecks {
     forAll(genObjectStorageItemPairAndSharedParents) { case (parents, item1, item2) =>
       TestUtil.withLocalObjectStorage { storage =>
         val objects = Await.result {
-          storage.writeAll(List(item1, item2)) before
+          (storage.writeAll(List(item1, item2)) before
+            storage.delete(item1.name)) before
             storage.list(parents)
         }
         assert(objects.directories.length.toInt == 1 || objects.objects.length.toInt == 1)
@@ -225,11 +226,16 @@ object LocalObjectStorageSpec {
 
   val genPathPairAndSharedParents: Gen[(String, String, String)] = {
     val halfSize = 5
-    for {
+    val generator = for {
       parents <- genPath(halfSize)
       first <- genPath(halfSize)
       second <- genPath(halfSize).suchThat(_ != first)
     } yield (parents, parents + "/" + first, parents + "/" + second)
+
+    generator.suchThat {
+      case (parent, first, second) =>
+        pathsConflict(List(parent, first)) && pathsConflict(List(parent, second))
+    }
   }
 
   val genMediaType: Gen[MediaType] = {
@@ -251,7 +257,7 @@ object LocalObjectStorageSpec {
   }
 
   val genObjectStorageItemPairAndSharedParents: Gen[(String, ObjectStorageItem, ObjectStorageItem)] = {
-    for {
+    val generator = for {
       (parents, path1, path2) <- genPathPairAndSharedParents
       data1 <- arbitrary[Array[Byte]]
       data2 <- arbitrary[Array[Byte]]
@@ -261,6 +267,11 @@ object LocalObjectStorageSpec {
       val item1 = ObjectStorageItem(path1, data1, mediaType1)
       val item2 = ObjectStorageItem(path2, data2, mediaType2)
       (parents, item1, item2)
+    }
+
+    generator.suchThat {
+      case (parent, first, second) =>
+        pathsConflict(List(parent, first.name)) && pathsConflict(List(parent, second.name))
     }
   }
 
