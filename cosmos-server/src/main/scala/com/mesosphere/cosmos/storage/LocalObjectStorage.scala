@@ -85,9 +85,7 @@ final class LocalObjectStorage private(storageDir: Path, scratchDir: Path, stats
     Stat.timeFuture(stats.stat("delete")) {
       pool {
         val fullName = storageDir.resolve(name)
-        if (Files.exists(fullName)) {
-          deleteFileAndEmptyParents(fullName)
-        }
+        deleteFileAndEmptyParents(fullName)
       }
     }
   }
