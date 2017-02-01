@@ -138,7 +138,7 @@ final class LocalObjectStorageSpec extends FreeSpec with PropertyChecks {
     }
   }
 
-  "delete() does not delete any other elements parents" in {
+  "delete() does not delete any other object's parents" in {
     forAll(genObjectStorageItemPairAndSharedParents) { case (parents, item1, item2) =>
       TestUtil.withLocalObjectStorage { storage =>
         val objects = Await.result {
@@ -182,7 +182,7 @@ final class LocalObjectStorageSpec extends FreeSpec with PropertyChecks {
     }
   }
 
-  "getCreationTime() return none in the file does not exist" in {
+  "getCreationTime() returns None if object does not exist" in {
     forAll(genPath) { name =>
       TestUtil.withLocalObjectStorage { storage =>
         val creationTime = Await.result {
