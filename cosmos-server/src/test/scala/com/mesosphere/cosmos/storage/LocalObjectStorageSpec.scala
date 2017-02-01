@@ -17,160 +17,177 @@ final class LocalObjectStorageSpec extends FreeSpec with PropertyChecks {
 
   import LocalObjectStorageSpec._
 
-  "read() on a nonexistent file returns Future(None)" in {
-    forAll(genPath) { path =>
-      TestUtil.withLocalObjectStorage { localStorage =>
-        assertResult(None) {
-          Await.result(localStorage.read(path))
+  "read() must observe None on a nonexistent object" in {
+    forAll(genObjectStorageState, genPath) { (state, path) =>
+      whenever(!state.map(_.name).contains(path)) {
+        TestUtil.withLocalObjectStorage { storage =>
+          val nonexistentRead = Await.result {
+            storage.writeAll(state) before
+              storage.read(path)
+          }
+          assertResult(None)(nonexistentRead)
         }
       }
     }
   }
 
-  "read() cannot observe partial writes to a file" in {
-    forAll(genPath, arbitrary[Array[Byte]]) { (path, dataToWrite) =>
-      TestUtil.withLocalObjectStorage { localStorage =>
-        val writeOp = localStorage.write(path, dataToWrite)
-        val readOp = TestUtil.eventualFuture(() => localStorage.readAsArray(path))
+  "read() must observe write() content" in {
+    forAll(genNonEmptyObjectStorageState) { state =>
+      TestUtil.withLocalObjectStorage { storage =>
+        val someItem = state.head
+        val Some((_, dataFromRead)) = Await.result {
+          storage.writeAll(state) before
+            storage.readAsArray(someItem.name)
+        }
+        assertResult(someItem.content)(dataFromRead)
+      }
+    }
+  }
+
+  "read() must observe applicationOctetStream as mediaType on a write() where no mediaType is given" in {
+    forAll(genObjectStorageItem.suchThat(_.mediaType.isEmpty)) { item =>
+      TestUtil.withLocalObjectStorage { storage =>
+        val Some((mediaTypeFromRead, _)) = Await.result {
+          storage.write(item.name, item.content) before
+            storage.readAsArray(item.name)
+        }
+        assertResult(MediaTypes.applicationOctetStream)(mediaTypeFromRead)
+      }
+    }
+  }
+
+  "read() must observe write() mediaType" in {
+    forAll(genNonEmptyObjectStorageState) { state =>
+      TestUtil.withLocalObjectStorage { storage =>
+        val someItem = state.head
+        val Some((mediaTypeFromRead, _)) = Await.result {
+          storage.writeAll(state) before
+            storage.readAsArray(someItem.name)
+        }
+        val mediaTypeWritten = getMediaTypeWritten(someItem.mediaType)
+        assertResult(mediaTypeWritten)(mediaTypeFromRead)
+      }
+    }
+  }
+
+  "read() cannot observe partial write() content" in {
+    forAll(genNonEmptyObjectStorageState) { state =>
+      TestUtil.withLocalObjectStorage { storage =>
+        val someItem = state.head
+        val writeOp = storage.writeAll(state)
+        val readOp = TestUtil.eventualFuture(() => storage.readAsArray(someItem.name))
         val (_, (_, dataFromRead)) = Await.result(writeOp.join(readOp))
-        assertResult(dataToWrite)(dataFromRead)
+        assertResult(someItem.content)(dataFromRead)
       }
     }
   }
 
-  "read() on a deleted file returns Future(None)" in {
-    forAll(genPath, arbitrary[Array[Byte]]) { (path, dataToWrite) =>
-      TestUtil.withLocalObjectStorage { localStorage =>
-        Await.result {
-          for {
-            _ <- localStorage.write(path, dataToWrite)
-            Some((_, dataFromRead)) <- localStorage.readAsArray(path)
-            _ <- Future(assertResult(dataToWrite)(dataFromRead))
-            _ <- localStorage.delete(path)
-            failedRead <- localStorage.readAsArray(path)
-            _ <- Future(assertResult(None)(failedRead))
-          } yield ()
+  "read() cannot observe partial write() mediaType" in {
+    forAll(genNonEmptyObjectStorageState) { state =>
+      TestUtil.withLocalObjectStorage { storage =>
+        val someItem = state.head
+        val writeOp = storage.writeAll(state)
+        val readOp = TestUtil.eventualFuture(() => storage.readAsArray(someItem.name))
+        val (_, (mediaTypeFromRead, _)) = Await.result(writeOp.join(readOp))
+        val mediaTypeWritten = getMediaTypeWritten(someItem.mediaType)
+        assertResult(mediaTypeWritten)(mediaTypeFromRead)
+      }
+    }
+  }
+
+  "read() must observe None on a delete()-ed object" in {
+    forAll(genNonEmptyObjectStorageState) { state =>
+      TestUtil.withLocalObjectStorage { storage =>
+        val someItem = state.head
+        val readResult = Await.result {
+          storage.writeAll(state).before(
+            storage.delete(someItem.name)).before(
+            storage.readAsArray(someItem.name))
         }
+        assertResult(None)(readResult)
       }
     }
   }
 
-  "read() returns the previously written MediaType" in {
-    forAll(genPath, arbitrary[Array[Byte]], genMediaType) { (path, dataToWrite, mediaTypeToWrite) =>
-      TestUtil.withLocalObjectStorage { localStorage =>
-        Await.result {
-          for {
-            _ <- localStorage.write(path, dataToWrite, Some(mediaTypeToWrite))
-            Some((mediaTypeFromRead, _)) <- localStorage.readAsArray(path)
-            _ <- Future(assertResult(mediaTypeToWrite)(mediaTypeFromRead))
-          } yield ()
-        }
-      }
-    }
-  }
-
-  "write() stores applicationOctetStream as default MediaType" in {
-    forAll(genPath, arbitrary[Array[Byte]]) { (path, dataToWrite) =>
-      TestUtil.withLocalObjectStorage { localStorage =>
-        Await.result {
-          for {
-            _ <- localStorage.write(path, dataToWrite)
-            Some((mediaType, _)) <- localStorage.readAsArray(path)
-            _ <- Future(assertResult(MediaTypes.applicationOctetStream)(mediaType))
-          } yield ()
+  "read() and write() must be case sensitive" in {
+    forAll(genNonEmptyObjectStorageState) { state =>
+      val someItem = state.head
+      val badName = someItem.name.toLowerCase
+      whenever(!state.map(_.name).contains(badName)) {
+        TestUtil.withLocalObjectStorage { storage =>
+          val readResult = Await.result {
+            storage.writeAll(state).before(
+              storage.readAsArray(badName))
+          }
+          assertResult(None)(readResult)
         }
       }
     }
   }
 
   "delete() removes all empty parent directories" in {
-    forAll(genObjectStorageState) { objectStorageState =>
-      TestUtil.withLocalObjectStorage { localStorage =>
-        Await.result {
-          for {
-            _ <- localStorage.writeAll(objectStorageState)
-            _ <- localStorage.deleteAll(objectStorageState.map(_.name))
-            objects <- localStorage.list("")
-            _ <- Future(assertResult(List())(objects.directories))
-          } yield ()
+    forAll(genObjectStorageState) { state =>
+      TestUtil.withLocalObjectStorage { storage =>
+        val objects = Await.result {
+          storage.writeAll(state).before(
+            storage.deleteAll(state.map(_.name)).before(
+              storage.list("")))
         }
+        assertResult(List())(objects.directories)
       }
     }
   }
 
-  "write() and read() must be case sensitive" in {
-    val name1 = "B/nR/xyharPhq"
-    val badName1 = "b/nR/xyharphq"
-    TestUtil.withLocalObjectStorage { localStorage =>
-      Await.result {
-        for {
-          _ <- localStorage.write(name1, Array[Byte]())
-          itemAtBadName <- localStorage.readAsArray(badName1)
-          _ <- Future(assertResult(None)(itemAtBadName))
-        } yield ()
+  "delete() does not delete any other elements parents" in {
+    forAll(genObjectStorageItemPairAndSharedParents) { case (parents, item1, item2) =>
+      TestUtil.withLocalObjectStorage { storage =>
+        val objects = Await.result {
+          storage.writeAll(List(item1, item2)) before
+            storage.list(parents)
+        }
+        assert(objects.directories.length.toInt == 1 || objects.objects.length.toInt == 1)
       }
     }
   }
 
   "list() returns all objects written" in {
-    forAll(genObjectStorageState) { objectStorageState =>
-      TestUtil.withLocalObjectStorage { localStorage =>
-        Await.result {
-          val namesToWrite = objectStorageState.map(_.name)
-          for {
-            _ <- localStorage.writeAll(objectStorageState)
-            namesInStorage <- localStorage.listAll("")
-            _ <- Future(assertResult(namesToWrite.sorted)(namesInStorage.sorted))
-            _ <- localStorage.deleteAll(objectStorageState.map(_.name))
-          } yield ()
-        }
-      }
-    }
-  }
-
-  "getUrl() return None for all objects" in {
-    forAll(genPath, arbitrary[Array[Byte]]) { (path, dataToWrite) =>
-      TestUtil.withLocalObjectStorage { localStorage =>
-        Await.result {
-          for {
-            _ <- localStorage.write(path, dataToWrite)
-            url <- Future(localStorage.getUrl(path))
-            _ <- Future(assertResult(None)(url))
-          } yield ()
-        }
+    forAll(genObjectStorageState) { state =>
+      TestUtil.withLocalObjectStorage { storage =>
+        val namesInStorage = Await.result {
+          storage.writeAll(state) before
+            storage.listAll("")
+        }.sorted
+        val namesWritten = state.map(_.name).sorted
+        assertResult(namesWritten)(namesInStorage)
       }
     }
   }
 
   "getCreationTime() returns the time the object was created" in {
-    forAll(genPath, arbitrary[Array[Byte]]) { (path, dataToWrite) =>
-      TestUtil.withLocalObjectStorage { localStorage =>
-        Await.result {
-          val tolerance = 2L
-          for {
-            timeBefore <- Future(Instant.now().minusSeconds(tolerance))
-            _ <- localStorage.write(path, dataToWrite)
-            creationTime <- localStorage.getCreationTime(path)
-            timeAfter <- Future(Instant.now().plusSeconds(tolerance))
-            _ <- Future(assert(
-              timeBefore.isBefore(creationTime.get) && timeAfter.isAfter(creationTime.get),
-              List(timeBefore, creationTime, timeAfter)
-            ))
-          } yield ()
+    forAll(genObjectStorageItem) { item =>
+      TestUtil.withLocalObjectStorage { storage =>
+        val tolerance = 2L
+        val timeBefore = Instant.now().minusSeconds(tolerance)
+        val creationTime = Await.result {
+          storage.write(item.name, item.content) before
+            storage.getCreationTime(item.name)
         }
+        val timeAfter = Instant.now().plusSeconds(tolerance)
+        assert(
+          timeBefore.isBefore(creationTime.get) && timeAfter.isAfter(creationTime.get),
+          List(timeBefore, creationTime, timeAfter)
+        )
       }
     }
   }
 
   "getCreationTime() return none in the file does not exist" in {
-    forAll(genPath) { path =>
-      TestUtil.withLocalObjectStorage { localStorage =>
-        Await.result {
-          for {
-            creationTime <- localStorage.getCreationTime(path)
-            _ <- Future(assertResult(None)(creationTime))
-          } yield ()
+    forAll(genPath) { name =>
+      TestUtil.withLocalObjectStorage { storage =>
+        val creationTime = Await.result {
+          storage.getCreationTime(name)
         }
+        assertResult(None)(creationTime)
       }
     }
   }
@@ -183,8 +200,7 @@ object LocalObjectStorageSpec {
 
   type ObjectStorageState = List[ObjectStorageItem]
 
-  val genPath: Gen[String] = {
-    val maxSegments = 10
+  def genPath(maxSegments: Int): Gen[String] = {
     val maxSegmentLength = 10
     val genSegment = Gen.choose(1, maxSegmentLength)
       .flatMap(Gen.buildableOfN[String, Char](_, Gen.alphaNumChar))
@@ -202,6 +218,20 @@ object LocalObjectStorageSpec {
       !s.contains("//") &&
       !s.endsWith("/")
 
+  val genPath: Gen[String] = {
+    val maxSegments = 10
+    genPath(maxSegments)
+  }
+
+  val genPathPairAndSharedParents: Gen[(String, String, String)] = {
+    val halfSize = 5
+    for {
+      parents <- genPath(halfSize)
+      first <- genPath(halfSize)
+      second <- genPath(halfSize).suchThat(_ != first)
+    } yield (parents, parents + "/" + first, parents + "/" + second)
+  }
+
   val genMediaType: Gen[MediaType] = {
     val mediaTypes = Array(
       MediaTypes.applicationJson,
@@ -209,7 +239,7 @@ object LocalObjectStorageSpec {
       MediaTypes.OperationStatus,
       MediaTypes.RepositoryList
     )
-    Gen.choose(0, mediaTypes.length - 1).map(mediaTypes)
+    Gen.oneOf(mediaTypes)
   }
 
   val genObjectStorageItem: Gen[ObjectStorageItem] = {
@@ -220,17 +250,41 @@ object LocalObjectStorageSpec {
     } yield ObjectStorageItem(path, data, mediaType)
   }
 
+  val genObjectStorageItemPairAndSharedParents: Gen[(String, ObjectStorageItem, ObjectStorageItem)] = {
+    for {
+      (parents, path1, path2) <- genPathPairAndSharedParents
+      data1 <- arbitrary[Array[Byte]]
+      data2 <- arbitrary[Array[Byte]]
+      mediaType1 <- Gen.option(genMediaType)
+      mediaType2 <- Gen.option(genMediaType)
+    } yield {
+      val item1 = ObjectStorageItem(path1, data1, mediaType1)
+      val item2 = ObjectStorageItem(path2, data2, mediaType2)
+      (parents, item1, item2)
+    }
+  }
+
   val genObjectStorageState: Gen[ObjectStorageState] = {
     Gen.listOf(genObjectStorageItem).suchThat { state =>
       !pathsConflict(state.map(_.name))
     }
   }
 
+  val genNonEmptyObjectStorageState: Gen[ObjectStorageState] = {
+    genObjectStorageState.suchThat(_.nonEmpty)
+  }
+
   def pathsConflict(paths: List[String]): Boolean = {
     paths.combinations(2).exists { case List(a, b) =>
-      a.startsWith(b) || b.startsWith(a)
+      val aComponents = a.split("/")
+      val bComponents = b.split("/")
+      aComponents.startsWith(bComponents) || bComponents.startsWith(aComponents)
     }
   }
+
+  def getMediaTypeWritten(maybeMediaType: Option[MediaType]): MediaType =
+    maybeMediaType.getOrElse(MediaTypes.applicationOctetStream)
+
 
   implicit class ObjectStorageNoStreams(val objectStorage: LocalObjectStorage) extends AnyVal {
 
@@ -258,19 +312,19 @@ object LocalObjectStorageSpec {
     }
 
     def writeAll(objectStorageItems: List[ObjectStorageItem]): Future[Unit] = {
-      Future.collect(
+      Future.join(
         objectStorageItems.map { objectStorageItem =>
           write(objectStorageItem.name, objectStorageItem.content, objectStorageItem.mediaType)
         }
-      ).map(_ => ())
+      )
     }
 
     def deleteAll(names: List[String]): Future[Unit] = {
-      Future.collect(
+      Future.join(
         names.map { name =>
           objectStorage.delete(name)
         }
-      ).map(_ => ())
+      )
     }
   }
 

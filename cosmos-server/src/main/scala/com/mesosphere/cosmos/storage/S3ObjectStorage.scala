@@ -123,11 +123,11 @@ final class S3ObjectStorage(
     Stat.timeFuture(stats.stat("getCreationTime")) {
       pool {
         try {
-          val creationTimeInMillis =
+          val creationTime =
             client
             .getObjectMetadata(new GetObjectMetadataRequest(bucket, fullPath(name)))
-            .getLastModified.getTime
-          Some(Instant.ofEpochMilli(creationTimeInMillis))
+            .getLastModified.toInstant
+          Some(creationTime)
         } catch {
           case e: AmazonS3Exception if e.getErrorCode == "NoSuchKey" =>
             None
