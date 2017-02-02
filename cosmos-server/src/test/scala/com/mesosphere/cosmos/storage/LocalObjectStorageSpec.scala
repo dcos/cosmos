@@ -16,6 +16,7 @@ import org.scalatest.prop.PropertyChecks
 final class LocalObjectStorageSpec extends FreeSpec with PropertyChecks {
 
   import LocalObjectStorageSpec._
+  import ObjectStorageOps.objectStorageOps
 
   "read() must observe None on a nonexistent object" in {
     forAll(genObjectStorageState, genPath) { (state, path) =>
@@ -146,7 +147,9 @@ final class LocalObjectStorageSpec extends FreeSpec with PropertyChecks {
             storage.delete(item1.name)) before
             storage.list(parents)
         }
-        assert(objects.directories.length.toInt == 1 || objects.objects.length.toInt == 1)
+
+        val condition = objects.directories.length == 1 || objects.objects.length == 1
+        assert(condition)
       }
     }
   }
@@ -156,7 +159,7 @@ final class LocalObjectStorageSpec extends FreeSpec with PropertyChecks {
       TestUtil.withLocalObjectStorage { storage =>
         val namesInStorage = Await.result {
           storage.writeAll(state) before
-            storage.listAll("")
+            storage.listAllObjects("")
         }.sorted
         val namesWritten = state.map(_.name).sorted
         assertResult(namesWritten)(namesInStorage)
@@ -309,17 +312,6 @@ object LocalObjectStorageSpec {
       objectStorage.read(name).map(_.map { case (mediaType, readStream) =>
         (mediaType, StreamIO.buffer(readStream).toByteArray)
       })
-    }
-
-    def listAll(base: String): Future[List[String]] = {
-      objectStorage.list(base).flatMap { objectList =>
-        Future.collect(
-          objectList.directories
-            .map(listAll)
-        ).map { rest =>
-          (objectList.objects :: rest.toList).flatten
-        }
-      }
     }
 
     def writeAll(objectStorageItems: List[ObjectStorageItem]): Future[Unit] = {
