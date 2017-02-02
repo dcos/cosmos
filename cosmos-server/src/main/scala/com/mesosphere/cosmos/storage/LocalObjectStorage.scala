@@ -15,11 +15,14 @@ import java.io.DataInputStream
 import java.io.DataOutputStream
 import java.io.InputStream
 import java.nio.charset.StandardCharsets
+import java.nio.file.DirectoryNotEmptyException
 import java.nio.file.Files
 import java.nio.file.NoSuchFileException
 import java.nio.file.Path
 import java.nio.file.StandardCopyOption
 import java.nio.file.StandardOpenOption
+import java.nio.file.attribute.BasicFileAttributes
+import java.time.Instant
 import scala.collection.JavaConverters._
 import scala.collection.breakOut
 import scala.util.control.NonFatal
@@ -81,11 +84,22 @@ final class LocalObjectStorage private(storageDir: Path, scratchDir: Path, stats
   override def delete(name: String): Future[Unit] = {
     Stat.timeFuture(stats.stat("delete")) {
       pool {
-        // Drop the boolean. We want to have the same semantic as S3 which succeeds in either case.
-        val _ = Files.deleteIfExists(storageDir.resolve(name))
-
-        // TODO: To have the same semantic as S3 we need to delete all empty parent directories
+        val fullName = storageDir.resolve(name)
+        deleteFileAndEmptyParents(fullName)
       }
+    }
+  }
+
+  private[this] def deleteFileAndEmptyParents(fullName: Path): Unit = {
+    val pathsToDelete =
+      Iterator
+        .iterate(fullName)(_.getParent)
+        .takeWhile(_ != storageDir)
+
+    try {
+      pathsToDelete.foreach(Files.deleteIfExists)
+    } catch {
+      case _: DirectoryNotEmptyException => ()
     }
   }
 
@@ -116,6 +130,22 @@ final class LocalObjectStorage private(storageDir: Path, scratchDir: Path, stats
   }
 
   override def getUrl(name: String): Option[Uri] = None
+
+  override def getCreationTime(name: String): Future[Option[Instant]] = {
+    pool {
+      val absolutePath = storageDir.resolve(name)
+      try {
+        val creationTime =
+          Files
+          .readAttributes(absolutePath, classOf[BasicFileAttributes])
+          .creationTime
+          .toInstant
+        Some(creationTime)
+      } catch {
+        case _: NoSuchFileException => None
+      }
+    }
+  }
 
   /*
    * This method creates a file and writes the metadata and body to it. It will lay it out as
