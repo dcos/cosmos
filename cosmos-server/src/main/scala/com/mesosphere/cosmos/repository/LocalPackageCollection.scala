@@ -19,7 +19,7 @@ final class LocalPackageCollection private(
   final def list(): Future[List[rpc.v1.model.LocalPackage]] = {
     for {
       operatingPackages <- installQueue.viewStatus()
-      storedPackages <- packageStorage.list()
+      storedPackages <- packageStorage.listAllLocalPackages()
     } yield {
       val pendingLocalPackages = operatingPackages.mapValues(
         LocalPackageCollection.operationStatusToLocalPackage
