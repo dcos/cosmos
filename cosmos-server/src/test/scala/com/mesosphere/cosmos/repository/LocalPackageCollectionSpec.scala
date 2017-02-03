@@ -4,7 +4,7 @@ import com.mesosphere.cosmos.PackageNotFound
 import com.mesosphere.cosmos.VersionNotFound
 import com.mesosphere.cosmos.rpc
 import com.mesosphere.cosmos.storage
-import com.mesosphere.cosmos.storage.PackageObjectStorage
+import com.mesosphere.cosmos.storage.PackageStorage
 import com.mesosphere.cosmos.test.TestUtil
 import com.mesosphere.universe
 import com.twitter.util.Await
@@ -103,7 +103,7 @@ final class LocalPackageCollectionSpec extends FreeSpec with Matchers {
   val expected: Seq[universe.v3.model.V3Package] = expectedAllMarathon ++ expectedAllGreat
 
   "Test all of the read operations" in TestUtil.withObjectStorage { objectStorage =>
-    val packageStorage = PackageObjectStorage(objectStorage)
+    val packageStorage = PackageStorage(objectStorage)
     val packageCollection = LocalPackageCollection(packageStorage, TestUtil.EmptyReaderView)
 
     val _ = Await.result(

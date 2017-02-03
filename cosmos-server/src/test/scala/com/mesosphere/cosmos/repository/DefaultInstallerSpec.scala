@@ -3,7 +3,7 @@ package com.mesosphere.cosmos.repository
 import com.mesosphere.Generators.genV3Package
 import com.mesosphere.cosmos.rpc
 import com.mesosphere.cosmos.storage
-import com.mesosphere.cosmos.storage.PackageObjectStorage
+import com.mesosphere.cosmos.storage.PackageStorage
 import com.mesosphere.cosmos.storage.StagedPackageStorage
 import com.mesosphere.cosmos.test.TestUtil
 import com.mesosphere.universe.v3.syntax.PackageDefinitionOps._
@@ -18,10 +18,10 @@ final class DefaultInstallerSpec extends FreeSpec with Matchers with PropertyChe
   "Test that installing new package succeeds" in TestUtil.withObjectStorage { tempObjectStorage =>
     TestUtil.withObjectStorage { objectStorage =>
       forAll(genV3Package) { expected =>
-        val packageObjectStorage = PackageObjectStorage(objectStorage)
+        val packageStorage = PackageStorage(objectStorage)
         val adder = DefaultInstaller(
           StagedPackageStorage(tempObjectStorage),
-          packageObjectStorage
+          packageStorage
         )
 
         val _ = Await.result(
@@ -32,7 +32,7 @@ final class DefaultInstallerSpec extends FreeSpec with Matchers with PropertyChe
         )
 
         val actual = Await.result(
-          packageObjectStorage.readPackageDefinition(expected.packageCoordinate)
+          packageStorage.readPackageDefinition(expected.packageCoordinate)
         )
 
         actual shouldBe Some(expected)
@@ -44,10 +44,10 @@ final class DefaultInstallerSpec extends FreeSpec with Matchers with PropertyChe
     tempObjectStorage =>
       TestUtil.withObjectStorage { objectStorage =>
         forAll(genV3Package) { expected =>
-          val packageObjectStorage = PackageObjectStorage(objectStorage)
+          val packageStorage = PackageStorage(objectStorage)
           val adder = DefaultInstaller(
             StagedPackageStorage(tempObjectStorage),
-            packageObjectStorage
+            packageStorage
           )
 
           val _ = Await.result(
@@ -63,7 +63,7 @@ final class DefaultInstallerSpec extends FreeSpec with Matchers with PropertyChe
           )
 
           val actual = Await.result(
-            packageObjectStorage.readPackageDefinition(expected.packageCoordinate)
+            packageStorage.readPackageDefinition(expected.packageCoordinate)
           )
 
           actual shouldBe Some(expected)

@@ -1,14 +1,14 @@
 package com.mesosphere.cosmos.repository
 
-import com.mesosphere.cosmos.storage.PackageObjectStorage
+import com.mesosphere.cosmos.storage.PackageStorage
 import com.mesosphere.universe
 import com.twitter.util.Future
 
 final class DefaultUniverseInstaller private(
-  packageObjectStorage: PackageObjectStorage
+  packageStorage: PackageStorage
 ) extends UniverseInstaller {
 
-  private[this] val install = installV3Package(packageObjectStorage) _
+  private[this] val install = installV3Package(packageStorage) _
 
   def apply(pkg: universe.v3.model.V3Package): Future[Unit] = install(pkg)
 
@@ -17,9 +17,9 @@ final class DefaultUniverseInstaller private(
 object DefaultUniverseInstaller {
 
   def apply(
-    packageObjectStorage: PackageObjectStorage
+    packageStorage: PackageStorage
   ): DefaultUniverseInstaller = {
-    new DefaultUniverseInstaller(packageObjectStorage)
+    new DefaultUniverseInstaller(packageStorage)
   }
 
 }

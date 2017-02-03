@@ -4,14 +4,14 @@ import com.mesosphere.cosmos.PackageNotFound
 import com.mesosphere.cosmos.VersionNotFound
 import com.mesosphere.cosmos.rpc
 import com.mesosphere.cosmos.search.searchForPackages
-import com.mesosphere.cosmos.storage.PackageObjectStorage
+import com.mesosphere.cosmos.storage.PackageStorage
 import com.mesosphere.cosmos.storage.installqueue.ReaderView
 import com.mesosphere.cosmos.storage
 import com.mesosphere.universe
 import com.twitter.util.Future
 
-final class LocalPackageCollection private (
-  objectStorage: PackageObjectStorage,
+final class LocalPackageCollection private(
+  packageStorage: PackageStorage,
   installQueue: ReaderView
 ) {
 
@@ -19,7 +19,7 @@ final class LocalPackageCollection private (
   final def list(): Future[List[rpc.v1.model.LocalPackage]] = {
     for {
       operatingPackages <- installQueue.viewStatus()
-      storedPackages <- objectStorage.list()
+      storedPackages <- packageStorage.list()
     } yield {
       val pendingLocalPackages = operatingPackages.mapValues(
         LocalPackageCollection.operationStatusToLocalPackage
@@ -74,10 +74,10 @@ final class LocalPackageCollection private (
 
 object LocalPackageCollection {
   def apply(
-    objectStorage: PackageObjectStorage,
+    packageStorage: PackageStorage,
     installQueue: ReaderView
   ): LocalPackageCollection = {
-    new LocalPackageCollection(objectStorage, installQueue)
+    new LocalPackageCollection(packageStorage, installQueue)
   }
 
   def installedPackage(
