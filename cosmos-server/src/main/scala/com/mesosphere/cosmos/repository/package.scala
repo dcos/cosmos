@@ -31,7 +31,7 @@ package object repository {
     pkg: universe.v3.model.V3Package
   ): Future[Unit] = {
 
-    packageStorage.listAllLocalPackages().map { packages =>
+    packageStorage.readAllLocalPackages().map { packages =>
       LocalPackageCollection.installedPackage(
         packages,
         pkg.name,
@@ -40,7 +40,7 @@ package object repository {
     }.transform {
       case Throw(VersionNotFound(_, _)) | Throw(PackageNotFound(_)) =>
         // Put the PackageDefinition in the package object storage.
-        packageStorage.writePackageDefinition(pkg)
+        packageStorage.write(pkg)
       case Throw(error) =>
         Future.exception(error)
       case Return(_) =>

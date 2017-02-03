@@ -32,7 +32,7 @@ final class DefaultInstallerSpec extends FreeSpec with Matchers with PropertyChe
         )
 
         val actual = Await.result(
-          packageStorage.readPackageDefinition(expected.packageCoordinate)
+          packageStorage.read(expected.packageCoordinate)
         )
 
         actual shouldBe Some(expected)
@@ -63,7 +63,7 @@ final class DefaultInstallerSpec extends FreeSpec with Matchers with PropertyChe
           )
 
           val actual = Await.result(
-            packageStorage.readPackageDefinition(expected.packageCoordinate)
+            packageStorage.read(expected.packageCoordinate)
           )
 
           actual shouldBe Some(expected)

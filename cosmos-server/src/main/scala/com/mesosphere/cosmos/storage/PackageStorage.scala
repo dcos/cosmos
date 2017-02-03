@@ -24,7 +24,7 @@ final class PackageStorage private(objectStorage: ObjectStorage) {
     s"${packageCoordinate.as[String]}/metadata.json"
   }
 
-  def writePackageDefinition(
+  def write(
     packageDefinition: universe.v3.model.V3Package
   ): Future[Unit] = {
     val metadataName = getMetadataName(packageDefinition.packageCoordinate)
@@ -33,7 +33,7 @@ final class PackageStorage private(objectStorage: ObjectStorage) {
     objectStorage.write(metadataName, data, mediaType)
   }
 
-  def readPackageDefinition(
+  def read(
     packageCoordinate: rpc.v1.model.PackageCoordinate
   ): Future[Option[universe.v3.model.V3Package]] = {
     val metadataName = getMetadataName(packageCoordinate)
@@ -42,16 +42,16 @@ final class PackageStorage private(objectStorage: ObjectStorage) {
     })
   }
 
-  def listAllPackageCoordinates(): Future[List[PackageCoordinate]] = {
+  def list(): Future[List[PackageCoordinate]] = {
     objectStorage.listWithoutPaging("").map { objectList =>
       objectList.directories.flatMap(_.as[Try[PackageCoordinate]].toOption)
     }
   }
 
-  def listAllLocalPackages(): Future[List[rpc.v1.model.LocalPackage]] = {
-    listAllPackageCoordinates().flatMap { coordinates =>
+  def readAllLocalPackages(): Future[List[rpc.v1.model.LocalPackage]] = {
+    list().flatMap { coordinates =>
       val localPackages = coordinates.map { coordinate =>
-        readPackageDefinition(coordinate).map {
+        read(coordinate).map {
           case Some(packageDefinition) =>
             rpc.v1.model.Installed(packageDefinition)
           case None =>
@@ -65,8 +65,8 @@ final class PackageStorage private(objectStorage: ObjectStorage) {
     }
   }
 
-  def listAllInstalledPackages(): Future[List[universe.v3.model.V3Package]] = {
-    listAllLocalPackages().map(_.flatMap {
+  def readAllInstalledPackages(): Future[List[universe.v3.model.V3Package]] = {
+    readAllLocalPackages().map(_.flatMap {
       case rpc.v1.model.Installed(v3Package) => Some(v3Package)
       case _ => None
     })
