@@ -1,6 +1,6 @@
 package com.mesosphere.cosmos
 
-import com.mesosphere.cosmos.storage.PackageObjectStorage
+import com.mesosphere.cosmos.storage.PackageStorage
 import com.mesosphere.universe
 import com.twitter.util.Future
 import com.twitter.util.Return
@@ -26,12 +26,12 @@ package object repository {
 
   // TODO package-add: Need tests for error cases
   def installV3Package(
-    packageObjectStorage: PackageObjectStorage
+    packageStorage: PackageStorage
   )(
     pkg: universe.v3.model.V3Package
   ): Future[Unit] = {
 
-    packageObjectStorage.list().map { packages =>
+    packageStorage.list().map { packages =>
       LocalPackageCollection.installedPackage(
         packages,
         pkg.name,
@@ -40,7 +40,7 @@ package object repository {
     }.transform {
       case Throw(VersionNotFound(_, _)) | Throw(PackageNotFound(_)) =>
         // Put the PackageDefinition in the package object storage.
-        packageObjectStorage.writePackageDefinition(pkg)
+        packageStorage.writePackageDefinition(pkg)
       case Throw(error) =>
         Future.exception(error)
       case Return(_) =>
