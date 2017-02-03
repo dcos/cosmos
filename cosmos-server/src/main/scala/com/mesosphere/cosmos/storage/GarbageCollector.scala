@@ -7,11 +7,14 @@ import com.twitter.util.Future
 import java.time.Instant
 import java.util.UUID
 
-final class GarbageCollector private(stagedPackageStorage: StagedPackageStorage, installQueueReader: ReaderView) {
+final class GarbageCollector private(
+  stagedPackageStorage: StagedPackageStorage,
+  installQueueReader: ReaderView
+) extends (() => Future[Unit]){
 
   private[this] val timeout = 60*60
 
-  def collectGarbage(): Future[Unit] = {
+  override def apply(): Future[Unit] = {
     listGarbage().flatMap { garbage =>
       Future.join(garbage.map(stagedPackageStorage.delete).toSeq)
     }
