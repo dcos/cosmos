@@ -51,7 +51,7 @@ final class PackageAddHandler(
         val Some(contentType) = session.contentType
 
         for {
-          stagedPackageId <- stagedPackageStorage.put(packageStream, packageSize, contentType)
+          stagedPackageId <- stagedPackageStorage.write(packageStream, packageSize, contentType)
           v3Package <- readPackageDefinitionFromStorage(stagedPackageId)
         } yield {
           Install(stagedPackageId, v3Package)
@@ -71,7 +71,7 @@ final class PackageAddHandler(
   ): Future[universe.v3.model.V3Package] = {
     for {
       // TODO package-add: verify media type
-      (_, packageInputStream) <- stagedPackageStorage.get(stagedPackageId)
+      (_, packageInputStream) <- stagedPackageStorage.read(stagedPackageId)
       packageZip = new ZipInputStream(packageInputStream)
       packageMetadata <- Future.const(extractPackageMetadata(packageZip))
     } yield {

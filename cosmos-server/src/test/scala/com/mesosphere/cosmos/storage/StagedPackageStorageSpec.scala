@@ -80,7 +80,7 @@ final class StagedPackageStorageSpec extends FreeSpec with MockitoSugar with Pro
       when(objectStorage.read(packageId.toString))
         .thenReturn(Future.value(Some((MediaTypes.PackageZip, packageData))))
 
-      val (_, inputStream) = Await.result(stagedStorage.get(packageId))
+      val (_, inputStream) = Await.result(stagedStorage.read(packageId))
       val zipIn = new ZipInputStream(inputStream)
       val packageIn = Stream.continually(Option(zipIn.getNextEntry()))
         .takeWhile(_.isDefined)
@@ -110,7 +110,7 @@ final class StagedPackageStorageSpec extends FreeSpec with MockitoSugar with Pro
 object StagedPackageStorageSpec {
 
   def testPut(storage: StagedPackageStorage, packageData: InputStream, packageSize: Long): UUID = {
-    Await.result(storage.put(packageData, packageSize, MediaTypes.PackageZip))
+    Await.result(storage.write(packageData, packageSize, MediaTypes.PackageZip))
   }
 
   implicit val arbitraryInputStream: Arbitrary[InputStream] = {

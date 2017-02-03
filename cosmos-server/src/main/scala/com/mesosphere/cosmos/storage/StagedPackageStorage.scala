@@ -7,14 +7,23 @@ import java.util.UUID
 
 final class StagedPackageStorage private(objectStorage: ObjectStorage) {
 
-  def get(packageId: UUID): Future[(MediaType, InputStream)] = {
+  import ObjectStorageOps.objectStorageOps
+
+  def read(id: UUID): Future[(MediaType, InputStream)] = {
     // TODO package-add: Test for failure cases
-    objectStorage.read(packageId.toString).map(_.get)
+    objectStorage.read(id.toString).map(_.get)
   }
 
-  def put(packageData: InputStream, packageSize: Long, mediaType: MediaType): Future[UUID] = {
+  def write(content: InputStream, contentLength: Long, mediaType: MediaType): Future[UUID] = {
     val id = UUID.randomUUID()
-    objectStorage.write(id.toString, packageData, packageSize, mediaType).before(Future.value(id))
+    objectStorage.write(id.toString, content, contentLength, mediaType) before
+      Future.value(id)
+  }
+
+  def list(): Future[List[UUID]] = {
+    objectStorage.listWithoutPaging("").map { objectList =>
+      objectList.directories.map(UUID.fromString)
+    }
   }
 
 }
