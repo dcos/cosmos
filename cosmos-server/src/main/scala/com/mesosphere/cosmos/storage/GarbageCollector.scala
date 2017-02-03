@@ -12,7 +12,7 @@ final class GarbageCollector private(
   installQueueReader: ReaderView
 ) extends (() => Future[Unit]){
 
-  private[this] val timeout = 60*60
+  private[this] val timeout: Long = 60*60
 
   override def apply(): Future[Unit] = {
     listGarbage().flatMap { garbage =>
@@ -58,4 +58,11 @@ final class GarbageCollector private(
     }
   }
 
+}
+
+object GarbageCollector {
+  def apply(
+    stagedPackageStorage: StagedPackageStorage,
+    installQueueReader: ReaderView
+  ): GarbageCollector = new GarbageCollector(stagedPackageStorage, installQueueReader)
 }

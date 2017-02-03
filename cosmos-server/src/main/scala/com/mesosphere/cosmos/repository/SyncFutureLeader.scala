@@ -12,7 +12,8 @@ import org.apache.curator.framework.state.ConnectionState
 
 final class SyncFutureLeader private (
   curatorClient: CuratorFramework,
-  processor: () => Future[Unit]
+  processor: () => Future[Unit],
+  garbageCollector: () => Future[Unit]
 )(
   implicit timer: Timer
 ) extends LeaderSelectorListener with AutoCloseable {
@@ -48,9 +49,10 @@ final class SyncFutureLeader private (
          */
         Future.join(
           Future.sleep(Duration.fromSeconds(10)), // scalastyle:ignore magic.number
-          processor()
+          processor(),
+          garbageCollector()
         ).unit.onFailure { error =>
-          logger.error(s"Got a failure from the processor", error)
+          logger.error(s"Got a failure from the processor or garbageCollector", error)
         }
       }
     } catch {
@@ -73,11 +75,12 @@ final class SyncFutureLeader private (
 object SyncFutureLeader {
   def apply(
     curatorClient: CuratorFramework,
-    processor: () => Future[Unit]
+    processor: () => Future[Unit],
+    garbageCollector: () => Future[Unit]
   )(
     implicit timer: Timer
   ): SyncFutureLeader = {
-    val leader = new SyncFutureLeader(curatorClient, processor)
+    val leader = new SyncFutureLeader(curatorClient, processor, garbageCollector)
     leader.start()
     leader
   }

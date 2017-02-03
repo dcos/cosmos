@@ -23,6 +23,7 @@ import com.mesosphere.cosmos.rpc.v1.circe.MediaTypedBodyParsers._
 import com.mesosphere.cosmos.rpc.v1.circe.MediaTypedEncoders._
 import com.mesosphere.cosmos.rpc.v1.circe.MediaTypedRequestDecoders._
 import com.mesosphere.cosmos.rpc.v2.circe.MediaTypedEncoders._
+import com.mesosphere.cosmos.storage.GarbageCollector
 import com.mesosphere.cosmos.storage.ObjectStorage
 import com.mesosphere.cosmos.storage.PackageStorage
 import com.mesosphere.cosmos.storage.StagedPackageStorage
@@ -301,6 +302,10 @@ with Logging {
           DefaultInstaller(stageStorage, packageStorage),
           DefaultUniverseInstaller(packageStorage),
           Uninstaller.Noop
+        ),
+        GarbageCollector(
+          stageStorage,
+          installQueue
         )
       )
       onExit(processingLeader.close())
