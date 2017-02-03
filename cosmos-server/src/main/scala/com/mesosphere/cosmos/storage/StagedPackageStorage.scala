@@ -3,6 +3,7 @@ package com.mesosphere.cosmos.storage
 import com.mesosphere.cosmos.http.MediaType
 import com.twitter.util.Future
 import java.io.InputStream
+import java.time.Instant
 import java.util.UUID
 
 final class StagedPackageStorage private(objectStorage: ObjectStorage) {
@@ -24,6 +25,14 @@ final class StagedPackageStorage private(objectStorage: ObjectStorage) {
     objectStorage.listWithoutPaging("").map { objectList =>
       objectList.directories.map(UUID.fromString)
     }
+  }
+
+  def delete(id: UUID): Future[Unit] = {
+    objectStorage.delete(id.toString)
+  }
+
+  def getCreationTime(id: UUID): Future[Instant] = {
+    objectStorage.getCreationTime(id.toString).map(_.get)
   }
 
 }
