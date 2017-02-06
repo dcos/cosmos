@@ -3,6 +3,8 @@ package com.mesosphere.cosmos
 import com.mesosphere.cosmos.model.ZooKeeperUri
 import com.netaporter.uri.Uri
 import com.twitter.app.Flaggable
+import com.twitter.conversions.storage._
+import com.twitter.util.StorageUnit
 import java.nio.file
 
 object Flaggables {
@@ -22,5 +24,9 @@ object Flaggables {
         case value => Some(flaggable.parse(value))
       }
     }
+  }
+
+  implicit val flagOfStorageUnit: Flaggable[StorageUnit] = Flaggable.mandatory { string =>
+    string.toInt.megabytes
   }
 }
