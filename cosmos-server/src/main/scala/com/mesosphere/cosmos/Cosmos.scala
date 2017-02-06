@@ -24,7 +24,7 @@ import com.mesosphere.cosmos.rpc.v1.circe.MediaTypedEncoders._
 import com.mesosphere.cosmos.rpc.v1.circe.MediaTypedRequestDecoders._
 import com.mesosphere.cosmos.rpc.v2.circe.MediaTypedEncoders._
 import com.mesosphere.cosmos.storage.ObjectStorage
-import com.mesosphere.cosmos.storage.PackageObjectStorage
+import com.mesosphere.cosmos.storage.PackageStorage
 import com.mesosphere.cosmos.storage.StagedPackageStorage
 import com.mesosphere.cosmos.storage.installqueue.InstallQueue
 import com.mesosphere.cosmos.storage.installqueue.ReaderView
@@ -32,7 +32,6 @@ import com.mesosphere.universe
 import com.netaporter.uri.Uri
 import com.twitter.app.App
 import com.twitter.app.Flag
-import com.twitter.conversions.storage.intToStorageUnitableWholeNumber
 import com.twitter.finagle.Http
 import com.twitter.finagle.ListeningServer
 import com.twitter.finagle.Service
@@ -294,13 +293,13 @@ with Logging {
 
     val objectStorages = configureObjectStorage(installQueue)
 
-    for ((pkgStorage, stageStorage, _) <- objectStorages) {
+    for ((packageStorage, stageStorage, _) <- objectStorages) {
       val processingLeader = SyncFutureLeader(
         zkClient,
         OperationProcessor(
           installQueue,
-          DefaultInstaller(stageStorage, pkgStorage),
-          DefaultUniverseInstaller(pkgStorage),
+          DefaultInstaller(stageStorage, packageStorage),
+          DefaultUniverseInstaller(packageStorage),
           Uninstaller.Noop
         )
       )
@@ -373,7 +372,7 @@ with Logging {
     installQueue: ReaderView
   )(
     implicit statsReceiver: StatsReceiver
-  ): Option[(PackageObjectStorage, StagedPackageStorage, LocalPackageCollection)] = {
+  ): Option[(PackageStorage, StagedPackageStorage, LocalPackageCollection)] = {
     def fromFlag(
       flag: Flag[ObjectStorageUri],
       description: String
@@ -384,11 +383,11 @@ with Logging {
     }
 
     (
-      fromFlag(packageStorageUri, "package").map(PackageObjectStorage(_)),
+      fromFlag(packageStorageUri, "package").map(PackageStorage(_)),
       fromFlag(stagedPackageStorageUri, "staged package").map(StagedPackageStorage(_))
     ) match {
-      case (Some(pkgStorage), Some(stagedStorage)) =>
-        Some((pkgStorage, stagedStorage, LocalPackageCollection(pkgStorage, installQueue)))
+      case (Some(packageStorage), Some(stagedStorage)) =>
+        Some((packageStorage, stagedStorage, LocalPackageCollection(packageStorage, installQueue)))
       case (None, None) =>
         None
       case (Some(_), None) =>

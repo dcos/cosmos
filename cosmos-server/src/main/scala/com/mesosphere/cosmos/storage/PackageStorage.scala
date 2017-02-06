@@ -17,7 +17,7 @@ import java.io.ByteArrayInputStream
 import java.nio.charset.StandardCharsets
 import scala.util.Try
 
-final class PackageObjectStorage private (objectStorage: ObjectStorage) {
+final class PackageStorage private(objectStorage: ObjectStorage) {
   private[this] val pool = FuturePool.interruptibleUnboundedPool
 
   def writePackageDefinition(
@@ -113,8 +113,8 @@ final class PackageObjectStorage private (objectStorage: ObjectStorage) {
   }
 }
 
-object PackageObjectStorage {
-  def apply(objectStorage: ObjectStorage): PackageObjectStorage = {
-    new PackageObjectStorage(objectStorage)
+object PackageStorage {
+  def apply(objectStorage: ObjectStorage): PackageStorage = {
+    new PackageStorage(objectStorage)
   }
 }

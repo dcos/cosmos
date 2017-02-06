@@ -8,7 +8,7 @@ import com.mesosphere.cosmos.rpc.MediaTypes
 import com.mesosphere.cosmos.rpc.v2.circe.Decoders._
 import com.mesosphere.cosmos.storage.ObjectStorage
 import com.mesosphere.cosmos.storage.ObjectStorage.ObjectList
-import com.mesosphere.cosmos.storage.PackageObjectStorage
+import com.mesosphere.cosmos.storage.PackageStorage
 import com.mesosphere.cosmos.storage.StagedPackageStorage
 import com.mesosphere.cosmos.test.CosmosIntegrationTestClient.CosmosClient
 import com.mesosphere.cosmos.test.CosmosIntegrationTestClient.PackageStorageClient
@@ -91,7 +91,7 @@ final class PackageAddSpec
   }
 
   private[this] var packageObjectStorage: ObjectStorage = _
-  private[this] var packageStorage: PackageObjectStorage = _
+  private[this] var packageStorage: PackageStorage = _
   private[this] var stagedObjectStorage: ObjectStorage = _
   private[this] var stagedPackageStorage: StagedPackageStorage = _
 
@@ -100,7 +100,7 @@ final class PackageAddSpec
     implicit val statsReceiver: StatsReceiver = NullStatsReceiver
 
     packageObjectStorage = ObjectStorage.fromUri(PackageStorageClient.packagesUri)
-    packageStorage = PackageObjectStorage(packageObjectStorage)
+    packageStorage = PackageStorage(packageObjectStorage)
 
     stagedObjectStorage = ObjectStorage.fromUri(PackageStorageClient.stagedUri)
     stagedPackageStorage = StagedPackageStorage(stagedObjectStorage)
