@@ -19,6 +19,7 @@ import com.mesosphere.cosmos.rpc.v1.circe.Decoders._
 import com.mesosphere.cosmos.rpc.v1.model._
 import com.netaporter.uri.Uri
 import com.netaporter.uri.dsl._
+import com.twitter.conversions.storage._
 import com.twitter.finagle.Service
 import com.twitter.finagle.SimpleFilter
 import com.twitter.finagle.http._
@@ -49,9 +50,9 @@ object CosmosIntegrationTestClient extends Matchers {
       }
       .flatMap { case (adminRouterUri, marathonUri, mesosMasterUri) =>
         Trys.join(
-          Services.adminRouterClient(adminRouterUri).map { adminRouterUri -> _},
-          Services.marathonClient(marathonUri).map { marathonUri -> _ },
-          Services.mesosClient(mesosMasterUri).map { mesosMasterUri -> _ }
+          Services.adminRouterClient(adminRouterUri, 5.megabytes).map { adminRouterUri -> _},
+          Services.marathonClient(marathonUri, 5.megabytes).map { marathonUri -> _ },
+          Services.mesosClient(mesosMasterUri, 5.megabytes).map { mesosMasterUri -> _ }
         )
       }
       .map { case (adminRouterClient, marathon, mesosMaster) =>
@@ -139,7 +140,7 @@ object CosmosIntegrationTestClient extends Matchers {
 
     // Do not relax the visibility on this -- use `submit()` instead; see its Scaladoc for why
     private[this] val client = {
-      Services.httpClient("cosmosIntegrationTestClient", uri, RequestLogging).get
+      Services.httpClient("cosmosIntegrationTestClient", uri, 5.megabytes, RequestLogging).get
     }
 
     private[this] object RequestLogging extends SimpleFilter[Request, Response] {

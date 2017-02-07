@@ -1,11 +1,11 @@
 package com.mesosphere.cosmos
 
-import java.nio.file
-
 import com.mesosphere.cosmos.Flaggables._
 import com.mesosphere.cosmos.model.ZooKeeperUri
 import com.netaporter.uri.Uri
 import com.twitter.app.GlobalFlag
+import com.twitter.conversions.storage._
+import com.twitter.util.StorageUnit
 
 // scalastyle:off object.name
 object dcosUri extends GlobalFlag[Uri](
@@ -42,4 +42,10 @@ object stagedPackageStorageUri extends GlobalFlag[Option[ObjectStorageUri]](
   None,
   "The URI where packages are staged before permanent storage"
 )
+
+object maxClientResponseSize extends GlobalFlag[StorageUnit](
+  5.megabytes,
+  "Maximum size for the response for requests initiated by Cosmos in Megabytes"
+)
+
 // scalastyle:on object.name
