@@ -4,7 +4,9 @@ import com.mesosphere.cosmos.Flaggables._
 import com.mesosphere.cosmos.model.ZooKeeperUri
 import com.netaporter.uri.Uri
 import com.twitter.app.GlobalFlag
+import com.twitter.conversions.storage._
 import com.twitter.util.ScheduledThreadPoolTimer
+import com.twitter.util.StorageUnit
 import com.twitter.util.Timer
 import java.net.InetSocketAddress
 import java.nio.file.Path
@@ -92,6 +94,11 @@ package cosmos {
 
   object keyPath extends GlobalFlag[Path](
     "Path to SSL Key file"
+  )
+
+  object maxClientResponseSize extends GlobalFlag[StorageUnit](
+    5.megabytes,
+    "Maximum size for the response for requests initiated by Cosmos in Megabytes"
   )
   // scalastyle:on object.name
 }
