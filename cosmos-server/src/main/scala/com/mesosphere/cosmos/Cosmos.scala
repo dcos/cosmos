@@ -340,14 +340,23 @@ with Logging {
           val master: Uri = mesosMasterUri().toStringRaw
           logger.info("Connecting to Marathon at: {}", mar)
           logger.info("Connecting to Mesos master at: {}", master)
-          logger.info("Connection to AdminRouter at: {}", adminRouter)
+          logger.info("Connecting to AdminRouter at: {}", adminRouter)
           (adminRouter, mar, master)
       }
       .flatMap { case (adminRouterUri, marathonUri, mesosMasterUri) =>
         Trys.join(
-          Services.adminRouterClient(adminRouterUri).map { adminRouterUri -> _ },
-          Services.marathonClient(marathonUri).map { marathonUri -> _ },
-          Services.mesosClient(mesosMasterUri).map { mesosMasterUri -> _ }
+          Services.adminRouterClient(
+            adminRouterUri,
+            maxClientResponseSize()
+          ).map(adminRouterUri -> _),
+          Services.marathonClient(
+            marathonUri,
+            maxClientResponseSize()
+          ).map(marathonUri -> _),
+          Services.mesosClient(
+            mesosMasterUri,
+            maxClientResponseSize()
+          ).map(mesosMasterUri -> _)
         )
       }
       .map { case (adminRouter, marathon, mesosMaster) =>

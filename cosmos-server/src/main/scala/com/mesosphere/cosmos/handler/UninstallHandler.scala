@@ -28,16 +28,19 @@ private[cosmos] final class UninstallHandler(
 
   private type FwIds = List[String]
 
-  private def lookupFrameworkIds(fwName: String)(implicit session: RequestSession): Future[FwIds] = {
-    adminRouter.getMasterState(fwName).map { masterState =>
-      masterState.frameworks
-        .filter(_.name == fwName)
-        .map(_.id)
-    }
+  private def lookupFrameworkIds(
+    fwName: String
+  )(
+    implicit session: RequestSession
+  ): Future[FwIds] = {
+    adminRouter.getFrameworks(fwName).map(_.map(_.id))
   }
+
   private def destroyMarathonAppsAndTearDownFrameworkIfPresent(
     uninstallOperations: List[UninstallOperation]
-  )(implicit session: RequestSession): Future[Seq[UninstallDetails]] = {
+  )(
+    implicit session: RequestSession
+  ): Future[Seq[UninstallDetails]] = {
     val fs = for {
       op <- uninstallOperations
       appId = op.appId
@@ -67,7 +70,12 @@ private[cosmos] final class UninstallHandler(
     }
     Future.collect(fs)
   }
-  private def destroyMarathonApp(appId: AppId)(implicit session: RequestSession): Future[MarathonAppDeleteSuccess] = {
+
+  private def destroyMarathonApp(
+    appId: AppId
+  )(
+    implicit session: RequestSession
+  ): Future[MarathonAppDeleteSuccess] = {
     adminRouter.deleteApp(appId, force = true) map { resp =>
       resp.status match {
         case Status.Ok => MarathonAppDeleteSuccess()
@@ -76,8 +84,10 @@ private[cosmos] final class UninstallHandler(
     }
   }
 
-  override def apply(req: rpc.v1.model.UninstallRequest)(implicit
-    session: RequestSession
+  override def apply(
+    req: rpc.v1.model.UninstallRequest
+  )(
+    implicit session: RequestSession
   ): Future[rpc.v1.model.UninstallResponse] = {
     /*
     the following implementation is based on what the current CLI implementation does.
@@ -122,8 +132,11 @@ private[cosmos] final class UninstallHandler(
       }
   }
 
-  private[this] def getMarathonApps(packageName: String, appId: Option[AppId])(implicit
-    session: RequestSession
+  private[this] def getMarathonApps(
+    packageName: String,
+    appId: Option[AppId]
+  )(
+    implicit session: RequestSession
   ): Future[List[MarathonApp]] = {
     appId match {
       case Some(id) =>
@@ -136,7 +149,10 @@ private[cosmos] final class UninstallHandler(
     }
   }
 
-  private[this] def createUninstallOperations(requestedPackageName: String, apps: List[MarathonApp]): List[UninstallOperation] = {
+  private[this] def createUninstallOperations(
+    requestedPackageName: String,
+    apps: List[MarathonApp]
+  ): List[UninstallOperation] = {
     val uninstallOperations = for {
       app <- apps
       labels = app.labels

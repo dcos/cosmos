@@ -26,7 +26,11 @@ class AdminRouter(
 
   def tearDownFramework(frameworkId: String)(implicit session: RequestSession): Future[MesosFrameworkTearDownResponse] = mesos.tearDownFramework(frameworkId)
 
-  def getMasterState(frameworkName: String)(implicit session: RequestSession): Future[MasterState] = mesos.getMasterState(frameworkName)
+  def getFrameworks(
+    frameworkName: String
+  )(
+    implicit session: RequestSession
+  ): Future[List[Framework]] = mesos.getFrameworks(frameworkName)
 
   def getDcosVersion()(implicit session: RequestSession): Future[DcosVersion] = adminRouterClient.getDcosVersion()
 
