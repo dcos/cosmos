@@ -12,8 +12,10 @@ import com.mesosphere.cosmos.storage.v1.model.FailedStatus
 import com.mesosphere.cosmos.storage.v1.model.Operation
 import com.mesosphere.cosmos.storage.v1.model.OperationFailure
 import com.mesosphere.cosmos.storage.v1.model.OperationStatus
-import com.mesosphere.cosmos.storage.v1.model.PendingStatus
 import com.mesosphere.cosmos.storage.v1.model.PendingOperation
+import com.mesosphere.cosmos.storage.v1.model.PendingStatus
+import com.mesosphere.universe.AbsolutePath
+import com.mesosphere.universe.PathInterpolations
 import com.mesosphere.universe.bijection.BijectionUtils
 import com.twitter.bijection.Conversion.asMethod
 import com.twitter.finagle.stats.Stat.timeFuture
@@ -347,8 +349,8 @@ final class InstallQueue private(
 
 object InstallQueue {
 
-  val installQueuePath = "/package/task-queue"
-
+  val installQueuePath: AbsolutePath = abspath"/package/task-queue"
+  
   def statusPath(packageCoordinate: PackageCoordinate): String = {
     s"$installQueuePath/${packageCoordinate.as[String]}"
   }
