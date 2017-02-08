@@ -20,10 +20,10 @@ object Generators {
         seqSize,
         Gen.oneOf(
           genNumbers.map(Right(_)),
-          Generators.maxSizedString(
+          Generators.nonEmptyMaxSizedString(
             maxStringLength,
             Gen.alphaLowerChar
-          ).filter(_.nonEmpty).map(Left(_))
+          ).map(Left(_))
         )
       )
     } yield preReleases
@@ -47,8 +47,8 @@ object Generators {
   }
 
   val genVersion: Gen[PackageDefinition.Version] = for {
-    semver <- genSemVer
-  } yield PackageDefinition.Version(semver.toString)
+    semVer <- genSemVer
+  } yield PackageDefinition.Version(semVer.toString())
 
   val genReleaseVersion: Gen[PackageDefinition.ReleaseVersion] = for {
     num <- Gen.posNum[Long]
@@ -83,6 +83,11 @@ object Generators {
 
   def maxSizedString(maxSize: Int, genChar: Gen[Char]): Gen[String] = for {
     size <- Gen.chooseNum(0, maxSize)
+    array <- Gen.containerOfN[Array, Char](size, genChar)
+  } yield new String(array)
+
+  def nonEmptyMaxSizedString(maxSize: Int, genChar: Gen[Char]): Gen[String] = for {
+    size <- Gen.chooseNum(1, maxSize)
     array <- Gen.containerOfN[Array, Char](size, genChar)
   } yield new String(array)
 
