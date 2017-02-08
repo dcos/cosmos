@@ -41,6 +41,10 @@ final class PathInterpolationsSpec extends FreeSpec with Matchers {
         """ { val bar = "bar"; abspath"/foo/$bar/baz" } """ shouldNot compile
       }
 
+      "non-literal use of interpolator" in {
+        """ { val path = "/foo/bar"; StringContext(path).abspath() } """ shouldNot compile
+      }
+
     }
 
   }

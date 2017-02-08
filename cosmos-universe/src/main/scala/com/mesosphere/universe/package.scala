@@ -30,7 +30,7 @@ package object universe {
         case _ if args.nonEmpty =>
           c.abort(c.enclosingPosition, "Interpolated values are not supported")
         case _ =>
-          c.abort(c.enclosingPosition, "Interpolation context not recognized")
+          c.abort(c.enclosingPosition, "This interpolator only works on string literals")
       }
     }
 
