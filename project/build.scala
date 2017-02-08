@@ -104,6 +104,10 @@ object CosmosBuild extends Build {
       "org.scalacheck" %% "scalacheck" % V.scalaCheck % "test"
     )
 
+    val scalaReflect = Seq(
+      "org.scala-lang" % "scala-reflect" % projectScalaVersion
+    )
+
     val scalaTest = Seq(
       "org.scalatest" %% "scalatest" % V.scalaTest % "test"
     )
@@ -285,7 +289,8 @@ object CosmosBuild extends Build {
     .settings(sharedSettings)
     .settings(
       libraryDependencies ++=
-        Deps.scalaTest
+        Deps.scalaReflect
+        ++ Deps.scalaTest
         ++ Deps.scalaCheck
     )
 

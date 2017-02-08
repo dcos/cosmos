@@ -1,21 +1,34 @@
 package com.mesosphere.universe
 
 import org.scalatest.FreeSpec
+import org.scalatest.Matchers
 
-final class PathInterpolationsSpec extends FreeSpec {
+final class PathInterpolationsSpec extends FreeSpec with Matchers {
 
   "AbsolutePath interpolation" - {
 
-    "root" in {
-      assertResult("/")(abspath"/".toString)
+    "is successful for" - {
+
+      "root" in {
+        assertResult("/")(abspath"/".toString)
+      }
+
+      "single element" in {
+        assertResult("/foo")(abspath"/foo".toString)
+      }
+
+      "two elements" in {
+        assertResult("/foo/bar")(abspath"/foo/bar".toString)
+      }
+
     }
 
-    "single element" in {
-      assertResult("/foo")(abspath"/foo".toString)
-    }
+    "fails for" - {
 
-    "two elements" in {
-      assertResult("/foo/bar")(abspath"/foo/bar".toString)
+      "empty string" in {
+        """ abspath"" """ shouldNot compile
+      }
+
     }
 
   }
