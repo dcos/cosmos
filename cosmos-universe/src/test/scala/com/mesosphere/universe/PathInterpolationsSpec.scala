@@ -29,6 +29,14 @@ final class PathInterpolationsSpec extends FreeSpec with Matchers {
         """ abspath"" """ shouldNot compile
       }
 
+      "relative path with one element" in {
+        """ abspath"foo" """ shouldNot compile
+      }
+
+      "relative path with two elements" in {
+        """ abspath"foo/bar" """ shouldNot compile
+      }
+
     }
 
   }

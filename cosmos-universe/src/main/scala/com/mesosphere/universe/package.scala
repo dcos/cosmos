@@ -22,10 +22,10 @@ package object universe {
       // Should have the form: PathInterpolations(StringContext(<string literal>))
       c.prefix.tree match {
         case Apply(_, List(Apply(_, List(path @ Literal(Constant(rawPath: String))))))
-          if rawPath.nonEmpty =>
+          if rawPath.startsWith("/") =>
           c.Expr(path)
         case _ =>
-          c.abort(c.enclosingPosition, "Invalid path")
+          c.abort(c.enclosingPosition, "Invalid absolute path")
       }
     }
 
