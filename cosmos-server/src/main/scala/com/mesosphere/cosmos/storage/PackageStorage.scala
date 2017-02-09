@@ -19,9 +19,7 @@ import scala.util.Try
 
 final class PackageStorage private(objectStorage: ObjectStorage) {
 
-  private[this] def getMetadataName(packageCoordinate: PackageCoordinate): String = {
-    s"${packageCoordinate.as[String]}/metadata.json"
-  }
+  import PackageStorage._
 
   def write(
     packageDefinition: universe.v3.model.V3Package
@@ -76,5 +74,9 @@ final class PackageStorage private(objectStorage: ObjectStorage) {
 object PackageStorage {
   def apply(objectStorage: ObjectStorage): PackageStorage = {
     new PackageStorage(objectStorage)
+  }
+
+  private def getMetadataName(packageCoordinate: PackageCoordinate): String = {
+    s"${packageCoordinate.as[String]}/metadata.json"
   }
 }
