@@ -33,11 +33,43 @@ final class PathSpec extends FreeSpec with PropertyChecks {
 
   }
 
+  "RelativePath.apply(String)" - {
+
+    "fails on empty" in {
+      assertResult(Left(RelativePath.Empty))(RelativePath(""))
+    }
+
+    "fails on absolute" in {
+      forAll { (pathSuffix: String) =>
+        assertResult(Left(RelativePath.Absolute))(RelativePath(s"/$pathSuffix"))
+      }
+    }
+
+    "succeeds in all other cases" in {
+      forAll { (path: String) =>
+        whenever (path.nonEmpty && !path.startsWith("/")) {
+          assert(RelativePath(path).isRight)
+        }
+      }
+    }
+
+  }
+
+  "RelativePath has a normalized toString representation" in {
+    forAll (genRelativePath) { path =>
+      assertResult(Right(path))(RelativePath(path.toString))
+    }
+  }
+
 }
 
 object PathSpec {
 
-  val genRelativePath: Gen[RelativePath] = arbitrary[List[String]].map(RelativePath)
+  val genRelativePath: Gen[RelativePath] = {
+    arbitrary[List[String]]
+      .map(elements => RelativePath(elements.mkString(Path.Separator)))
+      .flatMap(_.fold(_ => Gen.fail, Gen.const))
+  }
 
   // TODO cruhland
   val genAbsolutePath: Gen[AbsolutePath] = Gen.const(AbsolutePath())

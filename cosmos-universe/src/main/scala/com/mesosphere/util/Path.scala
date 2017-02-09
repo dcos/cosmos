@@ -4,6 +4,7 @@ trait Path
 
 object Path {
   val Root: AbsolutePath = AbsolutePath()
+  val Separator: String = "/"
 }
 
 // TODO cruhland
@@ -22,5 +23,22 @@ final case class RelativePath(toList: List[String]) extends Path {
   // scalastyle:off method.name
   def /(p: RelativePath): RelativePath = RelativePath(toList ++ p.toList)
   // scalastyle:on method.name
+
+  // TODO cruhland
+  override def toString: String = toList.head
+
+}
+
+object RelativePath {
+
+  def apply(path: String): Either[Error, RelativePath] = {
+    if (path.isEmpty) Left(Empty)
+    else if (path.startsWith(Path.Separator)) Left(Absolute)
+    else Right(RelativePath(List(path)))
+  }
+
+  sealed trait Error
+  case object Empty extends Error
+  case object Absolute extends Error
 
 }
