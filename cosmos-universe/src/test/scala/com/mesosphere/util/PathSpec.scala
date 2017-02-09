@@ -13,24 +13,11 @@ final class PathSpec extends FreeSpec with PropertyChecks {
   "A RelativePath can be extended by a RelativePath" in {
     forAll (genRelativePath, genRelativePath) { (basePath, extension) =>
       val fullPath = basePath / extension
-      assertResult(fullPath.toList)(basePath.toList ++ extension.toList)
-    }
-  }
 
-  "A RelativePath is equivalent to its toList representation" - {
-
-    "List[String] => RelativePath => List[String]" in {
-      forAll { (path: List[String]) =>
-        assertResult(path)(RelativePath(path).toList)
+      assertResult(Path.Separator) {
+        fullPath.toString.stripPrefix(basePath.toString).stripSuffix(extension.toString)
       }
     }
-
-    "RelativePath => List[String] => RelativePath" in {
-      forAll (genRelativePath) { path =>
-        assertResult(path)(RelativePath(path.toList))
-      }
-    }
-
   }
 
   "RelativePath.apply(String)" - {

@@ -18,14 +18,13 @@ final case class AbsolutePath() extends Path {
 
 }
 
-final case class RelativePath(toList: List[String]) extends Path {
+final case class RelativePath private(private val elements: List[String]) extends Path {
 
   // scalastyle:off method.name
-  def /(p: RelativePath): RelativePath = RelativePath(toList ++ p.toList)
+  def /(p: RelativePath): RelativePath = RelativePath(elements ++ p.elements)
   // scalastyle:on method.name
 
-  // TODO cruhland
-  override def toString: String = toList.head
+  override def toString: String = elements.mkString(Path.Separator)
 
 }
 
