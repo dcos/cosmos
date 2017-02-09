@@ -4,11 +4,13 @@ import com.mesosphere.cosmos.PackageFileMissing
 import com.mesosphere.cosmos.circe.Decoders.decode
 import com.mesosphere.cosmos.circe.Encoders.exceptionErrorResponse
 import com.mesosphere.cosmos.converter.Common._
+import com.mesosphere.cosmos.storage.ObjectStorageOps.objectStorageOps
 import com.mesosphere.cosmos.rpc
 import com.mesosphere.cosmos.rpc.v1.model.PackageCoordinate
 import com.mesosphere.universe
 import com.mesosphere.universe.v3.circe.Decoders._
 import com.mesosphere.universe.v3.circe.Encoders._
+import com.mesosphere.universe.v3.syntax.PackageDefinitionOps.packageDefinitionToPackageDefinitionOps
 import com.twitter.bijection.Conversion.asMethod
 import com.twitter.util.Future
 import io.circe.syntax._
@@ -16,9 +18,6 @@ import java.nio.charset.StandardCharsets
 import scala.util.Try
 
 final class PackageStorage private(objectStorage: ObjectStorage) {
-
-  import ObjectStorageOps.objectStorageOps
-  import com.mesosphere.universe.v3.syntax.PackageDefinitionOps.packageDefinitionToPackageDefinitionOps
 
   private[this] def getMetadataName(packageCoordinate: PackageCoordinate): String = {
     s"${packageCoordinate.as[String]}/metadata.json"
