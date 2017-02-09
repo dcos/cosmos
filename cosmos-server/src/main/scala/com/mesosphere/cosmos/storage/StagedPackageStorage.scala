@@ -9,9 +9,8 @@ import java.util.UUID
 
 final class StagedPackageStorage private(objectStorage: ObjectStorage) {
 
-  def read(id: UUID): Future[(MediaType, InputStream)] = {
-    // TODO package-add: Test for failure cases
-    objectStorage.read(id.toString).map(_.get)
+  def read(id: UUID): Future[Option[(MediaType, InputStream)]] = {
+    objectStorage.read(id.toString)
   }
 
   def write(content: InputStream, contentLength: Long, mediaType: MediaType): Future[UUID] = {
@@ -30,8 +29,8 @@ final class StagedPackageStorage private(objectStorage: ObjectStorage) {
     objectStorage.delete(id.toString)
   }
 
-  def getCreationTime(id: UUID): Future[Instant] = {
-    objectStorage.getCreationTime(id.toString).map(_.get)
+  def getCreationTime(id: UUID): Future[Option[Instant]] = {
+    objectStorage.getCreationTime(id.toString)
   }
 
 }

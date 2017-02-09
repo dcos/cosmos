@@ -20,9 +20,9 @@ final class GarbageCollector private(
     val stagedPackages = stagedPackageStorage.list().flatMap { ids =>
       val packages = ids.map { id =>
         stagedPackageStorage.getCreationTime(id)
-          .map((id, _))
+          .map(_.map((id, _)))
       }
-      Future.collect(packages).map(_.toList)
+      Future.collect(packages).map(_.toList.flatten)
     }
     val operations = installQueueReader.viewStatus().map(_.values.toList)
     val cutoffTime = Instant.now().minusSeconds(timeout)

@@ -71,7 +71,7 @@ final class PackageAddHandler(
   ): Future[universe.v3.model.V3Package] = {
     for {
       // TODO package-add: verify media type
-      (_, packageInputStream) <- stagedPackageStorage.read(stagedPackageId)
+      Some((_, packageInputStream)) <- stagedPackageStorage.read(stagedPackageId)
       packageZip = new ZipInputStream(packageInputStream)
       packageMetadata <- Future.const(extractPackageMetadata(packageZip))
     } yield {
