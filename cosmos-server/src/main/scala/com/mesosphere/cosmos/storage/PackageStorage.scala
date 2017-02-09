@@ -34,9 +34,11 @@ final class PackageStorage private(objectStorage: ObjectStorage) {
     packageCoordinate: rpc.v1.model.PackageCoordinate
   ): Future[Option[universe.v3.model.V3Package]] = {
     val metadataName = getMetadataName(packageCoordinate)
-    objectStorage.readAsArray(metadataName).map( _.map { case (_, data) =>
-      decode[universe.v3.model.V3Package](new String(data))
-    })
+    objectStorage.readAsArray(metadataName).map { pendingRead =>
+      pendingRead.map { case (_, data) =>
+        decode[universe.v3.model.V3Package](new String(data))
+      }
+    }
   }
 
   def list(): Future[List[PackageCoordinate]] = {
