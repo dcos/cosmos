@@ -1,14 +1,13 @@
 package com.mesosphere.cosmos.storage
 
 import com.mesosphere.cosmos.http.MediaType
+import com.mesosphere.cosmos.storage.ObjectStorageOps.objectStorageOps
 import com.twitter.util.Future
 import java.io.InputStream
 import java.time.Instant
 import java.util.UUID
 
 final class StagedPackageStorage private(objectStorage: ObjectStorage) {
-
-  import ObjectStorageOps.objectStorageOps
 
   def read(id: UUID): Future[(MediaType, InputStream)] = {
     // TODO package-add: Test for failure cases
