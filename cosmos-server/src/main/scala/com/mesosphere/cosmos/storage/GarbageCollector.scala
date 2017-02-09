@@ -7,11 +7,12 @@ import com.mesosphere.cosmos.storage.v1.model.PendingStatus
 import com.twitter.util.Future
 import java.time.Instant
 import java.util.UUID
+import scala.concurrent.duration._
 
 final class GarbageCollector private(
   stagedPackageStorage: StagedPackageStorage,
   installQueueReader: ReaderView,
-  timeout: Long
+  timeout: FiniteDuration
 ) extends (() => Future[Unit]){
 
   import GarbageCollector._
@@ -25,7 +26,7 @@ final class GarbageCollector private(
       Future.collect(packages).map(_.toList.flatten)
     }
     val operations = installQueueReader.viewStatus().map(_.values.toList)
-    val cutoffTime = Instant.now().minusSeconds(timeout)
+    val cutoffTime = Instant.now().minusSeconds(timeout.toSeconds)
     val garbage = for {
       stagedPackages <- stagedPackages
       operations <- operations
@@ -42,7 +43,7 @@ object GarbageCollector {
   def apply(
     stagedPackageStorage: StagedPackageStorage,
     installQueueReader: ReaderView,
-    timeout: Long = 60 * 60
+    timeout: FiniteDuration = 1.hour // TODO check that this is a good default
   ): GarbageCollector = {
     new GarbageCollector(stagedPackageStorage, installQueueReader, timeout)
   }
