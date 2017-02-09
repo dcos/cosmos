@@ -3,9 +3,7 @@ package com.mesosphere
 import scala.language.experimental.macros
 import scala.reflect.macros.blackbox.Context
 
-package object universe {
-
-  type AbsolutePath = String
+package object util {
 
   implicit final class PathInterpolations(val sc: StringContext) extends AnyVal {
 
@@ -23,7 +21,8 @@ package object universe {
       c.prefix.tree match {
         case Apply(_, List(Apply(_, List(path @ Literal(Constant(rawPath: String)))))) =>
           if (rawPath.startsWith("/")) {
-            c.Expr(path)
+            // TODO cruhland
+            reify(AbsolutePath())
           } else {
             c.abort(c.enclosingPosition, "Invalid absolute path")
           }

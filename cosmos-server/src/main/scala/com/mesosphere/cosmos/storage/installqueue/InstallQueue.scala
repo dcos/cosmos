@@ -14,9 +14,9 @@ import com.mesosphere.cosmos.storage.v1.model.OperationFailure
 import com.mesosphere.cosmos.storage.v1.model.OperationStatus
 import com.mesosphere.cosmos.storage.v1.model.PendingOperation
 import com.mesosphere.cosmos.storage.v1.model.PendingStatus
-import com.mesosphere.universe.AbsolutePath
-import com.mesosphere.universe.PathInterpolations
 import com.mesosphere.universe.bijection.BijectionUtils
+import com.mesosphere.util.AbsolutePath
+import com.mesosphere.util.PathInterpolations
 import com.twitter.bijection.Conversion.asMethod
 import com.twitter.finagle.stats.Stat.timeFuture
 import com.twitter.finagle.stats.StatsReceiver
@@ -45,7 +45,7 @@ final class InstallQueue private(
 
   private[this] val stats = statsReceiver.scope("InstallQueue")
 
-  private[this] val operationStatusCache = new TreeCache(client, installQueuePath)
+  private[this] val operationStatusCache = new TreeCache(client, installQueuePath.toString)
 
   def start(): Unit = {
     operationStatusCache.start()
@@ -329,7 +329,7 @@ final class InstallQueue private(
     timeFuture(stats.stat("viewStatus")) {
       val operationStatus =
         Option(operationStatusCache
-          .getCurrentChildren(installQueuePath))
+          .getCurrentChildren(installQueuePath.toString))
           .getOrElse(new java.util.HashMap[String, ChildData]())
           .toMap
           .map { case (encodedPackageCoordinate, childData) =>
@@ -350,9 +350,9 @@ final class InstallQueue private(
 object InstallQueue {
 
   val installQueuePath: AbsolutePath = abspath"/package/task-queue"
-  
-  def statusPath(packageCoordinate: PackageCoordinate): String = {
-    s"$installQueuePath/${packageCoordinate.as[String]}"
+
+  def statusPath(packageCoordinate: PackageCoordinate): AbsolutePath = {
+    installQueuePath / packageCoordinate.as[String]
   }
 
   def apply(client: CuratorFramework)(implicit statsReceiver: StatsReceiver): InstallQueue = {
@@ -379,5 +379,3 @@ object InstallQueue {
   }
 
 }
-
-

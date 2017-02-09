@@ -1,4 +1,4 @@
-package com.mesosphere.universe
+package com.mesosphere.util
 
 import org.scalatest.FreeSpec
 import org.scalatest.Matchers
