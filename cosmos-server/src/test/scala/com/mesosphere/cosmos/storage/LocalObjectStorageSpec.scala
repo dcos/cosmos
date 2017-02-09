@@ -2,6 +2,8 @@ package com.mesosphere.cosmos.storage
 
 import com.mesosphere.cosmos.http.MediaType
 import com.mesosphere.cosmos.http.MediaTypes
+import com.mesosphere.cosmos.storage.ObjectStorageOps.objectStorageOps
+import com.mesosphere.cosmos.storage.ObjectStorageTestOps.objectStorageTestOps
 import com.mesosphere.cosmos.test.TestUtil
 import com.twitter.util.Await
 import java.time.Instant
@@ -13,7 +15,6 @@ import org.scalatest.prop.PropertyChecks
 final class LocalObjectStorageSpec extends FreeSpec with PropertyChecks {
 
   import LocalObjectStorageSpec._
-  import ObjectStorageOps.objectStorageOps
 
   "read() must observe None on a nonexistent object" in {
     forAll(genObjectStorageState, genPath) { (state, path) =>

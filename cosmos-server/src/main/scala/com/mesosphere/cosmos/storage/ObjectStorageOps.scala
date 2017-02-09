@@ -7,15 +7,13 @@ import com.twitter.util.Future
 import com.twitter.util.FuturePool
 import java.io.ByteArrayInputStream
 
-class ObjectStorageOps(objectStorage: ObjectStorage) {
+final class ObjectStorageOps(val objectStorage: ObjectStorage) extends AnyVal {
 
   import ObjectStorageOps._
 
-  private[this] val pool = FuturePool.interruptibleUnboundedPool
-
   def readAsArray(name: String): Future[Option[(MediaType, Array[Byte])]] = {
     objectStorage.read(name).flatMap { item =>
-      pool { item.map { case (mediaType, readStream) =>
+      FuturePool.interruptibleUnboundedPool { item.map { case (mediaType, readStream) =>
         (mediaType, StreamIO.buffer(readStream).toByteArray)
       }}.ensure(item.foreach(_._2.close()))
     }
@@ -39,24 +37,6 @@ class ObjectStorageOps(objectStorage: ObjectStorage) {
     objectStorage.write(name, body, contentLength, mediaType)
   }
 
-  def writeAll(objectStorageItems: List[ObjectStorageItem]): Future[Unit] = {
-    Future.join(
-      objectStorageItems.map { objectStorageItem =>
-        objectStorage.write(
-          objectStorageItem.name,
-          objectStorageItem.content,
-          objectStorageItem.mediaType
-        )
-      }
-    )
-  }
-
-  def deleteAll(names: List[String]): Future[Unit] = {
-    Future.join(
-      names.map(objectStorage.delete)
-    )
-  }
-
   def listAllObjectNames(root: String): Future[List[String]] = {
     objectStorage.listWithoutPaging(root).flatMap { objectList =>
       Future.collect(
@@ -64,17 +44,6 @@ class ObjectStorageOps(objectStorage: ObjectStorage) {
       ).map { rest =>
         (objectList.objects :: rest.toList).flatten
       }
-    }
-  }
-
-  def listAllObjects(root: String): Future[List[ObjectStorageItem]] = {
-    listAllObjectNames(root).flatMap { names =>
-      Future.collect(names.map { name =>
-        for {
-          Some((mediaType, content)) <- objectStorage.readAsArray(name)
-          timeCreated <- objectStorage.getCreationTime(name)
-        } yield ObjectStorageItem(name, content, Some(mediaType), timeCreated)
-      }).map(_.toList)
     }
   }
 
