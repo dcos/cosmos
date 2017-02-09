@@ -65,10 +65,11 @@ final class PackageStorage private(objectStorage: ObjectStorage) {
   }
 
   def readAllInstalledPackages(): Future[List[universe.v3.model.V3Package]] = {
-    readAllLocalPackages().map(_.flatMap {
-      case rpc.v1.model.Installed(v3Package) => Some(v3Package)
-      case _ => None
-    })
+    readAllLocalPackages().map { allLocalPackages =>
+      allLocalPackages.collect {
+        case rpc.v1.model.Installed(v3Package) => v3Package
+      }
+    }
   }
 
 }
