@@ -49,11 +49,13 @@ final class SyncFutureLeader private (
          */
         Future.join(
           Future.sleep(Duration.fromSeconds(10)), // scalastyle:ignore magic.number
-          processor(),
-          garbageCollector()
-        ).unit.onFailure { error =>
-          logger.error(s"Got a failure from the processor or garbageCollector", error)
-        }
+          processor().onFailure {
+            logger.error(s"Got a failure from the processor or garbageCollector", _)
+          },
+          garbageCollector().onFailure {
+            logger.error(s"Got a failure from the processor or garbageCollector", _)
+          }
+        ).unit
       }
     } catch {
       case cancel: InterruptedException =>
