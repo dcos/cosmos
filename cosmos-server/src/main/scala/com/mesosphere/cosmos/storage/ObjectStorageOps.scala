@@ -6,6 +6,7 @@ import com.twitter.io.StreamIO
 import com.twitter.util.Future
 import com.twitter.util.FuturePool
 import java.io.ByteArrayInputStream
+import scala.language.implicitConversions
 
 final class ObjectStorageOps(val objectStorage: ObjectStorage) extends AnyVal {
 
@@ -81,8 +82,6 @@ final class ObjectStorageOps(val objectStorage: ObjectStorage) extends AnyVal {
 }
 
 object ObjectStorageOps {
-  import scala.language.implicitConversions
-
   implicit def objectStorageOps(objectStorage: ObjectStorage): ObjectStorageOps = {
     new ObjectStorageOps(objectStorage)
   }

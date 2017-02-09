@@ -2,6 +2,7 @@ package com.mesosphere.cosmos.storage
 
 import com.mesosphere.cosmos.storage.ObjectStorageOps.objectStorageOps
 import com.twitter.util.Future
+import scala.language.implicitConversions
 
 final class ObjectStorageTestOps(val objectStorage: ObjectStorage) extends AnyVal {
 
@@ -37,8 +38,6 @@ final class ObjectStorageTestOps(val objectStorage: ObjectStorage) extends AnyVa
 }
 
 object ObjectStorageTestOps {
-  import scala.language.implicitConversions
-
   implicit def objectStorageTestOps(objectStorage: ObjectStorage): ObjectStorageTestOps = {
     new ObjectStorageTestOps(objectStorage)
   }
