@@ -22,16 +22,51 @@ final class GarbageCollectorSpec extends FreeSpec with PropertyChecks {
 
   import GarbageCollectorSpec._
 
-  "Garbage is resolved properly" in {
-    forAll(genGarbageCollectorState) { case (stagedPackages, operations, cutoffTime) =>
-      val garbage = GarbageCollector.resolveGarbage(stagedPackages, operations, cutoffTime)
+  "Garbage is resolved such that" - {
 
-      val timeCreated = stagedPackages.toMap
-      val pendingUuids = GarbageCollector.getStagedPackageUuids(operations).toSet
-
-      assert(garbage.forall(uuid => timeCreated(uuid).isBefore(cutoffTime)))
-      assert(garbage.forall(uuid => !pendingUuids.contains(uuid)))
+    "a garbage element is older than cutoffTime" in {
+      forAll(genGarbageCollectorState) {
+        case (stagedPackages, operations, cutoffTime) =>
+          val garbage = GarbageCollector.resolveGarbage(stagedPackages, operations, cutoffTime)
+          val timeCreated = stagedPackages.toMap
+          assert(garbage.forall(uuid => timeCreated(uuid).isBefore(cutoffTime)))
+      }
     }
+
+    "a garbage element is not pending" in {
+      forAll(genGarbageCollectorState) {
+        case (stagedPackages, operations, cutoffTime) =>
+          val garbage = GarbageCollector.resolveGarbage(stagedPackages, operations, cutoffTime)
+          val pendingUuids = GarbageCollector.getStagedPackageUuids(operations).toSet
+          assert(garbage.forall(uuid => !pendingUuids.contains(uuid)))
+      }
+    }
+
+    "a garbage element must be staged" in {
+      forAll(genGarbageCollectorState) {
+        case (stagedPackages, operations, cutoffTime) =>
+          val garbage = GarbageCollector.resolveGarbage(stagedPackages, operations, cutoffTime)
+          val stagedUuids = stagedPackages.map(_._1)
+          assert(garbage.forall(stagedUuids.contains))
+      }
+    }
+
+    "a staged element is either too new, pending, or garbage" in {
+      forAll(genGarbageCollectorState) {
+        case (stagedPackages, operations, cutoffTime) =>
+          val garbage = GarbageCollector.resolveGarbage(stagedPackages, operations, cutoffTime)
+          val timeCreated = stagedPackages.toMap
+          val pendingUuids = GarbageCollector.getStagedPackageUuids(operations).toSet
+          val stagedUuids = timeCreated.keySet
+          assert(stagedUuids.forall{ staged =>
+            timeCreated(staged).isAfter(cutoffTime) ||
+              pendingUuids.contains(staged) ||
+              garbage.contains(staged)
+          })
+      }
+    }
+
+
   }
 
 }
@@ -104,7 +139,6 @@ object GarbageCollectorSpec {
     } yield {
       val pending = Random.shuffle(pendingOnly ++ pendingAndStaged)
       val uuidsZipCreationTimes = uuids zip creationTimes
-
       (uuidsZipCreationTimes, pending, cutoffTime)
     }
   }
