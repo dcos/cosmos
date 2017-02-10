@@ -27,13 +27,12 @@ final class GarbageCollector private(
     }
     val operations = installQueueReader.viewStatus().map(_.values.toList)
     val cutoffTime = Instant.now().minusSeconds(timeout.toSeconds)
-    val garbage = for {
+    for {
       stagedPackages <- stagedPackages
       operations <- operations
-    } yield resolveGarbage(stagedPackages, operations, cutoffTime)
-    garbage.flatMap { garbage =>
-      Future.join(garbage.map(stagedPackageStorage.delete).toSeq)
-    }
+      garbage = resolveGarbage(stagedPackages, operations, cutoffTime)
+      _ <- Future.join(garbage.map(stagedPackageStorage.delete).toSeq)
+    } yield ()
   }
 
 }
