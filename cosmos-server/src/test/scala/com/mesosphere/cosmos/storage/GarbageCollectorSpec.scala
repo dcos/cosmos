@@ -66,7 +66,6 @@ final class GarbageCollectorSpec extends FreeSpec with PropertyChecks {
       }
     }
 
-
   }
 
 }
@@ -77,36 +76,36 @@ object GarbageCollectorSpec {
     Gen.choose(0L, Long.MaxValue).map(Instant.ofEpochMilli)
   }
 
-  def genInstall(v3Package: Option[V3Package] = None): Gen[Install] = {
+  def genInstall(genV3Package: Gen[V3Package] = Generators.genV3Package): Gen[Install] = {
     for {
-      generatedV3Package <- Generators.genV3Package
+      v3Package <- genV3Package
       uuid <- Gen.uuid
-    } yield Install(uuid, v3Package.getOrElse(generatedV3Package))
+    } yield Install(uuid, v3Package)
   }
 
-  def genUniverseInstall(v3Package: Option[V3Package] = None): Gen[UniverseInstall] = {
-    Generators.genV3Package.map { generatedV3Package =>
-      UniverseInstall(v3Package.getOrElse(generatedV3Package))
+  def genUniverseInstall(genV3Package: Gen[V3Package] = Generators.genV3Package): Gen[UniverseInstall] = {
+    genV3Package.map { v3Package =>
+      UniverseInstall(v3Package)
     }
   }
 
-  def genUninstall(v3Package: Option[V3Package] = None): Gen[Uninstall] = {
-    Generators.genV3Package.map { generatedV3Package =>
-      Uninstall(v3Package.getOrElse(generatedV3Package))
+  def genUninstall(genV3Package: Gen[V3Package] = Generators.genV3Package): Gen[Uninstall] = {
+    genV3Package.map { v3Package =>
+      Uninstall(v3Package)
     }
   }
 
-  def genOperation(v3Package: Option[V3Package] = None): Gen[Operation] = {
-    Gen.oneOf(genInstall(v3Package), genUniverseInstall(v3Package), genUninstall(v3Package))
+  def genOperation(genV3Package: Gen[V3Package] = Generators.genV3Package): Gen[Operation] = {
+    Gen.oneOf(genInstall(genV3Package), genUniverseInstall(genV3Package), genUninstall(genV3Package))
   }
 
   val genErrorResponse: Gen[ErrorResponse] = {
     Gen.const(ErrorResponse("GeneratedError", "This is a generated Error"))
   }
 
-  def genOperationFailure(v3Package: Option[V3Package] = None): Gen[OperationFailure] = {
+  def genOperationFailure(genV3Package: Gen[V3Package] = Generators.genV3Package): Gen[OperationFailure] = {
     for {
-      operation <- genOperation(v3Package)
+      operation <- genOperation(genV3Package)
       error <- genErrorResponse
     } yield OperationFailure(operation, error)
   }
@@ -114,8 +113,8 @@ object GarbageCollectorSpec {
   val genPendingStatus: Gen[PendingStatus] = {
     for {
       v3Package <- Generators.genV3Package
-      pendingOperation <- genOperation(Some(v3Package))
-      failedOperation <- Gen.option(genOperationFailure(Some(v3Package)))
+      pendingOperation <- genOperation(v3Package)
+      failedOperation <- Gen.option(genOperationFailure(v3Package))
     } yield PendingStatus(pendingOperation, failedOperation)
   }
 
