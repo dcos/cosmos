@@ -35,4 +35,9 @@ package object util {
 
   }
 
+  implicit final class PathOps[P <: Path](val path: P) extends AnyVal {
+    // TODO cruhland
+    def /(extension: String): P = ???  // scalastyle:ignore method.name
+  }
+
 }

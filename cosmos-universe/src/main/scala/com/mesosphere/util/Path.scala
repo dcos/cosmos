@@ -10,11 +10,21 @@ object Path {
 // TODO cruhland
 final case class AbsolutePath() extends Path {
 
-  // scalastyle:off method.name
-  def /(p: RelativePath): AbsolutePath = ???
+  def /(p: RelativePath): AbsolutePath = ???  // scalastyle:ignore method.name
 
-  def /(p: String): AbsolutePath = ???
-  // scalastyle:on method.name
+}
+
+object AbsolutePath {
+
+  def apply(path: String): Either[Error, AbsolutePath] = {
+    if (path.isEmpty) Left(Empty)
+    else if (!path.startsWith(Path.Separator)) Left(Relative)
+    else Right(AbsolutePath())
+  }
+
+  sealed trait Error
+  case object Empty extends Error
+  case object Relative extends Error
 
 }
 

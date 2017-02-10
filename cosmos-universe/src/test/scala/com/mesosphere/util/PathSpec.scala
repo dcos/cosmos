@@ -10,16 +10,6 @@ final class PathSpec extends FreeSpec with PropertyChecks {
 
   import PathSpec._
 
-  "A RelativePath can be extended by a RelativePath" in {
-    forAll (genRelativePath, genRelativePath) { (basePath, extension) =>
-      val fullPath = basePath / extension
-
-      assertResult(Path.Separator) {
-        fullPath.toString.stripPrefix(basePath.toString).stripSuffix(extension.toString)
-      }
-    }
-  }
-
   "RelativePath.apply(String)" - {
 
     "fails on empty" in {
@@ -66,6 +56,38 @@ final class PathSpec extends FreeSpec with PropertyChecks {
         val normalizedPathStr = elements.mkString(Path.Separator)
 
         assertResult(Right(normalizedPathStr))(RelativePath(pathStr).right.map(_.toString))
+      }
+    }
+  }
+
+  "AbsolutePath.apply(String)" - {
+
+    "fails on empty" in {
+      assertResult(Left(AbsolutePath.Empty))(AbsolutePath(""))
+    }
+
+    "fails on relative" in {
+      forAll { (path: String) =>
+        whenever (path.nonEmpty && !path.startsWith(Path.Separator)) {
+          assertResult(Left(AbsolutePath.Relative))(AbsolutePath(path))
+        }
+      }
+    }
+
+    "succeeds in all other cases" in {
+      forAll { (path: String) =>
+        assert(AbsolutePath(s"/$path").isRight)
+      }
+    }
+
+  }
+
+  "A RelativePath can be extended by a RelativePath" in {
+    forAll (genRelativePath, genRelativePath) { (basePath, extension) =>
+      val fullPath = basePath / extension
+
+      assertResult(Path.Separator) {
+        fullPath.toString.stripPrefix(basePath.toString).stripSuffix(extension.toString)
       }
     }
   }
