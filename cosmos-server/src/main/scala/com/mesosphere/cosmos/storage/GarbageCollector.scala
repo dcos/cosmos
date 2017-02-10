@@ -61,9 +61,8 @@ object GarbageCollector {
   }
 
   def getStagedPackageUuids(operations: List[OperationStatus]): List[UUID] = {
-    operations.flatMap {
-      case PendingStatus(Install(stagedPackageID, _), _) => Some(stagedPackageID)
-      case _ => None
+    operations.collect {
+      case PendingStatus(Install(stagedPackageID, _), _) => stagedPackageID
     }
   }
 
