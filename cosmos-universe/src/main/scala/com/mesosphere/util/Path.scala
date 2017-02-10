@@ -12,6 +12,8 @@ final case class AbsolutePath() extends Path {
 
   def /(p: RelativePath): AbsolutePath = ???  // scalastyle:ignore method.name
 
+  override def toString: String = Path.Separator
+
 }
 
 object AbsolutePath {

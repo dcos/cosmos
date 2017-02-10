@@ -10,86 +10,112 @@ final class PathSpec extends FreeSpec with PropertyChecks {
 
   import PathSpec._
 
-  "RelativePath.apply(String)" - {
+  "Constructing Paths" - {
 
-    "fails on empty" in {
-      assertResult(Left(RelativePath.Empty))(RelativePath(""))
-    }
+    "RelativePath.apply(String)" - {
 
-    "fails on absolute" in {
-      forAll { (pathSuffix: String) =>
-        assertResult(Left(RelativePath.Absolute))(RelativePath(s"/$pathSuffix"))
+      "fails on empty" in {
+        assertResult(Left(RelativePath.Empty))(RelativePath(""))
       }
+
+      "fails on absolute" in {
+        forAll { (pathSuffix: String) =>
+          assertResult(Left(RelativePath.Absolute))(RelativePath(s"/$pathSuffix"))
+        }
+      }
+
+      "succeeds in all other cases" in {
+        forAll { (path: String) =>
+          whenever(path.nonEmpty && !path.startsWith("/")) {
+            assert(RelativePath(path).isRight)
+          }
+        }
+      }
+
     }
 
-    "succeeds in all other cases" in {
-      forAll { (path: String) =>
-        whenever (path.nonEmpty && !path.startsWith("/")) {
-          assert(RelativePath(path).isRight)
+    "AbsolutePath.apply(String)" - {
+
+      "fails on empty" in {
+        assertResult(Left(AbsolutePath.Empty))(AbsolutePath(""))
+      }
+
+      "fails on relative" in {
+        forAll { (path: String) =>
+          whenever (path.nonEmpty && !path.startsWith(Path.Separator)) {
+            assertResult(Left(AbsolutePath.Relative))(AbsolutePath(path))
+          }
+        }
+      }
+
+      "succeeds in all other cases" in {
+        forAll { (path: String) =>
+          assert(AbsolutePath(s"/$path").isRight)
+        }
+      }
+
+    }
+
+  }
+
+  "String representations of Paths" - {
+
+    "Path => String => Path preserves the value" - {
+
+      "RelativePath" in {
+        forAll (genRelativePath) { path =>
+          assertResult(Right(path))(RelativePath(path.toString))
+        }
+      }
+
+      "AbsolutePath" in {
+        forAll (genAbsolutePath) { path =>
+          assertResult(Right(path))(AbsolutePath(path.toString))
+        }
+      }
+
+    }
+
+    "String => Path => String normalizes the value" - {
+
+      "RelativePath" in {
+        val genElementsAndSeparatorCounts = for {
+          elements <- genPathElements
+          size <- Gen.size
+          counts <- Gen.listOfN(elements.size, Gen.chooseNum(1, size))
+        } yield (elements, counts)
+
+        forAll (genElementsAndSeparatorCounts) { case (elements, counts) =>
+          val elementsValid = validPathElements(elements)
+
+          whenever (elementsValid && elements.size == counts.size && counts.forall(_ > 0)) {
+            val elementsWithExtraSeparators = elements.zip(counts)
+              .flatMap { case (element, count) => element :: List.fill(count)(Path.Separator) }
+
+            val pathStr = elementsWithExtraSeparators.mkString
+            val normalizedPathStr = elements.mkString(Path.Separator)
+
+            assertResult(Right(normalizedPathStr))(RelativePath(pathStr).right.map(_.toString))
+          }
+        }
+      }
+
+    }
+
+  }
+
+  "Extending Paths" - {
+
+    "A RelativePath can be extended by a RelativePath" in {
+      forAll(genRelativePath, genRelativePath) { (basePath, extension) =>
+        val fullPath = basePath / extension
+
+        assertResult(Path.Separator) {
+          fullPath.toString.stripPrefix(basePath.toString).stripSuffix(extension.toString)
         }
       }
     }
 
-  }
-
-  "RelativePath preserves its String representation" in {
-    forAll (genRelativePath) { path =>
-      assertResult(Right(path))(RelativePath(path.toString))
-    }
-  }
-
-  "RelativePath has a normalized toString representation" in {
-    val genElementsAndSeparatorCounts = for {
-      elements <- genPathElements
-      size <- Gen.size
-      counts <- Gen.listOfN(elements.size, Gen.chooseNum(1, size))
-    } yield (elements, counts)
-
-    forAll (genElementsAndSeparatorCounts) { case (elements, counts) =>
-      val elementsValid = validPathElements(elements)
-
-      whenever (elementsValid && elements.size == counts.size && counts.forall(_ > 0)) {
-        val elementsWithExtraSeparators = elements.zip(counts)
-          .flatMap { case (element, count) => element :: List.fill(count)(Path.Separator) }
-
-        val pathStr = elementsWithExtraSeparators.mkString
-        val normalizedPathStr = elements.mkString(Path.Separator)
-
-        assertResult(Right(normalizedPathStr))(RelativePath(pathStr).right.map(_.toString))
-      }
-    }
-  }
-
-  "AbsolutePath.apply(String)" - {
-
-    "fails on empty" in {
-      assertResult(Left(AbsolutePath.Empty))(AbsolutePath(""))
-    }
-
-    "fails on relative" in {
-      forAll { (path: String) =>
-        whenever (path.nonEmpty && !path.startsWith(Path.Separator)) {
-          assertResult(Left(AbsolutePath.Relative))(AbsolutePath(path))
-        }
-      }
-    }
-
-    "succeeds in all other cases" in {
-      forAll { (path: String) =>
-        assert(AbsolutePath(s"/$path").isRight)
-      }
-    }
-
-  }
-
-  "A RelativePath can be extended by a RelativePath" in {
-    forAll (genRelativePath, genRelativePath) { (basePath, extension) =>
-      val fullPath = basePath / extension
-
-      assertResult(Path.Separator) {
-        fullPath.toString.stripPrefix(basePath.toString).stripSuffix(extension.toString)
-      }
-    }
   }
 
 }
