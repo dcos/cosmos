@@ -51,6 +51,7 @@ import com.twitter.server.Stats
 import com.twitter.util.Await
 import com.twitter.util.Try
 import org.slf4j.Logger
+import scala.concurrent.duration._
 
 
 private[cosmos] final class Cosmos(
@@ -305,7 +306,8 @@ with Logging {
         ),
         GarbageCollector(
           stageStorage,
-          installQueue
+          installQueue,
+          1.hour
         )
       )
       onExit(processingLeader.close())

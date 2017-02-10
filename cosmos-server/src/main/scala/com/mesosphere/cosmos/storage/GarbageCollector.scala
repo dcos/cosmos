@@ -12,7 +12,7 @@ import scala.concurrent.duration._
 final class GarbageCollector private(
   stagedPackageStorage: StagedPackageStorage,
   installQueueReader: ReaderView,
-  timeout: FiniteDuration
+  gracePeriod: FiniteDuration
 ) extends (() => Future[Unit]){
 
   import GarbageCollector._
@@ -26,7 +26,7 @@ final class GarbageCollector private(
       Future.collect(packages).map(_.toList.flatten)
     }
     val operations = installQueueReader.viewStatus().map(_.values.toList)
-    val cutoffTime = Instant.now().minusSeconds(timeout.toSeconds)
+    val cutoffTime = Instant.now().minusSeconds(gracePeriod.toSeconds)
     for {
       stagedPackages <- stagedPackages
       operations <- operations
@@ -42,9 +42,9 @@ object GarbageCollector {
   def apply(
     stagedPackageStorage: StagedPackageStorage,
     installQueueReader: ReaderView,
-    timeout: FiniteDuration = 1.hour // TODO check that this is a good default
+    gracePeriod: FiniteDuration
   ): GarbageCollector = {
-    new GarbageCollector(stagedPackageStorage, installQueueReader, timeout)
+    new GarbageCollector(stagedPackageStorage, installQueueReader, gracePeriod)
   }
 
   def resolveGarbage(
