@@ -68,7 +68,7 @@ final class PackageAddHandler(
   }
 
   private[this] def invert[A](a: Option[Try[A]]): Try[Option[A]] = {
-    // silly function to change types
+    // function to change types
     import cats.implicits._ // Breaks universe conversions
     Try.fromScala(a.map(twitterTryToScalaTry).sequenceU)
   }
