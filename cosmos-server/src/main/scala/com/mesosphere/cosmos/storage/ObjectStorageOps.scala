@@ -16,7 +16,7 @@ final class ObjectStorageOps(val objectStorage: ObjectStorage) extends AnyVal {
     objectStorage.read(name).flatMap { item =>
       FuturePool.interruptibleUnboundedPool { item.map { case (mediaType, readStream) =>
         (mediaType, StreamIO.buffer(readStream).toByteArray)
-      }}.ensure(item.foreach(_._2.close()))
+      }}.ensure(item.foreach { case (_ , inputStream) => inputStream.close() })
     }
   }
 
