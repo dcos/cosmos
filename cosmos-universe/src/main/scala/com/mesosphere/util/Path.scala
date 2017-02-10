@@ -33,7 +33,7 @@ object RelativePath {
   def apply(path: String): Either[Error, RelativePath] = {
     if (path.isEmpty) Left(Empty)
     else if (path.startsWith(Path.Separator)) Left(Absolute)
-    else Right(RelativePath(List(path)))
+    else Right(RelativePath(path.split(Path.Separator).toList.filter(_.nonEmpty)))
   }
 
   sealed trait Error

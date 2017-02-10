@@ -42,9 +42,31 @@ final class PathSpec extends FreeSpec with PropertyChecks {
 
   }
 
-  "RelativePath has a normalized toString representation" in {
+  "RelativePath preserves its String representation" in {
     forAll (genRelativePath) { path =>
       assertResult(Right(path))(RelativePath(path.toString))
+    }
+  }
+
+  "RelativePath has a normalized toString representation" in {
+    val genElementsAndSeparatorCounts = for {
+      elements <- genPathElements
+      size <- Gen.size
+      counts <- Gen.listOfN(elements.size, Gen.chooseNum(1, size))
+    } yield (elements, counts)
+
+    forAll (genElementsAndSeparatorCounts) { case (elements, counts) =>
+      val elementsValid = validPathElements(elements)
+
+      whenever (elementsValid && elements.size == counts.size && counts.forall(_ > 0)) {
+        val elementsWithExtraSeparators = elements.zip(counts)
+          .flatMap { case (element, count) => element :: List.fill(count)(Path.Separator) }
+
+        val pathStr = elementsWithExtraSeparators.mkString
+        val normalizedPathStr = elements.mkString(Path.Separator)
+
+        assertResult(Right(normalizedPathStr))(RelativePath(pathStr).right.map(_.toString))
+      }
     }
   }
 
@@ -52,15 +74,22 @@ final class PathSpec extends FreeSpec with PropertyChecks {
 
 object PathSpec {
 
+  val genPathElements: Gen[List[String]] = {
+    val genElement = Gen.nonEmptyListOf(arbitrary[Char]).map(_.mkString)
+    Gen.nonEmptyListOf(genElement).suchThat(validPathElements)
+  }
+
   val genRelativePath: Gen[RelativePath] = {
-    arbitrary[List[String]]
-      .map(elements => RelativePath(elements.mkString(Path.Separator)))
-      .flatMap(_.fold(_ => Gen.fail, Gen.const))
+    genPathElements.map(elements => RelativePath(elements.mkString(Path.Separator)).right.get)
   }
 
   // TODO cruhland
   val genAbsolutePath: Gen[AbsolutePath] = Gen.const(AbsolutePath())
 
   val genPath: Gen[Path] = Gen.oneOf(genRelativePath, genAbsolutePath)
+
+  def validPathElements(elements: List[String]): Boolean = {
+    elements.nonEmpty && elements.forall(e => e.nonEmpty && !e.contains(Path.Separator))
+  }
 
 }
