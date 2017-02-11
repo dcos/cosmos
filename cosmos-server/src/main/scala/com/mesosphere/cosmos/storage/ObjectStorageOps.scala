@@ -61,22 +61,24 @@ final class ObjectStorageOps(val objectStorage: ObjectStorage) extends AnyVal {
   private[this] def collectPages(
     firstPage: Future[ObjectStorage.ObjectList]
   ): Future[List[ObjectStorage.ObjectList]] = {
-    collectPagesReversed(firstPage.map(List(_))).map(_.reverse)
-  }
 
-  private[this] def collectPagesReversed(
-    pages: Future[List[ObjectStorage.ObjectList]]
-  ): Future[List[ObjectStorage.ObjectList]] = {
-    pages.flatMap { pagesSoFar =>
-      val mostRecentPage = pagesSoFar.head
-      mostRecentPage.listToken match {
-        case Some(token) =>
-          val nextPage = objectStorage.listNext(token)
-          collectPagesReversed(nextPage.map(_ :: pagesSoFar))
-        case None =>
-          Future.value(pagesSoFar)
+    // Requires pages.map(_.nonEmpty) == Future.value(true)
+    def collectPagesReversed(
+      pages: Future[List[ObjectStorage.ObjectList]]
+    ): Future[List[ObjectStorage.ObjectList]] = {
+      pages.flatMap { pagesSoFar =>
+        val mostRecentPage = pagesSoFar.head
+        mostRecentPage.listToken match {
+          case Some(token) =>
+            val nextPage = objectStorage.listNext(token)
+            collectPagesReversed(nextPage.map(_ :: pagesSoFar))
+          case None =>
+            Future.value(pagesSoFar)
+        }
       }
     }
+
+    collectPagesReversed(firstPage.map(List(_))).map(_.reverse)
   }
 
 }
