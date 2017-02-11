@@ -48,6 +48,16 @@ final class PathSpec extends FreeSpec with PropertyChecks {
         }
       }
 
+      "fails on more than one leading separator" in {
+        forAll (arbitrary[String], Gen.size) { (path, leadingSeparators) =>
+          whenever (leadingSeparators > 1) {
+            assertResult(Left(AbsolutePath.BadRoot)) {
+              AbsolutePath(Path.Separator * leadingSeparators + path)
+            }
+          }
+        }
+      }
+
       "succeeds in all other cases" in {
         forAll { (path: String) =>
           assert(AbsolutePath(s"/$path").isRight)
@@ -79,6 +89,17 @@ final class PathSpec extends FreeSpec with PropertyChecks {
     "String => Path => String normalizes the value" - {
 
       "RelativePath" in {
+        assertNormalization(formatPath = identity, buildPath = RelativePath(_))
+      }
+
+      "AbsolutePath" in {
+        assertNormalization(formatPath = Path.Separator + _, buildPath = AbsolutePath(_))
+      }
+
+      def assertNormalization(
+        formatPath: String => String,
+        buildPath: String => Either[_, Path]
+      ): Unit = {
         val genElementsAndSeparatorCounts = for {
           elements <- genPathElements
           size <- Gen.size
@@ -92,10 +113,10 @@ final class PathSpec extends FreeSpec with PropertyChecks {
             val elementsWithExtraSeparators = elements.zip(counts)
               .flatMap { case (element, count) => element :: List.fill(count)(Path.Separator) }
 
-            val pathStr = elementsWithExtraSeparators.mkString
-            val normalizedPathStr = elements.mkString(Path.Separator)
+            val pathStr = formatPath(elementsWithExtraSeparators.mkString)
+            val normalizedPathStr = formatPath(elements.mkString(Path.Separator))
 
-            assertResult(Right(normalizedPathStr))(RelativePath(pathStr).right.map(_.toString))
+            assertResult(Right(normalizedPathStr))(buildPath(pathStr).right.map(_.toString))
           }
         }
       }
@@ -131,8 +152,11 @@ object PathSpec {
     genPathElements.map(elements => RelativePath(elements.mkString(Path.Separator)).right.get)
   }
 
-  // TODO cruhland
-  val genAbsolutePath: Gen[AbsolutePath] = Gen.const(AbsolutePath())
+  val genAbsolutePath: Gen[AbsolutePath] = {
+    genPathElements.map { elements =>
+      AbsolutePath(elements.mkString(Path.Separator, Path.Separator, "")).right.get
+    }
+  }
 
   val genPath: Gen[Path] = Gen.oneOf(genRelativePath, genAbsolutePath)
 

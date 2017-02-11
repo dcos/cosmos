@@ -22,7 +22,7 @@ package object util {
         case Apply(_, List(Apply(_, List(path @ Literal(Constant(rawPath: String)))))) =>
           if (rawPath.startsWith("/")) {
             // TODO cruhland
-            reify(AbsolutePath())
+            reify(AbsolutePath("/").right.get)
           } else {
             c.abort(c.enclosingPosition, "Invalid absolute path")
           }
