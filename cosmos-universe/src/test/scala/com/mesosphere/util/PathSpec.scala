@@ -128,12 +128,22 @@ final class PathSpec extends FreeSpec with PropertyChecks {
   "Extending Paths" - {
 
     "A RelativePath can be extended by a RelativePath" in {
-      forAll(genRelativePath, genRelativePath) { (basePath, extension) =>
-        val fullPath = basePath / extension
+      assertPathExtension(genRelativePath)
+    }
 
-        assertResult(Path.Separator) {
-          fullPath.toString.stripPrefix(basePath.toString).stripSuffix(extension.toString)
-        }
+    "An AbsolutePath can be extended by a RelativePath" in {
+      assertPathExtension(genAbsolutePath)
+    }
+
+    def assertPathExtension[P <: Path](genBasePath: Gen[P]): Unit = {
+      forAll (genBasePath, genRelativePath) { (basePath, extension) =>
+        val basePathStr = basePath.toString
+        val extensionStr = extension.toString
+        val fullPathStr = (basePath / extension).toString
+
+        assert(fullPathStr.startsWith(basePathStr))
+        assert(fullPathStr.endsWith(extensionStr))
+        assertResult(Path.Separator)(fullPathStr.stripPrefix(basePathStr).stripSuffix(extensionStr))
       }
     }
 
