@@ -32,9 +32,9 @@ object RelativePath {
     else Right(RelativePath(path.split(Path.Separator).toList.filter(_.nonEmpty)))
   }
 
-  sealed trait Error
-  case object Empty extends Error
-  case object Absolute extends Error
+  sealed abstract class Error(val message: String)
+  case object Empty extends Error("Empty relative path")
+  case object Absolute extends Error("Expected relative path, but found absolute path")
 
 }
 
@@ -64,9 +64,9 @@ object AbsolutePath {
     }
   }
 
-  sealed trait Error
-  case object Empty extends Error
-  case object Relative extends Error
-  case object BadRoot extends Error
+  sealed abstract class Error(val message: String)
+  case object Empty extends Error("Empty absolute path")
+  case object Relative extends Error("Expected absolute path, but found relative path")
+  case object BadRoot extends Error("Too many leading separators for absolute path")
 
 }
