@@ -1,5 +1,6 @@
 package com.mesosphere.cosmos.handler
 
+import com.mesosphere.cosmos.InvalidPackageVersionForAdd
 import com.mesosphere.cosmos.circe.Decoders.decode
 import com.mesosphere.cosmos.finch.EndpointHandler
 import com.mesosphere.cosmos.http.RequestSession
@@ -41,9 +42,8 @@ final class PackageAddHandler(
           .map {
             case (v3Package: universe.v3.model.V3Package, _) =>
               UniverseInstall(v3Package)
-            case _ =>
-              // TODO: This returns a 500 we should create a different error that makes it a 4xx
-              throw new UnsupportedOperationException("Adding a package with packagingVersion 2.0")
+            case (v2Package: universe.v3.model.V2Package, _) =>
+              throw InvalidPackageVersionForAdd(v2Package.packageCoordinate)
           }
       case rpc.v1.model.UploadAddRequest(packageData) =>
         val packageStream = new ByteArrayInputStream(packageData)

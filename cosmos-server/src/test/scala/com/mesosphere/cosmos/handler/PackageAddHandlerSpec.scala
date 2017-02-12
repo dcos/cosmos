@@ -31,6 +31,7 @@ import org.scalatest.FreeSpec
 import org.scalatest.mock.MockitoSugar
 import org.scalatest.prop.PropertyChecks
 
+// TODO: Add test for installing a v2 package failing
 final class PackageAddHandlerSpec extends FreeSpec with MockitoSugar with PropertyChecks {
 
   import PackageAddHandlerSpec._
