@@ -6,6 +6,7 @@ import com.mesosphere.cosmos.http.CosmosRequests
 import com.mesosphere.cosmos.http.MediaType
 import com.mesosphere.cosmos.rpc.MediaTypes
 import com.mesosphere.cosmos.rpc.v2.circe.Decoders._
+import com.mesosphere.cosmos.rpc.v1.circe.Decoders._
 import com.mesosphere.cosmos.storage.ObjectStorage
 import com.mesosphere.cosmos.storage.ObjectStorage.ObjectList
 import com.mesosphere.cosmos.storage.PackageStorage
@@ -69,6 +70,17 @@ final class PackageAddSpec
       val version = universe.v3.model.PackageDefinition.Version("2.2.5-0.2.0")
       val addRequest = rpc.v1.model.UniverseAddRequest("cassandra", Some(version))
       assertSuccessfulUniverseAdd(addRequest)
+    }
+
+    "results in error when trying to add a version 2 package" in {
+      val version = universe.v3.model.PackageDefinition.Version("0.2.0-2")
+      val addRequest = rpc.v1.model.UniverseAddRequest("cassandra", Some(version))
+
+      val response = CosmosClient.submit(CosmosRequests.packageAdd(addRequest))
+      assertResult(Status.BadRequest)(response.status)
+      assertResult(MediaTypes.ErrorResponse)(MediaType.parse(response.contentType.get).get())
+
+      println(decode[rpc.v1.model.ErrorResponse](response.contentString))
     }
 
     def assertSuccessfulUniverseAdd(addRequest: rpc.v1.model.UniverseAddRequest): Unit = {
