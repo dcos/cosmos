@@ -1,12 +1,13 @@
 package com.mesosphere.cosmos
 
+import _root_.io.circe.Json
 import com.mesosphere.cosmos.circe.Decoders.decode
 import com.mesosphere.cosmos.converter.Response._
 import com.mesosphere.cosmos.http.CosmosRequests
 import com.mesosphere.cosmos.http.MediaType
 import com.mesosphere.cosmos.rpc.MediaTypes
-import com.mesosphere.cosmos.rpc.v2.circe.Decoders._
 import com.mesosphere.cosmos.rpc.v1.circe.Decoders._
+import com.mesosphere.cosmos.rpc.v2.circe.Decoders._
 import com.mesosphere.cosmos.storage.ObjectStorage
 import com.mesosphere.cosmos.storage.ObjectStorage.ObjectList
 import com.mesosphere.cosmos.storage.PackageStorage
@@ -80,7 +81,10 @@ final class PackageAddSpec
       assertResult(Status.BadRequest)(response.status)
       assertResult(MediaTypes.ErrorResponse)(MediaType.parse(response.contentType.get).get())
 
-      println(decode[rpc.v1.model.ErrorResponse](response.contentString))
+      val error = decode[rpc.v1.model.ErrorResponse](response.contentString)
+      assertResult(classOf[InvalidPackageVersionForAdd].getSimpleName)(error.`type`)
+      assertResult(Some(Json.fromString("cassandra")))(error.data.get("packageName"))
+      assertResult(Some(Json.fromString("0.2.0-2")))(error.data.get("packageVersion"))
     }
 
     def assertSuccessfulUniverseAdd(addRequest: rpc.v1.model.UniverseAddRequest): Unit = {
