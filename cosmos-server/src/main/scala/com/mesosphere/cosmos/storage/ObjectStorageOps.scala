@@ -1,7 +1,6 @@
 package com.mesosphere.cosmos.storage
 
 import com.mesosphere.cosmos.http.MediaType
-import com.mesosphere.cosmos.storage.ObjectStorage.ListToken
 import com.twitter.io.StreamIO
 import com.twitter.util.Future
 import com.twitter.util.FuturePool
@@ -36,13 +35,12 @@ final class ObjectStorageOps(val objectStorage: ObjectStorage) extends AnyVal {
     objectStorage.write(name, body, contentLength, mediaType)
   }
 
-  def listWithoutPaging(root: String): Future[ObjectStorage.ObjectList] = {
+  def listWithoutPaging(root: String): Future[ObjectStorageOps.ObjectStrictList] = {
     collectPages(objectStorage.list(root)).map { pages =>
-      new ObjectStorage.ObjectList {
-        override val listToken: Option[ListToken] = None
-        override val objects: List[String] = pages.flatMap(_.objects)
-        override val directories: List[String] = pages.flatMap(_.directories)
-      }
+      ObjectStorageOps.ObjectStrictList(
+        pages.flatMap(_.objects),
+        pages.flatMap(_.directories)
+      )
     }
   }
 
@@ -72,7 +70,11 @@ final class ObjectStorageOps(val objectStorage: ObjectStorage) extends AnyVal {
 }
 
 object ObjectStorageOps {
+
   implicit def objectStorageOps(objectStorage: ObjectStorage): ObjectStorageOps = {
     new ObjectStorageOps(objectStorage)
   }
+
+  case class ObjectStrictList(directories: List[String], objects: List[String])
+
 }
