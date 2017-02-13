@@ -18,8 +18,18 @@ final class ObjectStorageTestOps(val objectStorage: ObjectStorage) extends AnyVa
     )
   }
 
+  def listAllObjectNames(root: String): Future[List[String]] = {
+    objectStorage.listWithoutPaging(root).flatMap { objectList =>
+      Future.collect(
+        objectList.directories.map(listAllObjectNames)
+      ).map { rest =>
+        (objectList.objects :: rest.toList).flatten
+      }
+    }
+  }
+
   def listAllObjects(root: String): Future[List[ObjectStorageItem]] = {
-    objectStorage.listAllObjectNames(root).flatMap { names =>
+    listAllObjectNames(root).flatMap { names =>
       Future.collect(names.map { name =>
         for {
           Some((mediaType, content)) <- objectStorage.readAsArray(name)

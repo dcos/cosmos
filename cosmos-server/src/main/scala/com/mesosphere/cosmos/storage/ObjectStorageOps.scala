@@ -10,8 +10,6 @@ import scala.language.implicitConversions
 
 final class ObjectStorageOps(val objectStorage: ObjectStorage) extends AnyVal {
 
-  import ObjectStorageOps._
-
   def readAsArray(name: String): Future[Option[(MediaType, Array[Byte])]] = {
     objectStorage.read(name).flatMap { item =>
       FuturePool.interruptibleUnboundedPool { item.map { case (mediaType, readStream) =>
@@ -36,16 +34,6 @@ final class ObjectStorageOps(val objectStorage: ObjectStorage) extends AnyVal {
     val body = new ByteArrayInputStream(content)
     val contentLength = content.length.toLong
     objectStorage.write(name, body, contentLength, mediaType)
-  }
-
-  def listAllObjectNames(root: String): Future[List[String]] = {
-    objectStorage.listWithoutPaging(root).flatMap { objectList =>
-      Future.collect(
-        objectList.directories.map(listAllObjectNames)
-      ).map { rest =>
-        (objectList.objects :: rest.toList).flatten
-      }
-    }
   }
 
   def listWithoutPaging(root: String): Future[ObjectStorage.ObjectList] = {

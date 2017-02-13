@@ -41,7 +41,7 @@ final class PackageStorage private(objectStorage: ObjectStorage) {
     }
   }
 
-  def list(): Future[List[PackageCoordinate]] = {
+  private[this] def list(): Future[List[PackageCoordinate]] = {
     objectStorage.listWithoutPaging("").map { objectList =>
       objectList.directories.flatMap(_.as[Try[PackageCoordinate]].toOption)
     }
@@ -61,14 +61,6 @@ final class PackageStorage private(objectStorage: ObjectStorage) {
         }
       }
       Future.collect(localPackages).map(_.toList)
-    }
-  }
-
-  def readAllInstalledPackages(): Future[List[universe.v3.model.V3Package]] = {
-    readAllLocalPackages().map { allLocalPackages =>
-      allLocalPackages.collect {
-        case rpc.v1.model.Installed(v3Package) => v3Package
-      }
     }
   }
 
