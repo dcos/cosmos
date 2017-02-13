@@ -30,13 +30,13 @@ final class PackageStorage private(objectStorage: ObjectStorage) {
     objectStorage.write(metadataName, data, mediaType)
   }
 
-  def read(
+  def readPackageDefinition(
     packageCoordinate: rpc.v1.model.PackageCoordinate
   ): Future[Option[universe.v3.model.V3Package]] = {
     val metadataName = getMetadataName(packageCoordinate)
     objectStorage.readAsArray(metadataName).map { pendingRead =>
       pendingRead.map { case (_, data) =>
-        decode[universe.v3.model.V3Package](new String(data))
+        decode[universe.v3.model.V3Package](new String(data, StandardCharsets.UTF_8))
       }
     }
   }
@@ -50,7 +50,7 @@ final class PackageStorage private(objectStorage: ObjectStorage) {
   def readAllLocalPackages(): Future[List[rpc.v1.model.LocalPackage]] = {
     list().flatMap { coordinates =>
       val localPackages = coordinates.map { coordinate =>
-        read(coordinate).map {
+        readPackageDefinition(coordinate).map {
           case Some(packageDefinition) =>
             rpc.v1.model.Installed(packageDefinition)
           case None =>

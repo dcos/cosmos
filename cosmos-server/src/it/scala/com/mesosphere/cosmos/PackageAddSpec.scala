@@ -150,7 +150,7 @@ final class PackageAddSpec
       expectedV3Package,
       Await.result(
         TestUtil.eventualFuture(
-          () => packageStorage.read(
+          () => packageStorage.readPackageDefinition(
             expectedV3Package.packageCoordinate
           )
         )
