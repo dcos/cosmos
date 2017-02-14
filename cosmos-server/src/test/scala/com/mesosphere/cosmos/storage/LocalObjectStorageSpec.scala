@@ -216,9 +216,8 @@ object LocalObjectStorageSpec {
     for {
       numSegments <- Gen.choose(1, maxSegments)
       segments <- Gen.listOfN(numSegments, genSegment)
-    } yield {
-      RelativePath(segments.mkString("/")).right.get
-    }
+      relativePath <- RelativePath(segments.mkString("/")).fold(_ => Gen.fail, Gen.const)
+    } yield relativePath
   }
 
   val genPath: Gen[AbsolutePath] = {
