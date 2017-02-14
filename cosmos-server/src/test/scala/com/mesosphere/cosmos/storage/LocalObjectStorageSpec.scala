@@ -149,7 +149,10 @@ final class LocalObjectStorageSpec extends FreeSpec with PropertyChecks {
             storage.delete(item1.path)) before
             storage.list(parents)
         }
-        assert(objects.directories.length == 1 || objects.objects.length == 1)
+
+        // Need redundant `.toInt` calls to avoid an "implicit numeric widening" compiler warning
+        // TODO Update to ScalaTest 3.0.x; see https://github.com/scalatest/scalatest/issues/445
+        assert(objects.directories.length.toInt == 1 || objects.objects.length.toInt == 1)
       }
     }
   }
