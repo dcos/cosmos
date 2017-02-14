@@ -3,6 +3,7 @@ package com.mesosphere.cosmos.handler
 import com.mesosphere.cosmos.InvalidPackageVersionForAdd
 import com.mesosphere.cosmos.circe.Decoders.decode
 import com.mesosphere.cosmos.finch.EndpointHandler
+import com.mesosphere.cosmos.http.MediaType
 import com.mesosphere.cosmos.http.RequestSession
 import com.mesosphere.cosmos.repository.PackageCollection
 import com.mesosphere.cosmos.rpc
@@ -11,9 +12,9 @@ import com.mesosphere.cosmos.storage.installqueue.ProducerView
 import com.mesosphere.cosmos.storage.v1.model.Install
 import com.mesosphere.cosmos.storage.v1.model.UniverseInstall
 import com.mesosphere.universe
-import com.mesosphere.universe.bijection.BijectionUtils.twitterTryToScalaTry
 import com.mesosphere.universe.bijection.UniverseConversions._
 import com.mesosphere.universe.v3.circe.Decoders._
+import com.mesosphere.universe.v3.model.Metadata
 import com.mesosphere.universe.v3.syntax.PackageDefinitionOps._
 import com.twitter.bijection.Conversion.asMethod
 import com.twitter.finagle.http.Status
@@ -21,6 +22,7 @@ import com.twitter.io.StreamIO
 import com.twitter.util.Future
 import com.twitter.util.Try
 import java.io.ByteArrayInputStream
+import java.io.InputStream
 import java.nio.charset.StandardCharsets
 import java.time.Instant
 import java.util.UUID
@@ -67,21 +69,13 @@ final class PackageAddHandler(
     }
   }
 
-  private[this] def invert[A](a: Option[Try[A]]): Try[Option[A]] = {
-    // function to change types
-    import cats.implicits._ // Breaks universe conversions
-    Try.fromScala(a.map(twitterTryToScalaTry).sequenceU)
-  }
-
   private[this] def readPackageDefinitionFromStorage(
     stagedPackageId: UUID
   ): Future[Option[universe.v3.model.V3Package]] = {
     for {
       // TODO package-add: verify media type
       stagedPackage <- stagedPackageStorage.read(stagedPackageId)
-      packageInputStream = stagedPackage.map{ case (_, inputStream) => inputStream}
-      packageZip = packageInputStream.map(new ZipInputStream(_))
-      packageMetadata <- Future.const(invert(packageZip.map(extractPackageMetadata)))
+      packageMetadata <- traverse(stagedPackage)(extractPackageMetadata)
     } yield {
       // TODO package-add: Get creation time from storage
       packageMetadata.map { packageMetadata =>
@@ -92,13 +86,20 @@ final class PackageAddHandler(
     }
   }
 
-  private[this] def extractPackageMetadata(
-    packageZip: ZipInputStream
-  ): Try[universe.v3.model.Metadata] = {
-    Try {
+  private[this] def traverse[A, B](a: Option[A])(fun: A => Future[B]): Future[Option[B]] = {
+    a.map(fun) match {
+      case None => Future.value(None)
+      case Some(v) => v.map(Some(_))
+    }
+  }
+
+  private[this] def extractPackageMetadata(mediaTypeAndInputStream: (MediaType, InputStream)): Future[Metadata] = {
+    val (_, inputStream) = mediaTypeAndInputStream
+    val packageZip = new ZipInputStream(inputStream)
+    val metadata = Try {
       // TODO package-add: Factor out common Zip-handling code into utility methods
       Iterator
-        .continually(Option(packageZip.getNextEntry()))
+        .continually(Option(packageZip.getNextEntry))
         .takeWhile(_.isDefined)
         .flatten
         // TODO package-add: Test cases for files with unexpected content
@@ -109,6 +110,7 @@ final class PackageAddHandler(
         }
         .next()
     } ensure packageZip.close()
+    Future.const(metadata)
   }
 
 }
