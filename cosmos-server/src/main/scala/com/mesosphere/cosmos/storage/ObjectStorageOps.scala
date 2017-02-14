@@ -38,8 +38,8 @@ final class ObjectStorageOps(val objectStorage: ObjectStorage) extends AnyVal {
   def listWithoutPaging(root: String): Future[ObjectStorageOps.ObjectStrictList] = {
     collectPages(objectStorage.list(root)).map { pages =>
       ObjectStorageOps.ObjectStrictList(
-        pages.flatMap(_.objects),
-        pages.flatMap(_.directories)
+        objects = pages.flatMap(_.objects),
+        directories = pages.flatMap(_.directories)
       )
     }
   }
@@ -75,6 +75,6 @@ object ObjectStorageOps {
     new ObjectStorageOps(objectStorage)
   }
 
-  case class ObjectStrictList(directories: List[String], objects: List[String])
+  case class ObjectStrictList(objects: List[String], directories: List[String])
 
 }
