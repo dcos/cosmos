@@ -5,9 +5,11 @@ import com.mesosphere.cosmos.circe.Decoders.decode
 import com.mesosphere.cosmos.circe.Encoders.exceptionErrorResponse
 import com.mesosphere.cosmos.converter.Common._
 import com.mesosphere.cosmos.rpc
+import com.mesosphere.cosmos.rpc.v1.model.PackageCoordinate
 import com.mesosphere.universe
 import com.mesosphere.universe.v3.circe.Decoders._
 import com.mesosphere.universe.v3.circe.Encoders._
+import com.mesosphere.util.AbsolutePath
 import com.twitter.bijection.Conversion.asMethod
 import com.twitter.io.StreamIO
 import com.twitter.util.Future
@@ -18,6 +20,9 @@ import java.nio.charset.StandardCharsets
 import scala.util.Try
 
 final class PackageStorage private(objectStorage: ObjectStorage) {
+
+  import PackageStorage._
+
   private[this] val pool = FuturePool.interruptibleUnboundedPool
 
   def writePackageDefinition(
@@ -31,7 +36,7 @@ final class PackageStorage private(objectStorage: ObjectStorage) {
     val data = packageDefinition.asJson.noSpaces.getBytes(StandardCharsets.UTF_8)
 
     objectStorage.write(
-      s"${packageCoordinate.as[String]}/metadata.json",
+      AbsolutePath(s"/${packageCoordinate.as[String]}/$MetadataJson").right.get,
       new ByteArrayInputStream(data),
       data.length.toLong,
       universe.MediaTypes.universeV3Package
@@ -41,7 +46,7 @@ final class PackageStorage private(objectStorage: ObjectStorage) {
   def readPackageDefinition(
     packageCoordinate: rpc.v1.model.PackageCoordinate
   ): Future[Option[universe.v3.model.V3Package]] = {
-    val path = s"${packageCoordinate.as[String]}/metadata.json"
+    val path = AbsolutePath(s"/${packageCoordinate.as[String]}/$MetadataJson").right.get
 
     objectStorage.read(path).flatMap {
       case Some((_, inputStream)) =>
@@ -68,9 +73,7 @@ final class PackageStorage private(objectStorage: ObjectStorage) {
       listToken match {
         case Some(token) =>
           objectStorage.listNext(token).flatMap { objectList =>
-            val newPackageCoordinates = objectList.directories.flatMap { directory =>
-              directory.as[Try[rpc.v1.model.PackageCoordinate]].toOption
-            }
+            val newPackageCoordinates = getPackageCoordinates(objectList.directories)
 
             listing(
               newPackageCoordinates ++ packageCoordinates,
@@ -83,16 +86,11 @@ final class PackageStorage private(objectStorage: ObjectStorage) {
       }
     }
 
-    objectStorage.list("").flatMap { objectList =>
+    objectStorage.list(AbsolutePath.Root).flatMap { objectList =>
       /* TODO: This ignores errors for now. Need to revisit and figure out what to
        * do with parsing errors.
        */
-      listing(
-        objectList.directories.flatMap { directory =>
-          directory.as[Try[rpc.v1.model.PackageCoordinate]].toOption
-        },
-        objectList.listToken
-      )
+      listing(getPackageCoordinates(objectList.directories), objectList.listToken)
     } flatMap { packageCoordinates =>
       Future.collect {
         packageCoordinates.map { packageCoordinate =>
@@ -103,7 +101,7 @@ final class PackageStorage private(objectStorage: ObjectStorage) {
               )
             case None =>
               rpc.v1.model.Invalid(
-                exceptionErrorResponse(PackageFileMissing("metadata.json")),
+                exceptionErrorResponse(PackageFileMissing(MetadataJson)),
                 packageCoordinate
               )
           }
@@ -114,7 +112,19 @@ final class PackageStorage private(objectStorage: ObjectStorage) {
 }
 
 object PackageStorage {
+
+  val MetadataJson = "metadata.json"
+
   def apply(objectStorage: ObjectStorage): PackageStorage = {
     new PackageStorage(objectStorage)
   }
+
+  def getPackageCoordinates(directoryPaths: List[AbsolutePath]): List[PackageCoordinate] = {
+    for {
+      directoryPath <- directoryPaths
+      lastElement <- directoryPath.elements.lastOption
+      coordinate <- lastElement.as[Try[rpc.v1.model.PackageCoordinate]].toOption
+    } yield coordinate
+  }
+
 }

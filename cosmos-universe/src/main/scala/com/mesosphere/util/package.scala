@@ -21,7 +21,7 @@ package object util {
       c.prefix.tree match {
         case Apply(_, List(Apply(_, List(Literal(Constant(rawPath: String)))))) =>
           AbsolutePath(rawPath) match {
-            case Right(path) => reify(AbsolutePath("/").right.get) // TODO cruhland
+            case Right(_) => c.Expr[AbsolutePath](q"AbsolutePath($rawPath).right.get")
             case Left(error) => c.abort(c.enclosingPosition, error.message)
           }
         case _ if args.nonEmpty =>
@@ -31,11 +31,6 @@ package object util {
       }
     }
 
-  }
-
-  implicit final class PathOps[P <: Path](val path: P) extends AnyVal {
-    // TODO cruhland
-    def /(extension: String): P = ???  // scalastyle:ignore method.name
   }
 
 }

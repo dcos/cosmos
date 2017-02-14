@@ -17,6 +17,7 @@ import com.mesosphere.cosmos.storage.v1.model.PendingStatus
 import com.mesosphere.universe.bijection.BijectionUtils
 import com.mesosphere.util.AbsolutePath
 import com.mesosphere.util.PathInterpolations
+import com.mesosphere.util.RelativePath
 import com.twitter.bijection.Conversion.asMethod
 import com.twitter.finagle.stats.Stat.timeFuture
 import com.twitter.finagle.stats.StatsReceiver
@@ -352,7 +353,7 @@ object InstallQueue {
   val installQueuePath: AbsolutePath = abspath"/package/task-queue"
 
   def statusPath(packageCoordinate: PackageCoordinate): AbsolutePath = {
-    installQueuePath / packageCoordinate.as[String]
+    installQueuePath / RelativePath(packageCoordinate.as[String]).right.get
   }
 
   def apply(client: CuratorFramework)(implicit statsReceiver: StatsReceiver): InstallQueue = {

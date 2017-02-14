@@ -5,6 +5,7 @@ import org.scalacheck.Gen
 import org.scalatest.FreeSpec
 import org.scalatest.prop.PropertyChecks
 import scala.language.implicitConversions
+import scala.reflect.ClassTag
 
 final class PathSpec extends FreeSpec with PropertyChecks {
 
@@ -149,6 +150,34 @@ final class PathSpec extends FreeSpec with PropertyChecks {
 
   }
 
+  "Retrieving path elements" - {
+
+    behave like elementsTestCases(buildRelativePath, genRelativePath)
+
+    behave like elementsTestCases(buildAbsolutePath, genAbsolutePath)
+
+    def elementsTestCases[P <: Path : ClassTag](
+      buildPath: List[String] => Either[_, P],
+      genPath: Gen[P]
+    ): Unit = {
+      val pathType = implicitly[ClassTag[P]].runtimeClass.getSimpleName
+
+      s"$pathType => elements => $pathType is identity" in {
+        forAll (genPath) { path =>
+          assertResult(path)(buildPath(path.elements).right.get)
+        }
+      }
+
+      s"elements => $pathType => elements is identity" in {
+        forAll (genPathElements) { elements =>
+          assertResult(elements)(buildPath(elements).right.get.elements)
+        }
+      }
+
+    }
+
+  }
+
 }
 
 object PathSpec {
@@ -159,19 +188,25 @@ object PathSpec {
   }
 
   val genRelativePath: Gen[RelativePath] = {
-    genPathElements.map(elements => RelativePath(elements.mkString(Path.Separator)).right.get)
+    genPathElements.map(elements => buildRelativePath(elements).right.get)
   }
 
   val genAbsolutePath: Gen[AbsolutePath] = {
-    genPathElements.map { elements =>
-      AbsolutePath(elements.mkString(Path.Separator, Path.Separator, "")).right.get
-    }
+    genPathElements.map(elements => buildAbsolutePath(elements).right.get)
   }
 
   val genPath: Gen[Path] = Gen.oneOf(genRelativePath, genAbsolutePath)
 
   def validPathElements(elements: List[String]): Boolean = {
     elements.nonEmpty && elements.forall(e => e.nonEmpty && !e.contains(Path.Separator))
+  }
+
+  def buildRelativePath(elements: List[String]): Either[RelativePath.Error, RelativePath] = {
+    RelativePath(elements.mkString(Path.Separator))
+  }
+
+  def buildAbsolutePath(elements: List[String]): Either[AbsolutePath.Error, AbsolutePath] = {
+    AbsolutePath(elements.mkString(Path.Separator, Path.Separator, ""))
   }
 
 }

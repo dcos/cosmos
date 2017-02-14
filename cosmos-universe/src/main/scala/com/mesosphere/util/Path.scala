@@ -6,13 +6,15 @@ trait Path {
 
   def /(tail: RelativePath): Self  // scalastyle:ignore method.name
 
+  def elements: List[String]
+
 }
 
 object Path {
   val Separator: String = "/"
 }
 
-final case class RelativePath private(private val elements: List[String]) extends Path {
+final case class RelativePath private(override val elements: List[String]) extends Path {
 
   override type Self = RelativePath
 
@@ -48,9 +50,13 @@ final case class AbsolutePath private(private val path: Option[RelativePath]) ex
 
   override def toString: String = Path.Separator + path.fold("")(_.toString)
 
+  def elements: List[String] = path.fold(List.empty[String])(_.elements)
+
 }
 
 object AbsolutePath {
+
+  val Root: AbsolutePath = AbsolutePath(Path.Separator).right.get
 
   def apply(path: String): Either[Error, AbsolutePath] = {
     if (path.isEmpty) Left(Empty)

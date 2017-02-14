@@ -15,6 +15,7 @@ import com.mesosphere.universe
 import com.mesosphere.universe.MediaTypes
 import com.mesosphere.universe.TestUtil
 import com.mesosphere.universe.v3.syntax.PackageDefinitionOps._
+import com.mesosphere.util.AbsolutePath
 import com.netaporter.uri.Uri
 import com.twitter.finagle.http.Status
 import com.twitter.util.Await
@@ -85,10 +86,11 @@ final class PackageAddHandlerSpec extends FreeSpec with MockitoSugar with Proper
 
           val handler = buildHandler { (_, stagedObjectStorage, producerView) =>
             when {
-              stagedObjectStorage.write(any[String], any[InputStream], any[Long], any[MediaType])
+              stagedObjectStorage
+                .write(any[AbsolutePath], any[InputStream], any[Long], any[MediaType])
             }.thenReturn(Future.Unit)
 
-            when(stagedObjectStorage.read(any[String])).thenReturn {
+            when(stagedObjectStorage.read(any[AbsolutePath])).thenReturn {
               Future.value(Some((MediaTypes.PackageZip, new ByteArrayInputStream(packageData))))
             }
 

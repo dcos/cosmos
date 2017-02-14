@@ -3,6 +3,8 @@ package com.mesosphere.cosmos.storage
 import com.mesosphere.cosmos.http.MediaType
 import com.mesosphere.cosmos.http.MediaTypes
 import com.mesosphere.cosmos.test.TestUtil
+import com.mesosphere.util.AbsolutePath
+import com.mesosphere.util.RelativePath
 import com.twitter.io.StreamIO
 import com.twitter.util.Await
 import com.twitter.util.Future
@@ -12,6 +14,7 @@ import org.scalacheck.Arbitrary.arbitrary
 import org.scalacheck.Gen
 import org.scalatest.FreeSpec
 import org.scalatest.prop.PropertyChecks
+import scala.Ordering.Implicits.seqDerivedOrdering
 
 final class LocalObjectStorageSpec extends FreeSpec with PropertyChecks {
 
@@ -19,7 +22,7 @@ final class LocalObjectStorageSpec extends FreeSpec with PropertyChecks {
 
   "read() must observe None on a nonexistent object" in {
     forAll(genObjectStorageState, genPath) { (state, path) =>
-      whenever(!state.map(_.name).contains(path)) {
+      whenever(!state.map(_.path).contains(path)) {
         TestUtil.withLocalObjectStorage { storage =>
           val nonexistentRead = Await.result {
             storage.writeAll(state) before
@@ -37,7 +40,7 @@ final class LocalObjectStorageSpec extends FreeSpec with PropertyChecks {
         val someItem = state.head
         val Some((_, dataFromRead)) = Await.result {
           storage.writeAll(state) before
-            storage.readAsArray(someItem.name)
+            storage.readAsArray(someItem.path)
         }
         assertResult(someItem.content)(dataFromRead)
       }
@@ -48,8 +51,8 @@ final class LocalObjectStorageSpec extends FreeSpec with PropertyChecks {
     forAll(genObjectStorageItem.suchThat(_.mediaType.isEmpty)) { item =>
       TestUtil.withLocalObjectStorage { storage =>
         val Some((mediaTypeFromRead, _)) = Await.result {
-          storage.write(item.name, item.content) before
-            storage.readAsArray(item.name)
+          storage.write(item.path, item.content) before
+            storage.readAsArray(item.path)
         }
         assertResult(MediaTypes.applicationOctetStream)(mediaTypeFromRead)
       }
@@ -62,7 +65,7 @@ final class LocalObjectStorageSpec extends FreeSpec with PropertyChecks {
         val someItem = state.head
         val Some((mediaTypeFromRead, _)) = Await.result {
           storage.writeAll(state) before
-            storage.readAsArray(someItem.name)
+            storage.readAsArray(someItem.path)
         }
         val mediaTypeWritten = getMediaTypeWritten(someItem.mediaType)
         assertResult(mediaTypeWritten)(mediaTypeFromRead)
@@ -75,7 +78,7 @@ final class LocalObjectStorageSpec extends FreeSpec with PropertyChecks {
       TestUtil.withLocalObjectStorage { storage =>
         val someItem = state.head
         val writeOp = storage.writeAll(state)
-        val readOp = TestUtil.eventualFuture(() => storage.readAsArray(someItem.name))
+        val readOp = TestUtil.eventualFuture(() => storage.readAsArray(someItem.path))
         val (_, (_, dataFromRead)) = Await.result(writeOp.join(readOp))
         assertResult(someItem.content)(dataFromRead)
       }
@@ -87,7 +90,7 @@ final class LocalObjectStorageSpec extends FreeSpec with PropertyChecks {
       TestUtil.withLocalObjectStorage { storage =>
         val someItem = state.head
         val writeOp = storage.writeAll(state)
-        val readOp = TestUtil.eventualFuture(() => storage.readAsArray(someItem.name))
+        val readOp = TestUtil.eventualFuture(() => storage.readAsArray(someItem.path))
         val (_, (mediaTypeFromRead, _)) = Await.result(writeOp.join(readOp))
         val mediaTypeWritten = getMediaTypeWritten(someItem.mediaType)
         assertResult(mediaTypeWritten)(mediaTypeFromRead)
@@ -101,8 +104,8 @@ final class LocalObjectStorageSpec extends FreeSpec with PropertyChecks {
         val someItem = state.head
         val readResult = Await.result {
           storage.writeAll(state).before(
-            storage.delete(someItem.name)).before(
-            storage.readAsArray(someItem.name))
+            storage.delete(someItem.path)).before(
+            storage.readAsArray(someItem.path))
         }
         assertResult(None)(readResult)
       }
@@ -112,12 +115,12 @@ final class LocalObjectStorageSpec extends FreeSpec with PropertyChecks {
   "read() and write() must be case sensitive" in {
     forAll(genNonEmptyObjectStorageState) { state =>
       val someItem = state.head
-      val badName = someItem.name.toLowerCase
-      whenever(!state.map(_.name).contains(badName)) {
+      val badPath = AbsolutePath(someItem.path.toString.toLowerCase).right.get
+      whenever(!state.map(_.path).contains(badPath)) {
         TestUtil.withLocalObjectStorage { storage =>
           val readResult = Await.result {
             storage.writeAll(state).before(
-              storage.readAsArray(badName))
+              storage.readAsArray(badPath))
           }
           assertResult(None)(readResult)
         }
@@ -130,8 +133,8 @@ final class LocalObjectStorageSpec extends FreeSpec with PropertyChecks {
       TestUtil.withLocalObjectStorage { storage =>
         val objects = Await.result {
           storage.writeAll(state).before(
-            storage.deleteAll(state.map(_.name)).before(
-              storage.list("")))
+            storage.deleteAll(state.map(_.path)).before(
+              storage.list(AbsolutePath.Root)))
         }
         assertResult(List())(objects.directories)
       }
@@ -143,10 +146,10 @@ final class LocalObjectStorageSpec extends FreeSpec with PropertyChecks {
       TestUtil.withLocalObjectStorage { storage =>
         val objects = Await.result {
           (storage.writeAll(List(item1, item2)) before
-            storage.delete(item1.name)) before
+            storage.delete(item1.path)) before
             storage.list(parents)
         }
-        assert(objects.directories.length.toInt == 1 || objects.objects.length.toInt == 1)
+        assert(objects.directories.length == 1 || objects.objects.length == 1)
       }
     }
   }
@@ -154,12 +157,12 @@ final class LocalObjectStorageSpec extends FreeSpec with PropertyChecks {
   "list() returns all objects written" in {
     forAll(genObjectStorageState) { state =>
       TestUtil.withLocalObjectStorage { storage =>
-        val namesInStorage = Await.result {
+        val pathsInStorage = Await.result {
           storage.writeAll(state) before
-            storage.listAll("")
-        }.sorted
-        val namesWritten = state.map(_.name).sorted
-        assertResult(namesWritten)(namesInStorage)
+            storage.listAll(AbsolutePath.Root)
+        }.sortBy(_.elements)
+        val pathsWritten = state.map(_.path).sortBy(_.elements)
+        assertResult(pathsWritten)(pathsInStorage)
       }
     }
   }
@@ -170,8 +173,8 @@ final class LocalObjectStorageSpec extends FreeSpec with PropertyChecks {
         val tolerance = 2L
         val timeBefore = Instant.now().minusSeconds(tolerance)
         val creationTime = Await.result {
-          storage.write(item.name, item.content) before
-            storage.getCreationTime(item.name)
+          storage.write(item.path, item.content) before
+            storage.getCreationTime(item.path)
         }
         val timeAfter = Instant.now().plusSeconds(tolerance)
         assert(
@@ -197,40 +200,39 @@ final class LocalObjectStorageSpec extends FreeSpec with PropertyChecks {
 
 object LocalObjectStorageSpec {
 
-  case class ObjectStorageItem(name: String, content: Array[Byte], mediaType: Option[MediaType])
+  case class ObjectStorageItem(
+    path: AbsolutePath,
+    content: Array[Byte],
+    mediaType: Option[MediaType]
+  )
 
   type ObjectStorageState = List[ObjectStorageItem]
 
-  def genPath(maxSegments: Int): Gen[String] = {
+  def genRelativePath(maxSegments: Int): Gen[RelativePath] = {
     val maxSegmentLength = 10
     val genSegment = Gen.choose(1, maxSegmentLength)
       .flatMap(Gen.buildableOfN[String, Char](_, Gen.alphaNumChar))
 
-    (for {
+    for {
       numSegments <- Gen.choose(1, maxSegments)
       segments <- Gen.listOfN(numSegments, genSegment)
-      path = segments.mkString("/")
-    } yield path).suchThat(isValidPath)
+    } yield {
+      RelativePath(segments.mkString("/")).right.get
+    }
   }
 
-  def isValidPath(s: String): Boolean =
-    s.nonEmpty &&
-      !s.startsWith("/") &&
-      !s.contains("//") &&
-      !s.endsWith("/")
-
-  val genPath: Gen[String] = {
+  val genPath: Gen[AbsolutePath] = {
     val maxSegments = 10
-    genPath(maxSegments)
+    genRelativePath(maxSegments).map(AbsolutePath.Root / _)
   }
 
-  val genPathPairAndSharedParents: Gen[(String, String, String)] = {
+  val genPathPairAndSharedParents: Gen[(AbsolutePath, AbsolutePath, AbsolutePath)] = {
     val halfSize = 5
     val generator = for {
-      parents <- genPath(halfSize)
-      first <- genPath(halfSize)
-      second <- genPath(halfSize).suchThat(_ != first)
-    } yield (parents, parents + "/" + first, parents + "/" + second)
+      parents <- genRelativePath(halfSize).map(AbsolutePath.Root / _)
+      first <- genRelativePath(halfSize)
+      second <- genRelativePath(halfSize).suchThat(_ != first)
+    } yield (parents, parents / first, parents / second)
 
     generator.suchThat {
       case (parent, first, second) =>
@@ -256,7 +258,8 @@ object LocalObjectStorageSpec {
     } yield ObjectStorageItem(path, data, mediaType)
   }
 
-  val genObjectStorageItemPairAndSharedParents: Gen[(String, ObjectStorageItem, ObjectStorageItem)] = {
+  val genObjectStorageItemPairAndSharedParents:
+    Gen[(AbsolutePath, ObjectStorageItem, ObjectStorageItem)] = {
     val generator = for {
       (parents, path1, path2) <- genPathPairAndSharedParents
       data1 <- arbitrary[Array[Byte]]
@@ -271,13 +274,13 @@ object LocalObjectStorageSpec {
 
     generator.suchThat {
       case (parent, first, second) =>
-        pathsConflict(List(parent, first.name)) && pathsConflict(List(parent, second.name))
+        pathsConflict(List(parent, first.path)) && pathsConflict(List(parent, second.path))
     }
   }
 
   val genObjectStorageState: Gen[ObjectStorageState] = {
     Gen.listOf(genObjectStorageItem).suchThat { state =>
-      !pathsConflict(state.map(_.name))
+      !pathsConflict(state.map(_.path))
     }
   }
 
@@ -285,10 +288,10 @@ object LocalObjectStorageSpec {
     genObjectStorageState.suchThat(_.nonEmpty)
   }
 
-  def pathsConflict(paths: List[String]): Boolean = {
+  def pathsConflict(paths: List[AbsolutePath]): Boolean = {
     paths.combinations(2).exists { case List(a, b) =>
-      val aComponents = a.split("/")
-      val bComponents = b.split("/")
+      val aComponents = a.elements
+      val bComponents = b.elements
       aComponents.startsWith(bComponents) || bComponents.startsWith(aComponents)
     }
   }
@@ -299,19 +302,23 @@ object LocalObjectStorageSpec {
 
   implicit class ObjectStorageNoStreams(val objectStorage: LocalObjectStorage) extends AnyVal {
 
-    def write(name: String, content: Array[Byte], mediaType: Option[MediaType] = None): Future[Unit] = {
+    def write(
+      path: AbsolutePath,
+      content: Array[Byte],
+      mediaType: Option[MediaType] = None
+    ): Future[Unit] = {
       val body = new ByteArrayInputStream(content)
       val contentLength = content.length.toLong
-      objectStorage.write(name, body, contentLength, mediaType)
+      objectStorage.write(path, body, contentLength, mediaType)
     }
 
-    def readAsArray(name: String): Future[Option[(MediaType, Array[Byte])]] = {
-      objectStorage.read(name).map(_.map { case (mediaType, readStream) =>
+    def readAsArray(path: AbsolutePath): Future[Option[(MediaType, Array[Byte])]] = {
+      objectStorage.read(path).map(_.map { case (mediaType, readStream) =>
         (mediaType, StreamIO.buffer(readStream).toByteArray)
       })
     }
 
-    def listAll(base: String): Future[List[String]] = {
+    def listAll(base: AbsolutePath): Future[List[AbsolutePath]] = {
       objectStorage.list(base).flatMap { objectList =>
         Future.collect(
           objectList.directories
@@ -325,15 +332,15 @@ object LocalObjectStorageSpec {
     def writeAll(objectStorageItems: List[ObjectStorageItem]): Future[Unit] = {
       Future.join(
         objectStorageItems.map { objectStorageItem =>
-          write(objectStorageItem.name, objectStorageItem.content, objectStorageItem.mediaType)
+          write(objectStorageItem.path, objectStorageItem.content, objectStorageItem.mediaType)
         }
       )
     }
 
-    def deleteAll(names: List[String]): Future[Unit] = {
+    def deleteAll(paths: List[AbsolutePath]): Future[Unit] = {
       Future.join(
-        names.map { name =>
-          objectStorage.delete(name)
+        paths.map { path =>
+          objectStorage.delete(path)
         }
       )
     }

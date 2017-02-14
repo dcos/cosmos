@@ -2,6 +2,7 @@ package com.mesosphere.cosmos.storage
 
 import com.mesosphere.cosmos.http.MediaType
 import com.mesosphere.universe.MediaTypes
+import com.mesosphere.util.AbsolutePath
 import com.twitter.io.StreamIO
 import com.twitter.util.Await
 import com.twitter.util.Future
@@ -33,9 +34,10 @@ final class StagedPackageStorageSpec extends FreeSpec with MockitoSugar with Pro
 
     forAll { (packageData: InputStream, packageSize: Long) =>
       val packageId = testPut(stagedStorage, packageData, packageSize)
+      val packagePath = StagedPackageStorage.uuidToPath(packageId)
 
       val _ = verify(objectStorage)
-        .write(packageId.toString, packageData, packageSize, MediaTypes.PackageZip)
+        .write(packagePath, packageData, packageSize, MediaTypes.PackageZip)
     }
   }
 
@@ -76,8 +78,9 @@ final class StagedPackageStorageSpec extends FreeSpec with MockitoSugar with Pro
       }
       packageOut.close()
 
+      val packagePath = StagedPackageStorage.uuidToPath(packageId)
       val packageData = new ByteArrayInputStream(bytesOut.toByteArray)
-      when(objectStorage.read(packageId.toString))
+      when(objectStorage.read(packagePath))
         .thenReturn(Future.value(Some((MediaTypes.PackageZip, packageData))))
 
       val (_, inputStream) = Await.result(stagedStorage.get(packageId))
@@ -99,7 +102,7 @@ final class StagedPackageStorageSpec extends FreeSpec with MockitoSugar with Pro
     returnValue: Future[Unit]
   ): (ObjectStorage, StagedPackageStorage) = {
     val objectStorage = mock[ObjectStorage]
-    when(objectStorage.write(any[String], any[InputStream], any[Long], any[MediaType]))
+    when(objectStorage.write(any[AbsolutePath], any[InputStream], any[Long], any[MediaType]))
       .thenReturn(returnValue)
 
     (objectStorage, StagedPackageStorage(objectStorage))

@@ -10,6 +10,8 @@ import com.amazonaws.services.s3.model.ObjectListing
 import com.amazonaws.services.s3.model.ObjectMetadata
 import com.amazonaws.services.s3.model.PutObjectRequest
 import com.mesosphere.cosmos.http.MediaType
+import com.mesosphere.util.AbsolutePath
+import com.mesosphere.util.RelativePath
 import com.netaporter.uri.Uri
 import com.twitter.finagle.stats.Stat
 import com.twitter.finagle.stats.StatsReceiver
@@ -17,7 +19,6 @@ import com.twitter.util.Future
 import com.twitter.util.FuturePool
 import java.io.InputStream
 import java.time.Instant
-
 import scala.collection.JavaConverters._
 import scala.collection.breakOut
 
@@ -31,12 +32,12 @@ final class S3ObjectStorage(
   private[this] val pool = FuturePool.interruptibleUnboundedPool
 
   private[this] val bucket = s3Uri.getBucket
-  private[this] val path = s3Uri.getURI.getPath
+  private[this] val basePath = AbsolutePath(s3Uri.getURI.getPath).right.get
 
-  private[this] val stats = statsReceiver.scope(s"S3ObjectStorage($bucket, $path)")
+  private[this] val stats = statsReceiver.scope(s"S3ObjectStorage($bucket, $basePath)")
 
   override def write(
-    name: String,
+    path: AbsolutePath,
     body: InputStream,
     contentLength: Long,
     contentType: MediaType
@@ -47,7 +48,7 @@ final class S3ObjectStorage(
         metadata.setContentLength(contentLength)
         metadata.setContentType(contentType.show)
 
-        val putRequest = new PutObjectRequest(bucket, fullPath(name), body, metadata)
+        val putRequest = new PutObjectRequest(bucket, fullPath(path), body, metadata)
           .withCannedAcl(CannedAccessControlList.PublicRead)
 
           val _ = client.putObject(putRequest)
@@ -55,11 +56,11 @@ final class S3ObjectStorage(
     }
   }
 
-  override def read(name: String): Future[Option[(MediaType, InputStream)]] = {
+  override def read(path: AbsolutePath): Future[Option[(MediaType, InputStream)]] = {
     Stat.timeFuture(stats.stat("read")) {
       pool {
         try {
-          val result = client.getObject(bucket, fullPath(name))
+          val result = client.getObject(bucket, fullPath(path))
 
           Some(
             (
@@ -75,15 +76,15 @@ final class S3ObjectStorage(
     }
   }
 
-  override def delete(name: String): Future[Unit] = {
+  override def delete(path: AbsolutePath): Future[Unit] = {
     Stat.timeFuture(stats.stat("delete")) {
       pool {
-        client.deleteObject(bucket, fullPath(name))
+        client.deleteObject(bucket, fullPath(path))
       }
     }
   }
 
-  override def list(directory: String): Future[S3ObjectStorage.ObjectList] = {
+  override def list(directory: AbsolutePath): Future[S3ObjectStorage.ObjectList] = {
     Stat.timeFuture(stats.stat("list")) {
       pool {
         val listRequest = new ListObjectsRequest()
@@ -115,17 +116,17 @@ final class S3ObjectStorage(
     }
   }
 
-  override def getUrl(name: String): Option[Uri] = {
-    Some(Uri(client.getUrl(bucket, fullPath(name)).toURI))
+  override def getUrl(path: AbsolutePath): Option[Uri] = {
+    Some(Uri(client.getUrl(bucket, fullPath(path)).toURI))
   }
 
-  override def getCreationTime(name: String): Future[Option[Instant]] = {
+  override def getCreationTime(path: AbsolutePath): Future[Option[Instant]] = {
     Stat.timeFuture(stats.stat("getCreationTime")) {
       pool {
         try {
           val creationTime =
             client
-            .getObjectMetadata(new GetObjectMetadataRequest(bucket, fullPath(name)))
+            .getObjectMetadata(new GetObjectMetadataRequest(bucket, fullPath(path)))
             .getLastModified.toInstant
           Some(creationTime)
         } catch {
@@ -146,16 +147,18 @@ final class S3ObjectStorage(
     }
 
     S3ObjectStorage.ObjectList(
-      objectListing.getObjectSummaries.asScala.map(sum => relativePath(sum.getKey))(breakOut),
+      objectListing.getObjectSummaries.asScala.map(
+        sum => relativePath(AbsolutePath(sum.getKey).right.get)
+      )(breakOut),
       objectListing.getCommonPrefixes.asScala.map(
-        dir => removeEndingSlash(relativePath(dir))
+        dir => relativePath(AbsolutePath(dir).right.get)
       )(breakOut),
       listToken
     )
   }
 
-  private[this] def fullPath(name: String): String = {
-    makeStringDirectory(path) + name
+  private[this] def fullPath(path: AbsolutePath): String = {
+    (basePath / RelativePath(path.toString).right.get).toString
   }
 
   /*
@@ -167,16 +170,8 @@ final class S3ObjectStorage(
     if (prefix.endsWith("/")) prefix else prefix + "/"
   }
 
-  private[this] def removeEndingSlash(value: String): String = {
-    value.stripSuffix("/")
-  }
-
-  private[this] def relativePath(fullPath: String): String = {
-    if (fullPath.startsWith(makeStringDirectory(path))) {
-      fullPath.drop(makeStringDirectory(path).length)
-    } else {
-      fullPath
-    }
+  private[this] def relativePath(fullPath: AbsolutePath): AbsolutePath = {
+    AbsolutePath(fullPath.toString.stripPrefix(basePath.toString)).right.get
   }
 
 }
@@ -191,8 +186,8 @@ object S3ObjectStorage {
 
   case class ListToken(token: ObjectListing) extends ObjectStorage.ListToken
   case class ObjectList(
-    objects: List[String],
-    directories: List[String],
+    objects: List[AbsolutePath],
+    directories: List[AbsolutePath],
     listToken: Option[ListToken]
   ) extends ObjectStorage.ObjectList
 }
