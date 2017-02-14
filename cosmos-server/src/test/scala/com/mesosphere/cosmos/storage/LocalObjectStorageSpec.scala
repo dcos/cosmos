@@ -2,7 +2,6 @@ package com.mesosphere.cosmos.storage
 
 import com.mesosphere.cosmos.http.MediaType
 import com.mesosphere.cosmos.http.MediaTypes
-import com.mesosphere.cosmos.storage.ObjectStorageOps.objectStorageOps
 import com.mesosphere.cosmos.storage.ObjectStorageTestOps.objectStorageTestOps
 import com.mesosphere.cosmos.test.TestUtil
 import com.twitter.util.Await

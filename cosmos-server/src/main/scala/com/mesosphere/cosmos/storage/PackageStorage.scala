@@ -4,7 +4,6 @@ import com.mesosphere.cosmos.PackageFileMissing
 import com.mesosphere.cosmos.circe.Decoders.decode
 import com.mesosphere.cosmos.circe.Encoders.exceptionErrorResponse
 import com.mesosphere.cosmos.converter.Common._
-import com.mesosphere.cosmos.storage.ObjectStorageOps.objectStorageOps
 import com.mesosphere.cosmos.rpc
 import com.mesosphere.cosmos.rpc.v1.model.PackageCoordinate
 import com.mesosphere.universe

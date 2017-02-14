@@ -1,7 +1,6 @@
 package com.mesosphere.cosmos.storage
 
 import com.mesosphere.cosmos.http.MediaType
-import com.mesosphere.cosmos.storage.ObjectStorageOps.objectStorageOps
 import com.twitter.util.Future
 import java.io.InputStream
 import java.time.Instant

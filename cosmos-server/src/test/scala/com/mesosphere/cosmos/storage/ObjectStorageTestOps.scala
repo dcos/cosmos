@@ -1,6 +1,5 @@
 package com.mesosphere.cosmos.storage
 
-import com.mesosphere.cosmos.storage.ObjectStorageOps.objectStorageOps
 import com.twitter.util.Future
 import scala.language.implicitConversions
 
