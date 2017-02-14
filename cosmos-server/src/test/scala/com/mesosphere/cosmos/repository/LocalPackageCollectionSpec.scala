@@ -108,7 +108,7 @@ final class LocalPackageCollectionSpec extends FreeSpec with Matchers {
 
     val _ = Await.result(
       Future.collect(
-        expected.map(packageStorage.write)
+        expected.map(packageStorage.writePackageDefinition)
       )
     )
 

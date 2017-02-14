@@ -20,7 +20,7 @@ final class PackageStorage private(objectStorage: ObjectStorage) {
 
   import PackageStorage._
 
-  def write(
+  def writePackageDefinition(
     packageDefinition: universe.v3.model.V3Package
   ): Future[Unit] = {
     val metadataName = getMetadataName(packageDefinition.packageCoordinate)

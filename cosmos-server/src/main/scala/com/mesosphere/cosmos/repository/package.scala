@@ -40,7 +40,7 @@ package object repository {
     }.transform {
       case Throw(VersionNotFound(_, _)) | Throw(PackageNotFound(_)) =>
         // Put the PackageDefinition in the package object storage.
-        packageStorage.write(pkg)
+        packageStorage.writePackageDefinition(pkg)
       case Throw(error) =>
         Future.exception(error)
       case Return(_) =>
