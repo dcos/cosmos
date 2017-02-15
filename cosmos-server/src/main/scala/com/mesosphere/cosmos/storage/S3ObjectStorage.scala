@@ -32,7 +32,7 @@ final class S3ObjectStorage(
   private[this] val pool = FuturePool.interruptibleUnboundedPool
 
   private[this] val bucket = s3Uri.getBucket
-  private[this] val basePath = AbsolutePath(s3Uri.getURI.getPath).right.get
+  private[this] val basePath = AbsolutePath(s3Uri.getURI.getPath)
 
   private[this] val stats = statsReceiver.scope(s"S3ObjectStorage($bucket, $basePath)")
 
@@ -48,7 +48,7 @@ final class S3ObjectStorage(
         metadata.setContentLength(contentLength)
         metadata.setContentType(contentType.show)
 
-        val putRequest = new PutObjectRequest(bucket, fullPath(path), body, metadata)
+        val putRequest = new PutObjectRequest(bucket, resolve(path), body, metadata)
           .withCannedAcl(CannedAccessControlList.PublicRead)
 
           val _ = client.putObject(putRequest)
@@ -60,7 +60,7 @@ final class S3ObjectStorage(
     Stat.timeFuture(stats.stat("read")) {
       pool {
         try {
-          val result = client.getObject(bucket, fullPath(path))
+          val result = client.getObject(bucket, resolve(path))
 
           Some(
             (
@@ -79,7 +79,7 @@ final class S3ObjectStorage(
   override def delete(path: AbsolutePath): Future[Unit] = {
     Stat.timeFuture(stats.stat("delete")) {
       pool {
-        client.deleteObject(bucket, fullPath(path))
+        client.deleteObject(bucket, resolve(path))
       }
     }
   }
@@ -87,9 +87,13 @@ final class S3ObjectStorage(
   override def list(directory: AbsolutePath): Future[S3ObjectStorage.ObjectList] = {
     Stat.timeFuture(stats.stat("list")) {
       pool {
+        // S3 doesn't have the concept of directory but it can be emulated by adding `/` to the key.
+        // This allows you to list objects with a given prefix.
+        val prefix = resolve(directory) + "/"
+
         val listRequest = new ListObjectsRequest()
           .withBucketName(bucket)
-          .withPrefix(makeStringDirectory(fullPath(directory)))
+          .withPrefix(prefix)
           .withDelimiter("/")
 
           convertListResult(client.listObjects(listRequest))
@@ -117,7 +121,7 @@ final class S3ObjectStorage(
   }
 
   override def getUrl(path: AbsolutePath): Option[Uri] = {
-    Some(Uri(client.getUrl(bucket, fullPath(path)).toURI))
+    Some(Uri(client.getUrl(bucket, resolve(path)).toURI))
   }
 
   override def getCreationTime(path: AbsolutePath): Future[Option[Instant]] = {
@@ -126,7 +130,7 @@ final class S3ObjectStorage(
         try {
           val creationTime =
             client
-            .getObjectMetadata(new GetObjectMetadataRequest(bucket, fullPath(path)))
+            .getObjectMetadata(new GetObjectMetadataRequest(bucket, resolve(path)))
             .getLastModified.toInstant
           Some(creationTime)
         } catch {
@@ -148,30 +152,23 @@ final class S3ObjectStorage(
 
     S3ObjectStorage.ObjectList(
       objectListing.getObjectSummaries.asScala.map(
-        sum => relativePath(AbsolutePath(sum.getKey).right.get)
+        sum => relativize(sum.getKey)
       )(breakOut),
       objectListing.getCommonPrefixes.asScala.map(
-        dir => relativePath(AbsolutePath(dir).right.get)
+        dir => relativize(dir)
       )(breakOut),
       listToken
     )
   }
 
-  private[this] def fullPath(path: AbsolutePath): String = {
-    (basePath / RelativePath(path.toString).right.get).toString
+  private[this] def resolve(path: AbsolutePath): String = {
+    // TODO cruhland resolve impl
+    (basePath / RelativePath(path.toString)).toString
   }
 
-  /*
-   * This function makes sure that the string ends in a `/`. S3 doesn't have the concept of
-   * directory but it can be emulated by adding `/` to the key. This allows you to list
-   * objects with a given prefix.
-   */
-  private[this] def makeStringDirectory(prefix: String): String = {
-    if (prefix.endsWith("/")) prefix else prefix + "/"
-  }
-
-  private[this] def relativePath(fullPath: AbsolutePath): AbsolutePath = {
-    AbsolutePath(fullPath.toString.stripPrefix(basePath.toString)).right.get
+  private[this] def relativize(fullPath: String): AbsolutePath = {
+    // TODO cruhland relativize impl?
+    AbsolutePath(fullPath.stripPrefix(basePath.toString))
   }
 
 }

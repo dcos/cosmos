@@ -29,6 +29,7 @@ object StagedPackageStorage {
     new StagedPackageStorage(objectStorage)
   }
 
-  def uuidToPath(id: UUID): AbsolutePath = AbsolutePath(s"/$id").right.get
+  // TODO cruhland / redefinition
+  def uuidToPath(id: UUID): AbsolutePath = AbsolutePath(s"/$id")
 
 }

@@ -3,6 +3,7 @@ package com.mesosphere.cosmos.storage
 import com.mesosphere.cosmos.circe.Decoders.decode
 import com.mesosphere.cosmos.http.MediaType
 import com.mesosphere.util.AbsolutePath
+import com.mesosphere.util.RelativePath
 import com.netaporter.uri.Uri
 import com.twitter.finagle.http.Fields
 import com.twitter.finagle.stats.Stat
@@ -255,11 +256,13 @@ object LocalObjectStorage {
   }
 
   def resolve(filesystemPath: Path, objectPath: AbsolutePath): Path = {
+    // TODO cruhland possibly use relativize to drop the root?
     filesystemPath.resolve(objectPath.toString.drop(1))
   }
 
   def relativize(basePath: Path, fullPath: Path): AbsolutePath = {
-    AbsolutePath(s"/${basePath.relativize(fullPath)}").right.get
+    // TODO cruhland: relative path from file path -- using elements directly
+    AbsolutePath.Root / RelativePath(basePath.relativize(fullPath).toString)
   }
 
   case class ObjectList(

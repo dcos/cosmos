@@ -13,56 +13,84 @@ final class PathSpec extends FreeSpec with PropertyChecks {
 
   "Constructing Paths" - {
 
-    "RelativePath.apply(String)" - {
+    "RelativePath" - {
 
-      "fails on empty" in {
-        assertResult(Left(RelativePath.Empty))(RelativePath(""))
-      }
-
-      "fails on absolute" in {
-        forAll { (pathSuffix: String) =>
-          assertResult(Left(RelativePath.Absolute))(RelativePath(s"/$pathSuffix"))
+      "apply(String)" - {
+        behave like validationCases { path =>
+          try { Right(RelativePath(path)) } catch { case e: RelativePath.Error => Left(e) }
         }
       }
 
-      "succeeds in all other cases" in {
-        forAll { (path: String) =>
-          whenever(path.nonEmpty && !path.startsWith("/")) {
-            assert(RelativePath(path).isRight)
+      "validate(String)" - {
+        behave like validationCases(RelativePath.validate)
+      }
+
+      def validationCases(buildPath: String => Either[RelativePath.Error, RelativePath]): Unit = {
+
+        "fails on empty" in {
+          assertResult(Left(RelativePath.Empty))(buildPath(""))
+        }
+
+        "fails on absolute" in {
+          forAll { (pathSuffix: String) =>
+            assertResult(Left(RelativePath.Absolute))(buildPath(s"/$pathSuffix"))
           }
         }
+
+        "succeeds in all other cases" in {
+          forAll { (path: String) =>
+            whenever (path.nonEmpty && !path.startsWith("/")) {
+              assert(buildPath(path).isRight)
+            }
+          }
+        }
+
       }
 
     }
 
-    "AbsolutePath.apply(String)" - {
+    "AbsolutePath" - {
 
-      "fails on empty" in {
-        assertResult(Left(AbsolutePath.Empty))(AbsolutePath(""))
-      }
-
-      "fails on relative" in {
-        forAll { (path: String) =>
-          whenever (path.nonEmpty && !path.startsWith(Path.Separator)) {
-            assertResult(Left(AbsolutePath.Relative))(AbsolutePath(path))
-          }
+      "apply(String)" - {
+        behave like validationCases { path =>
+          try { Right(AbsolutePath(path)) } catch { case e: AbsolutePath.Error => Left(e) }
         }
       }
 
-      "fails on more than one leading separator" in {
-        forAll (arbitrary[String], Gen.size) { (path, leadingSeparators) =>
-          whenever (leadingSeparators > 1) {
-            assertResult(Left(AbsolutePath.BadRoot)) {
-              AbsolutePath(Path.Separator * leadingSeparators + path)
+      "validate(String)" - {
+        behave like validationCases(AbsolutePath.validate)
+      }
+
+      def validationCases(buildPath: String => Either[AbsolutePath.Error, AbsolutePath]): Unit = {
+
+        "fails on empty" in {
+          assertResult(Left(AbsolutePath.Empty))(buildPath(""))
+        }
+
+        "fails on relative" in {
+          forAll { (path: String) =>
+            whenever (path.nonEmpty && !path.startsWith(Path.Separator)) {
+              assertResult(Left(AbsolutePath.Relative))(buildPath(path))
             }
           }
         }
-      }
 
-      "succeeds in all other cases" in {
-        forAll { (path: String) =>
-          assert(AbsolutePath(s"/$path").isRight)
+        "fails on more than one leading separator" in {
+          forAll(arbitrary[String], Gen.size) { (path, leadingSeparators) =>
+            whenever (leadingSeparators > 1) {
+              assertResult(Left(AbsolutePath.BadRoot)) {
+                buildPath(Path.Separator * leadingSeparators + path)
+              }
+            }
+          }
         }
+
+        "succeeds in all other cases" in {
+          forAll { (path: String) =>
+            assert(buildPath(s"/$path").isRight)
+          }
+        }
+
       }
 
     }
@@ -75,13 +103,13 @@ final class PathSpec extends FreeSpec with PropertyChecks {
 
       "RelativePath" in {
         forAll (genRelativePath) { path =>
-          assertResult(Right(path))(RelativePath(path.toString))
+          assertResult(path)(RelativePath(path.toString))
         }
       }
 
       "AbsolutePath" in {
         forAll (genAbsolutePath) { path =>
-          assertResult(Right(path))(AbsolutePath(path.toString))
+          assertResult(path)(AbsolutePath(path.toString))
         }
       }
 
@@ -97,10 +125,7 @@ final class PathSpec extends FreeSpec with PropertyChecks {
         assertNormalization(formatPath = Path.Separator + _, buildPath = AbsolutePath(_))
       }
 
-      def assertNormalization(
-        formatPath: String => String,
-        buildPath: String => Either[_, Path]
-      ): Unit = {
+      def assertNormalization(formatPath: String => String, buildPath: String => Path): Unit = {
         val genElementsAndSeparatorCounts = for {
           elements <- genPathElements
           size <- Gen.size
@@ -117,7 +142,7 @@ final class PathSpec extends FreeSpec with PropertyChecks {
             val pathStr = formatPath(elementsWithExtraSeparators.mkString)
             val normalizedPathStr = formatPath(elements.mkString(Path.Separator))
 
-            assertResult(Right(normalizedPathStr))(buildPath(pathStr).right.map(_.toString))
+            assertResult(normalizedPathStr)(buildPath(pathStr).toString)
           }
         }
       }
@@ -157,20 +182,20 @@ final class PathSpec extends FreeSpec with PropertyChecks {
     behave like elementsTestCases(buildAbsolutePath, genAbsolutePath)
 
     def elementsTestCases[P <: Path : ClassTag](
-      buildPath: List[String] => Either[_, P],
+      buildPath: List[String] => P,
       genPath: Gen[P]
     ): Unit = {
       val pathType = implicitly[ClassTag[P]].runtimeClass.getSimpleName
 
       s"$pathType => elements => $pathType is identity" in {
         forAll (genPath) { path =>
-          assertResult(path)(buildPath(path.elements).right.get)
+          assertResult(path)(buildPath(path.elements))
         }
       }
 
       s"elements => $pathType => elements is identity" in {
         forAll (genPathElements) { elements =>
-          assertResult(elements)(buildPath(elements).right.get.elements)
+          assertResult(elements)(buildPath(elements).elements)
         }
       }
 
@@ -188,11 +213,11 @@ object PathSpec {
   }
 
   val genRelativePath: Gen[RelativePath] = {
-    genPathElements.map(elements => buildRelativePath(elements).right.get)
+    genPathElements.map(elements => buildRelativePath(elements))
   }
 
   val genAbsolutePath: Gen[AbsolutePath] = {
-    genPathElements.map(elements => buildAbsolutePath(elements).right.get)
+    genPathElements.map(elements => buildAbsolutePath(elements))
   }
 
   val genPath: Gen[Path] = Gen.oneOf(genRelativePath, genAbsolutePath)
@@ -201,11 +226,11 @@ object PathSpec {
     elements.nonEmpty && elements.forall(e => e.nonEmpty && !e.contains(Path.Separator))
   }
 
-  def buildRelativePath(elements: List[String]): Either[RelativePath.Error, RelativePath] = {
+  def buildRelativePath(elements: List[String]): RelativePath = {
     RelativePath(elements.mkString(Path.Separator))
   }
 
-  def buildAbsolutePath(elements: List[String]): Either[AbsolutePath.Error, AbsolutePath] = {
+  def buildAbsolutePath(elements: List[String]): AbsolutePath = {
     AbsolutePath(elements.mkString(Path.Separator, Path.Separator, ""))
   }
 

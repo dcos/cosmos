@@ -28,13 +28,15 @@ final case class RelativePath private(override val elements: List[String]) exten
 
 object RelativePath {
 
-  def apply(path: String): Either[Error, RelativePath] = {
+  def apply(path: String): RelativePath = validate(path).fold(throw _, identity)
+
+  def validate(path: String): Either[Error, RelativePath] = {
     if (path.isEmpty) Left(Empty)
     else if (path.startsWith(Path.Separator)) Left(Absolute)
     else Right(RelativePath(path.split(Path.Separator).toList.filter(_.nonEmpty)))
   }
 
-  sealed abstract class Error(val message: String)
+  sealed abstract class Error(override val getMessage: String) extends Exception
   case object Empty extends Error("Empty relative path")
   case object Absolute extends Error("Expected relative path, but found absolute path")
 
@@ -56,13 +58,15 @@ final case class AbsolutePath private(private val path: Option[RelativePath]) ex
 
 object AbsolutePath {
 
-  val Root: AbsolutePath = AbsolutePath(Path.Separator).right.get
+  val Root: AbsolutePath = AbsolutePath(Path.Separator)
 
-  def apply(path: String): Either[Error, AbsolutePath] = {
+  def apply(path: String): AbsolutePath = validate(path).fold(throw _, identity)
+
+  def validate(path: String): Either[AbsolutePath.Error, AbsolutePath] = {
     if (path.isEmpty) Left(Empty)
     else if (!path.startsWith(Path.Separator)) Left(Relative)
     else {
-      RelativePath(path.drop(1)) match {
+      RelativePath.validate(path.drop(1)) match {
         case Right(relativePath) => Right(AbsolutePath(Some(relativePath)))
         case Left(RelativePath.Empty) => Right(AbsolutePath(None))
         case Left(RelativePath.Absolute) => Left(BadRoot)
@@ -70,7 +74,7 @@ object AbsolutePath {
     }
   }
 
-  sealed abstract class Error(val message: String)
+  sealed abstract class Error(override val getMessage: String) extends Exception
   case object Empty extends Error("Empty absolute path")
   case object Relative extends Error("Expected absolute path, but found relative path")
   case object BadRoot extends Error("Too many leading separators for absolute path")

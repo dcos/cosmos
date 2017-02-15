@@ -10,15 +10,15 @@ final class PathInterpolationsSpec extends FreeSpec with Matchers {
     "is successful for" - {
 
       "root" in {
-        assertResult(AbsolutePath("/").right.get)(abspath"/")
+        assertResult(AbsolutePath("/"))(abspath"/")
       }
 
       "single element" in {
-        assertResult(AbsolutePath("/foo").right.get)(abspath"/foo")
+        assertResult(AbsolutePath("/foo"))(abspath"/foo")
       }
 
       "two elements" in {
-        assertResult(AbsolutePath("/foo/bar").right.get)(abspath"/foo/bar")
+        assertResult(AbsolutePath("/foo/bar"))(abspath"/foo/bar")
       }
 
     }

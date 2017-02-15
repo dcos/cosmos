@@ -115,7 +115,7 @@ final class LocalObjectStorageSpec extends FreeSpec with PropertyChecks {
   "read() and write() must be case sensitive" in {
     forAll(genNonEmptyObjectStorageState) { state =>
       val someItem = state.head
-      val badPath = AbsolutePath(someItem.path.toString.toLowerCase).right.get
+      val badPath = AbsolutePath(someItem.path.toString.toLowerCase)
       whenever(!state.map(_.path).contains(badPath)) {
         TestUtil.withLocalObjectStorage { storage =>
           val readResult = Await.result {
@@ -219,7 +219,7 @@ object LocalObjectStorageSpec {
     for {
       numSegments <- Gen.choose(1, maxSegments)
       segments <- Gen.listOfN(numSegments, genSegment)
-      relativePath <- RelativePath(segments.mkString("/")).fold(_ => Gen.fail, Gen.const)
+      relativePath <- RelativePath.validate(segments.mkString("/")).fold(_ => Gen.fail, Gen.const)
     } yield relativePath
   }
 

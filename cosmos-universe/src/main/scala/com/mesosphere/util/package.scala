@@ -20,9 +20,9 @@ package object util {
       // Should have the form: PathInterpolations(StringContext(<string literal>))
       c.prefix.tree match {
         case Apply(_, List(Apply(_, List(Literal(Constant(rawPath: String)))))) =>
-          AbsolutePath(rawPath) match {
-            case Right(_) => c.Expr[AbsolutePath](q"AbsolutePath($rawPath).right.get")
-            case Left(error) => c.abort(c.enclosingPosition, error.message)
+          AbsolutePath.validate(rawPath) match {
+            case Right(_) => c.Expr[AbsolutePath](q"AbsolutePath($rawPath)")
+            case Left(error) => c.abort(c.enclosingPosition, error.getMessage)
           }
         case _ if args.nonEmpty =>
           c.abort(c.enclosingPosition, "Interpolated values are not supported")
