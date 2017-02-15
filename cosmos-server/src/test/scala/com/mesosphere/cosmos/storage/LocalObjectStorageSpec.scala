@@ -2,11 +2,9 @@ package com.mesosphere.cosmos.storage
 
 import com.mesosphere.cosmos.http.MediaType
 import com.mesosphere.cosmos.http.MediaTypes
+import com.mesosphere.cosmos.storage.ObjectStorageTestOps.objectStorageTestOps
 import com.mesosphere.cosmos.test.TestUtil
-import com.twitter.io.StreamIO
 import com.twitter.util.Await
-import com.twitter.util.Future
-import java.io.ByteArrayInputStream
 import java.time.Instant
 import org.scalacheck.Arbitrary.arbitrary
 import org.scalacheck.Gen
@@ -146,7 +144,9 @@ final class LocalObjectStorageSpec extends FreeSpec with PropertyChecks {
             storage.delete(item1.name)) before
             storage.list(parents)
         }
-        assert(objects.directories.length.toInt == 1 || objects.objects.length.toInt == 1)
+
+        val condition = objects.directories.length == 1 || objects.objects.length == 1
+        assert(condition)
       }
     }
   }
@@ -156,7 +156,7 @@ final class LocalObjectStorageSpec extends FreeSpec with PropertyChecks {
       TestUtil.withLocalObjectStorage { storage =>
         val namesInStorage = Await.result {
           storage.writeAll(state) before
-            storage.listAll("")
+            storage.listAllObjectNames("")
         }.sorted
         val namesWritten = state.map(_.name).sorted
         assertResult(namesWritten)(namesInStorage)
@@ -196,8 +196,6 @@ final class LocalObjectStorageSpec extends FreeSpec with PropertyChecks {
 }
 
 object LocalObjectStorageSpec {
-
-  case class ObjectStorageItem(name: String, content: Array[Byte], mediaType: Option[MediaType])
 
   type ObjectStorageState = List[ObjectStorageItem]
 
@@ -295,48 +293,5 @@ object LocalObjectStorageSpec {
 
   def getMediaTypeWritten(maybeMediaType: Option[MediaType]): MediaType =
     maybeMediaType.getOrElse(MediaTypes.applicationOctetStream)
-
-
-  implicit class ObjectStorageNoStreams(val objectStorage: LocalObjectStorage) extends AnyVal {
-
-    def write(name: String, content: Array[Byte], mediaType: Option[MediaType] = None): Future[Unit] = {
-      val body = new ByteArrayInputStream(content)
-      val contentLength = content.length.toLong
-      objectStorage.write(name, body, contentLength, mediaType)
-    }
-
-    def readAsArray(name: String): Future[Option[(MediaType, Array[Byte])]] = {
-      objectStorage.read(name).map(_.map { case (mediaType, readStream) =>
-        (mediaType, StreamIO.buffer(readStream).toByteArray)
-      })
-    }
-
-    def listAll(base: String): Future[List[String]] = {
-      objectStorage.list(base).flatMap { objectList =>
-        Future.collect(
-          objectList.directories
-            .map(listAll)
-        ).map { rest =>
-          (objectList.objects :: rest.toList).flatten
-        }
-      }
-    }
-
-    def writeAll(objectStorageItems: List[ObjectStorageItem]): Future[Unit] = {
-      Future.join(
-        objectStorageItems.map { objectStorageItem =>
-          write(objectStorageItem.name, objectStorageItem.content, objectStorageItem.mediaType)
-        }
-      )
-    }
-
-    def deleteAll(names: List[String]): Future[Unit] = {
-      Future.join(
-        names.map { name =>
-          objectStorage.delete(name)
-        }
-      )
-    }
-  }
 
 }
