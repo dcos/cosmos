@@ -11,7 +11,6 @@ import com.amazonaws.services.s3.model.ObjectMetadata
 import com.amazonaws.services.s3.model.PutObjectRequest
 import com.mesosphere.cosmos.http.MediaType
 import com.mesosphere.util.AbsolutePath
-import com.mesosphere.util.RelativePath
 import com.netaporter.uri.Uri
 import com.twitter.finagle.stats.Stat
 import com.twitter.finagle.stats.StatsReceiver
@@ -162,13 +161,11 @@ final class S3ObjectStorage(
   }
 
   private[this] def resolve(path: AbsolutePath): String = {
-    // TODO cruhland path.relativize(AbsolutePath.Root)
-    basePath.resolve(RelativePath(path.toString)).toString
+    basePath.resolve(path.relativize(AbsolutePath.Root)).toString
   }
 
   private[this] def relativize(fullPath: String): AbsolutePath = {
-    // TODO cruhland relativize impl?
-    AbsolutePath(fullPath.stripPrefix(basePath.toString))
+    AbsolutePath.Root.resolve(AbsolutePath(fullPath).relativize(basePath))
   }
 
 }

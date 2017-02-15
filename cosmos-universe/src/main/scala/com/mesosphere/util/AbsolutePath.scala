@@ -1,28 +1,29 @@
 package com.mesosphere.util
 
-final case class AbsolutePath private(private val path: Option[RelativePath]) extends Path {
+final case class AbsolutePath private(private val path: RelativePath) extends Path {
 
   override type Self = AbsolutePath
 
-  // scalastyle:off method.name
-  def /(last: String): AbsolutePath = {
-    AbsolutePath(Some(path.fold(RelativePath.element(last))(_ / last)))
-  }
-  // scalastyle:on method.name
+  def /(last: String): AbsolutePath = AbsolutePath(path / last) // scalastyle:ignore method.name
 
-  override def resolve(tail: RelativePath): AbsolutePath = {
-    AbsolutePath(Some(path.fold(tail)(_.resolve(tail))))
-  }
+  override def resolve(tail: RelativePath): AbsolutePath = AbsolutePath(path.resolve(tail))
 
-  override def toString: String = Path.Separator + path.fold("")(_.toString)
+  /**
+   * The relative path that resolves to this path at `base`.
+   *
+   * @throws IllegalArgumentException if `base` is not a parent of, or identical to, this path.
+   */
+  def relativize(base: AbsolutePath): RelativePath = RelativePath.relativize(this, base)
 
-  def elements: Vector[String] = path.fold(Vector.empty[String])(_.elements)
+  override def toString: String = Path.Separator + path.toString
+
+  def elements: Vector[String] = path.elements
 
 }
 
 object AbsolutePath {
 
-  val Root: AbsolutePath = AbsolutePath(Path.Separator)
+  val Root: AbsolutePath = AbsolutePath(RelativePath.Empty)
 
   def apply(path: String): AbsolutePath = validate(path).fold(throw _, identity)
 
@@ -31,8 +32,7 @@ object AbsolutePath {
     else if (!path.startsWith(Path.Separator)) Left(Relative)
     else {
       RelativePath.validate(path.drop(1)) match {
-        case Right(relativePath) => Right(AbsolutePath(Some(relativePath)))
-        case Left(RelativePath.Empty) => Right(AbsolutePath(None))
+        case Right(relativePath) => Right(AbsolutePath(relativePath))
         case Left(RelativePath.Absolute) => Left(BadRoot)
       }
     }

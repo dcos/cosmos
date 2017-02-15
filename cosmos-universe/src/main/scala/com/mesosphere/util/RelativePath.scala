@@ -7,10 +7,7 @@ final case class RelativePath private(override val elements: Vector[String]) ext
   override type Self = RelativePath
 
   // scalastyle:off method.name
-  def /(last: String): RelativePath = {
-    validateElement(last)
-    RelativePath(elements :+ last)
-  }
+  def /(last: String): RelativePath = RelativePath(elements ++ validateElement(last))
   // scalastyle:on method.name
 
   override def resolve(tail: RelativePath): RelativePath = RelativePath(elements ++ tail.elements)
@@ -21,32 +18,40 @@ final case class RelativePath private(override val elements: Vector[String]) ext
 
 object RelativePath {
 
+  val Empty: RelativePath = RelativePath(Vector.empty)
+
   def apply(path: String): RelativePath = validate(path).fold(throw _, identity)
 
   def validate(path: String): Either[Error, RelativePath] = {
-    if (path.isEmpty) Left(Empty)
-    else if (path.startsWith(Path.Separator)) Left(Absolute)
+    if (path.startsWith(Path.Separator)) Left(Absolute)
     else Right(RelativePath(path.split(Path.Separator).toVector.filter(_.nonEmpty)))
   }
 
-  def element(s: String): RelativePath = {
-    validateElement(s)
-    RelativePath(Vector(s))
+  /**
+   * The relative path that resolves to `path` at `base`.
+   *
+   * @throws IllegalArgumentException if `base` is not a parent of, or identical to, `path`.
+   */
+  def relativize(path: AbsolutePath, base: AbsolutePath): RelativePath = {
+    // Take advantage of short-circuiting to avoid traversing the elements
+    val valid = base.elements.size <= path.elements.size && path.elements.startsWith(base.elements)
+
+    if (valid) RelativePath(path.elements.drop(base.elements.size))
+    else throw new IllegalArgumentException("Paths cannot be relativized")
   }
 
-  private def validateElement(s: String): Unit = {
+  private def validateElement(s: String): Vector[String] = {
     s match {
       case "" =>
-        throw new IllegalArgumentException("Empty path element")
+        Vector.empty
       case _ if s.contains(Path.Separator) =>
         throw new IllegalArgumentException("Path element contains separator")
       case _ =>
-        // Valid
+        Vector(s)
     }
   }
 
   sealed abstract class Error(override val getMessage: String) extends Exception
-  case object Empty extends Error("Empty relative path")
   case object Absolute extends Error("Expected relative path, but found absolute path")
 
 }

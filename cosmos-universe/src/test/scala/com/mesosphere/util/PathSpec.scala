@@ -15,29 +15,6 @@ final class PathSpec extends FreeSpec with PropertyChecks {
 
     "RelativePath" - {
 
-      "element(String)" - {
-
-        "fails if the element is empty" in {
-          val _ = intercept[IllegalArgumentException](RelativePath.element(""))
-        }
-
-        "fails if the element contains a separator" in {
-          forAll { (prefix: String, suffix: String) =>
-            val _ = intercept[IllegalArgumentException](RelativePath.element(s"$prefix/$suffix"))
-          }
-        }
-
-        "succeeds in all other cases, creating a RelativePath of that element" in {
-          forAll { (element: String) =>
-            whenever (element.nonEmpty && !element.contains(Path.Separator)) {
-              val Vector(actualElement) = RelativePath.element(element).elements
-              assertResult(actualElement)(element)
-            }
-          }
-        }
-
-      }
-
       "apply(String)" - {
         behave like validationCases { path =>
           try { Right(RelativePath(path)) } catch { case e: RelativePath.Error => Left(e) }
@@ -50,8 +27,8 @@ final class PathSpec extends FreeSpec with PropertyChecks {
 
       def validationCases(buildPath: String => Either[RelativePath.Error, RelativePath]): Unit = {
 
-        "fails on empty" in {
-          assertResult(Left(RelativePath.Empty))(buildPath(""))
+        "succeeds on empty" in {
+          assertResult(Right(RelativePath.Empty))(buildPath(""))
         }
 
         "fails on absolute" in {
@@ -192,9 +169,9 @@ final class PathSpec extends FreeSpec with PropertyChecks {
 
       def singleElementCases[P <: Path](genBasePath: Gen[P]): Unit = {
 
-        "fails on an empty element" in {
+        "succeeds on an empty element" in {
           forAll (genBasePath) { basePath =>
-            val _ = intercept[IllegalArgumentException](basePath / "")
+            assertResult(basePath)(basePath / "")
           }
         }
 
@@ -238,8 +215,10 @@ final class PathSpec extends FreeSpec with PropertyChecks {
           assert(fullPathStr.startsWith(basePathStr))
           assert(fullPathStr.endsWith(extensionStr))
 
-          val leftover = fullPathStr.stripPrefix(basePathStr).stripSuffix(extensionStr)
-          assertResult(Path.Separator)(leftover)
+          val expected =
+            if (basePath.elements.isEmpty || extension.elements.isEmpty) "" else Path.Separator
+          val actual = fullPathStr.stripPrefix(basePathStr).stripSuffix(extensionStr)
+          assertResult(expected)(actual)
         }
       }
 
@@ -275,13 +254,58 @@ final class PathSpec extends FreeSpec with PropertyChecks {
 
   }
 
+  "Relativization of paths" - {
+
+    "as a factory method of RelativePath" - {
+      behave like relativizationCases(RelativePath.relativize)
+    }
+
+    "as a convenience method on AbsolutePath" - {
+      behave like relativizationCases(_ relativize _)
+    }
+
+    def relativizationCases(relativize: (AbsolutePath, AbsolutePath) => RelativePath): Unit = {
+
+      "successful" in {
+        forAll (genAbsolutePath, genRelativePath) { (base, result) =>
+          assertResult(result)(relativize(base.resolve(result), base))
+        }
+      }
+
+      "succeeds if paths are equal" in {
+        forAll (genAbsolutePath) { path =>
+          assertResult(RelativePath.Empty)(relativize(path, path))
+        }
+      }
+
+      "fails if base is a child of path" in {
+        forAll (genAbsolutePath, genRelativePath) { (path, extension) =>
+          whenever (extension.elements.nonEmpty) {
+            val base = path.resolve(extension)
+            val _ = intercept[IllegalArgumentException](relativize(path, base))
+          }
+        }
+      }
+
+      "fails if base is not a parent of path" in {
+        forAll (genAbsolutePath, genAbsolutePath) { (path, base) =>
+          whenever (!path.elements.startsWith(base.elements)) {
+            val _ = intercept[IllegalArgumentException](relativize(path, base))
+          }
+        }
+      }
+
+    }
+
+  }
+
 }
 
 object PathSpec {
 
   val genPathElements: Gen[Vector[String]] = {
     val genElement = Gen.nonEmptyListOf(arbitrary[Char]).map(_.mkString)
-    Gen.nonEmptyContainerOf[Vector, String](genElement).suchThat(validPathElements)
+    Gen.containerOf[Vector, String](genElement).suchThat(validPathElements)
   }
 
   val genRelativePath: Gen[RelativePath] = {
@@ -295,7 +319,7 @@ object PathSpec {
   val genPath: Gen[Path] = Gen.oneOf(genRelativePath, genAbsolutePath)
 
   def validPathElements(elements: Vector[String]): Boolean = {
-    elements.nonEmpty && elements.forall(e => e.nonEmpty && !e.contains(Path.Separator))
+    elements.forall(e => e.nonEmpty && !e.contains(Path.Separator))
   }
 
   def buildRelativePath(elements: Vector[String]): RelativePath = {

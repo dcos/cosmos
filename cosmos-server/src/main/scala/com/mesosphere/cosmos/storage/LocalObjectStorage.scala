@@ -256,12 +256,10 @@ object LocalObjectStorage {
   }
 
   def resolve(filesystemPath: Path, objectPath: AbsolutePath): Path = {
-    // TODO cruhland possibly use relativize to drop the root?
-    filesystemPath.resolve(objectPath.toString.drop(1))
+    filesystemPath.resolve(objectPath.relativize(AbsolutePath.Root).toString)
   }
 
   def relativize(basePath: Path, fullPath: Path): AbsolutePath = {
-    // TODO cruhland: relative path from file path -- using elements directly
     AbsolutePath.Root.resolve(RelativePath(basePath.relativize(fullPath).toString))
   }
 
