@@ -50,10 +50,10 @@ final class SyncFutureLeader private (
         Future.join(
           Future.sleep(Duration.fromSeconds(10)), // scalastyle:ignore magic.number
           processor().onFailure {
-            logger.error(s"Got a failure from the processor or garbageCollector", _)
+            logger.error(s"Got a failure from the processor", _)
           },
           garbageCollector().onFailure {
-            logger.error(s"Got a failure from the processor or garbageCollector", _)
+            logger.error(s"Got a failure from the garbageCollector", _)
           }
         ).unit
       }

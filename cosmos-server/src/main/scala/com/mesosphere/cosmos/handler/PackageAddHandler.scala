@@ -1,6 +1,5 @@
 package com.mesosphere.cosmos.handler
 
-import cats.implicits._
 import com.mesosphere.cosmos.InvalidPackageVersionForAdd
 import com.mesosphere.cosmos.circe.Decoders.decode
 import com.mesosphere.cosmos.finch.EndpointHandler
@@ -70,6 +69,7 @@ final class PackageAddHandler(
 
   private[this] def invert[A](a: Option[Try[A]]): Try[Option[A]] = {
     // silly function to change types
+    import cats.implicits._ // Breaks universe conversions
     Try.fromScala(a.map(twitterTryToScalaTry).sequenceU)
   }
 
