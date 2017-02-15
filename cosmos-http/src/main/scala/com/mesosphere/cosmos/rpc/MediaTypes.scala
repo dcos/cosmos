@@ -15,6 +15,7 @@ object MediaTypes {
   val ListRequest = vnd("list-request")
   val ListResponse = vnd("list-response")
 
+  val ErrorResponse = vnd("error")
   val InstallRequest = vnd("install-request")
   val RenderRequest = vnd("render-request")
   val RenderResponse = vnd("render-response")
@@ -24,7 +25,6 @@ object MediaTypes {
   val ListVersionsRequest = vnd("list-versions-request")
   val ListVersionsResponse = vnd("list-versions-response")
   val CapabilitiesResponse = dcos("capabilities", 1)
-  val ErrorResponse = dcos("error", 1)
 
   val PackageRepositoryListRequest = vnd("repository.list-request")
   val PackageRepositoryListResponse = vnd("repository.list-response")
