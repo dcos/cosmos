@@ -283,9 +283,9 @@ object CosmosBuild extends Build {
 
   lazy val cosmos = Project("cosmos", file("."))
     .settings(sharedSettings)
-    .aggregate(http, model, json, jsonschema, bijection, render, finch, server, universe)
+    .aggregate(http, model, json, jsonschema, bijection, render, finch, server, common)
 
-  lazy val universe = Project("cosmos-universe", file("cosmos-universe"))
+  lazy val common = Project("cosmos-common", file("cosmos-common"))
     .settings(sharedSettings)
     .settings(
       libraryDependencies ++=
@@ -387,7 +387,7 @@ object CosmosBuild extends Build {
     .dependsOn(
       finch % "compile;test->test",
       render % "compile;test->test",
-      universe % "compile;test->test"
+      common % "compile;test->test"
     )
 
   //////////////////////////////////////////////////////////////////////////////
