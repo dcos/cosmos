@@ -36,8 +36,7 @@ final class PackageStorage private(objectStorage: ObjectStorage) {
     val data = packageDefinition.asJson.noSpaces.getBytes(StandardCharsets.UTF_8)
 
     objectStorage.write(
-      // TODO cruhland / redefinition
-      AbsolutePath(s"/${packageCoordinate.as[String]}/$MetadataJson"),
+      AbsolutePath.Root / packageCoordinate.as[String] / MetadataJson,
       new ByteArrayInputStream(data),
       data.length.toLong,
       universe.MediaTypes.universeV3Package
@@ -47,8 +46,7 @@ final class PackageStorage private(objectStorage: ObjectStorage) {
   def readPackageDefinition(
     packageCoordinate: rpc.v1.model.PackageCoordinate
   ): Future[Option[universe.v3.model.V3Package]] = {
-    // TODO cruhland / redefinition
-    val path = AbsolutePath(s"/${packageCoordinate.as[String]}/$MetadataJson")
+    val path = AbsolutePath.Root / packageCoordinate.as[String] / MetadataJson
 
     objectStorage.read(path).flatMap {
       case Some((_, inputStream)) =>

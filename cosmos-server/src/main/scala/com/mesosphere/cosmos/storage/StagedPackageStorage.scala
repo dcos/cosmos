@@ -29,7 +29,6 @@ object StagedPackageStorage {
     new StagedPackageStorage(objectStorage)
   }
 
-  // TODO cruhland / redefinition
-  def uuidToPath(id: UUID): AbsolutePath = AbsolutePath(s"/$id")
+  def uuidToPath(id: UUID): AbsolutePath = AbsolutePath.Root / id.toString
 
 }

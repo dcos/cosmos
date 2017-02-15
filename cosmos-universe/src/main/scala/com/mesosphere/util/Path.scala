@@ -4,9 +4,11 @@ trait Path {
 
   type Self <: Path
 
-  def resolve(tail: RelativePath): Self  // scalastyle:ignore method.name
+  def /(last: String): Self // scalastyle:ignore method.name
 
-  def elements: List[String]
+  def resolve(tail: RelativePath): Self
+
+  def elements: Vector[String]
 
 }
 
@@ -14,13 +16,20 @@ object Path {
   val Separator: String = "/"
 }
 
-final case class RelativePath private(override val elements: List[String]) extends Path {
+final case class RelativePath private(override val elements: Vector[String]) extends Path {
+
+  import RelativePath._
 
   override type Self = RelativePath
 
   // scalastyle:off method.name
-  override def resolve(tail: RelativePath): RelativePath = RelativePath(elements ++ tail.elements)
+  def /(last: String): RelativePath = {
+    validateElement(last)
+    RelativePath(elements :+ last)
+  }
   // scalastyle:on method.name
+
+  override def resolve(tail: RelativePath): RelativePath = RelativePath(elements ++ tail.elements)
 
   override def toString: String = elements.mkString(Path.Separator)
 
@@ -33,7 +42,23 @@ object RelativePath {
   def validate(path: String): Either[Error, RelativePath] = {
     if (path.isEmpty) Left(Empty)
     else if (path.startsWith(Path.Separator)) Left(Absolute)
-    else Right(RelativePath(path.split(Path.Separator).toList.filter(_.nonEmpty)))
+    else Right(RelativePath(path.split(Path.Separator).toVector.filter(_.nonEmpty)))
+  }
+
+  def element(s: String): RelativePath = {
+    validateElement(s)
+    RelativePath(Vector(s))
+  }
+
+  private def validateElement(s: String): Unit = {
+    s match {
+      case "" =>
+        throw new IllegalArgumentException("Empty path element")
+      case _ if s.contains(Path.Separator) =>
+        throw new IllegalArgumentException("Path element contains separator")
+      case _ =>
+        // Valid
+    }
   }
 
   sealed abstract class Error(override val getMessage: String) extends Exception
@@ -47,14 +72,18 @@ final case class AbsolutePath private(private val path: Option[RelativePath]) ex
   override type Self = AbsolutePath
 
   // scalastyle:off method.name
-  override def resolve(tail: RelativePath): AbsolutePath = {
-    AbsolutePath(Some(path.fold(tail)(_.resolve(tail))))
+  def /(last: String): AbsolutePath = {
+    AbsolutePath(Some(path.fold(RelativePath.element(last))(_ / last)))
   }
   // scalastyle:on method.name
 
+  override def resolve(tail: RelativePath): AbsolutePath = {
+    AbsolutePath(Some(path.fold(tail)(_.resolve(tail))))
+  }
+
   override def toString: String = Path.Separator + path.fold("")(_.toString)
 
-  def elements: List[String] = path.fold(List.empty[String])(_.elements)
+  def elements: Vector[String] = path.fold(Vector.empty[String])(_.elements)
 
 }
 

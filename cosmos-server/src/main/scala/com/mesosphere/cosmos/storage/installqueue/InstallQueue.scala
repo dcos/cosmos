@@ -353,8 +353,7 @@ object InstallQueue {
   val installQueuePath: AbsolutePath = abspath"/package/task-queue"
 
   def statusPath(packageCoordinate: PackageCoordinate): AbsolutePath = {
-    // TODO cruhland / redefinition
-    installQueuePath.resolve(RelativePath(packageCoordinate.as[String]))
+    installQueuePath / packageCoordinate.as[String]
   }
 
   def apply(client: CuratorFramework)(implicit statsReceiver: StatsReceiver): InstallQueue = {

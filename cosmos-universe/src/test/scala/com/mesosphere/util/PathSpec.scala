@@ -15,6 +15,29 @@ final class PathSpec extends FreeSpec with PropertyChecks {
 
     "RelativePath" - {
 
+      "element(String)" - {
+
+        "fails if the element is empty" in {
+          val _ = intercept[IllegalArgumentException](RelativePath.element(""))
+        }
+
+        "fails if the element contains a separator" in {
+          forAll { (prefix: String, suffix: String) =>
+            val _ = intercept[IllegalArgumentException](RelativePath.element(s"$prefix/$suffix"))
+          }
+        }
+
+        "succeeds in all other cases, creating a RelativePath of that element" in {
+          forAll { (element: String) =>
+            whenever (element.nonEmpty && !element.contains(Path.Separator)) {
+              val Vector(actualElement) = RelativePath.element(element).elements
+              assertResult(actualElement)(element)
+            }
+          }
+        }
+
+      }
+
       "apply(String)" - {
         behave like validationCases { path =>
           try { Right(RelativePath(path)) } catch { case e: RelativePath.Error => Left(e) }
@@ -153,24 +176,73 @@ final class PathSpec extends FreeSpec with PropertyChecks {
 
   "Extending Paths" - {
 
-    "A RelativePath can be extended by a RelativePath" in {
-      assertPathExtension(genRelativePath)
-    }
+    "by a single element" - {
 
-    "An AbsolutePath can be extended by a RelativePath" in {
-      assertPathExtension(genAbsolutePath)
-    }
+      "for RelativePaths" - {
 
-    def assertPathExtension[P <: Path](genBasePath: Gen[P]): Unit = {
-      forAll (genBasePath, genRelativePath) { (basePath, extension) =>
-        val basePathStr = basePath.toString
-        val extensionStr = extension.toString
-        val fullPathStr = basePath.resolve(extension).toString
+        behave like singleElementCases(genRelativePath)
 
-        assert(fullPathStr.startsWith(basePathStr))
-        assert(fullPathStr.endsWith(extensionStr))
-        assertResult(Path.Separator)(fullPathStr.stripPrefix(basePathStr).stripSuffix(extensionStr))
       }
+
+      "for AbsolutePaths" - {
+
+        behave like singleElementCases(genAbsolutePath)
+
+      }
+
+      def singleElementCases[P <: Path](genBasePath: Gen[P]): Unit = {
+
+        "fails on an empty element" in {
+          forAll (genBasePath) { basePath =>
+            val _ = intercept[IllegalArgumentException](basePath / "")
+          }
+        }
+
+        "fails on an element containing a separator" in {
+          forAll (genBasePath, arbitrary[String], arbitrary[String]) {
+            (basePath, prefix, suffix) =>
+              val _ = intercept[IllegalArgumentException](basePath / s"$prefix/$suffix")
+          }
+        }
+
+        "succeeds in all other cases, appending the element" in {
+          forAll (genBasePath, arbitrary[String]) { (basePath, element) =>
+            whenever (element.nonEmpty && !element.contains(Path.Separator)) {
+              val fullElements = (basePath / element).elements
+              assertResult(basePath.elements)(fullElements.init)
+              assertResult(element)(fullElements.last)
+            }
+          }
+        }
+
+      }
+
+    }
+
+    "by a RelativePath" - {
+
+      "A RelativePath can be extended by a RelativePath" in {
+        assertPathExtension(genRelativePath)
+      }
+
+      "An AbsolutePath can be extended by a RelativePath" in {
+        assertPathExtension(genAbsolutePath)
+      }
+
+      def assertPathExtension[P <: Path](genBasePath: Gen[P]): Unit = {
+        forAll (genBasePath, genRelativePath) { (basePath, extension) =>
+          val basePathStr = basePath.toString
+          val extensionStr = extension.toString
+          val fullPathStr = basePath.resolve(extension).toString
+
+          assert(fullPathStr.startsWith(basePathStr))
+          assert(fullPathStr.endsWith(extensionStr))
+
+          val leftover = fullPathStr.stripPrefix(basePathStr).stripSuffix(extensionStr)
+          assertResult(Path.Separator)(leftover)
+        }
+      }
+
     }
 
   }
@@ -182,7 +254,7 @@ final class PathSpec extends FreeSpec with PropertyChecks {
     behave like elementsTestCases(buildAbsolutePath, genAbsolutePath)
 
     def elementsTestCases[P <: Path : ClassTag](
-      buildPath: List[String] => P,
+      buildPath: Vector[String] => P,
       genPath: Gen[P]
     ): Unit = {
       val pathType = implicitly[ClassTag[P]].runtimeClass.getSimpleName
@@ -207,9 +279,9 @@ final class PathSpec extends FreeSpec with PropertyChecks {
 
 object PathSpec {
 
-  val genPathElements: Gen[List[String]] = {
+  val genPathElements: Gen[Vector[String]] = {
     val genElement = Gen.nonEmptyListOf(arbitrary[Char]).map(_.mkString)
-    Gen.nonEmptyListOf(genElement).suchThat(validPathElements)
+    Gen.nonEmptyContainerOf[Vector, String](genElement).suchThat(validPathElements)
   }
 
   val genRelativePath: Gen[RelativePath] = {
@@ -222,15 +294,15 @@ object PathSpec {
 
   val genPath: Gen[Path] = Gen.oneOf(genRelativePath, genAbsolutePath)
 
-  def validPathElements(elements: List[String]): Boolean = {
+  def validPathElements(elements: Vector[String]): Boolean = {
     elements.nonEmpty && elements.forall(e => e.nonEmpty && !e.contains(Path.Separator))
   }
 
-  def buildRelativePath(elements: List[String]): RelativePath = {
+  def buildRelativePath(elements: Vector[String]): RelativePath = {
     RelativePath(elements.mkString(Path.Separator))
   }
 
-  def buildAbsolutePath(elements: List[String]): AbsolutePath = {
+  def buildAbsolutePath(elements: Vector[String]): AbsolutePath = {
     AbsolutePath(elements.mkString(Path.Separator, Path.Separator, ""))
   }
 
