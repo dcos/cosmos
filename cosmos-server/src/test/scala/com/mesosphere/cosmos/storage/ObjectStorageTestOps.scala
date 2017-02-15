@@ -1,5 +1,6 @@
 package com.mesosphere.cosmos.storage
 
+import com.mesosphere.util.AbsolutePath
 import com.twitter.util.Future
 import scala.language.implicitConversions
 
@@ -9,7 +10,7 @@ final class ObjectStorageTestOps(val objectStorage: ObjectStorage) extends AnyVa
     Future.join(
       objectStorageItems.map { objectStorageItem =>
         objectStorage.write(
-          objectStorageItem.name,
+          objectStorageItem.path,
           objectStorageItem.content,
           objectStorageItem.mediaType
         )
@@ -17,31 +18,29 @@ final class ObjectStorageTestOps(val objectStorage: ObjectStorage) extends AnyVa
     )
   }
 
-  def listAllObjectNames(root: String): Future[List[String]] = {
+  def listAllObjectPaths(root: AbsolutePath): Future[List[AbsolutePath]] = {
     objectStorage.listWithoutPaging(root).flatMap { objectList =>
       Future.collect(
-        objectList.directories.map(listAllObjectNames)
+        objectList.directories.map(listAllObjectPaths)
       ).map { rest =>
         (objectList.objects :: rest.toList).flatten
       }
     }
   }
 
-  def listAllObjects(root: String): Future[List[ObjectStorageItem]] = {
-    listAllObjectNames(root).flatMap { names =>
-      Future.collect(names.map { name =>
+  def listAllObjects(root: AbsolutePath): Future[List[ObjectStorageItem]] = {
+    listAllObjectPaths(root).flatMap { paths =>
+      Future.collect(paths.map { path =>
         for {
-          Some((mediaType, content)) <- objectStorage.readAsArray(name)
-          timeCreated <- objectStorage.getCreationTime(name)
-        } yield ObjectStorageItem(name, content, Some(mediaType), timeCreated)
+          Some((mediaType, content)) <- objectStorage.readAsArray(path)
+          timeCreated <- objectStorage.getCreationTime(path)
+        } yield ObjectStorageItem(path, content, Some(mediaType), timeCreated)
       }).map(_.toList)
     }
   }
 
-  def deleteAll(names: List[String]): Future[Unit] = {
-    Future.join(
-      names.map(objectStorage.delete)
-    )
+  def deleteAll(paths: List[AbsolutePath]): Future[Unit] = {
+    Future.join(paths.map(objectStorage.delete))
   }
 
 }

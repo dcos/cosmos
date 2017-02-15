@@ -10,6 +10,7 @@ import com.mesosphere.universe
 import com.mesosphere.universe.v3.circe.Decoders._
 import com.mesosphere.universe.v3.circe.Encoders._
 import com.mesosphere.universe.v3.syntax.PackageDefinitionOps.packageDefinitionToPackageDefinitionOps
+import com.mesosphere.util.AbsolutePath
 import com.twitter.bijection.Conversion.asMethod
 import com.twitter.util.Future
 import io.circe.syntax._
@@ -23,7 +24,7 @@ final class PackageStorage private(objectStorage: ObjectStorage) {
   def writePackageDefinition(
     packageDefinition: universe.v3.model.V3Package
   ): Future[Unit] = {
-    val metadataName = getMetadataName(packageDefinition.packageCoordinate)
+    val metadataName = getMetadataPath(packageDefinition.packageCoordinate)
     val data = packageDefinition.asJson.noSpaces.getBytes(StandardCharsets.UTF_8)
     val mediaType = universe.MediaTypes.universeV3Package
     objectStorage.write(metadataName, data, mediaType)
@@ -32,7 +33,7 @@ final class PackageStorage private(objectStorage: ObjectStorage) {
   def readPackageDefinition(
     packageCoordinate: rpc.v1.model.PackageCoordinate
   ): Future[Option[universe.v3.model.V3Package]] = {
-    val metadataName = getMetadataName(packageCoordinate)
+    val metadataName = getMetadataPath(packageCoordinate)
     objectStorage.readAsArray(metadataName).map { pendingRead =>
       pendingRead.map { case (_, data) =>
         decode[universe.v3.model.V3Package](new String(data, StandardCharsets.UTF_8))
@@ -41,9 +42,8 @@ final class PackageStorage private(objectStorage: ObjectStorage) {
   }
 
   private[this] def list(): Future[List[PackageCoordinate]] = {
-    objectStorage.listWithoutPaging("").map { objectList =>
-      objectList.directories.flatMap(_.as[Try[PackageCoordinate]].toOption)
-    }
+    objectStorage.listWithoutPaging(AbsolutePath.Root)
+      .map(objectList => getPackageCoordinates(objectList.directories))
   }
 
   def readAllLocalPackages(): Future[List[rpc.v1.model.LocalPackage]] = {
@@ -66,11 +66,23 @@ final class PackageStorage private(objectStorage: ObjectStorage) {
 }
 
 object PackageStorage {
+
+  val MetadataJson = "metadata.json"
+
   def apply(objectStorage: ObjectStorage): PackageStorage = {
     new PackageStorage(objectStorage)
   }
 
-  private def getMetadataName(packageCoordinate: PackageCoordinate): String = {
-    s"${packageCoordinate.as[String]}/metadata.json"
+  private def getMetadataPath(packageCoordinate: PackageCoordinate): AbsolutePath = {
+    AbsolutePath.Root / packageCoordinate.as[String] / "metadata.json"
   }
+
+  def getPackageCoordinates(directoryPaths: List[AbsolutePath]): List[PackageCoordinate] = {
+    for {
+      directoryPath <- directoryPaths
+      lastElement <- directoryPath.elements.lastOption
+      coordinate <- lastElement.as[Try[rpc.v1.model.PackageCoordinate]].toOption
+    } yield coordinate
+  }
+
 }

@@ -21,6 +21,7 @@ import com.mesosphere.universe.test.TestingPackages
 import com.mesosphere.universe.v3.circe.Decoders._
 import com.mesosphere.universe.v3.syntax.PackageDefinitionOps._
 import com.mesosphere.universe.{TestUtil => UTestUtil}
+import com.mesosphere.util.AbsolutePath
 import com.twitter.bijection.Conversion.asMethod
 import com.twitter.finagle.http.Status
 import com.twitter.finagle.stats.NullStatsReceiver
@@ -199,8 +200,7 @@ object PackageAddSpec {
         }
     }
 
-    // TODO package-add: Be more lenient about slashes at beginning and end of paths
-    Await.result(storage.list("").flatMap(cleanObjectList))
+    Await.result(storage.list(AbsolutePath.Root).flatMap(cleanObjectList))
   }
 
   def describePackage(

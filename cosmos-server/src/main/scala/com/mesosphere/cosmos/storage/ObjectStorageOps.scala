@@ -1,6 +1,7 @@
 package com.mesosphere.cosmos.storage
 
 import com.mesosphere.cosmos.http.MediaType
+import com.mesosphere.util.AbsolutePath
 import com.twitter.io.StreamIO
 import com.twitter.util.Future
 import com.twitter.util.FuturePool
@@ -8,8 +9,8 @@ import java.io.ByteArrayInputStream
 
 final class ObjectStorageOps(val objectStorage: ObjectStorage) extends AnyVal {
 
-  def readAsArray(name: String): Future[Option[(MediaType, Array[Byte])]] = {
-    objectStorage.read(name).flatMap { item =>
+  def readAsArray(path: AbsolutePath): Future[Option[(MediaType, Array[Byte])]] = {
+    objectStorage.read(path).flatMap { item =>
       FuturePool.interruptibleUnboundedPool { item.map { case (mediaType, readStream) =>
         (mediaType, StreamIO.buffer(readStream).toByteArray)
       }}.ensure(item.foreach { case (_ , inputStream) => inputStream.close() })
@@ -17,24 +18,24 @@ final class ObjectStorageOps(val objectStorage: ObjectStorage) extends AnyVal {
   }
 
   def write(
-    name: String,
+    path: AbsolutePath,
     content: Array[Byte],
     mediaType: MediaType
   ): Future[Unit] = {
-    write(name, content, Some(mediaType))
+    write(path, content, Some(mediaType))
   }
 
   def write(
-    name: String,
+    path: AbsolutePath,
     content: Array[Byte],
     mediaType: Option[MediaType] = None
   ): Future[Unit] = {
     val body = new ByteArrayInputStream(content)
     val contentLength = content.length.toLong
-    objectStorage.write(name, body, contentLength, mediaType)
+    objectStorage.write(path, body, contentLength, mediaType)
   }
 
-  def listWithoutPaging(root: String): Future[ObjectStorageOps.ObjectStrictList] = {
+  def listWithoutPaging(root: AbsolutePath): Future[ObjectStorageOps.ObjectStrictList] = {
     collectPages(objectStorage.list(root)).map { pages =>
       ObjectStorageOps.ObjectStrictList(
         objects = pages.flatMap(_.objects),
@@ -69,5 +70,5 @@ final class ObjectStorageOps(val objectStorage: ObjectStorage) extends AnyVal {
 }
 
 object ObjectStorageOps {
-  case class ObjectStrictList(objects: List[String], directories: List[String])
+  case class ObjectStrictList(objects: List[AbsolutePath], directories: List[AbsolutePath])
 }

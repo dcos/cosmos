@@ -104,6 +104,10 @@ object CosmosBuild extends Build {
       "org.scalacheck" %% "scalacheck" % V.scalaCheck % "test"
     )
 
+    val scalaReflect = Seq(
+      "org.scala-lang" % "scala-reflect" % projectScalaVersion
+    )
+
     val scalaTest = Seq(
       "org.scalatest" %% "scalatest" % V.scalaTest % "test"
     )
@@ -279,7 +283,16 @@ object CosmosBuild extends Build {
 
   lazy val cosmos = Project("cosmos", file("."))
     .settings(sharedSettings)
-    .aggregate(http, model, json, jsonschema, bijection, render, finch, server)
+    .aggregate(http, model, json, jsonschema, bijection, render, finch, server, common)
+
+  lazy val common = Project("cosmos-common", file("cosmos-common"))
+    .settings(sharedSettings)
+    .settings(
+      libraryDependencies ++=
+        Deps.scalaReflect
+        ++ Deps.scalaTest
+        ++ Deps.scalaCheck
+    )
 
   lazy val model = Project("cosmos-model", file("cosmos-model"))
     .settings(sharedSettings)
@@ -373,7 +386,8 @@ object CosmosBuild extends Build {
     )
     .dependsOn(
       finch % "compile;test->test",
-      render % "compile;test->test"
+      render % "compile;test->test",
+      common % "compile;test->test"
     )
 
   //////////////////////////////////////////////////////////////////////////////
