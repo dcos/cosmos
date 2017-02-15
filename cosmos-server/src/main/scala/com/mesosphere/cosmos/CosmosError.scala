@@ -8,7 +8,6 @@ import cats.data.Ior
 import com.mesosphere.cosmos.circe.Encoders._
 import com.mesosphere.cosmos.http.MediaType
 import com.mesosphere.cosmos.rpc.v1.circe.Encoders._
-import com.mesosphere.cosmos.rpc.v1.model.PackageRepository
 import com.mesosphere.cosmos.thirdparty.marathon.circe.Encoders._
 import com.mesosphere.cosmos.thirdparty.marathon.model.AppId
 import com.mesosphere.cosmos.thirdparty.marathon.model.MarathonError
@@ -33,6 +32,21 @@ sealed abstract class CosmosError(
   val getHeaders: Map[String, String] = Map.empty
 
   val getData: Option[JsonObject]
+}
+
+case class InvalidPackageVersionForAdd(
+  packageCoordinate: rpc.v1.model.PackageCoordinate
+) extends CosmosError {
+  override val getData: Option[JsonObject] = {
+    Some(
+      JsonObject.fromMap(
+        Map(
+          "packageName" -> packageCoordinate.name.asJson,
+          "packageVersion" -> packageCoordinate.version.asJson
+        )
+      )
+    )
+  }
 }
 
 case class PackageNotFound(packageName: String) extends CosmosError {
@@ -411,7 +425,7 @@ case class UnsupportedRepositoryUri(uri: Uri) extends CosmosError {
 }
 
 case class RepositoryUriSyntax(
-  repository: PackageRepository,
+  repository: rpc.v1.model.PackageRepository,
   causedBy: Throwable
 ) extends CosmosError(Some(causedBy)) {
   override val getData: Option[JsonObject] = {
@@ -420,7 +434,7 @@ case class RepositoryUriSyntax(
 }
 
 case class RepositoryUriConnection(
-  repository: PackageRepository,
+  repository: rpc.v1.model.PackageRepository,
   causedBy: Throwable
 ) extends CosmosError(Some(causedBy)) {
   override val getData: Option[JsonObject] = {

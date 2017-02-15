@@ -31,7 +31,7 @@ package object repository {
     pkg: universe.v3.model.V3Package
   ): Future[Unit] = {
 
-    packageStorage.list().map { packages =>
+    packageStorage.readAllLocalPackages().map { packages =>
       LocalPackageCollection.installedPackage(
         packages,
         pkg.name,

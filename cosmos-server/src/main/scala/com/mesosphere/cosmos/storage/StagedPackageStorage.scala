@@ -4,21 +4,35 @@ import com.mesosphere.cosmos.http.MediaType
 import com.mesosphere.util.AbsolutePath
 import com.twitter.util.Future
 import java.io.InputStream
+import java.time.Instant
 import java.util.UUID
 
 final class StagedPackageStorage private(objectStorage: ObjectStorage) {
 
   import StagedPackageStorage._
 
-  def get(packageId: UUID): Future[(MediaType, InputStream)] = {
-    // TODO package-add: Test for failure cases
-    objectStorage.read(uuidToPath(packageId)).map(_.get)
+  def read(id: UUID): Future[Option[(MediaType, InputStream)]] = {
+    objectStorage.read(uuidToPath(id))
   }
 
-  def put(packageData: InputStream, packageSize: Long, mediaType: MediaType): Future[UUID] = {
+  def write(content: InputStream, contentLength: Long, mediaType: MediaType): Future[UUID] = {
     val id = UUID.randomUUID()
-    objectStorage.write(uuidToPath(id), packageData, packageSize, mediaType)
-      .before(Future.value(id))
+    objectStorage.write(uuidToPath(id), content, contentLength, mediaType) before
+      Future.value(id)
+  }
+
+  def list(): Future[List[UUID]] = {
+    objectStorage.listWithoutPaging(AbsolutePath.Root).map { objectList =>
+      objectList.directories.flatMap(path => path.elements.lastOption.map(UUID.fromString))
+    }
+  }
+
+  def delete(id: UUID): Future[Unit] = {
+    objectStorage.delete(uuidToPath(id))
+  }
+
+  def getCreationTime(id: UUID): Future[Option[Instant]] = {
+    objectStorage.getCreationTime(uuidToPath(id))
   }
 
 }

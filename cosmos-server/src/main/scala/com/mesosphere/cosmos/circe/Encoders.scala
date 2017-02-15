@@ -179,6 +179,14 @@ object Encoders {
     import com.mesosphere.cosmos._
 
     err match {
+      case InvalidPackageVersionForAdd(
+        rpc.v1.model.PackageCoordinate(
+          packageName,
+          packageVersion
+        )
+      ) =>
+        s"Unable to add version [$packageVersion] of package [$packageName]. Packaging format " +
+        "not supported for this operation."
       case PackageNotFound(packageName) =>
         s"Package [$packageName] not found"
       case VersionNotFound(
