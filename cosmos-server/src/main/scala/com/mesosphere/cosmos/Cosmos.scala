@@ -23,6 +23,7 @@ import com.mesosphere.cosmos.rpc.v1.circe.MediaTypedBodyParsers._
 import com.mesosphere.cosmos.rpc.v1.circe.MediaTypedEncoders._
 import com.mesosphere.cosmos.rpc.v1.circe.MediaTypedRequestDecoders._
 import com.mesosphere.cosmos.rpc.v2.circe.MediaTypedEncoders._
+import com.mesosphere.cosmos.storage.GarbageCollector
 import com.mesosphere.cosmos.storage.ObjectStorage
 import com.mesosphere.cosmos.storage.PackageStorage
 import com.mesosphere.cosmos.storage.StagedPackageStorage
@@ -50,6 +51,7 @@ import com.twitter.server.Stats
 import com.twitter.util.Await
 import com.twitter.util.Try
 import org.slf4j.Logger
+import scala.concurrent.duration._
 
 
 private[cosmos] final class Cosmos(
@@ -301,6 +303,11 @@ with Logging {
           DefaultInstaller(stageStorage, packageStorage),
           DefaultUniverseInstaller(packageStorage),
           Uninstaller.Noop
+        ),
+        GarbageCollector(
+          stageStorage,
+          installQueue,
+          1.hour
         )
       )
       onExit(processingLeader.close())

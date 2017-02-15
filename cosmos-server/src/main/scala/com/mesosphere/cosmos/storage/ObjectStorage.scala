@@ -11,6 +11,7 @@ import com.twitter.finagle.stats.StatsReceiver
 import com.twitter.util.Future
 import java.io.InputStream
 import java.time.Instant
+import scala.language.implicitConversions
 
 /**
  * General interface for storing and retrieving objects
@@ -100,6 +101,10 @@ object ObjectStorage {
       case S3Uri(s3Uri) => S3ObjectStorage(new AmazonS3Client(), s3Uri)
       case FileUri(path) => LocalObjectStorage(path)
     }
+  }
+
+  implicit def objectStorageOps(objectStorage: ObjectStorage): ObjectStorageOps = {
+    new ObjectStorageOps(objectStorage)
   }
 
 }
