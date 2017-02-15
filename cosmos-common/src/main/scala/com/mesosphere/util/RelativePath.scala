@@ -2,12 +2,19 @@ package com.mesosphere.util
 
 final case class RelativePath private(override val elements: Vector[String]) extends Path {
 
-  import RelativePath._
-
   override type Self = RelativePath
 
   // scalastyle:off method.name
-  def /(last: String): RelativePath = RelativePath(elements ++ validateElement(last))
+  def /(last: String): RelativePath = {
+    last match {
+      case "" =>
+        throw new IllegalArgumentException("Empty path element")
+      case _ if last.contains(Path.Separator) =>
+        throw new IllegalArgumentException("Path element contains separator")
+      case _ =>
+        RelativePath(elements :+ last)
+    }
+  }
   // scalastyle:on method.name
 
   override def resolve(tail: RelativePath): RelativePath = RelativePath(elements ++ tail.elements)
@@ -38,17 +45,6 @@ object RelativePath {
 
     if (valid) RelativePath(path.elements.drop(base.elements.size))
     else throw new IllegalArgumentException("Paths cannot be relativized")
-  }
-
-  private def validateElement(s: String): Vector[String] = {
-    s match {
-      case "" =>
-        Vector.empty
-      case _ if s.contains(Path.Separator) =>
-        throw new IllegalArgumentException("Path element contains separator")
-      case _ =>
-        Vector(s)
-    }
   }
 
   sealed abstract class Error(override val getMessage: String) extends Exception

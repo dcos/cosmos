@@ -169,9 +169,9 @@ final class PathSpec extends FreeSpec with PropertyChecks {
 
       def singleElementCases[P <: Path](genBasePath: Gen[P]): Unit = {
 
-        "succeeds on an empty element" in {
+        "fails on an empty element" in {
           forAll (genBasePath) { basePath =>
-            assertResult(basePath)(basePath / "")
+            val _ = intercept[IllegalArgumentException](basePath / "")
           }
         }
 
