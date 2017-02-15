@@ -1,5 +1,6 @@
 package com.mesosphere.cosmos.handler
 
+import cats.implicits._
 import com.mesosphere.cosmos.InvalidPackageVersionForAdd
 import com.mesosphere.cosmos.circe.Decoders.decode
 import com.mesosphere.cosmos.finch.EndpointHandler
@@ -11,6 +12,7 @@ import com.mesosphere.cosmos.storage.installqueue.ProducerView
 import com.mesosphere.cosmos.storage.v1.model.Install
 import com.mesosphere.cosmos.storage.v1.model.UniverseInstall
 import com.mesosphere.universe
+import com.mesosphere.universe.bijection.BijectionUtils.twitterTryToScalaTry
 import com.mesosphere.universe.bijection.UniverseConversions._
 import com.mesosphere.universe.v3.circe.Decoders._
 import com.mesosphere.universe.v3.syntax.PackageDefinitionOps._
@@ -52,7 +54,7 @@ final class PackageAddHandler(
 
         for {
           stagedPackageId <- stagedPackageStorage.write(packageStream, packageSize, contentType)
-          v3Package <- readPackageDefinitionFromStorage(stagedPackageId)
+          Some(v3Package) <- readPackageDefinitionFromStorage(stagedPackageId)
         } yield {
           Install(stagedPackageId, v3Package)
         }
@@ -66,19 +68,27 @@ final class PackageAddHandler(
     }
   }
 
+  private[this] def invert[A](a: Option[Try[A]]): Try[Option[A]] = {
+    // silly function to change types
+    Try.fromScala(a.map(twitterTryToScalaTry).sequenceU)
+  }
+
   private[this] def readPackageDefinitionFromStorage(
     stagedPackageId: UUID
-  ): Future[universe.v3.model.V3Package] = {
+  ): Future[Option[universe.v3.model.V3Package]] = {
     for {
       // TODO package-add: verify media type
-      Some((_, packageInputStream)) <- stagedPackageStorage.read(stagedPackageId)
-      packageZip = new ZipInputStream(packageInputStream)
-      packageMetadata <- Future.const(extractPackageMetadata(packageZip))
+      stagedPackage <- stagedPackageStorage.read(stagedPackageId)
+      packageInputStream = stagedPackage.map{ case (_, inputStream) => inputStream}
+      packageZip = packageInputStream.map(new ZipInputStream(_))
+      packageMetadata <- Future.const(invert(packageZip.map(extractPackageMetadata)))
     } yield {
       // TODO package-add: Get creation time from storage
-      val timeOfAdd = Instant.now().getEpochSecond
-      val releaseVersion = universe.v3.model.PackageDefinition.ReleaseVersion(timeOfAdd).get()
-      (packageMetadata, releaseVersion).as[universe.v3.model.V3Package]
+      packageMetadata.map { packageMetadata =>
+        val timeOfAdd = Instant.now().getEpochSecond
+        val releaseVersion = universe.v3.model.PackageDefinition.ReleaseVersion(timeOfAdd).get()
+        (packageMetadata, releaseVersion).as[universe.v3.model.V3Package]
+      }
     }
   }
 
