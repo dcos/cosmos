@@ -4,7 +4,7 @@ trait Path {
 
   type Self <: Path
 
-  def /(tail: RelativePath): Self  // scalastyle:ignore method.name
+  def resolve(tail: RelativePath): Self  // scalastyle:ignore method.name
 
   def elements: List[String]
 
@@ -19,7 +19,7 @@ final case class RelativePath private(override val elements: List[String]) exten
   override type Self = RelativePath
 
   // scalastyle:off method.name
-  override def /(tail: RelativePath): RelativePath = RelativePath(elements ++ tail.elements)
+  override def resolve(tail: RelativePath): RelativePath = RelativePath(elements ++ tail.elements)
   // scalastyle:on method.name
 
   override def toString: String = elements.mkString(Path.Separator)
@@ -47,7 +47,9 @@ final case class AbsolutePath private(private val path: Option[RelativePath]) ex
   override type Self = AbsolutePath
 
   // scalastyle:off method.name
-  override def /(tail: RelativePath): AbsolutePath = AbsolutePath(Some(path.fold(tail)(_ / tail)))
+  override def resolve(tail: RelativePath): AbsolutePath = {
+    AbsolutePath(Some(path.fold(tail)(_.resolve(tail))))
+  }
   // scalastyle:on method.name
 
   override def toString: String = Path.Separator + path.fold("")(_.toString)

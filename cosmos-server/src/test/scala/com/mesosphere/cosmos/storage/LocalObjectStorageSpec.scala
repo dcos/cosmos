@@ -225,16 +225,16 @@ object LocalObjectStorageSpec {
 
   val genPath: Gen[AbsolutePath] = {
     val maxSegments = 10
-    genRelativePath(maxSegments).map(AbsolutePath.Root / _)
+    genRelativePath(maxSegments).map(AbsolutePath.Root.resolve)
   }
 
   val genPathPairAndSharedParents: Gen[(AbsolutePath, AbsolutePath, AbsolutePath)] = {
     val halfSize = 5
     val generator = for {
-      parents <- genRelativePath(halfSize).map(AbsolutePath.Root / _)
+      parents <- genRelativePath(halfSize).map(AbsolutePath.Root.resolve)
       first <- genRelativePath(halfSize)
       second <- genRelativePath(halfSize).suchThat(_ != first)
-    } yield (parents, parents / first, parents / second)
+    } yield (parents, parents.resolve(first), parents.resolve(second))
 
     generator.suchThat {
       case (parent, first, second) =>

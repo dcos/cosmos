@@ -165,7 +165,7 @@ final class PathSpec extends FreeSpec with PropertyChecks {
       forAll (genBasePath, genRelativePath) { (basePath, extension) =>
         val basePathStr = basePath.toString
         val extensionStr = extension.toString
-        val fullPathStr = (basePath / extension).toString
+        val fullPathStr = basePath.resolve(extension).toString
 
         assert(fullPathStr.startsWith(basePathStr))
         assert(fullPathStr.endsWith(extensionStr))

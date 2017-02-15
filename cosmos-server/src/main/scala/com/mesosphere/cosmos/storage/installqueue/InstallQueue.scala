@@ -354,7 +354,7 @@ object InstallQueue {
 
   def statusPath(packageCoordinate: PackageCoordinate): AbsolutePath = {
     // TODO cruhland / redefinition
-    installQueuePath / RelativePath(packageCoordinate.as[String])
+    installQueuePath.resolve(RelativePath(packageCoordinate.as[String]))
   }
 
   def apply(client: CuratorFramework)(implicit statsReceiver: StatsReceiver): InstallQueue = {

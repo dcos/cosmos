@@ -162,8 +162,8 @@ final class S3ObjectStorage(
   }
 
   private[this] def resolve(path: AbsolutePath): String = {
-    // TODO cruhland resolve impl
-    (basePath / RelativePath(path.toString)).toString
+    // TODO cruhland path.relativize(AbsolutePath.Root)
+    basePath.resolve(RelativePath(path.toString)).toString
   }
 
   private[this] def relativize(fullPath: String): AbsolutePath = {

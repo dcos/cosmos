@@ -262,7 +262,7 @@ object LocalObjectStorage {
 
   def relativize(basePath: Path, fullPath: Path): AbsolutePath = {
     // TODO cruhland: relative path from file path -- using elements directly
-    AbsolutePath.Root / RelativePath(basePath.relativize(fullPath).toString)
+    AbsolutePath.Root.resolve(RelativePath(basePath.relativize(fullPath).toString))
   }
 
   case class ObjectList(
