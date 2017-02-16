@@ -2,6 +2,8 @@ package com.mesosphere.cosmos.storage
 
 import com.mesosphere.cosmos.circe.Decoders.decode
 import com.mesosphere.cosmos.http.MediaType
+import com.mesosphere.util.AbsolutePath
+import com.mesosphere.util.RelativePath
 import com.netaporter.uri.Uri
 import com.twitter.finagle.http.Fields
 import com.twitter.finagle.stats.Stat
@@ -36,17 +38,19 @@ import scala.util.control.NonFatal
 final class LocalObjectStorage private(storageDir: Path, scratchDir: Path, stats: StatsReceiver)
   extends ObjectStorage {
 
+  import LocalObjectStorage._
+
   private[this] val pool = FuturePool.interruptibleUnboundedPool
 
   override def write(
-    name: String,
+    path: AbsolutePath,
     body: InputStream,
     contentLength: Long,
     contentType: MediaType
   ): Future[Unit] = {
     Stat.timeFuture(stats.stat("write")) {
       pool {
-        val absolutePath = storageDir.resolve(name)
+        val absolutePath = resolve(storageDir, path)
 
         // Create all parent directories
         Files.createDirectories(absolutePath.getParent)
@@ -68,10 +72,10 @@ final class LocalObjectStorage private(storageDir: Path, scratchDir: Path, stats
     }
   }
 
-  override def read(name: String): Future[Option[(MediaType, InputStream)]] = {
+  override def read(path: AbsolutePath): Future[Option[(MediaType, InputStream)]] = {
     Stat.timeFuture(stats.stat("read")) {
       pool {
-        readFromFile(storageDir.resolve(name)).map { case (metadata, inputStream) =>
+        readFromFile(resolve(storageDir, path)).map { case (metadata, inputStream) =>
           (
             MediaType.parse(metadata(Fields.ContentType)).get,
             inputStream
@@ -81,10 +85,10 @@ final class LocalObjectStorage private(storageDir: Path, scratchDir: Path, stats
     }
   }
 
-  override def delete(name: String): Future[Unit] = {
+  override def delete(path: AbsolutePath): Future[Unit] = {
     Stat.timeFuture(stats.stat("delete")) {
       pool {
-        val fullName = storageDir.resolve(name)
+        val fullName = resolve(storageDir, path)
         deleteFileAndEmptyParents(fullName)
       }
     }
@@ -103,18 +107,18 @@ final class LocalObjectStorage private(storageDir: Path, scratchDir: Path, stats
     }
   }
 
-  override def list(directory: String): Future[LocalObjectStorage.ObjectList] = {
+  override def list(directory: AbsolutePath): Future[LocalObjectStorage.ObjectList] = {
     Stat.timeFuture(stats.stat("list")) {
       pool {
-        val absolutePath = storageDir.resolve(directory)
+        val absolutePath = resolve(storageDir, directory)
         val stream = Files.newDirectoryStream(absolutePath)
 
         try {
           val (directories, objects) = stream.asScala.partition(path => Files.isDirectory(path))
 
           LocalObjectStorage.ObjectList(
-            objects.map(objectPath => storageDir.relativize(objectPath).toString)(breakOut),
-            directories.map(directoryPath => storageDir.relativize(directoryPath).toString)(breakOut)
+            objects.map(objectPath => relativize(storageDir, objectPath))(breakOut),
+            directories.map(directoryPath => relativize(storageDir, directoryPath))(breakOut)
           )
         } finally {
           stream.close()
@@ -129,11 +133,11 @@ final class LocalObjectStorage private(storageDir: Path, scratchDir: Path, stats
     )
   }
 
-  override def getUrl(name: String): Option[Uri] = None
+  override def getUrl(path: AbsolutePath): Option[Uri] = None
 
-  override def getCreationTime(name: String): Future[Option[Instant]] = {
+  override def getCreationTime(path: AbsolutePath): Future[Option[Instant]] = {
     pool {
-      val absolutePath = storageDir.resolve(name)
+      val absolutePath = resolve(storageDir, path)
       try {
         val creationTime =
           Files
@@ -251,9 +255,17 @@ object LocalObjectStorage {
     new LocalObjectStorage(storageDir, scratchDir, stats)
   }
 
+  def resolve(filesystemPath: Path, objectPath: AbsolutePath): Path = {
+    filesystemPath.resolve(objectPath.relativize(AbsolutePath.Root).toString)
+  }
+
+  def relativize(basePath: Path, fullPath: Path): AbsolutePath = {
+    AbsolutePath.Root.resolve(RelativePath(basePath.relativize(fullPath).toString))
+  }
+
   case class ObjectList(
-    objects: List[String],
-    directories: List[String]
+    objects: List[AbsolutePath],
+    directories: List[AbsolutePath]
   ) extends ObjectStorage.ObjectList {
     val listToken = None
   }

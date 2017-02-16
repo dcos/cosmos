@@ -10,6 +10,7 @@ import com.amazonaws.services.s3.model.ObjectListing
 import com.amazonaws.services.s3.model.ObjectMetadata
 import com.amazonaws.services.s3.model.PutObjectRequest
 import com.mesosphere.cosmos.http.MediaType
+import com.mesosphere.util.AbsolutePath
 import com.netaporter.uri.Uri
 import com.twitter.finagle.stats.Stat
 import com.twitter.finagle.stats.StatsReceiver
@@ -17,7 +18,6 @@ import com.twitter.util.Future
 import com.twitter.util.FuturePool
 import java.io.InputStream
 import java.time.Instant
-
 import scala.collection.JavaConverters._
 import scala.collection.breakOut
 
@@ -31,12 +31,12 @@ final class S3ObjectStorage(
   private[this] val pool = FuturePool.interruptibleUnboundedPool
 
   private[this] val bucket = s3Uri.getBucket
-  private[this] val path = s3Uri.getURI.getPath
+  private[this] val basePath = AbsolutePath(s3Uri.getURI.getPath)
 
-  private[this] val stats = statsReceiver.scope(s"S3ObjectStorage($bucket, $path)")
+  private[this] val stats = statsReceiver.scope(s"S3ObjectStorage($bucket, $basePath)")
 
   override def write(
-    name: String,
+    path: AbsolutePath,
     body: InputStream,
     contentLength: Long,
     contentType: MediaType
@@ -47,7 +47,7 @@ final class S3ObjectStorage(
         metadata.setContentLength(contentLength)
         metadata.setContentType(contentType.show)
 
-        val putRequest = new PutObjectRequest(bucket, fullPath(name), body, metadata)
+        val putRequest = new PutObjectRequest(bucket, resolve(path), body, metadata)
           .withCannedAcl(CannedAccessControlList.PublicRead)
 
           val _ = client.putObject(putRequest)
@@ -55,11 +55,11 @@ final class S3ObjectStorage(
     }
   }
 
-  override def read(name: String): Future[Option[(MediaType, InputStream)]] = {
+  override def read(path: AbsolutePath): Future[Option[(MediaType, InputStream)]] = {
     Stat.timeFuture(stats.stat("read")) {
       pool {
         try {
-          val result = client.getObject(bucket, fullPath(name))
+          val result = client.getObject(bucket, resolve(path))
 
           Some(
             (
@@ -75,20 +75,24 @@ final class S3ObjectStorage(
     }
   }
 
-  override def delete(name: String): Future[Unit] = {
+  override def delete(path: AbsolutePath): Future[Unit] = {
     Stat.timeFuture(stats.stat("delete")) {
       pool {
-        client.deleteObject(bucket, fullPath(name))
+        client.deleteObject(bucket, resolve(path))
       }
     }
   }
 
-  override def list(directory: String): Future[S3ObjectStorage.ObjectList] = {
+  override def list(directory: AbsolutePath): Future[S3ObjectStorage.ObjectList] = {
     Stat.timeFuture(stats.stat("list")) {
       pool {
+        // S3 doesn't have the concept of directory but it can be emulated by adding `/` to the key.
+        // This allows you to list objects with a given prefix.
+        val prefix = resolve(directory) + "/"
+
         val listRequest = new ListObjectsRequest()
           .withBucketName(bucket)
-          .withPrefix(makeStringDirectory(fullPath(directory)))
+          .withPrefix(prefix)
           .withDelimiter("/")
 
           convertListResult(client.listObjects(listRequest))
@@ -115,17 +119,17 @@ final class S3ObjectStorage(
     }
   }
 
-  override def getUrl(name: String): Option[Uri] = {
-    Some(Uri(client.getUrl(bucket, fullPath(name)).toURI))
+  override def getUrl(path: AbsolutePath): Option[Uri] = {
+    Some(Uri(client.getUrl(bucket, resolve(path)).toURI))
   }
 
-  override def getCreationTime(name: String): Future[Option[Instant]] = {
+  override def getCreationTime(path: AbsolutePath): Future[Option[Instant]] = {
     Stat.timeFuture(stats.stat("getCreationTime")) {
       pool {
         try {
           val creationTime =
             client
-            .getObjectMetadata(new GetObjectMetadataRequest(bucket, fullPath(name)))
+            .getObjectMetadata(new GetObjectMetadataRequest(bucket, resolve(path)))
             .getLastModified.toInstant
           Some(creationTime)
         } catch {
@@ -146,37 +150,22 @@ final class S3ObjectStorage(
     }
 
     S3ObjectStorage.ObjectList(
-      objectListing.getObjectSummaries.asScala.map(sum => relativePath(sum.getKey))(breakOut),
+      objectListing.getObjectSummaries.asScala.map(
+        sum => relativize(sum.getKey)
+      )(breakOut),
       objectListing.getCommonPrefixes.asScala.map(
-        dir => removeEndingSlash(relativePath(dir))
+        dir => relativize(dir)
       )(breakOut),
       listToken
     )
   }
 
-  private[this] def fullPath(name: String): String = {
-    makeStringDirectory(path) + name
+  private[this] def resolve(path: AbsolutePath): String = {
+    basePath.resolve(path.relativize(AbsolutePath.Root)).toString
   }
 
-  /*
-   * This function makes sure that the string ends in a `/`. S3 doesn't have the concept of
-   * directory but it can be emulated by adding `/` to the key. This allows you to list
-   * objects with a given prefix.
-   */
-  private[this] def makeStringDirectory(prefix: String): String = {
-    if (prefix.endsWith("/")) prefix else prefix + "/"
-  }
-
-  private[this] def removeEndingSlash(value: String): String = {
-    value.stripSuffix("/")
-  }
-
-  private[this] def relativePath(fullPath: String): String = {
-    if (fullPath.startsWith(makeStringDirectory(path))) {
-      fullPath.drop(makeStringDirectory(path).length)
-    } else {
-      fullPath
-    }
+  private[this] def relativize(fullPath: String): AbsolutePath = {
+    AbsolutePath.Root.resolve(AbsolutePath(fullPath).relativize(basePath))
   }
 
 }
@@ -191,8 +180,8 @@ object S3ObjectStorage {
 
   case class ListToken(token: ObjectListing) extends ObjectStorage.ListToken
   case class ObjectList(
-    objects: List[String],
-    directories: List[String],
+    objects: List[AbsolutePath],
+    directories: List[AbsolutePath],
     listToken: Option[ListToken]
   ) extends ObjectStorage.ObjectList
 }
