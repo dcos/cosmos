@@ -7,14 +7,9 @@ import com.twitter.io.StreamIO
 import com.twitter.util.Await
 import com.twitter.util.Future
 import java.io.ByteArrayInputStream
-import java.io.ByteArrayOutputStream
 import java.io.IOException
 import java.io.InputStream
-import java.nio.charset.StandardCharsets
 import java.util.UUID
-import java.util.zip.ZipEntry
-import java.util.zip.ZipInputStream
-import java.util.zip.ZipOutputStream
 import org.mockito.Matchers.any
 import org.mockito.Mockito.verify
 import org.mockito.Mockito.when
@@ -23,7 +18,6 @@ import org.scalacheck.Gen
 import org.scalatest.FreeSpec
 import org.scalatest.mockito.MockitoSugar
 import org.scalatest.prop.PropertyChecks
-import scala.collection.mutable
 
 final class StagedPackageStorageSpec extends FreeSpec with MockitoSugar with PropertyChecks {
 
@@ -68,30 +62,14 @@ final class StagedPackageStorageSpec extends FreeSpec with MockitoSugar with Pro
     val objectStorage = mock[ObjectStorage]
     val stagedStorage = StagedPackageStorage(objectStorage)
 
-    forAll { (packageId: UUID, packageContents: Map[String, mutable.WrappedArray[Byte]]) =>
-      val bytesOut = new ByteArrayOutputStream()
-      val packageOut = new ZipOutputStream(bytesOut, StandardCharsets.UTF_8)
-      packageContents.foreach { case (path, data) =>
-          packageOut.putNextEntry(new ZipEntry(path))
-          packageOut.write(data.array)
-          packageOut.closeEntry()
-      }
-      packageOut.close()
-
+    forAll { (packageId: UUID, packageContents: Array[Byte]) =>
       val packagePath = StagedPackageStorage.uuidToPath(packageId)
-      val packageData = new ByteArrayInputStream(bytesOut.toByteArray)
+      val packageData = new ByteArrayInputStream(packageContents)
       when(objectStorage.read(packagePath))
         .thenReturn(Future.value(Some((MediaTypes.PackageZip, packageData))))
 
       val Some((_, inputStream)) = Await.result(stagedStorage.read(packageId))
-      val zipIn = new ZipInputStream(inputStream)
-      val packageIn = Stream.continually(Option(zipIn.getNextEntry()))
-        .takeWhile(_.isDefined)
-        .flatten
-        .map { zipEntry =>
-          zipEntry.getName -> new mutable.WrappedArray.ofByte(StreamIO.buffer(zipIn).toByteArray)
-        }
-        .toMap
+      val packageIn = StreamIO.buffer(inputStream).toByteArray
 
       assertResult(packageContents)(packageIn)
     }
