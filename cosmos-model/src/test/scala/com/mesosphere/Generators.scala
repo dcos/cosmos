@@ -14,7 +14,7 @@ object Generators {
     Gen.sized(size => Gen.chooseNum(N.zero, N.fromInt(size)))
   }
 
-  val genSemVer: Gen[universe.v3.model.SemVer] = {
+  private val genSemVer: Gen[universe.v3.model.SemVer] = {
     val maxStringLength = 10
     val genNumbers = nonNegNum[Long]
     val genPreReleases = for {
@@ -44,11 +44,11 @@ object Generators {
     } yield universe.v3.model.SemVer(major, minor, patch, preReleases, build)
   }
 
-  val genVersion: Gen[universe.v3.model.PackageDefinition.Version] = {
+  private val genVersion: Gen[universe.v3.model.PackageDefinition.Version] = {
     genSemVer.map(_.toString).map(universe.v3.model.PackageDefinition.Version)
   }
 
-  val genReleaseVersion: Gen[universe.v3.model.PackageDefinition.ReleaseVersion] = for {
+  private val genReleaseVersion: Gen[universe.v3.model.PackageDefinition.ReleaseVersion] = for {
     num <- Gen.posNum[Long]
   } yield universe.v3.model.PackageDefinition.ReleaseVersion(num).get
 
@@ -72,55 +72,37 @@ object Generators {
     )
   }
 
-  val genByteBuffer: Gen[ByteBuffer] = arbitrary[Array[Byte]].map(ByteBuffer.wrap)
+  private val genByteBuffer: Gen[ByteBuffer] = arbitrary[Array[Byte]].map(ByteBuffer.wrap)
 
-  val genV2Package: Gen[universe.v3.model.V2Package] = for {
-    v3package <- genV3Package
-    template <- genByteBuffer
-  } yield universe.v3.model.V2Package(
-    name=v3package.name,
-    version=v3package.version,
-    releaseVersion=v3package.releaseVersion,
-    maintainer=v3package.maintainer,
-    description=v3package.description,
-    marathon=universe.v3.model.Marathon(template)
-  )
-
-  val genPackageDefinition: Gen[universe.v3.model.PackageDefinition] = {
-    Gen.oneOf(genV3Package, genV2Package)
-  }
-
-  def maxSizedString(maxSize: Int, genChar: Gen[Char]): Gen[String] = for {
+  private def maxSizedString(maxSize: Int, genChar: Gen[Char]): Gen[String] = for {
     size <- Gen.chooseNum(0, maxSize)
     array <- Gen.containerOfN[Array, Char](size, genChar)
   } yield new String(array)
 
-  def nonEmptyMaxSizedString(maxSize: Int, genChar: Gen[Char]): Gen[String] = for {
+  private def nonEmptyMaxSizedString(maxSize: Int, genChar: Gen[Char]): Gen[String] = for {
     size <- Gen.chooseNum(1, maxSize)
     array <- Gen.containerOfN[Array, Char](size, genChar)
   } yield new String(array)
 
-  def genNonEmptyString(genChar: Gen[Char]): Gen[String] = {
+  private def genNonEmptyString(genChar: Gen[Char]): Gen[String] = {
     Gen.nonEmptyContainerOf[Array, Char](genChar).map(new String(_))
   }
 
-  val genTag: Gen[universe.v3.model.PackageDefinition.Tag] = {
+  private val genTag: Gen[universe.v3.model.PackageDefinition.Tag] = {
     val genTagChar = arbitrary[Char].suchThat(!_.isWhitespace)
     val genTagString = genNonEmptyString(genTagChar)
     genTagString.map(universe.v3.model.PackageDefinition.Tag(_).get)
   }
 
-  val genPathPart: Gen[PathPart] = Gen.resultOf(PathPart.apply _)
+  private val genPathPart: Gen[PathPart] = Gen.resultOf(PathPart.apply _)
 
-  val genDcosReleaseVersionVersion: Gen[universe.v3.model.DcosReleaseVersion.Version] = {
+  private val genDcosReleaseVersionVersion: Gen[universe.v3.model.DcosReleaseVersion.Version] = {
     nonNegNum[Int].map(universe.v3.model.DcosReleaseVersion.Version(_))
   }
 
-  val genDcosReleaseVersionSuffix: Gen[universe.v3.model.DcosReleaseVersion.Suffix] = {
+  private val genDcosReleaseVersionSuffix: Gen[universe.v3.model.DcosReleaseVersion.Suffix] = {
     genNonEmptyString(Gen.alphaNumChar).map(universe.v3.model.DcosReleaseVersion.Suffix(_))
   }
-
-  val genUuid: Gen[UUID] = Gen.resultOf((msb: Long, lsb: Long) => new UUID(msb, lsb))
 
   object Implicits {
 
@@ -142,7 +124,9 @@ object Generators {
 
     implicit val arbV3Package: Arbitrary[universe.v3.model.V3Package] = Arbitrary(genV3Package)
 
-    implicit val arbUuid: Arbitrary[UUID] = Arbitrary(genUuid)
+    implicit val arbUuid: Arbitrary[UUID] = Arbitrary(Gen.uuid)
+
+    implicit val arbSemVer: Arbitrary[universe.v3.model.SemVer] = Arbitrary(genSemVer)
 
   }
 
