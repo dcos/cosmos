@@ -1,6 +1,6 @@
 package com.mesosphere.cosmos.handler
 
-import com.mesosphere.Generators._
+import com.mesosphere.Generators.Implicits._
 import com.mesosphere.cosmos.OperationInProgress
 import com.mesosphere.cosmos.http.MediaType
 import com.mesosphere.cosmos.http.RequestSession
@@ -20,22 +20,17 @@ import com.netaporter.uri.Uri
 import com.twitter.finagle.http.Status
 import com.twitter.util.Await
 import com.twitter.util.Future
-import com.twitter.util.Return
-import com.twitter.util.Try
 import java.io.ByteArrayInputStream
 import java.io.InputStream
 import org.mockito.Matchers._
 import org.mockito.Mockito._
-import org.scalacheck.Arbitrary.arbitrary
-import org.scalacheck.Gen
+import org.scalacheck.Shapeless._
 import org.scalatest.Assertion
 import org.scalatest.FreeSpec
 import org.scalatest.mockito.MockitoSugar
 import org.scalatest.prop.PropertyChecks
 
 final class PackageAddHandlerSpec extends FreeSpec with MockitoSugar with PropertyChecks {
-
-  import PackageAddHandlerSpec._
 
   "The PackageAddHandler" - {
 
@@ -46,13 +41,13 @@ final class PackageAddHandlerSpec extends FreeSpec with MockitoSugar with Proper
         implicit val session = RequestSession(None, None)
 
         "with package name only" in {
-          forAll(genV3Package, genUri) { (packageDef, sourceUri) =>
+          forAll { (packageDef: universe.v3.model.V3Package, sourceUri: Uri) =>
             assertErrorOnPendingOperation(packageDef, sourceUri, None)
           }
         }
 
         "with package name and version" in {
-          forAll(genV3Package, genUri) { (packageDef, sourceUri) =>
+          forAll { (packageDef: universe.v3.model.V3Package, sourceUri: Uri) =>
             assertErrorOnPendingOperation(packageDef, sourceUri, Some(packageDef.version))
           }
         }
@@ -81,7 +76,7 @@ final class PackageAddHandlerSpec extends FreeSpec with MockitoSugar with Proper
       "for upload add requests" in {
         implicit val session = RequestSession(None, Some(MediaTypes.PackageZip))
 
-        forAll(genV3Package) { v3Package =>
+        forAll { (v3Package: universe.v3.model.V3Package) =>
           val packageData = TestUtil.buildPackage(v3Package)
           val addRequest = rpc.v1.model.UploadAddRequest(packageData)
 
@@ -127,19 +122,6 @@ final class PackageAddHandlerSpec extends FreeSpec with MockitoSugar with Proper
 
     }
 
-  }
-
-}
-
-object PackageAddHandlerSpec {
-
-  val genUri: Gen[Uri] = {
-    arbitrary[String]
-      .map(s => Try(Uri.parse(s)))
-      .flatMap {
-        case Return(uri) => uri
-        case _ => Gen.fail
-      }
   }
 
 }

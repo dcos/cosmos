@@ -2,16 +2,21 @@ package com.mesosphere
 
 import com.netaporter.uri.PathPart
 import java.nio.ByteBuffer
+import java.util.UUID
 import org.scalacheck.Arbitrary
 import org.scalacheck.Arbitrary.arbitrary
 import org.scalacheck.Gen
+import org.scalacheck.Gen.Choose
 
 object Generators {
 
+  def nonNegNum[A](implicit C: Choose[A], N: Numeric[A]): Gen[A] = {
+    Gen.sized(size => Gen.chooseNum(N.zero, N.fromInt(size)))
+  }
+
   val genSemVer: Gen[universe.v3.model.SemVer] = {
-    val maxNumber = 999999999L
     val maxStringLength = 10
-    val genNumbers = Gen.chooseNum(0, maxNumber)
+    val genNumbers = nonNegNum[Long]
     val genPreReleases = for {
       seqSize <- Gen.chooseNum(0, 3)
       preReleases <- Gen.containerOfN[Seq, Either[String, Long]](
@@ -108,12 +113,14 @@ object Generators {
   val genPathPart: Gen[PathPart] = Gen.resultOf(PathPart.apply _)
 
   val genDcosReleaseVersionVersion: Gen[universe.v3.model.DcosReleaseVersion.Version] = {
-    Gen.sized(Gen.chooseNum(0, _)).map(universe.v3.model.DcosReleaseVersion.Version(_))
+    nonNegNum[Int].map(universe.v3.model.DcosReleaseVersion.Version(_))
   }
 
   val genDcosReleaseVersionSuffix: Gen[universe.v3.model.DcosReleaseVersion.Suffix] = {
     genNonEmptyString(Gen.alphaNumChar).map(universe.v3.model.DcosReleaseVersion.Suffix(_))
   }
+
+  val genUuid: Gen[UUID] = Gen.resultOf((msb: Long, lsb: Long) => new UUID(msb, lsb))
 
   object Implicits {
 
@@ -132,6 +139,10 @@ object Generators {
     }
 
     implicit val arbByteBuffer: Arbitrary[ByteBuffer] = Arbitrary(genByteBuffer)
+
+    implicit val arbV3Package: Arbitrary[universe.v3.model.V3Package] = Arbitrary(genV3Package)
+
+    implicit val arbUuid: Arbitrary[UUID] = Arbitrary(genUuid)
 
   }
 
