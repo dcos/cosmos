@@ -1,7 +1,11 @@
 package com.mesosphere.universe.v3.model
 
-import com.mesosphere.universe.v3.model.DcosReleaseVersion.{Suffix, Version}
-import com.twitter.util.{Return, Throw, Try}
+import com.mesosphere.universe.v3.model.DcosReleaseVersion.Suffix
+import com.mesosphere.universe.v3.model.DcosReleaseVersion.Version
+import com.twitter.util.Return
+import com.twitter.util.Throw
+import com.twitter.util.Try
+import org.scalatest.Assertion
 import org.scalatest.FreeSpec
 
 class DcosReleaseVersionParserSpec extends FreeSpec {
@@ -72,7 +76,7 @@ class DcosReleaseVersionParserSpec extends FreeSpec {
     }
   }
 
-  private[this] def assertAssertionError[T](expectedMessage: String)(f: => Try[T]): Unit = {
+  private[this] def assertAssertionError[T](expectedMessage: String)(f: => Try[T]): Assertion = {
     f match {
       case Throw(ae: AssertionError) =>
         assertResult(expectedMessage)(ae.getMessage)

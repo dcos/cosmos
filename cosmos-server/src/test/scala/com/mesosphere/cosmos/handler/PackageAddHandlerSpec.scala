@@ -28,8 +28,9 @@ import org.mockito.Matchers._
 import org.mockito.Mockito._
 import org.scalacheck.Arbitrary.arbitrary
 import org.scalacheck.Gen
+import org.scalatest.Assertion
 import org.scalatest.FreeSpec
-import org.scalatest.mock.MockitoSugar
+import org.scalatest.mockito.MockitoSugar
 import org.scalatest.prop.PropertyChecks
 
 final class PackageAddHandlerSpec extends FreeSpec with MockitoSugar with PropertyChecks {
@@ -60,7 +61,7 @@ final class PackageAddHandlerSpec extends FreeSpec with MockitoSugar with Proper
           packageDef: universe.v3.model.V3Package,
           sourceUri: Uri,
           packageVersion: Option[universe.v3.model.PackageDefinition.Version]
-        ): Unit = {
+        ): Assertion = {
           val coordinate = rpc.v1.model.PackageCoordinate(packageDef.name, packageDef.version)
           val addRequest = rpc.v1.model.UniverseAddRequest(packageDef.name, packageVersion)
 
@@ -118,7 +119,7 @@ final class PackageAddHandlerSpec extends FreeSpec with MockitoSugar with Proper
       def assertErrorResponse(
         response: Future[rpc.v1.model.AddResponse],
         expectedCoordinate: rpc.v1.model.PackageCoordinate
-      ): Unit = {
+      ): Assertion = {
         val inProgress = intercept[OperationInProgress](Await.result(response))
         assertResult(Status.Conflict)(inProgress.status)
         assertResult(expectedCoordinate)(inProgress.coordinate)
@@ -135,7 +136,10 @@ object PackageAddHandlerSpec {
   val genUri: Gen[Uri] = {
     arbitrary[String]
       .map(s => Try(Uri.parse(s)))
-      .collect { case Return(uri) => uri }
+      .flatMap {
+        case Return(uri) => uri
+        case _ => Gen.fail
+      }
   }
 
 }

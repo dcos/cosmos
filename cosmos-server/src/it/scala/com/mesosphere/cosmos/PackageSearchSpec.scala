@@ -9,6 +9,7 @@ import com.mesosphere.cosmos.rpc.v1.model.SearchResult
 import com.mesosphere.cosmos.test.CosmosIntegrationTestClient.CosmosClient
 import com.mesosphere.universe
 import com.twitter.finagle.http._
+import org.scalatest.Assertion
 import org.scalatest.FreeSpec
 import org.scalatest.prop.TableDrivenPropertyChecks
 import scala.util.Right
@@ -43,7 +44,7 @@ final class PackageSearchSpec extends FreeSpec {
     query: String,
     status: Status,
     expectedResponse: SearchResponse
-  ): Unit = {
+  ): Assertion = {
     val request = CosmosRequests.packageSearch(SearchRequest(Some(query)))
     val response = CosmosClient.submit(request)
 

@@ -24,10 +24,10 @@ import io.finch.Endpoint
 import io.finch.Error.NotParsed
 import io.finch.Error.NotPresent
 import io.finch.Error.NotValid
-import io.finch.Input
 import io.finch.Output
 import io.finch.items.HeaderItem
 import org.scalacheck.Gen
+import org.scalatest.Assertion
 import org.scalatest.FreeSpec
 import org.scalatest.Matchers
 import org.scalatest.prop.PropertyChecks
@@ -153,7 +153,7 @@ final class RequestValidatorsSpec extends FreeSpec with Matchers with PropertyCh
   def assertMissingContentType[Req, Res](
     validator: Endpoint[EndpointContext[Req, Res]],
     request: HttpRequest
-  ): Unit = {
+  ): Assertion = {
     validateOutput(validator, request) should matchPattern {
       case Throw(NotPresent(HeaderItem(Fields.ContentType))) =>
     }
@@ -162,7 +162,7 @@ final class RequestValidatorsSpec extends FreeSpec with Matchers with PropertyCh
   def assertUnparseableContentType[Req, Res](
     validator: Endpoint[EndpointContext[Req, Res]],
     request: HttpRequest
-  ): Unit = {
+  ): Assertion = {
     whenever (MediaType.parse(request.headers(Fields.ContentType)).isThrow) {
       validateOutput(validator, request) should matchPattern {
         case Throw(NotParsed(HeaderItem(Fields.ContentType), _, _)) =>
@@ -175,7 +175,7 @@ final class RequestValidatorsSpec extends FreeSpec with Matchers with PropertyCh
     expectedContentType: MediaType,
     validator: Endpoint[EndpointContext[Req, Res]],
     request: HttpRequest
-  ): Unit = {
+  ): Assertion = {
     assertResult(expectedContentType) {
       val Return(output) = validateOutput(validator, request)
       val RequestSession(_, Some(contentType)) = output.value.session
@@ -187,7 +187,7 @@ final class RequestValidatorsSpec extends FreeSpec with Matchers with PropertyCh
     expectedContentType: MediaType,
     validator: Endpoint[EndpointContext[Req, Res]],
     request: HttpRequest
-  ): Unit = {
+  ): Assertion = {
     val expected = HttpRequest.toHeader(expectedContentType)
     val actual = request.headers.get(Fields.ContentType)
 

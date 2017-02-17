@@ -16,11 +16,11 @@ import java.nio.file.attribute.BasicFileAttributes
 
 object TestUtil {
 
-  def withObjectStorage(testCode: ObjectStorage => Unit): Unit = {
+  def withObjectStorage(testCode: ObjectStorage => Any): Any = {
     withLocalObjectStorage(testCode)
   }
 
-  def withLocalObjectStorage(testCode: LocalObjectStorage => Unit): Unit = {
+  def withLocalObjectStorage(testCode: LocalObjectStorage => Any): Any = {
     implicit val stats = com.twitter.finagle.stats.NullStatsReceiver
 
     val path = Files.createTempDirectory("cosmos-dlpc-")

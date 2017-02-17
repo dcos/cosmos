@@ -15,6 +15,7 @@ import com.mesosphere.universe
 import com.mesosphere.universe.v2.circe.Decoders._
 import com.twitter.finagle.http.Response
 import com.twitter.finagle.http.Status
+import org.scalatest.Assertion
 import org.scalatest.FreeSpec
 import org.scalatest.Matchers
 import org.scalatest.prop.TableDrivenPropertyChecks
@@ -73,7 +74,7 @@ extends FreeSpec with TableDrivenPropertyChecks with Matchers {
   private def packageDescribeLatestAndAssert(
     packageName: String,
     expectedVersion: universe.v2.model.PackageDetailsVersion
-  ): Unit = {
+  ): Assertion = {
     val response = describeRequest(rpc.v1.model.DescribeRequest(packageName, None))
 
     response.status shouldBe Status.Ok
@@ -87,7 +88,7 @@ extends FreeSpec with TableDrivenPropertyChecks with Matchers {
     status: Status,
     expectedMessage: String,
     version: Option[universe.v2.model.PackageDetailsVersion] = None
-  ): Unit = {
+  ): Assertion = {
     val response = describeRequest(
       rpc.v1.model.DescribeRequest(packageName, version)
     )
@@ -100,7 +101,7 @@ extends FreeSpec with TableDrivenPropertyChecks with Matchers {
     packageName: String,
     status: Status,
     content: Json
-  ): Unit = {
+  ): Assertion = {
     val request = rpc.v1.model.ListVersionsRequest(
       packageName,
       includePackageVersions = true
@@ -112,7 +113,7 @@ extends FreeSpec with TableDrivenPropertyChecks with Matchers {
 
   private def describeHelloworld(
     version: Option[universe.v2.model.PackageDetailsVersion] = None
-  ): Unit = {
+  ): Assertion = {
     val response = describeRequest(
       rpc.v1.model.DescribeRequest("helloworld", version)
     )

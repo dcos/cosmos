@@ -28,9 +28,11 @@ import com.twitter.util.Future
 import java.nio.charset.StandardCharsets
 import java.util.Base64
 import java.util.UUID
+import org.scalatest.Assertion
 import org.scalatest.BeforeAndAfterAll
 import org.scalatest.FreeSpec
 import org.scalatest.Matchers
+import org.scalatest.Succeeded
 import org.scalatest.prop.TableDrivenPropertyChecks
 import scala.util.Right
 
@@ -217,13 +219,13 @@ final class PackageInstallIntegrationSpec extends FreeSpec with BeforeAndAfterAl
 
   override protected def afterAll(): Unit = {
     // TODO: This should actually happen between each test, but for now tests depend on eachother :(
-    val deletes: Future[Seq[Unit]] = Future.collect(Seq(
+    val deletes: Future[Seq[Assertion]] = Future.collect(Seq(
       adminRouter.deleteApp(AppId("/helloworld"), force = true) map { resp => assert(resp.getStatusCode() === 200) },
       adminRouter.deleteApp(AppId("/cassandra/dcos"), force = true) map { resp => assert(resp.getStatusCode() === 200) },
       adminRouter.deleteApp(AppId("/custom-app-id"), force = true) map { resp => assert(resp.getStatusCode() === 200) },
 
       // Make sure this is cleaned up if its test failed
-      adminRouter.deleteApp(AppId("/chronos-bad-json"), force = true) map { _ => () }
+      adminRouter.deleteApp(AppId("/chronos-bad-json"), force = true) map { _ => Succeeded }
     ))
     Await.result(deletes.flatMap { x => Future.Unit })
   }
@@ -233,7 +235,7 @@ final class PackageInstallIntegrationSpec extends FreeSpec with BeforeAndAfterAl
     expectedResult: ExpectedResult,
     preInstallState: PreInstallState,
     postInstallState: PostInstallState
-  ): Unit = {
+  ): Assertion = {
     val appId = expectedResult.appId.getOrElse(AppId(installRequest.packageName))
 
     val packageWasInstalled = isAppInstalled(appId)

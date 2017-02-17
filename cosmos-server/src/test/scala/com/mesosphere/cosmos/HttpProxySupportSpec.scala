@@ -163,7 +163,7 @@ class HttpProxySupportSpec extends FreeSpec {
           Authenticator.setDefault(null)  // scalastyle:ignore null
         }
 
-        "are used in Authenticator (http)" - {
+        "are used in Authenticator (http)" in {
           val auth = new CosmosHttpProxyPasswordAuthenticator(authVars) {
             override def getRequestorType: RequestorType = RequestorType.PROXY
             override def getRequestingURL: URL = URI.create("http://someplace:123").toURL
@@ -176,7 +176,7 @@ class HttpProxySupportSpec extends FreeSpec {
 
         }
 
-        "are used in Authenticator (https)" - {
+        "are used in Authenticator (https)" in {
           val auth = new CosmosHttpProxyPasswordAuthenticator(authVars) {
             override def getRequestorType: RequestorType = RequestorType.PROXY
             override def getRequestingURL: URL = URI.create("https://someplace:123").toURL

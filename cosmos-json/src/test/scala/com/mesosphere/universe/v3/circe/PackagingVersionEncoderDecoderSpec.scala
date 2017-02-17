@@ -19,16 +19,16 @@ final class PackagingVersionEncoderDecoderSpec extends FreeSpec {
       assertResult(Json.fromString("2.0"))(version.asJson)
     }
 
-    "for V3PackagingVersion as PackagingVersion" - {
+    "for V3PackagingVersion as PackagingVersion" in {
       val version: universe.v3.model.PackagingVersion = universe.v3.model.V3PackagingVersion
       assertResult(Json.fromString("3.0"))(version.asJson)
     }
 
-    "for V2PackagingVersion as V2PackagingVersion" - {
+    "for V2PackagingVersion as V2PackagingVersion" in {
       assertResult(Json.fromString("2.0"))(universe.v3.model.V2PackagingVersion.asJson)
     }
 
-    "for V3PackagingVersion as V3PackagingVersion" - {
+    "for V3PackagingVersion as V3PackagingVersion" in {
       assertResult(Json.fromString("3.0"))(universe.v3.model.V3PackagingVersion.asJson)
     }
 

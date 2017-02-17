@@ -2,6 +2,7 @@ package com.mesosphere.util
 
 import org.scalacheck.Arbitrary.arbitrary
 import org.scalacheck.Gen
+import org.scalatest.Assertion
 import org.scalatest.FreeSpec
 import org.scalatest.prop.PropertyChecks
 import scala.language.implicitConversions
@@ -125,11 +126,14 @@ final class PathSpec extends FreeSpec with PropertyChecks {
         assertNormalization(formatPath = Path.Separator + _, buildPath = AbsolutePath(_))
       }
 
-      def assertNormalization(formatPath: String => String, buildPath: String => Path): Unit = {
+      def assertNormalization(
+        formatPath: String => String,
+        buildPath: String => Path
+      ): Assertion = {
         val genElementsAndSeparatorCounts = for {
           elements <- genPathElements
           size <- Gen.size
-          counts <- Gen.listOfN(elements.size, Gen.chooseNum(1, size))
+          counts <- Gen.listOfN(elements.size, Gen.chooseNum(1, math.max(1, size)))
         } yield (elements, counts)
 
         forAll (genElementsAndSeparatorCounts) { case (elements, counts) =>
@@ -206,7 +210,7 @@ final class PathSpec extends FreeSpec with PropertyChecks {
         assertPathExtension(genAbsolutePath)
       }
 
-      def assertPathExtension[P <: Path](genBasePath: Gen[P]): Unit = {
+      def assertPathExtension[P <: Path](genBasePath: Gen[P]): Assertion = {
         forAll (genBasePath, genRelativePath) { (basePath, extension) =>
           val basePathStr = basePath.toString
           val extensionStr = extension.toString

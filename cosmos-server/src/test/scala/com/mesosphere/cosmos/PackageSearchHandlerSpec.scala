@@ -2,12 +2,15 @@ package com.mesosphere.cosmos
 
 import com.mesosphere.cosmos.handler.PackageSearchHandler
 import com.mesosphere.cosmos.repository.PackageCollection
-import com.mesosphere.cosmos.rpc.v1.model.{SearchRequest, SearchResponse, SearchResult}
+import com.mesosphere.cosmos.rpc.v1.model.SearchRequest
+import com.mesosphere.cosmos.rpc.v1.model.SearchResponse
+import com.mesosphere.cosmos.rpc.v1.model.SearchResult
 import com.mesosphere.universe
-import com.twitter.util.{Await, Future}
+import com.twitter.util.Await
+import com.twitter.util.Future
 import org.mockito.Mockito._
 import org.scalatest.FreeSpec
-import org.scalatest.mock.MockitoSugar
+import org.scalatest.mockito.MockitoSugar
 
 final class PackageSearchHandlerSpec extends FreeSpec with MockitoSugar {
 
