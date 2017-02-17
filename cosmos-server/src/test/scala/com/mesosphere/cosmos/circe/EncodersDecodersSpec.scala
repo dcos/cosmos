@@ -318,31 +318,31 @@ class EncodersDecodersSpec extends FreeSpec with PropertyChecks with Matchers {
 
 object EncodersDecodersSpec {
 
-  implicit val genNotInstalled: Gen[NotInstalled] =
+  val genNotInstalled: Gen[NotInstalled] =
     genV3Package.map(NotInstalled)
 
-  implicit val genInstalling: Gen[Installing] =
+  val genInstalling: Gen[Installing] =
     genV3Package.map(Installing)
 
-  implicit val genInstalled: Gen[Installed] =
+  val genInstalled: Gen[Installed] =
     genV3Package.map(Installed)
 
-  implicit val genUninstalling: Gen[Uninstalling] = Gen.oneOf(
+  val genUninstalling: Gen[Uninstalling] = Gen.oneOf(
     genPackageCoordinate.map(pc => Uninstalling(Left(pc))),
     genV3Package.map(metadata => Uninstalling(Right(metadata)))
   )
 
-  implicit val genFailed: Gen[Failed] = for {
+  val genFailed: Gen[Failed] = for {
     operation <- genOperation
     error <- genErrorResponse
   } yield Failed(operation, error)
 
-  implicit val genInvalid: Gen[Invalid] = for {
+  val genInvalid: Gen[Invalid] = for {
     error <- genErrorResponse
     pc <- genPackageCoordinate
   } yield Invalid(error, pc)
 
-  implicit val genLocalPackage: Gen[LocalPackage] = Gen.oneOf(
+  val genLocalPackage: Gen[LocalPackage] = Gen.oneOf(
     genNotInstalled,
     genInstalling,
     genInstalled,

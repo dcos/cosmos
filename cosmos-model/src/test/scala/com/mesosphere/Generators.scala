@@ -39,11 +39,6 @@ object Generators {
     } yield universe.v3.model.SemVer(major, minor, patch, preReleases, build)
   }
 
-  val genPackageName: Gen[String] = {
-    val maxPackageNameLength = 64
-    Generators.maxSizedString(maxPackageNameLength, Gen.oneOf(Gen.numChar, Gen.alphaLowerChar))
-  }
-
   val genVersion: Gen[universe.v3.model.PackageDefinition.Version] = {
     genSemVer.map(_.toString).map(universe.v3.model.PackageDefinition.Version)
   }
@@ -52,19 +47,27 @@ object Generators {
     num <- Gen.posNum[Long]
   } yield universe.v3.model.PackageDefinition.ReleaseVersion(num).get
 
-  val genV3Package: Gen[universe.v3.model.V3Package] = for {
-    name <- genPackageName
-    version <- genVersion
-    releaseVersion <- genReleaseVersion
-    maintainer <- Gen.alphaStr
-    description <- Gen.alphaStr
-  } yield universe.v3.model.V3Package(
-    name=name,
-    version=version,
-    releaseVersion=releaseVersion,
-    maintainer=maintainer,
-    description=description
-  )
+  val genV3Package: Gen[universe.v3.model.V3Package] = {
+    val maxPackageNameLength = 64
+    val genPackageNameChar = Gen.oneOf(Gen.numChar, Gen.alphaLowerChar)
+    val genPackageName = maxSizedString(maxPackageNameLength, genPackageNameChar)
+
+    for {
+      name <- genPackageName
+      version <- genVersion
+      releaseVersion <- genReleaseVersion
+      maintainer <- Gen.alphaStr
+      description <- Gen.alphaStr
+    } yield universe.v3.model.V3Package(
+      name=name,
+      version=version,
+      releaseVersion=releaseVersion,
+      maintainer=maintainer,
+      description=description
+    )
+  }
+
+  val genByteBuffer: Gen[ByteBuffer] = arbitrary[Array[Byte]].map(ByteBuffer.wrap)
 
   val genV2Package: Gen[universe.v3.model.V2Package] = for {
     v3package <- genV3Package
@@ -111,8 +114,6 @@ object Generators {
   val genDcosReleaseVersionSuffix: Gen[universe.v3.model.DcosReleaseVersion.Suffix] = {
     genNonEmptyString(Gen.alphaNumChar).map(universe.v3.model.DcosReleaseVersion.Suffix(_))
   }
-
-  val genByteBuffer: Gen[ByteBuffer] = arbitrary[Array[Byte]].map(ByteBuffer.wrap)
 
   object Implicits {
 
