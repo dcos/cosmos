@@ -11,8 +11,10 @@ import com.mesosphere.universe.v2.model.PackageDetailsVersion
 import com.mesosphere.universe.v2.model.PackagingVersion
 import java.util.UUID
 import org.scalatest.AppendedClues
+import org.scalatest.Assertion
 import org.scalatest.FreeSpec
 import org.scalatest.Inside
+import org.scalatest.Succeeded
 import org.scalatest.concurrent.Eventually
 import scala.util.Right
 
@@ -29,7 +31,7 @@ final class PackageListIntegrationSpec
     "responds with repo and package data for packages whose repositories are in the repo list" in {
       withInstalledPackage("helloworld") { installResponse =>
         withInstalledPackageInListResponse(installResponse) { case Some(Installation(_, _)) =>
-          // Success
+          Succeeded
         }
       }
     }
@@ -54,14 +56,13 @@ final class PackageListIntegrationSpec
     withInstalledPackage("helloworld") { installResponse =>
       withDeletedRepository(helloWorldRepository) {
         withInstalledPackageInListResponse(installResponse) { case Some(Installation(_, pkg)) =>
-            assertResult(expectedPackageInformation)(pkg)
-          // Success
+          assertResult(expectedPackageInformation)(pkg)
         }
       }
     }
   }
 
-  private[this] def withInstalledPackage(packageName: String)(f: InstallResponse => Unit): Unit = {
+  private[this] def withInstalledPackage(packageName: String)(f: InstallResponse => Any): Any = {
     val installRequest =
       InstallRequest(packageName, appId = Some(AppId(UUID.randomUUID().toString)))
     val request = CosmosRequests.packageInstallV1(installRequest)
@@ -82,7 +83,7 @@ final class PackageListIntegrationSpec
       val actualUninstall =
         CosmosClient.callEndpoint[UninstallResponse](request) withClue "when uninstalling package"
 
-      inside (actualUninstall) {
+      val _ = inside (actualUninstall) {
         case Right(UninstallResponse(List(UninstallResult(uninstalledPackageName, appId, Some(packageVersion), _)))) =>
           assertResult(installResponse.appId)(appId)
           assertResult(installResponse.packageName)(uninstalledPackageName)
@@ -91,7 +92,7 @@ final class PackageListIntegrationSpec
     }
   }
 
-  private[this] def withDeletedRepository(repository: PackageRepository)(action: => Unit): Unit = {
+  private[this] def withDeletedRepository(repository: PackageRepository)(action: => Any): Any = {
     val repoDeleteRequest = PackageRepositoryDeleteRequest(name = Some(repository.name))
     val request = CosmosRequests.packageRepositoryDelete(repoDeleteRequest)
     val actualDelete = CosmosClient.callEndpoint[PackageRepositoryDeleteResponse](request)
@@ -109,7 +110,7 @@ final class PackageListIntegrationSpec
       val actualAdd = CosmosClient.callEndpoint[PackageRepositoryAddResponse](request)
         .withClue("when restoring deleted repo")
 
-      inside(actualAdd) { case Right(PackageRepositoryAddResponse(repositories)) =>
+      val _ = inside(actualAdd) { case Right(PackageRepositoryAddResponse(repositories)) =>
         inside(repositories.find(_.name == repository.name)) { case Some(addedRepository) =>
           assertResult(repository)(addedRepository)
         }
@@ -118,8 +119,8 @@ final class PackageListIntegrationSpec
   }
 
   private[this] def withInstalledPackageInListResponse(installResponse: InstallResponse)(
-    pf: PartialFunction[Option[Installation], Unit]
-  ): Unit = {
+    pf: PartialFunction[Option[Installation], Assertion]
+  ): Assertion = {
     val request = CosmosRequests.packageList(ListRequest())
     val actualList =
       CosmosClient.callEndpoint[ListResponse](request) withClue "when listing installed packages"
@@ -169,7 +170,7 @@ final class PackageListIntegrationSpec
     installResponse
   }
 
-  private[this] def packageUninstall(installResponse: InstallResponse): Unit = {
+  private[this] def packageUninstall(installResponse: InstallResponse): Assertion = {
     val uninstallRequest: UninstallRequest =
       UninstallRequest(installResponse.packageName, appId = Some(installResponse.appId), all = None)
     val request = CosmosRequests.packageUninstall(uninstallRequest)

@@ -21,7 +21,7 @@ import org.mockito.Mockito.when
 import org.scalacheck.Arbitrary
 import org.scalacheck.Gen
 import org.scalatest.FreeSpec
-import org.scalatest.mock.MockitoSugar
+import org.scalatest.mockito.MockitoSugar
 import org.scalatest.prop.PropertyChecks
 import scala.collection.mutable
 

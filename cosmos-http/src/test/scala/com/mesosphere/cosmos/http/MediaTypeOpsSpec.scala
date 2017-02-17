@@ -1,8 +1,8 @@
 package com.mesosphere.cosmos.http
 
 import com.mesosphere.cosmos.http.MediaTypeOps.mediaTypeToMediaTypeOps
+import org.scalatest.Assertion
 import org.scalatest.FreeSpec
-
 import scala.language.implicitConversions
 
 class MediaTypeOpsSpec extends FreeSpec {
@@ -262,13 +262,17 @@ class MediaTypeOpsSpec extends FreeSpec {
 
   }
 
-  private[this] def shouldSucceed(expected: MediaType, actual: MediaType): Unit = {
+  private[this] def shouldSucceed(expected: MediaType, actual: MediaType): Assertion = {
     assertMatch(expected, actual, shouldPass = true)
   }
-  private[this] def shouldFail(expected: MediaType, actual: MediaType): Unit = {
+  private[this] def shouldFail(expected: MediaType, actual: MediaType): Assertion = {
     assertMatch(expected, actual, shouldPass = false)
   }
-  private[this] def assertMatch(expected: MediaType, actual: MediaType, shouldPass: Boolean): Unit = {
+  private[this] def assertMatch(
+    expected: MediaType,
+    actual: MediaType,
+    shouldPass: Boolean
+  ): Assertion = {
     assert(MediaTypeOps.compatible(expected, actual) == shouldPass)
   }
 

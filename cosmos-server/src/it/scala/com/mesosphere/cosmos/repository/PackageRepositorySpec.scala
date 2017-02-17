@@ -14,6 +14,7 @@ import com.mesosphere.universe.common.circe.Encoders._
 import com.netaporter.uri.Uri
 import com.twitter.finagle.http._
 import org.scalatest.AppendedClues
+import org.scalatest.Assertion
 import org.scalatest.BeforeAndAfter
 import org.scalatest.FreeSpec
 import org.scalatest.concurrent.Eventually
@@ -124,7 +125,7 @@ final class PackageRepositorySpec
     val expectedMsg = s"Repository version [1.0.0-rc1] is not supported"
     assertAdd(expectedList, oldVersionRepository)
 
-    def assertUnsupportedVersion(): Unit = {
+    def assertUnsupportedVersion(): Assertion = {
       val response = searchPackages(SearchRequest(None))
       assertResult(Status.BadRequest)(response.status)
       val Right(err) = decode[ErrorResponse](response.contentString)
@@ -160,7 +161,7 @@ final class PackageRepositorySpec
       assertBrokenUri("http://foobar")
     }
 
-    def assertBrokenUri(uriText: String): Unit = {
+    def assertBrokenUri(uriText: String): Assertion = {
       val bogusRepository = PackageRepository("bogus", Uri.parse(uriText))
       assertAdd(defaultRepos :+ bogusRepository, bogusRepository)
 
@@ -190,8 +191,8 @@ final class PackageRepositorySpec
       assertInvalidRepo(uriText, expectedMsg)
     }
 
-    def assertInvalidRepo(uriText: String, expectedMsg: String): Unit = {
-      def assertBadRequest(): Unit = {
+    def assertInvalidRepo(uriText: String, expectedMsg: String): Assertion = {
+      def assertBadRequest(): Assertion = {
         val response = searchPackages(SearchRequest(None))
         assertResult(Status.BadRequest)(response.status)
         val Right(err) = decode[ErrorResponse](response.contentString)
@@ -248,7 +249,7 @@ final class PackageRepositorySpec
       assertDeleteAbsentRepo(request)
     }
 
-    def assertDeleteAbsentRepo(request: PackageRepositoryDeleteRequest): Unit = {
+    def assertDeleteAbsentRepo(request: PackageRepositoryDeleteRequest): Assertion = {
       val Left(errorResponse) =
         deleteRepo(request, status = Status.BadRequest) withClue "when deleting a repo"
       val errorData = optionToJsonMap("name", request.name) ++ optionToJsonMap("uri", request.uri)
@@ -309,12 +310,15 @@ object PackageRepositorySpec extends FreeSpec with TableDrivenPropertyChecks {
     expectedResponseList: Seq[PackageRepository],
     repository: PackageRepository,
     index: Option[Int] = None
-  ): Unit = {
+  ): Assertion = {
     val addRequest = PackageRepositoryAddRequest(repository.name, repository.uri, index)
     assertResult(expectedResponseList)(addRepo(addRequest).repositories)
   }
 
-  private def assertAddFailure(expectedErrorMessage: String, repository: PackageRepository): Unit = {
+  private def assertAddFailure(
+    expectedErrorMessage: String,
+    repository: PackageRepository
+  ): Assertion = {
     val repositoriesBeforeAdd = listRepos()
 
     assertResult(expectedErrorMessage) {

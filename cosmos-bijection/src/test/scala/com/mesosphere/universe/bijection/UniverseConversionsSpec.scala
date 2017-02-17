@@ -7,6 +7,7 @@ import com.mesosphere.universe.test.TestingPackages._
 import com.netaporter.uri.Uri
 import com.twitter.bijection.Conversion.asMethod
 import com.twitter.bijection.Injection
+import org.scalatest.Assertion
 import org.scalatest.FreeSpec
 import org.scalatest.Matchers
 import scala.util.Success
@@ -42,7 +43,7 @@ final class UniverseConversionsSpec extends FreeSpec with Matchers {
 
     def testCase(
       value: (universe.v3.model.Metadata, universe.v3.model.PackageDefinition.ReleaseVersion)
-    ): Unit = {
+    ): Assertion = {
       assertResult(value) {
         value
           .as[universe.v3.model.V3Package]
@@ -62,7 +63,7 @@ final class UniverseConversionsSpec extends FreeSpec with Matchers {
       testCase(MinimalV3ModelV3PackageDefinition)
     }
 
-    def testCase(v3Package: universe.v3.model.V3Package): Unit = {
+    def testCase(v3Package: universe.v3.model.V3Package): Assertion = {
       val selected = v3Package.selected
       val command = v3Package.command
 

@@ -13,6 +13,7 @@ import com.mesosphere.universe.v3.syntax.PackageDefinitionOps._
 import com.netaporter.uri.Uri
 import com.twitter.bijection.Conversion.asMethod
 import io.circe.Decoder
+import org.scalatest.Assertion
 import org.scalatest.FreeSpec
 import scala.util.Right
 import scala.util.Success
@@ -43,7 +44,7 @@ final class MarathonLabelsSpec extends FreeSpec {
     }
 
   }
-  "nonOverridableLabels" - {
+  "nonOverridableLabels" in {
     assertResult(Map())(MarathonLabels(TestingPackages.MinimalV3ModelV2PackageDefinition, RepoUri).nonOverridableLabels)
     assertResult(List(TestingPackages.MaximalV3ModelV2PackageDefinition.command.get))(
       MarathonLabels(TestingPackages.MaximalV3ModelV2PackageDefinition, RepoUri)
@@ -62,7 +63,7 @@ final class MarathonLabelsSpec extends FreeSpec {
   private[this] def assertCompatible(
     original: universe.v3.model.PackageDefinition,
     result: label.v1.model.PackageMetadata
-  ): Unit = {
+  ): Assertion = {
     // To test that `original` was accurately turned into `result`, reverse the transformation
     val Success(resultPackagingVersion) =
       result.packagingVersion.as[Try[universe.v3.model.PackagingVersion]]
@@ -92,4 +93,3 @@ final class MarathonLabelsSpec extends FreeSpec {
   }
 
 }
-
