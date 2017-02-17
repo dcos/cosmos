@@ -3,8 +3,8 @@ package com.mesosphere.cosmos.finch
 import com.mesosphere.cosmos.http.Authorization
 import com.mesosphere.cosmos.http.MediaType
 import com.mesosphere.cosmos.http.RequestSession
-import com.twitter.finagle.http.Status
 import com.twitter.finagle.http.Fields
+import com.twitter.finagle.http.Status
 import com.twitter.util.Await
 import com.twitter.util.Future
 import io.circe.Decoder
@@ -12,6 +12,7 @@ import io.circe.Encoder
 import io.circe.Json
 import io.circe.syntax._
 import io.finch._
+import org.scalatest.Assertion
 import org.scalatest.FreeSpec
 import scala.util.Right
 
@@ -121,7 +122,7 @@ final class EndpointHandlerSpec extends FreeSpec {
           assertApply(_.toUpperCase, "HELLO WORLD")
         }
 
-        def assertApply(fn: String => String, expected: String): Unit = {
+        def assertApply(fn: String => String, expected: String): Assertion = {
           val context = buildEndpointContext[String, String]("hello world")
           val handler = new EndpointHandler[String, String] {
             override def apply(request: String)(implicit session: RequestSession): Future[String] = {

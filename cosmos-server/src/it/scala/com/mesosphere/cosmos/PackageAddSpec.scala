@@ -29,6 +29,7 @@ import com.twitter.finagle.stats.StatsReceiver
 import com.twitter.io.Buf
 import com.twitter.util.Await
 import com.twitter.util.Future
+import org.scalatest.Assertion
 import org.scalatest.BeforeAndAfter
 import org.scalatest.BeforeAndAfterAll
 import org.scalatest.FreeSpec
@@ -88,7 +89,7 @@ final class PackageAddSpec
       assertResult(Some(Json.fromString("0.2.0-2")))(error.data.get("packageVersion"))
     }
 
-    def assertSuccessfulUniverseAdd(addRequest: rpc.v1.model.UniverseAddRequest): Unit = {
+    def assertSuccessfulUniverseAdd(addRequest: rpc.v1.model.UniverseAddRequest): Assertion = {
       val expectedPackage = describePackage(addRequest.packageName, addRequest.packageVersion)
 
       val request = CosmosRequests.packageAdd(addRequest)
@@ -128,14 +129,16 @@ final class PackageAddSpec
     cleanObjectStorage(packageObjectStorage)
   }
 
-  private[this] def assertSuccessfulAdd(expectedV3Package: universe.v3.model.V3Package): Unit = {
+  private[this] def assertSuccessfulAdd(
+    expectedV3Package: universe.v3.model.V3Package
+  ): Assertion = {
     assertSuccessfulResponse(expectedV3Package)
     assertExternalizedPackage(expectedV3Package)
   }
 
   private[this] def assertSuccessfulResponse(
     expectedV3Package: universe.v3.model.V3Package
-  ): Unit = {
+  ): Assertion = {
     val body = Buf.ByteArray.Owned(UTestUtil.buildPackage(expectedV3Package))
     val request = CosmosRequests.packageAdd(body)
     val response = CosmosClient.submit(request)
@@ -146,7 +149,7 @@ final class PackageAddSpec
 
   private[this] def assertExternalizedPackage(
     expectedV3Package: universe.v3.model.V3Package
-  ): Unit = {
+  ): Assertion = {
     assertSamePackage(
       expectedV3Package,
       Await.result(
@@ -162,7 +165,7 @@ final class PackageAddSpec
   private[this] def assertSamePackage(
     expected: universe.v3.model.V3Package,
     actual: universe.v3.model.V3Package
-  ): Unit = {
+  ): Assertion = {
     val normalizedExpected = normalizeV3Package(expected)
     val normalizedActual = normalizeV3Package(actual)
     assertResult(normalizedExpected)(normalizedActual)

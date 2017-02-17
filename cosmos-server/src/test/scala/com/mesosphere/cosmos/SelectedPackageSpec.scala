@@ -2,22 +2,28 @@ package com.mesosphere.cosmos
 
 import _root_.io.circe.jawn.decode
 import _root_.io.circe.syntax._
-import _root_.io.circe.{Decoder, Encoder, Printer}
+import _root_.io.circe.Decoder
+import _root_.io.circe.Encoder
+import _root_.io.circe.Printer
 import com.mesosphere.cosmos.handler.PackageSearchHandler
 import com.mesosphere.cosmos.repository.PackageCollection
 import com.mesosphere.cosmos.rpc.v1.circe.Decoders._
 import com.mesosphere.cosmos.rpc.v1.circe.Encoders._
-import com.mesosphere.cosmos.rpc.v1.model.{SearchRequest, SearchResponse, SearchResult}
+import com.mesosphere.cosmos.rpc.v1.model.SearchRequest
+import com.mesosphere.cosmos.rpc.v1.model.SearchResponse
+import com.mesosphere.cosmos.rpc.v1.model.SearchResult
 import com.mesosphere.universe
 import com.mesosphere.universe.bijection.UniverseConversions._
 import com.mesosphere.universe.v2.circe.Decoders._
 import com.mesosphere.universe.v2.circe.Encoders._
 import com.mesosphere.universe.v2.model._
 import com.twitter.bijection.Conversion.asMethod
-import com.twitter.util.{Await, Future}
+import com.twitter.util.Await
+import com.twitter.util.Future
 import org.mockito.Mockito._
+import org.scalatest.Assertion
 import org.scalatest.FreeSpec
-import org.scalatest.mock.MockitoSugar
+import org.scalatest.mockito.MockitoSugar
 import scala.util.Right
 
 final class SelectedPackageSpec extends FreeSpec with MockitoSugar {
@@ -50,7 +56,7 @@ final class SelectedPackageSpec extends FreeSpec with MockitoSugar {
     def assertSearchResults(
       resultsBeforeSorting: List[SearchResult],
       resultsAfterSorting: List[SearchResult]
-    ): Unit = {
+    ): Assertion = {
       val packageCollection = mock[PackageCollection]
       when(packageCollection.search(None)).thenReturn {
         Future.value(resultsBeforeSorting)
@@ -107,7 +113,7 @@ final class SelectedPackageSpec extends FreeSpec with MockitoSugar {
     def assertEncodeDecode[A](
       data: A,
       dropNullKeys: Boolean = false
-    )(implicit d: Decoder[A], e: Encoder[A]): Unit = {
+    )(implicit d: Decoder[A], e: Encoder[A]): Assertion = {
       assertResult(Right(data)) {
         decode[A](Printer.noSpaces.copy(dropNullKeys = dropNullKeys).pretty(data.asJson))
       }

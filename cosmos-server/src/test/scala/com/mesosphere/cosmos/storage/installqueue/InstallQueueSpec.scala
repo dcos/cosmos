@@ -11,8 +11,8 @@ import com.mesosphere.cosmos.storage.v1.circe.MediaTypedEncoders._
 import com.mesosphere.cosmos.storage.v1.model.FailedStatus
 import com.mesosphere.cosmos.storage.v1.model.OperationFailure
 import com.mesosphere.cosmos.storage.v1.model.OperationStatus
-import com.mesosphere.cosmos.storage.v1.model.PendingStatus
 import com.mesosphere.cosmos.storage.v1.model.PendingOperation
+import com.mesosphere.cosmos.storage.v1.model.PendingStatus
 import com.mesosphere.cosmos.storage.v1.model.UniverseInstall
 import com.mesosphere.cosmos.zookeeper.Clients
 import com.mesosphere.universe.test.TestingPackages
@@ -21,6 +21,7 @@ import com.twitter.util.Await
 import org.apache.curator.framework.CuratorFramework
 import org.apache.curator.test.TestingCluster
 import org.apache.zookeeper.KeeperException
+import org.scalatest.Assertion
 import org.scalatest.BeforeAndAfterAll
 import org.scalatest.Outcome
 import org.scalatest.fixture
@@ -574,7 +575,7 @@ final class InstallQueueSpec extends fixture.FreeSpec with BeforeAndAfterAll {
     client: CuratorFramework,
     packageCoordinate: PackageCoordinate,
     expected: OperationStatus
-  ): Unit = {
+  ): Assertion = {
     val data =
       client
         .getData
@@ -631,7 +632,7 @@ final class InstallQueueSpec extends fixture.FreeSpec with BeforeAndAfterAll {
   (
     client: CuratorFramework,
     packageCoordinate: PackageCoordinate
-  ): Unit = {
+  ): Assertion = {
     val stat =
       Option(
         client

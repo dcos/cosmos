@@ -39,6 +39,7 @@ import io.circe.syntax._
 import java.io.InputStreamReader
 import java.util.UUID
 import org.scalacheck.Gen
+import org.scalatest.Assertion
 import org.scalatest.FreeSpec
 import org.scalatest.Matchers
 import org.scalatest.prop.PropertyChecks
@@ -64,7 +65,7 @@ class EncodersDecodersSpec extends FreeSpec with PropertyChecks with Matchers {
     def assertRoundTrip(
       errorType: String,
       errorConstructor: (PackageRepository, Throwable) => Exception
-    ): Unit = {
+    ): Assertion = {
       val repo = PackageRepository("repo", Uri.parse("http://example.com"))
       val cause = "original failure message"
       val error = errorConstructor(repo, new Throwable(cause))
@@ -115,7 +116,7 @@ class EncodersDecodersSpec extends FreeSpec with PropertyChecks with Matchers {
     def assertThrowableDropped[A <: CosmosError with Product](
       error: A,
       throwableFieldNames: String*
-    ): Unit = {
+    ): Assertion = {
       val encodedFields = error.getData.getOrElse(JsonObject.empty)
       throwableFieldNames.foreach(name => assert(!encodedFields.contains(name), name))
       assertResult(error.productArity - throwableFieldNames.size)(encodedFields.size)

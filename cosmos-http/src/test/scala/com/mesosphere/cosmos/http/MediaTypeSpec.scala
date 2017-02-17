@@ -102,7 +102,10 @@ object MediaTypeSpec {
       subTypePart <- Gen.alphaStr.map(_.toLowerCase)
     } yield Try(MediaType(typePart, subTypePart))
 
-    genTry.collect { case Return(mediaType) => mediaType }
+    genTry.flatMap {
+      case Return(mediaType) => mediaType
+      case _ => Gen.fail
+    }
   }
 
 }
