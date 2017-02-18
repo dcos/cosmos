@@ -1,0 +1,187 @@
+#%RAML 1.0
+title: Cosmos API
+documentation:
+ - title: Packaging
+   content: |
+     TODO
+ - title: Service
+   content |
+     TODO
+/package:
+  description: Implements all packaging operations
+  /install:
+    description: Runs a service from a package
+    post:
+      body:
+        application/jsonTODO:
+          type: !include TODO/path/to/file.json
+          example:
+            packageName: cassandra
+            packageVersion: TODO
+            options: TODO
+      responses:
+        200:
+          body:
+            application/jsonTODO:
+              type: !include TODO/path/to/file.json
+              example:
+                packageName: cassandra
+                packageVersion: TODO
+                appId: TODO
+                cli: TODO
+  /uninstall:
+    description: TODO
+    post:
+      body:
+        application/jsonTODO:
+          type: !include TODO/path/to/file.json
+          example:
+      responses:
+        200:
+          body:
+            application/jsonTODO:
+              type: !include TODO/path/to/file.json
+              example:
+  /describe:
+    description: TODO
+    post:
+      body:
+        application/jsonTODO:
+          type: !include TODO/path/to/file.json
+          example:
+      responses:
+        200:
+          body:
+            application/jsonTODO:
+              type: !include TODO/path/to/file.json
+              example:
+  /render:
+    description: TODO
+    post:
+      body:
+        application/jsonTODO:
+          type: !include TODO/path/to/file.json
+          example:
+      responses:
+        200:
+          body:
+            application/jsonTODO:
+              type: !include TODO/path/to/file.json
+              example:
+  /list-versions:
+    description: TODO
+    post:
+      body:
+        application/jsonTODO:
+          type: !include TODO/path/to/file.json
+          example:
+      responses:
+        200:
+          body:
+            application/jsonTODO:
+              type: !include TODO/path/to/file.json
+              example:
+  /search:
+    description: TODO
+    post:
+      body:
+        application/jsonTODO:
+          type: !include TODO/path/to/file.json
+          example:
+      responses:
+        200:
+          body:
+            application/jsonTODO:
+              type: !include TODO/path/to/file.json
+              example:
+  /list:
+    description: TODO
+    post:
+      body:
+        application/jsonTODO:
+          type: !include TODO/path/to/file.json
+          example:
+      responses:
+        200:
+          body:
+            application/jsonTODO:
+              type: !include TODO/path/to/file.json
+              example:
+  /add:
+    description: TODO. Experimental!
+    post:
+      body:
+        application/jsonTODO:
+          type: !include TODO/path/to/file.json
+          example:
+      responses:
+        200: # TODO: confirm this is 200
+          body:
+            application/jsonTODO:
+              type: !include TODO/path/to/file.json
+              example:
+  /repository:
+    description: TODO
+    /list:
+      description: TODO
+      post:
+        body:
+          application/jsonTODO:
+            type: !include TODO/path/to/file.json
+            example:
+        responses:
+          200:
+            body:
+              application/jsonTODO:
+                type: !include TODO/path/to/file.json
+                example:
+    /add:
+      description: TODO
+      post:
+        body:
+          application/jsonTODO:
+            type: !include TODO/path/to/file.json
+            example:
+        responses:
+          200:
+            body:
+              application/jsonTODO:
+                type: !include TODO/path/to/file.json
+                example:
+    /delete:
+      description: TODO
+      post:
+        body:
+          application/jsonTODO:
+            type: !include TODO/path/to/file.json
+            example:
+        responses:
+          200:
+            body:
+              application/jsonTODO:
+                type: !include TODO/path/to/file.json
+                example:
+/capabilities:
+  description: TODO
+  get:
+    responses:
+      200:
+        body:
+          application/jsonTODO:
+            type: !include TODO/path/to/file.json
+            example:
+/service
+  description: TODO
+  /start:
+    description: TODO. Experimental!
+    post:
+      body:
+        application/jsonTODO:
+          type: !include TODO/path/to/file.json
+          example:
+      responses:
+        200: # TODO: confirm this is 200
+          body:
+            application/jsonTODO:
+              type: !include TODO/path/to/file.json
+              example:
