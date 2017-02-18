@@ -1,7 +1,8 @@
 package com.mesosphere.cosmos.repository
 
 import cats.data.Xor
-import cats.data.Xor.{Left, Right}
+import cats.data.Xor.Left
+import cats.data.Xor.Right
 import com.mesosphere.cosmos.AdminRouter
 import com.mesosphere.cosmos.BuildProperties
 import com.mesosphere.cosmos.GenericHttpError
@@ -16,8 +17,11 @@ import com.mesosphere.cosmos.UnsupportedContentType
 import com.mesosphere.cosmos.UnsupportedRedirect
 import com.mesosphere.cosmos.UnsupportedRepositoryVersion
 import com.mesosphere.cosmos.circe.Decoders.decode
+import com.mesosphere.cosmos.http.MediaType
 import com.mesosphere.cosmos.http.MediaTypeOps._
-import com.mesosphere.cosmos.http.{MediaType, MediaTypeParseError, MediaTypeParser, RequestSession}
+import com.mesosphere.cosmos.http.MediaTypeParseError
+import com.mesosphere.cosmos.http.MediaTypeParser
+import com.mesosphere.cosmos.http.RequestSession
 import com.mesosphere.cosmos.rpc.v1.model.PackageRepository
 import com.mesosphere.universe
 import com.mesosphere.universe.MediaTypes
@@ -26,19 +30,34 @@ import com.mesosphere.universe.v2.circe.Decoders._
 import com.mesosphere.universe.v3.circe.Decoders._
 import com.netaporter.uri.Uri
 import com.twitter.bijection.Conversion.asMethod
-import com.twitter.finagle.stats.{NullStatsReceiver, Stat, StatsReceiver}
+import com.twitter.finagle.stats.NullStatsReceiver
+import com.twitter.finagle.stats.Stat
+import com.twitter.finagle.stats.StatsReceiver
 import com.twitter.io.StreamIO
-import com.twitter.util.{Future, Try => TwitterTry}
+import com.twitter.util.Future
+import com.twitter.util.Return
+import com.twitter.util.Throw
+import com.twitter.util.{Try => TwitterTry}
+import io.circe.Decoder
+import io.circe.DecodingFailure
+import io.circe.Json
+import io.circe.JsonObject
 import io.circe.jawn.parse
-import io.circe.{Decoder, DecodingFailure, Json, JsonObject}
-import java.io.{IOException, InputStream}
-import java.net.{HttpURLConnection, MalformedURLException, URISyntaxException}
+import java.io.IOException
+import java.io.InputStream
+import java.net.HttpURLConnection
+import java.net.MalformedURLException
+import java.net.URISyntaxException
 import java.nio.ByteBuffer
-import java.nio.file.{Path, Paths}
-import java.util.zip.{GZIPInputStream, ZipInputStream}
+import java.nio.file.Path
+import java.nio.file.Paths
+import java.util.zip.GZIPInputStream
+import java.util.zip.ZipInputStream
 import scala.collection.JavaConverters._
 import scala.io.Source
-import scala.util.{Failure, Success, Try => ScalaTry}
+import scala.util.Failure
+import scala.util.Success
+import scala.util.{Try => ScalaTry}
 
 trait UniverseClient {
   def apply(repository: PackageRepository)(implicit session: RequestSession): Future[universe.v3.model.Repository]
@@ -52,6 +71,7 @@ final class DefaultUniverseClient(
 
   import DefaultUniverseClient._
 
+  private[this] val logger = org.slf4j.LoggerFactory.getLogger(getClass)
   private[this] val stats = statsReceiver.scope("repositoryFetcher")
   private[this] val fetchScope = stats.scope("fetch")
 
@@ -59,7 +79,17 @@ final class DefaultUniverseClient(
 
   def apply(repository: PackageRepository)(implicit session: RequestSession): Future[universe.v3.model.Repository] = {
     adminRouter.getDcosVersion().flatMap { dcosVersion =>
-      apply(repository, dcosVersion.version)
+      apply(repository, dcosVersion.version).respond {
+        case Return(_) =>
+          logger.info(
+            s"Success while fetching Universe state from ($repository, ${dcosVersion.version})"
+          )
+        case Throw(error) =>
+          logger.error(
+            s"Error while fetching Universe state from ($repository, ${dcosVersion.version})",
+            error
+          )
+      }
     }
   }
 
