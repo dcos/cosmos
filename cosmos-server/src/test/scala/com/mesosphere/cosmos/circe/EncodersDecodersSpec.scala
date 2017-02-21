@@ -1,7 +1,7 @@
 package com.mesosphere.cosmos.circe
 
 import com.google.common.io.CharStreams
-import com.mesosphere.Generators._
+import com.mesosphere.Generators.Implicits._
 import com.mesosphere.cosmos.CirceError
 import com.mesosphere.cosmos.ConcurrentAccess
 import com.mesosphere.cosmos.CosmosError
@@ -14,15 +14,8 @@ import com.mesosphere.cosmos.http.MediaType
 import com.mesosphere.cosmos.http.MediaTypeSubType
 import com.mesosphere.cosmos.rpc.v1.circe.Decoders._
 import com.mesosphere.cosmos.rpc.v1.model.ErrorResponse
-import com.mesosphere.cosmos.rpc.v1.model.Failed
-import com.mesosphere.cosmos.rpc.v1.model.Generators._
-import com.mesosphere.cosmos.rpc.v1.model.Installed
-import com.mesosphere.cosmos.rpc.v1.model.Installing
-import com.mesosphere.cosmos.rpc.v1.model.Invalid
 import com.mesosphere.cosmos.rpc.v1.model.LocalPackage
-import com.mesosphere.cosmos.rpc.v1.model.NotInstalled
 import com.mesosphere.cosmos.rpc.v1.model.PackageRepository
-import com.mesosphere.cosmos.rpc.v1.model.Uninstalling
 import com.mesosphere.cosmos.storage
 import com.mesosphere.cosmos.storage.v1.circe.Decoders._
 import com.mesosphere.universe.test.TestingPackages
@@ -36,9 +29,10 @@ import io.circe.JsonObject
 import io.circe.ParsingFailure
 import io.circe.jawn
 import io.circe.syntax._
+import io.circe.testing.instances._
 import java.io.InputStreamReader
 import java.util.UUID
-import org.scalacheck.Gen
+import org.scalacheck.Shapeless._
 import org.scalatest.Assertion
 import org.scalatest.FreeSpec
 import org.scalatest.Matchers
@@ -50,7 +44,6 @@ import scala.util.Right
 class EncodersDecodersSpec extends FreeSpec with PropertyChecks with Matchers {
   import Decoders._
   import Encoders._
-  import EncodersDecodersSpec._
 
   "CosmosError" - {
     "RepositoryUriSyntax" in {
@@ -308,47 +301,10 @@ class EncodersDecodersSpec extends FreeSpec with PropertyChecks with Matchers {
   }
 
   "For all LocalPackage; LocalPackage => JSON => LocalPackage" in {
-    forAll (genLocalPackage) { localPackage =>
+    forAll { (localPackage: LocalPackage) =>
       val string = localPackage.asJson.noSpaces
       decode[LocalPackage](string) shouldBe localPackage
     }
   }
-
-}
-
-object EncodersDecodersSpec {
-
-  implicit val genNotInstalled: Gen[NotInstalled] =
-    genV3Package.map(NotInstalled)
-
-  implicit val genInstalling: Gen[Installing] =
-    genV3Package.map(Installing)
-
-  implicit val genInstalled: Gen[Installed] =
-    genV3Package.map(Installed)
-
-  implicit val genUninstalling: Gen[Uninstalling] = Gen.oneOf(
-    genPackageCoordinate.map(pc => Uninstalling(Left(pc))),
-    genV3Package.map(metadata => Uninstalling(Right(metadata)))
-  )
-
-  implicit val genFailed: Gen[Failed] = for {
-    operation <- genOperation
-    error <- genErrorResponse
-  } yield Failed(operation, error)
-
-  implicit val genInvalid: Gen[Invalid] = for {
-    error <- genErrorResponse
-    pc <- genPackageCoordinate
-  } yield Invalid(error, pc)
-
-  implicit val genLocalPackage: Gen[LocalPackage] = Gen.oneOf(
-    genNotInstalled,
-    genInstalling,
-    genInstalled,
-    genUninstalling,
-    genFailed,
-    genInvalid
-  )
 
 }

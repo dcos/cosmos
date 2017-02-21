@@ -1,6 +1,6 @@
 package com.mesosphere.universe.v3.model
 
-import com.mesosphere.Generators._
+import com.mesosphere.Generators.Implicits._
 import org.scalatest.FreeSpec
 import org.scalatest.Matchers
 import org.scalatest.prop.PropertyChecks
@@ -9,7 +9,7 @@ import scala.util.Random
 final class SemVerSpec extends FreeSpec with PropertyChecks with Matchers {
   "For all SemVer => String => SemVer" in {
 
-    forAll (genSemVer) { expected =>
+    forAll { (expected: SemVer) =>
         val string = expected.toString
         val actual = SemVer(string).get
 

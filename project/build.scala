@@ -24,6 +24,7 @@ object CosmosBuild extends Build {
     val mockito = "1.10.19"
     val mustache = "0.9.1"
     val scalaCheck = "1.13.4"
+    val scalaCheckShapeless = "1.1.3"
     val scalaTest = "3.0.1"
     val scalaUri = "0.4.11"
     val slf4j = "1.7.10"
@@ -43,7 +44,8 @@ object CosmosBuild extends Build {
     )
 
     val circeCore = Seq(
-      "io.circe" %% "circe-core" % V.circe
+      "io.circe" %% "circe-core" % V.circe,
+      "io.circe" %% "circe-testing" % V.circe
     )
 
     val circe = circeCore ++ Seq(
@@ -102,6 +104,10 @@ object CosmosBuild extends Build {
 
     val scalaCheck = Seq(
       "org.scalacheck" %% "scalacheck" % V.scalaCheck % "test"
+    )
+
+    val scalaCheckShapeless = Seq(
+      "com.github.alexarchambault" %% "scalacheck-shapeless_1.13" % V.scalaCheckShapeless % "test"
     )
 
     val scalaReflect = Seq(
@@ -302,6 +308,7 @@ object CosmosBuild extends Build {
         ++ Deps.circeCore
         ++ Deps.twitterUtilCore
         ++ Deps.fastparse
+        ++ Deps.scalaCheckShapeless
     )
 
   lazy val json = Project("cosmos-json", file("cosmos-json"))
