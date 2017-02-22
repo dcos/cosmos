@@ -44,13 +44,13 @@ object CosmosBuild extends Build {
     )
 
     val circeCore = Seq(
-      "io.circe" %% "circe-core" % V.circe,
-      "io.circe" %% "circe-testing" % V.circe
+      "io.circe" %% "circe-core" % V.circe
     )
 
     val circe = circeCore ++ Seq(
       "io.circe" %% "circe-generic" % V.circe,
-      "io.circe" %% "circe-jawn" % V.circe
+      "io.circe" %% "circe-jawn" % V.circe,
+      "io.circe" %% "circe-testing" % V.circe
     )
 
     val curator = Seq(
@@ -289,7 +289,7 @@ object CosmosBuild extends Build {
 
   lazy val cosmos = Project("cosmos", file("."))
     .settings(sharedSettings)
-    .aggregate(http, model, json, jsonschema, bijection, render, finch, server, common)
+    .aggregate(http, model, json, common, jsonschema, bijection, render, finch, server)
 
   lazy val common = Project("cosmos-common", file("cosmos-common"))
     .settings(sharedSettings)
@@ -300,7 +300,7 @@ object CosmosBuild extends Build {
         ++ Deps.scalaCheck
     )
     .dependsOn(
-      model % "compile;test->test"
+      json % "compile;test->test"
     )
 
   lazy val model = Project("cosmos-model", file("cosmos-model"))
