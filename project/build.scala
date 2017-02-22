@@ -299,6 +299,9 @@ object CosmosBuild extends Build {
         ++ Deps.scalaTest
         ++ Deps.scalaCheck
     )
+    .dependsOn(
+      model % "compile;test->test"
+    )
 
   lazy val model = Project("cosmos-model", file("cosmos-model"))
     .settings(sharedSettings)
