@@ -3,16 +3,18 @@ package com.mesosphere.util
 import com.mesosphere.universe
 import java.io.InputStream
 import java.io.OutputStream
-import java.util.zip.ZipEntry
-import java.util.zip.ZipOutputStream
+import scala.util.Failure
+import scala.util.Try
 
 object PackageUtil {
 
-  def extractMetadata(packageContent: InputStream): universe.v3.model.Metadata = ???
-
-  def buildPackage(packageContent: OutputStream, metadata: universe.v3.model.Metadata): Unit = {
-    val zipOut = new ZipOutputStream(packageContent)
-    zipOut.putNextEntry(new ZipEntry(""))
+  def extractMetadata(packageContent: InputStream): Try[universe.v3.model.Metadata] = {
+    Failure(EntryNotFound(AbsolutePath.Root / "metadata.json"))
   }
+
+  def buildPackage(packageContent: OutputStream, metadata: universe.v3.model.Metadata): Unit = ???
+
+  sealed abstract class PackageError(override val getMessage: String) extends RuntimeException
+  case class EntryNotFound(path: AbsolutePath) extends PackageError(s"Missing package entry: $path")
 
 }

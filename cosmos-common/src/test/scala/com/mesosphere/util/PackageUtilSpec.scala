@@ -1,27 +1,40 @@
 package com.mesosphere.util
 
-import com.mesosphere.Generators.Implicits._
-import com.mesosphere.universe
-import io.circe.testing.instances._
 import java.io.ByteArrayInputStream
 import java.io.ByteArrayOutputStream
-import java.util.zip.ZipInputStream
+import java.util.zip.ZipEntry
+import java.util.zip.ZipOutputStream
 import org.scalatest.FreeSpec
 import org.scalatest.prop.PropertyChecks
-import org.scalacheck.Shapeless._
+import scala.util.Failure
 
 final class PackageUtilSpec extends FreeSpec with PropertyChecks {
 
-  "PackageUtil.buildPackage" in {
-    forAll { (metadata: universe.v3.model.Metadata) =>
-      val packageOut = new ByteArrayOutputStream
-      PackageUtil.buildPackage(packageOut, metadata)
+  import PackageUtilSpec._
 
-      val packageIn = new ByteArrayInputStream(packageOut.toByteArray)
-      val zipIn = new ZipInputStream(packageIn)
-      val firstEntry = Option(zipIn.getNextEntry)
-      assert(firstEntry.isDefined)
+  "extractMetadata() fails if metadata.json is not present" in {
+    forAll { (zipContents: Map[String, Array[Byte]]) =>
+      whenever (!zipContents.contains(MetadataJson)) {
+        val bytesOut = new ByteArrayOutputStream()
+        val zipOut = new ZipOutputStream(bytesOut)
+
+        for ((name, data) <- zipContents) {
+          val entry = new ZipEntry(name)
+          zipOut.putNextEntry(entry)
+          zipOut.write(data)
+        }
+
+        zipOut.close()
+
+        val bytesIn = new ByteArrayInputStream(bytesOut.toByteArray)
+        val Failure(error) = PackageUtil.extractMetadata(bytesIn)
+        assertResult(PackageUtil.EntryNotFound(AbsolutePath.Root / MetadataJson))(error)
+      }
     }
   }
 
+}
+
+object PackageUtilSpec {
+  val MetadataJson: String = "metadata.json"
 }
