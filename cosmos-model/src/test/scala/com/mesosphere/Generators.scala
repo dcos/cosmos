@@ -1,12 +1,14 @@
 package com.mesosphere
 
-import com.netaporter.uri.PathPart
+import com.netaporter.uri.Uri
 import java.nio.ByteBuffer
 import java.util.UUID
 import org.scalacheck.Arbitrary
 import org.scalacheck.Arbitrary.arbitrary
 import org.scalacheck.Gen
 import org.scalacheck.Gen.Choose
+import scala.util.Success
+import scala.util.Try
 
 object Generators {
 
@@ -94,7 +96,14 @@ object Generators {
     genTagString.map(universe.v3.model.PackageDefinition.Tag(_).get)
   }
 
-  private val genPathPart: Gen[PathPart] = Gen.resultOf(PathPart.apply _)
+  private val genUri: Gen[Uri] = {
+    arbitrary[String]
+      .map(s => Try(Uri.parse(s)))
+      .flatMap {
+        case Success(uri) => uri
+        case _ => Gen.fail
+      }
+  }
 
   private val genDcosReleaseVersionVersion: Gen[universe.v3.model.DcosReleaseVersion.Version] = {
     nonNegNum[Int].map(universe.v3.model.DcosReleaseVersion.Version(_))
@@ -108,7 +117,7 @@ object Generators {
 
     implicit val arbTag: Arbitrary[universe.v3.model.PackageDefinition.Tag] = Arbitrary(genTag)
 
-    implicit val arbPathPart: Arbitrary[PathPart] = Arbitrary(genPathPart)
+    implicit val arbUri: Arbitrary[Uri] = Arbitrary(genUri)
 
     implicit val arbDcosReleaseVersionVersion:
       Arbitrary[universe.v3.model.DcosReleaseVersion.Version] = {
