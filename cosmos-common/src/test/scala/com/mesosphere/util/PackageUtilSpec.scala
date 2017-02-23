@@ -63,6 +63,15 @@ final class PackageUtilSpec extends FreeSpec with PropertyChecks {
     }
   }
 
+  "extractMetadata() captures unexpected errors with Try" in {
+    val badInputStream = new InputStream {
+      override def read() = throw new UnsupportedOperationException
+    }
+
+    val Failure(error) = PackageUtil.extractMetadata(badInputStream)
+    assert(error.isInstanceOf[UnsupportedOperationException])
+  }
+
 }
 
 object PackageUtilSpec {
