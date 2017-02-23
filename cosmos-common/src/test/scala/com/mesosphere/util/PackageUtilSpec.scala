@@ -76,6 +76,18 @@ final class PackageUtilSpec extends FreeSpec with PropertyChecks {
     assert(badInputStream.isClosed)
   }
 
+  "buildPackage() creates a package such that extractMetadata() recovers the input" in {
+    forAll { (inputMetadata: universe.v3.model.Metadata) =>
+      val bytesOut = new ByteArrayOutputStream() with CloseDetector
+      PackageUtil.buildPackage(bytesOut, inputMetadata)
+      assert(bytesOut.isClosed)
+
+      val bytesIn = new ByteArrayInputStream(bytesOut.toByteArray)
+      val Success(outputMetadata) = PackageUtil.extractMetadata(bytesIn)
+      assertResult(inputMetadata)(outputMetadata)
+    }
+  }
+
 }
 
 object PackageUtilSpec {

@@ -3,12 +3,16 @@ package com.mesosphere.util
 import cats.syntax.either._
 import com.mesosphere.universe
 import com.mesosphere.universe.v3.circe.Decoders._
+import com.mesosphere.universe.v3.circe.Encoders._
 import com.twitter.io.StreamIO
 import io.circe.jawn.decode
+import io.circe.syntax._
 import java.io.InputStream
 import java.io.OutputStream
 import java.nio.charset.StandardCharsets
+import java.util.zip.ZipEntry
 import java.util.zip.ZipInputStream
+import java.util.zip.ZipOutputStream
 import scala.util.Try
 
 object PackageUtil {
@@ -40,7 +44,13 @@ object PackageUtil {
     result
   }
 
-  def buildPackage(packageContent: OutputStream, metadata: universe.v3.model.Metadata): Unit = ???
+  def buildPackage(packageContent: OutputStream, metadata: universe.v3.model.Metadata): Unit = {
+    val zipOut = new ZipOutputStream(packageContent)
+    zipOut.putNextEntry(new ZipEntry(MetadataPath.toString))
+    val metadataBytes = metadata.asJson.noSpaces.getBytes(StandardCharsets.UTF_8)
+    zipOut.write(metadataBytes)
+    zipOut.close()
+  }
 
   sealed abstract class PackageError(override val getMessage: String) extends RuntimeException
 
