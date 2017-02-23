@@ -32,6 +32,7 @@ final class PackageUtilSpec extends FreeSpec with PropertyChecks {
 
         val Failure(error) = PackageUtil.extractMetadata(bytesIn)
         assertResult(PackageUtil.MissingEntry(MetadataPath))(error)
+        assert(bytesIn.isClosed)
       }
     }
   }
@@ -48,6 +49,7 @@ final class PackageUtilSpec extends FreeSpec with PropertyChecks {
 
         val Failure(PackageUtil.InvalidEntry(path, _)) = PackageUtil.extractMetadata(bytesIn)
         assertResult(MetadataPath)(path)
+        assert(bytesIn.isClosed)
       }
     }
   }
@@ -60,16 +62,18 @@ final class PackageUtilSpec extends FreeSpec with PropertyChecks {
 
       val Success(extractedMetadata) = PackageUtil.extractMetadata(bytesIn)
       assertResult(goodMetadata)(extractedMetadata)
+      assert(bytesIn.isClosed)
     }
   }
 
   "extractMetadata() captures unexpected errors with Try" in {
-    val badInputStream = new InputStream {
+    val badInputStream = new InputStream with CloseDetector {
       override def read() = throw new UnsupportedOperationException
     }
 
     val Failure(error) = PackageUtil.extractMetadata(badInputStream)
     assert(error.isInstanceOf[UnsupportedOperationException])
+    assert(badInputStream.isClosed)
   }
 
 }
@@ -79,7 +83,7 @@ object PackageUtilSpec {
   val MetadataJson: String = "metadata.json"
   val MetadataPath: RelativePath = RelativePath(MetadataJson)
 
-  def encodeZip(contents: Map[String, Array[Byte]]): InputStream = {
+  def encodeZip(contents: Map[String, Array[Byte]]): InputStream with CloseDetector = {
     val bytesOut = new ByteArrayOutputStream()
     val zipOut = new ZipOutputStream(bytesOut)
 
@@ -90,7 +94,15 @@ object PackageUtilSpec {
     }
 
     zipOut.close()
-    new ByteArrayInputStream(bytesOut.toByteArray)
+    new ByteArrayInputStream(bytesOut.toByteArray) with CloseDetector
+  }
+
+  trait CloseDetector extends AutoCloseable {
+
+    var isClosed: Boolean = false
+
+    abstract override def close(): Unit = try { super.close() } finally { isClosed = true }
+
   }
 
 }

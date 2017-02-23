@@ -16,9 +16,9 @@ object PackageUtil {
   val MetadataPath: RelativePath = RelativePath("metadata.json")
 
   def extractMetadata(packageContent: InputStream): Try[universe.v3.model.Metadata] = {
-    Try {
-      val zipIn = new ZipInputStream(packageContent)
+    val zipIn = new ZipInputStream(packageContent)
 
+    val result = Try {
       val foundMetadata = Iterator.continually(Option(zipIn.getNextEntry))
         .takeWhile(_.isDefined)
         .flatten
@@ -34,6 +34,10 @@ object PackageUtil {
         throw MissingEntry(MetadataPath)
       }
     }
+
+    // If close() throws, let the exception propagate, since it's likely the result of a bug
+    zipIn.close()
+    result
   }
 
   def buildPackage(packageContent: OutputStream, metadata: universe.v3.model.Metadata): Unit = ???
