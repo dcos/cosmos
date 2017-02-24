@@ -24,7 +24,6 @@ import java.io.ByteArrayInputStream
 import java.io.InputStream
 import org.mockito.Matchers._
 import org.mockito.Mockito._
-import org.scalacheck.Shapeless._
 import org.scalatest.Assertion
 import org.scalatest.FreeSpec
 import org.scalatest.mockito.MockitoSugar

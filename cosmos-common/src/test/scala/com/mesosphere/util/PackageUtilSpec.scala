@@ -15,7 +15,6 @@ import java.io.InputStream
 import java.nio.charset.StandardCharsets
 import java.util.zip.ZipEntry
 import java.util.zip.ZipOutputStream
-import org.scalacheck.Shapeless._
 import org.scalatest.FreeSpec
 import org.scalatest.prop.PropertyChecks
 import scala.util.Failure

@@ -44,13 +44,13 @@ object CosmosBuild extends Build {
     )
 
     val circeCore = Seq(
-      "io.circe" %% "circe-core" % V.circe
+      "io.circe" %% "circe-core" % V.circe,
+      "io.circe" %% "circe-testing" % V.circe
     )
 
     val circe = circeCore ++ Seq(
       "io.circe" %% "circe-generic" % V.circe,
-      "io.circe" %% "circe-jawn" % V.circe,
-      "io.circe" %% "circe-testing" % V.circe
+      "io.circe" %% "circe-jawn" % V.circe
     )
 
     val curator = Seq(

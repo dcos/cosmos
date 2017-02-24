@@ -1,10 +1,13 @@
 package com.mesosphere
 
+import com.mesosphere.cosmos.rpc
 import com.netaporter.uri.Uri
+import io.circe.testing.instances._
 import java.nio.ByteBuffer
 import java.util.UUID
 import org.scalacheck.Arbitrary
 import org.scalacheck.Arbitrary.arbitrary
+import org.scalacheck.Shapeless._
 import org.scalacheck.Gen
 import org.scalacheck.Gen.Choose
 import scala.util.Success
@@ -113,7 +116,7 @@ object Generators {
     genNonEmptyString(Gen.alphaNumChar).map(universe.v3.model.DcosReleaseVersion.Suffix(_))
   }
 
-  object Implicits {
+  trait CustomImplicits {
 
     implicit val arbTag: Arbitrary[universe.v3.model.PackageDefinition.Tag] = Arbitrary(genTag)
 
@@ -137,6 +140,24 @@ object Generators {
 
     implicit val arbSemVer: Arbitrary[universe.v3.model.SemVer] = Arbitrary(genSemVer)
 
+  }
+
+  /** The members of this trait cannot be implicit, to avoid resolving to themselves. */
+  trait ShapelessImplicits extends CustomImplicits {
+
+    protected val arbMetadataShapeless: Arbitrary[universe.v3.model.Metadata] = {
+      implicitly[Arbitrary[universe.v3.model.Metadata]]
+    }
+
+    protected val arbLocalPackageShapeless: Arbitrary[rpc.v1.model.LocalPackage] = {
+      implicitly[Arbitrary[rpc.v1.model.LocalPackage]]
+    }
+
+  }
+
+  object Implicits extends ShapelessImplicits {
+    implicit val arbMetadata: Arbitrary[universe.v3.model.Metadata] = arbMetadataShapeless
+    implicit val arbLocalPackage: Arbitrary[rpc.v1.model.LocalPackage] = arbLocalPackageShapeless
   }
 
 }
