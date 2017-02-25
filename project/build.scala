@@ -201,6 +201,8 @@ object CosmosBuild extends Build {
 
     scalacOptions in (Test, console) ~= (_ filterNot (_ == "-Ywarn-unused-import")),
 
+    scalacOptions in (Compile, doc) += "-no-link-warnings",
+
     // Publishing options:
     publishMavenStyle := true,
 
