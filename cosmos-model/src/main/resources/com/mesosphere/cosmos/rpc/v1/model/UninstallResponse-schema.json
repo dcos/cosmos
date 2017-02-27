@@ -30,7 +30,7 @@
     }
   },
   "required": [
-    "repositories"
+    "results"
   ],
   "additionalProperties": false
 }

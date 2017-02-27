@@ -1,187 +1,235 @@
 #%RAML 1.0
-title: Cosmos API
-documentation:
- - title: Packaging
-   content: |
-     TODO
- - title: Service
-   content |
-     TODO
+title: DC/OS Package and Service
 /package:
-  description: Implements all packaging operations
+  description: Implements all packaging operation required for managing packages in DC/OS.
   /install:
-    description: Runs a service from a package
+    description: Runs a service from a package from Universe.
     post:
+      headers:
+        Accept:
+          enum: [application/vnd.dcos.package.install-response+json;charset=utf-8;version=v2]
       body:
-        application/jsonTODO:
-          type: !include TODO/path/to/file.json
+        application/vnd.dcos.package.install-request+json;charset=utf-8;version=v1:
+          type: !include ../../../../../../../../cosmos-model/src/main/resources/com/mesosphere/cosmos/rpc/v1/model/InstallRequest-schema.json
           example:
             packageName: cassandra
-            packageVersion: TODO
-            options: TODO
+            packageVersion: 1.0.24-3.0.10
       responses:
         200:
           body:
-            application/jsonTODO:
-              type: !include TODO/path/to/file.json
+            application/vnd.dcos.package.install-response+json;charset=utf-8;version=v2:
+              type: !include ../../../../../../../../cosmos-model/src/main/resources/com/mesosphere/cosmos/rpc/v2/model/InstallResponse-schema.json
               example:
                 packageName: cassandra
-                packageVersion: TODO
-                appId: TODO
-                cli: TODO
+                packageVersion: 1.0.24-3.0.10
+                appId: /cassandra
   /uninstall:
-    description: TODO
+    description: Stops a running service that was launched from a DC/OS Package.
     post:
+      headers:
+        Accept:
+          enum: [application/vnd.dcos.package.uninstall-response+json;charset=utf-8;version=v1]
       body:
-        application/jsonTODO:
-          type: !include TODO/path/to/file.json
+        application/vnd.dcos.package.uninstall-request+json;charset=utf-8;version=v1:
+          type: !include ../../../../../../../../cosmos-model/src/main/resources/com/mesosphere/cosmos/rpc/v1/model/UninstallRequest-schema.json
           example:
+            packageName: cassandra
+            appId: /cassandra
       responses:
         200:
           body:
-            application/jsonTODO:
-              type: !include TODO/path/to/file.json
+            application/vnd.dcos.package.uninstall-response+json;charset=utf-8;version=v1:
+              type: !include ../../../../../../../../cosmos-model/src/main/resources/com/mesosphere/cosmos/rpc/v1/model/UninstallResponse-schema.json
               example:
+                results:
+                  - packageName: cassandra
+                    appId: /cassandra
   /describe:
-    description: TODO
+    description: |
+      Show information about the given package including the resource need to start the service,
+      configure to start the service and command line extensions included with the package.
     post:
+      headers:
+        Accept:
+          enum: [application/vnd.dcos.package.describe-response+json;charset=utf-8;version=v2]
       body:
-        application/jsonTODO:
-          type: !include TODO/path/to/file.json
+        application/vnd.dcos.package.describe-request+json;charset=utf-8;version=v1:
+          type: !include ../../../../../../../../cosmos-model/src/main/resources/com/mesosphere/cosmos/rpc/v1/model/DescribeRequest-schema.json
           example:
+            packageName: cassandra
+            packageVersion: 1.0.24-3.0.10
       responses:
         200:
           body:
-            application/jsonTODO:
-              type: !include TODO/path/to/file.json
+            application/vnd.dcos.package.describe-response+json;charset=utf-8;version=v2:
+              type: !include ../../../../../../../../cosmos-model/src/main/resources/com/mesosphere/cosmos/rpc/v2/model/DescribeResponse-schema.json
               example:
+                name: cassandra
+                version: 1.0.24-3.0.10
+                packagingVersion: "3.0"
+                releaseVersion: 24
+                maintainer: support@mesospher.io
+                description: Apache Cassandra running on DC/OS
+                tags:
+                  - data
+                  - database
+                  - nosql
   /render:
-    description: TODO
+    description: |
+      Generates the Marathon Application Definition for the given package name and version, and an
+      optional configuration JSON object.
     post:
+      headers:
+        Accept:
+          enum: [application/vnd.dcos.package.render-response+json;charset=utf-8;version=v1]
       body:
-        application/jsonTODO:
-          type: !include TODO/path/to/file.json
-          example:
+        application/vnd.dcos.package.render-request+json;charset=utf-8;version=v1:
+          type: !include ../../../../../../../../cosmos-model/src/main/resources/com/mesosphere/cosmos/rpc/v1/model/RenderRequest-schema.json
       responses:
         200:
           body:
-            application/jsonTODO:
-              type: !include TODO/path/to/file.json
-              example:
+            application/vnd.dcos.package.render-response+json;charset=utf-8;version=v1:
+              type: !include ../../../../../../../../cosmos-model/src/main/resources/com/mesosphere/cosmos/rpc/v1/model/RenderResponse-schema.json
   /list-versions:
-    description: TODO
+    description: |
+      List all of the available versions for a given package name.
     post:
+      headers:
+        Accept:
+          enum: [application/vnd.dcos.package.list-versions-response+json;charset=utf-8;version=v1]
       body:
-        application/jsonTODO:
-          type: !include TODO/path/to/file.json
-          example:
+        application/vnd.dcos.package.list-versions-request+json;charset=utf-8;version=v1:
+          type: !include ../../../../../../../../cosmos-model/src/main/resources/com/mesosphere/cosmos/rpc/v1/model/ListVersionsRequest-schema.json
       responses:
         200:
           body:
-            application/jsonTODO:
-              type: !include TODO/path/to/file.json
-              example:
+            application/vnd.dcos.package.list-versions-response+json;charset=utf-8;version=v1:
+              type: !include ../../../../../../../../cosmos-model/src/main/resources/com/mesosphere/cosmos/rpc/v1/model/ListVersionsResponse-schema.json
   /search:
-    description: TODO
+    description: |
+      Lists all matching packages in the repository given a partial pattern. The character \'*\'
+      can be used to match any number of characters.
     post:
+      headers:
+        Accept:
+          enum: [application/vnd.dcos.package.search-response+json;charset=utf-8;version=v1]
       body:
-        application/jsonTODO:
-          type: !include TODO/path/to/file.json
-          example:
+        application/vnd.dcos.package.search-request+json;charset=utf-8;version=v1:
+          type: !include ../../../../../../../../cosmos-model/src/main/resources/com/mesosphere/cosmos/rpc/v1/model/SearchRequest-schema.json
       responses:
         200:
           body:
-            application/jsonTODO:
-              type: !include TODO/path/to/file.json
-              example:
+            application/vnd.dcos.package.search-response+json;charset=utf-8;version=v1:
+              type: !include ../../../../../../../../cosmos-model/src/main/resources/com/mesosphere/cosmos/rpc/v1/model/SearchResponse-schema.json
   /list:
-    description: TODO
+    description: |
+      Lists all of the running of the running DC/OS Services started from a DC/OS Package.
     post:
+      headers:
+        Accept:
+          enum: [application/vnd.dcos.package.list-response+json;charset=utf-8;version=v1]
       body:
-        application/jsonTODO:
-          type: !include TODO/path/to/file.json
-          example:
+        application/vnd.dcos.package.list-request+json;charset=utf-8;version=v1:
+          type: !include ../../../../../../../../cosmos-model/src/main/resources/com/mesosphere/cosmos/rpc/v1/model/ListRequest-schema.json
       responses:
         200:
           body:
-            application/jsonTODO:
-              type: !include TODO/path/to/file.json
-              example:
+            application/vnd.dcos.package.list-response+json;charset=utf-8;version=v1:
+              type: !include ../../../../../../../../cosmos-model/src/main/resources/com/mesosphere/cosmos/rpc/v1/model/ListResponse-schema.json
   /add:
-    description: TODO. Experimental!
+    description: |
+      **Experimental.** Adds a DC/OS Package to DC/OS. To add a DC/OS Package from Universe use the
+      content type _application/vnd.dcos.package.add-request+json;charset=utf-8;version=v1_.  To
+      add a package by uploading the file use the content type
+      _application/vnd.dcos.universe.package+zip;version=v1_.
     post:
+      headers:
+        Accept:
+          enum: [application/vnd.dcos.package.add-response+json;charset=utf-8;version=v1]
       body:
-        application/jsonTODO:
-          type: !include TODO/path/to/file.json
-          example:
+        application/vnd.dcos.package.add-request+json;charset=utf-8;version=v1:
+          type: !include ../../../../../../../../cosmos-model/src/main/resources/com/mesosphere/cosmos/rpc/v1/model/PackageAddRequest-schema.json
+        application/vnd.dcos.universe.package+zip;version=v1:
       responses:
         200: # TODO: confirm this is 200
           body:
-            application/jsonTODO:
-              type: !include TODO/path/to/file.json
-              example:
+            application/vnd.dcos.package.add-response+json;charset=utf-8;version=v1:
+              type: !include ../../../../../../../../cosmos-model/src/main/resources/com/mesosphere/cosmos/rpc/v1/model/PackageAddResponse-schema.json
   /repository:
-    description: TODO
     /list:
-      description: TODO
+      description: |
+        List all of the package repository (i.e Universe) used by DC/OS. The order in the list is
+        the order in which packages are found.
       post:
+        headers:
+          Accept:
+            enum:
+              [application/vnd.dcos.package.repository.list-response+json;charset=utf-8;version=v1]
         body:
-          application/jsonTODO:
-            type: !include TODO/path/to/file.json
-            example:
+          application/vnd.dcos.package.repository.list-request+json;charset=utf-8;version=v1:
+            type: !include ../../../../../../../../cosmos-model/src/main/resources/com/mesosphere/cosmos/rpc/v1/model/PackageRepositoryListRequest-schema.json
         responses:
           200:
             body:
-              application/jsonTODO:
-                type: !include TODO/path/to/file.json
-                example:
+              application/vnd.dcos.package.repository.list-response+json;charset=utf-8;version=v1:
+                type: !include ../../../../../../../../cosmos-model/src/main/resources/com/mesosphere/cosmos/rpc/v1/model/PackageRepositoryListResponse-schema.json
     /add:
-      description: TODO
+      description: |
+        Adds a package repository (i.e. Universe) for use by DC/OS. To add a package repository to
+        the beginning of list set the index to zero (0). To add a package repository to the end of
+        the list do not specify an index.
       post:
+        headers:
+          Accept:
+            enum: [application/vnd.dcos.package.repository.add-response+json;charset=utf-8;version=v1]
         body:
-          application/jsonTODO:
-            type: !include TODO/path/to/file.json
-            example:
+          application/vnd.dcos.package.repository.add-request+json;charset=utf-8;version=v1:
+            type: !include ../../../../../../../../cosmos-model/src/main/resources/com/mesosphere/cosmos/rpc/v1/model/PackageRepositoryAddRequest-schema.json
         responses:
           200:
             body:
-              application/jsonTODO:
-                type: !include TODO/path/to/file.json
-                example:
+              application/vnd.dcos.package.repository.add-response+json;charset=utf-8;version=v1:
+                type: !include ../../../../../../../../cosmos-model/src/main/resources/com/mesosphere/cosmos/rpc/v1/model/PackageRepositoryAddResponse-schema.json
     /delete:
-      description: TODO
+      description: |
+        Deletes a package repository (i.e. Universe) from DC/OS.
       post:
+        headers:
+          Accept:
+            enum: [application/vnd.dcos.package.repository.delete-response+json;charset=utf-8;version=v1]
         body:
-          application/jsonTODO:
-            type: !include TODO/path/to/file.json
-            example:
+          application/vnd.dcos.package.repository.delete-request+json;charset=utf-8;version=v1:
+            type: !include ../../../../../../../../cosmos-model/src/main/resources/com/mesosphere/cosmos/rpc/v1/model/PackageRepositoryDeleteRequest-schema.json
         responses:
           200:
             body:
-              application/jsonTODO:
-                type: !include TODO/path/to/file.json
-                example:
+              application/vnd.dcos.package.repository.delete-response+json;charset=utf-8;version=v1:
+                type: !include ../../../../../../../../cosmos-model/src/main/resources/com/mesosphere/cosmos/rpc/v1/model/PackageRepositoryDeleteResponse-schema.json
 /capabilities:
-  description: TODO
+  description: |
+    List all of the capabilities supported by this DC/OS.
   get:
+    headers:
+      Accept:
+        enum: [application/vnd.dcos.capabilities+json;charset=utf-8;version=v1]
     responses:
       200:
         body:
-          application/jsonTODO:
-            type: !include TODO/path/to/file.json
-            example:
-/service
-  description: TODO
+          application/vnd.dcos.capabilities+json;charset=utf-8;version=v1:
+            type: !include ../../../../../../../../cosmos-model/src/main/resources/com/mesosphere/cosmos/rpc/v1/model/CapabilitiesResponse-schema.json
+/service:
   /start:
-    description: TODO. Experimental!
+    description: |
+      **Experimental.** Starts a DC/OS Service from a DC/OS Package.
     post:
+      headers:
+        Accept:
+          enum: [application/vnd.dcos.sevice.start-response+json;charset=utf-8;version=v1]
       body:
-        application/jsonTODO:
-          type: !include TODO/path/to/file.json
-          example:
+        application/vnd.dcos.sevice.start-request+json;charset=utf-8;version=v1:
+          type: !include ../../../../../../../../cosmos-model/src/main/resources/com/mesosphere/cosmos/rpc/v1/model/ServiceStartRequest-schema.json
       responses:
         200: # TODO: confirm this is 200
           body:
-            application/jsonTODO:
-              type: !include TODO/path/to/file.json
-              example:
+            application/vnd.dcos.sevice.start-response+json;charset=utf-8;version=v1:
+              type: !include ../../../../../../../../cosmos-model/src/main/resources/com/mesosphere/cosmos/rpc/v1/model/ServiceStartResponse-schema.json
