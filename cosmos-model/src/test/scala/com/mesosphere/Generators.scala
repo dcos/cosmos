@@ -105,7 +105,7 @@ object Generators {
       .map(s => Try(Uri.parse(s)))
       .flatMap {
         case Success(uri) => uri
-        case _ => Gen.fail
+        case _ => Gen.fail    // URI parsing almost always succeeds, so this should be fine
       }
   }
 
