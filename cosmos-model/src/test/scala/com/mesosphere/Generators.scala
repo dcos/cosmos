@@ -10,6 +10,7 @@ import org.scalacheck.Arbitrary.arbitrary
 import org.scalacheck.Shapeless._
 import org.scalacheck.Gen
 import org.scalacheck.Gen.Choose
+import org.scalacheck.derive.MkArbitrary
 import scala.util.Success
 import scala.util.Try
 
@@ -116,7 +117,7 @@ object Generators {
     genNonEmptyString(Gen.alphaNumChar).map(universe.v3.model.DcosReleaseVersion.Suffix(_))
   }
 
-  trait CustomImplicits {
+  object Implicits {
 
     implicit val arbTag: Arbitrary[universe.v3.model.PackageDefinition.Tag] = Arbitrary(genTag)
 
@@ -140,30 +141,14 @@ object Generators {
 
     implicit val arbSemVer: Arbitrary[universe.v3.model.SemVer] = Arbitrary(genSemVer)
 
-  }
+    implicit val arbMetadata: Arbitrary[universe.v3.model.Metadata] = derived
 
-  /** The members of this trait cannot be implicit, to avoid resolving to themselves. */
-  trait ShapelessImplicits extends CustomImplicits {
+    implicit val arbLocalPackage: Arbitrary[rpc.v1.model.LocalPackage] = derived
 
-    protected val arbMetadataShapeless: Arbitrary[universe.v3.model.Metadata] = {
-      implicitly[Arbitrary[universe.v3.model.Metadata]]
-    }
+    implicit val arbUploadAddRequest: Arbitrary[rpc.v1.model.UploadAddRequest] = derived
 
-    protected val arbLocalPackageShapeless: Arbitrary[rpc.v1.model.LocalPackage] = {
-      implicitly[Arbitrary[rpc.v1.model.LocalPackage]]
-    }
+    private def derived[A: MkArbitrary]: Arbitrary[A] = implicitly[MkArbitrary[A]].arbitrary
 
-    protected val arbUploadAddRequestShapeless: Arbitrary[rpc.v1.model.UploadAddRequest] = {
-      implicitly[Arbitrary[rpc.v1.model.UploadAddRequest]]
-    }
-
-  }
-
-  object Implicits extends ShapelessImplicits {
-    implicit val arbMetadata: Arbitrary[universe.v3.model.Metadata] = arbMetadataShapeless
-    implicit val arbLocalPackage: Arbitrary[rpc.v1.model.LocalPackage] = arbLocalPackageShapeless
-    implicit val arbUploadAddRequest: Arbitrary[rpc.v1.model.UploadAddRequest] =
-      arbUploadAddRequestShapeless
   }
 
 }
