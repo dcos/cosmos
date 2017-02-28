@@ -17,8 +17,6 @@ import java.util.zip.ZipEntry
 import java.util.zip.ZipOutputStream
 import org.scalatest.FreeSpec
 import org.scalatest.prop.PropertyChecks
-import scala.util.Failure
-import scala.util.Success
 
 final class PackageUtilSpec extends FreeSpec with PropertyChecks {
 
@@ -29,7 +27,7 @@ final class PackageUtilSpec extends FreeSpec with PropertyChecks {
       whenever (!zipContents.contains(MetadataJson)) {
         val bytesIn = encodeZip(zipContents)
 
-        val Failure(error) = PackageUtil.extractMetadata(bytesIn)
+        val Left(error) = PackageUtil.extractMetadata(bytesIn)
         assertResult(PackageUtil.MissingEntry(MetadataPath))(error)
         assert(bytesIn.isClosed)
       }
@@ -46,7 +44,7 @@ final class PackageUtilSpec extends FreeSpec with PropertyChecks {
         val contentsWithMetadata = zipContents + (MetadataJson -> metadataBytes)
         val bytesIn = encodeZip(contentsWithMetadata)
 
-        val Failure(PackageUtil.InvalidEntry(path, _)) = PackageUtil.extractMetadata(bytesIn)
+        val Left(PackageUtil.InvalidEntry(path, _)) = PackageUtil.extractMetadata(bytesIn)
         assertResult(MetadataPath)(path)
         assert(bytesIn.isClosed)
       }
@@ -59,19 +57,18 @@ final class PackageUtilSpec extends FreeSpec with PropertyChecks {
       val contentsWithMetadata = zipContents + (MetadataJson -> metadataBytes)
       val bytesIn = encodeZip(contentsWithMetadata)
 
-      val Success(extractedMetadata) = PackageUtil.extractMetadata(bytesIn)
+      val Right(extractedMetadata) = PackageUtil.extractMetadata(bytesIn)
       assertResult(goodMetadata)(extractedMetadata)
       assert(bytesIn.isClosed)
     }
   }
 
-  "extractMetadata() captures unexpected errors with Try" in {
+  "extractMetadata() propagates unexpected errors" in {
     val badInputStream = new InputStream with CloseDetector {
       override def read() = throw new UnsupportedOperationException
     }
 
-    val Failure(error) = PackageUtil.extractMetadata(badInputStream)
-    assert(error.isInstanceOf[UnsupportedOperationException])
+    intercept[UnsupportedOperationException](PackageUtil.extractMetadata(badInputStream))
     assert(badInputStream.isClosed)
   }
 
@@ -82,7 +79,7 @@ final class PackageUtilSpec extends FreeSpec with PropertyChecks {
       assert(bytesOut.isClosed)
 
       val bytesIn = new ByteArrayInputStream(bytesOut.toByteArray)
-      val Success(outputMetadata) = PackageUtil.extractMetadata(bytesIn)
+      val Right(outputMetadata) = PackageUtil.extractMetadata(bytesIn)
       assertResult(inputMetadata)(outputMetadata)
     }
   }

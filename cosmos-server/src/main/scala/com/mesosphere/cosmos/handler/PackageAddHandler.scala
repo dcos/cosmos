@@ -1,5 +1,7 @@
 package com.mesosphere.cosmos.handler
 
+import cats.syntax.either._
+import com.mesosphere.cosmos.InvalidPackage
 import com.mesosphere.cosmos.InvalidPackageVersionForAdd
 import com.mesosphere.cosmos.finch.EndpointHandler
 import com.mesosphere.cosmos.http.RequestSession
@@ -10,7 +12,6 @@ import com.mesosphere.cosmos.storage.installqueue.ProducerView
 import com.mesosphere.cosmos.storage.v1.model.Install
 import com.mesosphere.cosmos.storage.v1.model.UniverseInstall
 import com.mesosphere.universe
-import com.mesosphere.universe.bijection.BijectionUtils
 import com.mesosphere.universe.bijection.UniverseConversions._
 import com.mesosphere.universe.v3.model.Metadata
 import com.mesosphere.universe.v3.syntax.PackageDefinitionOps._
@@ -93,8 +94,8 @@ final class PackageAddHandler(
   }
 
   private[this] def extractPackageMetadata(inputStream: InputStream): Future[Metadata] = {
-    pool(BijectionUtils.scalaTryToTwitterTry(PackageUtil.extractMetadata(inputStream)))
-      .lowerFromTry
+    pool(PackageUtil.extractMetadata(inputStream))
+      .map(_.valueOr(error => throw InvalidPackage(error)))
   }
 
 }

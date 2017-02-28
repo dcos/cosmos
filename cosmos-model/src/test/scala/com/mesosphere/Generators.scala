@@ -153,11 +153,17 @@ object Generators {
       implicitly[Arbitrary[rpc.v1.model.LocalPackage]]
     }
 
+    protected val arbUploadAddRequestShapeless: Arbitrary[rpc.v1.model.UploadAddRequest] = {
+      implicitly[Arbitrary[rpc.v1.model.UploadAddRequest]]
+    }
+
   }
 
   object Implicits extends ShapelessImplicits {
     implicit val arbMetadata: Arbitrary[universe.v3.model.Metadata] = arbMetadataShapeless
     implicit val arbLocalPackage: Arbitrary[rpc.v1.model.LocalPackage] = arbLocalPackageShapeless
+    implicit val arbUploadAddRequest: Arbitrary[rpc.v1.model.UploadAddRequest] =
+      arbUploadAddRequestShapeless
   }
 
 }
