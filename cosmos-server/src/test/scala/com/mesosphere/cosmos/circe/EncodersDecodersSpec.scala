@@ -29,10 +29,8 @@ import io.circe.JsonObject
 import io.circe.ParsingFailure
 import io.circe.jawn
 import io.circe.syntax._
-import io.circe.testing.instances._
 import java.io.InputStreamReader
 import java.util.UUID
-import org.scalacheck.Shapeless._
 import org.scalatest.Assertion
 import org.scalatest.FreeSpec
 import org.scalatest.Matchers

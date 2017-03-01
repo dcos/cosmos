@@ -1,11 +1,13 @@
 package com.mesosphere.cosmos.handler
 
 import com.mesosphere.Generators.Implicits._
+import com.mesosphere.cosmos.InvalidPackage
 import com.mesosphere.cosmos.OperationInProgress
 import com.mesosphere.cosmos.http.MediaType
 import com.mesosphere.cosmos.http.RequestSession
 import com.mesosphere.cosmos.repository.PackageCollection
 import com.mesosphere.cosmos.rpc
+import com.mesosphere.cosmos.rpc.v1.model.UploadAddRequest
 import com.mesosphere.cosmos.storage.ObjectStorage
 import com.mesosphere.cosmos.storage.StagedPackageStorage
 import com.mesosphere.cosmos.storage.installqueue.ProducerView
@@ -16,6 +18,7 @@ import com.mesosphere.universe.MediaTypes
 import com.mesosphere.universe.TestUtil
 import com.mesosphere.universe.v3.syntax.PackageDefinitionOps._
 import com.mesosphere.util.AbsolutePath
+import com.mesosphere.util.PackageUtil
 import com.netaporter.uri.Uri
 import com.twitter.finagle.http.Status
 import com.twitter.util.Await
@@ -24,7 +27,6 @@ import java.io.ByteArrayInputStream
 import java.io.InputStream
 import org.mockito.Matchers._
 import org.mockito.Mockito._
-import org.scalacheck.Shapeless._
 import org.scalatest.Assertion
 import org.scalatest.FreeSpec
 import org.scalatest.mockito.MockitoSugar
@@ -98,19 +100,6 @@ final class PackageAddHandlerSpec extends FreeSpec with MockitoSugar with Proper
         }
       }
 
-      def buildHandler(
-        configureMocks: (PackageCollection, ObjectStorage, ProducerView) => Any
-      ): PackageAddHandler = {
-        val packageCollection = mock[PackageCollection]
-        val stagedObjectStorage = mock[ObjectStorage]
-        val producerView = mock[ProducerView]
-
-        configureMocks(packageCollection, stagedObjectStorage, producerView)
-
-        val stagedPackageStorage = StagedPackageStorage(stagedObjectStorage)
-        new PackageAddHandler(packageCollection, stagedPackageStorage, producerView)
-      }
-
       def assertErrorResponse(
         response: Future[rpc.v1.model.AddResponse],
         expectedCoordinate: rpc.v1.model.PackageCoordinate
@@ -120,6 +109,47 @@ final class PackageAddHandlerSpec extends FreeSpec with MockitoSugar with Proper
         assertResult(expectedCoordinate)(inProgress.coordinate)
       }
 
+    }
+
+    "responds with an error if the package is invalid" in {
+      implicit val session = RequestSession(None, Some(MediaTypes.universeV3Package))
+
+      forAll { (uploadAddRequest: UploadAddRequest) =>
+        val packageIn = new ByteArrayInputStream(uploadAddRequest.packageData)
+        val expectedResult = PackageUtil.extractMetadata(packageIn)
+
+        whenever (expectedResult.isLeft) {
+          val Left(expectedError) = expectedResult
+          val handler = buildHandler { (_, stagedObjectStorage, _) =>
+            when {
+              stagedObjectStorage
+                .write(any[AbsolutePath], any[InputStream], any[Long], any[MediaType])
+            }.thenReturn(Future.Unit)
+
+            val packageFromStorage = new ByteArrayInputStream(uploadAddRequest.packageData)
+            when(stagedObjectStorage.read(any[AbsolutePath])).thenReturn {
+              Future.value(Some((MediaTypes.universeV3Package, packageFromStorage)))
+            }
+          }
+
+          val response = handler(uploadAddRequest)
+          val InvalidPackage(actualError) = intercept[InvalidPackage](Await.result(response))
+          assertResult(expectedError)(actualError)
+        }
+      }
+    }
+
+    def buildHandler(
+      configureMocks: (PackageCollection, ObjectStorage, ProducerView) => Any
+    ): PackageAddHandler = {
+      val packageCollection = mock[PackageCollection]
+      val stagedObjectStorage = mock[ObjectStorage]
+      val producerView = mock[ProducerView]
+
+      configureMocks(packageCollection, stagedObjectStorage, producerView)
+
+      val stagedPackageStorage = StagedPackageStorage(stagedObjectStorage)
+      new PackageAddHandler(packageCollection, stagedPackageStorage, producerView)
     }
 
   }

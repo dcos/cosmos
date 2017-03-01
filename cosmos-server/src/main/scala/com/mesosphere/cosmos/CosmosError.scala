@@ -15,6 +15,7 @@ import com.mesosphere.universe
 import com.mesosphere.universe.common.circe.Encoders._
 import com.mesosphere.universe.v2.circe.Encoders._
 import com.mesosphere.universe.v3.circe.Encoders._
+import com.mesosphere.util.PackageUtil
 import com.netaporter.uri.Uri
 import com.twitter.finagle.http.Status
 import org.jboss.netty.handler.codec.http.HttpMethod
@@ -501,5 +502,9 @@ case class OperationInProgress(coordinate: rpc.v1.model.PackageCoordinate) exten
   override val getData: Option[JsonObject] = {
     Some(JsonObject.singleton("coordinate", coordinate.asJson))
   }
+}
+
+case class InvalidPackage(reason: PackageUtil.PackageError) extends CosmosError(Some(reason)) {
+  override val getData: Option[JsonObject] = Some(reason.getData)
 }
 // scalastyle:on number.of.types
