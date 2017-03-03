@@ -9,7 +9,7 @@ import sbt._
 object CosmosBuild extends Build {
 
   lazy val projectScalaVersion = "2.11.7"
-  lazy val projectVersion = "0.3.0-SNAPSHOT"
+  lazy val projectVersion = "0.4.0-SNAPSHOT"
 
   object V {
     val aws = "1.11.63"
