@@ -20,6 +20,7 @@ import com.mesosphere.universe
 import com.mesosphere.universe.common.circe.Encoders._
 import com.mesosphere.universe.v2.circe.Encoders._
 import com.mesosphere.universe.v3.circe.Encoders._
+import com.mesosphere.util.PackageUtil
 import com.twitter.finagle.http.Fields
 import com.twitter.finagle.http.Status
 import io.circe.DecodingFailure
@@ -313,6 +314,7 @@ object Encoders {
       case NotImplemented(msg) => msg
       case OperationInProgress(coordinate) =>
         s"A change to package ${coordinate.name}-${coordinate.version} is already in progress"
+      case InvalidPackage(underlying) => underlying.getMessage
     }
   }
   // scalastyle:on cyclomatic.complexity method.length

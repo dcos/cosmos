@@ -33,6 +33,8 @@ import com.twitter.finagle.stats.Stat
 import com.twitter.finagle.stats.StatsReceiver
 import com.twitter.io.StreamIO
 import com.twitter.util.Future
+import com.twitter.util.Return
+import com.twitter.util.Throw
 import com.twitter.util.{Try => TwitterTry}
 import io.circe.Decoder
 import io.circe.DecodingFailure
@@ -69,6 +71,7 @@ final class DefaultUniverseClient(
 
   import DefaultUniverseClient._
 
+  private[this] val logger = org.slf4j.LoggerFactory.getLogger(getClass)
   private[this] val stats = statsReceiver.scope("repositoryFetcher")
   private[this] val fetchScope = stats.scope("fetch")
 
@@ -76,7 +79,17 @@ final class DefaultUniverseClient(
 
   def apply(repository: PackageRepository)(implicit session: RequestSession): Future[universe.v3.model.Repository] = {
     adminRouter.getDcosVersion().flatMap { dcosVersion =>
-      apply(repository, dcosVersion.version)
+      apply(repository, dcosVersion.version).respond {
+        case Return(_) =>
+          logger.info(
+            s"Success while fetching Universe state from ($repository, ${dcosVersion.version})"
+          )
+        case Throw(error) =>
+          logger.error(
+            s"Error while fetching Universe state from ($repository, ${dcosVersion.version})",
+            error
+          )
+      }
     }
   }
 

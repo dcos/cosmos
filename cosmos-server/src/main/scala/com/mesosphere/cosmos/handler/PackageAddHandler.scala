@@ -1,9 +1,9 @@
 package com.mesosphere.cosmos.handler
 
+import cats.syntax.either._
+import com.mesosphere.cosmos.InvalidPackage
 import com.mesosphere.cosmos.InvalidPackageVersionForAdd
-import com.mesosphere.cosmos.circe.Decoders.decode
 import com.mesosphere.cosmos.finch.EndpointHandler
-import com.mesosphere.cosmos.http.MediaType
 import com.mesosphere.cosmos.http.RequestSession
 import com.mesosphere.cosmos.repository.PackageCollection
 import com.mesosphere.cosmos.rpc
@@ -13,20 +13,17 @@ import com.mesosphere.cosmos.storage.v1.model.Install
 import com.mesosphere.cosmos.storage.v1.model.UniverseInstall
 import com.mesosphere.universe
 import com.mesosphere.universe.bijection.UniverseConversions._
-import com.mesosphere.universe.v3.circe.Decoders._
 import com.mesosphere.universe.v3.model.Metadata
 import com.mesosphere.universe.v3.syntax.PackageDefinitionOps._
+import com.mesosphere.util.PackageUtil
 import com.twitter.bijection.Conversion.asMethod
 import com.twitter.finagle.http.Status
-import com.twitter.io.StreamIO
 import com.twitter.util.Future
-import com.twitter.util.Try
+import com.twitter.util.FuturePool
 import java.io.ByteArrayInputStream
 import java.io.InputStream
-import java.nio.charset.StandardCharsets
 import java.time.Instant
 import java.util.UUID
-import java.util.zip.ZipInputStream
 
 final class PackageAddHandler(
   packageCollection: PackageCollection,
@@ -35,6 +32,8 @@ final class PackageAddHandler(
 ) extends EndpointHandler[rpc.v1.model.AddRequest, rpc.v1.model.AddResponse](
   successStatus = Status.Accepted
 ) {
+
+  private[this] val pool = FuturePool.interruptibleUnboundedPool
 
   override def apply(request: rpc.v1.model.AddRequest)(implicit
     session: RequestSession
@@ -74,7 +73,8 @@ final class PackageAddHandler(
   ): Future[Option[universe.v3.model.V3Package]] = {
     for {
       // TODO package-add: verify media type
-      stagedPackage <- stagedPackageStorage.read(stagedPackageId)
+      stagedPackageAndMediaType <- stagedPackageStorage.read(stagedPackageId)
+      stagedPackage = stagedPackageAndMediaType.map { case (_, inputStream) => inputStream }
       packageMetadata <- traverse(stagedPackage)(extractPackageMetadata)
     } yield {
       // TODO package-add: Get creation time from storage
@@ -93,24 +93,9 @@ final class PackageAddHandler(
     }
   }
 
-  private[this] def extractPackageMetadata(mediaTypeAndInputStream: (MediaType, InputStream)): Future[Metadata] = {
-    val (_, inputStream) = mediaTypeAndInputStream
-    val packageZip = new ZipInputStream(inputStream)
-    val metadata = Try {
-      // TODO package-add: Factor out common Zip-handling code into utility methods
-      Iterator
-        .continually(Option(packageZip.getNextEntry))
-        .takeWhile(_.isDefined)
-        .flatten
-        // TODO package-add: Test cases for files with unexpected content
-        .filter(_.getName == "metadata.json")
-        .map { _ =>
-          val metadataBytes = StreamIO.buffer(packageZip).toByteArray
-          decode[universe.v3.model.Metadata](new String(metadataBytes, StandardCharsets.UTF_8))
-        }
-        .next()
-    } ensure packageZip.close()
-    Future.const(metadata)
+  private[this] def extractPackageMetadata(inputStream: InputStream): Future[Metadata] = {
+    pool(PackageUtil.extractMetadata(inputStream))
+      .map(_.valueOr(error => throw InvalidPackage(error)))
   }
 
 }
