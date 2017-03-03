@@ -27,7 +27,7 @@
     }
   },
   "required": [
-    "capability"
+    "capabilities"
   ],
   "additionalProperties": false
 }

@@ -767,7 +767,10 @@
   ],
   "additionalProperties": false
 }
-</code></pre></div><div class="tab-pane" id="package_render_post_response"><h2>HTTP status code <a href="http://httpstatus.es/200" target="_blank">200</a></h2><h3>Body</h3><p><strong>Media type</strong>: application/vnd.dcos.package.render-response+json;charset=utf-8;version=v1</p><p><strong>Type</strong>:</p><pre><code>{
+</code></pre><p><strong>Example</strong>:</p><div class="examples"><pre><code>{
+  "packageName": "cassandra",
+  "packageVersion": "1.0.24-3.0.10"
+}</code></pre></div></div><div class="tab-pane" id="package_render_post_response"><h2>HTTP status code <a href="http://httpstatus.es/200" target="_blank">200</a></h2><h3>Body</h3><p><strong>Media type</strong>: application/vnd.dcos.package.render-response+json;charset=utf-8;version=v1</p><p><strong>Type</strong>:</p><pre><code>{
   "$schema": "http://json-schema.org/draft-04/schema#",
   "type": "object",
   "properties": {
@@ -781,7 +784,13 @@
   ],
   "additionalProperties": false
 }
-</code></pre></div></div></div></div></div></div></div><div class="panel panel-white resource-modal"><div class="panel-heading"><h4 class="panel-title"><a class="collapsed" data-toggle="collapse" href="#panel_package_list_versions"><span class="parent">/package</span>/list-versions</a> <span class="methods"><a href="#package_list_versions_post"><span class="badge badge_post">post</span></a></span></h4></div><div id="panel_package_list_versions" class="panel-collapse collapse"><div class="panel-body"><div class="resource-description"><p>List all of the available versions for a given package name.</p></div><div class="list-group"><div onclick="window.location.href = '#package_list_versions_post'" class="list-group-item"><span class="badge badge_post">post</span><div class="method_description"></div><div class="clearfix"></div></div></div></div></div><div class="modal fade" tabindex="0" id="package_list_versions_post"><div class="modal-dialog"><div class="modal-content"><div class="modal-header"><button type="button" class="close" data-dismiss="modal" aria-hidden="true">&times;</button><h4 class="modal-title" id="myModalLabel"><span class="badge badge_post">post</span> <span class="parent">/package</span>/list-versions</h4></div><div class="modal-body"><ul class="nav nav-tabs"><li class="active"><a href="#package_list_versions_post_request" data-toggle="tab">Request</a></li><li><a href="#package_list_versions_post_response" data-toggle="tab">Response</a></li></ul><div class="tab-content"><div class="tab-pane active" id="package_list_versions_post_request"><h3>Headers</h3><ul><li><strong>Accept</strong>: <em>required (application/vnd.dcos.package.list-versions-response+json;charset=utf-8;version=v1)</em></li></ul><h3>Body</h3><p><strong>Media type</strong>: application/vnd.dcos.package.list-versions-request+json;charset=utf-8;version=v1</p><p><strong>Type</strong>:</p><pre><code>{
+</code></pre><p><strong>Example</strong>:</p><div class="examples"><pre><code>{
+  "marathonJson": {
+    "id": "/cassandra",
+    "mem": 500,
+    "cpus": 1
+  }
+}</code></pre></div></div></div></div></div></div></div></div><div class="panel panel-white resource-modal"><div class="panel-heading"><h4 class="panel-title"><a class="collapsed" data-toggle="collapse" href="#panel_package_list_versions"><span class="parent">/package</span>/list-versions</a> <span class="methods"><a href="#package_list_versions_post"><span class="badge badge_post">post</span></a></span></h4></div><div id="panel_package_list_versions" class="panel-collapse collapse"><div class="panel-body"><div class="resource-description"><p>List all of the available versions for a given package name.</p></div><div class="list-group"><div onclick="window.location.href = '#package_list_versions_post'" class="list-group-item"><span class="badge badge_post">post</span><div class="method_description"></div><div class="clearfix"></div></div></div></div></div><div class="modal fade" tabindex="0" id="package_list_versions_post"><div class="modal-dialog"><div class="modal-content"><div class="modal-header"><button type="button" class="close" data-dismiss="modal" aria-hidden="true">&times;</button><h4 class="modal-title" id="myModalLabel"><span class="badge badge_post">post</span> <span class="parent">/package</span>/list-versions</h4></div><div class="modal-body"><ul class="nav nav-tabs"><li class="active"><a href="#package_list_versions_post_request" data-toggle="tab">Request</a></li><li><a href="#package_list_versions_post_response" data-toggle="tab">Response</a></li></ul><div class="tab-content"><div class="tab-pane active" id="package_list_versions_post_request"><h3>Headers</h3><ul><li><strong>Accept</strong>: <em>required (application/vnd.dcos.package.list-versions-response+json;charset=utf-8;version=v1)</em></li></ul><h3>Body</h3><p><strong>Media type</strong>: application/vnd.dcos.package.list-versions-request+json;charset=utf-8;version=v1</p><p><strong>Type</strong>:</p><pre><code>{
   "$schema": "http://json-schema.org/draft-04/schema#",
   "type": "object",
   "properties": {
@@ -798,7 +807,9 @@
   ],
   "additionalProperties": false
 }
-</code></pre></div><div class="tab-pane" id="package_list_versions_post_response"><h2>HTTP status code <a href="http://httpstatus.es/200" target="_blank">200</a></h2><h3>Body</h3><p><strong>Media type</strong>: application/vnd.dcos.package.list-versions-response+json;charset=utf-8;version=v1</p><p><strong>Type</strong>:</p><pre><code>{
+</code></pre><p><strong>Example</strong>:</p><div class="examples"><pre><code>{
+  "packageName": "cassandra"
+}</code></pre></div></div><div class="tab-pane" id="package_list_versions_post_response"><h2>HTTP status code <a href="http://httpstatus.es/200" target="_blank">200</a></h2><h3>Body</h3><p><strong>Media type</strong>: application/vnd.dcos.package.list-versions-response+json;charset=utf-8;version=v1</p><p><strong>Type</strong>:</p><pre><code>{
   "$schema": "http://json-schema.org/draft-04/schema#",
   "type": "object",
   "properties": {
@@ -815,7 +826,12 @@
   ],
   "additionalProperties": false
 }
-</code></pre></div></div></div></div></div></div></div><div class="panel panel-white resource-modal"><div class="panel-heading"><h4 class="panel-title"><a class="collapsed" data-toggle="collapse" href="#panel_package_search"><span class="parent">/package</span>/search</a> <span class="methods"><a href="#package_search_post"><span class="badge badge_post">post</span></a></span></h4></div><div id="panel_package_search" class="panel-collapse collapse"><div class="panel-body"><div class="resource-description"><p>Lists all matching packages in the repository given a partial pattern. The character \&#39;*\&#39; can be used to match any number of characters.</p></div><div class="list-group"><div onclick="window.location.href = '#package_search_post'" class="list-group-item"><span class="badge badge_post">post</span><div class="method_description"></div><div class="clearfix"></div></div></div></div></div><div class="modal fade" tabindex="0" id="package_search_post"><div class="modal-dialog"><div class="modal-content"><div class="modal-header"><button type="button" class="close" data-dismiss="modal" aria-hidden="true">&times;</button><h4 class="modal-title" id="myModalLabel"><span class="badge badge_post">post</span> <span class="parent">/package</span>/search</h4></div><div class="modal-body"><ul class="nav nav-tabs"><li class="active"><a href="#package_search_post_request" data-toggle="tab">Request</a></li><li><a href="#package_search_post_response" data-toggle="tab">Response</a></li></ul><div class="tab-content"><div class="tab-pane active" id="package_search_post_request"><h3>Headers</h3><ul><li><strong>Accept</strong>: <em>required (application/vnd.dcos.package.search-response+json;charset=utf-8;version=v1)</em></li></ul><h3>Body</h3><p><strong>Media type</strong>: application/vnd.dcos.package.search-request+json;charset=utf-8;version=v1</p><p><strong>Type</strong>:</p><pre><code>{
+</code></pre><p><strong>Example</strong>:</p><div class="examples"><pre><code>{
+  "results": {
+    "1.0.24-3.0.10": "24",
+    "1.0.23-3.0.10": "23"
+  }
+}</code></pre></div></div></div></div></div></div></div></div><div class="panel panel-white resource-modal"><div class="panel-heading"><h4 class="panel-title"><a class="collapsed" data-toggle="collapse" href="#panel_package_search"><span class="parent">/package</span>/search</a> <span class="methods"><a href="#package_search_post"><span class="badge badge_post">post</span></a></span></h4></div><div id="panel_package_search" class="panel-collapse collapse"><div class="panel-body"><div class="resource-description"><p>Lists all matching packages in the repository given a partial pattern. The character \&#39;*\&#39; can be used to match any number of characters.</p></div><div class="list-group"><div onclick="window.location.href = '#package_search_post'" class="list-group-item"><span class="badge badge_post">post</span><div class="method_description"></div><div class="clearfix"></div></div></div></div></div><div class="modal fade" tabindex="0" id="package_search_post"><div class="modal-dialog"><div class="modal-content"><div class="modal-header"><button type="button" class="close" data-dismiss="modal" aria-hidden="true">&times;</button><h4 class="modal-title" id="myModalLabel"><span class="badge badge_post">post</span> <span class="parent">/package</span>/search</h4></div><div class="modal-body"><ul class="nav nav-tabs"><li class="active"><a href="#package_search_post_request" data-toggle="tab">Request</a></li><li><a href="#package_search_post_response" data-toggle="tab">Response</a></li></ul><div class="tab-content"><div class="tab-pane active" id="package_search_post_request"><h3>Headers</h3><ul><li><strong>Accept</strong>: <em>required (application/vnd.dcos.package.search-response+json;charset=utf-8;version=v1)</em></li></ul><h3>Body</h3><p><strong>Media type</strong>: application/vnd.dcos.package.search-request+json;charset=utf-8;version=v1</p><p><strong>Type</strong>:</p><pre><code>{
   "$schema": "http://json-schema.org/draft-04/schema#",
   "type": "object",
   "properties": {
@@ -823,10 +839,101 @@
       "type": "string"
     }
   },
-  "required": [],
   "additionalProperties": false
 }
-</code></pre></div><div class="tab-pane" id="package_search_post_response"><h2>HTTP status code <a href="http://httpstatus.es/200" target="_blank">200</a></h2><h3>Body</h3><p><strong>Media type</strong>: application/vnd.dcos.package.search-response+json;charset=utf-8;version=v1</p></div></div></div></div></div></div></div><div class="panel panel-white resource-modal"><div class="panel-heading"><h4 class="panel-title"><a class="collapsed" data-toggle="collapse" href="#panel_package_list"><span class="parent">/package</span>/list</a> <span class="methods"><a href="#package_list_post"><span class="badge badge_post">post</span></a></span></h4></div><div id="panel_package_list" class="panel-collapse collapse"><div class="panel-body"><div class="resource-description"><p>Lists all of the running of the running DC/OS Services started from a DC/OS Package.</p></div><div class="list-group"><div onclick="window.location.href = '#package_list_post'" class="list-group-item"><span class="badge badge_post">post</span><div class="method_description"></div><div class="clearfix"></div></div></div></div></div><div class="modal fade" tabindex="0" id="package_list_post"><div class="modal-dialog"><div class="modal-content"><div class="modal-header"><button type="button" class="close" data-dismiss="modal" aria-hidden="true">&times;</button><h4 class="modal-title" id="myModalLabel"><span class="badge badge_post">post</span> <span class="parent">/package</span>/list</h4></div><div class="modal-body"><ul class="nav nav-tabs"><li class="active"><a href="#package_list_post_request" data-toggle="tab">Request</a></li><li><a href="#package_list_post_response" data-toggle="tab">Response</a></li></ul><div class="tab-content"><div class="tab-pane active" id="package_list_post_request"><h3>Headers</h3><ul><li><strong>Accept</strong>: <em>required (application/vnd.dcos.package.list-response+json;charset=utf-8;version=v1)</em></li></ul><h3>Body</h3><p><strong>Media type</strong>: application/vnd.dcos.package.list-request+json;charset=utf-8;version=v1</p><p><strong>Type</strong>:</p><pre><code>{
+</code></pre><p><strong>Example</strong>:</p><div class="examples"><pre><code>{
+  "query": "database"
+}</code></pre></div></div><div class="tab-pane" id="package_search_post_response"><h2>HTTP status code <a href="http://httpstatus.es/200" target="_blank">200</a></h2><h3>Body</h3><p><strong>Media type</strong>: application/vnd.dcos.package.search-response+json;charset=utf-8;version=v1</p><p><strong>Type</strong>:</p><pre><code>{
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "type": "object",
+  "properties": {
+    "packages": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string"
+          },
+          "currentVersion": {
+            "type": "string"
+          },
+          "description": {
+            "type": "string"
+          },
+          "framework": {
+            "type": "boolean"
+          },
+          "selected": {
+            "type": "boolean"
+          },
+          "images": {
+            "type": "object",
+            "properties": {
+              "icon-small": {
+                "type": "string"
+              },
+              "icon-medium": {
+                "type": "string"
+              },
+              "icon-large": {
+                "type": "string"
+              },
+              "screenshots": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              }
+            },
+            "additionalProperties": false
+          },
+          "tags": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "pattern": "^[^\\s]+$"
+            }
+          },
+          "versions": {
+            "type": "object",
+            "patternProperties": {
+              ".{1,}": { "type": "string" }
+            },
+            "additionalProperties": true
+          }
+        },
+        "required": [
+          "name",
+          "currentVersion",
+          "versions",
+          "description",
+          "framework",
+          "tags"
+        ],
+        "additionalProperties": false
+      }
+    }
+  },
+  "additionalProperties": false
+}
+</code></pre><p><strong>Example</strong>:</p><div class="examples"><pre><code>{
+  "packages": [
+    {
+      "name": "cassandra",
+      "currentVersion": "1.0.24-3.0.10",
+      "versions": {
+        "1.0.24-3.0.10": "24",
+        "1.0.23-3.0.10": "23"
+      },
+      "description": "Apache Cassandra",
+      "framework": true,
+      "tags": [
+        "database"
+      ]
+    }
+  ]
+}</code></pre></div></div></div></div></div></div></div></div><div class="panel panel-white resource-modal"><div class="panel-heading"><h4 class="panel-title"><a class="collapsed" data-toggle="collapse" href="#panel_package_list"><span class="parent">/package</span>/list</a> <span class="methods"><a href="#package_list_post"><span class="badge badge_post">post</span></a></span></h4></div><div id="panel_package_list" class="panel-collapse collapse"><div class="panel-body"><div class="resource-description"><p>Lists all of the running of the running DC/OS Services started from a DC/OS Package.</p></div><div class="list-group"><div onclick="window.location.href = '#package_list_post'" class="list-group-item"><span class="badge badge_post">post</span><div class="method_description"></div><div class="clearfix"></div></div></div></div></div><div class="modal fade" tabindex="0" id="package_list_post"><div class="modal-dialog"><div class="modal-content"><div class="modal-header"><button type="button" class="close" data-dismiss="modal" aria-hidden="true">&times;</button><h4 class="modal-title" id="myModalLabel"><span class="badge badge_post">post</span> <span class="parent">/package</span>/list</h4></div><div class="modal-body"><ul class="nav nav-tabs"><li class="active"><a href="#package_list_post_request" data-toggle="tab">Request</a></li><li><a href="#package_list_post_response" data-toggle="tab">Response</a></li></ul><div class="tab-content"><div class="tab-pane active" id="package_list_post_request"><h3>Headers</h3><ul><li><strong>Accept</strong>: <em>required (application/vnd.dcos.package.list-response+json;charset=utf-8;version=v1)</em></li></ul><h3>Body</h3><p><strong>Media type</strong>: application/vnd.dcos.package.list-request+json;charset=utf-8;version=v1</p><p><strong>Type</strong>:</p><pre><code>{
   "$schema": "http://json-schema.org/draft-04/schema#",
   "type": "object",
   "properties": {
@@ -837,10 +944,9 @@
       "type": "string"
     }
   },
-  "required": [],
   "additionalProperties": false
 }
-</code></pre></div><div class="tab-pane" id="package_list_post_response"><h2>HTTP status code <a href="http://httpstatus.es/200" target="_blank">200</a></h2><h3>Body</h3><p><strong>Media type</strong>: application/vnd.dcos.package.list-response+json;charset=utf-8;version=v1</p><p><strong>Type</strong>:</p><pre><code>{
+</code></pre><p><strong>Example</strong>:</p><div class="examples"><pre><code>{}</code></pre></div></div><div class="tab-pane" id="package_list_post_response"><h2>HTTP status code <a href="http://httpstatus.es/200" target="_blank">200</a></h2><h3>Body</h3><p><strong>Media type</strong>: application/vnd.dcos.package.list-response+json;charset=utf-8;version=v1</p><p><strong>Type</strong>:</p><pre><code>{
   "$schema": "http://json-schema.org/draft-04/schema#",
   "definitions": {
 
@@ -1052,14 +1158,372 @@
   ],
   "additionalProperties": false
 }
-</code></pre></div></div></div></div></div></div></div><div class="panel panel-white resource-modal"><div class="panel-heading"><h4 class="panel-title"><a class="collapsed" data-toggle="collapse" href="#panel_package_add"><span class="parent">/package</span>/add</a> <span class="methods"><a href="#package_add_post"><span class="badge badge_post">post</span></a></span></h4></div><div id="panel_package_add" class="panel-collapse collapse"><div class="panel-body"><div class="resource-description"><p><strong>Experimental.</strong> Adds a DC/OS Package to DC/OS. To add a DC/OS Package from Universe use the content type <em>application/vnd.dcos.package.add-request+json;charset=utf-8;version=v1</em>. To add a package by uploading the file use the content type <em>application/vnd.dcos.universe.package+zip;version=v1</em>.</p></div><div class="list-group"><div onclick="window.location.href = '#package_add_post'" class="list-group-item"><span class="badge badge_post">post</span><div class="method_description"></div><div class="clearfix"></div></div></div></div></div><div class="modal fade" tabindex="0" id="package_add_post"><div class="modal-dialog"><div class="modal-content"><div class="modal-header"><button type="button" class="close" data-dismiss="modal" aria-hidden="true">&times;</button><h4 class="modal-title" id="myModalLabel"><span class="badge badge_post">post</span> <span class="parent">/package</span>/add</h4></div><div class="modal-body"><ul class="nav nav-tabs"><li class="active"><a href="#package_add_post_request" data-toggle="tab">Request</a></li><li><a href="#package_add_post_response" data-toggle="tab">Response</a></li></ul><div class="tab-content"><div class="tab-pane active" id="package_add_post_request"><h3>Headers</h3><ul><li><strong>Accept</strong>: <em>required (application/vnd.dcos.package.add-response+json;charset=utf-8;version=v1)</em></li></ul><h3>Body</h3><p><strong>Media type</strong>: application/vnd.dcos.package.add-request+json;charset=utf-8;version=v1</p><p><strong>Media type</strong>: application/vnd.dcos.universe.package+zip;version=v1</p><p><strong>Type</strong>: object</p></div><div class="tab-pane" id="package_add_post_response"><h2>HTTP status code <a href="http://httpstatus.es/200" target="_blank">200</a></h2><h3>Body</h3><p><strong>Media type</strong>: application/vnd.dcos.package.add-response+json;charset=utf-8;version=v1</p></div></div></div></div></div></div></div><div class="panel panel-white resource-modal"><div class="panel-heading"><h4 class="panel-title"><a class="collapsed" data-toggle="collapse" href="#panel_package_repository_list"><span class="parent">/package/repository</span>/list</a> <span class="methods"><a href="#package_repository_list_post"><span class="badge badge_post">post</span></a></span></h4></div><div id="panel_package_repository_list" class="panel-collapse collapse"><div class="panel-body"><div class="resource-description"><p>List all of the package repository (i.e Universe) used by DC/OS. The order in the list is the order in which packages are found.</p></div><div class="list-group"><div onclick="window.location.href = '#package_repository_list_post'" class="list-group-item"><span class="badge badge_post">post</span><div class="method_description"></div><div class="clearfix"></div></div></div></div></div><div class="modal fade" tabindex="0" id="package_repository_list_post"><div class="modal-dialog"><div class="modal-content"><div class="modal-header"><button type="button" class="close" data-dismiss="modal" aria-hidden="true">&times;</button><h4 class="modal-title" id="myModalLabel"><span class="badge badge_post">post</span> <span class="parent">/package/repository</span>/list</h4></div><div class="modal-body"><ul class="nav nav-tabs"><li class="active"><a href="#package_repository_list_post_request" data-toggle="tab">Request</a></li><li><a href="#package_repository_list_post_response" data-toggle="tab">Response</a></li></ul><div class="tab-content"><div class="tab-pane active" id="package_repository_list_post_request"><h3>Headers</h3><ul><li><strong>Accept</strong>: <em>required (application/vnd.dcos.package.repository.list-response+json;charset=utf-8;version=v1)</em></li></ul><h3>Body</h3><p><strong>Media type</strong>: application/vnd.dcos.package.repository.list-request+json;charset=utf-8;version=v1</p><p><strong>Type</strong>:</p><pre><code>{
+</code></pre><p><strong>Example</strong>:</p><div class="examples"><pre><code>{
+  "packages": [
+    {
+      "appId": "/cassandra",
+      "packageInformation": {
+        "packageDefinition": {
+          "packagingVersion": "3.0",
+          "name": "cassandra",
+          "version": "1.0.24-3.0.10",
+          "maintainer": "support@mesosphere.io",
+          "description": "Apache Cassandra",
+          "tags": [
+            "database"
+          ]
+        }
+      }
+    }
+  ]
+}</code></pre></div></div></div></div></div></div></div></div><div class="panel panel-white resource-modal"><div class="panel-heading"><h4 class="panel-title"><a class="collapsed" data-toggle="collapse" href="#panel_package_add"><span class="parent">/package</span>/add</a> <span class="methods"><a href="#package_add_post"><span class="badge badge_post">post</span></a></span></h4></div><div id="panel_package_add" class="panel-collapse collapse"><div class="panel-body"><div class="resource-description"><p><strong>Experimental.</strong> Adds a DC/OS Package to DC/OS. To add a DC/OS Package from Universe use the content type <em>application/vnd.dcos.package.add-request+json;charset=utf-8;version=v1</em>. To add a package by uploading the file use the content type <em>application/vnd.dcos.universe.package+zip;version=v1</em>.</p></div><div class="list-group"><div onclick="window.location.href = '#package_add_post'" class="list-group-item"><span class="badge badge_post">post</span><div class="method_description"></div><div class="clearfix"></div></div></div></div></div><div class="modal fade" tabindex="0" id="package_add_post"><div class="modal-dialog"><div class="modal-content"><div class="modal-header"><button type="button" class="close" data-dismiss="modal" aria-hidden="true">&times;</button><h4 class="modal-title" id="myModalLabel"><span class="badge badge_post">post</span> <span class="parent">/package</span>/add</h4></div><div class="modal-body"><ul class="nav nav-tabs"><li class="active"><a href="#package_add_post_request" data-toggle="tab">Request</a></li><li><a href="#package_add_post_response" data-toggle="tab">Response</a></li></ul><div class="tab-content"><div class="tab-pane active" id="package_add_post_request"><h3>Headers</h3><ul><li><strong>Accept</strong>: <em>required (application/vnd.dcos.package.add-response+json;charset=utf-8;version=v1)</em></li></ul><h3>Body</h3><p><strong>Media type</strong>: application/vnd.dcos.package.add-request+json;charset=utf-8;version=v1</p><p><strong>Type</strong>:</p><pre><code>{
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "type": "object",
+  "properties": {
+    "packageName": {
+      "type": "string"
+    },
+    "packageVersion": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "packageName"
+  ],
+  "additionalProperties": false
+}
+</code></pre><p><strong>Example</strong>:</p><div class="examples"><pre><code>{
+  "packageName": "cassandra",
+  "packageVersion": "1.0.24-3.0.10"
+}</code></pre></div><p><strong>Media type</strong>: application/vnd.dcos.universe.package+zip;version=v1</p><p><strong>Type</strong>: object</p></div><div class="tab-pane" id="package_add_post_response"><h2>HTTP status code <a href="http://httpstatus.es/200" target="_blank">200</a></h2><h3>Body</h3><p><strong>Media type</strong>: application/vnd.dcos.package.add-response+json;charset=utf-8;version=v1</p><p><strong>Type</strong>:</p><pre><code>{
+  "$schema": "http://json-schema.org/draft-04/schema#",
+
+  "definitions": {
+
+
+    "dcosReleaseVersion": {
+      "type": "string",
+      "pattern": "^(?:0|[1-9][0-9]*)(?:\\.(?:0|[1-9][0-9]*))*$"
+    },
+
+    "url": {
+      "type": "string",
+      "allOf": [
+        { "format": "uri" },
+        { "pattern": "^https?://" }
+      ]
+    },
+
+    "base64String": {
+      "type": "string",
+      "pattern": "^([A-Za-z0-9+/]{4})*([A-Za-z0-9+/]{4}|[A-Za-z0-9+/]{3}=|[A-Za-z0-9+/]{2}==)$"
+    },
+
+    "cliInfo": {
+      "additionalProperties": false,
+      "properties": {
+        "contentHash": {
+          "items": {
+            "$ref": "#/definitions/hash"
+          },
+          "minItems": 1,
+          "type": "array"
+        },
+        "kind": {
+          "enum": [
+            "executable",
+            "zip"
+          ],
+          "type": "string"
+        },
+        "url": {
+          "$ref": "#/definitions/url"
+        }
+      },
+      "required": [
+        "url",
+        "kind",
+        "contentHash"
+      ],
+      "type": "object"
+    },
+
+    "hash": {
+      "additionalProperties": false,
+      "properties": {
+        "algo": {
+          "enum": [
+            "sha256"
+          ],
+          "type": "string"
+        },
+        "value": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "algo",
+        "value"
+      ],
+      "type": "object"
+    },
+
+
+    "marathon": {
+      "type": "object",
+      "properties": {
+        "v2AppMustacheTemplate": {
+          "$ref": "#/definitions/base64String"
+        }
+      },
+      "required": [ "v2AppMustacheTemplate" ],
+      "additionalProperties": false
+    },
+
+
+
+    "resource": {
+      "additionalProperties": false,
+      "type": "object",
+      "properties": {
+        "assets": {
+          "type": "object",
+          "properties": {
+            "uris": {
+              "type": "object",
+              "additionalProperties": {
+                "type": "string"
+              }
+            },
+            "container": {
+              "type": "object",
+              "properties": {
+                "docker": {
+                  "type": "object",
+                  "additionalProperties": {
+                    "type": "string"
+                  }
+                }
+              },
+              "additionalProperties": false
+            }
+          },
+          "additionalProperties": false
+        },
+        "cli": {
+          "additionalProperties": false,
+          "properties": {
+            "binaries": {
+              "additionalProperties": false,
+              "minProperties": 1,
+              "properties": {
+                "darwin": {
+                  "additionalProperties": false,
+                  "properties": {
+                    "x86-64": {
+                      "$ref": "#/definitions/cliInfo"
+                    }
+                  },
+                  "required": [
+                    "x86-64"
+                  ],
+                  "type": "object"
+                },
+                "linux": {
+                  "additionalProperties": false,
+                  "properties": {
+                    "x86-64": {
+                      "$ref": "#/definitions/cliInfo"
+                    }
+                  },
+                  "required": [
+                    "x86-64"
+                  ],
+                  "type": "object"
+                },
+                "windows": {
+                  "additionalProperties": false,
+                  "properties": {
+                    "x86-64": {
+                      "$ref": "#/definitions/cliInfo"
+                    }
+                  },
+                  "required": [
+                    "x86-64"
+                  ],
+                  "type": "object"
+                }
+              },
+              "type": "object"
+            }
+          },
+          "required": [
+            "binaries"
+          ],
+          "type": "object"
+        },
+        "images": {
+          "type": "object",
+          "properties": {
+            "icon-small": {
+              "type": "string"
+            },
+            "icon-medium": {
+              "type": "string"
+            },
+            "icon-large": {
+              "type": "string"
+            },
+            "screenshots": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            }
+          },
+          "additionalProperties": false
+        }
+      }
+    },
+
+
+    "config": {
+      "$ref": "http://json-schema.org/draft-04/schema#"
+    },
+
+
+    "command": {
+      "additionalProperties": false,
+      "required": ["pip"],
+      "properties": {
+        "pip": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
+      }
+    }
+
+  },
+
+  "type": "object",
+  "properties": {
+    "packagingVersion": {
+      "type": "string",
+      "enum": ["3.0"]
+    },
+    "name": {
+      "type": "string"
+    },
+    "version": {
+      "type": "string"
+    },
+    "releaseVersion": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "scm": {
+      "type": "string"
+    },
+    "maintainer": {
+      "type": "string"
+    },
+    "website": {
+      "type": "string"
+    },
+    "description": {
+      "type": "string"
+    },
+    "framework": {
+      "type": "boolean",
+      "default": false
+    },
+    "preInstallNotes": {
+      "type": "string"
+    },
+    "postInstallNotes": {
+      "type": "string"
+    },
+    "postUninstallNotes": {
+      "type": "string"
+    },
+    "tags": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "pattern": "^[^\\s]+$"
+      }
+    },
+    "selected": {
+      "type": "boolean",
+      "default": false
+    },
+    "licenses": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string"
+          },
+          "url": {
+            "$ref": "#/definitions/url"
+          }
+        },
+        "additionalProperties": false,
+        "required": [
+          "name",
+          "url"
+        ]
+      }
+    },
+    "minDcosReleaseVersion": {
+      "$ref": "#/definitions/dcosReleaseVersion"
+    },
+    "marathon": {
+      "$ref": "#/definitions/marathon"
+    },
+    "resource": {
+      "$ref": "#/definitions/resource"
+    },
+    "config": {
+      "$ref": "#/definitions/config"
+    },
+    "command": {
+      "$ref": "#/definitions/command"
+    }
+  },
+  "required": [
+    "packagingVersion",
+    "name",
+    "version",
+    "releaseVersion",
+    "maintainer",
+    "description",
+    "tags"
+  ],
+  "additionalProperties": false
+}
+</code></pre><p><strong>Example</strong>:</p><div class="examples"><pre><code>{
+  "name": "cassandra",
+  "version": "1.0.24-3.0.10",
+  "packagingVersion": "3.0",
+  "releaseVersion": 24,
+  "maintainer": "support@mesospher.io",
+  "description": "Apache Cassandra running on DC/OS",
+  "tags": [
+    "data",
+    "database",
+    "nosql"
+  ]
+}</code></pre></div></div></div></div></div></div></div></div><div class="panel panel-white resource-modal"><div class="panel-heading"><h4 class="panel-title"><a class="collapsed" data-toggle="collapse" href="#panel_package_repository_list"><span class="parent">/package/repository</span>/list</a> <span class="methods"><a href="#package_repository_list_post"><span class="badge badge_post">post</span></a></span></h4></div><div id="panel_package_repository_list" class="panel-collapse collapse"><div class="panel-body"><div class="resource-description"><p>List all of the package repository (i.e Universe) used by DC/OS. The order in the list is the order in which packages are found.</p></div><div class="list-group"><div onclick="window.location.href = '#package_repository_list_post'" class="list-group-item"><span class="badge badge_post">post</span><div class="method_description"></div><div class="clearfix"></div></div></div></div></div><div class="modal fade" tabindex="0" id="package_repository_list_post"><div class="modal-dialog"><div class="modal-content"><div class="modal-header"><button type="button" class="close" data-dismiss="modal" aria-hidden="true">&times;</button><h4 class="modal-title" id="myModalLabel"><span class="badge badge_post">post</span> <span class="parent">/package/repository</span>/list</h4></div><div class="modal-body"><ul class="nav nav-tabs"><li class="active"><a href="#package_repository_list_post_request" data-toggle="tab">Request</a></li><li><a href="#package_repository_list_post_response" data-toggle="tab">Response</a></li></ul><div class="tab-content"><div class="tab-pane active" id="package_repository_list_post_request"><h3>Headers</h3><ul><li><strong>Accept</strong>: <em>required (application/vnd.dcos.package.repository.list-response+json;charset=utf-8;version=v1)</em></li></ul><h3>Body</h3><p><strong>Media type</strong>: application/vnd.dcos.package.repository.list-request+json;charset=utf-8;version=v1</p><p><strong>Type</strong>:</p><pre><code>{
   "$schema": "http://json-schema.org/draft-04/schema#",
   "type": "object",
   "properties": {},
-  "required": [],
   "additionalProperties": false
 }
-</code></pre></div><div class="tab-pane" id="package_repository_list_post_response"><h2>HTTP status code <a href="http://httpstatus.es/200" target="_blank">200</a></h2><h3>Body</h3><p><strong>Media type</strong>: application/vnd.dcos.package.repository.list-response+json;charset=utf-8;version=v1</p><p><strong>Type</strong>:</p><pre><code>{
+</code></pre><p><strong>Example</strong>:</p><div class="examples"><pre><code>{}</code></pre></div></div><div class="tab-pane" id="package_repository_list_post_response"><h2>HTTP status code <a href="http://httpstatus.es/200" target="_blank">200</a></h2><h3>Body</h3><p><strong>Media type</strong>: application/vnd.dcos.package.repository.list-response+json;charset=utf-8;version=v1</p><p><strong>Type</strong>:</p><pre><code>{
   "$schema": "http://json-schema.org/draft-04/schema#",
   "definitions": {
 
@@ -1103,7 +1567,14 @@
   ],
   "additionalProperties": false
 }
-</code></pre></div></div></div></div></div></div></div><div class="panel panel-white resource-modal"><div class="panel-heading"><h4 class="panel-title"><a class="collapsed" data-toggle="collapse" href="#panel_package_repository_add"><span class="parent">/package/repository</span>/add</a> <span class="methods"><a href="#package_repository_add_post"><span class="badge badge_post">post</span></a></span></h4></div><div id="panel_package_repository_add" class="panel-collapse collapse"><div class="panel-body"><div class="resource-description"><p>Adds a package repository (i.e. Universe) for use by DC/OS. To add a package repository to the beginning of list set the index to zero (0). To add a package repository to the end of the list do not specify an index.</p></div><div class="list-group"><div onclick="window.location.href = '#package_repository_add_post'" class="list-group-item"><span class="badge badge_post">post</span><div class="method_description"></div><div class="clearfix"></div></div></div></div></div><div class="modal fade" tabindex="0" id="package_repository_add_post"><div class="modal-dialog"><div class="modal-content"><div class="modal-header"><button type="button" class="close" data-dismiss="modal" aria-hidden="true">&times;</button><h4 class="modal-title" id="myModalLabel"><span class="badge badge_post">post</span> <span class="parent">/package/repository</span>/add</h4></div><div class="modal-body"><ul class="nav nav-tabs"><li class="active"><a href="#package_repository_add_post_request" data-toggle="tab">Request</a></li><li><a href="#package_repository_add_post_response" data-toggle="tab">Response</a></li></ul><div class="tab-content"><div class="tab-pane active" id="package_repository_add_post_request"><h3>Headers</h3><ul><li><strong>Accept</strong>: <em>required (application/vnd.dcos.package.repository.add-response+json;charset=utf-8;version=v1)</em></li></ul><h3>Body</h3><p><strong>Media type</strong>: application/vnd.dcos.package.repository.add-request+json;charset=utf-8;version=v1</p><p><strong>Type</strong>:</p><pre><code>{
+</code></pre><p><strong>Example</strong>:</p><div class="examples"><pre><code>{
+  "repositories": [
+    {
+      "name": "Universe",
+      "uri": "https://universe.mesosphere.com/repo"
+    }
+  ]
+}</code></pre></div></div></div></div></div></div></div></div><div class="panel panel-white resource-modal"><div class="panel-heading"><h4 class="panel-title"><a class="collapsed" data-toggle="collapse" href="#panel_package_repository_add"><span class="parent">/package/repository</span>/add</a> <span class="methods"><a href="#package_repository_add_post"><span class="badge badge_post">post</span></a></span></h4></div><div id="panel_package_repository_add" class="panel-collapse collapse"><div class="panel-body"><div class="resource-description"><p>Adds a package repository (i.e. Universe) for use by DC/OS. To add a package repository to the beginning of list set the index to zero (0). To add a package repository to the end of the list do not specify an index.</p></div><div class="list-group"><div onclick="window.location.href = '#package_repository_add_post'" class="list-group-item"><span class="badge badge_post">post</span><div class="method_description"></div><div class="clearfix"></div></div></div></div></div><div class="modal fade" tabindex="0" id="package_repository_add_post"><div class="modal-dialog"><div class="modal-content"><div class="modal-header"><button type="button" class="close" data-dismiss="modal" aria-hidden="true">&times;</button><h4 class="modal-title" id="myModalLabel"><span class="badge badge_post">post</span> <span class="parent">/package/repository</span>/add</h4></div><div class="modal-body"><ul class="nav nav-tabs"><li class="active"><a href="#package_repository_add_post_request" data-toggle="tab">Request</a></li><li><a href="#package_repository_add_post_response" data-toggle="tab">Response</a></li></ul><div class="tab-content"><div class="tab-pane active" id="package_repository_add_post_request"><h3>Headers</h3><ul><li><strong>Accept</strong>: <em>required (application/vnd.dcos.package.repository.add-response+json;charset=utf-8;version=v1)</em></li></ul><h3>Body</h3><p><strong>Media type</strong>: application/vnd.dcos.package.repository.add-request+json;charset=utf-8;version=v1</p><p><strong>Type</strong>:</p><pre><code>{
   "$schema": "http://json-schema.org/draft-04/schema#",
   "definitions": {
 
@@ -1136,7 +1607,10 @@
   ],
   "additionalProperties": false
 }
-</code></pre></div><div class="tab-pane" id="package_repository_add_post_response"><h2>HTTP status code <a href="http://httpstatus.es/200" target="_blank">200</a></h2><h3>Body</h3><p><strong>Media type</strong>: application/vnd.dcos.package.repository.add-response+json;charset=utf-8;version=v1</p><p><strong>Type</strong>:</p><pre><code>{
+</code></pre><p><strong>Example</strong>:</p><div class="examples"><pre><code>{
+  "name": "Local Universe",
+  "uri": "http://universe.marathon.mesos:8080/repo"
+}</code></pre></div></div><div class="tab-pane" id="package_repository_add_post_response"><h2>HTTP status code <a href="http://httpstatus.es/200" target="_blank">200</a></h2><h3>Body</h3><p><strong>Media type</strong>: application/vnd.dcos.package.repository.add-response+json;charset=utf-8;version=v1</p><p><strong>Type</strong>:</p><pre><code>{
   "$schema": "http://json-schema.org/draft-04/schema#",
   "definitions": {
 
@@ -1180,7 +1654,18 @@
   ],
   "additionalProperties": false
 }
-</code></pre></div></div></div></div></div></div></div><div class="panel panel-white resource-modal"><div class="panel-heading"><h4 class="panel-title"><a class="collapsed" data-toggle="collapse" href="#panel_package_repository_delete"><span class="parent">/package/repository</span>/delete</a> <span class="methods"><a href="#package_repository_delete_post"><span class="badge badge_post">post</span></a></span></h4></div><div id="panel_package_repository_delete" class="panel-collapse collapse"><div class="panel-body"><div class="resource-description"><p>Deletes a package repository (i.e. Universe) from DC/OS.</p></div><div class="list-group"><div onclick="window.location.href = '#package_repository_delete_post'" class="list-group-item"><span class="badge badge_post">post</span><div class="method_description"></div><div class="clearfix"></div></div></div></div></div><div class="modal fade" tabindex="0" id="package_repository_delete_post"><div class="modal-dialog"><div class="modal-content"><div class="modal-header"><button type="button" class="close" data-dismiss="modal" aria-hidden="true">&times;</button><h4 class="modal-title" id="myModalLabel"><span class="badge badge_post">post</span> <span class="parent">/package/repository</span>/delete</h4></div><div class="modal-body"><ul class="nav nav-tabs"><li class="active"><a href="#package_repository_delete_post_request" data-toggle="tab">Request</a></li><li><a href="#package_repository_delete_post_response" data-toggle="tab">Response</a></li></ul><div class="tab-content"><div class="tab-pane active" id="package_repository_delete_post_request"><h3>Headers</h3><ul><li><strong>Accept</strong>: <em>required (application/vnd.dcos.package.repository.delete-response+json;charset=utf-8;version=v1)</em></li></ul><h3>Body</h3><p><strong>Media type</strong>: application/vnd.dcos.package.repository.delete-request+json;charset=utf-8;version=v1</p><p><strong>Type</strong>:</p><pre><code>{
+</code></pre><p><strong>Example</strong>:</p><div class="examples"><pre><code>{
+  "repositories": [
+    {
+      "name": "Universe",
+      "uri": "https://universe.mesosphere.com/repo"
+    },
+    {
+      "name": "Local Universe",
+      "uri": "http://universe.marathon.mesos:8080/repo"
+    }
+  ]
+}</code></pre></div></div></div></div></div></div></div></div><div class="panel panel-white resource-modal"><div class="panel-heading"><h4 class="panel-title"><a class="collapsed" data-toggle="collapse" href="#panel_package_repository_delete"><span class="parent">/package/repository</span>/delete</a> <span class="methods"><a href="#package_repository_delete_post"><span class="badge badge_post">post</span></a></span></h4></div><div id="panel_package_repository_delete" class="panel-collapse collapse"><div class="panel-body"><div class="resource-description"><p>Deletes a package repository (i.e. Universe) from DC/OS.</p></div><div class="list-group"><div onclick="window.location.href = '#package_repository_delete_post'" class="list-group-item"><span class="badge badge_post">post</span><div class="method_description"></div><div class="clearfix"></div></div></div></div></div><div class="modal fade" tabindex="0" id="package_repository_delete_post"><div class="modal-dialog"><div class="modal-content"><div class="modal-header"><button type="button" class="close" data-dismiss="modal" aria-hidden="true">&times;</button><h4 class="modal-title" id="myModalLabel"><span class="badge badge_post">post</span> <span class="parent">/package/repository</span>/delete</h4></div><div class="modal-body"><ul class="nav nav-tabs"><li class="active"><a href="#package_repository_delete_post_request" data-toggle="tab">Request</a></li><li><a href="#package_repository_delete_post_response" data-toggle="tab">Response</a></li></ul><div class="tab-content"><div class="tab-pane active" id="package_repository_delete_post_request"><h3>Headers</h3><ul><li><strong>Accept</strong>: <em>required (application/vnd.dcos.package.repository.delete-response+json;charset=utf-8;version=v1)</em></li></ul><h3>Body</h3><p><strong>Media type</strong>: application/vnd.dcos.package.repository.delete-request+json;charset=utf-8;version=v1</p><p><strong>Type</strong>:</p><pre><code>{
   "$schema": "http://json-schema.org/draft-04/schema#",
   "definitions": {
 
@@ -1203,10 +1688,11 @@
       "$ref": "#/definitions/httpUri"
     }
   },
-  "required": [],
   "additionalProperties": false
 }
-</code></pre></div><div class="tab-pane" id="package_repository_delete_post_response"><h2>HTTP status code <a href="http://httpstatus.es/200" target="_blank">200</a></h2><h3>Body</h3><p><strong>Media type</strong>: application/vnd.dcos.package.repository.delete-response+json;charset=utf-8;version=v1</p><p><strong>Type</strong>:</p><pre><code>{
+</code></pre><p><strong>Example</strong>:</p><div class="examples"><pre><code>{
+  "name": "Local Universe"
+}</code></pre></div></div><div class="tab-pane" id="package_repository_delete_post_response"><h2>HTTP status code <a href="http://httpstatus.es/200" target="_blank">200</a></h2><h3>Body</h3><p><strong>Media type</strong>: application/vnd.dcos.package.repository.delete-response+json;charset=utf-8;version=v1</p><p><strong>Type</strong>:</p><pre><code>{
   "$schema": "http://json-schema.org/draft-04/schema#",
   "definitions": {
 
@@ -1250,7 +1736,14 @@
   ],
   "additionalProperties": false
 }
-</code></pre></div></div></div></div></div></div></div></div></div></div><div class="panel panel-default"><div class="panel-heading"><h3 id="capabilities" class="panel-title">/capabilities</h3></div><div class="panel-body"><div class="top-resource-description"><p>List all of the capabilities supported by this DC/OS.</p></div><div class="panel-group"><div class="panel panel-white resource-modal"><div class="panel-heading"><h4 class="panel-title"><a class="collapsed" data-toggle="collapse" href="#panel_capabilities"><span class="parent"></span>/capabilities</a> <span class="methods"><a href="#capabilities_get"><span class="badge badge_get">get</span></a></span></h4></div><div id="panel_capabilities" class="panel-collapse collapse"><div class="panel-body"><div class="list-group"><div onclick="window.location.href = '#capabilities_get'" class="list-group-item"><span class="badge badge_get">get</span><div class="method_description"></div><div class="clearfix"></div></div></div></div></div><div class="modal fade" tabindex="0" id="capabilities_get"><div class="modal-dialog"><div class="modal-content"><div class="modal-header"><button type="button" class="close" data-dismiss="modal" aria-hidden="true">&times;</button><h4 class="modal-title" id="myModalLabel"><span class="badge badge_get">get</span> <span class="parent"></span>/capabilities</h4></div><div class="modal-body"><ul class="nav nav-tabs"><li class="active"><a href="#capabilities_get_request" data-toggle="tab">Request</a></li><li><a href="#capabilities_get_response" data-toggle="tab">Response</a></li></ul><div class="tab-content"><div class="tab-pane active" id="capabilities_get_request"><h3>Headers</h3><ul><li><strong>Accept</strong>: <em>required (application/vnd.dcos.capabilities+json;charset=utf-8;version=v1)</em></li></ul></div><div class="tab-pane" id="capabilities_get_response"><h2>HTTP status code <a href="http://httpstatus.es/200" target="_blank">200</a></h2><h3>Body</h3><p><strong>Media type</strong>: application/vnd.dcos.capabilities+json;charset=utf-8;version=v1</p><p><strong>Type</strong>:</p><pre><code>{
+</code></pre><p><strong>Example</strong>:</p><div class="examples"><pre><code>{
+  "repositories": [
+    {
+      "name": "Universe",
+      "uri": "https://universe.mesosphere.com/repo"
+    }
+  ]
+}</code></pre></div></div></div></div></div></div></div></div></div></div></div><div class="panel panel-default"><div class="panel-heading"><h3 id="capabilities" class="panel-title">/capabilities</h3></div><div class="panel-body"><div class="top-resource-description"><p>List all of the capabilities supported by this DC/OS.</p></div><div class="panel-group"><div class="panel panel-white resource-modal"><div class="panel-heading"><h4 class="panel-title"><a class="collapsed" data-toggle="collapse" href="#panel_capabilities"><span class="parent"></span>/capabilities</a> <span class="methods"><a href="#capabilities_get"><span class="badge badge_get">get</span></a></span></h4></div><div id="panel_capabilities" class="panel-collapse collapse"><div class="panel-body"><div class="list-group"><div onclick="window.location.href = '#capabilities_get'" class="list-group-item"><span class="badge badge_get">get</span><div class="method_description"></div><div class="clearfix"></div></div></div></div></div><div class="modal fade" tabindex="0" id="capabilities_get"><div class="modal-dialog"><div class="modal-content"><div class="modal-header"><button type="button" class="close" data-dismiss="modal" aria-hidden="true">&times;</button><h4 class="modal-title" id="myModalLabel"><span class="badge badge_get">get</span> <span class="parent"></span>/capabilities</h4></div><div class="modal-body"><ul class="nav nav-tabs"><li class="active"><a href="#capabilities_get_request" data-toggle="tab">Request</a></li><li><a href="#capabilities_get_response" data-toggle="tab">Response</a></li></ul><div class="tab-content"><div class="tab-pane active" id="capabilities_get_request"><h3>Headers</h3><ul><li><strong>Accept</strong>: <em>required (application/vnd.dcos.capabilities+json;charset=utf-8;version=v1)</em></li></ul></div><div class="tab-pane" id="capabilities_get_response"><h2>HTTP status code <a href="http://httpstatus.es/200" target="_blank">200</a></h2><h3>Body</h3><p><strong>Media type</strong>: application/vnd.dcos.capabilities+json;charset=utf-8;version=v1</p><p><strong>Type</strong>:</p><pre><code>{
   "$schema": "http://json-schema.org/draft-04/schema#",
   "definitions": {
 
@@ -1279,8 +1772,70 @@
     }
   },
   "required": [
-    "capability"
+    "capabilities"
   ],
   "additionalProperties": false
 }
-</code></pre></div></div></div></div></div></div></div></div></div></div><div class="panel panel-default"><div class="panel-heading"><h3 id="service" class="panel-title">/service</h3></div><div class="panel-body"><div class="panel-group"><div class="panel panel-white resource-modal"><div class="panel-heading"><h4 class="panel-title"><a class="collapsed" data-toggle="collapse" href="#panel_service_start"><span class="parent">/service</span>/start</a> <span class="methods"><a href="#service_start_post"><span class="badge badge_post">post</span></a></span></h4></div><div id="panel_service_start" class="panel-collapse collapse"><div class="panel-body"><div class="resource-description"><p><strong>Experimental.</strong> Starts a DC/OS Service from a DC/OS Package.</p></div><div class="list-group"><div onclick="window.location.href = '#service_start_post'" class="list-group-item"><span class="badge badge_post">post</span><div class="method_description"></div><div class="clearfix"></div></div></div></div></div><div class="modal fade" tabindex="0" id="service_start_post"><div class="modal-dialog"><div class="modal-content"><div class="modal-header"><button type="button" class="close" data-dismiss="modal" aria-hidden="true">&times;</button><h4 class="modal-title" id="myModalLabel"><span class="badge badge_post">post</span> <span class="parent">/service</span>/start</h4></div><div class="modal-body"><ul class="nav nav-tabs"><li class="active"><a href="#service_start_post_request" data-toggle="tab">Request</a></li><li><a href="#service_start_post_response" data-toggle="tab">Response</a></li></ul><div class="tab-content"><div class="tab-pane active" id="service_start_post_request"><h3>Headers</h3><ul><li><strong>Accept</strong>: <em>required (application/vnd.dcos.sevice.start-response+json;charset=utf-8;version=v1)</em></li></ul><h3>Body</h3><p><strong>Media type</strong>: application/vnd.dcos.sevice.start-request+json;charset=utf-8;version=v1</p></div><div class="tab-pane" id="service_start_post_response"><h2>HTTP status code <a href="http://httpstatus.es/200" target="_blank">200</a></h2><h3>Body</h3><p><strong>Media type</strong>: application/vnd.dcos.sevice.start-response+json;charset=utf-8;version=v1</p></div></div></div></div></div></div></div></div></div></div></div><div class="col-md-3"><div id="sidebar" class="hidden-print affix" role="complementary"><ul class="nav nav-pills nav-stacked"><li><a href="#package">/package</a></li><li><a href="#capabilities">/capabilities</a></li><li><a href="#service">/service</a></li></ul></div></div></div></div></body></html>
+</code></pre><p><strong>Example</strong>:</p><div class="examples"><pre><code>{
+  "capabilities": [
+    {
+      "name": "PACKAGE_MANAGEMENT"
+    },
+    {
+      "name": "SUPPORT_CLUSTER_REPORT"
+    },
+    {
+      "name": "METRONOME"
+    },
+    {
+      "name": "LOGGING"
+    }
+  ]
+}</code></pre></div></div></div></div></div></div></div></div></div></div></div><div class="panel panel-default"><div class="panel-heading"><h3 id="service" class="panel-title">/service</h3></div><div class="panel-body"><div class="panel-group"><div class="panel panel-white resource-modal"><div class="panel-heading"><h4 class="panel-title"><a class="collapsed" data-toggle="collapse" href="#panel_service_start"><span class="parent">/service</span>/start</a> <span class="methods"><a href="#service_start_post"><span class="badge badge_post">post</span></a></span></h4></div><div id="panel_service_start" class="panel-collapse collapse"><div class="panel-body"><div class="resource-description"><p><strong>Experimental.</strong> Starts a DC/OS Service from a DC/OS Package.</p></div><div class="list-group"><div onclick="window.location.href = '#service_start_post'" class="list-group-item"><span class="badge badge_post">post</span><div class="method_description"></div><div class="clearfix"></div></div></div></div></div><div class="modal fade" tabindex="0" id="service_start_post"><div class="modal-dialog"><div class="modal-content"><div class="modal-header"><button type="button" class="close" data-dismiss="modal" aria-hidden="true">&times;</button><h4 class="modal-title" id="myModalLabel"><span class="badge badge_post">post</span> <span class="parent">/service</span>/start</h4></div><div class="modal-body"><ul class="nav nav-tabs"><li class="active"><a href="#service_start_post_request" data-toggle="tab">Request</a></li><li><a href="#service_start_post_response" data-toggle="tab">Response</a></li></ul><div class="tab-content"><div class="tab-pane active" id="service_start_post_request"><h3>Headers</h3><ul><li><strong>Accept</strong>: <em>required (application/vnd.dcos.sevice.start-response+json;charset=utf-8;version=v1)</em></li></ul><h3>Body</h3><p><strong>Media type</strong>: application/vnd.dcos.sevice.start-request+json;charset=utf-8;version=v1</p><p><strong>Type</strong>:</p><pre><code>{
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "type": "object",
+  "properties": {
+    "packageName": {
+      "type": "string"
+    },
+    "packageVersion": {
+      "type": "string"
+    },
+    "options": {
+      "type": "object",
+      "additionalProperties": true
+    }
+  },
+  "required": [
+    "packageName"
+  ],
+  "additionalProperties": false
+}
+</code></pre><p><strong>Example</strong>:</p><div class="examples"><pre><code>{
+  "packageName": "cassandra",
+  "packageVersion": "1.0.24-3.0.10"
+}</code></pre></div></div><div class="tab-pane" id="service_start_post_response"><h2>HTTP status code <a href="http://httpstatus.es/200" target="_blank">200</a></h2><h3>Body</h3><p><strong>Media type</strong>: application/vnd.dcos.sevice.start-response+json;charset=utf-8;version=v1</p><p><strong>Type</strong>:</p><pre><code>{
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "type": "object",
+  "properties": {
+    "packageName": {
+      "type": "string"
+    },
+    "packageVersion": {
+      "type": "string"
+    },
+    "appId": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "packageName",
+    "packageVersion"
+  ],
+  "additionalProperties": false
+}
+</code></pre><p><strong>Example</strong>:</p><div class="examples"><pre><code>{
+  "packageName": "cassandra",
+  "packageVersion": "1.0.24-3.0.10",
+  "appId": "/cassandra"
+}</code></pre></div></div></div></div></div></div></div></div></div></div></div></div><div class="col-md-3"><div id="sidebar" class="hidden-print affix" role="complementary"><ul class="nav nav-pills nav-stacked"><li><a href="#package">/package</a></li><li><a href="#capabilities">/capabilities</a></li><li><a href="#service">/service</a></li></ul></div></div></div></div></body></html>

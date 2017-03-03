@@ -85,11 +85,19 @@ title: DC/OS Package and Service
       body:
         application/vnd.dcos.package.render-request+json;charset=utf-8;version=v1:
           type: !include ../../../../../../../../cosmos-model/src/main/resources/com/mesosphere/cosmos/rpc/v1/model/RenderRequest-schema.json
+          example:
+            packageName: cassandra
+            packageVersion: 1.0.24-3.0.10
       responses:
         200:
           body:
             application/vnd.dcos.package.render-response+json;charset=utf-8;version=v1:
               type: !include ../../../../../../../../cosmos-model/src/main/resources/com/mesosphere/cosmos/rpc/v1/model/RenderResponse-schema.json
+              example:
+                marathonJson:
+                  id: /cassandra
+                  mem: 500.0
+                  cpus: 1.0
   /list-versions:
     description: |
       List all of the available versions for a given package name.
@@ -100,11 +108,17 @@ title: DC/OS Package and Service
       body:
         application/vnd.dcos.package.list-versions-request+json;charset=utf-8;version=v1:
           type: !include ../../../../../../../../cosmos-model/src/main/resources/com/mesosphere/cosmos/rpc/v1/model/ListVersionsRequest-schema.json
+          example:
+            packageName: cassandra
       responses:
         200:
           body:
             application/vnd.dcos.package.list-versions-response+json;charset=utf-8;version=v1:
               type: !include ../../../../../../../../cosmos-model/src/main/resources/com/mesosphere/cosmos/rpc/v1/model/ListVersionsResponse-schema.json
+              example:
+                results:
+                  1.0.24-3.0.10: "24"
+                  1.0.23-3.0.10: "23"
   /search:
     description: |
       Lists all matching packages in the repository given a partial pattern. The character \'*\'
@@ -116,11 +130,24 @@ title: DC/OS Package and Service
       body:
         application/vnd.dcos.package.search-request+json;charset=utf-8;version=v1:
           type: !include ../../../../../../../../cosmos-model/src/main/resources/com/mesosphere/cosmos/rpc/v1/model/SearchRequest-schema.json
+          example:
+            query: database
       responses:
         200:
           body:
             application/vnd.dcos.package.search-response+json;charset=utf-8;version=v1:
               type: !include ../../../../../../../../cosmos-model/src/main/resources/com/mesosphere/cosmos/rpc/v1/model/SearchResponse-schema.json
+              example:
+                packages:
+                  - name: cassandra
+                    currentVersion: 1.0.24-3.0.10
+                    versions:
+                      1.0.24-3.0.10: "24"
+                      1.0.23-3.0.10: "23"
+                    description: Apache Cassandra
+                    framework: true
+                    tags:
+                      - database
   /list:
     description: |
       Lists all of the running of the running DC/OS Services started from a DC/OS Package.
@@ -131,11 +158,25 @@ title: DC/OS Package and Service
       body:
         application/vnd.dcos.package.list-request+json;charset=utf-8;version=v1:
           type: !include ../../../../../../../../cosmos-model/src/main/resources/com/mesosphere/cosmos/rpc/v1/model/ListRequest-schema.json
+          example: {}
       responses:
         200:
           body:
             application/vnd.dcos.package.list-response+json;charset=utf-8;version=v1:
               type: !include ../../../../../../../../cosmos-model/src/main/resources/com/mesosphere/cosmos/rpc/v1/model/ListResponse-schema.json
+              example:
+                packages:
+                  - appId: /cassandra
+                    packageInformation:
+                      packageDefinition:
+                        packagingVersion: "3.0"
+                        name: cassandra
+                        version: 1.0.24-3.0.10
+                        maintainer: support@mesosphere.io
+                        description: Apache Cassandra
+                        tags:
+                          - database
+
   /add:
     description: |
       **Experimental.** Adds a DC/OS Package to DC/OS. To add a DC/OS Package from Universe use the
@@ -149,12 +190,26 @@ title: DC/OS Package and Service
       body:
         application/vnd.dcos.package.add-request+json;charset=utf-8;version=v1:
           type: !include ../../../../../../../../cosmos-model/src/main/resources/com/mesosphere/cosmos/rpc/v1/model/PackageAddRequest-schema.json
+          example:
+            packageName: cassandra
+            packageVersion: 1.0.24-3.0.10
         application/vnd.dcos.universe.package+zip;version=v1:
       responses:
         200: # TODO: confirm this is 200
           body:
             application/vnd.dcos.package.add-response+json;charset=utf-8;version=v1:
               type: !include ../../../../../../../../cosmos-model/src/main/resources/com/mesosphere/cosmos/rpc/v1/model/PackageAddResponse-schema.json
+              example:
+                name: cassandra
+                version: 1.0.24-3.0.10
+                packagingVersion: "3.0"
+                releaseVersion: 24
+                maintainer: support@mesospher.io
+                description: Apache Cassandra running on DC/OS
+                tags:
+                  - data
+                  - database
+                  - nosql
   /repository:
     /list:
       description: |
@@ -168,11 +223,16 @@ title: DC/OS Package and Service
         body:
           application/vnd.dcos.package.repository.list-request+json;charset=utf-8;version=v1:
             type: !include ../../../../../../../../cosmos-model/src/main/resources/com/mesosphere/cosmos/rpc/v1/model/PackageRepositoryListRequest-schema.json
+            example: {}
         responses:
           200:
             body:
               application/vnd.dcos.package.repository.list-response+json;charset=utf-8;version=v1:
                 type: !include ../../../../../../../../cosmos-model/src/main/resources/com/mesosphere/cosmos/rpc/v1/model/PackageRepositoryListResponse-schema.json
+                example:
+                  repositories:
+                    - name: Universe
+                      uri: https://universe.mesosphere.com/repo
     /add:
       description: |
         Adds a package repository (i.e. Universe) for use by DC/OS. To add a package repository to
@@ -185,11 +245,20 @@ title: DC/OS Package and Service
         body:
           application/vnd.dcos.package.repository.add-request+json;charset=utf-8;version=v1:
             type: !include ../../../../../../../../cosmos-model/src/main/resources/com/mesosphere/cosmos/rpc/v1/model/PackageRepositoryAddRequest-schema.json
+            example:
+              name: Local Universe
+              uri: http://universe.marathon.mesos:8080/repo
         responses:
           200:
             body:
               application/vnd.dcos.package.repository.add-response+json;charset=utf-8;version=v1:
                 type: !include ../../../../../../../../cosmos-model/src/main/resources/com/mesosphere/cosmos/rpc/v1/model/PackageRepositoryAddResponse-schema.json
+                example:
+                  repositories:
+                    - name: Universe
+                      uri: https://universe.mesosphere.com/repo
+                    - name: Local Universe
+                      uri: http://universe.marathon.mesos:8080/repo
     /delete:
       description: |
         Deletes a package repository (i.e. Universe) from DC/OS.
@@ -200,11 +269,17 @@ title: DC/OS Package and Service
         body:
           application/vnd.dcos.package.repository.delete-request+json;charset=utf-8;version=v1:
             type: !include ../../../../../../../../cosmos-model/src/main/resources/com/mesosphere/cosmos/rpc/v1/model/PackageRepositoryDeleteRequest-schema.json
+            example:
+              name: Local Universe
         responses:
           200:
             body:
               application/vnd.dcos.package.repository.delete-response+json;charset=utf-8;version=v1:
                 type: !include ../../../../../../../../cosmos-model/src/main/resources/com/mesosphere/cosmos/rpc/v1/model/PackageRepositoryDeleteResponse-schema.json
+                example:
+                  repositories:
+                    - name: Universe
+                      uri: https://universe.mesosphere.com/repo
 /capabilities:
   description: |
     List all of the capabilities supported by this DC/OS.
@@ -217,6 +292,12 @@ title: DC/OS Package and Service
         body:
           application/vnd.dcos.capabilities+json;charset=utf-8;version=v1:
             type: !include ../../../../../../../../cosmos-model/src/main/resources/com/mesosphere/cosmos/rpc/v1/model/CapabilitiesResponse-schema.json
+            example:
+              capabilities:
+                - name: PACKAGE_MANAGEMENT
+                - name: SUPPORT_CLUSTER_REPORT
+                - name: METRONOME
+                - name: LOGGING
 /service:
   /start:
     description: |
@@ -228,8 +309,15 @@ title: DC/OS Package and Service
       body:
         application/vnd.dcos.sevice.start-request+json;charset=utf-8;version=v1:
           type: !include ../../../../../../../../cosmos-model/src/main/resources/com/mesosphere/cosmos/rpc/v1/model/ServiceStartRequest-schema.json
+          example:
+            packageName: cassandra
+            packageVersion: 1.0.24-3.0.10
       responses:
         200: # TODO: confirm this is 200
           body:
             application/vnd.dcos.sevice.start-response+json;charset=utf-8;version=v1:
               type: !include ../../../../../../../../cosmos-model/src/main/resources/com/mesosphere/cosmos/rpc/v1/model/ServiceStartResponse-schema.json
+              example:
+                packageName: cassandra
+                packageVersion: 1.0.24-3.0.10
+                appId: /cassandra

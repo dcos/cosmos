@@ -21,6 +21,5 @@
       "$ref": "#/definitions/httpUri"
     }
   },
-  "required": [],
   "additionalProperties": false
 }
