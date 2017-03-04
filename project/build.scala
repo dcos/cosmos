@@ -1,12 +1,11 @@
 package com.mesosphere.cosmos
 
 import com.github.retronym.SbtOneJar._
-import scoverage.ScoverageKeys._
-import sbtfilter.Plugin._
 import sbt.Keys._
 import sbt._
+import scoverage.ScoverageKeys._
 
-object CosmosBuild extends Build {
+object CosmosBuild {
 
   lazy val projectScalaVersion = "2.11.7"
   lazy val projectVersion = "0.4.0-SNAPSHOT"
@@ -288,119 +287,6 @@ object CosmosBuild extends Build {
       (cosmosIntegrationTestServer in IntegrationTest).value.cleanup()
     )
   ) ++ scalastyleItSettings
-
-  lazy val cosmos = Project("cosmos", file("."))
-    .settings(sharedSettings)
-    .aggregate(http, model, json, common, jsonschema, bijection, render, finch, server)
-
-  lazy val common = Project("cosmos-common", file("cosmos-common"))
-    .settings(sharedSettings)
-    .settings(
-      libraryDependencies ++=
-        Deps.scalaReflect
-        ++ Deps.scalaTest
-        ++ Deps.scalaCheck
-    )
-    .dependsOn(
-      json % "compile;test->test"
-    )
-
-  lazy val model = Project("cosmos-model", file("cosmos-model"))
-    .settings(sharedSettings)
-    .settings(
-      libraryDependencies ++=
-        Deps.scalaUri
-        ++ Deps.circeCore
-        ++ Deps.twitterUtilCore
-        ++ Deps.fastparse
-        ++ Deps.scalaCheckShapeless
-    )
-
-  lazy val json = Project("cosmos-json", file("cosmos-json"))
-    .settings(sharedSettings)
-    .settings(
-      libraryDependencies ++=
-        Deps.scalaUri
-        ++ Deps.circe
-    )
-    .dependsOn(
-      model % "compile;test->test"
-    )
-
-  lazy val bijection = Project("cosmos-bijection", file("cosmos-bijection"))
-    .settings(sharedSettings)
-    .settings(
-      libraryDependencies ++=
-        Deps.bijection
-    )
-    .dependsOn(
-      model % "compile;test->test"
-    )
-
-  lazy val http = Project("cosmos-http", file("cosmos-http"))
-    .settings(sharedSettings)
-    .settings(
-      libraryDependencies ++=
-        Deps.guava
-          ++ Deps.twitterUtilCore
-    )
-
-  lazy val finch = Project("cosmos-finch", file("cosmos-finch"))
-    .settings(sharedSettings)
-    .settings(
-      libraryDependencies ++=
-        Deps.finch
-    )
-    .dependsOn(
-      json % "compile;test->test",
-      http % "compile;test->test"
-    )
-
-  lazy val jsonschema = Project("cosmos-jsonschema", file("cosmos-jsonschema"))
-    .settings(sharedSettings)
-    .settings(
-      libraryDependencies ++=
-        Deps.circe
-          ++ Deps.jsonSchema
-    )
-
-  lazy val render = Project("cosmos-render", file("cosmos-render"))
-    .settings(sharedSettings)
-    .settings(
-      libraryDependencies ++=
-        Deps.mustache
-    )
-    .dependsOn(
-      json % "compile;test->test",
-      jsonschema % "compile;test->test",
-      bijection % "compile;test->test"
-    )
-
-  lazy val server = Project("cosmos-server", file("cosmos-server"))
-    .configs(IntegrationTest extend Test)
-    .settings(itSettings)
-    .settings(sharedSettings)
-    .settings(oneJarSettings)
-    .settings(mainClass in oneJar := Some("com.mesosphere.cosmos.Cosmos"))
-    .settings(filterSettings)
-    .settings(
-      libraryDependencies ++=
-        Deps.circe
-          ++ Deps.twitterServer
-          ++ Deps.curator
-          ++ Deps.logback
-          ++ Deps.mustache
-          ++ Deps.scalaUri
-          ++ Deps.bijectionUtil
-          ++ Deps.aws
-          ++ Deps.slf4j
-          ++ Deps.twitterCommons
-    )
-    .dependsOn(
-      finch % "compile;test->test",
-      render % "compile;test->test",
-      common % "compile;test->test"
-    )
 
   //////////////////////////////////////////////////////////////////////////////
   // BUILD TASKS
