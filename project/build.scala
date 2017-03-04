@@ -273,8 +273,8 @@ object CosmosBuild {
   private lazy val cosmosIntegrationTestServer = settingKey[CosmosIntegrationTestServer]("cosmos-it-server")
 
   val itSettings = Defaults.itSettings ++ Seq(
-    test in IntegrationTest <<= (test in IntegrationTest).dependsOn(oneJar),
-    testOnly in IntegrationTest <<= (testOnly in IntegrationTest).dependsOn(oneJar),
+    (test in IntegrationTest).set((test in IntegrationTest).dependsOn(oneJar), NoPosition),
+    (testOnly in IntegrationTest).set((testOnly in IntegrationTest).dependsOn(oneJar), NoPosition),
     cosmosIntegrationTestServer in IntegrationTest := new CosmosIntegrationTestServer(
       (javaHome in run).value.map(_.getCanonicalPath),
       (resourceDirectories in IntegrationTest).value,
