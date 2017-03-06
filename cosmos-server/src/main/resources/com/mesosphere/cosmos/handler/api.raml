@@ -194,7 +194,7 @@ title: DC/OS Package and Service
             packageVersion: 1.0.24-3.0.10
         application/vnd.dcos.universe.package+zip;version=v1:
       responses:
-        200: # TODO: confirm this is 200
+        202:
           body:
             application/vnd.dcos.package.add-response+json;charset=utf-8;version=v1:
               type: !include ../../../../../../../../cosmos-model/src/main/resources/com/mesosphere/cosmos/rpc/v1/model/PackageAddResponse-schema.json
@@ -311,7 +311,7 @@ title: DC/OS Package and Service
             packageName: cassandra
             packageVersion: 1.0.24-3.0.10
       responses:
-        200: # TODO: confirm this is 200
+        200:
           body:
             application/vnd.dcos.sevice.start-response+json;charset=utf-8;version=v1:
               type: !include ../../../../../../../../cosmos-model/src/main/resources/com/mesosphere/cosmos/rpc/v1/model/ServiceStartResponse-schema.json
