@@ -28,7 +28,7 @@ final class ServiceStartSpec extends FreeSpec with InstallQueueFixture with Befo
     val uninstallCassandra =
       rpc.v1.model.UninstallRequest("cassandra", appId = None, all = Some(true))
     val uninstallLinkerd =
-      rpc.v1.model.UninstallRequest("linkerd", appId = None, all = Some(true))
+      rpc.v1.model.UninstallRequest("kafka", appId = None, all = Some(true))
     val uninstallHelloworld =
       rpc.v1.model.UninstallRequest("helloworld", appId = None, all = Some(true))
 
