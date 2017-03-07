@@ -25,7 +25,7 @@ title: DC/OS Package and Service
                 appId: /cassandra
   /uninstall:
     post:
-      description: Stops a running service that was launched from a DC/OS Package.
+      description: Stops a running service that was launched from a DC/OS package.
       headers:
         Accept:
           enum: [application/vnd.dcos.package.uninstall-response+json;charset=utf-8;version=v1]
@@ -47,8 +47,8 @@ title: DC/OS Package and Service
   /describe:
     post:
       description: |
-        Show information about the given package including the resources need to start the service,
-        configuration to start the service and command line extensions included with the package.
+        Show information about the package, including the required resources and configuration to
+        start the service, and command line extensions that are included with the package.
       headers:
         Accept:
           enum: [application/vnd.dcos.package.describe-response+json;charset=utf-8;version=v2]
@@ -77,8 +77,8 @@ title: DC/OS Package and Service
   /render:
     post:
       description: |
-        Generates the Marathon Application Definition for the given package name, version, and
-        optional configuration JSON object.
+        Generates the Marathon application definition for the package name, version, and optional
+        configuration JSON object.
       headers:
         Accept:
           enum: [application/vnd.dcos.package.render-response+json;charset=utf-8;version=v1]
@@ -150,7 +150,7 @@ title: DC/OS Package and Service
   /list:
     post:
       description: |
-        Lists all of the running DC/OS Services started from a DC/OS Package.
+        Lists all of the running DC/OS services started from a DC/OS package.
       headers:
         Accept:
           enum: [application/vnd.dcos.package.list-response+json;charset=utf-8;version=v1]
@@ -179,7 +179,7 @@ title: DC/OS Package and Service
   /add:
     post:
       description: |
-        **Experimental.** Adds a DC/OS Package to DC/OS. To add a DC/OS Package from Universe use
+        **Experimental.** Adds a DC/OS Package to DC/OS. To add a DC/OS package from Universe use
         the content type _application/vnd.dcos.package.add-request+json;charset=utf-8;version=v1_.
         To add a package by uploading the file use the content type
         _application/vnd.dcos.universe.package+zip;version=v1_.
@@ -214,8 +214,8 @@ title: DC/OS Package and Service
       post:
         description: |
           List all of the package repositories (for example Universe) used by DC/OS. The list is
-          ordered by priority; if multiple repositories contain the same package, the one closest
-          to the start of the list will be used.
+          ordered by priority; if multiple repositories contain the same package, the package
+          closest to the start of the list will be used.
         headers:
           Accept:
             enum:
@@ -281,7 +281,7 @@ title: DC/OS Package and Service
                       uri: https://universe.mesosphere.com/repo
 /capabilities:
   get:
-    description: List all of the capabilities supported by this DC/OS.
+    description: List all of the capabilities supported by DC/OS.
     headers:
       Accept:
         enum: [application/vnd.dcos.capabilities+json;charset=utf-8;version=v1]
@@ -300,7 +300,7 @@ title: DC/OS Package and Service
   /start:
     post:
       description: |
-        **Experimental.** Starts a DC/OS Service from a DC/OS Package.
+        **Experimental.** Starts a DC/OS Service from a DC/OS package.
       headers:
         Accept:
           enum: [application/vnd.dcos.sevice.start-response+json;charset=utf-8;version=v1]
