@@ -27,13 +27,13 @@ final class ServiceStartSpec extends FreeSpec with InstallQueueFixture with Befo
   after {
     val uninstallCassandra =
       rpc.v1.model.UninstallRequest("cassandra", appId = None, all = Some(true))
-    val uninstallLinkerd =
-      rpc.v1.model.UninstallRequest("linkerd", appId = None, all = Some(true))
+    val uninstallKafka =
+      rpc.v1.model.UninstallRequest("kafka", appId = None, all = Some(true))
     val uninstallHelloworld =
       rpc.v1.model.UninstallRequest("helloworld", appId = None, all = Some(true))
 
     CosmosClient.submit(CosmosRequests.packageUninstall(uninstallCassandra))
-    CosmosClient.submit(CosmosRequests.packageUninstall(uninstallLinkerd))
+    CosmosClient.submit(CosmosRequests.packageUninstall(uninstallKafka))
     val _ = CosmosClient.submit(CosmosRequests.packageUninstall(uninstallHelloworld))
 
     // TODO package-add: Remove uploaded packages from storage
