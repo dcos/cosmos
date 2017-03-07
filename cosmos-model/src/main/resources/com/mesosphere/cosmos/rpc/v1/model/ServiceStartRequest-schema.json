@@ -5,9 +5,16 @@
     "packageName": {
       "type": "string"
     },
-    "appId": {
+    "packageVersion": {
       "type": "string"
+    },
+    "options": {
+      "type": "object",
+      "additionalProperties": true
     }
   },
+  "required": [
+    "packageName"
+  ],
   "additionalProperties": false
 }

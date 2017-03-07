@@ -6,6 +6,5 @@
       "type": "string"
     }
   },
-  "required": [],
   "additionalProperties": false
 }
