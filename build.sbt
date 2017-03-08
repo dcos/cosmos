@@ -1,4 +1,5 @@
 import com.mesosphere.cosmos.CosmosBuild._
+import com.mesosphere.cosmos.Deps
 
 lazy val cosmos = project.in(file("."))
   .settings(sharedSettings)
@@ -57,7 +58,8 @@ lazy val http = project.in(file("cosmos-http"))
   .settings(
     name := baseDirectory.value.name,
     libraryDependencies ++=
-      Deps.guava
+      Deps.findbugs
+        ++ Deps.guava
         ++ Deps.twitterUtilCore
   )
 
