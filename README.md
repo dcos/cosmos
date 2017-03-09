@@ -1,6 +1,7 @@
-# Cosmos
+# DC/OS Package Manager (Cosmos)
 
-An [orderly, harmonious, complete](http://www.thefreedictionary.com/cosmos) API for DC/OS services.
+Provides an API for the [orderly, harmonious, and complete](http://www.thefreedictionary.com/cosmos)
+management of DC/OS service packages.
 
 ## Running tests
 
