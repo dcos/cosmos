@@ -5,6 +5,11 @@ var ramlToSwagger = new transformer.Converter(
     transformer.Formats.SWAGGER
 );
 
+/* Based on how this script get called:
+ * process.argv[0] == nodejs
+ * process.argv[1] == raml2swagger
+ * process.argv[2] == <the path to the RAML file>
+ */
 var source = process.argv[2];
 
 ramlToSwagger.loadFile(source, function(err) {
