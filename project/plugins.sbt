@@ -1,5 +1,5 @@
 resolvers ++= Seq(
-  "sbt-plugin-releases-repo" at "http://repo.scala-sbt.org/scalasbt/sbt-plugin-releases",
+  Resolver.sbtPluginRepo("releases"),
   Resolver.sonatypeRepo("snapshots")
 )
 
