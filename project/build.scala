@@ -10,13 +10,14 @@ object CosmosBuild {
 
   val teamcityVersion = sys.env.get("TEAMCITY_VERSION")
 
-  val extraSettings = BuildPlugin.publishSettings ++ Defaults.coreDefaultSettings
+  val extraSettings = BuildPlugin.publishSettings
 
   val sharedSettings = extraSettings ++ Seq(
     organization := "com.mesosphere.cosmos",
     scalaVersion := V.projectScalaVersion,
     version := V.projectVersion,
 
+    // Required by One-JAR for multi-project builds: https://github.com/sbt/sbt-onejar#requirements
     exportJars := true,
 
     externalResolvers := Seq(
@@ -36,9 +37,8 @@ object CosmosBuild {
 
     publishArtifact in Test := false,
 
-    parallelExecution in ThisBuild := false,
-
-    parallelExecution in Test := false,
+    // Parallel changes to a shared cluster cause some tests to fail
+    parallelExecution in IntegrationTest := false,
 
     fork := false,
 
