@@ -7,9 +7,7 @@ import sbt._
 
 object CosmosBuild {
 
-  val extraSettings = BuildPlugin.publishSettings
-
-  val sharedSettings = extraSettings ++ Seq(
+  val sharedSettings = BuildPlugin.publishSettings ++ Seq(
     organization := "com.mesosphere.cosmos",
     scalaVersion := V.projectScalaVersion,
     version := V.projectVersion,
@@ -24,13 +22,6 @@ object CosmosBuild {
     ),
 
     libraryDependencies ++= Deps.mockito ++ Deps.scalaTest ++ Deps.scalaCheck,
-
-    javacOptions in Compile ++= Seq(
-      "-source", "1.8",
-      "-target", "1.8",
-      "-Xlint:unchecked",
-      "-Xlint:deprecation"
-    ),
 
     publishArtifact in Test := false,
 
