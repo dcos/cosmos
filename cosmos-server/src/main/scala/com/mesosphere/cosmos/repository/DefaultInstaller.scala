@@ -11,9 +11,9 @@ final class DefaultInstaller private (
   packageStorage: PackageStorage
 ) extends Installer {
 
-  private[this] val install = installV3Package(packageStorage) _
+  private[this] val install = installSupportedPackage(packageStorage) _
 
-  def apply(uri: UUID, pkg: universe.v3.model.V3Package): Future[Unit] = install(pkg)
+  def apply(uri: UUID, pkg: universe.v3.model.SupportedPackageDefinition): Future[Unit] = install(pkg)
 
 }
 

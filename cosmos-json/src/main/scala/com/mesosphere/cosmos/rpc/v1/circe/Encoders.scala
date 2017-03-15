@@ -75,7 +75,7 @@ object Encoders {
     deriveEncoder[UniverseAddRequest]
   }
   implicit val encodeAddResponse: Encoder[AddResponse] = {
-    implicitly[Encoder[universe.v3.model.PackageDefinition]].contramap(_.v3Package)
+    implicitly[Encoder[universe.v3.model.SupportedPackageDefinition]].contramap(_.supportedPackage)
   }
 
   implicit val encodeErrorResponse: Encoder[ErrorResponse] = deriveEncoder[ErrorResponse]

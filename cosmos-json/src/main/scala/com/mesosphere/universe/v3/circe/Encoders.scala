@@ -57,4 +57,8 @@ object Encoders {
   implicit val encodeMetadata: Encoder[Metadata] = Encoder.instance {
     case v3Metadata: V3Metadata => v3Metadata.asJson
   }
+
+  implicit val encodeSupportedPackageDefinition: Encoder[SupportedPackageDefinition] = Encoder.instance {
+    case v3: V3Package => v3.asJson
+  }
 }

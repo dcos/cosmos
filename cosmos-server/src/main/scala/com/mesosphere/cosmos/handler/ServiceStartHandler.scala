@@ -23,7 +23,7 @@ private[cosmos] final class ServiceStartHandler(
   private[this] def asPackageDefinition(
     localPackage: LocalPackage,
     packageName: String
-  ): universe.v3.model.PackageDefinition = {
+  ): universe.v3.model.SupportedPackageDefinition = {
     localPackage match {
       case installed: Installed => installed.metadata
       case _ => throw PackageNotInstalled(packageName)

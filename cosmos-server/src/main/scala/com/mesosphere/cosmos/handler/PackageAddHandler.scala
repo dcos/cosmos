@@ -63,9 +63,9 @@ final class PackageAddHandler(
 
     for {
       operation <- futureOperation
-      _ <- producerView.add(operation.v3Package.packageCoordinate, operation)
+      _ <- producerView.add(operation.packageDefinition.packageCoordinate, operation)
     } yield {
-      new rpc.v1.model.AddResponse(operation.v3Package)
+      new rpc.v1.model.AddResponse(operation.packageDefinition)
     }
   }
 

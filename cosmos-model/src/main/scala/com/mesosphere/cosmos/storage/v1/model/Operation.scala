@@ -4,18 +4,18 @@ import com.mesosphere.universe
 import java.util.UUID
 
 sealed trait Operation {
-  val v3Package: universe.v3.model.V3Package
+  val packageDefinition: universe.v3.model.SupportedPackageDefinition
 }
 
 case class Install(
   stagedPackageId: UUID,
-  v3Package: universe.v3.model.V3Package
+  packageDefinition: universe.v3.model.SupportedPackageDefinition
 ) extends Operation
 
 case class UniverseInstall(
-  v3Package: universe.v3.model.V3Package
+  packageDefinition: universe.v3.model.SupportedPackageDefinition
 ) extends Operation
 
 case class Uninstall(
-  v3Package: universe.v3.model.V3Package
+  packageDefinition: universe.v3.model.SupportedPackageDefinition
 ) extends Operation

@@ -129,4 +129,15 @@ object Decoders {
     }
   }
 
+  implicit val decodeSupportedPackageDefinition: Decoder[SupportedPackageDefinition] = {
+    Decoder.instance[SupportedPackageDefinition] { (hc: HCursor) =>
+      hc.downField("packagingVersion").as[PackagingVersion].flatMap {
+        case V3PackagingVersion => hc.as[V3Package]
+        case V2PackagingVersion => Left(DecodingFailure(
+          s"V2Package is not a supported package definition",
+          hc.history
+        ))
+      }
+    }
+  }
 }

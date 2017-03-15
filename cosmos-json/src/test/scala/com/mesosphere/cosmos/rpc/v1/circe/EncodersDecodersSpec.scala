@@ -28,7 +28,7 @@ final class EncodersDecodersSpec extends FreeSpec with PropertyChecks with Match
     "decodes from V3Package JSON" in {
       forAll { (v3Package: universe.v3.model.V3Package) =>
         assertResult(Right(v3Package)) {
-          decode[rpc.v1.model.AddResponse](v3Package.asJson.noSpaces).map(_.v3Package)
+          decode[rpc.v1.model.AddResponse](v3Package.asJson.noSpaces).map(_.supportedPackage)
         }
       }
     }

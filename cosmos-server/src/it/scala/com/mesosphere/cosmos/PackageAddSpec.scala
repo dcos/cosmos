@@ -19,6 +19,7 @@ import com.mesosphere.cosmos.test.TestUtil
 import com.mesosphere.universe
 import com.mesosphere.universe.test.TestingPackages
 import com.mesosphere.universe.v3.circe.Decoders._
+import com.mesosphere.universe.v3.model.SupportedPackageDefinition
 import com.mesosphere.universe.v3.syntax.PackageDefinitionOps._
 import com.mesosphere.universe.{TestUtil => UTestUtil}
 import com.mesosphere.util.AbsolutePath
@@ -130,32 +131,32 @@ final class PackageAddSpec
   }
 
   private[this] def assertSuccessfulAdd(
-    expectedV3Package: universe.v3.model.V3Package
+    expectedSupportedPackageDefinition: universe.v3.model.SupportedPackageDefinition
   ): Assertion = {
-    assertSuccessfulResponse(expectedV3Package)
-    assertExternalizedPackage(expectedV3Package)
+    assertSuccessfulResponse(expectedSupportedPackageDefinition)
+    assertExternalizedPackage(expectedSupportedPackageDefinition)
   }
 
   private[this] def assertSuccessfulResponse(
-    expectedV3Package: universe.v3.model.V3Package
+    expectedSupportedPackageDefinition: universe.v3.model.SupportedPackageDefinition
   ): Assertion = {
-    val body = Buf.ByteArray.Owned(UTestUtil.buildPackage(expectedV3Package))
+    val body = Buf.ByteArray.Owned(UTestUtil.buildPackage(expectedSupportedPackageDefinition))
     val request = CosmosRequests.packageAdd(body)
     val response = CosmosClient.submit(request)
     assertResult(Status.Accepted)(response.status)
-    val actualV3Package = decode[universe.v3.model.V3Package](response.contentString)
-    assertSamePackage(expectedV3Package, actualV3Package)
+    val actualSupportedPackageDefinition = decode[universe.v3.model.SupportedPackageDefinition](response.contentString)
+    assertSamePackage(expectedSupportedPackageDefinition, actualSupportedPackageDefinition)
   }
 
   private[this] def assertExternalizedPackage(
-    expectedV3Package: universe.v3.model.V3Package
+    expectedSupportedPackageDefinition: universe.v3.model.SupportedPackageDefinition
   ): Assertion = {
     assertSamePackage(
-      expectedV3Package,
+      expectedSupportedPackageDefinition,
       Await.result(
         TestUtil.eventualFuture(
           () => packageStorage.readPackageDefinition(
-            expectedV3Package.packageCoordinate
+            expectedSupportedPackageDefinition.packageCoordinate
           )
         )
       )
@@ -163,20 +164,23 @@ final class PackageAddSpec
   }
 
   private[this] def assertSamePackage(
-    expected: universe.v3.model.V3Package,
-    actual: universe.v3.model.V3Package
+    expected: universe.v3.model.SupportedPackageDefinition,
+    actual: universe.v3.model.SupportedPackageDefinition
   ): Assertion = {
-    val normalizedExpected = normalizeV3Package(expected)
-    val normalizedActual = normalizeV3Package(actual)
+    val normalizedExpected = normalizeSupportedPackageDefinition(expected)
+    val normalizedActual = normalizeSupportedPackageDefinition(actual)
     assertResult(normalizedExpected)(normalizedActual)
   }
 
-  private[this] def normalizeV3Package(
-    v3Package: universe.v3.model.V3Package
-  ): universe.v3.model.V3Package = {
+  private[this] def normalizeSupportedPackageDefinition(
+    supportedPackageDefinition: SupportedPackageDefinition
+  ): universe.v3.model.SupportedPackageDefinition = {
     // TODO package-add: Get release version from creation time in object storage
     val fakeReleaseVersion = universe.v3.model.ReleaseVersion(0L).get()
-    v3Package.copy(command = None, releaseVersion = fakeReleaseVersion, selected = None)
+    supportedPackageDefinition match {
+      case v3Package: universe.v3.model.V3Package =>
+        v3Package.copy(command = None, releaseVersion = fakeReleaseVersion, selected = None)
+    }
   }
 
 }

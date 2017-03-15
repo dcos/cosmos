@@ -92,13 +92,29 @@ package v3.model {
     resource: Option[V3Resource] = None,
     config: Option[JsonObject] = None,
     command: Option[Command] = None
-  ) extends PackageDefinition with Ordered[V3Package] {
+  ) extends SupportedPackageDefinition with Ordered[V3Package] {
     override def compare(that: V3Package): Int = {
       PackageDefinition.compare(
         (name, version, releaseVersion),
         (that.name, that.version, that.releaseVersion)
       )
     }
+  }
+
+  sealed trait SupportedPackageDefinition
+    extends PackageDefinition
+
+  object SupportedPackageDefinition {
+
+    implicit val supportedPackageDefinitionOrdering = new Ordering[SupportedPackageDefinition] {
+      override def compare(a: SupportedPackageDefinition, b: SupportedPackageDefinition): Int = {
+        PackageDefinition.compare(
+          (a.name, a.version, a.releaseVersion),
+          (b.name, b.version, b.releaseVersion)
+        )
+      }
+    }
+
   }
 
 }

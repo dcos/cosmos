@@ -133,7 +133,9 @@ final class PackageDefinitionOps(val pkgDef: PackageDefinition) extends AnyVal {
 object PackageDefinitionOps {
   import scala.language.implicitConversions
 
-  implicit def packageDefinitionToPackageDefinitionOps(pkgDef: PackageDefinition): PackageDefinitionOps = {
+  implicit def packageDefinitionToPackageDefinitionOps[P <: PackageDefinition](
+    pkgDef: P
+  ): PackageDefinitionOps = {
     new PackageDefinitionOps(pkgDef)
   }
 }
