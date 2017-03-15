@@ -28,10 +28,6 @@ object CosmosBuild {
     // Parallel changes to a shared cluster cause some tests to fail
     parallelExecution in IntegrationTest := false,
 
-    fork := false,
-
-    cancelable in Global := true,
-
     pomExtra :=
         <url>https://dcos.io</url>
         <licenses>
