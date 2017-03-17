@@ -4,15 +4,10 @@ import com.github.retronym.SbtOneJar._
 import com.mesosphere.sbt.BuildPlugin
 import sbt.Keys._
 import sbt._
-import scoverage.ScoverageKeys._
 
 object CosmosBuild {
 
-  val teamcityVersion = sys.env.get("TEAMCITY_VERSION")
-
-  val extraSettings = BuildPlugin.publishSettings
-
-  val sharedSettings = extraSettings ++ Seq(
+  val sharedSettings = BuildPlugin.publishSettings ++ Seq(
     organization := "com.mesosphere.cosmos",
     scalaVersion := V.projectScalaVersion,
     version := V.projectVersion,
@@ -28,23 +23,10 @@ object CosmosBuild {
 
     libraryDependencies ++= Deps.mockito ++ Deps.scalaTest ++ Deps.scalaCheck,
 
-    javacOptions in Compile ++= Seq(
-      "-source", "1.8",
-      "-target", "1.8",
-      "-Xlint:unchecked",
-      "-Xlint:deprecation"
-    ),
-
     publishArtifact in Test := false,
 
     // Parallel changes to a shared cluster cause some tests to fail
     parallelExecution in IntegrationTest := false,
-
-    fork := false,
-
-    cancelable in Global := true,
-
-    coverageOutputTeamCity := teamcityVersion.isDefined,
 
     pomExtra :=
         <url>https://dcos.io</url>
@@ -107,19 +89,4 @@ object CosmosBuild {
     )
   ) ++ scalastyleItSettings
 
-  //////////////////////////////////////////////////////////////////////////////
-  // BUILD TASKS
-  //////////////////////////////////////////////////////////////////////////////
-
-  teamcityVersion.foreach { _ =>
-      // add some info into the teamcity build context so that they can be used
-      // by later steps
-      reportParameter("SCALA_VERSION", V.projectScalaVersion)
-      reportParameter("PROJECT_VERSION", V.projectVersion)
-  }
-
-  def reportParameter(key: String, value: String): Unit = {
-    println(s"##teamcity[setParameter name='env.SBT_$key' value='$value']")
-    println(s"##teamcity[setParameter name='system.sbt.$key' value='$value']")
-  }
 }
