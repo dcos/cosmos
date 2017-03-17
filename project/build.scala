@@ -1,6 +1,5 @@
 package com.mesosphere.cosmos
 
-import com.github.retronym.SbtOneJar._
 import com.mesosphere.sbt.BuildPlugin
 import sbt.Keys._
 import sbt._
@@ -57,6 +56,8 @@ object CosmosBuild {
         </developers>
   ) ++ org.scalastyle.sbt.ScalastylePlugin.projectSettings
 
+  val (itConfigs, itSettings) = BuildPlugin.itConfigsAndSettings("com.mesosphere.cosmos.Cosmos")
+
   val scalastyleItSettings = {
     import org.scalastyle.sbt.ScalastylePlugin._
 
@@ -70,23 +71,5 @@ object CosmosBuild {
       (scalastyleSources in IntegrationTest) := Seq((scalaSource in IntegrationTest).value)
     ) ++ Project.inConfig(IntegrationTest)(rawScalastyleSettings())
   }
-
-  private lazy val cosmosIntegrationTestServer = settingKey[CosmosIntegrationTestServer]("cosmos-it-server")
-
-  val itSettings = Defaults.itSettings ++ Seq(
-    (test in IntegrationTest).set((test in IntegrationTest).dependsOn(oneJar), NoPosition),
-    (testOnly in IntegrationTest).set((testOnly in IntegrationTest).dependsOn(oneJar), NoPosition),
-    cosmosIntegrationTestServer in IntegrationTest := new CosmosIntegrationTestServer(
-      (javaHome in run).value.map(_.getCanonicalPath),
-      (resourceDirectories in IntegrationTest).value,
-      (artifactPath in oneJar).value
-    ),
-    testOptions in IntegrationTest += Tests.Setup(() =>
-      (cosmosIntegrationTestServer in IntegrationTest).value.setup((streams in runMain).value.log)
-    ),
-    testOptions in IntegrationTest += Tests.Cleanup(() =>
-      (cosmosIntegrationTestServer in IntegrationTest).value.cleanup()
-    )
-  ) ++ scalastyleItSettings
 
 }
