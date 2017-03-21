@@ -23,9 +23,9 @@ function copy {(
 
   mkdir -p ${TARGET_DIR}
   cp ${PROJECT_DIR}/cosmos-server/target/scala-2.11/cosmos-server_2.11-*-one-jar.jar ${TARGET_DIR}/${ONE_JAR}
-  cp ${PROJECT_DIR}/cosmos-server/target/api.html ${TARGET_DIR}
-  cp ${PROJECT_DIR}/cosmos-server/target/api.raml ${TARGET_DIR}
-  cp ${PROJECT_DIR}/cosmos-server/target/api.swagger ${TARGET_DIR}
+  cp ${PROJECT_DIR}/cosmos-server/target/*.html ${TARGET_DIR}
+  cp ${PROJECT_DIR}/cosmos-server/target/*.raml ${TARGET_DIR}
+  cp ${PROJECT_DIR}/cosmos-server/target/*.swagger ${TARGET_DIR}
 
 )}
 
@@ -56,9 +56,10 @@ function deploy {(
   aws s3 cp ${TARGET_DIR}/${SHA1_FILE} ${S3_DEPLOY_BUCKET}/${SHA1_FILE}
 
   # Copy the documentation to S3
-  aws s3 cp ${TARGET_DIR}/api.html ${S3_DEPLOY_BUCKET}/
-  aws s3 cp ${TARGET_DIR}/api.raml ${S3_DEPLOY_BUCKET}/
-  aws s3 cp ${TARGET_DIR}/api.swagger ${S3_DEPLOY_BUCKET}/
+  info "Uploading documentation to: ${S3_DEPLOY_BUCKET}"
+  aws s3 cp "${TARGET_DIR}/*.html" ${S3_DEPLOY_BUCKET}/
+  aws s3 cp "${TARGET_DIR}/*.raml" ${S3_DEPLOY_BUCKET}/
+  aws s3 cp "${TARGET_DIR}/*.swagger" ${S3_DEPLOY_BUCKET}/
 
   info "Generating buildinfo.json"
   cat ${DCOS_IMAGE_DIR}/buildinfo.json | \

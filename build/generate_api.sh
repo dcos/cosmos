@@ -11,16 +11,22 @@ mkdir -p "$TARGET_DIR"
 # Build a docker image with raml2html
 sudo docker build --tag ramltools "$REPO_DIR/docker/ramltools"
 
-# Generate the API HTML using the built docker image
-sudo docker run --volume="$REPO_DIR":/src:ro --rm ramltools /usr/local/bin/raml2html \
-  /src/cosmos-server/src/main/resources/com/mesosphere/cosmos/handler/api.raml \
-  > "$TARGET_DIR/api.html"
+for SERVICE in capabilities service package
+do
+  # Generate the API HTML using the built docker image
+  echo "Generating $SERVICE.html"
+  sudo docker run --volume="$REPO_DIR":/src:ro --rm ramltools /usr/local/bin/raml2html \
+    "/src/cosmos-server/src/main/resources/com/mesosphere/cosmos/handler/$SERVICE.raml" \
+    > "$TARGET_DIR/$SERVICE.html"
 
-# Generate the API Swagger using the built docker image
-sudo docker run --volume="$REPO_DIR":/src:ro --rm ramltools /usr/local/bin/raml2swagger \
-  /src/cosmos-server/src/main/resources/com/mesosphere/cosmos/handler/api.raml \
-  > "$TARGET_DIR/api.swagger"
+  # Generate the API Swagger using the built docker image
+  echo "Generating $SERVICE.swagger"
+  sudo docker run --volume="$REPO_DIR":/src:ro --rm ramltools /usr/local/bin/raml2swagger \
+    "/src/cosmos-server/src/main/resources/com/mesosphere/cosmos/handler/$SERVICE.raml" \
+    > "$TARGET_DIR/$SERVICE.swagger"
 
-# Copy the API RAML
-cp "$REPO_DIR/cosmos-server/src/main/resources/com/mesosphere/cosmos/handler/api.raml" \
-  "$TARGET_DIR/api.raml"
+  # Copy the API RAML
+  echo "Copying $SERVICE.raml"
+  cp "$REPO_DIR/cosmos-server/src/main/resources/com/mesosphere/cosmos/handler/$SERVICE.raml" \
+    "$TARGET_DIR/$SERVICE.raml"
+done
