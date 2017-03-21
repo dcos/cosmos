@@ -57,9 +57,12 @@ function deploy {(
 
   # Copy the documentation to S3
   info "Uploading documentation to: ${S3_DEPLOY_BUCKET}"
-  aws s3 cp "${TARGET_DIR}/*.html" ${S3_DEPLOY_BUCKET}/
-  aws s3 cp "${TARGET_DIR}/*.raml" ${S3_DEPLOY_BUCKET}/
-  aws s3 cp "${TARGET_DIR}/*.swagger" ${S3_DEPLOY_BUCKET}/
+  for SERVICE in capabilities service package
+  do
+    aws s3 cp "${TARGET_DIR}/$SERVICE.html" ${S3_DEPLOY_BUCKET}/
+    aws s3 cp "${TARGET_DIR}/$SERVICE.raml" ${S3_DEPLOY_BUCKET}/
+    aws s3 cp "${TARGET_DIR}/$SERVICE.swagger" ${S3_DEPLOY_BUCKET}/
+  done
 
   info "Generating buildinfo.json"
   cat ${DCOS_IMAGE_DIR}/buildinfo.json | \
