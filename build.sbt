@@ -102,7 +102,7 @@ lazy val server = project.in(file("cosmos-server"))
   .settings(sharedSettings)
   .settings(itSettings)
   .settings(oneJarSettings)
-  .settings(mainClass in oneJar := Some("com.mesosphere.cosmos.Cosmos"))
+  .settings(mainClass in oneJar := Some("com.mesosphere.cosmos.Main"))
   .settings(filterSettings)
   .settings(
     name := baseDirectory.value.name,

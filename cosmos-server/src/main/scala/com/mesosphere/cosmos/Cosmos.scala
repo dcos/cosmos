@@ -67,7 +67,8 @@ private[cosmos] final class Cosmos(
   packageRepositoryListHandler: EndpointHandler[rpc.v1.model.PackageRepositoryListRequest, rpc.v1.model.PackageRepositoryListResponse],
   packageSearchHandler: EndpointHandler[rpc.v1.model.SearchRequest, rpc.v1.model.SearchResponse],
   packageUninstallHandler: EndpointHandler[rpc.v1.model.UninstallRequest, rpc.v1.model.UninstallResponse],
-  serviceStartHandler: EndpointHandler[rpc.v1.model.ServiceStartRequest, rpc.v1.model.ServiceStartResponse]
+  serviceStartHandler: EndpointHandler[rpc.v1.model.ServiceStartRequest, rpc.v1.model.ServiceStartResponse],
+  extraEndpoints: Endpoint[Json]
 )(implicit statsReceiver: StatsReceiver = NullStatsReceiver) {
 
   lazy val logger: Logger = org.slf4j.LoggerFactory.getLogger(classOf[Cosmos])
@@ -157,7 +158,7 @@ private[cosmos] final class Cosmos(
         :+: packageSearch
         :+: packageUninstall
         :+: serviceStart
-      )
+      ) :+: extraEndpoints
 
     val api = endpoints.handle {
       case re: CosmosError =>
@@ -212,7 +213,59 @@ private[cosmos] final class Cosmos(
 
 }
 
-object Cosmos
+object Cosmos {
+
+  private[cosmos] def apply(
+    adminRouter: AdminRouter,
+    packageRunner: PackageRunner,
+    sourcesStorage: PackageSourcesStorage,
+    universeClient: UniverseClient,
+    installQueue: InstallQueue,
+    objectStorages: Option[(LocalPackageCollection, StagedPackageStorage)],
+    extraEndpoints: Endpoint[Json]
+  )(implicit statsReceiver: StatsReceiver = NullStatsReceiver): Cosmos = {
+
+    val repositories = new MultiRepository(
+      sourcesStorage,
+      universeClient
+    )
+
+    val packageAddHandler = enableIfSome(objectStorages, "package add") {
+      case (_, stagedStorage) => new PackageAddHandler(repositories, stagedStorage, installQueue)
+    }
+
+    val serviceStartHandler = enableIfSome(objectStorages, "service start") {
+      case (localPackageCollection, _) =>
+        new ServiceStartHandler(localPackageCollection, packageRunner)
+    }
+
+    new Cosmos(
+      new CapabilitiesHandler,
+      packageAddHandler,
+      new PackageDescribeHandler(repositories),
+      new PackageInstallHandler(repositories, packageRunner),
+      new ListHandler(adminRouter, uri => repositories.getRepository(uri)),
+      new ListVersionsHandler(repositories),
+      new PackageRenderHandler(repositories),
+      new PackageRepositoryAddHandler(sourcesStorage),
+      new PackageRepositoryDeleteHandler(sourcesStorage),
+      new PackageRepositoryListHandler(sourcesStorage),
+      new PackageSearchHandler(repositories),
+      new UninstallHandler(adminRouter, repositories),
+      serviceStartHandler,
+      extraEndpoints
+    )(statsReceiver)
+  }
+
+  private[this] def enableIfSome[A, Req, Res](requirement: Option[A], operationName: String)(
+    f: A => EndpointHandler[Req, Res]
+  ): EndpointHandler[Req, Res] = {
+    requirement.fold[EndpointHandler[Req, Res]](new NotConfiguredHandler(operationName))(f)
+  }
+
+}
+
+trait CosmosApp
 extends App
 with AdminHttpServer
 with Admin
@@ -221,9 +274,11 @@ with Lifecycle.Warmup
 with Stats
 with Logging {
 
-  lazy val logger = org.slf4j.LoggerFactory.getLogger(getClass)
+  protected val extraEndpoints: Endpoint[Json]
 
-  def main(): Unit = {
+  lazy val logger: Logger = org.slf4j.LoggerFactory.getLogger(getClass)
+
+  final def main(): Unit = {
     val service = startCosmos()(statsReceiver)
     val maybeHttpServer = startServer(service)
     val maybeHttpsServer = startTlsServer(service)
@@ -323,7 +378,8 @@ with Logging {
         objectStorages.map {
           case (_, stagedStorage, localCollection) =>
             (localCollection, stagedStorage)
-        }
+        },
+        extraEndpoints
       ).service
     )
   }
@@ -410,49 +466,8 @@ with Logging {
     }
   }
 
-  private[cosmos] def apply(
-    adminRouter: AdminRouter,
-    packageRunner: PackageRunner,
-    sourcesStorage: PackageSourcesStorage,
-    universeClient: UniverseClient,
-    installQueue: InstallQueue,
-    objectStorages: Option[(LocalPackageCollection, StagedPackageStorage)]
-  )(implicit statsReceiver: StatsReceiver = NullStatsReceiver): Cosmos = {
+}
 
-    val repositories = new MultiRepository(
-      sourcesStorage,
-      universeClient
-    )
-
-    val packageAddHandler = enableIfSome(objectStorages, "package add") {
-      case (_, stagedStorage) => new PackageAddHandler(repositories, stagedStorage, installQueue)
-    }
-
-    val serviceStartHandler = enableIfSome(objectStorages, "service start") {
-      case (localPackageCollection, _) =>
-        new ServiceStartHandler(localPackageCollection, packageRunner)
-    }
-
-    new Cosmos(
-      new CapabilitiesHandler,
-      packageAddHandler,
-      new PackageDescribeHandler(repositories),
-      new PackageInstallHandler(repositories, packageRunner),
-      new ListHandler(adminRouter, uri => repositories.getRepository(uri)),
-      new ListVersionsHandler(repositories),
-      new PackageRenderHandler(repositories),
-      new PackageRepositoryAddHandler(sourcesStorage),
-      new PackageRepositoryDeleteHandler(sourcesStorage),
-      new PackageRepositoryListHandler(sourcesStorage),
-      new PackageSearchHandler(repositories),
-      new UninstallHandler(adminRouter, repositories),
-      serviceStartHandler
-    )(statsReceiver)
-  }
-
-  private[this] def enableIfSome[A, Req, Res](requirement: Option[A], operationName: String)(
-    f: A => EndpointHandler[Req, Res]
-  ): EndpointHandler[Req, Res] = {
-    requirement.fold[EndpointHandler[Req, Res]](new NotConfiguredHandler(operationName))(f)
-  }
+object Main extends CosmosApp {
+  override val extraEndpoints: Endpoint[Json] = Endpoint.empty
 }
