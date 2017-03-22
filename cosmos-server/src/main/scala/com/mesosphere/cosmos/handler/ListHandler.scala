@@ -135,6 +135,8 @@ private[cosmos] final class ListHandler(
               rpc.v1.model.Installation(app.id, pkgInfo)
             }
         case (app, None) =>
+          // TODO: This doesn't look right. decodeInstallPackageInformation can throw yet it is not getting captured
+          // by future.value
           Future.value(rpc.v1.model.Installation(app.id, decodeInstalledPackageInformation(app)))
       }
     }
