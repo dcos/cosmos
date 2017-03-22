@@ -30,5 +30,6 @@ package object model {
 
     def packageMetadata: Option[String] = app.labels.get(MarathonApp.metadataLabel)
 
+    def serviceOptions: Option[String] = app.labels.get(MarathonApp.optionsLabel)
   }
 }

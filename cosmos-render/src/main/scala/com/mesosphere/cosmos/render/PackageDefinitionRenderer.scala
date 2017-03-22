@@ -44,10 +44,11 @@ object PackageDefinitionRenderer {
         ).flatten.foldLeft(JsonObject.empty)(merge)
 
         validateOptionsAgainstSchema(pkgDef, defaultOptionsAndUserOptions).flatMap { _ =>
-          // now that we know the users options are valid for the schema, we build up a composite json object
-          // to send into the mustache context for rendering. The following seq prepares for the merge
-          // of all the options, documents at later indices have higher priority than lower index objects
-          // order here is important, DO NOT carelessly re-order.
+          /* now that we know the users options are valid for the schema, we build up a composite
+           * json object to send into the mustache context for rendering. The following seq
+           * prepares for the merge of all the options, documents at later indices have higher
+           * priority than lower index objects order here is important, DO NOT carelessly re-order.
+           */
           val mergedOptions = Seq(
             Some(defaultOptionsAndUserOptions),
             resourceJson(pkgDef)
@@ -56,17 +57,20 @@ object PackageDefinitionRenderer {
           renderTemplate(m.v2AppMustacheTemplate, mergedOptions).flatMap { mJson =>
             extractLabels(Json.fromJsonObject(mJson))
               .map { existingLabels =>
-                val labels = MarathonLabels(pkgDef, sourceUri)
+                val labels = MarathonLabels(pkgDef, sourceUri, defaultOptionsAndUserOptions)
 
                 val newLabelsAndAppId = Seq(
-                  Some(labels.requiredLabelsJson).map(
-                    obj => JsonObject.singleton("labels", Json.fromJsonObject(obj))
+                  Some(
+                    JsonObject.singleton("labels", Json.fromJsonObject(labels.requiredLabelsJson))
                   ),
-                  Some(existingLabels).map(
-                    obj => JsonObject.singleton("labels", Json.fromJsonObject(obj))
+                  Some(
+                    JsonObject.singleton("labels", Json.fromJsonObject(existingLabels))
                   ),
-                  Some(labels.nonOverridableLabelsJson).map(
-                    obj => JsonObject.singleton("labels", Json.fromJsonObject(obj))
+                  Some(
+                    JsonObject.singleton(
+                      "labels",
+                      Json.fromJsonObject(labels.nonOverridableLabelsJson)
+                    )
                   ),
                   marathonAppId.map(appIdDoc)
                 ).flatten.foldLeft(JsonObject.empty)(merge)
