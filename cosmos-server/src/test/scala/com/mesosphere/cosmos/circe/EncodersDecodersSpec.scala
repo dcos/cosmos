@@ -310,7 +310,7 @@ class EncodersDecodersSpec extends FreeSpec with PropertyChecks with Matchers {
       val ls = List("hello", "world")
       val string = ls.asJson.noSpaces
       val string64 = Base64.getEncoder.encodeToString(string.getBytes(StandardCharsets.UTF_8))
-      assertResult(Right(ls))(decode64[List[String]](string64))
+      assertResult(ls)(decode64[List[String]](string64))
     }
   }
 

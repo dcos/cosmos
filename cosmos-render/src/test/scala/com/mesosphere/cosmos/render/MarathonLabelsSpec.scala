@@ -1,6 +1,5 @@
 package com.mesosphere.cosmos.render
 
-import cats.syntax.either._
 import com.mesosphere.cosmos.label
 import com.mesosphere.cosmos.label.v1.circe.Decoders._
 import com.mesosphere.cosmos.thirdparty.marathon.model.MarathonApp
@@ -13,18 +12,20 @@ import com.mesosphere.universe.v3.syntax.PackageDefinitionOps._
 import com.netaporter.uri.Uri
 import com.twitter.bijection.Conversion.asMethod
 import io.circe.Decoder
+import io.circe.Json
 import io.circe.JsonObject
 import io.circe.jawn.decode
+import io.circe.jawn.parse
 import io.circe.syntax._
 import java.nio.charset.StandardCharsets
 import java.util.Base64
 import org.scalatest.Assertion
 import org.scalatest.FreeSpec
-import scala.util.Right
+import org.scalatest.Matchers
 import scala.util.Success
 import scala.util.Try
 
-final class MarathonLabelsSpec extends FreeSpec {
+final class MarathonLabelsSpec extends FreeSpec with Matchers {
 
   val RepoUri = Uri.parse("some/repo/uri")
   val Options = JsonObject.fromMap(
@@ -43,11 +44,11 @@ final class MarathonLabelsSpec extends FreeSpec {
           RepoUri,
           Options
         )
+
         val packageMetadata = decodeRequiredLabel[label.v1.model.PackageMetadata](
           marathonLabels,
           MarathonApp.metadataLabel
         )
-        // TODO: Assert Option is there
 
         assertCompatible(TestingPackages.MinimalV3ModelV2PackageDefinition, packageMetadata)
       }
@@ -63,31 +64,39 @@ final class MarathonLabelsSpec extends FreeSpec {
           MarathonApp.metadataLabel
         )
 
-        // TODO: Assert Option is there
-
         assertCompatible(TestingPackages.MaximalV3ModelV2PackageDefinition, packageMetadata)
       }
     }
 
   }
 
-  "nonOverridableLabels" in {
-    assertResult(Map())(
+  "nonOverridableLabels" - {
+    "minimal" in {
       MarathonLabels(
         TestingPackages.MinimalV3ModelV2PackageDefinition,
         RepoUri,
         Options
+      ).nonOverridableLabels shouldBe (
+        Map(
+          MarathonApp.optionsLabel -> MarathonLabels.encodeForLabel(Json.fromJsonObject(Options))
+        )
+      )
+    }
+
+    "maximal" in {
+      // TODO: Assert Option is there
+      val labels = MarathonLabels(
+        TestingPackages.MaximalV3ModelV2PackageDefinition,
+        RepoUri,
+        Options
       ).nonOverridableLabels
-    )
 
-    // TODO: Assert Option is there
+      decode64[universe.v3.model.Command](labels(MarathonApp.commandLabel)) shouldBe (
+        Right(TestingPackages.MaximalV3ModelV2PackageDefinition.command.get)
+      )
 
-    assertResult(List(TestingPackages.MaximalV3ModelV2PackageDefinition.command.get))(
-      MarathonLabels(TestingPackages.MaximalV3ModelV2PackageDefinition, RepoUri, Options)
-        .nonOverridableLabels
-        .values
-        .map(decode64[universe.v3.model.Command](_).toOption.get)
-    )
+      parse64(labels(MarathonApp.optionsLabel)) shouldBe Right(Json.fromJsonObject(Options))
+    }
   }
 
   private[this] def decodeRequiredLabel[A: Decoder](labels: MarathonLabels, label: String): A = {
@@ -98,6 +107,10 @@ final class MarathonLabelsSpec extends FreeSpec {
 
   private[this] def decode64[T: Decoder](value: String): Either[io.circe.Error, T] = {
     decode[T](new String(Base64.getDecoder.decode(value), StandardCharsets.UTF_8))
+  }
+
+  private[this] def parse64(value: String): Either[io.circe.Error, Json] = {
+    parse(new String(Base64.getDecoder.decode(value), StandardCharsets.UTF_8))
   }
 
   private[this] def assertCompatible(
