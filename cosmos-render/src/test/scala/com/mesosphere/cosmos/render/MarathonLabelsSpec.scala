@@ -84,7 +84,6 @@ final class MarathonLabelsSpec extends FreeSpec with Matchers {
     }
 
     "maximal" in {
-      // TODO: Assert Option is there
       val labels = MarathonLabels(
         TestingPackages.MaximalV3ModelV2PackageDefinition,
         RepoUri,
