@@ -13,6 +13,8 @@ import com.mesosphere.universe.v3.syntax.PackageDefinitionOps._
 import com.netaporter.uri.Uri
 import com.twitter.bijection.Conversion.asMethod
 import io.circe.Decoder
+import io.circe.JsonObject
+import io.circe.syntax._
 import org.scalatest.Assertion
 import org.scalatest.FreeSpec
 import scala.util.Right
@@ -22,32 +24,63 @@ import scala.util.Try
 final class MarathonLabelsSpec extends FreeSpec {
 
   val RepoUri = Uri.parse("some/repo/uri")
+  val Options = JsonObject.fromMap(
+    Map(
+      "integer" -> 7.asJson,
+      "string" -> "value".asJson
+    )
+  )
 
   "requiredLabels" - {
 
     "MarathonApp.metadataLabel" - {
       "minimal" in {
-        val marathonLabels = MarathonLabels(TestingPackages.MinimalV3ModelV2PackageDefinition, RepoUri)
-        val packageMetadata =
-          decodeRequiredLabel[label.v1.model.PackageMetadata](marathonLabels, MarathonApp.metadataLabel)
+        val marathonLabels = MarathonLabels(
+          TestingPackages.MinimalV3ModelV2PackageDefinition,
+          RepoUri,
+          Options
+        )
+        val packageMetadata = decodeRequiredLabel[label.v1.model.PackageMetadata](
+          marathonLabels,
+          MarathonApp.metadataLabel
+        )
+        // TODO: Assert Option is there
 
         assertCompatible(TestingPackages.MinimalV3ModelV2PackageDefinition, packageMetadata)
       }
 
       "maximal" in {
-        val marathonLabels = MarathonLabels(TestingPackages.MaximalV3ModelV2PackageDefinition, RepoUri)
-        val packageMetadata =
-          decodeRequiredLabel[label.v1.model.PackageMetadata](marathonLabels, MarathonApp.metadataLabel)
+        val marathonLabels = MarathonLabels(
+          TestingPackages.MaximalV3ModelV2PackageDefinition,
+          RepoUri,
+          Options
+        )
+        val packageMetadata = decodeRequiredLabel[label.v1.model.PackageMetadata](
+          marathonLabels,
+          MarathonApp.metadataLabel
+        )
+
+        // TODO: Assert Option is there
 
         assertCompatible(TestingPackages.MaximalV3ModelV2PackageDefinition, packageMetadata)
       }
     }
 
   }
+
   "nonOverridableLabels" in {
-    assertResult(Map())(MarathonLabels(TestingPackages.MinimalV3ModelV2PackageDefinition, RepoUri).nonOverridableLabels)
+    assertResult(Map())(
+      MarathonLabels(
+        TestingPackages.MinimalV3ModelV2PackageDefinition,
+        RepoUri,
+        Options
+      ).nonOverridableLabels
+    )
+
+    // TODO: Assert Option is there
+
     assertResult(List(TestingPackages.MaximalV3ModelV2PackageDefinition.command.get))(
-      MarathonLabels(TestingPackages.MaximalV3ModelV2PackageDefinition, RepoUri)
+      MarathonLabels(TestingPackages.MaximalV3ModelV2PackageDefinition, RepoUri, Options)
         .nonOverridableLabels
         .values
         .map(JsonUtil.decode64[universe.v3.model.Command](_).toOption.get)
