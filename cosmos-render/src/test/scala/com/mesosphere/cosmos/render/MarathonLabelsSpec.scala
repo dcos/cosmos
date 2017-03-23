@@ -14,7 +14,10 @@ import com.netaporter.uri.Uri
 import com.twitter.bijection.Conversion.asMethod
 import io.circe.Decoder
 import io.circe.JsonObject
+import io.circe.jawn.decode
 import io.circe.syntax._
+import java.nio.charset.StandardCharsets
+import java.util.Base64
 import org.scalatest.Assertion
 import org.scalatest.FreeSpec
 import scala.util.Right
@@ -83,14 +86,18 @@ final class MarathonLabelsSpec extends FreeSpec {
       MarathonLabels(TestingPackages.MaximalV3ModelV2PackageDefinition, RepoUri, Options)
         .nonOverridableLabels
         .values
-        .map(JsonUtil.decode64[universe.v3.model.Command](_).toOption.get)
+        .map(decode64[universe.v3.model.Command](_).toOption.get)
     )
   }
 
   private[this] def decodeRequiredLabel[A: Decoder](labels: MarathonLabels, label: String): A = {
     val base64Json = labels.requiredLabels(MarathonApp.metadataLabel)
-    val Right(data) = JsonUtil.decode64[A](base64Json)
+    val Right(data) = decode64[A](base64Json)
     data
+  }
+
+  private[this] def decode64[T: Decoder](value: String): Either[io.circe.Error, T] = {
+    decode[T](new String(Base64.getDecoder.decode(value), StandardCharsets.UTF_8))
   }
 
   private[this] def assertCompatible(
