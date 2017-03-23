@@ -1,6 +1,5 @@
 package com.mesosphere.cosmos
 
-import _root_.io.circe.Json
 import _root_.io.finch._
 import _root_.io.finch.circe.dropNullKeys._
 import _root_.io.finch.internal.ToResponse
@@ -12,6 +11,8 @@ import com.mesosphere.cosmos.repository.DefaultInstaller
 import com.mesosphere.cosmos.repository.DefaultUniverseInstaller
 import com.mesosphere.cosmos.repository.LocalPackageCollection
 import com.mesosphere.cosmos.repository.OperationProcessor
+import com.mesosphere.cosmos.repository.PackageCollection
+import com.mesosphere.cosmos.repository.PackageSourcesStorage
 import com.mesosphere.cosmos.repository.SyncFutureLeader
 import com.mesosphere.cosmos.repository.Uninstaller
 import com.mesosphere.cosmos.repository.UniverseClient
@@ -22,6 +23,7 @@ import com.mesosphere.cosmos.storage.ObjectStorage
 import com.mesosphere.cosmos.storage.PackageStorage
 import com.mesosphere.cosmos.storage.StagedPackageStorage
 import com.mesosphere.cosmos.storage.installqueue.InstallQueue
+import com.mesosphere.cosmos.storage.installqueue.ProducerView
 import com.mesosphere.cosmos.storage.installqueue.ReaderView
 import com.netaporter.uri.Uri
 import com.twitter.app.App
@@ -187,6 +189,11 @@ with Logging {
 object Main extends CosmosApp {
 
   override def main(): Unit = {
+    val api = buildApi()
+    start(api)
+  }
+
+  def buildApi() = {
     implicit val sr = statsReceiver
 
     val adminRouter = configureDcosClients().get
@@ -236,8 +243,19 @@ object Main extends CosmosApp {
       universeClient
     )
 
+    buildHandlersAndEndpoints(adminRouter, sourcesStorage, objectStorages, repositories, installQueue, packageRunner)
+  }
+
+  def buildHandlersAndEndpoints(
+    adminRouter: AdminRouter,
+    sourcesStorage: PackageSourcesStorage,
+    objectStorages: Option[(LocalPackageCollection, StagedPackageStorage)],
+    repositories: MultiRepository,
+    producerView: ProducerView,
+    packageRunner: PackageRunner
+  ) = {
     val packageAddHandler = enableIfSome(objectStorages, "package add") {
-      case (_, stagedStorage) => new PackageAddHandler(repositories, stagedStorage, installQueue)
+      case (_, stagedStorage) => new PackageAddHandler(repositories, stagedStorage, producerView)
     }
 
     val serviceStartHandler = enableIfSome(objectStorages, "service start") {
@@ -264,23 +282,19 @@ object Main extends CosmosApp {
     import cosmosApi._
 
     // Keep alphabetized
-    val allEndpoints = (
-      capabilities
-        :+: packageAdd
-        :+: packageDescribe
-        :+: packageInstall
-        :+: packageList
-        :+: packageListVersions
-        :+: packageRender
-        :+: packageRepositoryAdd
-        :+: packageRepositoryDelete
-        :+: packageRepositoryList
-        :+: packageSearch
-        :+: packageUninstall
-        :+: serviceStart
-      )
-
-    start(allEndpoints)
+    (capabilities
+      :+: packageAdd
+      :+: packageDescribe
+      :+: packageInstall
+      :+: packageList
+      :+: packageListVersions
+      :+: packageRender
+      :+: packageRepositoryAdd
+      :+: packageRepositoryDelete
+      :+: packageRepositoryList
+      :+: packageSearch
+      :+: packageUninstall
+      :+: serviceStart)
   }
 
   private def enableIfSome[A, Req, Res](requirement: Option[A], operationName: String)(
