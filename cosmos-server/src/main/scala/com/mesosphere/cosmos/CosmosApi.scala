@@ -29,12 +29,12 @@ import com.mesosphere.cosmos.storage.StagedPackageStorage
 import com.mesosphere.cosmos.storage.installqueue.ProducerView
 
 final class CosmosApi(
-  adminRouter: AdminRouter,
-  sourcesStorage: PackageSourcesStorage,
-  objectStorages: Option[(LocalPackageCollection, StagedPackageStorage)],
-  repositories: MultiRepository,
-  producerView: ProducerView,
-  packageRunner: PackageRunner
+  val adminRouter: AdminRouter,
+  val sourcesStorage: PackageSourcesStorage,
+  val objectStorages: Option[(LocalPackageCollection, StagedPackageStorage)],
+  val repositories: MultiRepository,
+  val producerView: ProducerView,
+  val packageRunner: PackageRunner
 ) {
 
   import CosmosApi._

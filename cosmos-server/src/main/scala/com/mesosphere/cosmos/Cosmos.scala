@@ -19,6 +19,7 @@ import com.mesosphere.cosmos.storage.ObjectStorage
 import com.mesosphere.cosmos.storage.PackageStorage
 import com.mesosphere.cosmos.storage.StagedPackageStorage
 import com.mesosphere.cosmos.storage.installqueue.InstallQueue
+import com.mesosphere.cosmos.storage.installqueue.ProcessorView
 import com.mesosphere.cosmos.storage.installqueue.ReaderView
 import com.netaporter.uri.Uri
 import com.twitter.app.App
@@ -40,6 +41,7 @@ import com.twitter.server.Lifecycle
 import com.twitter.server.Stats
 import com.twitter.util.Await
 import com.twitter.util.Try
+import org.apache.curator.framework.CuratorFramework
 import org.slf4j.Logger
 import scala.concurrent.duration._
 
@@ -120,6 +122,43 @@ with Logging {
 
   lazy val logger: Logger = org.slf4j.LoggerFactory.getLogger(getClass)
 
+  final def buildApi(): CosmosApi = {
+    implicit val sr = statsReceiver
+
+    val adminRouter = configureDcosClients().get
+    val packageRunner = new MarathonPackageRunner(adminRouter)
+
+    val zkUri = zookeeperUri()
+    logger.info("Using {} for the ZooKeeper connection", zkUri)
+
+    val zkClient = zookeeper.Clients.createAndInitialize(zkUri)
+    onExit(zkClient.close())
+
+    val sourcesStorage = ZkRepositoryList(zkClient)
+    onExit(sourcesStorage.close())
+
+    val installQueue = InstallQueue(zkClient)
+    onExit(installQueue.close())
+
+    val objectStorages = configureObjectStorage(zkClient, installQueue)
+
+    val universeClient = UniverseClient(adminRouter)
+
+    val repositories = new MultiRepository(
+      sourcesStorage,
+      universeClient
+    )
+
+    new CosmosApi(
+      adminRouter,
+      sourcesStorage,
+      objectStorages,
+      repositories,
+      installQueue,
+      packageRunner
+    )
+  }
+
   final def start[A](allEndpoints: Endpoint[A])(implicit
     tr: ToResponse.Aux[A, Application.Json],
     tre: ToResponse.Aux[Exception, Application.Json]
@@ -152,107 +191,12 @@ with Logging {
     }
   }
 
-  private[this] def startServer(service: Service[Request, Response]): Option[ListeningServer] = {
-    getHttpInterface.map { iface =>
-      Http
-        .server
-        .configured(Label("http"))
-        .serve(iface, service)
-    }
-  }
-
-  private[this] def startTlsServer(
-    service: Service[Request, Response]
-  ): Option[ListeningServer] = {
-    getHttpsInterface.map { iface =>
-      Http
-        .server
-        .configured(Label("https"))
-        .withTransport.tls(
-          getCertificatePath.get.toString,
-          getKeyPath.get.toString,
-          None,
-          None,
-          None
-        )
-        .serve(iface, service)
-    }
-  }
-
-}
-
-object Main extends CosmosApp {
-
-  override def main(): Unit = {
-    val api = buildApi()
-    start(api.allEndpoints)
-  }
-
-  def buildApi(): CosmosApi = {
-    implicit val sr = statsReceiver
-
-    val adminRouter = configureDcosClients().get
-    val packageRunner = new MarathonPackageRunner(adminRouter)
-
-    val zkUri = zookeeperUri()
-    logger.info("Using {} for the ZooKeeper connection", zkUri)
-
-    val zkClient = zookeeper.Clients.createAndInitialize(zkUri)
-    onExit(zkClient.close())
-
-    val sourcesStorage = ZkRepositoryList(zkClient)
-    onExit(sourcesStorage.close())
-
-    val installQueue = InstallQueue(zkClient)
-    onExit(installQueue.close())
-
-    val allObjectStorages = configureObjectStorage(installQueue)
-
-    for ((packageStorage, stageStorage, _) <- allObjectStorages) {
-      val processingLeader = SyncFutureLeader(
-        zkClient,
-        OperationProcessor(
-          installQueue,
-          DefaultInstaller(stageStorage, packageStorage),
-          DefaultUniverseInstaller(packageStorage),
-          Uninstaller.Noop
-        ),
-        GarbageCollector(
-          stageStorage,
-          installQueue,
-          1.hour
-        )
-      )
-      onExit(processingLeader.close())
-    }
-
-    val objectStorages = allObjectStorages.map {
-      case (_, stagedStorage, localCollection) =>
-        (localCollection, stagedStorage)
-    }
-
-    val universeClient = UniverseClient(adminRouter)
-
-    val repositories = new MultiRepository(
-      sourcesStorage,
-      universeClient
-    )
-
-    new CosmosApi(
-      adminRouter,
-      sourcesStorage,
-      objectStorages,
-      repositories,
-      installQueue,
-      packageRunner
-    )
-  }
-
-  private def configureObjectStorage(
-    installQueue: ReaderView
+  private[this] def configureObjectStorage(
+    zkClient: CuratorFramework,
+    installQueue: ProcessorView with ReaderView
   )(
     implicit statsReceiver: StatsReceiver
-  ): Option[(PackageStorage, StagedPackageStorage, LocalPackageCollection)] = {
+  ): Option[(LocalPackageCollection, StagedPackageStorage)] = {
     def fromFlag(
       flag: Flag[ObjectStorageUri],
       description: String
@@ -262,7 +206,7 @@ object Main extends CosmosApp {
       flag.get.map(uri => ObjectStorage.fromUri(uri)(statsReceiver))
     }
 
-    (
+    val validObjectStorages = (
       fromFlag(packageStorageUri, "package").map(PackageStorage(_)),
       fromFlag(stagedPackageStorageUri, "staged package").map(StagedPackageStorage(_))
     ) match {
@@ -281,9 +225,41 @@ object Main extends CosmosApp {
             "stage storage provided."
         )
     }
+
+    for ((packageStorage, stageStorage, _) <- validObjectStorages) {
+      configureBackgroundTasks(zkClient, installQueue, packageStorage, stageStorage)
+    }
+
+    validObjectStorages.map {
+      case (_, stagedStorage, localCollection) => (localCollection, stagedStorage)
+    }
   }
 
-  private def configureDcosClients(): Try[AdminRouter] = {
+  private[this] def configureBackgroundTasks(
+    zkClient: CuratorFramework,
+    installQueue: ProcessorView with ReaderView,
+    packageStorage: PackageStorage,
+    stageStorage: StagedPackageStorage
+  ): Unit = {
+    val processingLeader = SyncFutureLeader(
+      zkClient,
+      OperationProcessor(
+        installQueue,
+        DefaultInstaller(stageStorage, packageStorage),
+        DefaultUniverseInstaller(packageStorage),
+        Uninstaller.Noop
+      ),
+      GarbageCollector(
+        stageStorage,
+        installQueue,
+        1.hour
+      )
+    )
+
+    onExit(processingLeader.close())
+  }
+
+  private[this] def configureDcosClients(): Try[AdminRouter] = {
     import com.netaporter.uri.dsl._
 
     Try(dcosUri())
@@ -328,6 +304,42 @@ object Main extends CosmosApp {
           new MesosMasterClient(mesosMaster._1, mesosMaster._2)
         )
       }
+  }
+
+  private[this] def startServer(service: Service[Request, Response]): Option[ListeningServer] = {
+    getHttpInterface.map { iface =>
+      Http
+        .server
+        .configured(Label("http"))
+        .serve(iface, service)
+    }
+  }
+
+  private[this] def startTlsServer(
+    service: Service[Request, Response]
+  ): Option[ListeningServer] = {
+    getHttpsInterface.map { iface =>
+      Http
+        .server
+        .configured(Label("https"))
+        .withTransport.tls(
+          getCertificatePath.get.toString,
+          getKeyPath.get.toString,
+          None,
+          None,
+          None
+        )
+        .serve(iface, service)
+    }
+  }
+
+}
+
+object Main extends CosmosApp {
+
+  override def main(): Unit = {
+    val api = buildApi()
+    start(api.allEndpoints)
   }
 
 }
