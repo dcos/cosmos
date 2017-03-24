@@ -305,7 +305,7 @@ class EncodersDecodersSpec extends FreeSpec with PropertyChecks with Matchers {
     }
   }
 
-  "Base64 Decoder" - {
+  "Base64 decoder" - {
     "basic example" in {
       val ls = List("hello", "world")
       val string = ls.asJson.noSpaces
@@ -314,4 +314,12 @@ class EncodersDecodersSpec extends FreeSpec with PropertyChecks with Matchers {
     }
   }
 
+  "Base64 parser" - {
+    "basic example" in {
+      val ls = Json.fromValues(List("hello".asJson, "world".asJson))
+      val string = ls.noSpaces
+      val string64 = Base64.getEncoder.encodeToString(string.getBytes(StandardCharsets.UTF_8))
+      assertResult(ls)(parse64(string64))
+    }
+  }
 }

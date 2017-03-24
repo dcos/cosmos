@@ -5,7 +5,6 @@ import com.mesosphere.cosmos.label.v1.circe.Decoders._
 import com.mesosphere.cosmos.thirdparty.marathon.model.MarathonApp
 import com.mesosphere.universe
 import com.mesosphere.universe.bijection.UniverseConversions._
-import com.mesosphere.universe.common.JsonUtil
 import com.mesosphere.universe.test.TestingPackages
 import com.mesosphere.universe.v3.circe.Decoders._
 import com.mesosphere.universe.v3.syntax.PackageDefinitionOps._
@@ -27,8 +26,8 @@ import scala.util.Try
 
 final class MarathonLabelsSpec extends FreeSpec with Matchers {
 
-  val RepoUri = Uri.parse("some/repo/uri")
-  val Options = JsonObject.fromMap(
+  private[this] val repoUri = Uri.parse("some/repo/uri")
+  private[this] val options = JsonObject.fromMap(
     Map(
       "integer" -> 7.asJson,
       "string" -> "value".asJson
@@ -41,8 +40,8 @@ final class MarathonLabelsSpec extends FreeSpec with Matchers {
       "minimal" in {
         val marathonLabels = MarathonLabels(
           TestingPackages.MinimalV3ModelV2PackageDefinition,
-          RepoUri,
-          Options
+          repoUri,
+          options
         )
 
         val packageMetadata = decodeRequiredLabel[label.v1.model.PackageMetadata](
@@ -56,8 +55,8 @@ final class MarathonLabelsSpec extends FreeSpec with Matchers {
       "maximal" in {
         val marathonLabels = MarathonLabels(
           TestingPackages.MaximalV3ModelV2PackageDefinition,
-          RepoUri,
-          Options
+          repoUri,
+          options
         )
         val packageMetadata = decodeRequiredLabel[label.v1.model.PackageMetadata](
           marathonLabels,
@@ -74,27 +73,26 @@ final class MarathonLabelsSpec extends FreeSpec with Matchers {
     "minimal" in {
       MarathonLabels(
         TestingPackages.MinimalV3ModelV2PackageDefinition,
-        RepoUri,
-        Options
-      ).nonOverridableLabels shouldBe (
+        repoUri,
+        options
+      ).nonOverridableLabels shouldBe
         Map(
-          MarathonApp.optionsLabel -> MarathonLabels.encodeForLabel(Json.fromJsonObject(Options))
+          MarathonApp.optionsLabel -> MarathonLabels.encodeForLabel(Json.fromJsonObject(options))
         )
-      )
     }
 
     "maximal" in {
       val labels = MarathonLabels(
         TestingPackages.MaximalV3ModelV2PackageDefinition,
-        RepoUri,
-        Options
+        repoUri,
+        options
       ).nonOverridableLabels
 
-      decode64[universe.v3.model.Command](labels(MarathonApp.commandLabel)) shouldBe (
+      decode64[universe.v3.model.Command](labels(MarathonApp.commandLabel)) shouldBe
         Right(TestingPackages.MaximalV3ModelV2PackageDefinition.command.get)
-      )
 
-      parse64(labels(MarathonApp.optionsLabel)) shouldBe Right(Json.fromJsonObject(Options))
+
+      parse64(labels(MarathonApp.optionsLabel)) shouldBe Right(Json.fromJsonObject(options))
     }
   }
 
