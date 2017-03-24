@@ -39,7 +39,8 @@ class PackageRenderHandlerSpec extends FreeSpec {
         )),
         "labels" -> Json.fromFields(Seq(
           "DCOS_PACKAGE_RELEASE" -> "0".asJson,
-          "DCOS_PACKAGE_SOURCE" -> "https://downloads.mesosphere.com/universe/helloworld.zip".asJson,
+          "DCOS_PACKAGE_SOURCE" ->
+            "https://downloads.mesosphere.com/universe/helloworld.zip".asJson,
           "DCOS_PACKAGE_COMMAND" ->
             ("eyJwaXAiOlsiZGNvczwxLjAiLCJnaXQraHR0cHM6Ly9naXRodWIuY29tL21lc29zcGhlcmUvZGNvcy1oZW" +
               "xsb3dvcmxkLmdpdCNkY29zLWhlbGxvd29ybGQ9MC4xLjAiXX0=").asJson,
@@ -51,6 +52,7 @@ class PackageRenderHandlerSpec extends FreeSpec {
              "c3BoZXJlL2Rjb3MtaGVsbG93b3JsZCIsImZyYW1ld29yayI6ZmFsc2UsInByZUluc3RhbGxOb3RlcyI6Ik" +
              "Egc2FtcGxlIHByZS1pbnN0YWxsYXRpb24gbWVzc2FnZSIsInBvc3RJbnN0YWxsTm90ZXMiOiJBIHNhbXBs" +
              "ZSBwb3N0LWluc3RhbGxhdGlvbiBtZXNzYWdlIn0=").asJson,
+          "DCOS_PACKAGE_OPTIONS" -> "eyJwb3J0Ijo4MDgwfQ==".asJson,
           "DCOS_PACKAGE_REGISTRY_VERSION" -> "2.0".asJson,
           "DCOS_PACKAGE_VERSION" -> "0.1.0".asJson,
           "DCOS_PACKAGE_NAME" -> "helloworld".asJson,
