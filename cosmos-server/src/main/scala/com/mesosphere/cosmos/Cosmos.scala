@@ -45,70 +45,6 @@ import org.apache.curator.framework.CuratorFramework
 import org.slf4j.Logger
 import scala.concurrent.duration._
 
-final class Cosmos[A](allEndpoints: Endpoint[A])(implicit
-  statsReceiver: StatsReceiver = NullStatsReceiver,
-  tr: ToResponse.Aux[A, Application.Json],
-  tre: ToResponse.Aux[Exception, Application.Json]
-) {
-
-  lazy val logger: Logger = org.slf4j.LoggerFactory.getLogger(classOf[Cosmos[_]])
-
-  val service: Service[Request, Response] = {
-    val stats = statsReceiver.scope("errorFilter")
-
-    val api = allEndpoints.handle {
-      case re: CosmosError =>
-        stats.counter(s"definedError/${sanitiseClassName(re.getClass)}").incr()
-        val output = Output.failure(
-          re,
-          re.status
-        ).withHeader(
-          Fields.ContentType -> MediaTypes.ErrorResponse.show
-        )
-        re.getHeaders.foldLeft(output) { case (out, kv) => out.withHeader(kv) }
-      case fe @ (_: _root_.io.finch.Error | _: _root_.io.finch.Errors) =>
-        stats.counter(s"finchError/${sanitiseClassName(fe.getClass)}").incr()
-        Output.failure(
-          fe.asInstanceOf[Exception], // Must be an Exception based on the types
-          Status.BadRequest
-        ).withHeader(
-          Fields.ContentType -> MediaTypes.ErrorResponse.show
-        )
-      case e: Exception =>
-        stats.counter(s"unhandledException/${sanitiseClassName(e.getClass)}").incr()
-        logger.warn("Unhandled exception: ", e)
-        Output.failure(
-          e,
-          Status.InternalServerError
-        ).withHeader(
-          Fields.ContentType -> MediaTypes.ErrorResponse.show
-        )
-      case t: Throwable =>
-        stats.counter(s"unhandledThrowable/${sanitiseClassName(t.getClass)}").incr()
-        logger.warn("Unhandled throwable: ", t)
-        Output.failure(
-          new Exception(t),
-          Status.InternalServerError
-        ).withHeader(
-          Fields.ContentType -> MediaTypes.ErrorResponse.show
-        )
-    }
-
-    api.toServiceAs[Application.Json]
-  }
-
-  /**
-    * Removes characters from class names that are disallowed by some metrics systems.
-    *
-    * @param clazz the class whose name is to be santised
-    * @return The name of the specified class with all "illegal characters" replaced with '.'
-    */
-  private[this] def sanitiseClassName(clazz: Class[_]): String = {
-    clazz.getName.replaceAllLiterally("$", ".")
-  }
-
-}
-
 trait CosmosApp
 extends App
 with AdminHttpServer
@@ -117,6 +53,8 @@ with Lifecycle
 with Lifecycle.Warmup
 with Stats
 with Logging {
+
+  import CosmosApp._
 
   def main(): Unit
 
@@ -166,7 +104,7 @@ with Logging {
     HttpProxySupport.configureProxySupport()
     implicit val sr = statsReceiver
 
-    val service = LoggingFilter.andThen(new Cosmos(allEndpoints).service)
+    val service = LoggingFilter.andThen(buildService(allEndpoints))
     val maybeHttpServer = startServer(service)
     val maybeHttpsServer = startTlsServer(service)
 
@@ -306,7 +244,59 @@ with Logging {
       }
   }
 
-  private[this] def startServer(service: Service[Request, Response]): Option[ListeningServer] = {
+  private[this] def buildService[A](endpoints: Endpoint[A])(implicit
+    statsReceiver: StatsReceiver,
+    tr: ToResponse.Aux[A, Application.Json],
+    tre: ToResponse.Aux[Exception, Application.Json]
+  ): Service[Request, Response] = {
+    val stats = statsReceiver.scope("errorFilter")
+
+    val api = endpoints.handle {
+      case re: CosmosError =>
+        stats.counter(s"definedError/${sanitiseClassName(re.getClass)}").incr()
+        val output = Output.failure(
+          re,
+          re.status
+        ).withHeader(
+          Fields.ContentType -> MediaTypes.ErrorResponse.show
+        )
+        re.getHeaders.foldLeft(output) { case (out, kv) => out.withHeader(kv) }
+      case fe @ (_: _root_.io.finch.Error | _: _root_.io.finch.Errors) =>
+        stats.counter(s"finchError/${sanitiseClassName(fe.getClass)}").incr()
+        Output.failure(
+          fe.asInstanceOf[Exception], // Must be an Exception based on the types
+          Status.BadRequest
+        ).withHeader(
+          Fields.ContentType -> MediaTypes.ErrorResponse.show
+        )
+      case e: Exception =>
+        stats.counter(s"unhandledException/${sanitiseClassName(e.getClass)}").incr()
+        logger.warn("Unhandled exception: ", e)
+        Output.failure(
+          e,
+          Status.InternalServerError
+        ).withHeader(
+          Fields.ContentType -> MediaTypes.ErrorResponse.show
+        )
+      case t: Throwable =>
+        stats.counter(s"unhandledThrowable/${sanitiseClassName(t.getClass)}").incr()
+        logger.warn("Unhandled throwable: ", t)
+        Output.failure(
+          new Exception(t),
+          Status.InternalServerError
+        ).withHeader(
+          Fields.ContentType -> MediaTypes.ErrorResponse.show
+        )
+    }
+
+    api.toServiceAs[Application.Json]
+  }
+
+}
+
+object CosmosApp {
+
+  private def startServer(service: Service[Request, Response]): Option[ListeningServer] = {
     getHttpInterface.map { iface =>
       Http
         .server
@@ -315,7 +305,7 @@ with Logging {
     }
   }
 
-  private[this] def startTlsServer(
+  private def startTlsServer(
     service: Service[Request, Response]
   ): Option[ListeningServer] = {
     getHttpsInterface.map { iface =>
@@ -323,19 +313,29 @@ with Logging {
         .server
         .configured(Label("https"))
         .withTransport.tls(
-          getCertificatePath.get.toString,
-          getKeyPath.get.toString,
-          None,
-          None,
-          None
-        )
+        getCertificatePath.get.toString,
+        getKeyPath.get.toString,
+        None,
+        None,
+        None
+      )
         .serve(iface, service)
     }
   }
 
+  /**
+   * Removes characters from class names that are disallowed by some metrics systems.
+   *
+   * @param clazz the class whose name is to be santised
+   * @return The name of the specified class with all "illegal characters" replaced with '.'
+   */
+  private def sanitiseClassName(clazz: Class[_]): String = {
+    clazz.getName.replaceAllLiterally("$", ".")
+  }
+
 }
 
-object Main extends CosmosApp {
+object Cosmos extends CosmosApp {
 
   override def main(): Unit = {
     val api = buildApi()
