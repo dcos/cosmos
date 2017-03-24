@@ -3,7 +3,6 @@ package com.mesosphere.cosmos
 import _root_.io.circe.Json
 import _root_.io.finch._
 import _root_.io.finch.circe.dropNullKeys._
-import _root_.io.finch.internal.ToResponse
 import com.mesosphere.cosmos.app.Logging
 import com.mesosphere.cosmos.circe.Encoders._
 import com.mesosphere.cosmos.finch.DispatchingMediaTypedEncoder
@@ -69,7 +68,12 @@ import com.twitter.util.Try
 import org.apache.curator.framework.CuratorFramework
 import org.slf4j.Logger
 import scala.concurrent.duration._
+import shapeless.:+:
+import shapeless.CNil
+import shapeless.Coproduct
 import shapeless.HNil
+import shapeless.Inl
+import shapeless.Inr
 
 trait CosmosApp
 extends App
@@ -123,10 +127,8 @@ with Logging {
     )
   }
 
-  // The return type of this method is Endpoint[Json :+: Json :+: ... :+: CNil],
-  // with a `Json` for each endpoint. We let Scala infer the type instead of writing it explicitly.
   // scalastyle:off method.length
-  protected final def buildEndpoints(components: Components) = {
+  protected final def buildEndpoints(components: Components): Endpoint[Json :+: CNil] = {
     import components._
 
     val packageInstallHandler = new PackageInstallHandler(repositories, packageRunner)
@@ -188,14 +190,11 @@ with Logging {
       :+: packageRepositoryList
       :+: packageSearch
       :+: packageUninstall
-      :+: serviceStart)
+      :+: serviceStart).map(degenerateCoproduct)
   }
   // scalastyle:on method.length
 
-  protected final def start[A](allEndpoints: Endpoint[A])(implicit
-    tr: ToResponse.Aux[A, Application.Json],
-    tre: ToResponse.Aux[Exception, Application.Json]
-  ): Unit = {
+  protected final def start(allEndpoints: Endpoint[Json :+: CNil]): Unit = {
     HttpProxySupport.configureProxySupport()
     implicit val sr = statsReceiver
 
@@ -339,10 +338,8 @@ with Logging {
       }
   }
 
-  private[this] def buildService[A](endpoints: Endpoint[A])(implicit
-    statsReceiver: StatsReceiver,
-    tr: ToResponse.Aux[A, Application.Json],
-    tre: ToResponse.Aux[Exception, Application.Json]
+  private[this] def buildService(endpoints: Endpoint[Json :+: CNil])(implicit
+    statsReceiver: StatsReceiver
   ): Service[Request, Response] = {
     val stats = statsReceiver.scope("errorFilter")
 
@@ -451,6 +448,13 @@ object CosmosApp {
    */
   private def sanitizeClassName(clazz: Class[_]): String = {
     clazz.getName.replaceAllLiterally("$", ".")
+  }
+
+  implicit def degenerateCoproduct[H, T <: Coproduct](implicit
+    toOne: T => H :+: CNil
+  ): (H :+: T => H :+: CNil) = {
+    case Inl(h) => Inl(h)
+    case Inr(t) => toOne(t)
   }
 
 }
