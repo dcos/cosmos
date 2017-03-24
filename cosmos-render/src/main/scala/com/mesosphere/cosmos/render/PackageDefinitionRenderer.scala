@@ -49,7 +49,7 @@ object PackageDefinitionRenderer {
            * prepares for the merge of all the options, documents at later indices have higher
            * priority than lower index objects order here is important, DO NOT carelessly re-order.
            */
-          val mergedOptions = Seq(
+          val mergedOptions = List(
             Some(defaultOptionsAndUserOptions),
             resourceJson(pkgDef)
           ).flatten.foldLeft(JsonObject.empty)(merge)
@@ -59,28 +59,25 @@ object PackageDefinitionRenderer {
               .map { existingLabels =>
                 val labels = MarathonLabels(pkgDef, sourceUri, defaultOptionsAndUserOptions)
 
-                val newLabelsAndAppId = Seq(
-                  Some(
-                    JsonObject.singleton("labels", Json.fromJsonObject(labels.requiredLabelsJson))
-                  ),
-                  Some(
-                    JsonObject.singleton("labels", Json.fromJsonObject(existingLabels))
-                  ),
-                  Some(
-                    JsonObject.singleton(
-                      "labels",
-                      Json.fromJsonObject(labels.nonOverridableLabelsJson)
-                    )
-                  ),
-                  marathonAppId.map(appIdDoc)
-                ).flatten.foldLeft(JsonObject.empty)(merge)
-
-                merge(mJson, newLabelsAndAppId)
+                (marathonAppId.map(appIdDoc) ::
+                  generateLabelsPartialObjects(labels, existingLabels).map(Some(_))
+                ).flatten.foldLeft(mJson)(merge)
               }
               .map(Json.fromJsonObject)
           }
         }
     }
+  }
+
+  private[this] def generateLabelsPartialObjects(
+    labels: MarathonLabels,
+    existingLabels: JsonObject
+  ): List[JsonObject] = {
+    List(
+      JsonObject.singleton("labels", Json.fromJsonObject(labels.requiredLabelsJson)),
+      JsonObject.singleton("labels", Json.fromJsonObject(existingLabels)),
+      JsonObject.singleton("labels", Json.fromJsonObject(labels.nonOverridableLabelsJson))
+    )
   }
 
   private[this] def validateOptionsAgainstSchema(
