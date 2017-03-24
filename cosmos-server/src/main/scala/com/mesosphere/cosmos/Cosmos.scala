@@ -1,25 +1,51 @@
 package com.mesosphere.cosmos
 
+import _root_.io.circe.Json
 import _root_.io.finch._
 import _root_.io.finch.circe.dropNullKeys._
 import _root_.io.finch.internal.ToResponse
 import com.mesosphere.cosmos.app.Logging
 import com.mesosphere.cosmos.circe.Encoders._
+import com.mesosphere.cosmos.finch.DispatchingMediaTypedEncoder
+import com.mesosphere.cosmos.finch.EndpointHandler
+import com.mesosphere.cosmos.finch.FinchExtensions._
+import com.mesosphere.cosmos.finch.MediaTypedRequestDecoder
+import com.mesosphere.cosmos.finch.RequestValidators
+import com.mesosphere.cosmos.handler.CapabilitiesHandler
+import com.mesosphere.cosmos.handler.ListHandler
+import com.mesosphere.cosmos.handler.ListVersionsHandler
+import com.mesosphere.cosmos.handler.NotConfiguredHandler
+import com.mesosphere.cosmos.handler.PackageAddHandler
+import com.mesosphere.cosmos.handler.PackageDescribeHandler
+import com.mesosphere.cosmos.handler.PackageInstallHandler
+import com.mesosphere.cosmos.handler.PackageRenderHandler
+import com.mesosphere.cosmos.handler.PackageRepositoryAddHandler
+import com.mesosphere.cosmos.handler.PackageRepositoryDeleteHandler
+import com.mesosphere.cosmos.handler.PackageRepositoryListHandler
+import com.mesosphere.cosmos.handler.PackageSearchHandler
+import com.mesosphere.cosmos.handler.ServiceStartHandler
+import com.mesosphere.cosmos.handler.UninstallHandler
 import com.mesosphere.cosmos.repository.DefaultInstaller
 import com.mesosphere.cosmos.repository.DefaultUniverseInstaller
 import com.mesosphere.cosmos.repository.LocalPackageCollection
 import com.mesosphere.cosmos.repository.OperationProcessor
+import com.mesosphere.cosmos.repository.PackageSourcesStorage
 import com.mesosphere.cosmos.repository.SyncFutureLeader
 import com.mesosphere.cosmos.repository.Uninstaller
 import com.mesosphere.cosmos.repository.UniverseClient
 import com.mesosphere.cosmos.repository.ZkRepositoryList
 import com.mesosphere.cosmos.rpc.MediaTypes
+import com.mesosphere.cosmos.rpc.v1.circe.MediaTypedBodyParsers._
+import com.mesosphere.cosmos.rpc.v1.circe.MediaTypedEncoders._
+import com.mesosphere.cosmos.rpc.v1.circe.MediaTypedRequestDecoders._
+import com.mesosphere.cosmos.rpc.v2.circe.MediaTypedEncoders._
 import com.mesosphere.cosmos.storage.GarbageCollector
 import com.mesosphere.cosmos.storage.ObjectStorage
 import com.mesosphere.cosmos.storage.PackageStorage
 import com.mesosphere.cosmos.storage.StagedPackageStorage
 import com.mesosphere.cosmos.storage.installqueue.InstallQueue
 import com.mesosphere.cosmos.storage.installqueue.ProcessorView
+import com.mesosphere.cosmos.storage.installqueue.ProducerView
 import com.mesosphere.cosmos.storage.installqueue.ReaderView
 import com.netaporter.uri.Uri
 import com.twitter.app.App
@@ -33,7 +59,6 @@ import com.twitter.finagle.http.Response
 import com.twitter.finagle.http.Status
 import com.twitter.finagle.http.filter.LoggingFilter
 import com.twitter.finagle.param.Label
-import com.twitter.finagle.stats.NullStatsReceiver
 import com.twitter.finagle.stats.StatsReceiver
 import com.twitter.server.Admin
 import com.twitter.server.AdminHttpServer
@@ -44,6 +69,7 @@ import com.twitter.util.Try
 import org.apache.curator.framework.CuratorFramework
 import org.slf4j.Logger
 import scala.concurrent.duration._
+import shapeless.HNil
 
 trait CosmosApp
 extends App
@@ -60,7 +86,7 @@ with Logging {
 
   lazy val logger: Logger = org.slf4j.LoggerFactory.getLogger(getClass)
 
-  final def buildApi(): CosmosApi = {
+  protected final def buildComponents(): Components = {
     implicit val sr = statsReceiver
 
     val adminRouter = configureDcosClients().get
@@ -87,7 +113,7 @@ with Logging {
       universeClient
     )
 
-    new CosmosApi(
+    new Components(
       adminRouter,
       sourcesStorage,
       objectStorages,
@@ -97,7 +123,76 @@ with Logging {
     )
   }
 
-  final def start[A](allEndpoints: Endpoint[A])(implicit
+  // The return type of this method is Endpoint[Json :+: Json :+: ... :+: CNil],
+  // with a `Json` for each endpoint. We let Scala infer the type instead of writing it explicitly.
+  // scalastyle:off method.length
+  protected final def buildEndpoints(components: Components) = {
+    import components._
+
+    val packageInstallHandler = new PackageInstallHandler(repositories, packageRunner)
+    val packageUninstallHandler = new UninstallHandler(adminRouter, repositories)
+    val packageDescribeHandler = new PackageDescribeHandler(repositories)
+    val packageRenderHandler = new PackageRenderHandler(repositories)
+    val packageListVersionsHandler = new ListVersionsHandler(repositories)
+    val packageSearchHandler = new PackageSearchHandler(repositories)
+    val packageListHandler = new ListHandler(adminRouter, uri => repositories.getRepository(uri))
+    val packageRepoListHandler = new PackageRepositoryListHandler(sourcesStorage)
+    val packageRepoAddHandler = new PackageRepositoryAddHandler(sourcesStorage)
+    val packageRepoDeleteHandler = new PackageRepositoryDeleteHandler(sourcesStorage)
+    val capabilitiesHandler = new CapabilitiesHandler
+
+    val packageAddHandler = enableIfSome(objectStorages, "package add") {
+      case (_, stagedStorage) => new PackageAddHandler(repositories, stagedStorage, producerView)
+    }
+
+    val serviceStartHandler = enableIfSome(objectStorages, "service start") {
+      case (localPackageCollection, _) =>
+        new ServiceStartHandler(localPackageCollection, packageRunner)
+    }
+
+    // Package endpoints
+    val pkg = "package"
+    val packageInstall = standardEndpoint(pkg :: "install", packageInstallHandler)
+    val packageUninstall = standardEndpoint(pkg :: "uninstall", packageUninstallHandler)
+    val packageDescribe = standardEndpoint(pkg :: "describe", packageDescribeHandler)
+    val packageRender = standardEndpoint(pkg :: "render", packageRenderHandler)
+    val packageListVersions = standardEndpoint(pkg :: "list-versions", packageListVersionsHandler)
+    val packageSearch = standardEndpoint(pkg :: "search", packageSearchHandler)
+    val packageList = standardEndpoint(pkg :: "list", packageListHandler)
+
+    val repo = "repository"
+    val packageRepositoryList = standardEndpoint(pkg :: repo :: "list", packageRepoListHandler)
+    val packageRepositoryAdd = standardEndpoint(pkg :: repo :: "add", packageRepoAddHandler)
+    val packageRepositoryDelete =
+      standardEndpoint(pkg :: repo :: "delete", packageRepoDeleteHandler)
+
+    val packageAdd =
+      route(post("package" :: "add"), packageAddHandler)(RequestValidators.selectedBody)
+
+    // Service endpoints
+    val serviceStart = standardEndpoint("service" :: "start", serviceStartHandler)
+
+    // Capabilities
+    val capabilities = route(get("capabilities"), capabilitiesHandler)(RequestValidators.noBody)
+
+    // Keep alphabetized
+    (capabilities
+      :+: packageAdd
+      :+: packageDescribe
+      :+: packageInstall
+      :+: packageList
+      :+: packageListVersions
+      :+: packageRender
+      :+: packageRepositoryAdd
+      :+: packageRepositoryDelete
+      :+: packageRepositoryList
+      :+: packageSearch
+      :+: packageUninstall
+      :+: serviceStart)
+  }
+  // scalastyle:on method.length
+
+  protected final def start[A](allEndpoints: Endpoint[A])(implicit
     tr: ToResponse.Aux[A, Application.Json],
     tre: ToResponse.Aux[Exception, Application.Json]
   ): Unit = {
@@ -252,17 +347,17 @@ with Logging {
     val stats = statsReceiver.scope("errorFilter")
 
     val api = endpoints.handle {
-      case re: CosmosError =>
-        stats.counter(s"definedError/${sanitiseClassName(re.getClass)}").incr()
+      case ce: CosmosError =>
+        stats.counter(s"definedError/${sanitizeClassName(ce.getClass)}").incr()
         val output = Output.failure(
-          re,
-          re.status
+          ce,
+          ce.status
         ).withHeader(
           Fields.ContentType -> MediaTypes.ErrorResponse.show
         )
-        re.getHeaders.foldLeft(output) { case (out, kv) => out.withHeader(kv) }
+        ce.getHeaders.foldLeft(output) { case (out, kv) => out.withHeader(kv) }
       case fe @ (_: _root_.io.finch.Error | _: _root_.io.finch.Errors) =>
-        stats.counter(s"finchError/${sanitiseClassName(fe.getClass)}").incr()
+        stats.counter(s"finchError/${sanitizeClassName(fe.getClass)}").incr()
         Output.failure(
           fe.asInstanceOf[Exception], // Must be an Exception based on the types
           Status.BadRequest
@@ -270,7 +365,7 @@ with Logging {
           Fields.ContentType -> MediaTypes.ErrorResponse.show
         )
       case e: Exception =>
-        stats.counter(s"unhandledException/${sanitiseClassName(e.getClass)}").incr()
+        stats.counter(s"unhandledException/${sanitizeClassName(e.getClass)}").incr()
         logger.warn("Unhandled exception: ", e)
         Output.failure(
           e,
@@ -279,7 +374,7 @@ with Logging {
           Fields.ContentType -> MediaTypes.ErrorResponse.show
         )
       case t: Throwable =>
-        stats.counter(s"unhandledThrowable/${sanitiseClassName(t.getClass)}").incr()
+        stats.counter(s"unhandledThrowable/${sanitizeClassName(t.getClass)}").incr()
         logger.warn("Unhandled throwable: ", t)
         Output.failure(
           new Exception(t),
@@ -296,40 +391,65 @@ with Logging {
 
 object CosmosApp {
 
+  final class Components(
+    val adminRouter: AdminRouter,
+    val sourcesStorage: PackageSourcesStorage,
+    val objectStorages: Option[(LocalPackageCollection, StagedPackageStorage)],
+    val repositories: MultiRepository,
+    val producerView: ProducerView,
+    val packageRunner: PackageRunner
+  )
+
+  private def enableIfSome[A, Req, Res](requirement: Option[A], operationName: String)(
+    f: A => EndpointHandler[Req, Res]
+  ): EndpointHandler[Req, Res] = {
+    requirement.fold[EndpointHandler[Req, Res]](new NotConfiguredHandler(operationName))(f)
+  }
+
+  private def standardEndpoint[Req, Res](
+    path: Endpoint[HNil],
+    handler: EndpointHandler[Req, Res]
+  )(implicit
+    accepts: MediaTypedRequestDecoder[Req],
+    produces: DispatchingMediaTypedEncoder[Res]
+  ): Endpoint[Json] = {
+    route(post(path), handler)(RequestValidators.standard)
+  }
+
   private def startServer(service: Service[Request, Response]): Option[ListeningServer] = {
-    getHttpInterface.map { iface =>
+    getHttpInterface.map { interface =>
       Http
         .server
         .configured(Label("http"))
-        .serve(iface, service)
+        .serve(interface, service)
     }
   }
 
   private def startTlsServer(
     service: Service[Request, Response]
   ): Option[ListeningServer] = {
-    getHttpsInterface.map { iface =>
+    getHttpsInterface.map { interface =>
       Http
         .server
         .configured(Label("https"))
         .withTransport.tls(
-        getCertificatePath.get.toString,
-        getKeyPath.get.toString,
-        None,
-        None,
-        None
-      )
-        .serve(iface, service)
+          getCertificatePath.get.toString,
+          getKeyPath.get.toString,
+          None,
+          None,
+          None
+        )
+        .serve(interface, service)
     }
   }
 
   /**
    * Removes characters from class names that are disallowed by some metrics systems.
    *
-   * @param clazz the class whose name is to be santised
+   * @param clazz the class whose name is to be sanitized
    * @return The name of the specified class with all "illegal characters" replaced with '.'
    */
-  private def sanitiseClassName(clazz: Class[_]): String = {
+  private def sanitizeClassName(clazz: Class[_]): String = {
     clazz.getName.replaceAllLiterally("$", ".")
   }
 
@@ -338,8 +458,9 @@ object CosmosApp {
 object Cosmos extends CosmosApp {
 
   override def main(): Unit = {
-    val api = buildApi()
-    start(api.allEndpoints)
+    val components = buildComponents()
+    val endpoints = buildEndpoints(components)
+    start(endpoints)
   }
 
 }
