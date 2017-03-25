@@ -68,6 +68,7 @@ import com.twitter.util.Try
 import org.apache.curator.framework.CuratorFramework
 import org.slf4j.Logger
 import scala.concurrent.duration._
+import scala.language.implicitConversions
 import shapeless.:+:
 import shapeless.CNil
 import shapeless.Coproduct
@@ -128,7 +129,7 @@ with Logging {
   }
 
   // scalastyle:off method.length
-  protected final def buildEndpoints(components: Components): Endpoint[Json :+: CNil] = {
+  protected final def buildEndpoints(components: Components): Endpoint[Json] = {
     import components._
 
     val packageInstallHandler = new PackageInstallHandler(repositories, packageRunner)
@@ -194,7 +195,7 @@ with Logging {
   }
   // scalastyle:on method.length
 
-  protected final def start(allEndpoints: Endpoint[Json :+: CNil]): Unit = {
+  protected final def start(allEndpoints: Endpoint[Json]): Unit = {
     HttpProxySupport.configureProxySupport()
     implicit val sr = statsReceiver
 
@@ -338,7 +339,7 @@ with Logging {
       }
   }
 
-  private[this] def buildService(endpoints: Endpoint[Json :+: CNil])(implicit
+  private[this] def buildService(endpoints: Endpoint[Json])(implicit
     statsReceiver: StatsReceiver
   ): Service[Request, Response] = {
     val stats = statsReceiver.scope("errorFilter")
@@ -450,11 +451,11 @@ object CosmosApp {
     clazz.getName.replaceAllLiterally("$", ".")
   }
 
-  implicit def degenerateCoproduct[H, T <: Coproduct](implicit
-    toOne: T => H :+: CNil
-  ): (H :+: T => H :+: CNil) = {
-    case Inl(h) => Inl(h)
-    case Inr(t) => toOne(t)
+  implicit def degenerateCNil[A](cnil: CNil): A = cnil.impossible
+
+  implicit def degenerateCoproduct[H, T <: Coproduct](implicit toH: T => H): (H :+: T => H) = {
+    case Inl(h) => h
+    case Inr(t) => toH(t)
   }
 
 }
