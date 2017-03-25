@@ -23,6 +23,9 @@ function copy {(
 
   mkdir -p ${TARGET_DIR}
   cp ${PROJECT_DIR}/cosmos-server/target/scala-2.11/cosmos-server_2.11-*-one-jar.jar ${TARGET_DIR}/${ONE_JAR}
+  cp ${PROJECT_DIR}/cosmos-server/target/*.html ${TARGET_DIR}
+  cp ${PROJECT_DIR}/cosmos-server/target/*.raml ${TARGET_DIR}
+  cp ${PROJECT_DIR}/cosmos-server/target/*.swagger ${TARGET_DIR}
 
 )}
 
@@ -51,6 +54,15 @@ function deploy {(
   info "Uploading artifact to: ${url}"
   aws s3 cp ${TARGET_DIR}/${ONE_JAR} ${S3_DEPLOY_BUCKET}/${ONE_JAR}
   aws s3 cp ${TARGET_DIR}/${SHA1_FILE} ${S3_DEPLOY_BUCKET}/${SHA1_FILE}
+
+  # Copy the documentation to S3
+  info "Uploading documentation to: ${S3_DEPLOY_BUCKET}"
+  for SERVICE in capabilities service package
+  do
+    aws s3 cp "${TARGET_DIR}/$SERVICE.html" ${S3_DEPLOY_BUCKET}/
+    aws s3 cp "${TARGET_DIR}/$SERVICE.raml" ${S3_DEPLOY_BUCKET}/
+    aws s3 cp "${TARGET_DIR}/$SERVICE.swagger" ${S3_DEPLOY_BUCKET}/
+  done
 
   info "Generating buildinfo.json"
   cat ${DCOS_IMAGE_DIR}/buildinfo.json | \

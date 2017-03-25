@@ -44,11 +44,12 @@ object PackageDefinitionRenderer {
         ).flatten.foldLeft(JsonObject.empty)(merge)
 
         validateOptionsAgainstSchema(pkgDef, defaultOptionsAndUserOptions).flatMap { _ =>
-          // now that we know the users options are valid for the schema, we build up a composite json object
-          // to send into the mustache context for rendering. The following seq prepares for the merge
-          // of all the options, documents at later indices have higher priority than lower index objects
-          // order here is important, DO NOT carelessly re-order.
-          val mergedOptions = Seq(
+          /* now that we know the users options are valid for the schema, we build up a composite
+           * json object to send into the mustache context for rendering. The following seq
+           * prepares for the merge of all the options, documents at later indices have higher
+           * priority than lower index objects order here is important, DO NOT carelessly re-order.
+           */
+          val mergedOptions = List(
             Some(defaultOptionsAndUserOptions),
             resourceJson(pkgDef)
           ).flatten.foldLeft(JsonObject.empty)(merge)
@@ -56,27 +57,27 @@ object PackageDefinitionRenderer {
           renderTemplate(m.v2AppMustacheTemplate, mergedOptions).flatMap { mJson =>
             extractLabels(Json.fromJsonObject(mJson))
               .map { existingLabels =>
-                val labels = MarathonLabels(pkgDef, sourceUri)
+                val labels = MarathonLabels(pkgDef, sourceUri, defaultOptionsAndUserOptions)
 
-                val newLabelsAndAppId = Seq(
-                  Some(labels.requiredLabelsJson).map(
-                    obj => JsonObject.singleton("labels", Json.fromJsonObject(obj))
-                  ),
-                  Some(existingLabels).map(
-                    obj => JsonObject.singleton("labels", Json.fromJsonObject(obj))
-                  ),
-                  Some(labels.nonOverridableLabelsJson).map(
-                    obj => JsonObject.singleton("labels", Json.fromJsonObject(obj))
-                  ),
-                  marathonAppId.map(appIdDoc)
-                ).flatten.foldLeft(JsonObject.empty)(merge)
-
-                merge(mJson, newLabelsAndAppId)
+                (marathonAppId.map(appIdDoc) ::
+                  generateLabelsPartialObjects(labels, existingLabels).map(Some(_))
+                ).flatten.foldLeft(mJson)(merge)
               }
               .map(Json.fromJsonObject)
           }
         }
     }
+  }
+
+  private[this] def generateLabelsPartialObjects(
+    labels: MarathonLabels,
+    existingLabels: JsonObject
+  ): List[JsonObject] = {
+    List(
+      JsonObject.singleton("labels", Json.fromJsonObject(labels.requiredLabelsJson)),
+      JsonObject.singleton("labels", Json.fromJsonObject(existingLabels)),
+      JsonObject.singleton("labels", Json.fromJsonObject(labels.nonOverridableLabelsJson))
+    )
   }
 
   private[this] def validateOptionsAgainstSchema(

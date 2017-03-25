@@ -1,5 +1,5 @@
 #%RAML 1.0
-title: DC/OS Package and Service
+title: DC/OS Package
 /package:
   description: Implements all packaging operations required for managing packages in DC/OS.
   /install:
@@ -279,43 +279,3 @@ title: DC/OS Package and Service
                   repositories:
                     - name: Universe
                       uri: https://universe.mesosphere.com/repo
-/capabilities:
-  get:
-    description: List all of the capabilities supported by DC/OS.
-    headers:
-      Accept:
-        enum: [application/vnd.dcos.capabilities+json;charset=utf-8;version=v1]
-    responses:
-      200:
-        body:
-          application/vnd.dcos.capabilities+json;charset=utf-8;version=v1:
-            type: !include ../../../../../../../../cosmos-model/src/main/resources/com/mesosphere/cosmos/rpc/v1/model/CapabilitiesResponse-schema.json
-            example:
-              capabilities:
-                - name: PACKAGE_MANAGEMENT
-                - name: SUPPORT_CLUSTER_REPORT
-                - name: METRONOME
-                - name: LOGGING
-/service:
-  /start:
-    post:
-      description: |
-        **Experimental.** Starts a DC/OS Service from a DC/OS package.
-      headers:
-        Accept:
-          enum: [application/vnd.dcos.sevice.start-response+json;charset=utf-8;version=v1]
-      body:
-        application/vnd.dcos.sevice.start-request+json;charset=utf-8;version=v1:
-          type: !include ../../../../../../../../cosmos-model/src/main/resources/com/mesosphere/cosmos/rpc/v1/model/ServiceStartRequest-schema.json
-          example:
-            packageName: cassandra
-            packageVersion: 1.0.24-3.0.10
-      responses:
-        200:
-          body:
-            application/vnd.dcos.sevice.start-response+json;charset=utf-8;version=v1:
-              type: !include ../../../../../../../../cosmos-model/src/main/resources/com/mesosphere/cosmos/rpc/v1/model/ServiceStartResponse-schema.json
-              example:
-                packageName: cassandra
-                packageVersion: 1.0.24-3.0.10
-                appId: /cassandra
