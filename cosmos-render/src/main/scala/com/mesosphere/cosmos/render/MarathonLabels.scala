@@ -10,9 +10,9 @@ import com.mesosphere.universe.v3.model.PackageDefinition
 import com.mesosphere.universe.v3.syntax.PackageDefinitionOps._
 import com.netaporter.uri.Uri
 import com.twitter.bijection.Conversion.asMethod
-import io.circe.{Json, JsonObject}
+import io.circe.Json
+import io.circe.JsonObject
 import io.circe.syntax._
-
 import java.nio.charset.StandardCharsets
 import java.util.Base64
 
@@ -24,7 +24,8 @@ final class MarathonLabels(
   packageReleaseVersion: String,
   packageVersion: String,
   packagingVersion: String,
-  sourceUri: Uri
+  sourceUri: Uri,
+  options: Json
 ) {
 
   def requiredLabelsJson: JsonObject = JsonObject.fromMap(requiredLabels.mapValues(_.asJson))
@@ -48,7 +49,8 @@ final class MarathonLabels(
     Seq(
       commandJson.map(
         command => MarathonApp.commandLabel -> MarathonLabels.encodeForLabel(command)
-      )
+      ),
+      Some(MarathonApp.optionsLabel -> MarathonLabels.encodeForLabel(options))
     ).flatten.toMap
   }
   private[this] def metadataLabel: String = {
@@ -57,7 +59,11 @@ final class MarathonLabels(
 }
 
 object MarathonLabels {
-  def apply(pkg: PackageDefinition, sourceUri: Uri): MarathonLabels = {
+  def apply(
+    pkg: PackageDefinition,
+    sourceUri: Uri,
+    options: JsonObject
+  ): MarathonLabels = {
     new MarathonLabels(
       commandJson = pkg.command.map(_.asJson(universe.v3.circe.Encoders.encodeCommand)),
       isFramework = pkg.framework.getOrElse(false),
@@ -66,7 +72,8 @@ object MarathonLabels {
       packageReleaseVersion = pkg.releaseVersion.value.toString,
       packageVersion = pkg.version.toString,
       packagingVersion = pkg.packagingVersion.show,
-      sourceUri = sourceUri
+      sourceUri = sourceUri,
+      options = Json.fromJsonObject(options)
     )
   }
 

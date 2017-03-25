@@ -10,7 +10,6 @@ import com.mesosphere.cosmos.http.RequestSession
 import com.mesosphere.cosmos.internal.model.MarathonAppOps
 import com.mesosphere.cosmos.internal.model.PackageOrigin
 import com.mesosphere.cosmos.label
-import com.mesosphere.cosmos.label.v1.circe.Decoders._
 import com.mesosphere.cosmos.repository.CosmosRepository
 import com.mesosphere.cosmos.rpc
 import com.mesosphere.cosmos.thirdparty
@@ -20,9 +19,6 @@ import com.netaporter.uri.dsl.stringToUri
 import com.twitter.bijection.Conversion.asMethod
 import com.twitter.util.Future
 import com.twitter.util.Try
-import java.nio.charset.StandardCharsets
-import java.util.Base64
-
 
 private[cosmos] final class ListHandler(
   adminRouter: AdminRouter,
@@ -34,7 +30,7 @@ private[cosmos] final class ListHandler(
     pkgName: String,
     pkgReleaseVersion: universe.v3.model.PackageDefinition.ReleaseVersion,
     repoUri: PackageOrigin,
-    pkgMetadata: Option[String]
+    pkgMetadata: label.v1.model.PackageMetadata
   )
 
   override def apply(
@@ -135,7 +131,7 @@ private[cosmos] final class ListHandler(
               rpc.v1.model.Installation(app.id, pkgInfo)
             }
         case (app, None) =>
-          Future.value(rpc.v1.model.Installation(app.id, decodeInstalledPackageInformation(app)))
+          Future(rpc.v1.model.Installation(app.id, decodeInstalledPackageInformation(app)))
       }
     }
   }
@@ -143,12 +139,7 @@ private[cosmos] final class ListHandler(
   private[this] def decodeInstalledPackageInformation(
     app: App
   ): rpc.v1.model.InstalledPackageInformation = {
-    val pkgMetadata = app.pkgMetadata.getOrElse("")
-    val pkgInfo = new String(
-      Base64.getDecoder.decode(pkgMetadata),
-      StandardCharsets.UTF_8
-    )
-    decode[label.v1.model.PackageMetadata](pkgInfo).as[rpc.v1.model.InstalledPackageInformation]
+    app.pkgMetadata.as[rpc.v1.model.InstalledPackageInformation]
   }
 
 }

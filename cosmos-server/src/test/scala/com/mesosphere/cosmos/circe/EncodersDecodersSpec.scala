@@ -10,6 +10,7 @@ import com.mesosphere.cosmos.PackageFileMissing
 import com.mesosphere.cosmos.RepositoryUriConnection
 import com.mesosphere.cosmos.RepositoryUriSyntax
 import com.mesosphere.cosmos.ServiceUnavailable
+import com.mesosphere.cosmos.circe.Decoders.decode64
 import com.mesosphere.cosmos.http.MediaType
 import com.mesosphere.cosmos.http.MediaTypeSubType
 import com.mesosphere.cosmos.rpc.v1.circe.Decoders._
@@ -30,14 +31,13 @@ import io.circe.ParsingFailure
 import io.circe.jawn
 import io.circe.syntax._
 import java.io.InputStreamReader
+import java.nio.charset.StandardCharsets
+import java.util.Base64
 import java.util.UUID
 import org.scalatest.Assertion
 import org.scalatest.FreeSpec
 import org.scalatest.Matchers
 import org.scalatest.prop.PropertyChecks
-import scala.util.Either
-import scala.util.Left
-import scala.util.Right
 
 class EncodersDecodersSpec extends FreeSpec with PropertyChecks with Matchers {
   import Decoders._
@@ -305,4 +305,21 @@ class EncodersDecodersSpec extends FreeSpec with PropertyChecks with Matchers {
     }
   }
 
+  "Base64 decoder" - {
+    "basic example" in {
+      val ls = List("hello", "world")
+      val string = ls.asJson.noSpaces
+      val string64 = Base64.getEncoder.encodeToString(string.getBytes(StandardCharsets.UTF_8))
+      assertResult(ls)(decode64[List[String]](string64))
+    }
+  }
+
+  "Base64 parser" - {
+    "basic example" in {
+      val ls = Json.fromValues(List("hello".asJson, "world".asJson))
+      val string = ls.noSpaces
+      val string64 = Base64.getEncoder.encodeToString(string.getBytes(StandardCharsets.UTF_8))
+      assertResult(ls)(parse64(string64))
+    }
+  }
 }

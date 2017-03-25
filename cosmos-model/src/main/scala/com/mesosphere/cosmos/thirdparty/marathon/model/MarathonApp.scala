@@ -21,4 +21,5 @@ object MarathonApp {
   val repositoryLabel = "DCOS_PACKAGE_SOURCE"
   val versionLabel = "DCOS_PACKAGE_VERSION"
   val commandLabel = "DCOS_PACKAGE_COMMAND"
+  val optionsLabel = "DCOS_PACKAGE_OPTIONS"
 }
