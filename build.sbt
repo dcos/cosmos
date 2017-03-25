@@ -100,9 +100,7 @@ lazy val render = project.in(file("cosmos-render"))
 lazy val server = project.in(file("cosmos-server"))
   .settings(sharedSettings)
   .settings(filterSettings)
-  .configs(itConfigs: _*)
   .settings(itSettings)
-  .settings(scalastyleItSettings)
   .settings(
     name := baseDirectory.value.name,
     libraryDependencies ++=
