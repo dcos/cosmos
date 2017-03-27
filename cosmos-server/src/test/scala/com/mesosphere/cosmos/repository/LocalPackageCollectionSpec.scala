@@ -20,8 +20,8 @@ final class LocalPackageCollectionSpec extends FreeSpec with Matchers {
   val expectedLatestCeph = universe.v3.model.V3Package(
     packagingVersion=universe.v3.model.V3PackagingVersion,
     name="ceph",
-    version=universe.v3.model.PackageDefinition.Version("1.1"),
-    releaseVersion=universe.v3.model.PackageDefinition.ReleaseVersion(3).get,
+    version=universe.v3.model.Version("1.1"),
+    releaseVersion=universe.v3.model.ReleaseVersion(3).get,
     maintainer="jose@mesosphere.com",
     description="Great object store"
   )
@@ -29,8 +29,8 @@ final class LocalPackageCollectionSpec extends FreeSpec with Matchers {
   val expectedLambda05 = universe.v3.model.V3Package(
     packagingVersion=universe.v3.model.V3PackagingVersion,
     name="lambda",
-    version=universe.v3.model.PackageDefinition.Version("0.5"),
-    releaseVersion=universe.v3.model.PackageDefinition.ReleaseVersion(2).get,
+    version=universe.v3.model.Version("0.5"),
+    releaseVersion=universe.v3.model.ReleaseVersion(2).get,
     maintainer="jose@mesosphere.com",
     description="Great compute framework"
   )
@@ -39,33 +39,33 @@ final class LocalPackageCollectionSpec extends FreeSpec with Matchers {
     universe.v3.model.V3Package(
       packagingVersion=universe.v3.model.V3PackagingVersion,
       name="marathon",
-      version=universe.v3.model.PackageDefinition.Version("0.9"),
+      version=universe.v3.model.Version("0.9"),
       releaseVersion=
-        universe.v3.model.PackageDefinition.ReleaseVersion(4).get, // scalastyle:ignore magic.number
+        universe.v3.model.ReleaseVersion(4).get, // scalastyle:ignore magic.number
       maintainer="jose@mesosphere.com",
       description="paas framework"
     ),
     universe.v3.model.V3Package(
       packagingVersion=universe.v3.model.V3PackagingVersion,
       name="marathon",
-      version=universe.v3.model.PackageDefinition.Version("0.8.4"),
-      releaseVersion=universe.v3.model.PackageDefinition.ReleaseVersion(3).get,
+      version=universe.v3.model.Version("0.8.4"),
+      releaseVersion=universe.v3.model.ReleaseVersion(3).get,
       maintainer="jose@mesosphere.com",
       description="paas framework"
     ),
     universe.v3.model.V3Package(
       packagingVersion=universe.v3.model.V3PackagingVersion,
       name="marathon",
-      version=universe.v3.model.PackageDefinition.Version("1.0"),
-      releaseVersion=universe.v3.model.PackageDefinition.ReleaseVersion(2).get,
+      version=universe.v3.model.Version("1.0"),
+      releaseVersion=universe.v3.model.ReleaseVersion(2).get,
       maintainer="jose@mesosphere.com",
       description="paas framework"
     ),
     universe.v3.model.V3Package(
       packagingVersion=universe.v3.model.V3PackagingVersion,
       name="marathon",
-      version=universe.v3.model.PackageDefinition.Version("0.10"),
-      releaseVersion=universe.v3.model.PackageDefinition.ReleaseVersion(1).get,
+      version=universe.v3.model.Version("0.10"),
+      releaseVersion=universe.v3.model.ReleaseVersion(1).get,
       maintainer="jose@mesosphere.com",
       description="paas framework"
     )
@@ -75,8 +75,8 @@ final class LocalPackageCollectionSpec extends FreeSpec with Matchers {
     universe.v3.model.V3Package(
       packagingVersion=universe.v3.model.V3PackagingVersion,
       name="lambda",
-      version=universe.v3.model.PackageDefinition.Version("0.12"),
-      releaseVersion=universe.v3.model.PackageDefinition.ReleaseVersion(3).get,
+      version=universe.v3.model.Version("0.12"),
+      releaseVersion=universe.v3.model.ReleaseVersion(3).get,
       maintainer="jose@mesosphere.com",
       description="Great compute framework"
     ),
@@ -85,16 +85,16 @@ final class LocalPackageCollectionSpec extends FreeSpec with Matchers {
     universe.v3.model.V3Package(
       packagingVersion=universe.v3.model.V3PackagingVersion,
       name="ceph",
-      version=universe.v3.model.PackageDefinition.Version("0.8.4"),
-      releaseVersion=universe.v3.model.PackageDefinition.ReleaseVersion(2).get,
+      version=universe.v3.model.Version("0.8.4"),
+      releaseVersion=universe.v3.model.ReleaseVersion(2).get,
       maintainer="jose@mesosphere.com",
       description="Great object store"
     ),
     universe.v3.model.V3Package(
       packagingVersion=universe.v3.model.V3PackagingVersion,
       name="ceph",
-      version=universe.v3.model.PackageDefinition.Version("1.5"),
-      releaseVersion=universe.v3.model.PackageDefinition.ReleaseVersion(1).get,
+      version=universe.v3.model.Version("1.5"),
+      releaseVersion=universe.v3.model.ReleaseVersion(1).get,
       maintainer="jose@mesosphere.com",
       description="Great object store"
     )
@@ -124,7 +124,7 @@ final class LocalPackageCollectionSpec extends FreeSpec with Matchers {
     val actualLambda05 = Await.result(
       packageCollection.getPackageByPackageVersion(
         "lambda",
-        Option(universe.v3.model.PackageDefinition.Version("0.5"))
+        Option(universe.v3.model.Version("0.5"))
       )
     )
     actualLambda05 shouldBe rpc.v1.model.Installed(expectedLambda05)
@@ -134,12 +134,12 @@ final class LocalPackageCollectionSpec extends FreeSpec with Matchers {
       Await.result(
         packageCollection.getPackageByPackageVersion(
           "ceph",
-          Option(universe.v3.model.PackageDefinition.Version("1.55"))
+          Option(universe.v3.model.Version("1.55"))
         )
       )
     )
     missingPackageVersion shouldBe Failure(
-      VersionNotFound("ceph", universe.v3.model.PackageDefinition.Version("1.55"))
+      VersionNotFound("ceph", universe.v3.model.Version("1.55"))
     )
 
 
@@ -148,7 +148,7 @@ final class LocalPackageCollectionSpec extends FreeSpec with Matchers {
       Await.result(
         packageCollection.getPackageByPackageVersion(
           "queue",
-          Option(universe.v3.model.PackageDefinition.Version("1.5"))
+          Option(universe.v3.model.Version("1.5"))
         )
       )
     )
@@ -174,8 +174,8 @@ final class LocalPackageCollectionSpec extends FreeSpec with Matchers {
       universe.v3.model.V3Package(
         packagingVersion=universe.v3.model.V3PackagingVersion,
         name="lambda",
-        version=universe.v3.model.PackageDefinition.Version("0.8"),
-        releaseVersion=universe.v3.model.PackageDefinition.ReleaseVersion(3).get,
+        version=universe.v3.model.Version("0.8"),
+        releaseVersion=universe.v3.model.ReleaseVersion(3).get,
         maintainer="jose@mesosphere.com",
         description="Great compute framework"
       )
@@ -184,8 +184,8 @@ final class LocalPackageCollectionSpec extends FreeSpec with Matchers {
     val package010 = universe.v3.model.V3Package(
       packagingVersion=universe.v3.model.V3PackagingVersion,
       name="lambda",
-      version=universe.v3.model.PackageDefinition.Version("0.10"),
-      releaseVersion=universe.v3.model.PackageDefinition.ReleaseVersion(3).get,
+      version=universe.v3.model.Version("0.10"),
+      releaseVersion=universe.v3.model.ReleaseVersion(3).get,
       maintainer="jose@mesosphere.com",
       description="Great compute framework"
     )
@@ -203,8 +203,8 @@ final class LocalPackageCollectionSpec extends FreeSpec with Matchers {
         universe.v3.model.V3Package(
           packagingVersion=universe.v3.model.V3PackagingVersion,
           name="lambda",
-          version=universe.v3.model.PackageDefinition.Version("0.12"),
-          releaseVersion=universe.v3.model.PackageDefinition.ReleaseVersion(3).get,
+          version=universe.v3.model.Version("0.12"),
+          releaseVersion=universe.v3.model.ReleaseVersion(3).get,
           maintainer="jose@mesosphere.com",
           description="Great compute framework"
         )
@@ -214,8 +214,8 @@ final class LocalPackageCollectionSpec extends FreeSpec with Matchers {
           universe.v3.model.V3Package(
             packagingVersion=universe.v3.model.V3PackagingVersion,
             name="lambda",
-            version=universe.v3.model.PackageDefinition.Version("0.11"),
-            releaseVersion=universe.v3.model.PackageDefinition.ReleaseVersion(3).get,
+            version=universe.v3.model.Version("0.11"),
+            releaseVersion=universe.v3.model.ReleaseVersion(3).get,
             maintainer="jose@mesosphere.com",
             description="Great compute framework"
           )
@@ -226,7 +226,7 @@ final class LocalPackageCollectionSpec extends FreeSpec with Matchers {
         rpc.v1.model.ErrorResponse("type", "message", None),
         rpc.v1.model.PackageCoordinate(
           "lambda",
-          universe.v3.model.PackageDefinition.Version("0.9")
+          universe.v3.model.Version("0.9")
         )
       ),
       expectedInstalled
@@ -237,7 +237,7 @@ final class LocalPackageCollectionSpec extends FreeSpec with Matchers {
     LocalPackageCollection.packageByPackageVersion(
       input,
       "lambda",
-      Some(universe.v3.model.PackageDefinition.Version("0.10"))
+      Some(universe.v3.model.Version("0.10"))
     ) shouldBe expected010
     LocalPackageCollection.packageByPackageName(input, "lambda") shouldBe input
 

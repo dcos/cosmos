@@ -13,8 +13,8 @@ import io.circe.generic.semiauto._
 import scala.util.Left
 
 object Decoders {
-  implicit val keyDecodePackageDefinitionVersion: KeyDecoder[universe.v3.model.PackageDefinition.Version] = {
-    KeyDecoder.instance { s => Some(universe.v3.model.PackageDefinition.Version(s)) }
+  implicit val keyDecodePackageDefinitionVersion: KeyDecoder[universe.v3.model.Version] = {
+    KeyDecoder.instance { s => Some(universe.v3.model.Version(s)) }
   }
 
   implicit val decodeSearchResult: Decoder[SearchResult] = deriveDecoder[SearchResult]

@@ -28,7 +28,7 @@ private[cosmos] final class PackageRenderHandler(
     packageCache
       .getPackageByPackageVersion(
         request.packageName,
-        request.packageVersion.as[Option[universe.v3.model.PackageDefinition.Version]]
+        request.packageVersion.as[Option[universe.v3.model.Version]]
       )
       .flatMap { case (pkg, uri) =>
         val packageConfig =

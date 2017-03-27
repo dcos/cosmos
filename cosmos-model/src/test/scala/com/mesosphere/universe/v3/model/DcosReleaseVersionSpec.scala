@@ -1,7 +1,5 @@
 package com.mesosphere.universe.v3.model
 
-import com.mesosphere.universe.v3.model.DcosReleaseVersion.Suffix
-import com.mesosphere.universe.v3.model.DcosReleaseVersion.Version
 import com.twitter.util.Return
 import com.twitter.util.Throw
 import com.twitter.util.Try
@@ -20,8 +18,8 @@ class DcosReleaseVersionSpec extends FreeSpec {
     "Ordering should" - {
       "make operators available" - {
         import DcosReleaseVersion._
-        val left = DcosReleaseVersion(Version(1), List(Version(0)))
-        val right = DcosReleaseVersion(Version(1), List(Version(0), Version(1)))
+        val left = DcosReleaseVersion(DcosReleaseVersion.Version(1), List(DcosReleaseVersion.Version(0)))
+        val right = DcosReleaseVersion(DcosReleaseVersion.Version(1), List(DcosReleaseVersion.Version(0), DcosReleaseVersion.Version(1)))
         "<=" in {
           assert(left <= right)
         }
@@ -127,72 +125,78 @@ class DcosReleaseVersionSpec extends FreeSpec {
     // scalastyle:off magic.number
     "show should render correctly" - {
       "1.0.0-beta" in {
-        val test = DcosReleaseVersion(Version(1), List(Version(0), Version(0)), Some(Suffix("beta")))
+        val test = DcosReleaseVersion(
+          DcosReleaseVersion.Version(1),
+          List(
+            DcosReleaseVersion.Version(0),
+            DcosReleaseVersion.Version(0)
+          ),
+          Some(DcosReleaseVersion.Suffix("beta")))
         assertResult("1.0.0-beta")(test.show)
       }
       "1" in {
-        val test = DcosReleaseVersion(Version(1))
+        val test = DcosReleaseVersion(DcosReleaseVersion.Version(1))
         assertResult("1")(test.show)
       }
       "10-dev" in {
-        val test = DcosReleaseVersion(Version(10), List.empty, Some(Suffix("dev")))
+        val test = DcosReleaseVersion(DcosReleaseVersion.Version(10), List.empty, Some(DcosReleaseVersion.Suffix("dev")))
         assertResult("10-dev")(test.show)
       }
     }
 
-    "Version" - {
+    "DcosReleaseVersion.Version" - {
       "should enforce that values are >= 0" - {
         "-1" in {
           assertAssertionError("assertion failed: Value -1 is not >= 0") {
-            Version(-1)
+            DcosReleaseVersion.Version(-1)
           }
         }
 
         "-100" in {
           assertAssertionError("assertion failed: Value -100 is not >= 0") {
-            Version(-100)
+            DcosReleaseVersion.Version(-100)
           }
         }
 
         "0" in {
-          assertResult(0)(Version(0).value)
+          assertResult(0)(DcosReleaseVersion.Version(0).value)
         }
 
         "1" in {
-          assertResult(1)(Version(1).value)
+          assertResult(1)(DcosReleaseVersion.Version(1).value)
         }
 
         "100" in {
-          assertResult(100)(Version(100).value)
+          assertResult(100)(DcosReleaseVersion.Version(100).value)
         }
       }
     }
     // scalastyle:on magic.number
 
-    "Suffix" - {
+    "DcosReleaseVersion.Suffix" - {
       "enforces format constraints" - {
         "pass for" - {
           "beta" in {
-            assertResult("beta")(Suffix("beta").value)
+            assertResult("beta")(DcosReleaseVersion.Suffix("beta").value)
           }
           "BETA" in {
-            assertResult("BETA")(Suffix("BETA").value)
+            assertResult("BETA")(DcosReleaseVersion.Suffix("BETA").value)
           }
         }
         "fail for" - {
           "!" in {
             assertAssertionError("assertion failed: Value '!' does not conform to expected format ^[A-Za-z0-9]+$") {
-              Suffix("!")
+              DcosReleaseVersion.Suffix("!")
             }
           }
           "-" in {
             assertAssertionError("assertion failed: Value '-' does not conform to expected format ^[A-Za-z0-9]+$") {
-              Suffix("-")
+              DcosReleaseVersion.Suffix("-")
             }
           }
           "." in {
             assertAssertionError("assertion failed: Value '.' does not conform to expected format ^[A-Za-z0-9]+$") {
-              Suffix(".")
+              DcosReleaseVersion.Suffix(".")
             }
           }
         }

@@ -75,9 +75,9 @@ object UniverseConversions {
     Bijection.build(fwd)(rev)
   }
 
-  implicit val v3ReleaseVersionToLong: Injection[universe.v3.model.PackageDefinition.ReleaseVersion, Long] = {
-    val fwd = (x: universe.v3.model.PackageDefinition.ReleaseVersion) => x.value
-    val rev = (universe.v3.model.PackageDefinition.ReleaseVersion.apply _).andThen(
+  implicit val v3ReleaseVersionToLong: Injection[universe.v3.model.ReleaseVersion, Long] = {
+    val fwd = (x: universe.v3.model.ReleaseVersion) => x.value
+    val rev = (universe.v3.model.ReleaseVersion.apply _).andThen(
       BijectionUtils.twitterTryToScalaTry
     )
 
@@ -85,20 +85,20 @@ object UniverseConversions {
   }
 
   implicit val v3ReleaseVersionToString:
-    Injection[universe.v3.model.PackageDefinition.ReleaseVersion, String] = {
-    Injection.connect[universe.v3.model.PackageDefinition.ReleaseVersion, Long, String]
+    Injection[universe.v3.model.ReleaseVersion, String] = {
+    Injection.connect[universe.v3.model.ReleaseVersion, Long, String]
   }
 
   implicit val v3ReleaseVersionToV2ReleaseVersion:
-    Injection[universe.v3.model.PackageDefinition.ReleaseVersion,
+    Injection[universe.v3.model.ReleaseVersion,
       universe.v2.model.ReleaseVersion] = {
-    Injection.connect[universe.v3.model.PackageDefinition.ReleaseVersion,
+    Injection.connect[universe.v3.model.ReleaseVersion,
       String,
       universe.v2.model.ReleaseVersion]
   }
 
   implicit val v3MetadataToV3Package:
-    Conversion[(universe.v3.model.Metadata, universe.v3.model.PackageDefinition.ReleaseVersion),
+    Conversion[(universe.v3.model.Metadata, universe.v3.model.ReleaseVersion),
       universe.v3.model.V3Package] = Conversion.fromFunction { case (metadata, releaseVersion) =>
     universe.v3.model.V3Package(
       packagingVersion=metadata.packagingVersion,
@@ -178,19 +178,19 @@ object UniverseConversions {
 
   implicit val v2PackageDetailsVersionToV3PackageDefinitionVersion:
     Bijection[universe.v2.model.PackageDetailsVersion,
-      universe.v3.model.PackageDefinition.Version] = {
+      universe.v3.model.Version] = {
     Bijection.build {
-      x: universe.v2.model.PackageDetailsVersion => universe.v3.model.PackageDefinition.Version(x.toString)
+      x: universe.v2.model.PackageDetailsVersion => universe.v3.model.Version(x.toString)
     } {
-      x: universe.v3.model.PackageDefinition.Version => universe.v2.model.PackageDetailsVersion(x.toString)
+      x: universe.v3.model.Version => universe.v2.model.PackageDetailsVersion(x.toString)
     }
   }
 
   implicit val v3PackageDefinitionTagToString:
-    Injection[universe.v3.model.PackageDefinition.Tag,
+    Injection[universe.v3.model.Tag,
       String /* "Tag" in universe.v2.model.PackageDefinition is only a String */] = {
-    val fwd = (x: universe.v3.model.PackageDefinition.Tag) => x.value
-    val rev = (universe.v3.model.PackageDefinition.Tag.apply _).andThen(BijectionUtils.twitterTryToScalaTry)
+    val fwd = (x: universe.v3.model.Tag) => x.value
+    val rev = (universe.v3.model.Tag.apply _).andThen(BijectionUtils.twitterTryToScalaTry)
 
     Injection.build(fwd)(rev)
   }

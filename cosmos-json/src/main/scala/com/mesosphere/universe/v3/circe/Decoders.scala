@@ -40,13 +40,13 @@ object Decoders {
   implicit val decodeMarathon: Decoder[Marathon] = deriveDecoder[Marathon]
   implicit val decodePlatforms: Decoder[Platforms] = deriveDecoder[Platforms]
 
-  implicit val decodePackageDefinitionVersion: Decoder[PackageDefinition.Version] = {
-    Decoder.decodeString.map(PackageDefinition.Version)
+  implicit val decodePackageDefinitionVersion: Decoder[Version] = {
+    Decoder.decodeString.map(Version)
   }
 
-  implicit val decodePackageDefinitionTag: Decoder[PackageDefinition.Tag] =
-    Decoder.instance[PackageDefinition.Tag] { (c: HCursor) =>
-      c.as[String].map(PackageDefinition.Tag(_)).flatMap {
+  implicit val decodePackageDefinitionTag: Decoder[Tag] =
+    Decoder.instance[Tag] { (c: HCursor) =>
+      c.as[String].map(Tag(_)).flatMap {
         case Return(r) => Right(r)
         case Throw(ex) =>
           val msg = ex.getMessage.replaceAllLiterally("assertion failed: ", "")
@@ -54,9 +54,9 @@ object Decoders {
       }
     }
 
-  implicit val decodePackageDefinitionReleaseVersion: Decoder[PackageDefinition.ReleaseVersion] =
-    Decoder.instance[PackageDefinition.ReleaseVersion] { (c: HCursor) =>
-      c.as[Long].map(PackageDefinition.ReleaseVersion(_)).flatMap {
+  implicit val decodePackageDefinitionReleaseVersion: Decoder[ReleaseVersion] =
+    Decoder.instance[ReleaseVersion] { (c: HCursor) =>
+      c.as[Long].map(ReleaseVersion(_)).flatMap {
         case Return(v) => Right(v)
         case Throw(e) => Left(DecodingFailure(e.getMessage, c.history))
       }

@@ -58,15 +58,15 @@ private object PackageSearchSpec extends TableDrivenPropertyChecks {
 
   val ArangodbSearchResult = SearchResult(
     name = "arangodb",
-    currentVersion = universe.v3.model.PackageDefinition.Version("0.3.0"),
+    currentVersion = universe.v3.model.Version("0.3.0"),
     versions = Map(
-      universe.v3.model.PackageDefinition.Version("0.2.1") -> universe.v3.model.PackageDefinition.ReleaseVersion(0).get,
-      universe.v3.model.PackageDefinition.Version("0.3.0") -> universe.v3.model.PackageDefinition.ReleaseVersion(1).get),
+      universe.v3.model.Version("0.2.1") -> universe.v3.model.ReleaseVersion(0).get,
+      universe.v3.model.Version("0.3.0") -> universe.v3.model.ReleaseVersion(1).get),
     description = "A distributed free and open-source database with a flexible data model for documents, graphs, and key-values. " +
       "Build high performance applications using a convenient SQL-like query language or JavaScript extensions.",
     framework = true,
     tags = List("arangodb", "NoSQL", "database")
-      .map(universe.v3.model.PackageDefinition.Tag(_).get),
+      .map(universe.v3.model.Tag(_).get),
     selected = Some(true),
     images = Some(universe.v3.model.Images(
       iconSmall = Some("https://raw.githubusercontent.com/arangodb/arangodb-dcos/master/icons/arangodb_small.png"),
@@ -78,21 +78,21 @@ private object PackageSearchSpec extends TableDrivenPropertyChecks {
 
   val CassandraSearchResult = SearchResult(
     name = "cassandra",
-    currentVersion = universe.v3.model.PackageDefinition.Version("1.0.6-2.2.5"),
+    currentVersion = universe.v3.model.Version("1.0.6-2.2.5"),
     versions = Map(
       // scalastyle:off magic.number
-      universe.v3.model.PackageDefinition.Version("0.2.0-1") -> universe.v3.model.PackageDefinition.ReleaseVersion(0).get,
-      universe.v3.model.PackageDefinition.Version("0.2.0-2") -> universe.v3.model.PackageDefinition.ReleaseVersion(1).get,
-      universe.v3.model.PackageDefinition.Version("1.0.5-2.2.5") -> universe.v3.model.PackageDefinition.ReleaseVersion(7).get,
-      universe.v3.model.PackageDefinition.Version("1.0.2-2.2.5") -> universe.v3.model.PackageDefinition.ReleaseVersion(4).get,
-      universe.v3.model.PackageDefinition.Version("2.2.5-0.2.0") -> universe.v3.model.PackageDefinition.ReleaseVersion(3).get,
-      universe.v3.model.PackageDefinition.Version("1.0.6-2.2.5") -> universe.v3.model.PackageDefinition.ReleaseVersion(8).get,
-      universe.v3.model.PackageDefinition.Version("1.0.4-2.2.5") -> universe.v3.model.PackageDefinition.ReleaseVersion(5).get
+      universe.v3.model.Version("0.2.0-1") -> universe.v3.model.ReleaseVersion(0).get,
+      universe.v3.model.Version("0.2.0-2") -> universe.v3.model.ReleaseVersion(1).get,
+      universe.v3.model.Version("1.0.5-2.2.5") -> universe.v3.model.ReleaseVersion(7).get,
+      universe.v3.model.Version("1.0.2-2.2.5") -> universe.v3.model.ReleaseVersion(4).get,
+      universe.v3.model.Version("2.2.5-0.2.0") -> universe.v3.model.ReleaseVersion(3).get,
+      universe.v3.model.Version("1.0.6-2.2.5") -> universe.v3.model.ReleaseVersion(8).get,
+      universe.v3.model.Version("1.0.4-2.2.5") -> universe.v3.model.ReleaseVersion(5).get
       // scalastyle:on magic.number
     ),
     description = "Apache Cassandra running on DC/OS",
     framework = true,
-    tags = List("data", "database", "nosql").map(universe.v3.model.PackageDefinition.Tag(_).get),
+    tags = List("data", "database", "nosql").map(universe.v3.model.Tag(_).get),
     selected = Some(true),
     images = Some(universe.v3.model.Images(
       iconSmall = Some("https://downloads.mesosphere.com/cassandra-mesos/assets/cassandra-small.png"),
@@ -104,14 +104,14 @@ private object PackageSearchSpec extends TableDrivenPropertyChecks {
 
   val CrateSearchResult = SearchResult(
     name = "crate",
-    currentVersion = universe.v3.model.PackageDefinition.Version("0.1.0"),
-    versions = Map(universe.v3.model.PackageDefinition.Version("0.1.0") -> universe.v3.model.PackageDefinition.ReleaseVersion(0).get),
+    currentVersion = universe.v3.model.Version("0.1.0"),
+    versions = Map(universe.v3.model.Version("0.1.0") -> universe.v3.model.ReleaseVersion(0).get),
     description = "A Mesos Framework that allows running and resizing one or multiple Crate database clusters.",
     framework = true,
     tags = List(
       "database",
       "nosql"
-    ).map(universe.v3.model.PackageDefinition.Tag(_).get),
+    ).map(universe.v3.model.Tag(_).get),
     selected = None,
     images = Some(universe.v3.model.Images(
       Some("https://downloads.mesosphere.com/universe/assets/icon-service-crate-small.png"),
@@ -123,13 +123,13 @@ private object PackageSearchSpec extends TableDrivenPropertyChecks {
 
   val MemsqlSearchResult = SearchResult(
     name = "memsql",
-    currentVersion = universe.v3.model.PackageDefinition.Version("0.0.1"),
-    versions = Map(universe.v3.model.PackageDefinition.Version("0.0.1") -> universe.v3.model.PackageDefinition.ReleaseVersion(0).get),
+    currentVersion = universe.v3.model.Version("0.0.1"),
+    versions = Map(universe.v3.model.Version("0.0.1") -> universe.v3.model.ReleaseVersion(0).get),
     description =
       "MemSQL running on Apache Mesos. This framework provides the ability to create and manage " +
         "a set of MemSQL clusters, each running with the MemSQL Ops management tool.",
     framework = true,
-    tags = List("mysql", "database", "rdbms").map(universe.v3.model.PackageDefinition.Tag(_).get),
+    tags = List("mysql", "database", "rdbms").map(universe.v3.model.Tag(_).get),
     selected = None,
     images = Some(universe.v3.model.Images(
       Some("https://downloads.mesosphere.com/universe/assets/icon-service-memsql-small.png"),
@@ -141,8 +141,8 @@ private object PackageSearchSpec extends TableDrivenPropertyChecks {
 
   val MysqlSearchResult = SearchResult(
     name = "mysql",
-    currentVersion = universe.v3.model.PackageDefinition.Version("5.7.12"),
-    versions = Map(universe.v3.model.PackageDefinition.Version("5.7.12") -> universe.v3.model.PackageDefinition.ReleaseVersion(1).get),
+    currentVersion = universe.v3.model.Version("5.7.12"),
+    versions = Map(universe.v3.model.Version("5.7.12") -> universe.v3.model.ReleaseVersion(1).get),
     description =
       "MySQL is the world's most popular open source database. With its proven performance, " +
         "reliability and ease-of-use, MySQL has become the leading database choice for " +
@@ -150,22 +150,22 @@ private object PackageSearchSpec extends TableDrivenPropertyChecks {
         "via e-commerce and information services, all the way to high profile web properties " +
         "including Facebook, Twitter, YouTube, Yahoo! and many more.",
     framework = false,
-    tags = List("database", "mysql", "sql").map(universe.v3.model.PackageDefinition.Tag(_).get),
+    tags = List("database", "mysql", "sql").map(universe.v3.model.Tag(_).get),
     selected = None,
     images = None
   )
 
   val RiakSearchResult = SearchResult(
     name = "riak",
-    currentVersion = universe.v3.model.PackageDefinition.Version("0.1.1"),
-    versions = Map(universe.v3.model.PackageDefinition.Version("0.1.1") -> universe.v3.model.PackageDefinition.ReleaseVersion(0).get),
+    currentVersion = universe.v3.model.Version("0.1.1"),
+    versions = Map(universe.v3.model.Version("0.1.1") -> universe.v3.model.ReleaseVersion(0).get),
     description = "A distributed NoSQL key-value data store that offers high availability, fault tolerance, operational simplicity, and scalability.",
     framework = true,
     tags = List(
       "database",
       "riak",
       "NoSql"
-    ).map(universe.v3.model.PackageDefinition.Tag(_).get),
+    ).map(universe.v3.model.Tag(_).get),
     selected = None,
     images = Some(universe.v3.model.Images(
       Some("https://downloads.mesosphere.com/universe/assets/icon-service-riak-small.png"),

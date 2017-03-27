@@ -37,7 +37,7 @@ object LocalPackage {
       case Invalid(_, packageCoordinate) => packageCoordinate.name
     }
 
-    def packageVersion: universe.v3.model.PackageDefinition.Version = value match {
+    def packageVersion: universe.v3.model.Version = value match {
       case NotInstalled(pkg) => pkg.version
       case Installed(pkg) => pkg.version
       case Installing(pkg) => pkg.version

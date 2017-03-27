@@ -5,6 +5,6 @@ import io.circe.JsonObject
 
 case class ServiceStartRequest(
   packageName: String,
-  packageVersion: Option[universe.v3.model.PackageDefinition.Version] = None,
+  packageVersion: Option[universe.v3.model.Version] = None,
   options: Option[JsonObject] = None
 )

@@ -32,22 +32,22 @@ final class UniverseConversionsSpec extends FreeSpec with Matchers {
   "(Metadata, ReleaseVersion) => V3Package => (Metadata, ReleaseVersion) is the identity fn" - {
 
     "Max metadata" in {
-      val releaseVersion = universe.v3.model.PackageDefinition.ReleaseVersion(Long.MaxValue).get
+      val releaseVersion = universe.v3.model.ReleaseVersion(Long.MaxValue).get
       testCase((MaximalV3ModelMetadata, releaseVersion))
     }
 
     "Min metadata" in {
-      val releaseVersion = universe.v3.model.PackageDefinition.ReleaseVersion(0L).get
+      val releaseVersion = universe.v3.model.ReleaseVersion(0L).get
       testCase((MinimalV3ModelMetadata, releaseVersion))
     }
 
     def testCase(
-      value: (universe.v3.model.Metadata, universe.v3.model.PackageDefinition.ReleaseVersion)
+      value: (universe.v3.model.Metadata, universe.v3.model.ReleaseVersion)
     ): Assertion = {
       assertResult(value) {
         value
           .as[universe.v3.model.V3Package]
-          .as[(universe.v3.model.Metadata, universe.v3.model.PackageDefinition.ReleaseVersion)]
+          .as[(universe.v3.model.Metadata, universe.v3.model.ReleaseVersion)]
       }
     }
 
@@ -68,7 +68,7 @@ final class UniverseConversionsSpec extends FreeSpec with Matchers {
       val command = v3Package.command
 
       val roundTrip = v3Package
-        .as[(universe.v3.model.Metadata, universe.v3.model.PackageDefinition.ReleaseVersion)]
+        .as[(universe.v3.model.Metadata, universe.v3.model.ReleaseVersion)]
         .as[universe.v3.model.V3Package]
 
       assert(roundTrip.selected.isEmpty)
@@ -93,10 +93,10 @@ final class UniverseConversionsSpec extends FreeSpec with Matchers {
   }
 
   "Injection[universe.v3.model.PackageDefinition.Tag, String]" in {
-    val tag = universe.v3.model.PackageDefinition.Tag("foobar").get
+    val tag = universe.v3.model.Tag("foobar").get
     val stringFromTag = tag.as[String]
-    assertResult(Success(tag))(Injection.invert[universe.v3.model.PackageDefinition.Tag, String](stringFromTag))
-    assertResult(true)(Injection.invert[universe.v3.model.PackageDefinition.Tag, String]("foo bar\nfar").isFailure)
+    assertResult(Success(tag))(Injection.invert[universe.v3.model.Tag, String](stringFromTag))
+    assertResult(true)(Injection.invert[universe.v3.model.Tag, String]("foo bar\nfar").isFailure)
     assertResult("foobar")(tag.as[String])
   }
 
@@ -128,14 +128,14 @@ final class UniverseConversionsSpec extends FreeSpec with Matchers {
     assertResult(v2)(v3FromV2.as[universe.v2.model.Resource])
   }
 
-  "Bijection[universe.v2.model.PackageDetailsVersion, universe.v3.model.PackageDefinition.Version]" in {
+  "Bijection[universe.v2.model.PackageDetailsVersion, universe.v3.model.Version]" in {
     val v2: universe.v2.model.PackageDetailsVersion = universe.v2.model.PackageDetailsVersion("2.0")
-    val v3FromV2 = v2.as[universe.v3.model.PackageDefinition.Version]
+    val v3FromV2 = v2.as[universe.v3.model.Version]
     assertResult(v2)(v3FromV2.as[universe.v2.model.PackageDetailsVersion])
 
-    val v3: universe.v3.model.PackageDefinition.Version = universe.v3.model.PackageDefinition.Version("3.0")
+    val v3: universe.v3.model.Version = universe.v3.model.Version("3.0")
     val v2FromV3 = v3.as[universe.v2.model.PackageDetailsVersion]
-    assertResult(v3)(v2FromV3.as[universe.v3.model.PackageDefinition.Version])
+    assertResult(v3)(v2FromV3.as[universe.v3.model.Version])
   }
 
   private[this] def expectV3(v2model: universe.v2.model.PackageDetails): universe.v2.model.PackageDetails = v2model.copy(

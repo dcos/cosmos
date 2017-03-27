@@ -6,7 +6,7 @@ import java.net.MalformedURLException
 import com.mesosphere.cosmos.rpc.v1.model.PackageRepository
 import com.mesosphere.cosmos.test.CosmosIntegrationTestClient
 import com.mesosphere.cosmos.{GenericHttpError, RepositoryUriConnection, RepositoryUriSyntax}
-import com.mesosphere.universe.v3.model.PackageDefinition.Version
+import com.mesosphere.universe.v3.model.Version
 import com.mesosphere.universe.v3.model.{DcosReleaseVersion, DcosReleaseVersionParser}
 import com.mesosphere.universe.v3.syntax.PackageDefinitionOps._
 import com.netaporter.uri.Uri

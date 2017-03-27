@@ -57,7 +57,7 @@ final class PackageAddHandlerSpec extends FreeSpec with MockitoSugar with Proper
         def assertErrorOnPendingOperation(
           packageDef: universe.v3.model.V3Package,
           sourceUri: Uri,
-          packageVersion: Option[universe.v3.model.PackageDefinition.Version]
+          packageVersion: Option[universe.v3.model.Version]
         ): Assertion = {
           val coordinate = rpc.v1.model.PackageCoordinate(packageDef.name, packageDef.version)
           val addRequest = rpc.v1.model.UniverseAddRequest(packageDef.name, packageVersion)

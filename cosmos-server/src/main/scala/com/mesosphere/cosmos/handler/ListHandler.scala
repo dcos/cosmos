@@ -28,7 +28,7 @@ private[cosmos] final class ListHandler(
   private case class App(
     id: thirdparty.marathon.model.AppId,
     pkgName: String,
-    pkgReleaseVersion: universe.v3.model.PackageDefinition.ReleaseVersion,
+    pkgReleaseVersion: universe.v3.model.ReleaseVersion,
     repoUri: PackageOrigin,
     pkgMetadata: label.v1.model.PackageMetadata
   )

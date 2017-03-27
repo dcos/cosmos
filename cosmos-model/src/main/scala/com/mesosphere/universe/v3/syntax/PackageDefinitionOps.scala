@@ -1,7 +1,6 @@
 package com.mesosphere.universe.v3.syntax
 
 import com.mesosphere.cosmos.rpc.v1.model.PackageCoordinate
-import com.mesosphere.universe.v3.model.PackageDefinition.Tag
 import com.mesosphere.universe.v3.model._
 import io.circe.JsonObject
 
@@ -24,13 +23,13 @@ final class PackageDefinitionOps(val pkgDef: PackageDefinition) extends AnyVal {
     case v3: V3Package => v3.name
   }
 
-  def version: PackageDefinition.Version = pkgDef match {
+  def version: Version = pkgDef match {
     case v2: V2Package => v2.version
     case v3: V3Package => v3.version
   }
 
   //noinspection MutatorLikeMethodIsParameterless
-  def releaseVersion: PackageDefinition.ReleaseVersion = pkgDef match {
+  def releaseVersion: ReleaseVersion = pkgDef match {
     case v2: V2Package => v2.releaseVersion
     case v3: V3Package => v3.releaseVersion
   }

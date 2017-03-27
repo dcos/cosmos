@@ -20,16 +20,16 @@ package object model {
 
     def packageName: Option[String] = app.labels.get(MarathonApp.nameLabel)
 
-    def packageReleaseVersion: Option[universe.v3.model.PackageDefinition.ReleaseVersion] = {
+    def packageReleaseVersion: Option[universe.v3.model.ReleaseVersion] = {
       app.labels.get(MarathonApp.releaseLabel).flatMap { label =>
-        Injection.invert[universe.v3.model.PackageDefinition.ReleaseVersion, String](
+        Injection.invert[universe.v3.model.ReleaseVersion, String](
           label
         ).toOption
       }
     }
 
-    def packageVersion: Option[universe.v3.model.PackageDefinition.Version] = {
-      app.labels.get(MarathonApp.versionLabel).map(universe.v3.model.PackageDefinition.Version)
+    def packageVersion: Option[universe.v3.model.Version] = {
+      app.labels.get(MarathonApp.versionLabel).map(universe.v3.model.Version)
     }
 
     def packageRepository: Option[PackageOrigin] = for {

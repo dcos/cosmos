@@ -33,13 +33,13 @@ object Encoders {
 
   implicit val encodePlatforms: Encoder[Platforms] = deriveEncoder[Platforms]
 
-  implicit val encodePackageDefinitionVersion: Encoder[PackageDefinition.Version] = {
+  implicit val encodePackageDefinitionVersion: Encoder[Version] = {
     Encoder.instance(_.toString.asJson)
   }
-  implicit val encodePackageDefinitionTag: Encoder[PackageDefinition.Tag] = {
+  implicit val encodePackageDefinitionTag: Encoder[Tag] = {
     Encoder.instance(_.value.asJson)
   }
-  implicit val encodePackageDefinitionReleaseVersion: Encoder[PackageDefinition.ReleaseVersion] = {
+  implicit val encodePackageDefinitionReleaseVersion: Encoder[ReleaseVersion] = {
     Encoder.instance(_.value.asJson)
   }
   implicit val encodeRepository: Encoder[Repository] = deriveEncoder[Repository]

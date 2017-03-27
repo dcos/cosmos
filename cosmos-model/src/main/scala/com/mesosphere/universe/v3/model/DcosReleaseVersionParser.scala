@@ -1,6 +1,5 @@
 package com.mesosphere.universe.v3.model
 
-import com.mesosphere.universe.v3.model.DcosReleaseVersion.{Suffix, Version}
 import com.twitter.util.{Return, Throw, Try}
 
 import java.util.regex.Pattern
@@ -42,12 +41,12 @@ object DcosReleaseVersionParser {
   }
 
   private[this] def parseVersion(s: String): Try[DcosReleaseVersion.Version] = Try {
-    Version(s.toInt)
+    DcosReleaseVersion.Version(s.toInt)
   }
 
   private[this] def parseSuffix(s: Option[String]): Try[Option[DcosReleaseVersion.Suffix]] = s match {
     case None => Return(None)
-    case Some(suff) => Return(Some(Suffix(suff)))
+    case Some(suff) => Return(Some(DcosReleaseVersion.Suffix(suff)))
   }
 
   private[this] def parseVersionSuffix(version: String, suffix: Option[String], errMsg: String): Try[DcosReleaseVersion] = {

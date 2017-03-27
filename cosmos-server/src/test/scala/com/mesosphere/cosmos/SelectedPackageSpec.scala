@@ -127,10 +127,10 @@ object SelectedPackageSpec {
   def makeSearchResult(selected: Option[Boolean], name: String = "some-package"): SearchResult = {
     SearchResult(
       name = name,
-      currentVersion = universe.v3.model.PackageDefinition.Version("1.2.3"),
+      currentVersion = universe.v3.model.Version("1.2.3"),
       versions = Map(
-        universe.v3.model.PackageDefinition.Version("1.2.3") ->
-          universe.v3.model.PackageDefinition.ReleaseVersion(0).get
+        universe.v3.model.Version("1.2.3") ->
+          universe.v3.model.ReleaseVersion(0).get
       ),
       description = "An arbitrary package",
       tags = Nil,

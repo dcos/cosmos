@@ -38,7 +38,7 @@ final class LocalPackageCollection private(
   // They may only specify the name.
   final def getInstalledPackage(
     packageName: String,
-    packageVersion: Option[universe.v3.model.PackageDefinition.Version]
+    packageVersion: Option[universe.v3.model.Version]
   ): Future[rpc.v1.model.LocalPackage] = {
     list().map { packages =>
       LocalPackageCollection.installedPackage(packages, packageName, packageVersion)
@@ -50,7 +50,7 @@ final class LocalPackageCollection private(
   // describe any package while we only want to render or uninstall installed packages.
   final def getPackageByPackageVersion(
     packageName: String,
-    packageVersion: Option[universe.v3.model.PackageDefinition.Version]
+    packageVersion: Option[universe.v3.model.Version]
   ): Future[rpc.v1.model.LocalPackage] = {
     list().map { packages =>
       LocalPackageCollection.packageByPackageVersion(packages, packageName, packageVersion)
@@ -83,7 +83,7 @@ object LocalPackageCollection {
   def installedPackage(
     packages: List[rpc.v1.model.LocalPackage],
     packageName: String,
-    packageVersion: Option[universe.v3.model.PackageDefinition.Version]
+    packageVersion: Option[universe.v3.model.Version]
   ): rpc.v1.model.LocalPackage = {
     val namedPackages = packages
       .filter(pkg => pkg.packageName == packageName)
@@ -95,7 +95,7 @@ object LocalPackageCollection {
   def packageByPackageVersion(
     packages: List[rpc.v1.model.LocalPackage],
     packageName: String,
-    packageVersion: Option[universe.v3.model.PackageDefinition.Version]
+    packageVersion: Option[universe.v3.model.Version]
   ): rpc.v1.model.LocalPackage = {
     val namedPackages = packages.filter(pkg => pkg.packageName == packageName)
 
@@ -112,7 +112,7 @@ object LocalPackageCollection {
   private[this] def resolveVersion(
     packages: List[rpc.v1.model.LocalPackage],
     packageName: String,
-    packageVersion: Option[universe.v3.model.PackageDefinition.Version]
+    packageVersion: Option[universe.v3.model.Version]
   ): rpc.v1.model.LocalPackage = {
     val optionalPackage = packageVersion match {
       case Some(version) => packages.find(_.packageVersion == version)

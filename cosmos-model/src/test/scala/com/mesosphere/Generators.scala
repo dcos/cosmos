@@ -50,13 +50,13 @@ object Generators {
     } yield universe.v3.model.SemVer(major, minor, patch, preReleases, build)
   }
 
-  private val genVersion: Gen[universe.v3.model.PackageDefinition.Version] = {
-    genSemVer.map(_.toString).map(universe.v3.model.PackageDefinition.Version)
+  private val genVersion: Gen[universe.v3.model.Version] = {
+    genSemVer.map(_.toString).map(universe.v3.model.Version)
   }
 
-  private val genReleaseVersion: Gen[universe.v3.model.PackageDefinition.ReleaseVersion] = for {
+  private val genReleaseVersion: Gen[universe.v3.model.ReleaseVersion] = for {
     num <- Gen.posNum[Long]
-  } yield universe.v3.model.PackageDefinition.ReleaseVersion(num).get
+  } yield universe.v3.model.ReleaseVersion(num).get
 
   val genV3Package: Gen[universe.v3.model.V3Package] = {
     val maxPackageNameLength = 64
@@ -94,10 +94,10 @@ object Generators {
     Gen.nonEmptyContainerOf[Array, Char](genChar).map(new String(_))
   }
 
-  private val genTag: Gen[universe.v3.model.PackageDefinition.Tag] = {
+  private val genTag: Gen[universe.v3.model.Tag] = {
     val genTagChar = arbitrary[Char].suchThat(!_.isWhitespace)
     val genTagString = genNonEmptyString(genTagChar)
-    genTagString.map(universe.v3.model.PackageDefinition.Tag(_).get)
+    genTagString.map(universe.v3.model.Tag(_).get)
   }
 
   private val genUri: Gen[Uri] = {
@@ -119,7 +119,7 @@ object Generators {
 
   object Implicits {
 
-    implicit val arbTag: Arbitrary[universe.v3.model.PackageDefinition.Tag] = Arbitrary(genTag)
+    implicit val arbTag: Arbitrary[universe.v3.model.Tag] = Arbitrary(genTag)
 
     implicit val arbUri: Arbitrary[Uri] = Arbitrary(genUri)
 

@@ -98,10 +98,10 @@ class PackageDefinitionRendererSpec extends FreeSpec with TableDrivenPropertyChe
         val packageDefinition = V3Package(
           packagingVersion = V3PackagingVersion,
           name = packageName,
-          version = PackageDefinition.Version("1.2.3"),
+          version = Version("1.2.3"),
           maintainer = "Mesosphere",
           description = "Testing user options",
-          releaseVersion = PackageDefinition.ReleaseVersion(0).get,
+          releaseVersion = ReleaseVersion(0).get,
           marathon = Some(Marathon(mustacheBytes)),
           config = Some(buildConfig(Json.fromJsonObject(defaultsJson)))
         )
@@ -149,8 +149,8 @@ class PackageDefinitionRendererSpec extends FreeSpec with TableDrivenPropertyChe
 
       val pkg = V2Package(
         name = "test",
-        version = PackageDefinition.Version("1.2.3"),
-        releaseVersion = PackageDefinition.ReleaseVersion(0).get(),
+        version = Version("1.2.3"),
+        releaseVersion = ReleaseVersion(0).get(),
         maintainer = "maintainer",
         description = "description",
         marathon = Marathon(mustacheBytes),
@@ -208,8 +208,8 @@ class PackageDefinitionRendererSpec extends FreeSpec with TableDrivenPropertyChe
     "result in error if no marathon template defined" in {
       val pkg = V3Package(
         name = "test",
-        version = PackageDefinition.Version("1.2.3"),
-        releaseVersion = PackageDefinition.ReleaseVersion(0).get(),
+        version = Version("1.2.3"),
+        releaseVersion = ReleaseVersion(0).get(),
         maintainer = "maintainer",
         description = "description"
       )
@@ -223,8 +223,8 @@ class PackageDefinitionRendererSpec extends FreeSpec with TableDrivenPropertyChe
       val mustacheBytes = ByteBuffer.wrap(mustache.getBytes(StandardCharsets.UTF_8))
       val pkg = V3Package(
         name = "test",
-        version = PackageDefinition.Version("1.2.3"),
-        releaseVersion = PackageDefinition.ReleaseVersion(0).get(),
+        version = Version("1.2.3"),
+        releaseVersion = ReleaseVersion(0).get(),
         maintainer = "maintainer",
         description = "description",
         marathon = Some(Marathon(mustacheBytes))
@@ -244,8 +244,8 @@ class PackageDefinitionRendererSpec extends FreeSpec with TableDrivenPropertyChe
       val mustacheBytes = ByteBuffer.wrap(mustache.getBytes(StandardCharsets.UTF_8))
       val pkg = V3Package(
         name = "test",
-        version = PackageDefinition.Version("1.2.3"),
-        releaseVersion = PackageDefinition.ReleaseVersion(0).get(),
+        version = Version("1.2.3"),
+        releaseVersion = ReleaseVersion(0).get(),
         maintainer = "maintainer",
         description = "description",
         marathon = Some(Marathon(mustacheBytes))
@@ -261,8 +261,8 @@ class PackageDefinitionRendererSpec extends FreeSpec with TableDrivenPropertyChe
       val mustacheBytes = ByteBuffer.wrap(mustache.getBytes(StandardCharsets.UTF_8))
       val pkg = V3Package(
         name = "test",
-        version = PackageDefinition.Version("1.2.3"),
-        releaseVersion = PackageDefinition.ReleaseVersion(0).get(),
+        version = Version("1.2.3"),
+        releaseVersion = ReleaseVersion(0).get(),
         maintainer = "maintainer",
         description = "description",
         marathon = Some(Marathon(mustacheBytes))
@@ -277,8 +277,8 @@ class PackageDefinitionRendererSpec extends FreeSpec with TableDrivenPropertyChe
       val mustacheBytes = ByteBuffer.wrap(mustache.getBytes(StandardCharsets.UTF_8))
       val pkg = V2Package(
         name = "test",
-        version = PackageDefinition.Version("1.2.3"),
-        releaseVersion = PackageDefinition.ReleaseVersion(0).get(),
+        version = Version("1.2.3"),
+        releaseVersion = ReleaseVersion(0).get(),
         maintainer = "maintainer",
         description = "description",
         marathon = Marathon(mustacheBytes),
@@ -316,8 +316,8 @@ class PackageDefinitionRendererSpec extends FreeSpec with TableDrivenPropertyChe
         val mustacheBytes = ByteBuffer.wrap(mustache.getBytes(StandardCharsets.UTF_8))
         val pkg = V2Package(
           name = "test",
-          version = PackageDefinition.Version("1.2.3"),
-          releaseVersion = PackageDefinition.ReleaseVersion(0).get(),
+          version = Version("1.2.3"),
+          releaseVersion = ReleaseVersion(0).get(),
           maintainer = "maintainer",
           description = "description",
           marathon = Marathon(mustacheBytes),
@@ -344,8 +344,8 @@ class PackageDefinitionRendererSpec extends FreeSpec with TableDrivenPropertyChe
         val mustacheBytes = ByteBuffer.wrap(mustache.getBytes(StandardCharsets.UTF_8))
         val pkg = V3Package(
           name = "test",
-          version = PackageDefinition.Version("1.2.3"),
-          releaseVersion = PackageDefinition.ReleaseVersion(0).get(),
+          version = Version("1.2.3"),
+          releaseVersion = ReleaseVersion(0).get(),
           maintainer = "maintainer",
           description = "description",
           marathon = Some(Marathon(mustacheBytes)),
@@ -462,10 +462,10 @@ class PackageDefinitionRendererSpec extends FreeSpec with TableDrivenPropertyChe
     V3Package(
       packagingVersion = V3PackagingVersion,
       name = "testing",
-      version = PackageDefinition.Version("a.b.c"),
+      version = Version("a.b.c"),
       maintainer = "foo@bar.baz",
       description = "blah",
-      releaseVersion = PackageDefinition.ReleaseVersion(0).get,
+      releaseVersion = ReleaseVersion(0).get,
       marathon = Some(Marathon(ByteBuffer.wrap(mustache.getBytes(StandardCharsets.UTF_8))))
     )
   }

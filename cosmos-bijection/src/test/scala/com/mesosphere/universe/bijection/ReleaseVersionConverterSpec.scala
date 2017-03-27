@@ -25,19 +25,19 @@ final class ReleaseVersionConverterSpec extends FreeSpec {
   "v3ReleaseVersionToLong should" - {
 
     "always succeed in the forward direction" in {
-      val version = universe.v3.model.PackageDefinition.ReleaseVersion(2).get
+      val version = universe.v3.model.ReleaseVersion(2).get
       assertResult(2)(version.as[Long])
     }
 
     "succeed in the reverse direction on nonnegative numbers" in {
-      val version = universe.v3.model.PackageDefinition.ReleaseVersion(0).get
+      val version = universe.v3.model.ReleaseVersion(0).get
       assertResult(Success(version))(
-        0L.as[Try[universe.v3.model.PackageDefinition.ReleaseVersion]]
+        0L.as[Try[universe.v3.model.ReleaseVersion]]
       )
     }
 
     "fail in the reverse direction on negative numbers" in {
-      val Failure(iae) = (-1L).as[Try[universe.v3.model.PackageDefinition.ReleaseVersion]]
+      val Failure(iae) = (-1L).as[Try[universe.v3.model.ReleaseVersion]]
       val expectedMessage = "Expected integer value >= 0 for release version, but found [-1]"
       assertResult(expectedMessage)(iae.getMessage)
     }
@@ -53,32 +53,32 @@ final class ReleaseVersionConverterSpec extends FreeSpec {
   }
 
   private[this] def v3ReleaseVersionStringConversions[A](implicit
-    versionToA: Injection[universe.v3.model.PackageDefinition.ReleaseVersion, A],
+    versionToA: Injection[universe.v3.model.ReleaseVersion, A],
     aToString: Bijection[A, String]
   ): Unit = {
 
     "always succeed in the forward direction" in {
       val version = 42L
       assertResult("42") {
-        universe.v3.model.PackageDefinition.ReleaseVersion(version).get.as[A].as[String]
+        universe.v3.model.ReleaseVersion(version).get.as[A].as[String]
       }
     }
 
     "succeed in the reverse direction on nonnegative version numbers" in {
       val version = 24L
-      assertResult(Success(universe.v3.model.PackageDefinition.ReleaseVersion(version).get)) {
-        "24".as[A].as[Try[universe.v3.model.PackageDefinition.ReleaseVersion]]
+      assertResult(Success(universe.v3.model.ReleaseVersion(version).get)) {
+        "24".as[A].as[Try[universe.v3.model.ReleaseVersion]]
       }
     }
 
     "fail in the reverse direction on negative version numbers" in {
-      val Failure(iae) = "-2".as[A].as[Try[universe.v3.model.PackageDefinition.ReleaseVersion]]
+      val Failure(iae) = "-2".as[A].as[Try[universe.v3.model.ReleaseVersion]]
       val message = "Expected integer value >= 0 for release version, but found [-2]"
       assertResult(message)(iae.getMessage)
     }
 
     "fail in the reverse direction on non-number values" in {
-      val Failure(iae) = "foo".as[A].as[Try[universe.v3.model.PackageDefinition.ReleaseVersion]]
+      val Failure(iae) = "foo".as[A].as[Try[universe.v3.model.ReleaseVersion]]
       val message = "Failed to invert: foo"
       assertResult(message)(iae.getMessage)
     }

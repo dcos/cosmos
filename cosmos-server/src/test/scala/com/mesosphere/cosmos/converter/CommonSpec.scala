@@ -17,7 +17,7 @@ final class CommonSpec extends FreeSpec with PropertyChecks {
     forAll { (name: String, version: String) =>
       val expected = rpc.v1.model.PackageCoordinate(
         name,
-        universe.v3.model.PackageDefinition.Version(version)
+        universe.v3.model.Version(version)
       )
       val intermediate: String = expected.as[String]
       val Success(actual) = intermediate.as[Try[rpc.v1.model.PackageCoordinate]]

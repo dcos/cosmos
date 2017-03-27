@@ -15,7 +15,7 @@ import org.scalatest.prop.GeneratorDrivenPropertyChecks.forAll
 final class ResponseSpec extends FreeSpec {
   "Conversion[rpc.v2.model.InstallResponse,Try[rpc.v1.model.InstallResponse]]" - {
     val vstring = "9.87.654.3210"
-    val ver = universe.v3.model.PackageDefinition.Version(vstring)
+    val ver = universe.v3.model.Version(vstring)
     val name = "ResponseSpec"
     val appid = AppId("foobar")
     val clis = List(None, Some("post install notes"))

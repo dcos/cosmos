@@ -296,9 +296,8 @@ final class DefaultUniverseClient(
     universe.v3.model.V2Package(
       universe.v3.model.V2PackagingVersion,
       details.name,
-      universe.v3.model.PackageDefinition
-        .Version(details.version.toString),
-      releaseVersion.as[ScalaTry[universe.v3.model.PackageDefinition.ReleaseVersion]].get,
+      universe.v3.model.Version(details.version.toString),
+      releaseVersion.as[ScalaTry[universe.v3.model.ReleaseVersion]].get,
       details.maintainer,
       details.description,
       universe.v3.model.Marathon(marathon),
@@ -308,7 +307,7 @@ final class DefaultUniverseClient(
           // unfortunately com.mesosphere.universe.v2.model.PackageDetails#tags is a list string due to the
           // more formal type not being defined. The likely of this failing is remove, especially when the
           // source is universe-server.
-          universe.v3.model.PackageDefinition.Tag(tag).get
+          universe.v3.model.Tag(tag).get
       },
       details.selected.orElse(Some(false)),
       details.scm,

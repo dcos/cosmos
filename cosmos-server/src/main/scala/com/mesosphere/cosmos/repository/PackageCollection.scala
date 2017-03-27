@@ -19,7 +19,7 @@ trait PackageCollection {
 
   def getPackageByPackageVersion(
     packageName: String,
-    packageVersion: Option[universe.v3.model.PackageDefinition.Version]
+    packageVersion: Option[universe.v3.model.Version]
   )(implicit session: RequestSession): Future[(universe.v3.model.PackageDefinition, Uri)]
 
   def search(query: Option[String])(implicit session: RequestSession): Future[List[rpc.v1.model.SearchResult]]

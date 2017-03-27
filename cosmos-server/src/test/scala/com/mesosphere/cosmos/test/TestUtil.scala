@@ -7,7 +7,7 @@ import com.mesosphere.cosmos.storage.ObjectStorage
 import com.mesosphere.cosmos.storage.installqueue.ReaderView
 import com.mesosphere.universe
 import com.mesosphere.universe.test.TestingPackages
-import com.mesosphere.universe.v3.model.PackageDefinition.ReleaseVersion
+import com.mesosphere.universe.v3.model.ReleaseVersion
 import com.mesosphere.universe.v3.model._
 import com.twitter.util.Future
 import java.io.IOException

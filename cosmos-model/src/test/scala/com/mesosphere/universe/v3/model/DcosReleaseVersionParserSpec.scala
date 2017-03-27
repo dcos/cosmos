@@ -1,7 +1,5 @@
 package com.mesosphere.universe.v3.model
 
-import com.mesosphere.universe.v3.model.DcosReleaseVersion.Suffix
-import com.mesosphere.universe.v3.model.DcosReleaseVersion.Version
 import com.twitter.util.Return
 import com.twitter.util.Throw
 import com.twitter.util.Try
@@ -15,16 +13,16 @@ class DcosReleaseVersionParserSpec extends FreeSpec {
     "succeed for" - {
       "1" in {
         val Return(parse) = DcosReleaseVersionParser.parse("1")
-        assertResult(DcosReleaseVersion(Version(1)))(parse)
+        assertResult(DcosReleaseVersion(DcosReleaseVersion.Version(1)))(parse)
       }
 
       // scalastyle:off magic.number
       "10.200.3000.40000.500000-oneMillion" in {
         val Return(parse) = DcosReleaseVersionParser.parse("10.200.3000.40000.500000-oneMillion")
         val expected = DcosReleaseVersion(
-          Version(10),
-          List(Version(200), Version(3000), Version(40000), Version(500000)),
-          Some(Suffix("oneMillion"))
+          DcosReleaseVersion.Version(10),
+          List(DcosReleaseVersion.Version(200), DcosReleaseVersion.Version(3000), DcosReleaseVersion.Version(40000), DcosReleaseVersion.Version(500000)),
+          Some(DcosReleaseVersion.Suffix("oneMillion"))
         )
         assertResult(expected)(parse)
       }
@@ -33,9 +31,9 @@ class DcosReleaseVersionParserSpec extends FreeSpec {
       "1-ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789" in {
         val Return(parse) = DcosReleaseVersionParser.parse("1-ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789")
         val expected = DcosReleaseVersion(
-          Version(1),
+          DcosReleaseVersion.Version(1),
           List.empty,
-          Some(Suffix("ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789"))
+          Some(DcosReleaseVersion.Suffix("ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789"))
         )
         assertResult(expected)(parse)
       }
