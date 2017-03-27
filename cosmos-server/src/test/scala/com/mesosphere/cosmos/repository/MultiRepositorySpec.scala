@@ -2,7 +2,7 @@ package com.mesosphere.cosmos
 
 import com.mesosphere.cosmos.repository.PackageSourcesStorage
 import com.mesosphere.cosmos.repository.UniverseClient
-import com.mesosphere.universe.v3.model.PackageDefinition.Version
+import com.mesosphere.universe.v3.model.Version
 import com.mesosphere.cosmos.rpc.v1.model.PackageRepository
 import org.scalatest.FreeSpec
 import com.mesosphere.cosmos.http.RequestSession

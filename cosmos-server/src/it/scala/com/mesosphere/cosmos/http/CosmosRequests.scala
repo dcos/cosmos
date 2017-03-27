@@ -39,7 +39,7 @@ object CosmosRequests {
 
   def packageDescribeV2(
     packageName: String,
-    packageVersion: Option[universe.v3.model.PackageDefinition.Version]
+    packageVersion: Option[universe.v3.model.Version]
   ): HttpRequest = {
     val oldVersion = packageVersion.as[Option[universe.v2.model.PackageDetailsVersion]]
     val describeRequest = rpc.v1.model.DescribeRequest(packageName, oldVersion)

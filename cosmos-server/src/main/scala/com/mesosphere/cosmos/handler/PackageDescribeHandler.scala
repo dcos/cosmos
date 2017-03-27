@@ -18,7 +18,7 @@ private[cosmos] final class PackageDescribeHandler(
   ): Future[universe.v3.model.PackageDefinition] = {
     val packageInfo = packageCollection.getPackageByPackageVersion(
       request.packageName,
-      request.packageVersion.as[Option[universe.v3.model.PackageDefinition.Version]]
+      request.packageVersion.as[Option[universe.v3.model.Version]]
     )
 
     packageInfo.map { case (pkg, _) => pkg }

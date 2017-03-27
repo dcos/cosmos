@@ -15,8 +15,8 @@ import com.mesosphere.cosmos.storage.v1.model.PendingOperation
 import com.mesosphere.cosmos.storage.v1.model.PendingStatus
 import com.mesosphere.cosmos.storage.v1.model.UniverseInstall
 import com.mesosphere.cosmos.zookeeper.Clients
+import com.mesosphere.universe
 import com.mesosphere.universe.test.TestingPackages
-import com.mesosphere.universe.v3.model.PackageDefinition
 import com.twitter.util.Await
 import org.apache.curator.framework.CuratorFramework
 import org.apache.curator.test.TestingCluster
@@ -661,15 +661,15 @@ final class InstallQueueSpec extends fixture.FreeSpec with BeforeAndAfterAll {
 
 object InstallQueueSpec {
   private val coordinate1 =
-    PackageCoordinate("coordinate", PackageDefinition.Version("1"))
+    PackageCoordinate("coordinate", universe.v3.model.Version("1"))
   private val coordinate2 =
-    PackageCoordinate("coordinate", PackageDefinition.Version("2"))
+    PackageCoordinate("coordinate", universe.v3.model.Version("2"))
   private val coordinate3 =
-    PackageCoordinate("coordinate", PackageDefinition.Version("3"))
+    PackageCoordinate("coordinate", universe.v3.model.Version("3"))
   private val coordinate4 =
-    PackageCoordinate("coordinate", PackageDefinition.Version("4"))
+    PackageCoordinate("coordinate", universe.v3.model.Version("4"))
   private val coordinate5 =
-    PackageCoordinate("coordinate", PackageDefinition.Version("5"))
+    PackageCoordinate("coordinate", universe.v3.model.Version("5"))
   private val errorResponse1 =
     ErrorResponse("foo", "bar")
   private val errorResponse2 =

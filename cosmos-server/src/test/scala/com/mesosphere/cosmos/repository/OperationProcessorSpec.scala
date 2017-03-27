@@ -196,7 +196,7 @@ final class OperationProcessorSpec extends FreeSpec with Matchers {
 object OperationProcessorSpec {
   val (packageCoordinate, pkg) = {
     val name = "test"
-    val version = universe.v3.model.PackageDefinition.Version("1.2.3")
+    val version = universe.v3.model.Version("1.2.3")
 
     val packageCoordinate = rpc.v1.model.PackageCoordinate(name, version)
 

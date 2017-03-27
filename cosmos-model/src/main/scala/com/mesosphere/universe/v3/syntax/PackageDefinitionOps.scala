@@ -23,7 +23,7 @@ final class PackageDefinitionOps(val pkgDef: PackageDefinition) extends AnyVal {
     case v3: V3Package => v3.name
   }
 
-  def version: PackageDefinition.Version = pkgDef match {
+  def version: Version = pkgDef match {
     case v2: V2Package => v2.version
     case v3: V3Package => v3.version
   }

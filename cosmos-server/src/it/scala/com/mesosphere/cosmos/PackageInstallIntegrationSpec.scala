@@ -187,7 +187,7 @@ final class PackageInstallIntegrationSpec extends FreeSpec with BeforeAndAfterAl
       import com.mesosphere.universe.v3.model._
       val expectedBody = rpc.v2.model.InstallResponse(
         "enterprise-security-cli",
-        universe.v3.model.PackageDefinition.Version("0.8.0"),
+        universe.v3.model.Version("0.8.0"),
         cli = Some(Cli(Some(Platforms(
           None,
           Some(Architectures(Binary(

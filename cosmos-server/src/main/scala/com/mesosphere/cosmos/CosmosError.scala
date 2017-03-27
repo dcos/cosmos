@@ -62,7 +62,7 @@ case class PackageNotFound(packageName: String) extends CosmosError {
 
 case class VersionNotFound(
   packageName: String,
-  packageVersion: universe.v3.model.PackageDefinition.Version
+  packageVersion: universe.v3.model.Version
 ) extends CosmosError {
   override val getData: Option[JsonObject] = {
     Some(
@@ -462,7 +462,7 @@ case class ConversionError(failure: String) extends CosmosError {
 
 case class ServiceMarathonTemplateNotFound(
   packageName: String,
-  packageVersion: universe.v3.model.PackageDefinition.Version
+  packageVersion: universe.v3.model.Version
 ) extends CosmosError {
   override val getData: Option[JsonObject] = {
     Some(

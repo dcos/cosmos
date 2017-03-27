@@ -178,11 +178,11 @@ object UniverseConversions {
 
   implicit val v2PackageDetailsVersionToV3PackageDefinitionVersion:
     Bijection[universe.v2.model.PackageDetailsVersion,
-      universe.v3.model.PackageDefinition.Version] = {
+      universe.v3.model.Version] = {
     Bijection.build {
-      x: universe.v2.model.PackageDetailsVersion => universe.v3.model.PackageDefinition.Version(x.toString)
+      x: universe.v2.model.PackageDetailsVersion => universe.v3.model.Version(x.toString)
     } {
-      x: universe.v3.model.PackageDefinition.Version => universe.v2.model.PackageDetailsVersion(x.toString)
+      x: universe.v3.model.Version => universe.v2.model.PackageDetailsVersion(x.toString)
     }
   }
 

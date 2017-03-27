@@ -31,7 +31,7 @@ private[cosmos] final class PackageInstallHandler(
     packageCollection
       .getPackageByPackageVersion(
         request.packageName,
-        request.packageVersion.as[Option[universe.v3.model.PackageDefinition.Version]]
+        request.packageVersion.as[Option[universe.v3.model.Version]]
       )
       .flatMap { case (pkg, sourceUri) =>
         val packageConfig =

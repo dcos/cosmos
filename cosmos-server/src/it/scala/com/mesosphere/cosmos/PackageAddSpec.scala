@@ -70,13 +70,13 @@ final class PackageAddSpec
     }
 
     "by name and version" in {
-      val version = universe.v3.model.PackageDefinition.Version("2.2.5-0.2.0")
+      val version = universe.v3.model.Version("2.2.5-0.2.0")
       val addRequest = rpc.v1.model.UniverseAddRequest("cassandra", Some(version))
       assertSuccessfulUniverseAdd(addRequest)
     }
 
     "results in error when trying to add a version 2 package" in {
-      val version = universe.v3.model.PackageDefinition.Version("0.2.0-2")
+      val version = universe.v3.model.Version("0.2.0-2")
       val addRequest = rpc.v1.model.UniverseAddRequest("cassandra", Some(version))
 
       val response = CosmosClient.submit(CosmosRequests.packageAdd(addRequest))
@@ -208,7 +208,7 @@ object PackageAddSpec {
 
   def describePackage(
     packageName: String,
-    packageVersion: Option[universe.v3.model.PackageDefinition.Version]
+    packageVersion: Option[universe.v3.model.Version]
   ): rpc.v2.model.DescribeResponse = {
     val request = CosmosRequests.packageDescribeV2(packageName, packageVersion)
     val response = CosmosClient.submit(request)

@@ -192,7 +192,7 @@ object Encoders {
         s"Package [$packageName] not found"
       case VersionNotFound(
         packageName,
-        com.mesosphere.universe.v3.model.PackageDefinition.Version(packageVersion)
+        com.mesosphere.universe.v3.model.Version(packageVersion)
       ) =>
         s"Version [$packageVersion] of package [$packageName] not found"
       case PackageFileMissing(fileName, _) =>
@@ -307,7 +307,7 @@ object Encoders {
             s"Unsupported redirect scheme - supported: $supportedMsg"
         }
       case ConversionError(failure) => failure
-      case ServiceMarathonTemplateNotFound(name, universe.v3.model.PackageDefinition.Version(version)) =>
+      case ServiceMarathonTemplateNotFound(name, universe.v3.model.Version(version)) =>
         s"Package: [$name] version: [$version] does not have a Marathon template defined and can not be rendered"
       case EnvelopeError(msg) => msg
       case InstallQueueError(msg) => msg

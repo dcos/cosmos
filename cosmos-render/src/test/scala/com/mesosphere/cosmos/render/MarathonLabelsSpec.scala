@@ -127,7 +127,7 @@ final class MarathonLabelsSpec extends FreeSpec with Matchers {
 
     assertResult(original.packagingVersion)(resultPackagingVersion)
     assertResult(original.name)(result.name)
-    assertResult(original.version)(result.version.as[universe.v3.model.PackageDefinition.Version])
+    assertResult(original.version)(result.version.as[universe.v3.model.Version])
     assertResult(original.maintainer)(result.maintainer)
     assertResult(original.description)(result.description)
     assertResult(original.tags)(resultTags)

@@ -40,8 +40,8 @@ object Decoders {
   implicit val decodeMarathon: Decoder[Marathon] = deriveDecoder[Marathon]
   implicit val decodePlatforms: Decoder[Platforms] = deriveDecoder[Platforms]
 
-  implicit val decodePackageDefinitionVersion: Decoder[PackageDefinition.Version] = {
-    Decoder.decodeString.map(PackageDefinition.Version)
+  implicit val decodePackageDefinitionVersion: Decoder[Version] = {
+    Decoder.decodeString.map(Version)
   }
 
   implicit val decodePackageDefinitionTag: Decoder[Tag] =

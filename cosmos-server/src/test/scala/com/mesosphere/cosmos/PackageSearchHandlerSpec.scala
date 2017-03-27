@@ -40,9 +40,9 @@ object PackageSearchHandlerSpec {
   def searchResult(name: String): SearchResult = {
     SearchResult(
       name = name,
-      currentVersion = universe.v3.model.PackageDefinition.Version("1.2.3"),
+      currentVersion = universe.v3.model.Version("1.2.3"),
       versions = Map(
-        universe.v3.model.PackageDefinition.Version("1.2.3") ->
+        universe.v3.model.Version("1.2.3") ->
           universe.v3.model.PackageDefinition.ReleaseVersion(0).get
       ),
       description = "a package",

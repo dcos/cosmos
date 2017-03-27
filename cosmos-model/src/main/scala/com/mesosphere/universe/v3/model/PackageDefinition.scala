@@ -8,7 +8,6 @@ import io.circe.JsonObject
 
 sealed abstract class PackageDefinition
 object PackageDefinition {
-  final case class Version(override val toString: String) extends AnyVal
 
   final class ReleaseVersion private(val value: Long) extends AnyVal
 
@@ -61,7 +60,7 @@ object PackageDefinition {
 case class V2Package(
   packagingVersion: V2PackagingVersion.type = V2PackagingVersion,
   name: String,
-  version: PackageDefinition.Version,
+  version: Version,
   releaseVersion: PackageDefinition.ReleaseVersion,
   maintainer: String,
   description: String,
@@ -93,7 +92,7 @@ case class V2Package(
 case class V3Package(
   packagingVersion: V3PackagingVersion.type = V3PackagingVersion,
   name: String,
-  version: PackageDefinition.Version,
+  version: Version,
   releaseVersion: PackageDefinition.ReleaseVersion,
   maintainer: String,
   description: String,

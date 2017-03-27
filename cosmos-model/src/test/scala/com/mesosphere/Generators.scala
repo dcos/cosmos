@@ -50,8 +50,8 @@ object Generators {
     } yield universe.v3.model.SemVer(major, minor, patch, preReleases, build)
   }
 
-  private val genVersion: Gen[universe.v3.model.PackageDefinition.Version] = {
-    genSemVer.map(_.toString).map(universe.v3.model.PackageDefinition.Version)
+  private val genVersion: Gen[universe.v3.model.Version] = {
+    genSemVer.map(_.toString).map(universe.v3.model.Version)
   }
 
   private val genReleaseVersion: Gen[universe.v3.model.PackageDefinition.ReleaseVersion] = for {

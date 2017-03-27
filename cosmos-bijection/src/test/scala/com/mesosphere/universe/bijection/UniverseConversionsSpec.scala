@@ -128,14 +128,14 @@ final class UniverseConversionsSpec extends FreeSpec with Matchers {
     assertResult(v2)(v3FromV2.as[universe.v2.model.Resource])
   }
 
-  "Bijection[universe.v2.model.PackageDetailsVersion, universe.v3.model.PackageDefinition.Version]" in {
+  "Bijection[universe.v2.model.PackageDetailsVersion, universe.v3.model.Version]" in {
     val v2: universe.v2.model.PackageDetailsVersion = universe.v2.model.PackageDetailsVersion("2.0")
-    val v3FromV2 = v2.as[universe.v3.model.PackageDefinition.Version]
+    val v3FromV2 = v2.as[universe.v3.model.Version]
     assertResult(v2)(v3FromV2.as[universe.v2.model.PackageDetailsVersion])
 
-    val v3: universe.v3.model.PackageDefinition.Version = universe.v3.model.PackageDefinition.Version("3.0")
+    val v3: universe.v3.model.Version = universe.v3.model.Version("3.0")
     val v2FromV3 = v3.as[universe.v2.model.PackageDetailsVersion]
-    assertResult(v3)(v2FromV3.as[universe.v3.model.PackageDefinition.Version])
+    assertResult(v3)(v2FromV3.as[universe.v3.model.Version])
   }
 
   private[this] def expectV3(v2model: universe.v2.model.PackageDetails): universe.v2.model.PackageDetails = v2model.copy(

@@ -11,7 +11,7 @@ import java.nio.charset.StandardCharsets
 object TestingPackages {
   val PackagingVersion = universe.v3.model.V3PackagingVersion
   val Name = "MAXIMAL"
-  val Version = universe.v3.model.PackageDefinition.Version("9.87.654.3210")
+  val Version = universe.v3.model.Version("9.87.654.3210")
   val Maintainer = "max@mesosphere.io"
   val Description = "A complete package definition"
   val MarathonTemplate = Some(universe.v3.model.Marathon(
@@ -113,7 +113,7 @@ object TestingPackages {
   val MinimalV3ModelV3PackageDefinition: universe.v3.model.V3Package = universe.v3.model.V3Package(
     packagingVersion = universe.v3.model.V3PackagingVersion,
     name = "minimal",
-    version = universe.v3.model.PackageDefinition.Version("1.2.3"),
+    version = universe.v3.model.Version("1.2.3"),
     releaseVersion = universe.v3.model.PackageDefinition.ReleaseVersion(0).get,
     maintainer = "minimal@mesosphere.io",
     description = "A minimal package definition"
@@ -275,7 +275,7 @@ object TestingPackages {
 
   val HelloWorldV3Package: universe.v3.model.V3Package = universe.v3.model.V3Package(
     name = "helloworld",
-    version = universe.v3.model.PackageDefinition.Version("0.1.0"),
+    version = universe.v3.model.Version("0.1.0"),
     releaseVersion = universe.v3.model.PackageDefinition.ReleaseVersion(0L).get(),
     website = Some("https://github.com/mesosphere/dcos-helloworld"),
     maintainer = "support@mesosphere.io",

@@ -5,7 +5,7 @@ import io.circe.JsonObject
 case class Metadata(
   packagingVersion: V3PackagingVersion.type = V3PackagingVersion,
   name: String,
-  version: PackageDefinition.Version,
+  version: Version,
   maintainer: String,
   description: String,
   tags: List[Tag] = Nil,

@@ -36,7 +36,7 @@ final class MultiRepository(
 
   override def getPackageByPackageVersion(
       packageName: String,
-      packageVersion: Option[universe.v3.model.PackageDefinition.Version]
+      packageVersion: Option[universe.v3.model.Version]
   )(implicit session: RequestSession): Future[(universe.v3.model.PackageDefinition, Uri)] = {
     /* Fold over all the results in order and ignore PackageNotFound and VersionNotFound errors.
      * We have found our answer when we find a PackageDefinition or a generic exception.

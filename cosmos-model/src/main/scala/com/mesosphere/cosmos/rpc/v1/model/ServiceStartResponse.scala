@@ -5,6 +5,6 @@ import com.mesosphere.universe
 
 case class ServiceStartResponse(
   packageName: String,
-  packageVersion: universe.v3.model.PackageDefinition.Version,
+  packageVersion: universe.v3.model.Version,
   appId: Option[AppId] = None
 )
