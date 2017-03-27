@@ -30,7 +30,7 @@ object PackageDefinition {
       aReleaseVersion.value.compare(bReleaseVersion.value)
     }
   }
-  
+
 }
 
 /**

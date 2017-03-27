@@ -16,7 +16,7 @@ object Tag {
   val packageDetailsTagRegex: String = "^[^\\s]+$"
   val packageDetailsTagPattern: Pattern = Pattern.compile(packageDetailsTagRegex)
 
-  def apply(s: String): Try[Tag] = { //TODO: Get rid of this Try. Most call sites do .get
+  def apply(s: String): Try[Tag] = {
     if (packageDetailsTagPattern.matcher(s).matches()) {
       Return(new Tag(s))
     } else {
