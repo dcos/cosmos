@@ -98,12 +98,9 @@ lazy val render = project.in(file("cosmos-render"))
   )
 
 lazy val server = project.in(file("cosmos-server"))
-  .configs(IntegrationTest extend Test)
   .settings(sharedSettings)
-  .settings(itSettings)
-  .settings(oneJarSettings)
-  .settings(mainClass in oneJar := Some("com.mesosphere.cosmos.Cosmos"))
   .settings(filterSettings)
+  .settings(itSettings)
   .settings(
     name := baseDirectory.value.name,
     libraryDependencies ++=

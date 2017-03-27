@@ -1,7 +1,7 @@
 package com.mesosphere.cosmos
 
-import com.github.retronym.SbtOneJar._
 import com.mesosphere.sbt.BuildPlugin
+import com.mesosphere.sbt.Scalastyle
 import sbt.Keys._
 import sbt._
 
@@ -11,6 +11,9 @@ object CosmosBuild {
     organization := "com.mesosphere.cosmos",
     scalaVersion := V.projectScalaVersion,
     version := V.projectVersion,
+
+    Scalastyle.scalastyleConfig in Global :=
+      Some((baseDirectory in ThisBuild).value / "scalastyle-config.xml"),
 
     // Required by One-JAR for multi-project builds: https://github.com/sbt/sbt-onejar#requirements
     exportJars := true,
@@ -22,6 +25,8 @@ object CosmosBuild {
     ),
 
     libraryDependencies ++= Deps.mockito ++ Deps.scalaTest ++ Deps.scalaCheck,
+
+    test in (This, Global, This) := (test in Test).value,
 
     publishArtifact in Test := false,
 
@@ -55,38 +60,8 @@ object CosmosBuild {
             <name>Tamar Ben-Shachar</name>
           </developer>
         </developers>
-  ) ++ org.scalastyle.sbt.ScalastylePlugin.projectSettings
+  )
 
-  val scalastyleItSettings = {
-    import org.scalastyle.sbt.ScalastylePlugin._
-
-    Seq(
-      (scalastyleConfig in IntegrationTest) := (scalastyleConfig in scalastyle).value,
-      (scalastyleConfigUrl in IntegrationTest) := None,
-      (scalastyleConfigUrlCacheFile in IntegrationTest) := "scalastyle-it-config.xml",
-      (scalastyleConfigRefreshHours in IntegrationTest) := (scalastyleConfigRefreshHours in scalastyle).value,
-      (scalastyleTarget in IntegrationTest) := target.value / "scalastyle-it-result.xml",
-      (scalastyleFailOnError in IntegrationTest) := (scalastyleFailOnError in scalastyle).value,
-      (scalastyleSources in IntegrationTest) := Seq((scalaSource in IntegrationTest).value)
-    ) ++ Project.inConfig(IntegrationTest)(rawScalastyleSettings())
-  }
-
-  private lazy val cosmosIntegrationTestServer = settingKey[CosmosIntegrationTestServer]("cosmos-it-server")
-
-  val itSettings = Defaults.itSettings ++ Seq(
-    (test in IntegrationTest).set((test in IntegrationTest).dependsOn(oneJar), NoPosition),
-    (testOnly in IntegrationTest).set((testOnly in IntegrationTest).dependsOn(oneJar), NoPosition),
-    cosmosIntegrationTestServer in IntegrationTest := new CosmosIntegrationTestServer(
-      (javaHome in run).value.map(_.getCanonicalPath),
-      (resourceDirectories in IntegrationTest).value,
-      (artifactPath in oneJar).value
-    ),
-    testOptions in IntegrationTest += Tests.Setup(() =>
-      (cosmosIntegrationTestServer in IntegrationTest).value.setup((streams in runMain).value.log)
-    ),
-    testOptions in IntegrationTest += Tests.Cleanup(() =>
-      (cosmosIntegrationTestServer in IntegrationTest).value.cleanup()
-    )
-  ) ++ scalastyleItSettings
+  val itSettings = BuildPlugin.itSettings("com.mesosphere.cosmos.Cosmos")
 
 }
