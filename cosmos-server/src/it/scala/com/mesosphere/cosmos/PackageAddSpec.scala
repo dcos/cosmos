@@ -175,7 +175,7 @@ final class PackageAddSpec
     v3Package: universe.v3.model.V3Package
   ): universe.v3.model.V3Package = {
     // TODO package-add: Get release version from creation time in object storage
-    val fakeReleaseVersion = universe.v3.model.PackageDefinition.ReleaseVersion(0L).get()
+    val fakeReleaseVersion = universe.v3.model.ReleaseVersion(0L).get()
     v3Package.copy(command = None, releaseVersion = fakeReleaseVersion, selected = None)
   }
 

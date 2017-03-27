@@ -101,7 +101,7 @@ class PackageDefinitionRendererSpec extends FreeSpec with TableDrivenPropertyChe
           version = Version("1.2.3"),
           maintainer = "Mesosphere",
           description = "Testing user options",
-          releaseVersion = PackageDefinition.ReleaseVersion(0).get,
+          releaseVersion = ReleaseVersion(0).get,
           marathon = Some(Marathon(mustacheBytes)),
           config = Some(buildConfig(Json.fromJsonObject(defaultsJson)))
         )
@@ -150,7 +150,7 @@ class PackageDefinitionRendererSpec extends FreeSpec with TableDrivenPropertyChe
       val pkg = V2Package(
         name = "test",
         version = Version("1.2.3"),
-        releaseVersion = PackageDefinition.ReleaseVersion(0).get(),
+        releaseVersion = ReleaseVersion(0).get(),
         maintainer = "maintainer",
         description = "description",
         marathon = Marathon(mustacheBytes),
@@ -209,7 +209,7 @@ class PackageDefinitionRendererSpec extends FreeSpec with TableDrivenPropertyChe
       val pkg = V3Package(
         name = "test",
         version = Version("1.2.3"),
-        releaseVersion = PackageDefinition.ReleaseVersion(0).get(),
+        releaseVersion = ReleaseVersion(0).get(),
         maintainer = "maintainer",
         description = "description"
       )
@@ -224,7 +224,7 @@ class PackageDefinitionRendererSpec extends FreeSpec with TableDrivenPropertyChe
       val pkg = V3Package(
         name = "test",
         version = Version("1.2.3"),
-        releaseVersion = PackageDefinition.ReleaseVersion(0).get(),
+        releaseVersion = ReleaseVersion(0).get(),
         maintainer = "maintainer",
         description = "description",
         marathon = Some(Marathon(mustacheBytes))
@@ -245,7 +245,7 @@ class PackageDefinitionRendererSpec extends FreeSpec with TableDrivenPropertyChe
       val pkg = V3Package(
         name = "test",
         version = Version("1.2.3"),
-        releaseVersion = PackageDefinition.ReleaseVersion(0).get(),
+        releaseVersion = ReleaseVersion(0).get(),
         maintainer = "maintainer",
         description = "description",
         marathon = Some(Marathon(mustacheBytes))
@@ -262,7 +262,7 @@ class PackageDefinitionRendererSpec extends FreeSpec with TableDrivenPropertyChe
       val pkg = V3Package(
         name = "test",
         version = Version("1.2.3"),
-        releaseVersion = PackageDefinition.ReleaseVersion(0).get(),
+        releaseVersion = ReleaseVersion(0).get(),
         maintainer = "maintainer",
         description = "description",
         marathon = Some(Marathon(mustacheBytes))
@@ -278,7 +278,7 @@ class PackageDefinitionRendererSpec extends FreeSpec with TableDrivenPropertyChe
       val pkg = V2Package(
         name = "test",
         version = Version("1.2.3"),
-        releaseVersion = PackageDefinition.ReleaseVersion(0).get(),
+        releaseVersion = ReleaseVersion(0).get(),
         maintainer = "maintainer",
         description = "description",
         marathon = Marathon(mustacheBytes),
@@ -317,7 +317,7 @@ class PackageDefinitionRendererSpec extends FreeSpec with TableDrivenPropertyChe
         val pkg = V2Package(
           name = "test",
           version = Version("1.2.3"),
-          releaseVersion = PackageDefinition.ReleaseVersion(0).get(),
+          releaseVersion = ReleaseVersion(0).get(),
           maintainer = "maintainer",
           description = "description",
           marathon = Marathon(mustacheBytes),
@@ -345,7 +345,7 @@ class PackageDefinitionRendererSpec extends FreeSpec with TableDrivenPropertyChe
         val pkg = V3Package(
           name = "test",
           version = Version("1.2.3"),
-          releaseVersion = PackageDefinition.ReleaseVersion(0).get(),
+          releaseVersion = ReleaseVersion(0).get(),
           maintainer = "maintainer",
           description = "description",
           marathon = Some(Marathon(mustacheBytes)),
@@ -465,7 +465,7 @@ class PackageDefinitionRendererSpec extends FreeSpec with TableDrivenPropertyChe
       version = Version("a.b.c"),
       maintainer = "foo@bar.baz",
       description = "blah",
-      releaseVersion = PackageDefinition.ReleaseVersion(0).get,
+      releaseVersion = ReleaseVersion(0).get,
       marathon = Some(Marathon(ByteBuffer.wrap(mustache.getBytes(StandardCharsets.UTF_8))))
     )
   }

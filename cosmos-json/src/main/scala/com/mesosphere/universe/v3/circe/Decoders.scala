@@ -54,9 +54,9 @@ object Decoders {
       }
     }
 
-  implicit val decodePackageDefinitionReleaseVersion: Decoder[PackageDefinition.ReleaseVersion] =
-    Decoder.instance[PackageDefinition.ReleaseVersion] { (c: HCursor) =>
-      c.as[Long].map(PackageDefinition.ReleaseVersion(_)).flatMap {
+  implicit val decodePackageDefinitionReleaseVersion: Decoder[ReleaseVersion] =
+    Decoder.instance[ReleaseVersion] { (c: HCursor) =>
+      c.as[Long].map(ReleaseVersion(_)).flatMap {
         case Return(v) => Right(v)
         case Throw(e) => Left(DecodingFailure(e.getMessage, c.history))
       }

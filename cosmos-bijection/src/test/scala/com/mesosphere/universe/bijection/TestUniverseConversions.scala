@@ -7,7 +7,7 @@ object TestUniverseConversions {
 
   implicit val v3PackageToV3Metadata:
     Conversion[universe.v3.model.V3Package,
-      (universe.v3.model.Metadata, universe.v3.model.PackageDefinition.ReleaseVersion)] = {
+      (universe.v3.model.Metadata, universe.v3.model.ReleaseVersion)] = {
     Conversion.fromFunction { v3Package =>
       val metadata = universe.v3.model.Metadata(
         packagingVersion = v3Package.packagingVersion,

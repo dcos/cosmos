@@ -54,9 +54,9 @@ object Generators {
     genSemVer.map(_.toString).map(universe.v3.model.Version)
   }
 
-  private val genReleaseVersion: Gen[universe.v3.model.PackageDefinition.ReleaseVersion] = for {
+  private val genReleaseVersion: Gen[universe.v3.model.ReleaseVersion] = for {
     num <- Gen.posNum[Long]
-  } yield universe.v3.model.PackageDefinition.ReleaseVersion(num).get
+  } yield universe.v3.model.ReleaseVersion(num).get
 
   val genV3Package: Gen[universe.v3.model.V3Package] = {
     val maxPackageNameLength = 64

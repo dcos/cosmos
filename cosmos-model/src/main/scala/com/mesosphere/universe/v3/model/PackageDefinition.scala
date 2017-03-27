@@ -1,32 +1,10 @@
 package com.mesosphere.universe.v3.model
 
 import com.mesosphere.universe.v3.syntax.PackageDefinitionOps._
-import com.twitter.util.Return
-import com.twitter.util.Throw
-import com.twitter.util.Try
 import io.circe.JsonObject
 
 sealed abstract class PackageDefinition
 object PackageDefinition {
-
-  final class ReleaseVersion private(val value: Long) extends AnyVal
-
-  object ReleaseVersion {
-
-    def apply(value: Long): Try[ReleaseVersion] = {
-      if (value >= 0) {
-        Return(new ReleaseVersion(value))
-      } else {
-        val message = s"Expected integer value >= 0 for release version, but found [$value]"
-        Throw(new IllegalArgumentException(message))
-      }
-    }
-
-    implicit val packageDefinitionReleaseVersionOrdering: Ordering[ReleaseVersion] = {
-      Ordering.by(_.value)
-    }
-
-  }
 
   implicit val packageDefinitionOrdering = new Ordering[PackageDefinition] {
     override def compare(a: PackageDefinition, b: PackageDefinition): Int = {
@@ -52,6 +30,7 @@ object PackageDefinition {
       aReleaseVersion.value.compare(bReleaseVersion.value)
     }
   }
+  
 }
 
 /**
@@ -61,7 +40,7 @@ case class V2Package(
   packagingVersion: V2PackagingVersion.type = V2PackagingVersion,
   name: String,
   version: Version,
-  releaseVersion: PackageDefinition.ReleaseVersion,
+  releaseVersion: ReleaseVersion,
   maintainer: String,
   description: String,
   marathon: Marathon,
@@ -93,7 +72,7 @@ case class V3Package(
   packagingVersion: V3PackagingVersion.type = V3PackagingVersion,
   name: String,
   version: Version,
-  releaseVersion: PackageDefinition.ReleaseVersion,
+  releaseVersion: ReleaseVersion,
   maintainer: String,
   description: String,
   tags: List[Tag] = Nil,

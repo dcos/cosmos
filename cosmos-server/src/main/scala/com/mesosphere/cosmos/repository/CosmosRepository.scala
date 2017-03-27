@@ -28,7 +28,7 @@ final class CosmosRepository (
 
   def getPackageByReleaseVersion(
     packageName: String,
-    releaseVersion: universe.v3.model.PackageDefinition.ReleaseVersion
+    releaseVersion: universe.v3.model.ReleaseVersion
   )(
     implicit session: RequestSession
   ): Future[universe.v3.model.PackageDefinition] = {
@@ -107,7 +107,7 @@ final class CosmosRepository (
               ))
 
             val releaseVersion = searchResult.versions.get(pkg.version).map { releaseVersion =>
-              import universe.v3.model.PackageDefinition.ReleaseVersion
+              import universe.v3.model.ReleaseVersion
               implicitly[Ordering[ReleaseVersion]].max(releaseVersion, pkg.releaseVersion)
             } getOrElse {
               pkg.releaseVersion

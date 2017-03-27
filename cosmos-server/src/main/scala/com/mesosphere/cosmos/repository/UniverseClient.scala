@@ -297,7 +297,7 @@ final class DefaultUniverseClient(
       universe.v3.model.V2PackagingVersion,
       details.name,
       universe.v3.model.Version(details.version.toString),
-      releaseVersion.as[ScalaTry[universe.v3.model.PackageDefinition.ReleaseVersion]].get,
+      releaseVersion.as[ScalaTry[universe.v3.model.ReleaseVersion]].get,
       details.maintainer,
       details.description,
       universe.v3.model.Marathon(marathon),

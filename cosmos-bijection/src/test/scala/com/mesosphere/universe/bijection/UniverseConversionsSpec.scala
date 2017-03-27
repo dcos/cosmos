@@ -32,22 +32,22 @@ final class UniverseConversionsSpec extends FreeSpec with Matchers {
   "(Metadata, ReleaseVersion) => V3Package => (Metadata, ReleaseVersion) is the identity fn" - {
 
     "Max metadata" in {
-      val releaseVersion = universe.v3.model.PackageDefinition.ReleaseVersion(Long.MaxValue).get
+      val releaseVersion = universe.v3.model.ReleaseVersion(Long.MaxValue).get
       testCase((MaximalV3ModelMetadata, releaseVersion))
     }
 
     "Min metadata" in {
-      val releaseVersion = universe.v3.model.PackageDefinition.ReleaseVersion(0L).get
+      val releaseVersion = universe.v3.model.ReleaseVersion(0L).get
       testCase((MinimalV3ModelMetadata, releaseVersion))
     }
 
     def testCase(
-      value: (universe.v3.model.Metadata, universe.v3.model.PackageDefinition.ReleaseVersion)
+      value: (universe.v3.model.Metadata, universe.v3.model.ReleaseVersion)
     ): Assertion = {
       assertResult(value) {
         value
           .as[universe.v3.model.V3Package]
-          .as[(universe.v3.model.Metadata, universe.v3.model.PackageDefinition.ReleaseVersion)]
+          .as[(universe.v3.model.Metadata, universe.v3.model.ReleaseVersion)]
       }
     }
 
@@ -68,7 +68,7 @@ final class UniverseConversionsSpec extends FreeSpec with Matchers {
       val command = v3Package.command
 
       val roundTrip = v3Package
-        .as[(universe.v3.model.Metadata, universe.v3.model.PackageDefinition.ReleaseVersion)]
+        .as[(universe.v3.model.Metadata, universe.v3.model.ReleaseVersion)]
         .as[universe.v3.model.V3Package]
 
       assert(roundTrip.selected.isEmpty)

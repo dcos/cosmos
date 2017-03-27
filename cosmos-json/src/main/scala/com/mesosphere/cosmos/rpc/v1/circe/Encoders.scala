@@ -16,7 +16,7 @@ object Encoders {
   implicit val keyEncodePackageDefinitionVersion: KeyEncoder[universe.v3.model.Version] = {
     KeyEncoder.instance(_.toString)
   }
-  implicit val encodePackageDefinitionReleaseVersion: Encoder[universe.v3.model.PackageDefinition.ReleaseVersion] = {
+  implicit val encodePackageDefinitionReleaseVersion: Encoder[universe.v3.model.ReleaseVersion] = {
     Encoder.instance { rv => rv.value.asJson }
   }
 

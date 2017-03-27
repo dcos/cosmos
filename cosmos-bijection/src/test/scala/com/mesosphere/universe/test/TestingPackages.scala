@@ -89,7 +89,7 @@ object TestingPackages {
     PackagingVersion,
     Name,
     Version,
-    releaseVersion = universe.v3.model.PackageDefinition.ReleaseVersion(Long.MaxValue).get,
+    releaseVersion = universe.v3.model.ReleaseVersion(Long.MaxValue).get,
     Maintainer,
     Description,
     Tags,
@@ -114,7 +114,7 @@ object TestingPackages {
     packagingVersion = universe.v3.model.V3PackagingVersion,
     name = "minimal",
     version = universe.v3.model.Version("1.2.3"),
-    releaseVersion = universe.v3.model.PackageDefinition.ReleaseVersion(0).get,
+    releaseVersion = universe.v3.model.ReleaseVersion(0).get,
     maintainer = "minimal@mesosphere.io",
     description = "A minimal package definition"
   )
@@ -276,7 +276,7 @@ object TestingPackages {
   val HelloWorldV3Package: universe.v3.model.V3Package = universe.v3.model.V3Package(
     name = "helloworld",
     version = universe.v3.model.Version("0.1.0"),
-    releaseVersion = universe.v3.model.PackageDefinition.ReleaseVersion(0L).get(),
+    releaseVersion = universe.v3.model.ReleaseVersion(0L).get(),
     website = Some("https://github.com/mesosphere/dcos-helloworld"),
     maintainer = "support@mesosphere.io",
     description = "Example DCOS application package",
