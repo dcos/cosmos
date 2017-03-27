@@ -65,7 +65,10 @@ final class PackageAddHandler(
       operation <- futureOperation
       _ <- producerView.add(operation.packageDefinition.packageCoordinate, operation)
     } yield {
-      new rpc.v1.model.AddResponse(operation.packageDefinition)
+      operation.packageDefinition match {
+        case v3Package: universe.v3.model.V3Package =>
+          new rpc.v1.model.AddResponse(v3Package)
+      }
     }
   }
 
