@@ -36,7 +36,7 @@ object Encoders {
   implicit val encodePackageDefinitionVersion: Encoder[PackageDefinition.Version] = {
     Encoder.instance(_.toString.asJson)
   }
-  implicit val encodePackageDefinitionTag: Encoder[PackageDefinition.Tag] = {
+  implicit val encodePackageDefinitionTag: Encoder[Tag] = {
     Encoder.instance(_.value.asJson)
   }
   implicit val encodePackageDefinitionReleaseVersion: Encoder[PackageDefinition.ReleaseVersion] = {

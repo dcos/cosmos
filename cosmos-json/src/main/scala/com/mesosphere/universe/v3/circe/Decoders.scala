@@ -44,9 +44,9 @@ object Decoders {
     Decoder.decodeString.map(PackageDefinition.Version)
   }
 
-  implicit val decodePackageDefinitionTag: Decoder[PackageDefinition.Tag] =
-    Decoder.instance[PackageDefinition.Tag] { (c: HCursor) =>
-      c.as[String].map(PackageDefinition.Tag(_)).flatMap {
+  implicit val decodePackageDefinitionTag: Decoder[Tag] =
+    Decoder.instance[Tag] { (c: HCursor) =>
+      c.as[String].map(Tag(_)).flatMap {
         case Return(r) => Right(r)
         case Throw(ex) =>
           val msg = ex.getMessage.replaceAllLiterally("assertion failed: ", "")

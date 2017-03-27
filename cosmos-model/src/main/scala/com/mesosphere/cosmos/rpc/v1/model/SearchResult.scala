@@ -8,7 +8,7 @@ case class SearchResult(
   versions: Map[universe.v3.model.PackageDefinition.Version, universe.v3.model.PackageDefinition.ReleaseVersion],
   description: String,
   framework: Boolean,
-  tags: List[universe.v3.model.PackageDefinition.Tag],
+  tags: List[universe.v3.model.Tag],
   selected: Option[Boolean] = None,
   images: Option[universe.v3.model.Images] = None
 )

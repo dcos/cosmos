@@ -9,7 +9,7 @@ case class DescribeResponse(
   version: universe.v3.model.PackageDefinition.Version,
   maintainer: String,
   description: String,
-  tags: List[universe.v3.model.PackageDefinition.Tag] = Nil,
+  tags: List[universe.v3.model.Tag] = Nil,
   selected: Boolean = false,
   scm: Option[String] = None,
   website: Option[String] = None,

@@ -8,7 +8,7 @@ case class Metadata(
   version: PackageDefinition.Version,
   maintainer: String,
   description: String,
-  tags: List[PackageDefinition.Tag] = Nil,
+  tags: List[Tag] = Nil,
   scm: Option[String] = None,
   website: Option[String] = None,
   framework: Option[Boolean] = None,

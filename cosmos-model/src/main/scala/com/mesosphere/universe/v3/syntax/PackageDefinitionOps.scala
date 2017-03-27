@@ -1,7 +1,6 @@
 package com.mesosphere.universe.v3.syntax
 
 import com.mesosphere.cosmos.rpc.v1.model.PackageCoordinate
-import com.mesosphere.universe.v3.model.PackageDefinition.Tag
 import com.mesosphere.universe.v3.model._
 import io.circe.JsonObject
 

@@ -18,7 +18,7 @@ object TestingPackages {
     v2AppMustacheTemplate = ByteBuffer.wrap("marathon template".getBytes(StandardCharsets.UTF_8))
   ))
   val Tags = List("all", "the", "things").map(
-    s => universe.v3.model.PackageDefinition.Tag(s).get
+    s => universe.v3.model.Tag(s).get
   )
   val Scm = Some("git")
   val Website = Some("mesosphere.com")
@@ -283,7 +283,7 @@ object TestingPackages {
     preInstallNotes = Some("A sample pre-installation message"),
     postInstallNotes = Some("A sample post-installation message"),
     tags = List("mesosphere", "example", "subcommand")
-      .map(s => universe.v3.model.PackageDefinition.Tag(s).get()),
+      .map(s => universe.v3.model.Tag(s).get()),
     marathon = Some(universe.v3.model.Marathon(HelloWorldMarathonTemplate)),
     config = Some(JsonObject.fromMap(Map(
       "$schema" -> "http://json-schema.org/schema#".asJson,
