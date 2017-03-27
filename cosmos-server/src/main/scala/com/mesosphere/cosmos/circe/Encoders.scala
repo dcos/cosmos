@@ -315,6 +315,7 @@ object Encoders {
       case OperationInProgress(coordinate) =>
         s"A change to package ${coordinate.name}-${coordinate.version} is already in progress"
       case InvalidPackage(underlying) => underlying.getMessage
+      case UnknownMediaType(msg) => msg
     }
   }
   // scalastyle:on cyclomatic.complexity method.length

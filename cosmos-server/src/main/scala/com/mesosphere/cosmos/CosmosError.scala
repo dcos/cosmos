@@ -507,4 +507,10 @@ case class OperationInProgress(coordinate: rpc.v1.model.PackageCoordinate) exten
 case class InvalidPackage(reason: PackageUtil.PackageError) extends CosmosError(Some(reason)) {
   override val getData: Option[JsonObject] = Some(reason.getData)
 }
+
+case class UnknownMediaType(msg: String) extends CosmosError {
+  override val getData: Option[JsonObject] = {
+    Some(JsonObject.singleton("msg", msg.asJson))
+  }
+}
 // scalastyle:on number.of.types

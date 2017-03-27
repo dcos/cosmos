@@ -1,6 +1,7 @@
 package com.mesosphere.cosmos.storage
 
 import com.mesosphere.cosmos.PackageFileMissing
+import com.mesosphere.cosmos.UnknownMediaType
 import com.mesosphere.cosmos.circe.Decoders.decode
 import com.mesosphere.cosmos.circe.Encoders.exceptionErrorResponse
 import com.mesosphere.cosmos.converter.Common._
@@ -27,7 +28,7 @@ final class PackageStorage private(objectStorage: ObjectStorage) {
     val metadataName = getMetadataPath(packageDefinition.packageCoordinate)
     val data = packageDefinition.asJson.noSpaces.getBytes(StandardCharsets.UTF_8)
     val mediaType = packageDefinition match {
-      case _: com.mesosphere.universe.v3.model.V3Package => universe.MediaTypes.universeV3Package
+      case _: universe.v3.model.V3Package => universe.MediaTypes.universeV3Package
     }
     objectStorage.write(metadataName, data, mediaType)
   }
@@ -37,8 +38,13 @@ final class PackageStorage private(objectStorage: ObjectStorage) {
   ): Future[Option[universe.v3.model.SupportedPackageDefinition]] = {
     val metadataName = getMetadataPath(packageCoordinate)
     objectStorage.readAsArray(metadataName).map { pendingRead =>
-      pendingRead.map { case (_, data) =>
-        decode[universe.v3.model.SupportedPackageDefinition](new String(data, StandardCharsets.UTF_8))
+      pendingRead.map {
+        case (universe.MediaTypes.universeV3Package, data) =>
+          decode[universe.v3.model.SupportedPackageDefinition](
+            new String(data, StandardCharsets.UTF_8)
+          )
+        case (mt, _) =>
+          throw UnknownMediaType(mt.show)
       }
     }
   }
