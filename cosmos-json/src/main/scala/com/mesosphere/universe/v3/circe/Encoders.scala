@@ -53,5 +53,8 @@ object Encoders {
   implicit val encodeV3Package: Encoder[V3Package] = deriveEncoder[V3Package]
   implicit val encodeV3Resource: Encoder[V3Resource] = deriveEncoder[V3Resource]
 
-  implicit val encodeMetadata: Encoder[Metadata] = deriveEncoder[Metadata]
+  implicit val encodeV3Metadata: Encoder[V3Metadata] = deriveEncoder[V3Metadata]
+  implicit val encodeMetadata: Encoder[Metadata] = Encoder.instance {
+    case v3Metadata: V3Metadata => v3Metadata.asJson
+  }
 }

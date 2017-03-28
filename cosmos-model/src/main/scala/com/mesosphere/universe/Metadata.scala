@@ -4,7 +4,9 @@ import io.circe.JsonObject
 
 package v3.model {
 
-  case class Metadata(
+  sealed trait Metadata
+
+  case class V3Metadata(
     packagingVersion: V3PackagingVersion.type = V3PackagingVersion,
     name: String,
     version: Version,
@@ -22,6 +24,6 @@ package v3.model {
     marathon: Option[Marathon] = None,
     resource: Option[V3Resource] = None,
     config: Option[JsonObject] = None
-  )
+  ) extends Metadata
 
 }

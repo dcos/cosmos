@@ -98,7 +98,7 @@ object UniverseConversions {
   }
 
   implicit val v3MetadataToV3Package:
-    Conversion[(universe.v3.model.Metadata, universe.v3.model.ReleaseVersion),
+    Conversion[(universe.v3.model.V3Metadata, universe.v3.model.ReleaseVersion),
       universe.v3.model.V3Package] = Conversion.fromFunction { case (metadata, releaseVersion) =>
     universe.v3.model.V3Package(
       packagingVersion=metadata.packagingVersion,
