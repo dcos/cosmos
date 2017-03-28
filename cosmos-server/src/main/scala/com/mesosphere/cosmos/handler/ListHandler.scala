@@ -2,7 +2,6 @@ package com.mesosphere.cosmos.handler
 
 import com.mesosphere.cosmos.AdminRouter
 import com.mesosphere.cosmos.PackageNotFound
-import com.mesosphere.cosmos.circe.Decoders.decode
 import com.mesosphere.cosmos.converter.Label._
 import com.mesosphere.cosmos.converter.Response._
 import com.mesosphere.cosmos.finch.EndpointHandler
@@ -14,8 +13,11 @@ import com.mesosphere.cosmos.repository.CosmosRepository
 import com.mesosphere.cosmos.rpc
 import com.mesosphere.cosmos.thirdparty
 import com.mesosphere.universe
+import com.mesosphere.universe.v3.model.V2Package
+import com.mesosphere.universe.v3.model.V3Package
+import com.mesosphere.universe.v4.model.PackageDefinition
+import com.mesosphere.universe.v4.model.V4Package
 import com.netaporter.uri.Uri
-import com.netaporter.uri.dsl.stringToUri
 import com.twitter.bijection.Conversion.asMethod
 import com.twitter.util.Future
 import com.twitter.util.Try
@@ -100,25 +102,12 @@ private[cosmos] final class ListHandler(
           repo
             .getPackageByReleaseVersion(app.pkgName, app.pkgReleaseVersion)
             .map { pkg =>
-              val adjustedPackage: universe.v3.model.PackageDefinition = pkg match {
-                /* Note: The old code dropped CLI information when returning information to the
-                 * client. We will fix this when we move to the new APIs.
-                 *
-                 * The clients expect the both selected and framework to be set.
-                 */
-                case pkg: universe.v3.model.V3Package =>
-                  pkg.copy(
-                    selected=pkg.selected orElse Some(false),
-                    framework=pkg.framework orElse Some(false),
-                    resource=pkg.resource.map(_.copy(cli=None))
-                  )
-                case pkg: universe.v3.model.V2Package =>
-                  pkg.copy(
-                    selected=pkg.selected orElse Some(false),
-                    framework=pkg.framework orElse Some(false)
-                  )
-              }
-
+              /* Note: The old code dropped CLI information when returning information to the
+               * client. We will fix this when we move to the new APIs.
+               *
+               * The clients expect the both selected and framework to be set.
+               */
+              val adjustedPackage: PackageDefinition = setSelectedAndFramework(pkg)
               adjustedPackage.as[Try[rpc.v1.model.InstalledPackageInformation]]
             }.lowerFromTry
             .handle {
@@ -133,6 +122,30 @@ private[cosmos] final class ListHandler(
         case (app, None) =>
           Future(rpc.v1.model.Installation(app.id, decodeInstalledPackageInformation(app)))
       }
+    }
+  }
+
+  private[this] def setSelectedAndFramework(
+    pkg: universe.v4.model.PackageDefinition
+  ): universe.v4.model.PackageDefinition = {
+    pkg match {
+      case pkg: V3Package =>
+        pkg.copy(
+          selected = pkg.selected orElse Some(false),
+          framework = pkg.framework orElse Some(false),
+          resource = pkg.resource.map(_.copy(cli = None))
+        )
+      case pkg: V4Package =>
+        pkg.copy(
+          selected = pkg.selected orElse Some(false),
+          framework = pkg.framework orElse Some(false),
+          resource = pkg.resource.map(_.copy(cli = None))
+        )
+      case pkg: V2Package =>
+        pkg.copy(
+          selected = pkg.selected orElse Some(false),
+          framework = pkg.framework orElse Some(false)
+        )
     }
   }
 

@@ -137,11 +137,15 @@ object Generators {
 
     implicit val arbV3Package: Arbitrary[universe.v3.model.V3Package] = Arbitrary(genV3Package)
 
+    implicit val arbSupportedPackage: Arbitrary[universe.v4.model.SupportedPackageDefinition] = {
+      Arbitrary(genV3Package)
+    }
+
     implicit val arbUuid: Arbitrary[UUID] = Arbitrary(Gen.uuid)
 
     implicit val arbSemVer: Arbitrary[universe.v3.model.SemVer] = Arbitrary(genSemVer)
 
-    implicit val arbMetadata: Arbitrary[universe.v3.model.Metadata] = derived
+    implicit val arbMetadata: Arbitrary[universe.v4.model.Metadata] = derived
 
     implicit val arbLocalPackage: Arbitrary[rpc.v1.model.LocalPackage] = derived
 

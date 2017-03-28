@@ -2,6 +2,7 @@ package com.mesosphere.universe.bijection
 
 import com.mesosphere.universe
 import com.mesosphere.universe.bijection.UniverseConversions._
+import com.mesosphere.universe.test.TestingPackages
 import com.twitter.bijection.Bijection
 import com.twitter.bijection.Conversion.asMethod
 import com.twitter.bijection.Injection
@@ -42,6 +43,14 @@ final class PackagingVersionConverterSpec extends FreeSpec with Matchers with Ta
 
   "v3V3PackagingVersionToV2PackagingVersion should" - {
     behave like v3V3PackagingVersionConversions[universe.v2.model.PackagingVersion]
+  }
+
+  "v4V4PackagingVersionToString should" - {
+    behave like v4V4PackagingVersionConversions[String]
+  }
+
+  "v4V4PackagingVersionToV2PackagingVersion should" - {
+    behave like v4V4PackagingVersionConversions[universe.v2.model.PackagingVersion]
   }
 
   "v3PackagingVersionToString should" - {
@@ -98,29 +107,52 @@ final class PackagingVersionConverterSpec extends FreeSpec with Matchers with Ta
 
   }
 
-  private[this] def v3PackagingVersionConversions[A](implicit
-    versionToA: Injection[universe.v3.model.PackagingVersion, A],
+  private[this] def v4V4PackagingVersionConversions[A](implicit
+    packagingVersionConverter: Injection[universe.v4.model.V4PackagingVersion.type, A],
     aToString: Bijection[A, String]
   ): Unit = {
 
     "succeed in the forward direction" in {
-      forAll(universe.v3.model.PackagingVersionTestCompanion.validPackagingVersions) { (version, string) =>
+      assertResult("4.0")(universe.v4.model.V4PackagingVersion.as[A].as[String])
+    }
+
+    """succeed in the reverse direction if the string is "4.0"""" in {
+      assertResult(Success(universe.v4.model.V4PackagingVersion)) {
+        "4.0".as[A].as[Try[universe.v4.model.V4PackagingVersion.type]]
+      }
+    }
+
+    "fail in the reverse direction if the string is anything else" in {
+      val Failure(iae) = "2.0".as[A].as[Try[universe.v4.model.V4PackagingVersion.type]]
+      val message = "Expected value [4.0] for packaging version, but found [2.0]"
+      assertResult(message)(iae.getMessage)
+    }
+
+  }
+
+  private[this] def v3PackagingVersionConversions[A](implicit
+    versionToA: Injection[universe.v4.model.PackagingVersion, A],
+    aToString: Bijection[A, String]
+  ): Unit = {
+
+    "succeed in the forward direction" in {
+      forAll(TestingPackages.validPackagingVersions) { (version, string) =>
         version.as[A].as[String] should be (string)
       }
     }
 
     "succeed in the reverse direction" - {
       "when the version is valid" in {
-        forAll(universe.v3.model.PackagingVersionTestCompanion.validPackagingVersions) { (version, string) =>
-          string.as[A].as[Try[universe.v3.model.PackagingVersion]] should be (Success(version))
+        forAll(TestingPackages.validPackagingVersions) { (version, string) =>
+          string.as[A].as[Try[universe.v4.model.PackagingVersion]] should be (Success(version))
         }
       }
     }
 
-    "fail in the reverse direction if the version is not 2.0 or 3.0" in {
+    "fail in the reverse direction if the version is not 2.0 or 3.0 or 4.0" in {
       val invalidVersion = "2.5"
-      val Failure(iae) = invalidVersion.as[A].as[Try[universe.v3.model.PackagingVersion]]
-      val message = universe.v3.model.PackagingVersionTestCompanion.renderInvalidVersionMessage(invalidVersion)
+      val Failure(iae) = invalidVersion.as[A].as[Try[universe.v4.model.PackagingVersion]]
+      val message = TestingPackages.renderInvalidVersionMessage(invalidVersion)
       assertResult(message)(iae.getMessage)
     }
 

@@ -11,7 +11,6 @@ import com.twitter.bijection.Injection
 import org.scalatest.FreeSpec
 import org.scalatest.Matchers
 import org.scalatest.prop.TableDrivenPropertyChecks
-import org.scalatest.prop.TableFor1
 import scala.util.Success
 
 final class UniverseConversionsSpec extends FreeSpec with Matchers with TableDrivenPropertyChecks {
@@ -22,20 +21,24 @@ final class UniverseConversionsSpec extends FreeSpec with Matchers with TableDri
       MaximalV3ModelPackageDefinitionV2 -> MaximalV2ModelPackageDetails,
       MinimalV3ModelPackageDefinitionV2 -> MinimalV2ModelPackageDetails,
       MaximalV3ModelPackageDefinitionV3 -> expectV3(MaximalV2ModelPackageDetails),
-      MinimalV3ModelPackageDefinitionV3 -> expectV3(MinimalV2ModelPackageDetails)
+      MinimalV3ModelPackageDefinitionV3 -> expectV3(MinimalV2ModelPackageDetails),
+      MaximalV4ModelPackageDefinitionV4 -> expectV4(MaximalV2ModelPackageDetails),
+      MinimalV4ModelPackageDefinitionV4 -> expectV4(MinimalV2ModelPackageDetails)
     )
 
-  "Conversion[universe.v3.model.PackageDefinition, universe.v2.model.PackageDetails]" in {
+  "Conversion[universe.v4.model.PackageDefinition, universe.v2.model.PackageDetails]" in {
     forAll(packageDefinitionToPackageDetails) { (packageDefinition, packageDetails) =>
       packageDefinition.as[universe.v2.model.PackageDetails] should be(packageDetails)
     }
   }
 
-  val metadataAndReleaseVersion: TableFor1[(universe.v3.model.Metadata, universe.v3.model.ReleaseVersion)] =
+  val metadataAndReleaseVersion =
     Table(
       "(Metadata, ReleaseVersion)",
       (MaximalV3ModelMetadata, MaxReleaseVersion),
-      (MinimalV3ModelMetadata, MinReleaseVersion)
+      (MinimalV3ModelMetadata, MinReleaseVersion),
+      (MaximalV4ModelMetadata, MaxReleaseVersion),
+      (MinimalV4ModelMetadata, MinReleaseVersion)
     )
 
   "(Metadata, ReleaseVersion) => SupportedPackageDefinition => (Metadata, ReleaseVersion) is the identity fn" in {
@@ -48,7 +51,9 @@ final class UniverseConversionsSpec extends FreeSpec with Matchers with TableDri
     Table(
       "SupportedPackageDefinition",
       MaximalV3ModelV3PackageDefinition,
-      MinimalV3ModelV3PackageDefinition
+      MinimalV3ModelV3PackageDefinition,
+      MaximalV4ModelV4PackageDefinition,
+      MinimalV4ModelV4PackageDefinition
     )
 
   "SupportedPackageDefinition => (Metadata, ReleaseVersion) => SupportedPackageDefinition" - {
@@ -57,6 +62,8 @@ final class UniverseConversionsSpec extends FreeSpec with Matchers with TableDri
         val roundtrip = metadataConversionAlmostRoundTrip(original) match {
           case v3: universe.v3.model.V3Package =>
             v3.copy(selected = original.selected, command = original.command)
+          case v4: universe.v4.model.V4Package =>
+            v4.copy(selected = original.selected)
         }
         roundtrip should be(original)
       }
@@ -143,22 +150,24 @@ final class UniverseConversionsSpec extends FreeSpec with Matchers with TableDri
   }
 
   def metadataConversionRoundTrip(
-    metadataAndReleaseVersion: (universe.v3.model.Metadata, universe.v3.model.ReleaseVersion)
-  ): (universe.v3.model.Metadata, universe.v3.model.ReleaseVersion) = {
+    metadataAndReleaseVersion: (universe.v4.model.Metadata, universe.v3.model.ReleaseVersion)
+  ): (universe.v4.model.Metadata, universe.v3.model.ReleaseVersion) = {
     metadataAndReleaseVersion
-      .as[universe.v3.model.SupportedPackageDefinition]
-      .as[(universe.v3.model.Metadata, universe.v3.model.ReleaseVersion)]
+      .as[universe.v4.model.SupportedPackageDefinition]
+      .as[(universe.v4.model.Metadata, universe.v3.model.ReleaseVersion)]
   }
 
   def metadataConversionAlmostRoundTrip(
-    supportedPackage: universe.v3.model.SupportedPackageDefinition
-  ): universe.v3.model.SupportedPackageDefinition = {
+    supportedPackage: universe.v4.model.SupportedPackageDefinition
+  ): universe.v4.model.SupportedPackageDefinition = {
     supportedPackage
-      .as[(universe.v3.model.Metadata, universe.v3.model.ReleaseVersion)]
-      .as[universe.v3.model.SupportedPackageDefinition]
+      .as[(universe.v4.model.Metadata, universe.v3.model.ReleaseVersion)]
+      .as[universe.v4.model.SupportedPackageDefinition]
   }
 
   private[this] def expectV3 = expectVersion("3.0") _
+
+  private[this] def expectV4 = expectVersion("4.0") _
 
   private[this] def expectVersion(
     version: String

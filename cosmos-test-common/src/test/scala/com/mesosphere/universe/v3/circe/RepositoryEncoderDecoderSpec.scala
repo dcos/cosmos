@@ -1,5 +1,6 @@
 package com.mesosphere.universe.v3.circe
 
+import com.mesosphere.universe.test.TestingPackages
 import com.mesosphere.universe.v3.model._
 import com.mesosphere.universe.v3.syntax.PackageDefinitionOps._
 import io.circe.Json
@@ -93,7 +94,7 @@ class RepositoryEncoderDecoderSpec extends FreeSpec {
         )
       )
 
-      val expectedErrorMessage = s"Expected one of ${PackagingVersionTestCompanion.versionStringList}" +
+      val expectedErrorMessage = s"Expected one of ${TestingPackages.versionStringList}" +
         " for packaging version, but found " +
         "[3.1]: El(DownField(packagingVersion),true,false),El(DownArray,true,false)," +
         "El(DownField(packages),true,false)"

@@ -19,7 +19,7 @@ object PackageUtil {
 
   def extractMetadata(
     packageContent: InputStream
-  ): Either[PackageError, universe.v3.model.Metadata] = {
+  ): Either[PackageError, universe.v4.model.Metadata] = {
     val zipIn = new ZipInputStream(packageContent)
 
     try {
@@ -32,7 +32,7 @@ object PackageUtil {
           val metadataBytes = StreamIO.buffer(zipIn).toByteArray
           val metadataString = new String(metadataBytes, StandardCharsets.UTF_8)
 
-          decode[universe.v3.model.Metadata](metadataString)
+          decode[universe.v4.model.Metadata](metadataString)
             .leftMap(error => InvalidEntry(MetadataPath, error))
         }
     } finally {
@@ -40,7 +40,7 @@ object PackageUtil {
     }
   }
 
-  def buildPackage(packageContent: OutputStream, metadata: universe.v3.model.Metadata): Unit = {
+  def buildPackage(packageContent: OutputStream, metadata: universe.v4.model.Metadata): Unit = {
     val zipOut = new ZipOutputStream(packageContent)
     zipOut.putNextEntry(new ZipEntry(MetadataPath.toString))
     val metadataBytes = metadata.asJson.noSpaces.getBytes(StandardCharsets.UTF_8)

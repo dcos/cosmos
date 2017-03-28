@@ -6,7 +6,7 @@ import com.mesosphere.cosmos.label.v1.model.PackageMetadata
 import com.mesosphere.cosmos.thirdparty.marathon.model.MarathonApp
 import com.mesosphere.universe
 import com.mesosphere.universe.common.JsonUtil
-import com.mesosphere.universe.v3.model.PackageDefinition
+import com.mesosphere.universe.v4.model.PackageDefinition
 import com.mesosphere.universe.v3.syntax.PackageDefinitionOps._
 import com.netaporter.uri.Uri
 import com.twitter.bijection.Conversion.asMethod

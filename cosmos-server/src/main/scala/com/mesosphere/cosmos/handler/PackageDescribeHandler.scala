@@ -11,11 +11,11 @@ import com.twitter.util.Future
 
 private[cosmos] final class PackageDescribeHandler(
   packageCollection: PackageCollection
-) extends EndpointHandler[rpc.v1.model.DescribeRequest, universe.v3.model.PackageDefinition] {
+) extends EndpointHandler[rpc.v1.model.DescribeRequest, universe.v4.model.PackageDefinition] {
 
   override def apply(request: rpc.v1.model.DescribeRequest)(implicit
     session: RequestSession
-  ): Future[universe.v3.model.PackageDefinition] = {
+  ): Future[universe.v4.model.PackageDefinition] = {
     val packageInfo = packageCollection.getPackageByPackageVersion(
       request.packageName,
       request.packageVersion.as[Option[universe.v3.model.Version]]

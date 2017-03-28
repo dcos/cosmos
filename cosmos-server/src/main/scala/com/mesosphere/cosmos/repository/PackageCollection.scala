@@ -15,12 +15,12 @@ import com.twitter.util.Future
   */
 trait PackageCollection {
 
-  def getPackagesByPackageName(packageName: String)(implicit session: RequestSession): Future[List[universe.v3.model.PackageDefinition]]
+  def getPackagesByPackageName(packageName: String)(implicit session: RequestSession): Future[List[universe.v4.model.PackageDefinition]]
 
   def getPackageByPackageVersion(
     packageName: String,
     packageVersion: Option[universe.v3.model.Version]
-  )(implicit session: RequestSession): Future[(universe.v3.model.PackageDefinition, Uri)]
+  )(implicit session: RequestSession): Future[(universe.v4.model.PackageDefinition, Uri)]
 
   def search(query: Option[String])(implicit session: RequestSession): Future[List[rpc.v1.model.SearchResult]]
 }
