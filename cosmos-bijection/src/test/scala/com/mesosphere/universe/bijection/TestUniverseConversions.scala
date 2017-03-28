@@ -33,12 +33,12 @@ object TestUniverseConversions {
     }
   }
 
-  implicit val supportedPackageToV3Metadata:
+  implicit val supportedPackageToMetadata:
     Conversion[universe.v3.model.SupportedPackageDefinition,
       (universe.v3.model.Metadata, universe.v3.model.ReleaseVersion)] = {
     Conversion.fromFunction {
       case v3Package: universe.v3.model.V3Package =>
-        val metadata = universe.v3.model.Metadata(
+        val metadata = universe.v3.model.V3Metadata(
           packagingVersion = v3Package.packagingVersion,
           name = v3Package.name,
           version = v3Package.version,
