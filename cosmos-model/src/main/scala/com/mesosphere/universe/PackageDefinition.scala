@@ -41,14 +41,8 @@ package v3.model {
 
   object SupportedPackageDefinition {
 
-    implicit val supportedPackageDefinitionOrdering = new Ordering[SupportedPackageDefinition] {
-      override def compare(a: SupportedPackageDefinition, b: SupportedPackageDefinition): Int = {
-        PackageDefinition.compare(
-          (a.name, a.version, a.releaseVersion),
-          (b.name, b.version, b.releaseVersion)
-        )
-      }
-    }
+    implicit val supportedPackageDefinitionOrdering: Ordering[SupportedPackageDefinition] =
+      PackageDefinition.packageDefinitionOrdering.on(identity)
 
   }
 
