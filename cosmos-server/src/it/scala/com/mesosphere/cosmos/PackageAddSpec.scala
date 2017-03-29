@@ -19,7 +19,6 @@ import com.mesosphere.cosmos.test.TestUtil
 import com.mesosphere.universe
 import com.mesosphere.universe.test.TestingPackages
 import com.mesosphere.universe.v3.circe.Decoders._
-import com.mesosphere.universe.v3.model.SupportedPackageDefinition
 import com.mesosphere.universe.v3.syntax.PackageDefinitionOps._
 import com.mesosphere.universe.{TestUtil => UTestUtil}
 import com.mesosphere.util.AbsolutePath
@@ -173,7 +172,7 @@ final class PackageAddSpec
   }
 
   private[this] def normalizeSupportedPackageDefinition(
-    supportedPackageDefinition: SupportedPackageDefinition
+    supportedPackageDefinition: universe.v3.model.SupportedPackageDefinition
   ): universe.v3.model.SupportedPackageDefinition = {
     // TODO package-add: Get release version from creation time in object storage
     val fakeReleaseVersion = universe.v3.model.ReleaseVersion(0L).get()

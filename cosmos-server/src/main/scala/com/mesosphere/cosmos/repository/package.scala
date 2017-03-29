@@ -2,7 +2,7 @@ package com.mesosphere.cosmos
 
 import com.mesosphere.cosmos.storage.PackageStorage
 import com.mesosphere.universe
-import com.mesosphere.universe.v3.syntax.PackageDefinitionOps.packageDefinitionToPackageDefinitionOps
+import com.mesosphere.universe.v3.syntax.PackageDefinitionOps._
 import com.twitter.util.Future
 import com.twitter.util.Return
 import com.twitter.util.Throw

@@ -4,7 +4,6 @@ import com.mesosphere.universe
 import com.twitter.bijection.Conversion
 import com.twitter.bijection.Conversion.asMethod
 
-
 object TestUniverseConversions {
 
   private implicit val v3PackageToV3Metadata:

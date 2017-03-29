@@ -1,7 +1,6 @@
 package com.mesosphere.cosmos.storage
 
 import com.mesosphere.cosmos.PackageFileMissing
-import com.mesosphere.cosmos.UnknownMediaType
 import com.mesosphere.cosmos.circe.Decoders.decode
 import com.mesosphere.cosmos.circe.Encoders.exceptionErrorResponse
 import com.mesosphere.cosmos.converter.Common._
@@ -40,11 +39,14 @@ final class PackageStorage private(objectStorage: ObjectStorage) {
     objectStorage.readAsArray(metadataName).map { pendingRead =>
       pendingRead.map {
         case (universe.MediaTypes.universeV3Package, data) =>
-          decode[universe.v3.model.SupportedPackageDefinition](
+          decode[universe.v3.model.V3Package](
             new String(data, StandardCharsets.UTF_8)
           )
         case (mt, _) =>
-          throw UnknownMediaType(mt.show)
+          throw new RuntimeException(
+            "Found incorrect media type when trying to " +
+              "read a supported package definition from storage: " +
+              mt.show)
       }
     }
   }

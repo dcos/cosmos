@@ -1,7 +1,7 @@
 package com.mesosphere.cosmos.storage.v1.model
 
 import com.mesosphere.cosmos.rpc
-import com.mesosphere.universe.v3.syntax.PackageDefinitionOps.packageDefinitionToPackageDefinitionOps
+import com.mesosphere.universe.v3.syntax.PackageDefinitionOps._
 
 case class PendingOperation(
   operation: Operation,

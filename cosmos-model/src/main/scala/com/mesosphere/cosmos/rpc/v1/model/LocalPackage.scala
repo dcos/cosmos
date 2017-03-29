@@ -2,7 +2,7 @@ package com.mesosphere.cosmos.rpc.v1.model
 
 import com.mesosphere.cosmos.storage.v1.model.Operation
 import com.mesosphere.universe
-import com.mesosphere.universe.v3.syntax.PackageDefinitionOps.packageDefinitionToPackageDefinitionOps
+import com.mesosphere.universe.v3.syntax.PackageDefinitionOps._
 
 sealed trait LocalPackage
 

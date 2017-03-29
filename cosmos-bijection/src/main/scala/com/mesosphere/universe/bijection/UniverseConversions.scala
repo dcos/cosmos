@@ -1,8 +1,6 @@
 package com.mesosphere.universe.bijection
 
 import com.mesosphere.universe
-import com.mesosphere.universe.v3.model.V3Metadata
-import com.mesosphere.universe.v3.model.V3Package
 import com.netaporter.uri.Uri
 import com.twitter.bijection.Bijection
 import com.twitter.bijection.Conversion
@@ -126,12 +124,12 @@ object UniverseConversions {
     )
   }
 
-  implicit val MetadataToSupportedPackageDefinition:
+  implicit val metadataToSupportedPackageDefinition:
     Conversion[(universe.v3.model.Metadata, universe.v3.model.ReleaseVersion),
       universe.v3.model.SupportedPackageDefinition] = Conversion.fromFunction { case (metadata, releaseVersion) =>
       metadata match {
-        case v3Metadata: V3Metadata =>
-          (v3Metadata, releaseVersion).as[V3Package]
+        case v3Metadata: universe.v3.model.V3Metadata =>
+          (v3Metadata, releaseVersion).as[universe.v3.model.V3Package]
       }
   }
 
