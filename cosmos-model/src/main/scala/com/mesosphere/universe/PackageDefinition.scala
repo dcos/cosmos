@@ -36,6 +36,22 @@ package v3.model {
 
   }
 
+  sealed trait SupportedPackageDefinition
+    extends PackageDefinition
+
+  object SupportedPackageDefinition {
+
+    implicit val supportedPackageDefinitionOrdering = new Ordering[SupportedPackageDefinition] {
+      override def compare(a: SupportedPackageDefinition, b: SupportedPackageDefinition): Int = {
+        PackageDefinition.compare(
+          (a.name, a.version, a.releaseVersion),
+          (b.name, b.version, b.releaseVersion)
+        )
+      }
+    }
+
+  }
+
   /**
     * Conforms to: https://universe.mesosphere.com/v3/schema/repo#/definitions/v20Package
     */
@@ -99,22 +115,6 @@ package v3.model {
         (that.name, that.version, that.releaseVersion)
       )
     }
-  }
-
-  sealed trait SupportedPackageDefinition
-    extends PackageDefinition
-
-  object SupportedPackageDefinition {
-
-    implicit val supportedPackageDefinitionOrdering = new Ordering[SupportedPackageDefinition] {
-      override def compare(a: SupportedPackageDefinition, b: SupportedPackageDefinition): Int = {
-        PackageDefinition.compare(
-          (a.name, a.version, a.releaseVersion),
-          (b.name, b.version, b.releaseVersion)
-        )
-      }
-    }
-
   }
 
 }

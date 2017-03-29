@@ -67,7 +67,7 @@ final class PackageAddHandler(
     } yield {
       operation.packageDefinition match {
         case v3Package: universe.v3.model.V3Package =>
-          new rpc.v1.model.AddResponse(v3Package)
+          rpc.v1.model.AddResponse(v3Package)
       }
     }
   }

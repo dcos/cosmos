@@ -6,7 +6,7 @@ import com.twitter.bijection.Conversion.asMethod
 
 object TestUniverseConversions {
 
-  private implicit val v3PackageToV3Metadata:
+  implicit val v3PackageToV3Metadata:
     Conversion[universe.v3.model.V3Package,
       (universe.v3.model.V3Metadata, universe.v3.model.ReleaseVersion)] = {
     Conversion.fromFunction { v3Package =>

@@ -68,10 +68,8 @@ final class UniverseConversionsSpec extends FreeSpec with Matchers {
       val command = v3Package.command
 
       val roundTrip = v3Package
-        .asInstanceOf[universe.v3.model.SupportedPackageDefinition]
-        .as[(universe.v3.model.Metadata, universe.v3.model.ReleaseVersion)]
-        .as[universe.v3.model.SupportedPackageDefinition]
-        .asInstanceOf[universe.v3.model.V3Package]
+        .as[(universe.v3.model.V3Metadata, universe.v3.model.ReleaseVersion)]
+        .as[universe.v3.model.V3Package]
 
       assert(roundTrip.selected.isEmpty)
       assert(roundTrip.command.isEmpty)
