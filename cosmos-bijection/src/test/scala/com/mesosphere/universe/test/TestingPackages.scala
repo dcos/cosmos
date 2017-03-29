@@ -223,7 +223,7 @@ object TestingPackages {
     ))
   )
 
-  val MaximalV3ModelMetadata = universe.v3.model.Metadata(
+  val MaximalV3ModelMetadata = universe.v3.model.V3Metadata(
     PackagingVersion,
     Name,
     Version,
@@ -243,7 +243,7 @@ object TestingPackages {
     Config
   )
 
-  val MinimalV3ModelMetadata = universe.v3.model.Metadata(
+  val MinimalV3ModelMetadata = universe.v3.model.V3Metadata(
     PackagingVersion,
     Name,
     Version,

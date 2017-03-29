@@ -102,7 +102,18 @@ object Decoders {
     packagingVersionSubclassToString(V3PackagingVersion)
   }
 
-  implicit val decodeMetadata: Decoder[Metadata] = deriveDecoder[Metadata]
+  implicit val decodeV3Metadata: Decoder[V3Metadata] = deriveDecoder[V3Metadata]
+  implicit val decodeMetadata: Decoder[Metadata] = {
+    Decoder.instance[Metadata] { (hc: HCursor) =>
+      hc.downField("packagingVersion").as[PackagingVersion].flatMap {
+        case V3PackagingVersion => hc.as[V3Metadata]
+        case V2PackagingVersion => Left(DecodingFailure(
+          "V2Metadata is not supported",
+          hc.history
+        ))
+      }
+    }
+  }
 
   private[this] def packagingVersionSubclassToString[V <: PackagingVersion](
     expected: V

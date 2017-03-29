@@ -14,6 +14,7 @@ import com.mesosphere.cosmos.storage.v1.model.UniverseInstall
 import com.mesosphere.universe
 import com.mesosphere.universe.bijection.UniverseConversions._
 import com.mesosphere.universe.v3.model.Metadata
+import com.mesosphere.universe.v3.model.V3Metadata
 import com.mesosphere.universe.v3.syntax.PackageDefinitionOps._
 import com.mesosphere.util.PackageUtil
 import com.twitter.bijection.Conversion.asMethod
@@ -81,7 +82,10 @@ final class PackageAddHandler(
       packageMetadata.map { packageMetadata =>
         val timeOfAdd = Instant.now().getEpochSecond
         val releaseVersion = universe.v3.model.ReleaseVersion(timeOfAdd).get()
-        (packageMetadata, releaseVersion).as[universe.v3.model.V3Package]
+        packageMetadata match {
+          case v3Metadata: universe.v3.model.V3Metadata =>
+            (v3Metadata, releaseVersion).as[universe.v3.model.V3Package]
+        }
       }
     }
   }
