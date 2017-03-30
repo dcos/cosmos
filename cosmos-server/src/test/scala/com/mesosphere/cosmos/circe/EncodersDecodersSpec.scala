@@ -195,7 +195,7 @@ class EncodersDecodersSpec extends FreeSpec with PropertyChecks with Matchers {
       val v3Package = TestingPackages.MinimalV3ModelV3PackageDefinition
       val uninstall: storage.v1.model.Operation = storage.v1.model.Uninstall(v3Package)
       val expectedUninstallJson = Json.obj(
-        "v3Package" -> v3Package.asJson,
+        "packageDefinition" -> v3Package.asJson,
         "type" -> "Uninstall".asJson
       )
       val actualUninstallJson = uninstall.asJson
@@ -264,7 +264,7 @@ class EncodersDecodersSpec extends FreeSpec with PropertyChecks with Matchers {
         Json.obj(
           "operation" ->
             Json.obj(
-              "v3Package" -> TestingPackages.MinimalV3ModelV3PackageDefinition.asJson,
+              "packageDefinition" -> TestingPackages.MinimalV3ModelV3PackageDefinition.asJson,
               "type" -> "Uninstall".asJson
             ),
           "failure" -> Json.Null,

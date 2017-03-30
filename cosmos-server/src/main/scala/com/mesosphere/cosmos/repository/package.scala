@@ -2,33 +2,34 @@ package com.mesosphere.cosmos
 
 import com.mesosphere.cosmos.storage.PackageStorage
 import com.mesosphere.universe
+import com.mesosphere.universe.v3.syntax.PackageDefinitionOps._
 import com.twitter.util.Future
 import com.twitter.util.Return
 import com.twitter.util.Throw
 import java.util.UUID
 
 package object repository {
-  type Installer = (UUID, universe.v3.model.V3Package) => Future[Unit]
+  type Installer = (UUID, universe.v3.model.SupportedPackageDefinition) => Future[Unit]
 
-  type UniverseInstaller = universe.v3.model.V3Package => Future[Unit]
+  type UniverseInstaller = universe.v3.model.SupportedPackageDefinition => Future[Unit]
   object UniverseInstaller {
     object Noop extends UniverseInstaller {
-      def apply(p: universe.v3.model.V3Package): Future[Unit] = Future.Done
+      def apply(p: universe.v3.model.SupportedPackageDefinition): Future[Unit] = Future.Done
     }
   }
 
-  type Uninstaller = universe.v3.model.V3Package => Future[Unit]
+  type Uninstaller = universe.v3.model.SupportedPackageDefinition => Future[Unit]
   object Uninstaller {
     object Noop extends Uninstaller {
-      def apply(p: universe.v3.model.V3Package): Future[Unit] = Future.Done
+      def apply(p: universe.v3.model.SupportedPackageDefinition): Future[Unit] = Future.Done
     }
   }
 
   // TODO package-add: Need tests for error cases
-  def installV3Package(
+  def installSupportedPackage(
     packageStorage: PackageStorage
   )(
-    pkg: universe.v3.model.V3Package
+    pkg: universe.v3.model.SupportedPackageDefinition
   ): Future[Unit] = {
 
     packageStorage.readAllLocalPackages().map { packages =>

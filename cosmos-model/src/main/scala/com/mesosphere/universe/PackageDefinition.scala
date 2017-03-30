@@ -36,6 +36,16 @@ package v3.model {
 
   }
 
+  sealed trait SupportedPackageDefinition
+    extends PackageDefinition
+
+  object SupportedPackageDefinition {
+
+    implicit val supportedPackageDefinitionOrdering: Ordering[SupportedPackageDefinition] =
+      PackageDefinition.packageDefinitionOrdering.on(identity)
+
+  }
+
   /**
     * Conforms to: https://universe.mesosphere.com/v3/schema/repo#/definitions/v20Package
     */
@@ -92,7 +102,7 @@ package v3.model {
     resource: Option[V3Resource] = None,
     config: Option[JsonObject] = None,
     command: Option[Command] = None
-  ) extends PackageDefinition with Ordered[V3Package] {
+  ) extends SupportedPackageDefinition with Ordered[V3Package] {
     override def compare(that: V3Package): Int = {
       PackageDefinition.compare(
         (name, version, releaseVersion),

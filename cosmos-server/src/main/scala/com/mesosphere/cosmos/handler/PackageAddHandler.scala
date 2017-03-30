@@ -55,23 +55,26 @@ final class PackageAddHandler(
 
         for {
           stagedPackageId <- stagedPackageStorage.write(packageStream, packageSize, contentType)
-          Some(v3Package) <- readPackageDefinitionFromStorage(stagedPackageId)
+          Some(supportedPackage) <- readPackageDefinitionFromStorage(stagedPackageId)
         } yield {
-          Install(stagedPackageId, v3Package)
+          Install(stagedPackageId, supportedPackage)
         }
     }
 
     for {
       operation <- futureOperation
-      _ <- producerView.add(operation.v3Package.packageCoordinate, operation)
+      _ <- producerView.add(operation.packageDefinition.packageCoordinate, operation)
     } yield {
-      new rpc.v1.model.AddResponse(operation.v3Package)
+      operation.packageDefinition match {
+        case v3Package: universe.v3.model.V3Package =>
+          rpc.v1.model.AddResponse(v3Package)
+      }
     }
   }
 
   private[this] def readPackageDefinitionFromStorage(
     stagedPackageId: UUID
-  ): Future[Option[universe.v3.model.V3Package]] = {
+  ): Future[Option[universe.v3.model.SupportedPackageDefinition]] = {
     for {
       // TODO package-add: verify media type
       stagedPackageAndMediaType <- stagedPackageStorage.read(stagedPackageId)
@@ -82,10 +85,7 @@ final class PackageAddHandler(
       packageMetadata.map { packageMetadata =>
         val timeOfAdd = Instant.now().getEpochSecond
         val releaseVersion = universe.v3.model.ReleaseVersion(timeOfAdd).get()
-        packageMetadata match {
-          case v3Metadata: universe.v3.model.V3Metadata =>
-            (v3Metadata, releaseVersion).as[universe.v3.model.V3Package]
-        }
+        (packageMetadata, releaseVersion).as[universe.v3.model.SupportedPackageDefinition]
       }
     }
   }

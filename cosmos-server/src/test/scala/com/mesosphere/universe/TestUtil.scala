@@ -7,9 +7,9 @@ import java.io.ByteArrayOutputStream
 
 object TestUtil {
 
-  def buildPackage(v3Package: v3.model.V3Package): Array[Byte] = {
+  def buildPackage(supportedPackage: v3.model.SupportedPackageDefinition): Array[Byte] = {
     val (packageData, _) =
-      v3Package.as[(v3.model.V3Metadata, v3.model.ReleaseVersion)]
+      supportedPackage.as[(v3.model.Metadata, v3.model.ReleaseVersion)]
 
     val bytesOut = new ByteArrayOutputStream()
     PackageUtil.buildPackage(bytesOut, packageData)

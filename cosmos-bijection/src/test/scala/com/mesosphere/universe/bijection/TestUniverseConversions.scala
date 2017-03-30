@@ -2,6 +2,7 @@ package com.mesosphere.universe.bijection
 
 import com.mesosphere.universe
 import com.twitter.bijection.Conversion
+import com.twitter.bijection.Conversion.asMethod
 
 object TestUniverseConversions {
 
@@ -30,6 +31,15 @@ object TestUniverseConversions {
       )
 
       (metadata, v3Package.releaseVersion)
+    }
+  }
+
+  implicit val supportedPackageToMetadata:
+    Conversion[universe.v3.model.SupportedPackageDefinition,
+      (universe.v3.model.Metadata, universe.v3.model.ReleaseVersion)] = {
+    Conversion.fromFunction {
+      case v3Package: universe.v3.model.V3Package =>
+        v3Package.as[(universe.v3.model.V3Metadata, universe.v3.model.ReleaseVersion)]
     }
   }
 

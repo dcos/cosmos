@@ -22,21 +22,31 @@ final class PackageStorage private(objectStorage: ObjectStorage) {
   import PackageStorage._
 
   def writePackageDefinition(
-    packageDefinition: universe.v3.model.V3Package
+    packageDefinition: universe.v3.model.SupportedPackageDefinition
   ): Future[Unit] = {
     val metadataName = getMetadataPath(packageDefinition.packageCoordinate)
     val data = packageDefinition.asJson.noSpaces.getBytes(StandardCharsets.UTF_8)
-    val mediaType = universe.MediaTypes.universeV3Package
+    val mediaType = packageDefinition match {
+      case _: universe.v3.model.V3Package => universe.MediaTypes.universeV3Package
+    }
     objectStorage.write(metadataName, data, mediaType)
   }
 
   def readPackageDefinition(
     packageCoordinate: rpc.v1.model.PackageCoordinate
-  ): Future[Option[universe.v3.model.V3Package]] = {
+  ): Future[Option[universe.v3.model.SupportedPackageDefinition]] = {
     val metadataName = getMetadataPath(packageCoordinate)
     objectStorage.readAsArray(metadataName).map { pendingRead =>
-      pendingRead.map { case (_, data) =>
-        decode[universe.v3.model.V3Package](new String(data, StandardCharsets.UTF_8))
+      pendingRead.map {
+        case (universe.MediaTypes.universeV3Package, data) =>
+          decode[universe.v3.model.V3Package](
+            new String(data, StandardCharsets.UTF_8)
+          )
+        case (mt, _) =>
+          throw new RuntimeException(
+            "Found incorrect media type when trying to " +
+              "read a supported package definition from storage: " +
+              mt.show)
       }
     }
   }

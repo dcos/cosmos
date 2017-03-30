@@ -7,5 +7,5 @@ case class PendingOperation(
   operation: Operation,
   failure: Option[OperationFailure]
 ) {
-  def packageCoordinate: rpc.v1.model.PackageCoordinate = operation.v3Package.packageCoordinate
+  def packageCoordinate: rpc.v1.model.PackageCoordinate = operation.packageDefinition.packageCoordinate
 }

@@ -16,16 +16,16 @@ object LocalPackage {
       case Installing(pkg) => pkg.packageCoordinate
       case Uninstalling(Left(pc)) => pc
       case Uninstalling(Right(pkg)) => pkg.packageCoordinate
-      case Failed(op, _) => op.v3Package.packageCoordinate
+      case Failed(op, _) => op.packageDefinition.packageCoordinate
     }
 
-    def metadata: Either[PackageCoordinate, universe.v3.model.V3Package] = value match {
+    def metadata: Either[PackageCoordinate, universe.v3.model.SupportedPackageDefinition] = value match {
       case Invalid(_, pc) => Left(pc)
       case NotInstalled(pkg) => Right(pkg)
       case Installed(pkg) => Right(pkg)
       case Installing(pkg) => Right(pkg)
       case Uninstalling(data) => data
-      case Failed(op, _) => Right(op.v3Package)
+      case Failed(op, _) => Right(op.packageDefinition)
     }
 
     def packageName: String = value match {
@@ -33,7 +33,7 @@ object LocalPackage {
       case Installed(pkg) => pkg.name
       case Installing(pkg) => pkg.name
       case Uninstalling(data) => data.fold(_.name, _.name)
-      case Failed(op, _) => op.v3Package.name
+      case Failed(op, _) => op.packageDefinition.name
       case Invalid(_, packageCoordinate) => packageCoordinate.name
     }
 
@@ -42,7 +42,7 @@ object LocalPackage {
       case Installed(pkg) => pkg.version
       case Installing(pkg) => pkg.version
       case Uninstalling(data) => data.fold(_.version, _.version)
-      case Failed(op, _) => op.v3Package.version
+      case Failed(op, _) => op.packageDefinition.version
       case Invalid(_, packageCoordinate) => packageCoordinate.version
     }
 
@@ -63,7 +63,7 @@ object LocalPackage {
     override def compare(a: LocalPackage, b: LocalPackage): Int = {
       (a.metadata, b.metadata) match {
         case (Right(aMetadata), Right(bMetadata)) =>
-          implicitly[Ordering[universe.v3.model.PackageDefinition]].compare(aMetadata, bMetadata)
+          implicitly[Ordering[universe.v3.model.SupportedPackageDefinition]].compare(aMetadata, bMetadata)
         case (Right(aMetadata), Left(bPackageCoordinate)) =>
           LocalPackage.compare(aMetadata, bPackageCoordinate)
         case (Left(aPackageCoordinate), Right(bMetadata)) =>
@@ -75,7 +75,7 @@ object LocalPackage {
   }
 
   def compare(
-    metadata: universe.v3.model.PackageDefinition,
+    metadata: universe.v3.model.SupportedPackageDefinition,
     packageCoordinate: PackageCoordinate
   ): Int = {
     val nameOrder = metadata.name.compare(packageCoordinate.name)
@@ -106,19 +106,19 @@ object LocalPackage {
 }
 
 final case class NotInstalled(
-  metadata: universe.v3.model.V3Package
+  metadata: universe.v3.model.SupportedPackageDefinition
 ) extends LocalPackage
 
 final case class Installing(
-  metadata: universe.v3.model.V3Package
+  metadata: universe.v3.model.SupportedPackageDefinition
 ) extends LocalPackage
 
 final case class Installed(
-  metadata: universe.v3.model.V3Package
+  metadata: universe.v3.model.SupportedPackageDefinition
 ) extends LocalPackage
 
 final case class Uninstalling(
-  data: Either[PackageCoordinate, universe.v3.model.V3Package]
+  data: Either[PackageCoordinate, universe.v3.model.SupportedPackageDefinition]
 ) extends LocalPackage
 
 // TODO: We shouldn't return Operation. It contains stagedPackageId which is useless to the client

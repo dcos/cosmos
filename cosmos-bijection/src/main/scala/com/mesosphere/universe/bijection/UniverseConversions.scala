@@ -124,6 +124,15 @@ object UniverseConversions {
     )
   }
 
+  implicit val metadataToSupportedPackageDefinition:
+    Conversion[(universe.v3.model.Metadata, universe.v3.model.ReleaseVersion),
+      universe.v3.model.SupportedPackageDefinition] = Conversion.fromFunction { case (metadata, releaseVersion) =>
+      metadata match {
+        case v3Metadata: universe.v3.model.V3Metadata =>
+          (v3Metadata, releaseVersion).as[universe.v3.model.V3Package]
+      }
+  }
+
   implicit val v3PackageDefinitionToV2PackageDetails:
     Conversion[universe.v3.model.PackageDefinition, universe.v2.model.PackageDetails] = {
     Conversion.fromFunction {
