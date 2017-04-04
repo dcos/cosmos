@@ -34,7 +34,7 @@ final class FinagleStreamingSpec extends FreeSpec {
 
     try {
       val reqBodySize = 10 * Runtime.getRuntime.maxMemory()
-      val readSize: Long = 200 * 1000 * 1000
+      val readSize: Long = 200L * 1000L * 1000L
 
       val values = Iterator.iterate(0L)(_ + 1).takeWhile(_ < reqBodySize)
       val bytes = iteratorToInputStream(values.map(v => (v & 0xFF).toByte))

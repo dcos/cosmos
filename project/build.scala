@@ -7,7 +7,7 @@ import sbt._
 
 object CosmosBuild {
 
-  val sharedSettings = BuildPlugin.publishSettings ++ Seq(
+  val sharedSettings: Seq[Def.Setting[_]] = BuildPlugin.publishSettings ++ Seq(
     organization := "com.mesosphere.cosmos",
     scalaVersion := V.projectScalaVersion,
     version := V.projectVersion,
@@ -18,17 +18,17 @@ object CosmosBuild {
     // Required by One-JAR for multi-project builds: https://github.com/sbt/sbt-onejar#requirements
     exportJars := true,
 
-    externalResolvers := Seq(
-      Resolver.mavenLocal,
-      DefaultMavenRepository,
-      "Twitter Maven" at "https://maven.twttr.com"
+    resolvers ++= Seq(
+      Resolver.mavenLocal,                          // For locally-published dependencies
+      "Twitter Maven" at "https://maven.twttr.com"  // For some Twitter dependencies
     ),
 
     libraryDependencies ++= Deps.mockito ++ Deps.scalaTest ++ Deps.scalaCheck,
 
     test in (This, Global, This) := (test in Test).value,
 
-    publishArtifact in Test := false,
+    publishArtifact in Test := true,
+    publishArtifact in IntegrationTest := true,
 
     // Parallel changes to a shared cluster cause some tests to fail
     parallelExecution in IntegrationTest := false,
@@ -60,8 +60,59 @@ object CosmosBuild {
             <name>Tamar Ben-Shachar</name>
           </developer>
         </developers>
-  )
+  ) ++ packageSettings
 
-  val itSettings = BuildPlugin.itSettings("com.mesosphere.cosmos.Cosmos")
+  val itSettings: Seq[Def.Setting[_]] = BuildPlugin.itSettings("com.mesosphere.cosmos.Cosmos")
+
+  // Adapted from `artifactSetting` in SBT's Defaults.scala
+  // Enables publishing of integration test artifacts with the correct classifiers
+  def customArtifactSetting(
+    a: Artifact,
+    classifier: Option[String],
+    cOpt: Option[Configuration]
+  ): Artifact = {
+    val cPart = cOpt flatMap {
+      case Compile => None
+      case Test    => Some(Artifact.TestsClassifier)
+      case c       => Some(c.name)
+    }
+    val combined = cPart.toList ++ classifier.toList
+    if (combined.isEmpty) a.copy(classifier = None, configurations = cOpt.toList) else {
+      val classifierString = combined mkString "-"
+      val confs = cOpt.toList flatMap { c => Defaults.artifactConfigurations(a, c, classifier) }
+
+      // Begin updated section
+      val testsPrefix = Artifact.TestsClassifier + "-"
+      val itPrefix = "it-"
+      val strippedClassifier =
+        if (classifierString.startsWith(testsPrefix)) classifierString.stripPrefix(testsPrefix)
+        else if (classifierString.startsWith(itPrefix)) classifierString.stripPrefix(itPrefix)
+        else classifierString
+
+      val classifierName = Some(classifierString)
+      val classifierType =
+        Artifact.classifierTypeMap.getOrElse(strippedClassifier, Artifact.DefaultType)
+      a.copy(classifier = classifierName, `type` = classifierType, configurations = confs)
+      // End updated section
+    }
+  }
+
+  def packageSettings: Seq[Def.Setting[_]] = {
+    val artifactSetting = artifact := customArtifactSetting(
+      artifact.value,
+      artifactClassifier.value,
+      configuration.?.value
+    )
+
+    val artifactSettings = for {
+      conf <- Seq(Compile, Test, IntegrationTest)
+      task <- Classpaths.defaultPackageKeys
+      setting <- inConfig(conf)(inTask(task)(Seq(artifactSetting)))
+    } yield setting
+
+    artifactSettings ++ Classpaths.defaultPackageKeys.flatMap { packageTask =>
+      addArtifact(artifact in (IntegrationTest, packageTask), packageTask in IntegrationTest)
+    }
+  }
 
 }
