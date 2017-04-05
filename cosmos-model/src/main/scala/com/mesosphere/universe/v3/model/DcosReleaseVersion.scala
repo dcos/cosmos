@@ -2,8 +2,6 @@ package com.mesosphere.universe.v3.model
 
 import io.circe.Decoder
 import io.circe.Encoder
-import io.circe.generic.semiauto.deriveDecoder
-import io.circe.generic.semiauto.deriveEncoder
 import io.circe.syntax.EncoderOps
 
 /**

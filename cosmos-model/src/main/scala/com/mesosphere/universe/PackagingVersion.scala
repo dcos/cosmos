@@ -1,15 +1,14 @@
 package com.mesosphere.universe
 
 import cats.syntax.either._
+import com.mesosphere.universe.common.circe.Decoders._
 import com.twitter.util.Return
 import com.twitter.util.Throw
 import com.twitter.util.Try
 import io.circe.Decoder
+import io.circe.DecodingFailure
 import io.circe.Encoder
 import io.circe.HCursor
-import io.circe.DecodingFailure
-import io.circe.generic.semiauto.deriveDecoder
-import io.circe.generic.semiauto.deriveEncoder
 
 package v3.model {
 

@@ -7,7 +7,6 @@ import io.circe.Decoder
 import io.circe.Encoder
 import io.circe.generic.semiauto.deriveDecoder
 import io.circe.generic.semiauto.deriveEncoder
-import io.circe.syntax.EncoderOps
 
 case class License(name: String, url: Uri)
 

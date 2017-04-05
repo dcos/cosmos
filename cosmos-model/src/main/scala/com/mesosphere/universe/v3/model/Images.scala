@@ -1,12 +1,11 @@
 package com.mesosphere.universe.v3.model
 
 import cats.syntax.either._
+import com.mesosphere.universe.common.circe.Decoders._
 import io.circe.Decoder
 import io.circe.Encoder
 import io.circe.HCursor
 import io.circe.Json
-import io.circe.generic.semiauto.deriveDecoder
-import io.circe.generic.semiauto.deriveEncoder
 import io.circe.syntax.EncoderOps
 
 case class Images(

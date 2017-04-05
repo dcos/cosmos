@@ -9,8 +9,6 @@ import io.circe.Encoder
 import io.circe.HCursor
 import io.circe.DecodingFailure
 import io.circe.syntax.EncoderOps
-import io.circe.generic.semiauto.deriveDecoder
-import io.circe.generic.semiauto.deriveEncoder
 
 final class ReleaseVersion private(val value: Long) extends AnyVal
 

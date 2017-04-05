@@ -1,6 +1,7 @@
 package com.mesosphere.universe
 
 import cats.syntax.either._
+import com.mesosphere.universe.common.circe.Decoders._
 import com.mesosphere.universe.v3.syntax.PackageDefinitionOps._
 import io.circe.Decoder
 import io.circe.DecodingFailure
