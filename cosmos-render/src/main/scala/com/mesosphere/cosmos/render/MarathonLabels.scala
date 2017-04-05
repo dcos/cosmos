@@ -65,7 +65,7 @@ object MarathonLabels {
     options: JsonObject
   ): MarathonLabels = {
     new MarathonLabels(
-      commandJson = pkg.command.map(_.asJson(universe.v3.circe.Encoders.encodeCommand)),
+      commandJson = pkg.command.map(_.asJson(universe.v3.model.Command.encodeCommand)),
       isFramework = pkg.framework.getOrElse(false),
       packageMetadata = pkg.as[PackageMetadata],
       packageName = pkg.name,

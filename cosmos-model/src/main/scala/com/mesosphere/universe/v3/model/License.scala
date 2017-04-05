@@ -1,5 +1,17 @@
 package com.mesosphere.universe.v3.model
 
+import com.mesosphere.universe.common.circe.Decoders._
+import com.mesosphere.universe.common.circe.Encoders._
 import com.netaporter.uri.Uri
+import io.circe.Decoder
+import io.circe.Encoder
+import io.circe.generic.semiauto.deriveDecoder
+import io.circe.generic.semiauto.deriveEncoder
+import io.circe.syntax.EncoderOps
 
 case class License(name: String, url: Uri)
+
+object License {
+  implicit val decodeLicense: Decoder[License] = deriveDecoder[License]
+  implicit val encodeLicense: Encoder[License] = deriveEncoder[License]
+}

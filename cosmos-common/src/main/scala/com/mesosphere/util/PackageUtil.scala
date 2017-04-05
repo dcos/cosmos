@@ -2,8 +2,6 @@ package com.mesosphere.util
 
 import cats.syntax.either._
 import com.mesosphere.universe
-import com.mesosphere.universe.v3.circe.Decoders._
-import com.mesosphere.universe.v3.circe.Encoders._
 import com.twitter.io.StreamIO
 import io.circe.JsonObject
 import io.circe.jawn.decode

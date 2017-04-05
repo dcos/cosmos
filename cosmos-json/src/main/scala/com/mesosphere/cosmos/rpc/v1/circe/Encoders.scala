@@ -5,9 +5,6 @@ import com.mesosphere.cosmos.thirdparty.marathon.circe.Encoders._
 import com.mesosphere.universe
 import com.mesosphere.universe.common.circe.Encoders._
 import com.mesosphere.universe.v2.circe.Encoders._
-import com.mesosphere.universe.v3.circe.Encoders._
-import com.mesosphere.universe.v3.circe.Encoders.{encodeImages => encodeV3Images}
-import com.mesosphere.universe.v3.circe.Encoders.{encodeLicense => encodeV3License}
 import io.circe._
 import io.circe.generic.semiauto._
 import io.circe.syntax._

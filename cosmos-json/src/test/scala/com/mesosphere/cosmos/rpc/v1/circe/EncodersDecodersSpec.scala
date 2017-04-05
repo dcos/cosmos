@@ -5,7 +5,6 @@ import com.mesosphere.Generators.Implicits._
 import com.mesosphere.cosmos.rpc
 import com.mesosphere.cosmos.rpc.v1.model.AddResponse
 import com.mesosphere.universe
-import com.mesosphere.universe.v3.circe.Encoders._
 import io.circe.jawn.decode
 import io.circe.syntax._
 import org.scalatest.FreeSpec

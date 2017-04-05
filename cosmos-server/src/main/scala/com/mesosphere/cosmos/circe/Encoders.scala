@@ -18,8 +18,6 @@ import com.mesosphere.cosmos.storage.v1.model.Uninstall
 import com.mesosphere.cosmos.storage.v1.model.UniverseInstall
 import com.mesosphere.universe
 import com.mesosphere.universe.common.circe.Encoders._
-import com.mesosphere.universe.v2.circe.Encoders._
-import com.mesosphere.universe.v3.circe.Encoders._
 import com.mesosphere.util.PackageUtil
 import com.twitter.finagle.http.Fields
 import com.twitter.finagle.http.Status

@@ -14,7 +14,6 @@ import com.mesosphere.cosmos.thirdparty.marathon.model.MarathonError
 import com.mesosphere.universe
 import com.mesosphere.universe.common.circe.Encoders._
 import com.mesosphere.universe.v2.circe.Encoders._
-import com.mesosphere.universe.v3.circe.Encoders._
 import com.mesosphere.util.PackageUtil
 import com.netaporter.uri.Uri
 import com.twitter.finagle.http.Status

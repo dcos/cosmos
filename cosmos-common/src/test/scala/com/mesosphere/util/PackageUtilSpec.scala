@@ -3,8 +3,6 @@ package com.mesosphere.util
 import cats.syntax.either._
 import com.mesosphere.Generators.Implicits._
 import com.mesosphere.universe
-import com.mesosphere.universe.v3.circe.Decoders._
-import com.mesosphere.universe.v3.circe.Encoders._
 import io.circe.Json
 import io.circe.jawn.decode
 import io.circe.syntax._

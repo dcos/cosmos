@@ -1,7 +1,5 @@
 package com.mesosphere.universe.v3.circe
 
-import com.mesosphere.universe.v3.circe.Decoders._
-import com.mesosphere.universe.v3.circe.Encoders._
 import com.mesosphere.universe.v3.model._
 import io.circe.Json
 import io.circe.jawn.parse
@@ -57,7 +55,7 @@ class RepositoryEncoderDecoderSpec extends FreeSpec {
         "/com/mesosphere/universe/v3/circe/test-v3-repo-up-to-1.8.json"
       )
       val jsonString = Source.fromInputStream(inputStream, "UTF-8").mkString
-      val repo = decodeRepository.decodeJson(parse(jsonString).right.get).right.get
+      val repo = Repository.decodeRepository.decodeJson(parse(jsonString).right.get).right.get
 
       val expected = 9
       assertResult(expected)(repo.packages.size)
@@ -107,7 +105,7 @@ class RepositoryEncoderDecoderSpec extends FreeSpec {
         "[3.1]: El(DownField(packagingVersion),true,false),El(DownArray,true,false)," +
         "El(DownField(packages),true,false)"
 
-      val Left(decodingFailure) = decodeRepository.decodeJson(json)
+      val Left(decodingFailure) = Repository.decodeRepository.decodeJson(json)
 
       assertResult(expectedErrorMessage)(decodingFailure.getMessage())
     }
@@ -131,7 +129,7 @@ class RepositoryEncoderDecoderSpec extends FreeSpec {
         "El(DownArray,true,false),El(DownField(tags),true,false),El(DownArray,true,false)," +
         "El(DownField(packages),true,false)"
 
-      val Left(decodingFailure) = decodeRepository.decodeJson(json)
+      val Left(decodingFailure) = Repository.decodeRepository.decodeJson(json)
 
       assertResult(expectedErrorMessage)(decodingFailure.getMessage())
     }
@@ -156,7 +154,7 @@ class RepositoryEncoderDecoderSpec extends FreeSpec {
         "[-1]: El(DownField(releaseVersion),true,false),El(DownArray,true,false)," +
         "El(DownField(packages),true,false)"
 
-      val Left(decodingFailure) = decodeRepository.decodeJson(json)
+      val Left(decodingFailure) = Repository.decodeRepository.decodeJson(json)
 
       assertResult(expectedErrorMessage)(decodingFailure.getMessage())
     }

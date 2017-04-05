@@ -8,7 +8,6 @@ import com.mesosphere.cosmos.thirdparty.marathon.circe.Encoders.encodeAppId
 import com.mesosphere.cosmos.thirdparty.marathon.model.AppId
 import com.mesosphere.universe
 import com.mesosphere.universe.common.ByteBuffers
-import com.mesosphere.universe.v3.circe.Encoders._
 import com.mesosphere.universe.v3.syntax.PackageDefinitionOps._
 import com.netaporter.uri.Uri
 import io.circe.Json

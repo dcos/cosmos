@@ -1,8 +1,6 @@
 package com.mesosphere.universe.v3.circe
 
 import com.mesosphere.universe
-import com.mesosphere.universe.v3.circe.Decoders._
-import com.mesosphere.universe.v3.circe.Encoders._
 import io.circe.Decoder
 import io.circe.Json
 import io.circe.syntax._

@@ -1,5 +1,11 @@
 package com.mesosphere.universe.v3.model
 
+import io.circe.Decoder
+import io.circe.Encoder
+import io.circe.generic.semiauto.deriveDecoder
+import io.circe.generic.semiauto.deriveEncoder
+import io.circe.syntax.EncoderOps
+
 /**
   * Conforms to: https://universe.mesosphere.com/v3/schema/repo#/definitions/dcosReleaseVersion
   */
@@ -61,5 +67,10 @@ object DcosReleaseVersion {
   implicit def dcosReleaseVersionOrderingOps(left: DcosReleaseVersion): dcosReleaseVersionOrdering.Ops = {
     dcosReleaseVersionOrdering.mkOrderingOps(left)
   }
+
+  implicit val decodeDcosReleaseVersion: Decoder[DcosReleaseVersion] = Decoder.decodeString.map { versionString =>
+    DcosReleaseVersionParser.parseUnsafe(versionString)
+  }
+  implicit val encodeDcosReleaseVersion: Encoder[DcosReleaseVersion] = Encoder.instance(_.show.asJson)
 
 }
