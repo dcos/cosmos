@@ -41,9 +41,7 @@ final class PackagingVersionEncoderDecoderSpec extends FreeSpec with Matchers wi
         Decoder[universe.v3.model.PackagingVersion].decodeJson(Json.fromString(invalidVersion))
       val expectedMessage =
         universe.v3.model.PackagingVersionTestCompanion.renderInvalidVersionMessage(invalidVersion)
-      assertResult(expectedMessage) {
-        failure.message
-      }
+      assertResult(expectedMessage)(failure.message)
     }
 
     behave like failedDecodeOnNonString[universe.v3.model.PackagingVersion]
