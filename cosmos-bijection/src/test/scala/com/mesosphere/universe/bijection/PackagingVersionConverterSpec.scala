@@ -104,14 +104,14 @@ final class PackagingVersionConverterSpec extends FreeSpec with Matchers with Ta
   ): Unit = {
 
     "succeed in the forward direction" in {
-      forAll(universe.v3.model.PackagingVersionTestOps.validPackagingVersions) { (version, string) =>
+      forAll(universe.v3.model.PackagingVersionTestCompanion.validPackagingVersions) { (version, string) =>
         version.as[A].as[String] should be (string)
       }
     }
 
     "succeed in the reverse direction" - {
       "when the version is valid" in {
-        forAll(universe.v3.model.PackagingVersionTestOps.validPackagingVersions) { (version, string) =>
+        forAll(universe.v3.model.PackagingVersionTestCompanion.validPackagingVersions) { (version, string) =>
           string.as[A].as[Try[universe.v3.model.PackagingVersion]] should be (Success(version))
         }
       }
@@ -120,7 +120,7 @@ final class PackagingVersionConverterSpec extends FreeSpec with Matchers with Ta
     "fail in the reverse direction if the version is not 2.0 or 3.0" in {
       val invalidVersion = "2.5"
       val Failure(iae) = invalidVersion.as[A].as[Try[universe.v3.model.PackagingVersion]]
-      val message = universe.v3.model.PackagingVersionTestOps.renderInvalidVersionMessage(invalidVersion)
+      val message = universe.v3.model.PackagingVersionTestCompanion.renderInvalidVersionMessage(invalidVersion)
       assertResult(message)(iae.getMessage)
     }
 

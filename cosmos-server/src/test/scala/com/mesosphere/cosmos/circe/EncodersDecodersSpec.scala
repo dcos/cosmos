@@ -130,7 +130,7 @@ class EncodersDecodersSpec extends FreeSpec with PropertyChecks with Matchers {
 
         val invalidVersion = "1.0"
         val invalidPackagingVersionErrorString =
-          universe.v3.model.PackagingVersionTestOps.renderInvalidVersionMessage(invalidVersion)
+          universe.v3.model.PackagingVersionTestCompanion.renderInvalidVersionMessage(invalidVersion)
 
         assertResult("json_error")(typ)
         assertResult("decode")(dataType)

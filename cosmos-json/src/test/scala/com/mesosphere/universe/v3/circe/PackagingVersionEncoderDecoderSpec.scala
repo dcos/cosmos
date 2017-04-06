@@ -14,13 +14,13 @@ final class PackagingVersionEncoderDecoderSpec extends FreeSpec with Matchers wi
 
   "Encoders.encodePackagingVersion" - {
     "as PackagingVersion type" in {
-      forAll(universe.v3.model.PackagingVersionTestOps.validPackagingVersions) { (version, string) =>
+      forAll(universe.v3.model.PackagingVersionTestCompanion.validPackagingVersions) { (version, string) =>
         version.asJson should be(Json.fromString(string))
       }
     }
 
     "as subclass type" in {
-      forAll(universe.v3.model.PackagingVersionTestOps.validPackagingVersions) { (version, string) =>
+      forAll(universe.v3.model.PackagingVersionTestCompanion.validPackagingVersions) { (version, string) =>
         toJsonAsPackagingVersionSubclass(version) should be(Json.fromString(string))
       }
     }
@@ -28,7 +28,7 @@ final class PackagingVersionEncoderDecoderSpec extends FreeSpec with Matchers wi
 
   "Decoders.decodeV3PackagingVersion should" - {
     "successfully decode packaging versions" in {
-      forAll(universe.v3.model.PackagingVersionTestOps.validPackagingVersions) { (version, string) =>
+      forAll(universe.v3.model.PackagingVersionTestCompanion.validPackagingVersions) { (version, string) =>
         val decodedVersion =
           Decoder[universe.v3.model.PackagingVersion].decodeJson(Json.fromString(string))
         decodedVersion should be (Right(version))
@@ -40,7 +40,7 @@ final class PackagingVersionEncoderDecoderSpec extends FreeSpec with Matchers wi
       val Left(failure) =
         Decoder[universe.v3.model.PackagingVersion].decodeJson(Json.fromString(invalidVersion))
       val expectedMessage =
-        universe.v3.model.PackagingVersionTestOps.renderInvalidVersionMessage(invalidVersion)
+        universe.v3.model.PackagingVersionTestCompanion.renderInvalidVersionMessage(invalidVersion)
       assertResult(expectedMessage) {
         failure.message
       }

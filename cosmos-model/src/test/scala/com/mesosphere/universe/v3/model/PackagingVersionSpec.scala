@@ -8,7 +8,7 @@ import org.scalatest.prop.TableDrivenPropertyChecks
 final class PackagingVersionSpec extends FreeSpec with Matchers with TableDrivenPropertyChecks {
 
   "PackagingVersion.show" - {
-    forAll(universe.v3.model.PackagingVersionTestOps.validPackagingVersions) { (version, string) =>
+    forAll(universe.v3.model.PackagingVersionTestCompanion.validPackagingVersions) { (version, string) =>
         s"PackagingVersion $string" in {
           version.show should be(string)
         }
@@ -16,7 +16,7 @@ final class PackagingVersionSpec extends FreeSpec with Matchers with TableDriven
   }
 
   "PackagingVersions.allVersions" in {
-    val allVersions = universe.v3.model.PackagingVersionTestOps.validPackagingVersions.map(_._1)
+    val allVersions = universe.v3.model.PackagingVersionTestCompanion.validPackagingVersions.map(_._1)
     allVersions should be(PackagingVersion.allVersions)
   }
 

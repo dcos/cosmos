@@ -3,7 +3,7 @@ package com.mesosphere.universe.v3.model
 import com.mesosphere.universe
 import org.scalatest.prop.TableFor2
 
-object PackagingVersionTestOps {
+object PackagingVersionTestCompanion {
 
   val validPackagingVersions: TableFor2[universe.v3.model.PackagingVersion, String] = {
     new TableFor2(
