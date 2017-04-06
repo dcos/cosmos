@@ -1,7 +1,6 @@
 package com.mesosphere.universe.v3.circe
 
 import com.mesosphere.universe
-import com.mesosphere.universe.test.TestingPackages
 import io.circe.Decoder
 import io.circe.Json
 import io.circe.syntax._
@@ -15,13 +14,13 @@ final class PackagingVersionEncoderDecoderSpec extends FreeSpec with Matchers wi
 
   "Encoders.encodePackagingVersion" - {
     "as PackagingVersion type" in {
-      forAll(TestingPackages.validPackagingVersions) { (version, string) =>
+      forAll(universe.v3.model.PackagingVersionTestOps.validPackagingVersions) { (version, string) =>
         version.asJson should be(Json.fromString(string))
       }
     }
 
     "as subclass type" in {
-      forAll(TestingPackages.validPackagingVersions) { (version, string) =>
+      forAll(universe.v3.model.PackagingVersionTestOps.validPackagingVersions) { (version, string) =>
         toJsonAsPackagingVersionSubclass(version) should be(Json.fromString(string))
       }
     }
@@ -29,7 +28,7 @@ final class PackagingVersionEncoderDecoderSpec extends FreeSpec with Matchers wi
 
   "Decoders.decodeV3PackagingVersion should" - {
     "successfully decode packaging versions" in {
-      forAll(TestingPackages.validPackagingVersions) { (version, string) =>
+      forAll(universe.v3.model.PackagingVersionTestOps.validPackagingVersions) { (version, string) =>
         val decodedVersion =
           Decoder[universe.v3.model.PackagingVersion].decodeJson(Json.fromString(string))
         decodedVersion should be (Right(version))
@@ -37,8 +36,12 @@ final class PackagingVersionEncoderDecoderSpec extends FreeSpec with Matchers wi
     }
 
     "fail to decode any other string value" in {
-      val Left(failure) = Decoder[universe.v3.model.PackagingVersion].decodeJson(Json.fromString("3.1"))
-      assertResult("Expected one of [2.0, 3.0] for packaging version, but found [3.1]") {
+      val invalidVersion = "3.1"
+      val Left(failure) =
+        Decoder[universe.v3.model.PackagingVersion].decodeJson(Json.fromString(invalidVersion))
+      val expectedMessage =
+        universe.v3.model.PackagingVersionTestOps.renderInvalidVersionMessage(invalidVersion)
+      assertResult(expectedMessage) {
         failure.message
       }
     }

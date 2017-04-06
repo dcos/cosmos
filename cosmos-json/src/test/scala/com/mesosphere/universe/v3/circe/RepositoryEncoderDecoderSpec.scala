@@ -101,7 +101,8 @@ class RepositoryEncoderDecoderSpec extends FreeSpec {
         )
       )
 
-      val expectedErrorMessage = "Expected one of [2.0, 3.0] for packaging version, but found " +
+      val expectedErrorMessage = s"Expected one of ${PackagingVersionTestOps.versionStringList}" +
+        " for packaging version, but found " +
         "[3.1]: El(DownField(packagingVersion),true,false),El(DownArray,true,false)," +
         "El(DownField(packages),true,false)"
 

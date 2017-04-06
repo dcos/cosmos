@@ -300,11 +300,4 @@ object TestingPackages {
     )))
   )
 
-  val validPackagingVersions: TableFor2[universe.v3.model.PackagingVersion, String] =
-    new TableFor2(
-      "PackagingVersion" -> "String",
-      universe.v3.model.V2PackagingVersion -> "2.0",
-      universe.v3.model.V3PackagingVersion -> "3.0"
-    )
-
 }

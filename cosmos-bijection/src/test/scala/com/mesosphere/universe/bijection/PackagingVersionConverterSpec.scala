@@ -2,7 +2,6 @@ package com.mesosphere.universe.bijection
 
 import com.mesosphere.universe
 import com.mesosphere.universe.bijection.UniverseConversions._
-import com.mesosphere.universe.test.TestingPackages
 import com.twitter.bijection.Bijection
 import com.twitter.bijection.Conversion.asMethod
 import com.twitter.bijection.Injection
@@ -105,22 +104,23 @@ final class PackagingVersionConverterSpec extends FreeSpec with Matchers with Ta
   ): Unit = {
 
     "succeed in the forward direction" in {
-      forAll(TestingPackages.validPackagingVersions) { (version, string) =>
+      forAll(universe.v3.model.PackagingVersionTestOps.validPackagingVersions) { (version, string) =>
         version.as[A].as[String] should be (string)
       }
     }
 
     "succeed in the reverse direction" - {
       "when the version is valid" in {
-        forAll(TestingPackages.validPackagingVersions) { (version, string) =>
+        forAll(universe.v3.model.PackagingVersionTestOps.validPackagingVersions) { (version, string) =>
           string.as[A].as[Try[universe.v3.model.PackagingVersion]] should be (Success(version))
         }
       }
     }
 
     "fail in the reverse direction if the version is not 2.0 or 3.0" in {
-      val Failure(iae) = "2.5".as[A].as[Try[universe.v3.model.PackagingVersion]]
-      val message = "Expected one of [2.0, 3.0] for packaging version, but found [2.5]"
+      val invalidVersion = "2.5"
+      val Failure(iae) = invalidVersion.as[A].as[Try[universe.v3.model.PackagingVersion]]
+      val message = universe.v3.model.PackagingVersionTestOps.renderInvalidVersionMessage(invalidVersion)
       assertResult(message)(iae.getMessage)
     }
 

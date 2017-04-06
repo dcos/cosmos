@@ -19,6 +19,7 @@ import com.mesosphere.cosmos.rpc.v1.model.LocalPackage
 import com.mesosphere.cosmos.rpc.v1.model.PackageRepository
 import com.mesosphere.cosmos.storage
 import com.mesosphere.cosmos.storage.v1.circe.Decoders._
+import com.mesosphere.universe
 import com.mesosphere.universe.test.TestingPackages
 import com.mesosphere.universe.v3.model.Repository
 import com.netaporter.uri.Uri
@@ -126,9 +127,14 @@ class EncodersDecodersSpec extends FreeSpec with PropertyChecks with Matchers {
         val Right(dataType) = c.downField("data").downField("type").as[String]
         val Right(reason) = c.downField("data").downField("reason").as[String]
         val Right(path) = c.downField("data").downField("path").as[String]
+
+        val invalidVersion = "1.0"
+        val invalidPackagingVersionErrorString =
+          universe.v3.model.PackagingVersionTestOps.renderInvalidVersionMessage(invalidVersion)
+
         assertResult("json_error")(typ)
         assertResult("decode")(dataType)
-        assertResult("Expected one of [2.0, 3.0] for packaging version, but found [1.0]")(reason)
+        assertResult(invalidPackagingVersionErrorString)(reason)
         assertResult(".packages[0].packagingVersion")(path)
       }
 
