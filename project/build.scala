@@ -64,13 +64,18 @@ object CosmosBuild {
 
   val itSettings: Seq[Def.Setting[_]] = BuildPlugin.itSettings("com.mesosphere.cosmos.Cosmos")
 
-  // Adapted from `artifactSetting` in SBT's Defaults.scala
-  // Enables publishing of integration test artifacts with the correct classifiers
+  /**
+   * Adapted from `artifactSetting` in SBT's Defaults.scala.
+   *
+   * This needed to be customized so that the JARs for sources and javadocs of the integration
+   * tests end up in the correct Ivy directories when published (srcs and docs, respectively).
+   */
   def customArtifactSetting(
     a: Artifact,
     classifier: Option[String],
     cOpt: Option[Configuration]
   ): Artifact = {
+    // This part is unchanged from SBT's `artifactSetting`
     val cPart = cOpt flatMap {
       case Compile => None
       case Test    => Some(Artifact.TestsClassifier)
@@ -81,19 +86,23 @@ object CosmosBuild {
       val classifierString = combined mkString "-"
       val confs = cOpt.toList flatMap { c => Defaults.artifactConfigurations(a, c, classifier) }
 
-      // Begin updated section
+      // Here's where the customization starts
+      // We need to treat the integration tests in the same way as the unit tests here
       val testsPrefix = Artifact.TestsClassifier + "-"
       val itPrefix = "it-"
+
+      // Remove the prefix from the classifier string so that SBT/Ivy can recognize what's left
       val strippedClassifier =
         if (classifierString.startsWith(testsPrefix)) classifierString.stripPrefix(testsPrefix)
         else if (classifierString.startsWith(itPrefix)) classifierString.stripPrefix(itPrefix)
         else classifierString
 
       val classifierName = Some(classifierString)
+
+      // This map lookup needs the stripped classifier to succeed
       val classifierType =
         Artifact.classifierTypeMap.getOrElse(strippedClassifier, Artifact.DefaultType)
       a.copy(classifier = classifierName, `type` = classifierType, configurations = confs)
-      // End updated section
     }
   }
 
@@ -104,13 +113,8 @@ object CosmosBuild {
       configuration.?.value
     )
 
-    val artifactSettings = for {
-      conf <- Seq(Compile, Test, IntegrationTest)
-      task <- Classpaths.defaultPackageKeys
-      setting <- inConfig(conf)(inTask(task)(Seq(artifactSetting)))
-    } yield setting
-
-    artifactSettings ++ Classpaths.defaultPackageKeys.flatMap { packageTask =>
+    Classpaths.defaultPackageKeys.flatMap { packageTask =>
+      inConfig(IntegrationTest)(inTask(packageTask)(Seq(artifactSetting))) ++
       addArtifact(artifact in (IntegrationTest, packageTask), packageTask in IntegrationTest)
     }
   }
