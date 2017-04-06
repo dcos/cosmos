@@ -4,95 +4,99 @@ import com.mesosphere.universe
 import com.mesosphere.universe.bijection.TestUniverseConversions._
 import com.mesosphere.universe.bijection.UniverseConversions._
 import com.mesosphere.universe.test.TestingPackages._
+import com.mesosphere.universe.v3.syntax.PackageDefinitionOps._
 import com.netaporter.uri.Uri
 import com.twitter.bijection.Conversion.asMethod
 import com.twitter.bijection.Injection
-import org.scalatest.Assertion
 import org.scalatest.FreeSpec
 import org.scalatest.Matchers
+import org.scalatest.prop.TableDrivenPropertyChecks
+import org.scalatest.prop.TableFor1
 import scala.util.Success
 
-final class UniverseConversionsSpec extends FreeSpec with Matchers {
+final class UniverseConversionsSpec extends FreeSpec with Matchers with TableDrivenPropertyChecks {
 
-  "Conversion[universe.v3.model.PackageDefinition, universe.v2.model.PackageDetails]" - {
-    "Max v3v3 -> Max v2" in {
-      assertResult(expectV3(MaximalV2ModelPackageDetails))(MaximalV3ModelPackageDefinitionV3.as[universe.v2.model.PackageDetails])
-    }
-    "Min v3v3 -> Min v2" in {
-      assertResult(expectV3(MinimalV2ModelPackageDetails))(MinimalV3ModelPackageDefinitionV3.as[universe.v2.model.PackageDetails])
-    }
-    "Max v3v2 -> Max v3" in {
-      assertResult(MaximalV2ModelPackageDetails)(MaximalV3ModelPackageDefinitionV2.as[universe.v2.model.PackageDetails])
-    }
-    "Min v3v2 -> Min v3" in {
-      assertResult(MinimalV2ModelPackageDetails)(MinimalV3ModelPackageDefinitionV2.as[universe.v2.model.PackageDetails])
+  val packageDefinitionToPackageDetails =
+    Table(
+      "PackageDefinition" -> "PackageDetails",
+      MaximalV3ModelPackageDefinitionV2 -> MaximalV2ModelPackageDetails,
+      MinimalV3ModelPackageDefinitionV2 -> MinimalV2ModelPackageDetails,
+      MaximalV3ModelPackageDefinitionV3 -> expectV3(MaximalV2ModelPackageDetails),
+      MinimalV3ModelPackageDefinitionV3 -> expectV3(MinimalV2ModelPackageDetails)
+    )
+
+  "Conversion[universe.v3.model.PackageDefinition, universe.v2.model.PackageDetails]" in {
+    forAll(packageDefinitionToPackageDetails) { (packageDefinition, packageDetails) =>
+      packageDefinition.as[universe.v2.model.PackageDetails] should be(packageDetails)
     }
   }
 
-  "(V3Metadata, ReleaseVersion) => V3Package => (V3Metadata, ReleaseVersion) is the identity fn" - {
+  val metadataAndReleaseVersion: TableFor1[(universe.v3.model.Metadata, universe.v3.model.ReleaseVersion)] =
+    Table(
+      "(Metadata, ReleaseVersion)",
+      (MaximalV3ModelMetadata, MaxReleaseVersion),
+      (MinimalV3ModelMetadata, MinReleaseVersion)
+    )
 
-    "Max metadata" in {
-      val releaseVersion = universe.v3.model.ReleaseVersion(Long.MaxValue).get
-      testCase((MaximalV3ModelMetadata, releaseVersion))
+  "(Metadata, ReleaseVersion) => SupportedPackageDefinition => (Metadata, ReleaseVersion) is the identity fn" in {
+    forAll(metadataAndReleaseVersion) { metadataAndReleaseVersion =>
+      id(metadataAndReleaseVersion) should be(metadataAndReleaseVersion)
     }
+  }
 
-    "Min metadata" in {
-      val releaseVersion = universe.v3.model.ReleaseVersion(0L).get
-      testCase((MinimalV3ModelMetadata, releaseVersion))
-    }
+  val supportedPackageDefinition =
+    Table(
+      "SupportedPackageDefinition",
+      MaximalV3ModelV3PackageDefinition,
+      MinimalV3ModelV3PackageDefinition
+    )
 
-    def testCase(
-      value: (universe.v3.model.Metadata, universe.v3.model.ReleaseVersion)
-    ): Assertion = {
-      assertResult(value) {
-        value
-          .as[universe.v3.model.SupportedPackageDefinition]
-          .as[(universe.v3.model.Metadata, universe.v3.model.ReleaseVersion)]
+  "SupportedPackageDefinition => (Metadata, ReleaseVersion) => SupportedPackageDefinition" - {
+    "is almost the identity function" in {
+      forAll(supportedPackageDefinition) { original =>
+        val roundtrip = almostId(original) match {
+          case v3: universe.v3.model.V3Package =>
+            v3.copy(selected = original.selected, command = original.command)
+        }
+        roundtrip should be(original)
       }
     }
-
-  }
-
-  "V3Package => (V3Metadata, ReleaseVersion) => V3Package is almost the identity function" - {
-
-    "Max V3Package" in {
-      testCase(MaximalV3ModelV3PackageDefinition)
-    }
-
-    "Min V3Package" in {
-      testCase(MinimalV3ModelV3PackageDefinition)
-    }
-
-    def testCase(v3Package: universe.v3.model.V3Package): Assertion = {
-      val selected = v3Package.selected
-      val command = v3Package.command
-
-      val roundTrip = v3Package
-        .as[(universe.v3.model.V3Metadata, universe.v3.model.ReleaseVersion)]
-        .as[universe.v3.model.V3Package]
-
-      assert(roundTrip.selected.isEmpty)
-      assert(roundTrip.command.isEmpty)
-      assertResult(v3Package)(roundTrip.copy(selected = selected, command = command))
-    }
-
-  }
-
-  "Conversion[universe.v3.model.V3Package, universe.v2.model.PackageDetails]" - {
-    "Min v3v3 -> Min v2" in {
-      assertResult(expectV3(MinimalV2ModelPackageDetails))(MinimalV3ModelV3PackageDefinition.as[universe.v2.model.PackageDetails])
-    }
-    "Max v3v3 -> Max v2" in {
-      assertResult(expectV3(MaximalV2ModelPackageDetails))(MaximalV3ModelV3PackageDefinition.as[universe.v2.model.PackageDetails])
+    "should produce empty command and selected parameters" in {
+      forAll(supportedPackageDefinition) { original =>
+        val roundtrip = almostId(original)
+        roundtrip.command should be(None)
+        roundtrip.selected should be(None)
+      }
     }
   }
+
+  val v3PackageToPackageDetails =
+    Table(
+      "V3Package" -> "PackageDetails",
+      MaximalV3ModelV3PackageDefinition -> expectV3(MaximalV2ModelPackageDetails),
+      MinimalV3ModelV3PackageDefinition -> expectV3(MinimalV2ModelPackageDetails)
+    )
+
+  "Conversion[universe.v3.model.V3Package, universe.v2.model.PackageDetails]" in {
+    forAll(v3PackageToPackageDetails) { (v3Package, packageDetails) =>
+      v3Package.as[universe.v2.model.PackageDetails] should be(packageDetails)
+    }
+  }
+
+  val v2PackageToPackageDetails =
+    Table(
+      "V3Package" -> "PackageDetails",
+      MaximalV3ModelV2PackageDefinition -> MaximalV2ModelPackageDetails,
+      MinimalV3ModelV2PackageDefinition -> MinimalV2ModelPackageDetails
+    )
 
   "Conversion[universe.v3.model.V2Package, universe.v2.model.PackageDetails]" in {
-    assertResult(MaximalV2ModelPackageDetails)(MaximalV3ModelV2PackageDefinition.as[universe.v2.model.PackageDetails])
-    assertResult(MinimalV2ModelPackageDetails)(MinimalV3ModelV2PackageDefinition.as[universe.v2.model.PackageDetails])
+    forAll(v2PackageToPackageDetails) { (v2Package, packageDetails) =>
+      v2Package.as[universe.v2.model.PackageDetails] should be(packageDetails)
+    }
   }
 
-  "Injection[universe.v3.model.PackageDefinition.Tag, String]" in {
+  "Injection[universe.v3.model.Tag, String]" in {
     val tag = universe.v3.model.Tag("foobar").get
     val stringFromTag = tag.as[String]
     assertResult(Success(tag))(Injection.invert[universe.v3.model.Tag, String](stringFromTag))
@@ -138,8 +142,30 @@ final class UniverseConversionsSpec extends FreeSpec with Matchers {
     assertResult(v3)(v2FromV3.as[universe.v3.model.Version])
   }
 
-  private[this] def expectV3(v2model: universe.v2.model.PackageDetails): universe.v2.model.PackageDetails = v2model.copy(
-    packagingVersion = universe.v2.model.PackagingVersion("3.0")
+  def id(
+    metadataAndReleaseVersion: (universe.v3.model.Metadata, universe.v3.model.ReleaseVersion)
+  ): (universe.v3.model.Metadata, universe.v3.model.ReleaseVersion) = {
+    metadataAndReleaseVersion
+      .as[universe.v3.model.SupportedPackageDefinition]
+      .as[(universe.v3.model.Metadata, universe.v3.model.ReleaseVersion)]
+  }
+
+  def almostId(
+    supportedPackage: universe.v3.model.SupportedPackageDefinition
+  ): universe.v3.model.SupportedPackageDefinition = {
+    supportedPackage
+      .as[(universe.v3.model.Metadata, universe.v3.model.ReleaseVersion)]
+      .as[universe.v3.model.SupportedPackageDefinition]
+  }
+
+  private[this] def expectV3 = expectVersion("3.0") _
+
+  private[this] def expectVersion(
+    version: String
+  )(
+    v2model: universe.v2.model.PackageDetails
+  ): universe.v2.model.PackageDetails = v2model.copy(
+    packagingVersion = universe.v2.model.PackagingVersion(version)
   )
 
 }

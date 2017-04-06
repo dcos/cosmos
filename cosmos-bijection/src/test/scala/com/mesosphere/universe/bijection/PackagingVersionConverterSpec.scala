@@ -2,13 +2,18 @@ package com.mesosphere.universe.bijection
 
 import com.mesosphere.universe
 import com.mesosphere.universe.bijection.UniverseConversions._
+import com.mesosphere.universe.test.TestingPackages
+import com.twitter.bijection.Bijection
 import com.twitter.bijection.Conversion.asMethod
-import com.twitter.bijection.{Bijection, Injection}
+import com.twitter.bijection.Injection
 import org.scalatest.FreeSpec
+import org.scalatest.Matchers
+import org.scalatest.prop.TableDrivenPropertyChecks
+import scala.util.Failure
+import scala.util.Success
+import scala.util.Try
 
-import scala.util.{Failure, Success, Try}
-
-final class PackagingVersionConverterSpec extends FreeSpec {
+final class PackagingVersionConverterSpec extends FreeSpec with Matchers with TableDrivenPropertyChecks {
 
   "v2PackagingVersionToString should" - {
 
@@ -99,34 +104,18 @@ final class PackagingVersionConverterSpec extends FreeSpec {
     aToString: Bijection[A, String]
   ): Unit = {
 
-    "succeed in the forward direction" - {
-
-      "V2PackagingVersion" in {
-        val version: universe.v3.model.PackagingVersion = universe.v3.model.V2PackagingVersion
-        assertResult("2.0")(version.as[A].as[String])
+    "succeed in the forward direction" in {
+      forAll(TestingPackages.validPackagingVersions) { (version, string) =>
+        version.as[A].as[String] should be (string)
       }
-
-      "V3PackagingVersion" in {
-        val version: universe.v3.model.PackagingVersion = universe.v3.model.V3PackagingVersion
-        assertResult("3.0")(version.as[A].as[String])
-      }
-
     }
 
     "succeed in the reverse direction" - {
-
-      "if the version is 2.0" in {
-        assertResult(Success(universe.v3.model.V2PackagingVersion)) {
-          "2.0".as[A].as[Try[universe.v3.model.PackagingVersion]]
+      "when the version is valid" in {
+        forAll(TestingPackages.validPackagingVersions) { (version, string) =>
+          string.as[A].as[Try[universe.v3.model.PackagingVersion]] should be (Success(version))
         }
       }
-
-      "if the version is 3.0" in {
-        assertResult(Success(universe.v3.model.V3PackagingVersion)) {
-          "3.0".as[A].as[Try[universe.v3.model.PackagingVersion]]
-        }
-      }
-
     }
 
     "fail in the reverse direction if the version is not 2.0 or 3.0" in {

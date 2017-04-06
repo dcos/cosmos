@@ -1,48 +1,38 @@
 package com.mesosphere.universe.v3.circe
 
 import com.mesosphere.universe
+import com.mesosphere.universe.test.TestingPackages
 import io.circe.Decoder
 import io.circe.Json
 import io.circe.syntax._
 import org.scalatest.FreeSpec
+import org.scalatest.Matchers
+import org.scalatest.prop.TableDrivenPropertyChecks
 import scala.util.Left
 import scala.util.Right
 
-final class PackagingVersionEncoderDecoderSpec extends FreeSpec {
+final class PackagingVersionEncoderDecoderSpec extends FreeSpec with Matchers with TableDrivenPropertyChecks {
 
   "Encoders.encodePackagingVersion" - {
-
-    "for V2PackagingVersion as PackagingVersion" in {
-      val version: universe.v3.model.PackagingVersion = universe.v3.model.V2PackagingVersion
-      assertResult(Json.fromString("2.0"))(version.asJson)
-    }
-
-    "for V3PackagingVersion as PackagingVersion" in {
-      val version: universe.v3.model.PackagingVersion = universe.v3.model.V3PackagingVersion
-      assertResult(Json.fromString("3.0"))(version.asJson)
-    }
-
-    "for V2PackagingVersion as V2PackagingVersion" in {
-      assertResult(Json.fromString("2.0"))(universe.v3.model.V2PackagingVersion.asJson)
-    }
-
-    "for V3PackagingVersion as V3PackagingVersion" in {
-      assertResult(Json.fromString("3.0"))(universe.v3.model.V3PackagingVersion.asJson)
-    }
-
-  }
-
-  "Decoders.decodeV3PackagingVersion should" - {
-
-    "successfully decode version 2.0" in {
-      assertResult(Right(universe.v3.model.V2PackagingVersion)) {
-        Decoder[universe.v3.model.PackagingVersion].decodeJson(Json.fromString("2.0"))
+    "as PackagingVersion type" in {
+      forAll(TestingPackages.validPackagingVersions) { (version, string) =>
+        version.asJson should be(Json.fromString(string))
       }
     }
 
-    "successfully decode version 3.0" in {
-      assertResult(Right(universe.v3.model.V3PackagingVersion)) {
-        Decoder[universe.v3.model.PackagingVersion].decodeJson(Json.fromString("3.0"))
+    "as subclass type" in {
+      forAll(TestingPackages.validPackagingVersions) { (version, string) =>
+        toJsonAsPackagingVersionSubclass(version) should be(Json.fromString(string))
+      }
+    }
+  }
+
+  "Decoders.decodeV3PackagingVersion should" - {
+    "successfully decode packaging versions" in {
+      forAll(TestingPackages.validPackagingVersions) { (version, string) =>
+        val decodedVersion =
+          Decoder[universe.v3.model.PackagingVersion].decodeJson(Json.fromString(string))
+        decodedVersion should be (Right(version))
       }
     }
 
@@ -114,6 +104,13 @@ final class PackagingVersionEncoderDecoderSpec extends FreeSpec {
       val Left(failure) = decoder.decodeJson(Json.fromDoubleOrNull(3.1))
       assertResult("String value expected")(failure.message)
     }
+  }
+
+  private[this] def toJsonAsPackagingVersionSubclass(
+    packagingVersion: universe.v3.model.PackagingVersion
+  ): Json = packagingVersion match {
+    case universe.v3.model.V2PackagingVersion => universe.v3.model.V2PackagingVersion.asJson
+    case universe.v3.model.V3PackagingVersion => universe.v3.model.V3PackagingVersion.asJson
   }
 
 }

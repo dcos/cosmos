@@ -7,12 +7,15 @@ import io.circe.syntax._
 import io.circe.JsonObject
 import java.nio.ByteBuffer
 import java.nio.charset.StandardCharsets
+import org.scalatest.prop.TableFor2
 
 object TestingPackages {
   val PackagingVersion = universe.v3.model.V3PackagingVersion
   val Name = "MAXIMAL"
   val Version = universe.v3.model.Version("9.87.654.3210")
   val Maintainer = "max@mesosphere.io"
+  val MaxReleaseVersion = universe.v3.model.ReleaseVersion(Long.MaxValue).get
+  val MinReleaseVersion = universe.v3.model.ReleaseVersion(0L).get
   val Description = "A complete package definition"
   val MarathonTemplate = Some(universe.v3.model.Marathon(
     v2AppMustacheTemplate = ByteBuffer.wrap("marathon template".getBytes(StandardCharsets.UTF_8))
@@ -89,7 +92,7 @@ object TestingPackages {
     PackagingVersion,
     Name,
     Version,
-    releaseVersion = universe.v3.model.ReleaseVersion(Long.MaxValue).get,
+    MaxReleaseVersion,
     Maintainer,
     Description,
     Tags,
@@ -114,7 +117,7 @@ object TestingPackages {
     packagingVersion = universe.v3.model.V3PackagingVersion,
     name = "minimal",
     version = universe.v3.model.Version("1.2.3"),
-    releaseVersion = universe.v3.model.ReleaseVersion(0).get,
+    releaseVersion = MinReleaseVersion,
     maintainer = "minimal@mesosphere.io",
     description = "A minimal package definition"
   )
@@ -276,7 +279,7 @@ object TestingPackages {
   val HelloWorldV3Package: universe.v3.model.V3Package = universe.v3.model.V3Package(
     name = "helloworld",
     version = universe.v3.model.Version("0.1.0"),
-    releaseVersion = universe.v3.model.ReleaseVersion(0L).get(),
+    releaseVersion = MinReleaseVersion,
     website = Some("https://github.com/mesosphere/dcos-helloworld"),
     maintainer = "support@mesosphere.io",
     description = "Example DCOS application package",
@@ -296,5 +299,12 @@ object TestingPackages {
       )
     )))
   )
+
+  val validPackagingVersions: TableFor2[universe.v3.model.PackagingVersion, String] =
+    new TableFor2(
+      "PackagingVersion" -> "String",
+      universe.v3.model.V2PackagingVersion -> "2.0",
+      universe.v3.model.V3PackagingVersion -> "3.0"
+    )
 
 }
