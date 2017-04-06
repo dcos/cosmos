@@ -3,7 +3,6 @@ package com.mesosphere.cosmos.thirdparty.adminrouter.circe
 import cats.syntax.either._
 import com.mesosphere.cosmos.thirdparty.adminrouter.model.DcosVersion
 import com.mesosphere.universe
-import com.mesosphere.universe.v3.circe.Decoders._
 import io.circe.Decoder
 import io.circe.HCursor
 

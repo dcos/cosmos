@@ -51,7 +51,7 @@ object Generators {
   }
 
   private val genVersion: Gen[universe.v3.model.Version] = {
-    genSemVer.map(_.toString).map(universe.v3.model.Version)
+    genSemVer.map(_.toString).map(universe.v3.model.Version(_))
   }
 
   private val genReleaseVersion: Gen[universe.v3.model.ReleaseVersion] = for {

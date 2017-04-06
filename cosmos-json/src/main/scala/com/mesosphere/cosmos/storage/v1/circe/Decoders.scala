@@ -11,7 +11,6 @@ import com.mesosphere.cosmos.storage.v1.model.PendingOperation
 import com.mesosphere.cosmos.storage.v1.model.PendingStatus
 import com.mesosphere.cosmos.storage.v1.model.Uninstall
 import com.mesosphere.cosmos.storage.v1.model.UniverseInstall
-import com.mesosphere.universe.v3.circe.Decoders._
 import io.circe.Decoder
 import io.circe.DecodingFailure
 import io.circe.HCursor

@@ -7,8 +7,6 @@ import com.mesosphere.cosmos.converter.Common._
 import com.mesosphere.cosmos.rpc
 import com.mesosphere.cosmos.rpc.v1.model.PackageCoordinate
 import com.mesosphere.universe
-import com.mesosphere.universe.v3.circe.Decoders._
-import com.mesosphere.universe.v3.circe.Encoders._
 import com.mesosphere.universe.v3.syntax.PackageDefinitionOps.packageDefinitionToPackageDefinitionOps
 import com.mesosphere.util.AbsolutePath
 import com.twitter.bijection.Conversion.asMethod

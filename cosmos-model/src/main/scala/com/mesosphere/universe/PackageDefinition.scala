@@ -1,7 +1,16 @@
 package com.mesosphere.universe
 
+import cats.syntax.either._
+import com.mesosphere.universe.common.circe.Decoders._
 import com.mesosphere.universe.v3.syntax.PackageDefinitionOps._
+import io.circe.Decoder
+import io.circe.DecodingFailure
+import io.circe.Encoder
+import io.circe.HCursor
 import io.circe.JsonObject
+import io.circe.generic.semiauto.deriveDecoder
+import io.circe.generic.semiauto.deriveEncoder
+import io.circe.syntax.EncoderOps
 
 package v3.model {
 
@@ -34,6 +43,19 @@ package v3.model {
       }
     }
 
+    implicit val decodePackageDefinition: Decoder[PackageDefinition] = {
+      Decoder.instance[PackageDefinition] { (hc: HCursor) =>
+        hc.downField("packagingVersion").as[PackagingVersion].flatMap {
+          case V2PackagingVersion => hc.as[V2Package]
+          case V3PackagingVersion => hc.as[V3Package]
+        }
+      }
+    }
+
+    implicit val encodePackageDefinition: Encoder[PackageDefinition] = Encoder.instance {
+      case v2: V2Package => v2.asJson
+      case v3: V3Package => v3.asJson
+    }
   }
 
   sealed trait SupportedPackageDefinition
@@ -43,6 +65,22 @@ package v3.model {
 
     implicit val supportedPackageDefinitionOrdering: Ordering[SupportedPackageDefinition] =
       PackageDefinition.packageDefinitionOrdering.on(identity)
+
+    implicit val decodeSupportedPackageDefinition: Decoder[SupportedPackageDefinition] = {
+      Decoder.instance[SupportedPackageDefinition] { (hc: HCursor) =>
+        hc.downField("packagingVersion").as[PackagingVersion].flatMap {
+          case V3PackagingVersion => hc.as[V3Package]
+          case V2PackagingVersion => Left(DecodingFailure(
+            s"V2Package is not a supported package definition",
+            hc.history
+          ))
+        }
+      }
+    }
+
+    implicit val encodeSupportedPackageDefinition: Encoder[SupportedPackageDefinition] = Encoder.instance {
+      case v3: V3Package => v3.asJson
+    }
 
   }
 
@@ -78,6 +116,11 @@ package v3.model {
     }
   }
 
+  object V2Package {
+    implicit val decodeV3V2Package: Decoder[V2Package] = deriveDecoder[V2Package]
+    implicit val encodeV2Package: Encoder[V2Package] = deriveEncoder[V2Package]
+  }
+
   /**
     * Conforms to: https://universe.mesosphere.com/v3/schema/repo#/definitions/v30Package
     */
@@ -109,6 +152,11 @@ package v3.model {
         (that.name, that.version, that.releaseVersion)
       )
     }
+  }
+
+  object V3Package {
+    implicit val decodeV3V3Package: Decoder[V3Package] = deriveDecoder[V3Package]
+    implicit val encodeV3Package: Encoder[V3Package] = deriveEncoder[V3Package]
   }
 
 }

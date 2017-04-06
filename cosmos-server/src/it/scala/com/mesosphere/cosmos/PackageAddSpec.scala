@@ -18,7 +18,6 @@ import com.mesosphere.cosmos.test.InstallQueueFixture
 import com.mesosphere.cosmos.test.TestUtil
 import com.mesosphere.universe
 import com.mesosphere.universe.test.TestingPackages
-import com.mesosphere.universe.v3.circe.Decoders._
 import com.mesosphere.universe.v3.syntax.PackageDefinitionOps._
 import com.mesosphere.universe.{TestUtil => UTestUtil}
 import com.mesosphere.util.AbsolutePath

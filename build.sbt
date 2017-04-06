@@ -24,7 +24,7 @@ lazy val model = project.in(file("cosmos-model"))
     name := baseDirectory.value.name,
     libraryDependencies ++=
       Deps.scalaUri
-        ++ Deps.circeCore
+        ++ Deps.circe
         ++ Deps.twitterUtilCore
         ++ Deps.fastparse
         ++ Deps.scalaCheckShapeless

@@ -20,7 +20,6 @@ import com.mesosphere.cosmos.rpc.v1.model.PackageRepository
 import com.mesosphere.cosmos.storage
 import com.mesosphere.cosmos.storage.v1.circe.Decoders._
 import com.mesosphere.universe.test.TestingPackages
-import com.mesosphere.universe.v3.circe.Encoders._
 import com.mesosphere.universe.v3.model.Repository
 import com.netaporter.uri.Uri
 import io.circe.DecodingFailure
@@ -178,7 +177,6 @@ class EncodersDecodersSpec extends FreeSpec with PropertyChecks with Matchers {
   }
 
   private[this] def loadAndDecode(resourceName: String): Either[Error, Repository] = {
-    import com.mesosphere.universe.v3.circe.Decoders._
     Option(this.getClass.getResourceAsStream(resourceName)) match {
       case Some(is) =>
         val jsonString = CharStreams.toString(new InputStreamReader(is))

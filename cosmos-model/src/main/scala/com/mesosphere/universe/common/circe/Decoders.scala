@@ -9,6 +9,10 @@ import java.util.Base64
 
 object Decoders {
 
+  implicit val decodeString: Decoder[String] = {
+    Decoder.decodeString.withErrorMessage("String value expected")
+  }
+
   implicit val decodeUri: Decoder[Uri] = Decoder.decodeString.map(Uri.parse)
 
   implicit val decodeByteBuffer: Decoder[ByteBuffer] = Decoder.instance { c =>

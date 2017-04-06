@@ -5,7 +5,6 @@ import com.mesosphere.cosmos.finch.MediaTypedEncoder
 import com.mesosphere.cosmos.rpc.MediaTypes
 import com.mesosphere.cosmos.rpc.v1.circe.Encoders._
 import com.mesosphere.cosmos.rpc.v1.model._
-import com.mesosphere.universe.v3.circe.Encoders._
 import com.mesosphere.universe.{MediaTypes => UMediaTypes}
 
 object MediaTypedEncoders {

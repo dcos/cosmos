@@ -29,7 +29,7 @@ package object model {
     }
 
     def packageVersion: Option[universe.v3.model.Version] = {
-      app.labels.get(MarathonApp.versionLabel).map(universe.v3.model.Version)
+      app.labels.get(MarathonApp.versionLabel).map(universe.v3.model.Version(_))
     }
 
     def packageRepository: Option[PackageOrigin] = for {
