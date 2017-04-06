@@ -1,25 +1,23 @@
 package com.mesosphere.universe.v3.model
 
+import com.mesosphere.universe
 import org.scalatest.FreeSpec
+import org.scalatest.Matchers
+import org.scalatest.prop.TableDrivenPropertyChecks
 
-final class PackagingVersionSpec extends FreeSpec {
+final class PackagingVersionSpec extends FreeSpec with Matchers with TableDrivenPropertyChecks {
 
   "PackagingVersion.show" - {
-
-    "V2PackagingVersion" in {
-      assertResult("2.0")(V2PackagingVersion.show)
+    forAll(universe.v3.model.PackagingVersionTestCompanion.validPackagingVersions) { (version, string) =>
+        s"PackagingVersion $string" in {
+          version.show should be(string)
+        }
     }
-
-    "V3PackagingVersion" in {
-      assertResult("3.0")(V3PackagingVersion.show)
-    }
-
   }
 
-  "PackagingVersion$.allVersions" in {
-    assertResult(Seq(V2PackagingVersion, V3PackagingVersion)) {
-      PackagingVersion.allVersions
-    }
+  "PackagingVersions.allVersions" in {
+    val allVersions = universe.v3.model.PackagingVersionTestCompanion.validPackagingVersions.map(_._1)
+    allVersions should be(PackagingVersion.allVersions)
   }
 
 }

@@ -55,8 +55,8 @@ final class PackageUtilSpec extends FreeSpec with PropertyChecks {
       val contentsWithMetadata = zipContents + (MetadataJson -> metadataBytes)
       val bytesIn = encodeZip(contentsWithMetadata)
 
-      val Right(extractedMetadata) = PackageUtil.extractMetadata(bytesIn)
-      assertResult(goodMetadata)(extractedMetadata)
+      val extractedMetadata = PackageUtil.extractMetadata(bytesIn)
+      assertResult(Right(goodMetadata))(extractedMetadata)
       assert(bytesIn.isClosed)
     }
   }
