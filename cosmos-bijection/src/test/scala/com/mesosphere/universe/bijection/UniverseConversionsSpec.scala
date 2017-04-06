@@ -40,7 +40,7 @@ final class UniverseConversionsSpec extends FreeSpec with Matchers with TableDri
 
   "(Metadata, ReleaseVersion) => SupportedPackageDefinition => (Metadata, ReleaseVersion) is the identity fn" in {
     forAll(metadataAndReleaseVersion) { metadataAndReleaseVersion =>
-      id(metadataAndReleaseVersion) should be(metadataAndReleaseVersion)
+      metadataConversionRoundTrip(metadataAndReleaseVersion) should be(metadataAndReleaseVersion)
     }
   }
 
@@ -54,7 +54,7 @@ final class UniverseConversionsSpec extends FreeSpec with Matchers with TableDri
   "SupportedPackageDefinition => (Metadata, ReleaseVersion) => SupportedPackageDefinition" - {
     "is almost the identity function" in {
       forAll(supportedPackageDefinition) { original =>
-        val roundtrip = almostId(original) match {
+        val roundtrip = metadataConversionAlmostRoundTrip(original) match {
           case v3: universe.v3.model.V3Package =>
             v3.copy(selected = original.selected, command = original.command)
         }
@@ -63,7 +63,7 @@ final class UniverseConversionsSpec extends FreeSpec with Matchers with TableDri
     }
     "should produce empty command and selected parameters" in {
       forAll(supportedPackageDefinition) { original =>
-        val roundtrip = almostId(original)
+        val roundtrip = metadataConversionAlmostRoundTrip(original)
         roundtrip.command should be(None)
         roundtrip.selected should be(None)
       }
@@ -142,7 +142,7 @@ final class UniverseConversionsSpec extends FreeSpec with Matchers with TableDri
     assertResult(v3)(v2FromV3.as[universe.v3.model.Version])
   }
 
-  def id(
+  def metadataConversionRoundTrip(
     metadataAndReleaseVersion: (universe.v3.model.Metadata, universe.v3.model.ReleaseVersion)
   ): (universe.v3.model.Metadata, universe.v3.model.ReleaseVersion) = {
     metadataAndReleaseVersion
@@ -150,7 +150,7 @@ final class UniverseConversionsSpec extends FreeSpec with Matchers with TableDri
       .as[(universe.v3.model.Metadata, universe.v3.model.ReleaseVersion)]
   }
 
-  def almostId(
+  def metadataConversionAlmostRoundTrip(
     supportedPackage: universe.v3.model.SupportedPackageDefinition
   ): universe.v3.model.SupportedPackageDefinition = {
     supportedPackage
