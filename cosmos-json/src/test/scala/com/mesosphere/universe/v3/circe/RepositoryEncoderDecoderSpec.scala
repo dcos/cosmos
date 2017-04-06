@@ -1,6 +1,7 @@
 package com.mesosphere.universe.v3.circe
 
 import com.mesosphere.universe.v3.model._
+import com.mesosphere.universe.v3.syntax.PackageDefinitionOps._
 import io.circe.Json
 import io.circe.jawn.parse
 import io.circe.syntax._
@@ -61,18 +62,9 @@ class RepositoryEncoderDecoderSpec extends FreeSpec {
       assertResult(expected)(repo.packages.size)
 
       val cassandraVersions = repo.packages
-        .filter {
-          case v2: V2Package => v2.name == "cassandra"
-          case v3: V3Package => v3.name == "cassandra"
-        }
-        .sortBy {
-          case v2: V2Package => v2.releaseVersion.value
-          case v3: V3Package => v3.releaseVersion.value
-        }
-        .map {
-          case v2: V2Package => v2.version
-          case v3: V3Package => v3.version
-        }
+        .filter(_.name == "cassandra")
+        .sortBy(_.releaseVersion.value)
+        .map(_.version)
 
       val expectedCassandraVersions = List(
         Version("0.2.0-1"),
@@ -101,7 +93,8 @@ class RepositoryEncoderDecoderSpec extends FreeSpec {
         )
       )
 
-      val expectedErrorMessage = "Expected one of [2.0, 3.0] for packaging version, but found " +
+      val expectedErrorMessage = s"Expected one of ${PackagingVersionTestCompanion.versionStringList}" +
+        " for packaging version, but found " +
         "[3.1]: El(DownField(packagingVersion),true,false),El(DownArray,true,false)," +
         "El(DownField(packages),true,false)"
 
