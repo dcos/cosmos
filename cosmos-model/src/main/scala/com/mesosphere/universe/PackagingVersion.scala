@@ -58,6 +58,20 @@ package v3.model {
         }
       }
     }
+
+    def decodePackagingVersionSubclass[V <: PackagingVersion](expected: V): Decoder[V] = {
+      Decoder.instance { c: HCursor =>
+        c.as[String].flatMap {
+          case expected.show => Right(expected)
+          case s => Left(
+            DecodingFailure(
+              s"Expected value [${expected.show}] for packaging version, but found [$s]",
+              c.history
+            )
+          )
+        }
+      }
+    }
   }
 
   case object V2PackagingVersion extends PackagingVersion {
@@ -65,17 +79,7 @@ package v3.model {
     val show: String = "2.0"
 
     implicit val decodeV2PackagingVersion: Decoder[V2PackagingVersion.type] = {
-      Decoder.instance { c: HCursor =>
-        c.as[String].flatMap {
-          case this.show => Right(this)
-          case s => Left(
-            DecodingFailure(
-              s"Expected value [$show] for packaging version, but found [$s]",
-              c.history
-            )
-          )
-        }
-      }
+      PackagingVersion.decodePackagingVersionSubclass(this)
     }
 
     implicit val encodeV2PackagingVersion: Encoder[V2PackagingVersion.type] = {
@@ -90,17 +94,7 @@ package v3.model {
     val show: String = "3.0"
 
     implicit val decodeV3PackagingVersion: Decoder[V3PackagingVersion.type] = {
-      Decoder.instance { c: HCursor =>
-        c.as[String].flatMap {
-          case this.show => Right(this)
-          case s => Left(
-            DecodingFailure(
-              s"Expected value [$show] for packaging version, but found [$s]",
-              c.history
-            )
-          )
-        }
-      }
+      PackagingVersion.decodePackagingVersionSubclass(this)
     }
 
     implicit val encodeV3PackagingVersion: Encoder[V3PackagingVersion.type] = {
