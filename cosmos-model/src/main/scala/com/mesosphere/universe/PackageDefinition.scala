@@ -14,7 +14,7 @@ import io.circe.syntax.EncoderOps
 
 package v3.model {
 
-  sealed abstract class PackageDefinition
+  sealed trait PackageDefinition
 
   object PackageDefinition {
 
