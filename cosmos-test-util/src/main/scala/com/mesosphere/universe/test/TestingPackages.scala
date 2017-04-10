@@ -3,11 +3,10 @@ package com.mesosphere.universe.test
 import com.mesosphere.universe
 import com.netaporter.uri.Uri
 import io.circe.Json
-import io.circe.syntax._
 import io.circe.JsonObject
+import io.circe.syntax._
 import java.nio.ByteBuffer
 import java.nio.charset.StandardCharsets
-import org.scalatest.prop.TableFor2
 
 object TestingPackages {
   val PackagingVersion = universe.v3.model.V3PackagingVersion

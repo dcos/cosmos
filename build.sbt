@@ -1,9 +1,22 @@
 import com.mesosphere.cosmos.CosmosBuild._
+import com.mesosphere.cosmos.CosmosIntegrationTestServer
 import com.mesosphere.cosmos.Deps
 
 lazy val cosmos = project.in(file("."))
   .settings(sharedSettings)
-  .aggregate(http, model, json, common, jsonschema, bijection, render, finch, server)
+  .aggregate(
+    bijection,
+    common,
+    finch,
+    http,
+    integrationTests,
+    json,
+    jsonschema,
+    model,
+    render,
+    server,
+    testUtil
+  )
 
 lazy val common = project.in(file("cosmos-common"))
   .settings(sharedSettings)
@@ -50,7 +63,8 @@ lazy val bijection = project.in(file("cosmos-bijection"))
       Deps.bijection
   )
   .dependsOn(
-    model % "compile;test->test"
+    model % "compile;test->test",
+    testUtil % "test->compile"
   )
 
 lazy val http = project.in(file("cosmos-http"))
@@ -72,7 +86,8 @@ lazy val finch = project.in(file("cosmos-finch"))
   )
   .dependsOn(
     json % "compile;test->test",
-    http % "compile;test->test"
+    http % "compile;test->test",
+    testUtil % "test->compile"
   )
 
 lazy val jsonschema = project.in(file("cosmos-jsonschema"))
@@ -100,7 +115,10 @@ lazy val render = project.in(file("cosmos-render"))
 lazy val server = project.in(file("cosmos-server"))
   .settings(sharedSettings)
   .settings(filterSettings)
-  .settings(itSettings)
+  // The sbt-dcos plugin provides these one-JAR settings, but they are combined with the
+  // integration test settings; since we need to customize the latter, we have to handle these too
+  .settings(oneJarSettings)
+  .settings(mainClass in oneJar := Some("com.mesosphere.cosmos.Cosmos"))
   .settings(
     name := baseDirectory.value.name,
     libraryDependencies ++=
@@ -119,4 +137,58 @@ lazy val server = project.in(file("cosmos-server"))
     finch % "compile;test->test",
     render % "compile;test->test",
     common % "compile;test->test"
+  )
+
+/**
+ * Common test code. Sources are located in the "main" subdirectory so the JAR can be
+ * published to Maven repositories with a standard POM.
+ */
+lazy val testUtil = project.in(file("cosmos-test-util"))
+  .settings(sharedSettings)
+  .settings(
+    name := baseDirectory.value.name,
+    libraryDependencies ++=
+      Deps.finch
+        ++ Deps.bijection
+  )
+  .dependsOn(
+    common,
+    http,
+    model
+  )
+
+/**
+ * Integration test code. Sources are located in the "main" subdirectory so the JAR can be
+ * published to Maven repositories with a standard POM.
+ */
+lazy val integrationTests = project.in(file("cosmos-integration-tests"))
+  .settings(sharedSettings)
+  .settings(
+    name := baseDirectory.value.name,
+    // The sbt-dcos plugin provides this, but we need to customize it
+    testOptions in IntegrationTest ++= {
+      lazy val itServer = new CosmosIntegrationTestServer(
+        (javaHome in run).value.map(_.getCanonicalPath),
+        // The resources we need are in src/main/resources, not src/it/resources
+        (resourceDirectories in Compile).value,
+        // The one-JAR to use is produced by cosmos-server
+        (oneJar in server).value
+      )
+
+      Seq(
+        Tests.Setup(() => itServer.setup((streams in runMain).value.log)),
+        Tests.Cleanup(() => itServer.cleanup())
+      )
+    },
+    // Uses (compile in Compile) instead of (compile in IntegrationTest), the default
+    definedTests in IntegrationTest := {
+      val frameworkMap = (loadedTestFrameworks in IntegrationTest).value
+      val analysis = (compile in Compile).value
+      val s = (streams in IntegrationTest).value
+      Tests.discover(frameworkMap.values.toList, analysis, s.log)._1
+    }
+  )
+  .dependsOn(
+    server % "compile->test",
+    testUtil
   )
