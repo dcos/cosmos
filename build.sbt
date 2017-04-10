@@ -15,7 +15,7 @@ lazy val cosmos = project.in(file("."))
     model,
     render,
     server,
-    testUtil
+    testCommon
   )
 
 lazy val common = project.in(file("cosmos-common"))
@@ -64,7 +64,7 @@ lazy val bijection = project.in(file("cosmos-bijection"))
   )
   .dependsOn(
     model % "compile;test->test",
-    testUtil % "test->compile"
+    testCommon % "test->compile"
   )
 
 lazy val http = project.in(file("cosmos-http"))
@@ -87,7 +87,7 @@ lazy val finch = project.in(file("cosmos-finch"))
   .dependsOn(
     json % "compile;test->test",
     http % "compile;test->test",
-    testUtil % "test->compile"
+    testCommon % "test->compile"
   )
 
 lazy val jsonschema = project.in(file("cosmos-jsonschema"))
@@ -143,7 +143,7 @@ lazy val server = project.in(file("cosmos-server"))
  * Common test code. Sources are located in the "main" subdirectory so the JAR can be
  * published to Maven repositories with a standard POM.
  */
-lazy val testUtil = project.in(file("cosmos-test-util"))
+lazy val testCommon = project.in(file("cosmos-test-common"))
   .settings(sharedSettings)
   .settings(
     name := baseDirectory.value.name,
@@ -190,5 +190,5 @@ lazy val integrationTests = project.in(file("cosmos-integration-tests"))
   )
   .dependsOn(
     server % "compile->test",
-    testUtil
+    testCommon
   )
