@@ -22,11 +22,7 @@ object CosmosBuild {
       "Twitter Maven" at "https://maven.twttr.com"  // For some Twitter dependencies
     ),
 
-    libraryDependencies ++= Deps.mockito ++ Deps.scalaTest ++ Deps.scalaCheck,
-
     test in (This, Global, This) := (test in Test).value,
-
-    publishArtifact in Test := true,
 
     // Parallel changes to a shared cluster cause some tests to fail
     parallelExecution in IntegrationTest := false,
