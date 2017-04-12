@@ -26,6 +26,8 @@ object CosmosBuild {
 
     test in (This, Global, This) := (test in Test).value,
 
+    publishArtifact in Test := true,
+
     // Parallel changes to a shared cluster cause some tests to fail
     parallelExecution in IntegrationTest := false,
 

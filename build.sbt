@@ -5,17 +5,7 @@ import com.mesosphere.cosmos.Deps
 lazy val cosmos = project.in(file("."))
   .settings(sharedSettings)
   .aggregate(
-    bijection,
-    common,
-    finch,
-    http,
-    integrationTests,
-    json,
-    jsonschema,
-    model,
-    render,
-    server,
-    testCommon
+    bijection, common, finch, http, integrationTests, json, jsonschema, model, render, server
   )
 
 lazy val common = project.in(file("cosmos-common"))
@@ -63,8 +53,7 @@ lazy val bijection = project.in(file("cosmos-bijection"))
       Deps.bijection
   )
   .dependsOn(
-    model % "compile;test->test",
-    testCommon % "test->compile"
+    model % "compile;test->test"
   )
 
 lazy val http = project.in(file("cosmos-http"))
@@ -86,8 +75,7 @@ lazy val finch = project.in(file("cosmos-finch"))
   )
   .dependsOn(
     json % "compile;test->test",
-    http % "compile;test->test",
-    testCommon % "test->compile"
+    http % "compile;test->test"
   )
 
 lazy val jsonschema = project.in(file("cosmos-jsonschema"))
@@ -140,24 +128,6 @@ lazy val server = project.in(file("cosmos-server"))
   )
 
 /**
- * Common test code. Sources are located in the "main" subdirectory so the JAR can be
- * published to Maven repositories with a standard POM.
- */
-lazy val testCommon = project.in(file("cosmos-test-common"))
-  .settings(sharedSettings)
-  .settings(
-    name := baseDirectory.value.name,
-    libraryDependencies ++=
-      Deps.finch
-        ++ Deps.bijection
-  )
-  .dependsOn(
-    common,
-    http,
-    model
-  )
-
-/**
  * Integration test code. Sources are located in the "main" subdirectory so the JAR can be
  * published to Maven repositories with a standard POM.
  */
@@ -189,6 +159,5 @@ lazy val integrationTests = project.in(file("cosmos-integration-tests"))
     }
   )
   .dependsOn(
-    server % "compile->test",
-    testCommon
+    server % "compile->test"
   )

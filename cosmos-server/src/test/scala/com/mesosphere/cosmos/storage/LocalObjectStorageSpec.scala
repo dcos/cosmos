@@ -1,6 +1,5 @@
 package com.mesosphere.cosmos.storage
 
-import com.mesosphere.TestUtil.eventualFuture
 import com.mesosphere.cosmos.http.MediaType
 import com.mesosphere.cosmos.http.MediaTypes
 import com.mesosphere.cosmos.storage.ObjectStorageTestOps.objectStorageTestOps
@@ -77,7 +76,7 @@ final class LocalObjectStorageSpec extends FreeSpec with PropertyChecks {
       TestUtil.withLocalObjectStorage { storage =>
         val someItem = state.head
         val writeOp = storage.writeAll(state)
-        val readOp = eventualFuture(() => storage.readAsArray(someItem.path))
+        val readOp = TestUtil.eventualFuture(() => storage.readAsArray(someItem.path))
         val (_, (_, dataFromRead)) = Await.result(writeOp.join(readOp))
         assertResult(someItem.content)(dataFromRead)
       }
@@ -89,7 +88,7 @@ final class LocalObjectStorageSpec extends FreeSpec with PropertyChecks {
       TestUtil.withLocalObjectStorage { storage =>
         val someItem = state.head
         val writeOp = storage.writeAll(state)
-        val readOp = eventualFuture(() => storage.readAsArray(someItem.path))
+        val readOp = TestUtil.eventualFuture(() => storage.readAsArray(someItem.path))
         val (_, (mediaTypeFromRead, _)) = Await.result(writeOp.join(readOp))
         val mediaTypeWritten = getMediaTypeWritten(someItem.mediaType)
         assertResult(mediaTypeWritten)(mediaTypeFromRead)

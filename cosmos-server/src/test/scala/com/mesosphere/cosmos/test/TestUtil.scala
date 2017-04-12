@@ -49,6 +49,15 @@ object TestUtil {
     val _ = Files.walkFileTree(path, visitor)
   }
 
+  def eventualFuture[T](
+    future: () => Future[Option[T]]
+  ): Future[T] = {
+    future().flatMap {
+      case Some(value) => Future.value(value)
+      case None => eventualFuture(future)
+    }
+  }
+
   implicit val Anonymous = RequestSession(None)
 
   val MinimalV2ModelDescribeResponse = rpc.v2.model.DescribeResponse(
