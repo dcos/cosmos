@@ -28,7 +28,7 @@ lazy val common = project.in(file("cosmos-common"))
         ++ Deps.scalaCheck
   )
   .dependsOn(
-    json % "compile;test->test"
+    json
   )
 
 lazy val model = project.in(file("cosmos-model"))
@@ -51,7 +51,7 @@ lazy val json = project.in(file("cosmos-json"))
         ++ Deps.circe
   )
   .dependsOn(
-    model % "compile;test->test"
+    model
   )
 
 lazy val bijection = project.in(file("cosmos-bijection"))
@@ -62,7 +62,7 @@ lazy val bijection = project.in(file("cosmos-bijection"))
       Deps.bijection
   )
   .dependsOn(
-    model % "compile;test->test"
+    model
   )
 
 lazy val http = project.in(file("cosmos-http"))
@@ -83,8 +83,8 @@ lazy val finch = project.in(file("cosmos-finch"))
       Deps.finch
   )
   .dependsOn(
-    json % "compile;test->test",
-    http % "compile;test->test"
+    json,
+    http
   )
 
 lazy val jsonschema = project.in(file("cosmos-jsonschema"))
@@ -104,9 +104,9 @@ lazy val render = project.in(file("cosmos-render"))
       Deps.mustache
   )
   .dependsOn(
-    json % "compile;test->test",
-    jsonschema % "compile;test->test",
-    bijection % "compile;test->test"
+    json,
+    jsonschema,
+    bijection
   )
 
 lazy val server = project.in(file("cosmos-server"))
@@ -131,9 +131,9 @@ lazy val server = project.in(file("cosmos-server"))
         ++ Deps.twitterCommons
   )
   .dependsOn(
-    finch % "compile;test->test",
-    render % "compile;test->test",
-    common % "compile;test->test"
+    finch,
+    render,
+    common
   )
 
 lazy val testCommon = project.in(file("cosmos-test-common"))
