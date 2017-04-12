@@ -99,6 +99,20 @@ java -jar cosmos-server/target/scala-2.11/cosmos-server_2.11-<version>-SNAPSHOT-
      -com.mesosphere.cosmos.stagedPackageStorageUri file://<absolute-path-to-staged-dir>
 ```
 
+## Project structure
+
+The code is organized into several subprojects, each of which has a JAR published to the
+Sonatype OSS repository. Here's an overview:
+
+* `cosmos-test-common`
+    * `src/main` directory: defines the code and resources used by both the unit and integration
+    tests.
+    * `src/test` directory: defines the unit tests and any resources they require.
+* `cosmos-integration-tests`
+    * `src/main` directory: defines the integration tests and any resources they require.
+* The remaining subprojects define the main code for Cosmos, always within their `src/main`
+directories.
+
 ## Versions & Compatibility
 
 ### DC/OS
