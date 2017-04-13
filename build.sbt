@@ -28,7 +28,7 @@ lazy val common = project.in(file("cosmos-common"))
         ++ Deps.scalaCheck
   )
   .dependsOn(
-    json % "compile;test->test"
+    json
   )
 
 lazy val model = project.in(file("cosmos-model"))
@@ -40,7 +40,6 @@ lazy val model = project.in(file("cosmos-model"))
         ++ Deps.circe
         ++ Deps.twitterUtilCore
         ++ Deps.fastparse
-        ++ Deps.scalaCheckShapeless
   )
 
 lazy val json = project.in(file("cosmos-json"))
@@ -52,7 +51,7 @@ lazy val json = project.in(file("cosmos-json"))
         ++ Deps.circe
   )
   .dependsOn(
-    model % "compile;test->test"
+    model
   )
 
 lazy val bijection = project.in(file("cosmos-bijection"))
@@ -63,8 +62,7 @@ lazy val bijection = project.in(file("cosmos-bijection"))
       Deps.bijection
   )
   .dependsOn(
-    model % "compile;test->test",
-    testCommon % "test->compile"
+    model
   )
 
 lazy val http = project.in(file("cosmos-http"))
@@ -85,9 +83,8 @@ lazy val finch = project.in(file("cosmos-finch"))
       Deps.finch
   )
   .dependsOn(
-    json % "compile;test->test",
-    http % "compile;test->test",
-    testCommon % "test->compile"
+    json,
+    http
   )
 
 lazy val jsonschema = project.in(file("cosmos-jsonschema"))
@@ -107,9 +104,9 @@ lazy val render = project.in(file("cosmos-render"))
       Deps.mustache
   )
   .dependsOn(
-    json % "compile;test->test",
-    jsonschema % "compile;test->test",
-    bijection % "compile;test->test"
+    json,
+    jsonschema,
+    bijection
   )
 
 lazy val server = project.in(file("cosmos-server"))
@@ -134,27 +131,24 @@ lazy val server = project.in(file("cosmos-server"))
         ++ Deps.twitterCommons
   )
   .dependsOn(
-    finch % "compile;test->test",
-    render % "compile;test->test",
-    common % "compile;test->test"
+    finch,
+    render,
+    common
   )
 
-/**
- * Common test code. Sources are located in the "main" subdirectory so the JAR can be
- * published to Maven repositories with a standard POM.
- */
 lazy val testCommon = project.in(file("cosmos-test-common"))
   .settings(sharedSettings)
   .settings(
     name := baseDirectory.value.name,
     libraryDependencies ++=
-      Deps.finch
-        ++ Deps.bijection
+      Deps.curator
+        ++ Deps.mockito
+        ++ Deps.scalaCheck
+        ++ Deps.scalaCheckShapeless
+        ++ Deps.scalaTest
   )
   .dependsOn(
-    common,
-    http,
-    model
+    server
   )
 
 /**
@@ -189,6 +183,5 @@ lazy val integrationTests = project.in(file("cosmos-integration-tests"))
     }
   )
   .dependsOn(
-    server % "compile->test",
     testCommon
   )
