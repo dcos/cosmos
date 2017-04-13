@@ -87,9 +87,10 @@ The following table outlines which version of Cosmos is bundled with each versio
 
 | DC/OS Release Version | Cosmos Version |
 |-----------------------|----------------|
-| 1.6.1                 | 0.1.2          |
-| 1.7.x                 | 0.1.5          |
-| 1.8.x                 | 0.2.0          |
+| &ge; 1.6.1            | 0.1.2          |
+| &ge; 1.7.0            | 0.1.5          |
+| &ge; 1.8.0            | 0.2.0          |
+| &ge; 1.8.9            | 0.2.1          |
 
 ### Universe
 
@@ -102,7 +103,7 @@ The below table is a compatibility matrix between Cosmos and Universe repository
 |       | application/zip (version-2.x) | application/vnd.dcos.universe.repo+json;charset=utf-8;version=v3 |
 | ----- | ----------------------------- | ---------------------------------------------------------------- |
 | 0.1.x | Supported                     | Not Supported                                                    |
-| 0.2.0 | Supported                     | Supported                                                        |
+| 0.2.x | Supported                     | Supported                                                        |
 
 
 #### Packaging Version
@@ -114,7 +115,7 @@ The below table is a compatibility matrix between Cosmos and Universe packaging 
 |       |    2.0    |      3.0      |
 | ----- | --------- | ------------- |
 | 0.1.x | Supported | Not Supported |
-| 0.2.0 | Supported | Supported     |
+| 0.2.x | Supported | Supported     |
 
 ### API Method Version Compatibility
 
