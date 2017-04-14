@@ -56,7 +56,11 @@ object PackageDefinitionRenderer {
           renderTemplate(m.v2AppMustacheTemplate, mergedOptions).flatMap { mJson =>
             extractLabels(Json.fromJsonObject(mJson))
               .map { existingLabels =>
-                val labels = MarathonLabels(pkgDef, sourceUri, defaultOptionsAndUserOptions)
+                val labels = MarathonLabels(
+                  pkgDef,
+                  sourceUri,
+                  options.getOrElse(JsonObject.empty)
+                )
 
                 (marathonAppId.map(appIdDoc) ::
                   generateLabelsPartialObjects(labels, existingLabels).map(Some(_))

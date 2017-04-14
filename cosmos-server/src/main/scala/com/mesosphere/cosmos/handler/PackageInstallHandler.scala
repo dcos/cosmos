@@ -34,8 +34,12 @@ private[cosmos] final class PackageInstallHandler(
         request.packageVersion.as[Option[universe.v3.model.Version]]
       )
       .flatMap { case (pkg, sourceUri) =>
-        val packageConfig =
-          PackageDefinitionRenderer.renderMarathonV2App(sourceUri, pkg, request.options, request.appId)
+        val packageConfig = PackageDefinitionRenderer.renderMarathonV2App(
+          sourceUri,
+          pkg,
+          request.options,
+          request.appId
+        )
 
         packageConfig match {
           case Right(renderedMarathonJson) =>
