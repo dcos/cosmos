@@ -53,6 +53,7 @@ final class MarathonLabels(
       Some(MarathonApp.optionsLabel -> MarathonLabels.encodeForLabel(options))
     ).flatten.toMap
   }
+
   private[this] def metadataLabel: String = {
     MarathonLabels.encodeForLabel(packageMetadata.asJson)
   }
