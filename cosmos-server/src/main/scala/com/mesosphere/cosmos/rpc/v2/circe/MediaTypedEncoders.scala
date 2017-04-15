@@ -10,16 +10,16 @@ import com.twitter.util.Try
 
 object MediaTypedEncoders {
 
-  implicit val packageDescribeResponseEncoder: DispatchingMediaTypedEncoder[universe.v3.model.PackageDefinition] = {
+  implicit val packageDescribeResponseEncoder: DispatchingMediaTypedEncoder[universe.v4.model.PackageDefinition] = {
     DispatchingMediaTypedEncoder(Set(
       MediaTypedEncoder(
-        encoder = rpc.v2.circe.Encoders.encodeV2DescribeResponse.contramap { (pkg: universe.v3.model.PackageDefinition) =>
-          pkg.as[rpc.v2.model.DescribeResponse]
+        encoder = rpc.v2.circe.Encoders.encodeV2DescribeResponse.contramap { (pkg: universe.v4.model.PackageDefinition) =>
+          pkg.as[Try[rpc.v2.model.DescribeResponse]].get()
         },
         mediaType = MediaTypes.V2DescribeResponse
       ),
       MediaTypedEncoder(
-        encoder = rpc.v1.circe.Encoders.encodeDescribeResponse.contramap { (pkg: universe.v3.model.PackageDefinition) =>
+        encoder = rpc.v1.circe.Encoders.encodeDescribeResponse.contramap { (pkg: universe.v4.model.PackageDefinition) =>
           pkg.as[Try[rpc.v1.model.DescribeResponse]].get()
         },
         mediaType = MediaTypes.V1DescribeResponse

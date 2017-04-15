@@ -36,7 +36,7 @@ final class PackageUtilSpec extends FreeSpec with PropertyChecks {
     forAll { (zipContents: Map[String, Array[Byte]], badMetadata: Either[Json, Array[Byte]]) =>
       val metadataBytes = badMetadata.valueOr(_.noSpaces.getBytes(StandardCharsets.UTF_8))
       val metadataString = new String(metadataBytes, StandardCharsets.UTF_8)
-      val decodedMetadata = decode[universe.v3.model.Metadata](metadataString)
+      val decodedMetadata = decode[universe.v4.model.Metadata](metadataString)
 
       whenever (decodedMetadata.isLeft) {
         val contentsWithMetadata = zipContents + (MetadataJson -> metadataBytes)
@@ -50,7 +50,7 @@ final class PackageUtilSpec extends FreeSpec with PropertyChecks {
   }
 
   "extractMetadata() succeeds if metadata.json could be decoded" in {
-    forAll { (zipContents: Map[String, Array[Byte]], goodMetadata: universe.v3.model.Metadata) =>
+    forAll { (zipContents: Map[String, Array[Byte]], goodMetadata: universe.v4.model.Metadata) =>
       val metadataBytes = goodMetadata.asJson.noSpaces.getBytes(StandardCharsets.UTF_8)
       val contentsWithMetadata = zipContents + (MetadataJson -> metadataBytes)
       val bytesIn = encodeZip(contentsWithMetadata)
@@ -71,7 +71,7 @@ final class PackageUtilSpec extends FreeSpec with PropertyChecks {
   }
 
   "buildPackage() creates a package such that extractMetadata() recovers the input" in {
-    forAll { (inputMetadata: universe.v3.model.Metadata) =>
+    forAll { (inputMetadata: universe.v4.model.Metadata) =>
       val bytesOut = new ByteArrayOutputStream() with CloseDetector
       PackageUtil.buildPackage(bytesOut, inputMetadata)
       assert(bytesOut.isClosed)

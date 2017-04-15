@@ -7,6 +7,7 @@ import io.circe.JsonObject
 import io.circe.syntax._
 import java.nio.ByteBuffer
 import java.nio.charset.StandardCharsets
+import org.scalatest.prop.TableFor2
 
 object TestingPackages {
   val PackagingVersion = universe.v3.model.V3PackagingVersion
@@ -201,10 +202,10 @@ object TestingPackages {
     description = MinimalV3ModelV3PackageDefinition.description
   )
 
-  val MaximalV3ModelPackageDefinitionV2: universe.v3.model.PackageDefinition = MaximalV3ModelV2PackageDefinition
-  val MinimalV3ModelPackageDefinitionV2: universe.v3.model.PackageDefinition = MinimalV3ModelV2PackageDefinition
-  val MaximalV3ModelPackageDefinitionV3: universe.v3.model.PackageDefinition = MaximalV3ModelV3PackageDefinition
-  val MinimalV3ModelPackageDefinitionV3: universe.v3.model.PackageDefinition = MinimalV3ModelV3PackageDefinition
+  val MaximalV3ModelPackageDefinitionV2: universe.v4.model.PackageDefinition = MaximalV3ModelV2PackageDefinition
+  val MinimalV3ModelPackageDefinitionV2: universe.v4.model.PackageDefinition = MinimalV3ModelV2PackageDefinition
+  val MaximalV3ModelPackageDefinitionV3: universe.v4.model.PackageDefinition = MaximalV3ModelV3PackageDefinition
+  val MinimalV3ModelPackageDefinitionV3: universe.v4.model.PackageDefinition = MinimalV3ModelV3PackageDefinition
 
   val MaximalV2Resource = universe.v2.model.Resource(
     assets = Some(universe.v2.model.Assets(
@@ -298,5 +299,86 @@ object TestingPackages {
       )
     )))
   )
+
+  val MaximalV4ModelMetadata = universe.v4.model.V4Metadata(
+    universe.v4.model.V4PackagingVersion,
+    Name,
+    Version,
+    Maintainer,
+    Description,
+    Tags,
+    Scm,
+    Website,
+    Framework,
+    PreInstallNotes,
+    PostInstallNotes,
+    PostUninstallNotes,
+    Licenses,
+    MinDcosReleaseVersion,
+    MarathonTemplate,
+    Resource,
+    Config,
+    upgradesFrom = Some(List(universe.v3.model.Version("8.0"))),
+    downgradesTo = Some(List(universe.v3.model.Version("8.0")))
+  )
+
+  val MinimalV4ModelMetadata = universe.v4.model.V4Metadata(
+    universe.v4.model.V4PackagingVersion,
+    Name,
+    Version,
+    Maintainer,
+    Description
+  )
+
+  val validPackagingVersions: TableFor2[universe.v4.model.PackagingVersion, String] = {
+    new TableFor2(
+      "PackagingVersion" -> "String",
+      universe.v3.model.V2PackagingVersion -> "2.0",
+      universe.v3.model.V3PackagingVersion -> "3.0",
+      universe.v4.model.V4PackagingVersion -> "4.0"
+    )
+  }
+
+  val versionStringList =  validPackagingVersions.map(_._2).mkString("[", ", ", "]")
+
+  def renderInvalidVersionMessage(invalidVersion: String): String = {
+    s"Expected one of $versionStringList for packaging version, but found [$invalidVersion]"
+  }
+
+  val MinimalV4ModelV4PackageDefinition: universe.v4.model.V4Package = universe.v4.model.V4Package(
+    packagingVersion = universe.v4.model.V4PackagingVersion,
+    name = "minimal",
+    version = universe.v3.model.Version("1.2.3"),
+    releaseVersion = universe.v3.model.ReleaseVersion(0).get,
+    maintainer = "minimal@mesosphere.io",
+    description = "A minimal package definition"
+  )
+
+  val MaximalV4ModelV4PackageDefinition: universe.v4.model.V4Package = universe.v4.model.V4Package(
+    universe.v4.model.V4PackagingVersion,
+    Name,
+    Version,
+    releaseVersion = universe.v3.model.ReleaseVersion(Long.MaxValue).get,
+    Maintainer,
+    Description,
+    Tags,
+    None,
+    Scm,
+    Website,
+    Framework,
+    PreInstallNotes,
+    PostInstallNotes,
+    PostUninstallNotes,
+    Licenses,
+    MinDcosReleaseVersion,
+    MarathonTemplate,
+    Resource,
+    Config,
+    upgradesFrom = Some(List(universe.v3.model.Version("8.0"))),
+    downgradesTo = Some(List(universe.v3.model.Version("8.0")))
+  )
+
+  val MaximalV4ModelPackageDefinitionV4: universe.v4.model.PackageDefinition = MaximalV4ModelV4PackageDefinition
+  val MinimalV4ModelPackageDefinitionV4: universe.v4.model.PackageDefinition = MinimalV4ModelV4PackageDefinition
 
 }

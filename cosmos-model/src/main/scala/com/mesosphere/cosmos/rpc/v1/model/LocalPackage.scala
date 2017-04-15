@@ -19,7 +19,7 @@ object LocalPackage {
       case Failed(op, _) => op.packageDefinition.packageCoordinate
     }
 
-    def metadata: Either[PackageCoordinate, universe.v3.model.SupportedPackageDefinition] = value match {
+    def metadata: Either[PackageCoordinate, universe.v4.model.SupportedPackageDefinition] = value match {
       case Invalid(_, pc) => Left(pc)
       case NotInstalled(pkg) => Right(pkg)
       case Installed(pkg) => Right(pkg)
@@ -63,7 +63,7 @@ object LocalPackage {
     override def compare(a: LocalPackage, b: LocalPackage): Int = {
       (a.metadata, b.metadata) match {
         case (Right(aMetadata), Right(bMetadata)) =>
-          implicitly[Ordering[universe.v3.model.SupportedPackageDefinition]].compare(aMetadata, bMetadata)
+          implicitly[Ordering[universe.v4.model.SupportedPackageDefinition]].compare(aMetadata, bMetadata)
         case (Right(aMetadata), Left(bPackageCoordinate)) =>
           LocalPackage.compare(aMetadata, bPackageCoordinate)
         case (Left(aPackageCoordinate), Right(bMetadata)) =>
@@ -75,7 +75,7 @@ object LocalPackage {
   }
 
   def compare(
-    metadata: universe.v3.model.SupportedPackageDefinition,
+    metadata: universe.v4.model.SupportedPackageDefinition,
     packageCoordinate: PackageCoordinate
   ): Int = {
     val nameOrder = metadata.name.compare(packageCoordinate.name)
@@ -106,19 +106,19 @@ object LocalPackage {
 }
 
 final case class NotInstalled(
-  metadata: universe.v3.model.SupportedPackageDefinition
+  metadata: universe.v4.model.SupportedPackageDefinition
 ) extends LocalPackage
 
 final case class Installing(
-  metadata: universe.v3.model.SupportedPackageDefinition
+  metadata: universe.v4.model.SupportedPackageDefinition
 ) extends LocalPackage
 
 final case class Installed(
-  metadata: universe.v3.model.SupportedPackageDefinition
+  metadata: universe.v4.model.SupportedPackageDefinition
 ) extends LocalPackage
 
 final case class Uninstalling(
-  data: Either[PackageCoordinate, universe.v3.model.SupportedPackageDefinition]
+  data: Either[PackageCoordinate, universe.v4.model.SupportedPackageDefinition]
 ) extends LocalPackage
 
 // TODO: We shouldn't return Operation. It contains stagedPackageId which is useless to the client

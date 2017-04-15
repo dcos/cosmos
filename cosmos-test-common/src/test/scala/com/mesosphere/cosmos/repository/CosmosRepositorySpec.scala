@@ -17,7 +17,7 @@ import com.twitter.common.util.Clock
 
 
 final class CosmosRepositorySpec extends FreeSpec {
-  def client(ls: List[universe.v3.model.PackageDefinition]): C.repository.UniverseClient = {
+  def client(ls: List[universe.v4.model.PackageDefinition]): C.repository.UniverseClient = {
     new C.repository.UniverseClient {
       def apply(repository: PackageRepository)(implicit session: RequestSession): Future[universe.v3.model.Repository] = Future {
         universe.v3.model.Repository(ls)
@@ -173,8 +173,8 @@ final class CosmosRepositorySpec extends FreeSpec {
   }
   "timeout repository" in {
     var count = 0
-    def client(before: List[universe.v3.model.PackageDefinition],
-               after: List[universe.v3.model.PackageDefinition]
+    def client(before: List[universe.v4.model.PackageDefinition],
+               after: List[universe.v4.model.PackageDefinition]
                ): C.repository.UniverseClient = {
       new C.repository.UniverseClient {
         def apply(repository: PackageRepository)

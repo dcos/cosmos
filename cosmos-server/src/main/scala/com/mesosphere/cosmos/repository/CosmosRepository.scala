@@ -31,7 +31,7 @@ final class CosmosRepository (
     releaseVersion: universe.v3.model.ReleaseVersion
   )(
     implicit session: RequestSession
-  ): Future[universe.v3.model.PackageDefinition] = {
+  ): Future[universe.v4.model.PackageDefinition] = {
     synchronizedUpdate().map { internalRepository =>
       internalRepository.packages.find { pkg =>
         pkg.name == packageName && pkg.releaseVersion == releaseVersion
@@ -46,7 +46,7 @@ final class CosmosRepository (
     packageVersion: Option[universe.v3.model.Version]
   )(
     implicit session: RequestSession
-  ): Future[(universe.v3.model.PackageDefinition, Uri)] = {
+  ): Future[(universe.v4.model.PackageDefinition, Uri)] = {
     synchronizedUpdate().map { internalRepository =>
       val ns = internalRepository.packages.filter { pkg =>
         pkg.name == packageName
@@ -67,7 +67,7 @@ final class CosmosRepository (
     packageName: String
   )(
     implicit session: RequestSession
-  ): Future[List[universe.v3.model.PackageDefinition]] = {
+  ): Future[List[universe.v4.model.PackageDefinition]] = {
     synchronizedUpdate().map { internalRepository =>
       internalRepository.packages.filter(_.name == packageName)
     }

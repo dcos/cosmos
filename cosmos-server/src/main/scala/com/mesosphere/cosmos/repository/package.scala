@@ -9,19 +9,19 @@ import com.twitter.util.Throw
 import java.util.UUID
 
 package object repository {
-  type Installer = (UUID, universe.v3.model.SupportedPackageDefinition) => Future[Unit]
+  type Installer = (UUID, universe.v4.model.SupportedPackageDefinition) => Future[Unit]
 
-  type UniverseInstaller = universe.v3.model.SupportedPackageDefinition => Future[Unit]
+  type UniverseInstaller = universe.v4.model.SupportedPackageDefinition => Future[Unit]
   object UniverseInstaller {
     object Noop extends UniverseInstaller {
-      def apply(p: universe.v3.model.SupportedPackageDefinition): Future[Unit] = Future.Done
+      def apply(p: universe.v4.model.SupportedPackageDefinition): Future[Unit] = Future.Done
     }
   }
 
-  type Uninstaller = universe.v3.model.SupportedPackageDefinition => Future[Unit]
+  type Uninstaller = universe.v4.model.SupportedPackageDefinition => Future[Unit]
   object Uninstaller {
     object Noop extends Uninstaller {
-      def apply(p: universe.v3.model.SupportedPackageDefinition): Future[Unit] = Future.Done
+      def apply(p: universe.v4.model.SupportedPackageDefinition): Future[Unit] = Future.Done
     }
   }
 
@@ -29,7 +29,7 @@ package object repository {
   def installSupportedPackage(
     packageStorage: PackageStorage
   )(
-    pkg: universe.v3.model.SupportedPackageDefinition
+    pkg: universe.v4.model.SupportedPackageDefinition
   ): Future[Unit] = {
 
     packageStorage.readAllLocalPackages().map { packages =>

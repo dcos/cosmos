@@ -34,12 +34,44 @@ object TestUniverseConversions {
     }
   }
 
+  private implicit val v4PackageToV4Metadata:
+    Conversion[universe.v4.model.V4Package,
+      (universe.v4.model.V4Metadata, universe.v3.model.ReleaseVersion)] = {
+    Conversion.fromFunction { v4Package =>
+      val metadata = universe.v4.model.V4Metadata(
+        packagingVersion = v4Package.packagingVersion,
+        name = v4Package.name,
+        version = v4Package.version,
+        maintainer = v4Package.maintainer,
+        description = v4Package.description,
+        tags = v4Package.tags,
+        scm = v4Package.scm,
+        website = v4Package.website,
+        framework = v4Package.framework,
+        preInstallNotes = v4Package.preInstallNotes,
+        postInstallNotes = v4Package.postInstallNotes,
+        postUninstallNotes = v4Package.postUninstallNotes,
+        licenses = v4Package.licenses,
+        minDcosReleaseVersion = v4Package.minDcosReleaseVersion,
+        marathon = v4Package.marathon,
+        resource = v4Package.resource,
+        config = v4Package.config,
+        upgradesFrom = v4Package.upgradesFrom,
+        downgradesTo = v4Package.downgradesTo
+      )
+
+      (metadata, v4Package.releaseVersion)
+    }
+  }
+
   implicit val supportedPackageToMetadata:
-    Conversion[universe.v3.model.SupportedPackageDefinition,
-      (universe.v3.model.Metadata, universe.v3.model.ReleaseVersion)] = {
+    Conversion[universe.v4.model.SupportedPackageDefinition,
+      (universe.v4.model.Metadata, universe.v3.model.ReleaseVersion)] = {
     Conversion.fromFunction {
       case v3Package: universe.v3.model.V3Package =>
         v3Package.as[(universe.v3.model.V3Metadata, universe.v3.model.ReleaseVersion)]
+      case v4Package: universe.v4.model.V4Package =>
+        v4Package.as[(universe.v4.model.V4Metadata, universe.v3.model.ReleaseVersion)]
     }
   }
 

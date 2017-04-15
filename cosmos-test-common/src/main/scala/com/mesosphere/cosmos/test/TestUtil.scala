@@ -7,8 +7,6 @@ import com.mesosphere.cosmos.storage.ObjectStorage
 import com.mesosphere.cosmos.storage.installqueue.ReaderView
 import com.mesosphere.universe
 import com.mesosphere.universe.test.TestingPackages
-import com.mesosphere.universe.v3.model.ReleaseVersion
-import com.mesosphere.universe.v3.model._
 import com.twitter.util.Future
 import java.io.IOException
 import java.nio.file._
@@ -109,11 +107,6 @@ object TestUtil {
     ),
     resourceDefinition = Some(TestingPackages.MaximalV2Resource)
   )
-
-  def nameAndRelease(pkg: PackageDefinition): (String, ReleaseVersion) = pkg match {
-    case v2: V2Package => (v2.name, v2.releaseVersion)
-    case v3: V3Package => (v3.name, v3.releaseVersion)
-  }
 
   object EmptyReaderView extends ReaderView {
     override def viewStatus(): Future[Map[rpc.v1.model.PackageCoordinate, storage.v1.model.OperationStatus]] =

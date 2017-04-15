@@ -110,12 +110,12 @@ final class MarathonLabelsSpec extends FreeSpec with Matchers {
   }
 
   private[this] def assertCompatible(
-    original: universe.v3.model.PackageDefinition,
+    original: universe.v4.model.PackageDefinition,
     result: label.v1.model.PackageMetadata
   ): Assertion = {
     // To test that `original` was accurately turned into `result`, reverse the transformation
     val Success(resultPackagingVersion) =
-      result.packagingVersion.as[Try[universe.v3.model.PackagingVersion]]
+      result.packagingVersion.as[Try[universe.v4.model.PackagingVersion]]
 
     val resultTags = result.tags.map(tag => universe.v3.model.Tag(tag).get)
     val resultLicenses = result.licenses.map { licenses =>

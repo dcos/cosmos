@@ -1,131 +1,159 @@
 package com.mesosphere.universe.v3.syntax
 
 import com.mesosphere.cosmos.rpc.v1.model.PackageCoordinate
-import com.mesosphere.universe.v3.model._
+import com.mesosphere.universe
+import io.circe.Json
 import io.circe.JsonObject
+import io.circe.syntax.EncoderOps
 
-final class PackageDefinitionOps(val pkgDef: PackageDefinition) extends AnyVal {
+final class PackageDefinitionOps(val pkgDef: universe.v4.model.PackageDefinition) extends AnyVal {
 
-  def packageCoordinate: PackageCoordinate = pkgDef match {
-    case v2: V2Package =>
-      PackageCoordinate(v2.name, v2.version)
-    case v3: V3Package =>
-      PackageCoordinate(v3.name, v3.version)
+  def packageCoordinate: PackageCoordinate =  {
+    PackageCoordinate(name, version)
   }
 
-  def packagingVersion: PackagingVersion = pkgDef match {
-    case v2: V2Package => v2.packagingVersion
-    case v3: V3Package => v3.packagingVersion
+  def packagingVersion: universe.v4.model.PackagingVersion = pkgDef match {
+    case v2: universe.v3.model.V2Package => v2.packagingVersion
+    case v3: universe.v3.model.V3Package => v3.packagingVersion
+    case v4: universe.v4.model.V4Package => v4.packagingVersion
   }
 
   def name: String = pkgDef match {
-    case v2: V2Package => v2.name
-    case v3: V3Package => v3.name
+    case v2: universe.v3.model.V2Package => v2.name
+    case v3: universe.v3.model.V3Package => v3.name
+    case v4: universe.v4.model.V4Package => v4.name
   }
 
-  def version: Version = pkgDef match {
-    case v2: V2Package => v2.version
-    case v3: V3Package => v3.version
+  def version: universe.v3.model.Version = pkgDef match {
+    case v2: universe.v3.model.V2Package => v2.version
+    case v3: universe.v3.model.V3Package => v3.version
+    case v4: universe.v4.model.V4Package => v4.version
   }
 
   //noinspection MutatorLikeMethodIsParameterless
-  def releaseVersion: ReleaseVersion = pkgDef match {
-    case v2: V2Package => v2.releaseVersion
-    case v3: V3Package => v3.releaseVersion
+  def releaseVersion: universe.v3.model.ReleaseVersion = pkgDef match {
+    case v2: universe.v3.model.V2Package => v2.releaseVersion
+    case v3: universe.v3.model.V3Package => v3.releaseVersion
+    case v4: universe.v4.model.V4Package => v4.releaseVersion
   }
 
   def maintainer: String = pkgDef match {
-    case v2: V2Package => v2.maintainer
-    case v3: V3Package => v3.maintainer
+    case v2: universe.v3.model.V2Package => v2.maintainer
+    case v3: universe.v3.model.V3Package => v3.maintainer
+    case v4: universe.v4.model.V4Package => v4.maintainer
   }
 
   def description: String = pkgDef match {
-    case v2: V2Package => v2.description
-    case v3: V3Package => v3.description
+    case v2: universe.v3.model.V2Package => v2.description
+    case v3: universe.v3.model.V3Package => v3.description
+    case v4: universe.v4.model.V4Package => v4.description
   }
 
-  def marathon: Option[Marathon] = pkgDef match {
-    case v2: V2Package => Some(v2.marathon)
-    case v3: V3Package => v3.marathon
+  def marathon: Option[universe.v3.model.Marathon] = pkgDef match {
+    case v2: universe.v3.model.V2Package => Some(v2.marathon)
+    case v3: universe.v3.model.V3Package => v3.marathon
+    case v4: universe.v4.model.V4Package => v4.marathon
   }
 
-  def tags: List[Tag] = pkgDef match {
-    case v2: V2Package => v2.tags
-    case v3: V3Package => v3.tags
+  def tags: List[universe.v3.model.Tag] = pkgDef match {
+    case v2: universe.v3.model.V2Package => v2.tags
+    case v3: universe.v3.model.V3Package => v3.tags
+    case v4: universe.v4.model.V4Package => v4.tags
   }
 
   def selected: Option[Boolean] = pkgDef match {
-    case v2: V2Package => v2.selected
-    case v3: V3Package => v3.selected
+    case v2: universe.v3.model.V2Package => v2.selected
+    case v3: universe.v3.model.V3Package => v3.selected
+    case v4: universe.v4.model.V4Package => v4.selected
   }
 
   def scm: Option[String]= pkgDef match {
-    case v2: V2Package => v2.scm
-    case v3: V3Package => v3.scm
+    case v2: universe.v3.model.V2Package => v2.scm
+    case v3: universe.v3.model.V3Package => v3.scm
+    case v4: universe.v4.model.V4Package => v4.scm
   }
 
   def website: Option[String] = pkgDef match {
-    case v2: V2Package => v2.website
-    case v3: V3Package => v3.website
+    case v2: universe.v3.model.V2Package => v2.website
+    case v3: universe.v3.model.V3Package => v3.website
+    case v4: universe.v4.model.V4Package => v4.website
   }
 
   def framework: Option[Boolean] = pkgDef match {
-    case v2: V2Package => v2.framework
-    case v3: V3Package => v3.framework
+    case v2: universe.v3.model.V2Package => v2.framework
+    case v3: universe.v3.model.V3Package => v3.framework
+    case v4: universe.v4.model.V4Package => v4.framework
   }
 
   def preInstallNotes: Option[String] = pkgDef match {
-    case v2: V2Package => v2.preInstallNotes
-    case v3: V3Package => v3.preInstallNotes
+    case v2: universe.v3.model.V2Package => v2.preInstallNotes
+    case v3: universe.v3.model.V3Package => v3.preInstallNotes
+    case v4: universe.v4.model.V4Package => v4.preInstallNotes
   }
 
   def postInstallNotes: Option[String] = pkgDef match {
-    case v2: V2Package => v2.postInstallNotes
-    case v3: V3Package => v3.postInstallNotes
+    case v2: universe.v3.model.V2Package => v2.postInstallNotes
+    case v3: universe.v3.model.V3Package => v3.postInstallNotes
+    case v4: universe.v4.model.V4Package => v4.postInstallNotes
   }
 
   def postUninstallNotes: Option[String] = pkgDef match {
-    case v2: V2Package => v2.postUninstallNotes
-    case v3: V3Package => v3.postUninstallNotes
+    case v2: universe.v3.model.V2Package => v2.postUninstallNotes
+    case v3: universe.v3.model.V3Package => v3.postUninstallNotes
+    case v4: universe.v4.model.V4Package => v4.postUninstallNotes
   }
 
-  def licenses: Option[List[License]] = pkgDef match {
-    case v2: V2Package => v2.licenses
-    case v3: V3Package => v3.licenses
+  def licenses: Option[List[universe.v3.model.License]] = pkgDef match {
+    case v2: universe.v3.model.V2Package => v2.licenses
+    case v3: universe.v3.model.V3Package => v3.licenses
+    case v4: universe.v4.model.V4Package => v4.licenses
   }
 
   def config: Option[JsonObject] = pkgDef match {
-    case v2: V2Package => v2.config
-    case v3: V3Package => v3.config
+    case v2: universe.v3.model.V2Package => v2.config
+    case v3: universe.v3.model.V3Package => v3.config
+    case v4: universe.v4.model.V4Package => v4.config
   }
 
-  def command: Option[Command] = pkgDef match {
-    case v2: V2Package => v2.command
-    case v3: V3Package => v3.command
+  def command: Option[universe.v3.model.Command] = pkgDef match {
+    case v2: universe.v3.model.V2Package => v2.command
+    case v3: universe.v3.model.V3Package => v3.command
+    case _: universe.v4.model.V4Package => None // v4 does not have command
   }
 
-  def minDcosReleaseVersion: Option[DcosReleaseVersion] = pkgDef match {
-    case v2: V2Package => None
-    case v3: V3Package => v3.minDcosReleaseVersion
+  def minDcosReleaseVersion: Option[universe.v3.model.DcosReleaseVersion] = pkgDef match {
+    case _: universe.v3.model.V2Package => None
+    case v3: universe.v3.model.V3Package => v3.minDcosReleaseVersion
+    case v4: universe.v4.model.V4Package => v4.minDcosReleaseVersion
   }
 
-  def v3Resource: Option[V3Resource] = pkgDef match {
-    case v2: V2Package => v2.resource.map { case V2Resource(assets, images) =>
-      V3Resource(assets, images)
+  def v3Resource: Option[universe.v3.model.V3Resource] = pkgDef match {
+    case v2: universe.v3.model.V2Package => v2.resource.map { case universe.v3.model.V2Resource(assets, images) =>
+      universe.v3.model.V3Resource(assets, images)
     }
-    case v3: V3Package => v3.resource
+    case v3: universe.v3.model.V3Package => v3.resource
+    case v4: universe.v4.model.V4Package => v4.resource
   }
 
   // -------- Non top-level properties that we are safe to "jump" to --------------
 
-  def images: Option[Images] = pkgDef match {
-    case v2: V2Package => v2.resource.flatMap(_.images)
-    case v3: V3Package => v3.resource.flatMap(_.images)
+  def images: Option[universe.v3.model.Images] = pkgDef match {
+    case v2: universe.v3.model.V2Package => v2.resource.flatMap(_.images)
+    case v3: universe.v3.model.V3Package => v3.resource.flatMap(_.images)
+    case v4: universe.v4.model.V4Package => v4.resource.flatMap(_.images)
   }
 
-  def cli: Option[Cli] = pkgDef match {
-    case v2: V2Package => None
-    case v3: V3Package => v3.resource.flatMap(_.cli)
+  def cli: Option[universe.v3.model.Cli] = pkgDef match {
+    case _ : universe.v3.model.V2Package => None
+    case v3: universe.v3.model.V3Package => v3.resource.flatMap(_.cli)
+    case v4: universe.v4.model.V4Package => v4.resource.flatMap(_.cli)
+  }
+
+  // -------- Utility Methods to convert to Json -----------------------------------
+  def resourceJson: Option[Json] = pkgDef match {
+    case v2: universe.v3.model.V2Package => v2.resource.map(_.asJson)
+    case v3: universe.v3.model.V3Package => v3.resource.map(_.asJson)
+    case v4: universe.v4.model.V4Package => v4.resource.map(_.asJson)
   }
 
 }
@@ -133,7 +161,7 @@ final class PackageDefinitionOps(val pkgDef: PackageDefinition) extends AnyVal {
 object PackageDefinitionOps {
   import scala.language.implicitConversions
 
-  implicit def packageDefinitionToPackageDefinitionOps[P <: PackageDefinition](
+  implicit def packageDefinitionToPackageDefinitionOps[P <: universe.v4.model.PackageDefinition](
     pkgDef: P
   ): PackageDefinitionOps = {
     new PackageDefinitionOps(pkgDef)

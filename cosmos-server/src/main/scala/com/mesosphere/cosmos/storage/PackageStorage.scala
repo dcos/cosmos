@@ -20,11 +20,12 @@ final class PackageStorage private(objectStorage: ObjectStorage) {
   import PackageStorage._
 
   def writePackageDefinition(
-    packageDefinition: universe.v3.model.SupportedPackageDefinition
+    packageDefinition: universe.v4.model.SupportedPackageDefinition
   ): Future[Unit] = {
     val metadataName = getMetadataPath(packageDefinition.packageCoordinate)
     val data = packageDefinition.asJson.noSpaces.getBytes(StandardCharsets.UTF_8)
     val mediaType = packageDefinition match {
+      case _: universe.v4.model.V4Package => universe.MediaTypes.universeV4Package
       case _: universe.v3.model.V3Package => universe.MediaTypes.universeV3Package
     }
     objectStorage.write(metadataName, data, mediaType)
@@ -32,7 +33,7 @@ final class PackageStorage private(objectStorage: ObjectStorage) {
 
   def readPackageDefinition(
     packageCoordinate: rpc.v1.model.PackageCoordinate
-  ): Future[Option[universe.v3.model.SupportedPackageDefinition]] = {
+  ): Future[Option[universe.v4.model.SupportedPackageDefinition]] = {
     val metadataName = getMetadataPath(packageCoordinate)
     objectStorage.readAsArray(metadataName).map { pendingRead =>
       pendingRead.map {

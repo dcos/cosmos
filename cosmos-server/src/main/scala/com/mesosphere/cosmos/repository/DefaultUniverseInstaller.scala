@@ -10,7 +10,7 @@ final class DefaultUniverseInstaller private(
 
   private[this] val install = installSupportedPackage(packageStorage) _
 
-  def apply(pkg: universe.v3.model.SupportedPackageDefinition): Future[Unit] = install(pkg)
+  def apply(pkg: universe.v4.model.SupportedPackageDefinition): Future[Unit] = install(pkg)
 
 }
 

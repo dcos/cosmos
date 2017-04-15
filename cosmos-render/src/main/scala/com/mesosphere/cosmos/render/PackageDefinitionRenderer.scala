@@ -29,7 +29,7 @@ object PackageDefinitionRenderer {
 
   def renderMarathonV2App(
     sourceUri: Uri,
-    pkgDef: universe.v3.model.PackageDefinition,
+    pkgDef: universe.v4.model.PackageDefinition,
     options: Option[JsonObject],
     marathonAppId: Option[AppId]
   ): Either[PackageDefinitionRenderError, Json] = {
@@ -50,7 +50,7 @@ object PackageDefinitionRenderer {
            */
           val mergedOptions = List(
             Some(defaultOptionsAndUserOptions),
-            resourceJson(pkgDef)
+            pkgDef.resourceJson.map(rj => JsonObject.singleton("resource", rj))
           ).flatten.foldLeft(JsonObject.empty)(merge)
 
           renderTemplate(m.v2AppMustacheTemplate, mergedOptions).flatMap { mJson =>
@@ -84,7 +84,7 @@ object PackageDefinitionRenderer {
   }
 
   private[this] def validateOptionsAgainstSchema(
-    pkgDef: universe.v3.model.PackageDefinition,
+    pkgDef: universe.v4.model.PackageDefinition,
     options: JsonObject
   ): Either[PackageDefinitionRenderError, Unit] = {
     (pkgDef.config, options.nonEmpty) match {
@@ -97,15 +97,6 @@ object PackageDefinitionRenderer {
         JsonSchema.jsonObjectMatchesSchema(options, schema)
           .leftMap(OptionsValidationFailure)
     }
-  }
-
-  private[this] def resourceJson(
-    pkgDef: universe.v3.model.PackageDefinition
-  ): Option[JsonObject] = pkgDef match {
-    case v2: universe.v3.model.V2Package =>
-      v2.resource.map(res => JsonObject.singleton("resource", res.asJson))
-    case v3: universe.v3.model.V3Package =>
-      v3.resource.map(res => JsonObject.singleton("resource", res.asJson))
   }
 
   private[render] def merge(target: JsonObject, fragment: JsonObject): JsonObject = {

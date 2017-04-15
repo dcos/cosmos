@@ -1,6 +1,7 @@
 package com.mesosphere.universe
 
 import cats.syntax.either._
+import com.mesosphere.universe
 import com.mesosphere.universe.common.circe.Decoders._
 import io.circe.JsonObject
 import io.circe.Decoder
@@ -12,25 +13,6 @@ import io.circe.generic.semiauto.deriveEncoder
 import io.circe.syntax.EncoderOps
 
 package v3.model {
-
-  sealed trait Metadata
-
-  object Metadata {
-    implicit val decodeMetadata: Decoder[Metadata] = {
-      Decoder.instance[Metadata] { (hc: HCursor) =>
-        hc.downField("packagingVersion").as[PackagingVersion].flatMap {
-          case V3PackagingVersion => hc.as[V3Metadata]
-          case V2PackagingVersion => Left(DecodingFailure(
-            "V2Metadata is not supported",
-            hc.history
-          ))
-        }
-      }
-    }
-    implicit val encodeMetadata: Encoder[Metadata] = Encoder.instance {
-      case v3Metadata: V3Metadata => v3Metadata.asJson
-    }
-  }
 
   case class V3Metadata(
     packagingVersion: V3PackagingVersion.type = V3PackagingVersion,
@@ -50,11 +32,62 @@ package v3.model {
     marathon: Option[Marathon] = None,
     resource: Option[V3Resource] = None,
     config: Option[JsonObject] = None
-  ) extends Metadata
+  ) extends universe.v4.model.Metadata
 
   object V3Metadata {
-    implicit val decodeV3Metadata: Decoder[V3Metadata] = deriveDecoder[V3Metadata]
-    implicit val encodeV3Metadata: Encoder[V3Metadata] = deriveEncoder[V3Metadata]
+    implicit val decodeV3Metadata: Decoder[universe.v3.model.V3Metadata] = deriveDecoder[universe.v3.model.V3Metadata]
+    implicit val encodeV3Metadata: Encoder[universe.v3.model.V3Metadata] = deriveEncoder[universe.v3.model.V3Metadata]
   }
 
+}
+
+package v4.model {
+
+  sealed trait Metadata
+
+  object Metadata {
+    implicit val decodeMetadata: Decoder[universe.v4.model.Metadata] = {
+      Decoder.instance[universe.v4.model.Metadata] { (hc: HCursor) =>
+        hc.downField("packagingVersion").as[universe.v4.model.PackagingVersion].flatMap {
+          case universe.v4.model.V4PackagingVersion => hc.as[universe.v4.model.V4Metadata]
+          case universe.v3.model.V3PackagingVersion => hc.as[universe.v3.model.V3Metadata]
+          case universe.v3.model.V2PackagingVersion => Left(DecodingFailure(
+            "V2Metadata is not supported",
+            hc.history
+          ))
+        }
+      }
+    }
+    implicit val encodeMetadata: Encoder[universe.v4.model.Metadata] = Encoder.instance {
+      case v3Metadata: universe.v3.model.V3Metadata => v3Metadata.asJson
+      case v4Metadata: universe.v4.model.V4Metadata => v4Metadata.asJson
+    }
+  }
+
+  case class V4Metadata(
+    packagingVersion: V4PackagingVersion.type = V4PackagingVersion,
+    name: String,
+    version: universe.v3.model.Version,
+    maintainer: String,
+    description: String,
+    tags: List[universe.v3.model.Tag] = Nil,
+    scm: Option[String] = None,
+    website: Option[String] = None,
+    framework: Option[Boolean] = None,
+    preInstallNotes: Option[String] = None,
+    postInstallNotes: Option[String] = None,
+    postUninstallNotes: Option[String] = None,
+    licenses: Option[List[universe.v3.model.License]] = None,
+    minDcosReleaseVersion: Option[universe.v3.model.DcosReleaseVersion] = None,
+    marathon: Option[universe.v3.model.Marathon] = None,
+    resource: Option[universe.v3.model.V3Resource] = None,
+    config: Option[JsonObject] = None,
+    upgradesFrom: Option[List[universe.v3.model.Version]] = None,
+    downgradesTo: Option[List[universe.v3.model.Version]] = None
+  ) extends universe.v4.model.Metadata
+
+  object V4Metadata {
+    implicit val decodeV4Metadata: Decoder[universe.v4.model.V4Metadata] = deriveDecoder[universe.v4.model.V4Metadata]
+    implicit val encodeV4Metadata: Encoder[universe.v4.model.V4Metadata] = deriveEncoder[universe.v4.model.V4Metadata]
+  }
 }

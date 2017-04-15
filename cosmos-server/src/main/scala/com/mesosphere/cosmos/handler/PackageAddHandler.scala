@@ -13,8 +13,7 @@ import com.mesosphere.cosmos.storage.v1.model.Install
 import com.mesosphere.cosmos.storage.v1.model.UniverseInstall
 import com.mesosphere.universe
 import com.mesosphere.universe.bijection.UniverseConversions._
-import com.mesosphere.universe.v3.model.Metadata
-import com.mesosphere.universe.v3.model.V3Metadata
+import com.mesosphere.universe.v4.model.Metadata
 import com.mesosphere.universe.v3.syntax.PackageDefinitionOps._
 import com.mesosphere.util.PackageUtil
 import com.twitter.bijection.Conversion.asMethod
@@ -43,6 +42,8 @@ final class PackageAddHandler(
       case rpc.v1.model.UniverseAddRequest(packageName, packageVersion) =>
         packageCollection.getPackageByPackageVersion(packageName, packageVersion)
           .map {
+            case (v4Package: universe.v4.model.V4Package, _) =>
+              UniverseInstall(v4Package)
             case (v3Package: universe.v3.model.V3Package, _) =>
               UniverseInstall(v3Package)
             case (v2Package: universe.v3.model.V2Package, _) =>
@@ -65,16 +66,13 @@ final class PackageAddHandler(
       operation <- futureOperation
       _ <- producerView.add(operation.packageDefinition.packageCoordinate, operation)
     } yield {
-      operation.packageDefinition match {
-        case v3Package: universe.v3.model.V3Package =>
-          rpc.v1.model.AddResponse(v3Package)
-      }
+      rpc.v1.model.AddResponse(operation.packageDefinition)
     }
   }
 
   private[this] def readPackageDefinitionFromStorage(
     stagedPackageId: UUID
-  ): Future[Option[universe.v3.model.SupportedPackageDefinition]] = {
+  ): Future[Option[universe.v4.model.SupportedPackageDefinition]] = {
     for {
       // TODO package-add: verify media type
       stagedPackageAndMediaType <- stagedPackageStorage.read(stagedPackageId)
@@ -85,7 +83,7 @@ final class PackageAddHandler(
       packageMetadata.map { packageMetadata =>
         val timeOfAdd = Instant.now().getEpochSecond
         val releaseVersion = universe.v3.model.ReleaseVersion(timeOfAdd).get()
-        (packageMetadata, releaseVersion).as[universe.v3.model.SupportedPackageDefinition]
+        (packageMetadata, releaseVersion).as[universe.v4.model.SupportedPackageDefinition]
       }
     }
   }

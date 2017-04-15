@@ -1,6 +1,6 @@
 package com.mesosphere.universe.v3.model
 
-import com.mesosphere.universe.v3.model.PackageDefinition._
+import com.mesosphere.universe
 import java.nio.ByteBuffer
 import org.scalatest.FreeSpec
 import org.scalatest.Matchers
@@ -84,7 +84,7 @@ class V3PackageSpec extends FreeSpec with Matchers {
     )
   }
 
-  def packageDefinition(tuple: (String, Version, ReleaseVersion)): PackageDefinition = {
+  def packageDefinition(tuple: (String, Version, ReleaseVersion)): universe.v4.model.PackageDefinition = {
     if (Random.nextBoolean) {
       v2Package(tuple)
     } else {

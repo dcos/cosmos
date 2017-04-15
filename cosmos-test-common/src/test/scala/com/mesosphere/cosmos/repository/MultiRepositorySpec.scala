@@ -12,14 +12,15 @@ import com.twitter.util.{Await, Future, Return, Throw, Try}
 import com.netaporter.uri.Uri
 import cats.data.Ior
 import cats.data.Ior.{Both, Left, Right}
+import com.mesosphere.universe
 import com.mesosphere.universe.test.TestingPackages
-import com.mesosphere.universe.v3.model.{PackageDefinition, Repository}
 
 final class MultiRepositorySpec extends FreeSpec {
 
-  case class TestClient(repos: List[PackageRepository] = Nil, ls: List[PackageDefinition] = Nil) extends UniverseClient {
-    def apply(repo: PackageRepository)(implicit session: RequestSession): Future[Repository] = {
-      Future(Repository(repos.filter( _ == repo).flatMap(_ => ls)))
+  case class TestClient(repos: List[PackageRepository] = Nil, ls: List[universe.v4.model.PackageDefinition] = Nil)
+    extends UniverseClient {
+    def apply(repo: PackageRepository)(implicit session: RequestSession): Future[universe.v3.model.Repository] = {
+      Future(universe.v3.model.Repository(repos.filter( _ == repo).flatMap(_ => ls)))
     }
   }
 
@@ -31,9 +32,15 @@ final class MultiRepositorySpec extends FreeSpec {
     def delete(nameOrUri: Ior[String, Uri]): Future[List[PackageRepository]] =  ???
   }
 
-  case class TestMultiClient(repos: List[(PackageRepository,List[PackageDefinition])] = Nil) extends UniverseClient {
-    def apply(repo: PackageRepository)(implicit session: RequestSession): Future[Repository] = Future {
-      Repository(repos.filter( _._1 == repo).flatMap(_._2))
+  case class TestMultiClient(
+    repos: List[(PackageRepository,List[universe.v4.model.PackageDefinition])] = Nil
+  ) extends UniverseClient {
+    def apply(
+      repo: PackageRepository
+    )(implicit
+      session: RequestSession
+    ): Future[universe.v3.model.Repository] = Future {
+      universe.v3.model.Repository(repos.filter( _._1 == repo).flatMap(_._2))
     }
   }
   "getRepository" - {

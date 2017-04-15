@@ -30,9 +30,13 @@ object UniverseConversions {
     packagingVersionSubclassToString(universe.v3.model.V3PackagingVersion)
   }
 
-  implicit val v3PackagingVersionToString: Injection[universe.v3.model.PackagingVersion, String] = {
-    val fwd = (version: universe.v3.model.PackagingVersion) => version.show
-    val rev = (universe.v3.model.PackagingVersion.apply _).andThen(BijectionUtils.twitterTryToScalaTry)
+  implicit val v4V4PackagingVersionToString: Injection[universe.v4.model.V4PackagingVersion.type, String] = {
+    packagingVersionSubclassToString(universe.v4.model.V4PackagingVersion)
+  }
+
+  implicit val v3PackagingVersionToString: Injection[universe.v4.model.PackagingVersion, String] = {
+    val fwd = (version: universe.v4.model.PackagingVersion) => version.show
+    val rev = (universe.v4.model.PackagingVersion.apply _).andThen(BijectionUtils.twitterTryToScalaTry)
 
     Injection.build(fwd)(rev)
   }
@@ -47,12 +51,17 @@ object UniverseConversions {
     Injection.connect[universe.v3.model.V3PackagingVersion.type, String, universe.v2.model.PackagingVersion]
   }
 
-  implicit val v3PackagingVersionToV2PackagingVersion:
-    Injection[universe.v3.model.PackagingVersion, universe.v2.model.PackagingVersion] = {
-    Injection.connect[universe.v3.model.PackagingVersion, String, universe.v2.model.PackagingVersion]
+  implicit val v4V4PackagingVersionToV2PackagingVersion:
+    Injection[universe.v4.model.V4PackagingVersion.type, universe.v2.model.PackagingVersion] = {
+    Injection.connect[universe.v4.model.V4PackagingVersion.type, String, universe.v2.model.PackagingVersion]
   }
 
-  private[this] def packagingVersionSubclassToString[V <: universe.v3.model.PackagingVersion](
+  implicit val v3PackagingVersionToV2PackagingVersion:
+    Injection[universe.v4.model.PackagingVersion, universe.v2.model.PackagingVersion] = {
+    Injection.connect[universe.v4.model.PackagingVersion, String, universe.v2.model.PackagingVersion]
+  }
+
+  private[this] def packagingVersionSubclassToString[V <: universe.v4.model.PackagingVersion](
     expected: V
   ): Injection[V, String] = {
     val fwd = (version: V) => version.show
@@ -124,20 +133,73 @@ object UniverseConversions {
     )
   }
 
-  implicit val metadataToSupportedPackageDefinition:
-    Conversion[(universe.v3.model.Metadata, universe.v3.model.ReleaseVersion),
-      universe.v3.model.SupportedPackageDefinition] = Conversion.fromFunction { case (metadata, releaseVersion) =>
-      metadata match {
-        case v3Metadata: universe.v3.model.V3Metadata =>
-          (v3Metadata, releaseVersion).as[universe.v3.model.V3Package]
-      }
+  private implicit val v4MetadataToV4Package:
+    Conversion[(universe.v4.model.V4Metadata, universe.v3.model.ReleaseVersion),
+      universe.v4.model.V4Package] = Conversion.fromFunction { case (metadata, releaseVersion) =>
+    universe.v4.model.V4Package(
+      packagingVersion=metadata.packagingVersion,
+      name=metadata.name,
+      version=metadata.version,
+      releaseVersion=releaseVersion,
+      maintainer=metadata.maintainer,
+      description=metadata.description,
+      tags=metadata.tags,
+      selected=None, // Selected package is an Universe concept. Setting to the default value.
+      scm=metadata.scm,
+      website=metadata.website,
+      framework=metadata.framework,
+      preInstallNotes=metadata.preInstallNotes,
+      postInstallNotes=metadata.postInstallNotes,
+      postUninstallNotes=metadata.postUninstallNotes,
+      licenses=metadata.licenses,
+      minDcosReleaseVersion=metadata.minDcosReleaseVersion,
+      marathon=metadata.marathon,
+      resource=metadata.resource,
+      config=metadata.config,
+      upgradesFrom=metadata.upgradesFrom,
+      downgradesTo=metadata.downgradesTo
+    )
   }
 
-  implicit val v3PackageDefinitionToV2PackageDetails:
-    Conversion[universe.v3.model.PackageDefinition, universe.v2.model.PackageDetails] = {
+  implicit val metadataToSupportedPackageDefinition:
+    Conversion[(universe.v4.model.Metadata, universe.v3.model.ReleaseVersion),
+      universe.v4.model.SupportedPackageDefinition] = Conversion.fromFunction { case (metadata, releaseVersion) =>
+    metadata match {
+      case v3Metadata: universe.v3.model.V3Metadata =>
+        (v3Metadata, releaseVersion).as[universe.v3.model.V3Package]
+      case v4Metadata: universe.v4.model.V4Metadata =>
+        (v4Metadata, releaseVersion).as[universe.v4.model.V4Package]
+    }
+  }
+
+  implicit val v4PackageDefinitionToV2PackageDetails:
+    Conversion[universe.v4.model.PackageDefinition, universe.v2.model.PackageDetails] = {
     Conversion.fromFunction {
       case v2Package: universe.v3.model.V2Package => v2Package.as[universe.v2.model.PackageDetails]
       case v3Package: universe.v3.model.V3Package => v3Package.as[universe.v2.model.PackageDetails]
+      case v4Package: universe.v4.model.V4Package => v4Package.as[universe.v2.model.PackageDetails]
+    }
+  }
+
+  implicit val v4V4PackageToV2PackageDetails:
+    Conversion[universe.v4.model.V4Package, universe.v2.model.PackageDetails] = {
+    Conversion.fromFunction { (pkg: universe.v4.model.V4Package) =>
+      universe.v2.model.PackageDetails(
+        packagingVersion = pkg.packagingVersion.as[universe.v2.model.PackagingVersion],
+        name = pkg.name,
+        version = pkg.version.as[universe.v2.model.PackageDetailsVersion],
+        maintainer = pkg.maintainer,
+        description = pkg.description,
+        tags = pkg.tags.as[List[String]],
+        selected = pkg.selected,
+        scm = pkg.scm,
+        website = pkg.website,
+        framework = pkg.framework,
+        preInstallNotes = pkg.preInstallNotes,
+        postInstallNotes = pkg.postInstallNotes,
+        postUninstallNotes = pkg.postUninstallNotes,
+        licenses = pkg.licenses.as[Option[List[universe.v2.model.License]]]
+      )
     }
   }
 

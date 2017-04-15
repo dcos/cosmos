@@ -28,6 +28,7 @@ import com.twitter.finagle.stats.StatsReceiver
 import com.twitter.io.Buf
 import com.twitter.util.Await
 import com.twitter.util.Future
+import com.twitter.util.Try
 import org.scalatest.Assertion
 import org.scalatest.BeforeAndAfter
 import org.scalatest.BeforeAndAfterAll
@@ -99,7 +100,7 @@ final class PackageAddSpec
 
       val v3Package = decode[universe.v3.model.V3Package](response.contentString)
       assertResult(expectedPackage) {
-        (v3Package: universe.v3.model.PackageDefinition).as[rpc.v2.model.DescribeResponse]
+        (v3Package: universe.v4.model.PackageDefinition).as[Try[rpc.v2.model.DescribeResponse]].get()
       }
 
       assertExternalizedPackage(v3Package)
@@ -129,25 +130,25 @@ final class PackageAddSpec
   }
 
   private[this] def assertSuccessfulAdd(
-    expectedSupportedPackageDefinition: universe.v3.model.SupportedPackageDefinition
+    expectedSupportedPackageDefinition: universe.v4.model.SupportedPackageDefinition
   ): Assertion = {
     assertSuccessfulResponse(expectedSupportedPackageDefinition)
     assertExternalizedPackage(expectedSupportedPackageDefinition)
   }
 
   private[this] def assertSuccessfulResponse(
-    expectedSupportedPackageDefinition: universe.v3.model.SupportedPackageDefinition
+    expectedSupportedPackageDefinition: universe.v4.model.SupportedPackageDefinition
   ): Assertion = {
     val body = Buf.ByteArray.Owned(UTestUtil.buildPackage(expectedSupportedPackageDefinition))
     val request = CosmosRequests.packageAdd(body)
     val response = CosmosClient.submit(request)
     assertResult(Status.Accepted)(response.status)
-    val actualSupportedPackageDefinition = decode[universe.v3.model.SupportedPackageDefinition](response.contentString)
+    val actualSupportedPackageDefinition = decode[universe.v4.model.SupportedPackageDefinition](response.contentString)
     assertSamePackage(expectedSupportedPackageDefinition, actualSupportedPackageDefinition)
   }
 
   private[this] def assertExternalizedPackage(
-    expectedSupportedPackageDefinition: universe.v3.model.SupportedPackageDefinition
+    expectedSupportedPackageDefinition: universe.v4.model.SupportedPackageDefinition
   ): Assertion = {
     assertSamePackage(
       expectedSupportedPackageDefinition,
@@ -162,8 +163,8 @@ final class PackageAddSpec
   }
 
   private[this] def assertSamePackage(
-    expected: universe.v3.model.SupportedPackageDefinition,
-    actual: universe.v3.model.SupportedPackageDefinition
+    expected: universe.v4.model.SupportedPackageDefinition,
+    actual: universe.v4.model.SupportedPackageDefinition
   ): Assertion = {
     val normalizedExpected = normalizeSupportedPackageDefinition(expected)
     val normalizedActual = normalizeSupportedPackageDefinition(actual)
@@ -171,13 +172,15 @@ final class PackageAddSpec
   }
 
   private[this] def normalizeSupportedPackageDefinition(
-    supportedPackageDefinition: universe.v3.model.SupportedPackageDefinition
-  ): universe.v3.model.SupportedPackageDefinition = {
+    supportedPackageDefinition: universe.v4.model.SupportedPackageDefinition
+  ): universe.v4.model.SupportedPackageDefinition = {
     // TODO package-add: Get release version from creation time in object storage
     val fakeReleaseVersion = universe.v3.model.ReleaseVersion(0L).get()
     supportedPackageDefinition match {
       case v3Package: universe.v3.model.V3Package =>
         v3Package.copy(command = None, releaseVersion = fakeReleaseVersion, selected = None)
+      case v4Package: universe.v4.model.V4Package =>
+        v4Package.copy(releaseVersion = fakeReleaseVersion, selected = None)
     }
   }
 

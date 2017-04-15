@@ -54,7 +54,7 @@ private[cosmos] final class PackageInstallHandler(
   }
 
   private[this] def handlePackageConfig(
-    pkg: universe.v3.model.PackageDefinition,
+    pkg: universe.v4.model.PackageDefinition,
     packageConfig: Either[PackageDefinitionRenderError, Json]
   )(
     implicit session: RequestSession
