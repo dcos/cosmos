@@ -3,13 +3,19 @@ package com.mesosphere.cosmos.render
 import cats.syntax.either._
 import com.github.fge.jsonschema.main.JsonSchemaFactory
 import com.github.mustachejava.DefaultMustacheFactory
+import com.mesosphere.cosmos.bijection.CosmosConversions._
 import com.mesosphere.cosmos.jsonschema.JsonSchema
+import com.mesosphere.cosmos.label
+import com.mesosphere.cosmos.label.v1.circe.Encoders._
 import com.mesosphere.cosmos.thirdparty.marathon.circe.Encoders.encodeAppId
 import com.mesosphere.cosmos.thirdparty.marathon.model.AppId
+import com.mesosphere.cosmos.thirdparty.marathon.model.MarathonApp
 import com.mesosphere.universe
 import com.mesosphere.universe.common.ByteBuffers
+import com.mesosphere.universe.common.JsonUtil
 import com.mesosphere.universe.v3.syntax.PackageDefinitionOps._
 import com.netaporter.uri.Uri
+import com.twitter.bijection.Conversion.asMethod
 import io.circe.Json
 import io.circe.JsonObject
 import io.circe.jawn.parse
@@ -18,10 +24,9 @@ import java.io.StringReader
 import java.io.StringWriter
 import java.nio.ByteBuffer
 import java.nio.charset.StandardCharsets
-import scala.util.Either
-import scala.util.Left
-import scala.util.Right
+import java.util.Base64
 
+// TODO: make sure that we test all of the cases tested in MarathonLabelsSpec
 
 object PackageDefinitionRenderer {
   private[this] final val MustacheFactory = new DefaultMustacheFactory()
@@ -33,54 +38,84 @@ object PackageDefinitionRenderer {
     options: Option[JsonObject],
     marathonAppId: Option[AppId]
   ): Either[PackageDefinitionRenderError, Json] = {
-    pkgDef.marathon match {
-      case None => Left(MissingMarathonV2AppTemplate)
-      case Some(m) =>
-        val defaultOptions = pkgDef.config.map(JsonSchema.extractDefaultsFromSchema)
-        val defaultOptionsAndUserOptions = Seq(
-          defaultOptions,
-          options
-        ).flatten.foldLeft(JsonObject.empty)(merge)
+    pkgDef.marathon.map { marathon =>
+      val defaultOptionsAndUserOptions = (
+        pkgDef.config.map(JsonSchema.extractDefaultsFromSchema).toList ++ options.toList
+      ).foldLeft(JsonObject.empty)(merge)
 
-        validateOptionsAgainstSchema(pkgDef, defaultOptionsAndUserOptions).flatMap { _ =>
-          /* now that we know the users options are valid for the schema, we build up a composite
-           * json object to send into the mustache context for rendering. The following seq
-           * prepares for the merge of all the options, documents at later indices have higher
-           * priority than lower index objects order here is important, DO NOT carelessly re-order.
-           */
-          val mergedOptions = List(
-            Some(defaultOptionsAndUserOptions),
-            pkgDef.resourceJson.map(rj => JsonObject.singleton("resource", rj))
-          ).flatten.foldLeft(JsonObject.empty)(merge)
+      validateOptionsAgainstSchema(pkgDef, defaultOptionsAndUserOptions).flatMap { _ =>
+        /* Now that we know the users options are valid for the schema, we build up a composite
+         * json object to send into the mustache context for rendering. The following seq
+         * prepares for the merge of all the options, documents at later indices have higher
+         * priority than lower index objects order here is important, DO NOT carelessly re-order.
+         */
+        val mergedOptions = (
+          defaultOptionsAndUserOptions ::
+          pkgDef.resourceJson.map(rj => JsonObject.singleton("resource", rj)).toList
+        ).foldLeft(JsonObject.empty)(merge)
 
-          renderTemplate(m.v2AppMustacheTemplate, mergedOptions).flatMap { mJson =>
-            extractLabels(Json.fromJsonObject(mJson))
-              .map { existingLabels =>
-                val labels = MarathonLabels(
-                  pkgDef,
-                  sourceUri,
-                  options.getOrElse(JsonObject.empty)
-                )
-
-                (marathonAppId.map(appIdDoc) ::
-                  generateLabelsPartialObjects(labels, existingLabels).map(Some(_))
-                ).flatten.foldLeft(mJson)(merge)
-              }
-              .map(Json.fromJsonObject)
+        renderTemplate(marathon.v2AppMustacheTemplate, mergedOptions).flatMap { mJson =>
+          extractLabels(mJson.asJson).map { existingLabels =>
+            Json.fromJsonObject(
+              decorateMarathonJson(
+                mJson,
+                sourceUri,
+                pkgDef,
+                options,
+                marathonAppId,
+                existingLabels
+              )
+            )
           }
         }
-    }
+      }
+    } getOrElse Left(MissingMarathonV2AppTemplate)
   }
 
-  private[this] def generateLabelsPartialObjects(
-    labels: MarathonLabels,
-    existingLabels: JsonObject
-  ): List[JsonObject] = {
-    List(
-      JsonObject.singleton("labels", Json.fromJsonObject(labels.requiredLabelsJson)),
-      JsonObject.singleton("labels", Json.fromJsonObject(existingLabels)),
-      JsonObject.singleton("labels", Json.fromJsonObject(labels.nonOverridableLabelsJson))
+  // TODO: Write documentation for what this method is doing.
+  private[this] def decorateMarathonJson(
+    marathonJson: JsonObject,
+    sourceUri: Uri,
+    pkg: universe.v4.model.PackageDefinition,
+    options: Option[JsonObject],
+    marathonAppId: Option[AppId],
+    existingLabels: Json
+  ): JsonObject = {
+    val requiredLabels = Json.fromFields(
+      Map(
+        (MarathonApp.metadataLabel, encodeForLabel(pkg.as[label.v1.model.PackageMetadata].asJson)),
+        (MarathonApp.registryVersionLabel, pkg.packagingVersion.show),
+        (MarathonApp.nameLabel, pkg.name),
+        (MarathonApp.versionLabel, pkg.version.toString),
+        (MarathonApp.repositoryLabel, sourceUri.toString),
+        (MarathonApp.releaseLabel, pkg.releaseVersion.value.toString),
+        (MarathonApp.isFrameworkLabel, pkg.framework.getOrElse(false).toString)
+      ).mapValues(_.asJson)
     )
+
+    val nonOverridableLabels = Json.fromFields(
+      (
+        (
+          MarathonApp.optionsLabel,
+          encodeForLabel(options.getOrElse(JsonObject.empty).asJson)
+        ) ::
+        pkg.command.map { command =>
+          (
+            MarathonApp.commandLabel,
+            encodeForLabel(command.asJson(universe.v3.model.Command.encodeCommand))
+          )
+        }.toList
+      ).toMap.mapValues(_.asJson)
+    )
+
+    (
+      marathonAppId.map(id => JsonObject.singleton("id", id.asJson)).toList ++
+      List(
+        JsonObject.singleton("labels", requiredLabels),
+        JsonObject.singleton("labels", existingLabels),
+        JsonObject.singleton("labels", nonOverridableLabels)
+      )
+    ).foldLeft(marathonJson)(merge)
   }
 
   private[this] def validateOptionsAgainstSchema(
@@ -112,10 +147,6 @@ object PackageDefinitionRenderer {
 
       updatedTarget.add(fragmentKey, mergedValue)
     }
-  }
-
-  private[this] def appIdDoc(appId: AppId): JsonObject = {
-    JsonObject.singleton("id", appId.asJson)
   }
 
   private[this] def renderTemplate(
@@ -151,23 +182,25 @@ object PackageDefinitionRenderer {
     )
   }
 
-  private[this] def extractLabels(obj: Json): Either[PackageDefinitionRenderError, JsonObject] = {
-    val hasLabels = obj.cursor.fieldSet.exists(_.contains("labels"))
-    if (hasLabels) {
-      // this is a bit of a sketchy check since marathon could change underneath us, but we want to try and
-      // surface this error to the user as soon as possible. The check that is being performed here is to ensure
-      // that `.labels` of `obj` is a Map[String, String]. Marathon enforces this and produces a very cryptic
-      // message if not adhered to, so we try and let the user know here where we can craft a more informational
-      // error message.
-      // If marathon ever changes its schema for labels then this code will most likely need a new version with
-      // this version left intact for backward compatibility reasons.
-      obj.cursor.get[Map[String, String]]("labels") match {
-        case Left(err) => Left(InvalidLabelSchema(err))
-        case Right(m) => Right(JsonObject.fromMap(m.mapValues(_.asJson)))
-      }
-    } else {
-      Right(JsonObject.empty)
+  private[this] def extractLabels(
+    obj: Json
+  ): Either[PackageDefinitionRenderError, Json] = {
+    // This is a bit of a sketchy check since marathon could change underneath us, but we want
+    // to try and surface this error to the user as soon as possible. The check that is being
+    // performed here is to ensure that `.labels` of `obj` is a Map[String, String]. Marathon
+    // enforces this and produces a very cryptic message if not adhered to, so we try and let
+    // the user know here where we can craft a more informational error message.
+    // If marathon ever changes its schema for labels then this code will most likely need a
+    // new version with this version left intact for backward compatibility reasons.
+    obj.cursor.getOrElse[Map[String, String]]("labels")(Map.empty) match {
+      case Left(err) => Left(InvalidLabelSchema(err))
+      case Right(labels) => Right(Json.fromFields(labels.mapValues(_.asJson)))
     }
   }
 
+  private[this] def encodeForLabel(json: Json): String = {
+    // TODO: Don't pretty print. Use noSpaces instead
+    val bytes = JsonUtil.dropNullKeysPrinter.pretty(json).getBytes(StandardCharsets.UTF_8)
+    Base64.getEncoder.encodeToString(bytes)
+  }
 }
