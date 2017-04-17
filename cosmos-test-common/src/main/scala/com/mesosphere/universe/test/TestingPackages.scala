@@ -7,6 +7,7 @@ import io.circe.JsonObject
 import io.circe.syntax._
 import java.nio.ByteBuffer
 import java.nio.charset.StandardCharsets
+import org.scalatest.prop.TableFor1
 import org.scalatest.prop.TableFor2
 
 object TestingPackages {
@@ -380,5 +381,14 @@ object TestingPackages {
 
   val MaximalV4ModelPackageDefinitionV4: universe.v4.model.PackageDefinition = MaximalV4ModelV4PackageDefinition
   val MinimalV4ModelPackageDefinitionV4: universe.v4.model.PackageDefinition = MinimalV4ModelV4PackageDefinition
+
+  val supportedPackageDefinitions: TableFor1[universe.v4.model.SupportedPackageDefinition] =
+    new TableFor1(
+      "supportedPackageDefinition",
+      MinimalV3ModelV3PackageDefinition,
+      MaximalV3ModelV3PackageDefinition,
+      MinimalV4ModelV4PackageDefinition,
+      MaximalV4ModelV4PackageDefinition
+    )
 
 }
