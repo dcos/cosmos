@@ -21,6 +21,7 @@ import org.jboss.netty.handler.codec.http.HttpMethod
 import scala.util.control.NoStackTrace
 
 // scalastyle:off number.of.types
+
 sealed abstract class CosmosError(
   causedBy: Option[Throwable] = None
 ) extends RuntimeException(causedBy.orNull) {
