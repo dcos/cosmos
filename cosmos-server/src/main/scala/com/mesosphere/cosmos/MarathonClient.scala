@@ -1,6 +1,7 @@
 package com.mesosphere.cosmos
 
 import _root_.io.circe.Json
+import _root_.io.circe.JsonObject
 import com.mesosphere.cosmos.http.RequestSession
 import com.mesosphere.cosmos.thirdparty.marathon.circe.Decoders._
 import com.mesosphere.cosmos.thirdparty.marathon.model.{AppId, MarathonAppResponse, MarathonAppsResponse}
@@ -16,8 +17,8 @@ class MarathonClient(
   client: Service[Request, Response]
 ) extends ServiceClient(marathonUri) {
 
-  def createApp(appJson: Json)(implicit session: RequestSession): Future[Response] = {
-    client(post("v2" / "apps" , appJson))
+  def createApp(appJson: JsonObject)(implicit session: RequestSession): Future[Response] = {
+    client(post("v2" / "apps" , Json.fromJsonObject(appJson)))
   }
 
   def getAppOption(appId: AppId)(implicit session: RequestSession): Future[Option[MarathonAppResponse]] = {

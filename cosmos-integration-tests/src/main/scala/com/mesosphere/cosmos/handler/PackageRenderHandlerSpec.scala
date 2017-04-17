@@ -24,20 +24,20 @@ class PackageRenderHandlerSpec extends FreeSpec {
   "PackageRenderHandler should" - {
 
     "succeed when attempting to render a service with a marathon template" in {
-      val expectedBody = RenderResponse(Json.fromFields(Seq(
+      val expectedBody = RenderResponse(JsonObject.fromIterable(List(
         "id" -> "helloworld".asJson,
         "cpus" -> 1.0.asJson,
         "mem" -> 512.asJson,
         "instances" -> 1.asJson,
         "cmd" -> "python3 -m http.server 8080".asJson,
-        "container" -> Json.fromFields(Seq(
+        "container" -> Json.fromFields(List(
           "type" -> "DOCKER".asJson,
-          "docker" -> Json.fromFields(Seq(
+          "docker" -> Json.fromFields(List(
             "image" -> "python:3".asJson,
             "network" -> "HOST".asJson
           ))
         )),
-        "labels" -> Json.fromFields(Seq(
+        "labels" -> Json.fromFields(List(
           "DCOS_PACKAGE_RELEASE" -> "0".asJson,
           "DCOS_PACKAGE_SOURCE" ->
             "https://downloads.mesosphere.com/universe/helloworld.zip".asJson,

@@ -1,8 +1,11 @@
 package com.mesosphere.cosmos.render
 
 import cats.syntax.either._
+import com.mesosphere.cosmos.circe.Decoders.parse64
 import com.mesosphere.cosmos.thirdparty.marathon.circe.Decoders.decodeAppId
 import com.mesosphere.cosmos.thirdparty.marathon.model.AppId
+import com.mesosphere.cosmos.thirdparty.marathon.model.MarathonApp
+import com.mesosphere.universe.common.JsonUtil
 import com.mesosphere.universe.v3.model._
 import com.netaporter.uri.dsl._
 import io.circe.Json
@@ -13,12 +16,11 @@ import io.circe.syntax._
 import java.nio.ByteBuffer
 import java.nio.charset.StandardCharsets
 import org.scalatest.FreeSpec
+import org.scalatest.Matchers
 import org.scalatest.prop.TableDrivenPropertyChecks
 import scala.io.Source
-import scala.util.Left
-import scala.util.Right
 
-class PackageDefinitionRendererSpec extends FreeSpec with TableDrivenPropertyChecks {
+class PackageDefinitionRendererSpec extends FreeSpec with Matchers with TableDrivenPropertyChecks {
 
   "if .labels from .marathon.v2AppMustacheTemplate " - {
     "isn't Map[String, String] an error is returned" in {
@@ -59,7 +61,7 @@ class PackageDefinitionRendererSpec extends FreeSpec with TableDrivenPropertyChe
         pd,
         None,
         None
-      ).right.get.hcursor.downField("env").downField("some").as[String]
+      ).right.get.asJson.hcursor.downField("env").downField("some").as[String]
 
       assertResult("thing")(some)
     }
@@ -75,7 +77,7 @@ class PackageDefinitionRendererSpec extends FreeSpec with TableDrivenPropertyChe
 
       val Right(rendered) = PackageDefinitionRenderer.renderMarathonV2App("http://someplace", pkg, None, None)
 
-      val Right(labels) = rendered.cursor.get[Map[String, String]]("labels")
+      val Right(labels) = rendered.asJson.cursor.get[Map[String, String]]("labels")
       assertResult("A")(labels("a"))
       assertResult("B")(labels("b"))
     }
@@ -83,13 +85,7 @@ class PackageDefinitionRendererSpec extends FreeSpec with TableDrivenPropertyChe
 
   "Merging JSON objects" - {
 
-    "should pass on all examples" in {
-      forAll (Examples) { (defaultsJson, optionsJson, mergedJson) =>
-        assertResult(mergedJson)(PackageDefinitionRenderer.merge(defaultsJson, optionsJson))
-      }
-    }
-
-    "should happen as part of package install" in {
+    "should happen as part of marathon AppDefinition rendering" in {
       forAll (Examples) { (defaultsJson, optionsJson, mergedJson) =>
         val packageName = "options-test"
         val mustacheTemplate = buildMustacheTemplate(mergedJson)
@@ -111,7 +107,7 @@ class PackageDefinitionRendererSpec extends FreeSpec with TableDrivenPropertyChe
           packageDefinition,
           Some(optionsJson),
           None
-        ).map(_.asObject.get)
+        )
 
         val expectedOptions = keyValify(mergedJson)
         val hasAllOptions = expectedOptions.forall { case (k, v) =>
@@ -182,24 +178,31 @@ class PackageDefinitionRendererSpec extends FreeSpec with TableDrivenPropertyChe
       ).asObject.get
 
       val appId = AppId("/override")
-      val Right(rendered) = PackageDefinitionRenderer.renderMarathonV2App(
+      val renderedFocus = PackageDefinitionRenderer.renderMarathonV2App(
         "http://someplace",
         pkg,
         Some(options),
         Some(appId)
-      )
+      ).right.get.asJson.hcursor
 
-      val Right(actualAppId) = rendered.cursor.get[AppId]("id")
-      assertResult(appId)(actualAppId)
 
-      val Right(actualUri) = rendered.cursor.get[String]("uri")
-      assertResult("http://someplace/blob")(actualUri)
+      renderedFocus.get[AppId]("id") shouldBe Right(appId)
+      renderedFocus.get[String]("uri") shouldBe Right("http://someplace/blob")
 
-      val Right(actualDcosPackageName) = rendered.hcursor.downField("labels").get[String]("DCOS_PACKAGE_NAME")
-      assertResult("testing-name")(actualDcosPackageName)
+      // Test that all of the labels are set correctly
+      val labelFocus = renderedFocus.downField("labels")
 
-      val Right(actualDcosPackageCommand) = rendered.hcursor.downField("labels").get[String]("DCOS_PACKAGE_COMMAND")
-      assert(actualDcosPackageCommand !== "should-be-overridden-cmd")
+      labelFocus.get[String](MarathonApp.isFrameworkLabel) shouldBe Right("false")
+      labelFocus.get[String](MarathonApp.nameLabel) shouldBe Right("test")
+      labelFocus.get[String](MarathonApp.registryVersionLabel) shouldBe Right("2.0")
+      labelFocus.get[String](MarathonApp.releaseLabel) shouldBe Right("0")
+      labelFocus.get[String](MarathonApp.repositoryLabel) shouldBe Right("http://someplace")
+      labelFocus.get[String](MarathonApp.versionLabel) shouldBe Right("1.2.3")
+      labelFocus.get[String](MarathonApp.commandLabel).map(parse64(_)) shouldBe
+        Right(pkg.command.asJson)
+      labelFocus.get[String](MarathonApp.optionsLabel).map(parse64(_)) shouldBe Right(options)
+
+      // TODO: Fix this! labelFocus.get[String](MarathonApp.metadataLabel).map(decode64[MetadataLabel](_))
     }
 
   }
@@ -296,12 +299,12 @@ class PackageDefinitionRendererSpec extends FreeSpec with TableDrivenPropertyChe
       ).asObject.get
 
       val appId = AppId("/override")
-      val Right(rendered) = PackageDefinitionRenderer.renderMarathonV2App(
+      val rendered = PackageDefinitionRenderer.renderMarathonV2App(
         "http://someplace",
         pkg,
         Some(options),
         Some(appId)
-      )
+      ).right.get.asJson
 
       val Right(actualAppId) = rendered.cursor.get[AppId]("id")
       assertResult(appId)(actualAppId)
@@ -330,7 +333,12 @@ class PackageDefinitionRendererSpec extends FreeSpec with TableDrivenPropertyChe
             ))
           ))
         )
-        val Right(rendered) = PackageDefinitionRenderer.renderMarathonV2App("http://someplace", pkg, None, None)
+        val rendered = PackageDefinitionRenderer.renderMarathonV2App(
+          "http://someplace",
+          pkg,
+          None,
+          None
+        ).right.get.asJson
 
         val Right(renderedValue) = rendered.cursor.get[String]("some")
         assertResult("http://someplace/blob")(renderedValue)
@@ -358,7 +366,12 @@ class PackageDefinitionRendererSpec extends FreeSpec with TableDrivenPropertyChe
             ))
           ))
         )
-        val Right(rendered) = PackageDefinitionRenderer.renderMarathonV2App("http://someplace", pkg, None, None)
+        val rendered = PackageDefinitionRenderer.renderMarathonV2App(
+          "http://someplace",
+          pkg,
+          None,
+          None
+        ).right.get.asJson
 
         val Right(renderedValue) = rendered.cursor.get[String]("some")
         assertResult("http://someplace/blob")(renderedValue)

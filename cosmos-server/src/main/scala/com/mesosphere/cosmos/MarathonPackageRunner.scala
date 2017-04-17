@@ -1,6 +1,6 @@
 package com.mesosphere.cosmos
 
-import _root_.io.circe.Json
+import _root_.io.circe.JsonObject
 import com.mesosphere.cosmos.circe.Decoders.decode
 import com.mesosphere.cosmos.http.RequestSession
 import com.mesosphere.cosmos.thirdparty.marathon.circe.Decoders._
@@ -14,7 +14,7 @@ import scala.util.Try
 /** A [[com.mesosphere.cosmos.PackageRunner]] implementation for Marathon. */
 final class MarathonPackageRunner(adminRouter: AdminRouter) extends PackageRunner {
 
-  def launch(renderedConfig: Json)(implicit session: RequestSession): Future[MarathonApp] = {
+  def launch(renderedConfig: JsonObject)(implicit session: RequestSession): Future[MarathonApp] = {
     adminRouter.createApp(renderedConfig)
       .map { response =>
         response.status match {

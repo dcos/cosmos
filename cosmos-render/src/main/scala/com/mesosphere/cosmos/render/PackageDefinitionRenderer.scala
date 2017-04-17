@@ -37,11 +37,11 @@ object PackageDefinitionRenderer {
     pkgDef: universe.v4.model.PackageDefinition,
     options: Option[JsonObject],
     marathonAppId: Option[AppId]
-  ): Either[PackageDefinitionRenderError, Json] = {
+  ): Either[PackageDefinitionRenderError, JsonObject] = {
     pkgDef.marathon.map { marathon =>
       val defaultOptionsAndUserOptions = (
         pkgDef.config.map(JsonSchema.extractDefaultsFromSchema).toList ++ options.toList
-      ).foldLeft(JsonObject.empty)(merge)
+      ).foldLeft(JsonObject.empty)(JsonUtil.merge)
 
       validateOptionsAgainstSchema(pkgDef, defaultOptionsAndUserOptions).flatMap { _ =>
         /* Now that we know the users options are valid for the schema, we build up a composite
@@ -52,19 +52,17 @@ object PackageDefinitionRenderer {
         val mergedOptions = (
           defaultOptionsAndUserOptions ::
           pkgDef.resourceJson.map(rj => JsonObject.singleton("resource", rj)).toList
-        ).foldLeft(JsonObject.empty)(merge)
+        ).foldLeft(JsonObject.empty)(JsonUtil.merge)
 
         renderTemplate(marathon.v2AppMustacheTemplate, mergedOptions).flatMap { mJson =>
           extractLabels(mJson.asJson).map { existingLabels =>
-            Json.fromJsonObject(
-              decorateMarathonJson(
-                mJson,
-                sourceUri,
-                pkgDef,
-                options,
-                marathonAppId,
-                existingLabels
-              )
+            decorateMarathonJson(
+              mJson,
+              sourceUri,
+              pkgDef,
+              options,
+              marathonAppId,
+              existingLabels
             )
           }
         }
@@ -72,7 +70,12 @@ object PackageDefinitionRenderer {
     } getOrElse Left(MissingMarathonV2AppTemplate)
   }
 
-  // TODO: Write documentation for what this method is doing.
+  /** Decorate the Marathon AppDefinition with package specific information.
+   *
+   *  As part of the rendering process we need to override or guarantee that certain labels
+   *  exists. This method add such labels to the AppDefinition and optionally overrides the
+   *  application id.
+   */
   private[this] def decorateMarathonJson(
     marathonJson: JsonObject,
     sourceUri: Uri,
@@ -83,18 +86,36 @@ object PackageDefinitionRenderer {
   ): JsonObject = {
     val requiredLabels = Json.fromFields(
       Map(
-        (MarathonApp.metadataLabel, encodeForLabel(pkg.as[label.v1.model.PackageMetadata].asJson)),
-        (MarathonApp.registryVersionLabel, pkg.packagingVersion.show),
-        (MarathonApp.nameLabel, pkg.name),
-        (MarathonApp.versionLabel, pkg.version.toString),
-        (MarathonApp.repositoryLabel, sourceUri.toString),
-        (MarathonApp.releaseLabel, pkg.releaseVersion.value.toString),
         (MarathonApp.isFrameworkLabel, pkg.framework.getOrElse(false).toString)
       ).mapValues(_.asJson)
     )
 
     val nonOverridableLabels = Json.fromFields(
       (
+        (
+          MarathonApp.metadataLabel,
+          encodeForLabel(pkg.as[label.v1.model.PackageMetadata].asJson)
+        ) ::
+        (
+          MarathonApp.registryVersionLabel,
+          pkg.packagingVersion.show
+        ) ::
+        (
+          MarathonApp.nameLabel,
+          pkg.name
+        ) ::
+        (
+          MarathonApp.versionLabel,
+          pkg.version.toString
+        ) ::
+        (
+          MarathonApp.repositoryLabel,
+          sourceUri.toString
+        ) ::
+        (
+          MarathonApp.releaseLabel,
+          pkg.releaseVersion.value.toString
+        ) ::
         (
           MarathonApp.optionsLabel,
           encodeForLabel(options.getOrElse(JsonObject.empty).asJson)
@@ -115,7 +136,7 @@ object PackageDefinitionRenderer {
         JsonObject.singleton("labels", existingLabels),
         JsonObject.singleton("labels", nonOverridableLabels)
       )
-    ).foldLeft(marathonJson)(merge)
+    ).foldLeft(marathonJson)(JsonUtil.merge)
   }
 
   private[this] def validateOptionsAgainstSchema(
@@ -134,20 +155,6 @@ object PackageDefinitionRenderer {
     }
   }
 
-  private[render] def merge(target: JsonObject, fragment: JsonObject): JsonObject = {
-    fragment.toList.foldLeft(target) { (updatedTarget, fragmentEntry) =>
-      val (fragmentKey, fragmentValue) = fragmentEntry
-      val targetValueOpt = updatedTarget(fragmentKey)
-
-      val mergedValue = (targetValueOpt.flatMap(_.asObject), fragmentValue.asObject) match {
-        case (Some(targetObject), Some(fragmentObject)) =>
-          Json.fromJsonObject(merge(targetObject, fragmentObject))
-        case _ => fragmentValue
-      }
-
-      updatedTarget.add(fragmentKey, mergedValue)
-    }
-  }
 
   private[this] def renderTemplate(
     template: ByteBuffer,
@@ -199,7 +206,6 @@ object PackageDefinitionRenderer {
   }
 
   private[this] def encodeForLabel(json: Json): String = {
-    // TODO: Don't pretty print. Use noSpaces instead
     val bytes = JsonUtil.dropNullKeysPrinter.pretty(json).getBytes(StandardCharsets.UTF_8)
     Base64.getEncoder.encodeToString(bytes)
   }
