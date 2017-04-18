@@ -37,6 +37,7 @@ package object model {
       originUri <- Try(Uri.parse(repoValue)).toOption
     } yield PackageOrigin(originUri)
 
+    // TODO: This needs to be optional in the next PR when we persist the PkgDef envelope
     def packageMetadata: label.v1.model.PackageMetadata = {
       decode64[label.v1.model.PackageMetadata](
         app.labels.get(MarathonApp.metadataLabel).getOrElse("")

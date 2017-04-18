@@ -3,7 +3,6 @@ package com.mesosphere.cosmos.handler
 import com.mesosphere.cosmos.AdminRouter
 import com.mesosphere.cosmos.PackageNotFound
 import com.mesosphere.cosmos.converter.Label._
-import com.mesosphere.cosmos.converter.Response._
 import com.mesosphere.cosmos.finch.EndpointHandler
 import com.mesosphere.cosmos.http.RequestSession
 import com.mesosphere.cosmos.internal.model.MarathonAppOps
@@ -27,14 +26,6 @@ private[cosmos] final class ListHandler(
   repositories: (Uri) => Future[Option[CosmosRepository]]
 ) extends EndpointHandler[rpc.v1.model.ListRequest, rpc.v1.model.ListResponse] {
 
-  private case class App(
-    id: thirdparty.marathon.model.AppId,
-    pkgName: String,
-    pkgReleaseVersion: universe.v3.model.ReleaseVersion,
-    repoUri: PackageOrigin,
-    pkgMetadata: label.v1.model.PackageMetadata
-  )
-
   override def apply(
     request: rpc.v1.model.ListRequest
   )(
@@ -42,11 +33,10 @@ private[cosmos] final class ListHandler(
   ): Future[rpc.v1.model.ListResponse] = {
     for {
       apps <- getApplications(adminRouter, request)
-      repoAssocs <- getRepositoryAssociations(repositories, apps)
-      installs <- getInstallations(repoAssocs)
     } yield {
-      rpc.v1.model.ListResponse(installs.sortBy(install =>
+      rpc.v1.model.ListResponse(apps.sortBy(install =>
         (install.packageInformation.packageDefinition.name, install.appId)))
+
     }
   }
 
@@ -55,7 +45,7 @@ private[cosmos] final class ListHandler(
     request: rpc.v1.model.ListRequest
   )(
     implicit session: RequestSession
-  ): Future[Seq[App]] = {
+  ): Future[Seq[rpc.v1.model.Installation]] = {
 
     def satisfiesRequest(app: thirdparty.marathon.model.MarathonApp): Boolean = {
       // corner case: packageReleaseVersion will be None if parsing the label fails
@@ -67,64 +57,17 @@ private[cosmos] final class ListHandler(
     }
 
     adminRouter.listApps().map { response =>
-      response.apps.collect{
+      response.apps.collect {
         case app if satisfiesRequest(app) =>
-          App(
+          rpc.v1.model.Installation(
             app.id,
-            app.packageName.get,
-            app.packageReleaseVersion.get,
-            app.packageRepository.get,
-            app.packageMetadata
+            decodeInstalledPackageInformation(app)
           )
       }
     }
   }
 
-  private[this] def getRepositoryAssociations(
-    repositories: (Uri) => Future[Option[CosmosRepository]],
-    apps: Seq[App]
-  ): Future[Seq[(App, Option[CosmosRepository])]] = {
-    Future.collect {
-      apps.map { app =>
-        repositories(app.repoUri.uri).map(repo => (app, repo))
-      }
-    }
-  }
-
-  private[this] def getInstallations(
-    assocs: Seq[(App, Option[CosmosRepository])]
-  )(
-    implicit session: RequestSession
-  ): Future[Seq[rpc.v1.model.Installation]] = {
-    Future.collect {
-      assocs.map {
-        case (app, Some(repo)) =>
-          repo
-            .getPackageByReleaseVersion(app.pkgName, app.pkgReleaseVersion)
-            .map { pkg =>
-              /* Note: The old code dropped CLI information when returning information to the
-               * client. We will fix this when we move to the new APIs.
-               *
-               * The clients expect the both selected and framework to be set.
-               */
-              val adjustedPackage: PackageDefinition = setSelectedAndFramework(pkg)
-              adjustedPackage.as[Try[rpc.v1.model.InstalledPackageInformation]]
-            }.lowerFromTry
-            .handle {
-              case PackageNotFound(_) =>
-                /* If for some reason the package is not part of the repo anymore we should use
-                 * the information stored with the application
-                 */
-                decodeInstalledPackageInformation(app)
-            }.map { pkgInfo =>
-              rpc.v1.model.Installation(app.id, pkgInfo)
-            }
-        case (app, None) =>
-          Future(rpc.v1.model.Installation(app.id, decodeInstalledPackageInformation(app)))
-      }
-    }
-  }
-
+  /* TODO: this may be helpful when we have PackageDefinition => Installation
   private[this] def setSelectedAndFramework(
     pkg: universe.v4.model.PackageDefinition
   ): universe.v4.model.PackageDefinition = {
@@ -148,11 +91,13 @@ private[cosmos] final class ListHandler(
         )
     }
   }
+  */
 
   private[this] def decodeInstalledPackageInformation(
-    app: App
+    app: thirdparty.marathon.model.MarathonApp
   ): rpc.v1.model.InstalledPackageInformation = {
-    app.pkgMetadata.as[rpc.v1.model.InstalledPackageInformation]
+    // TODO: We nee to fix this in the next PR when we optionally persist this
+    app.packageMetadata.as[rpc.v1.model.InstalledPackageInformation]
   }
 
 }
