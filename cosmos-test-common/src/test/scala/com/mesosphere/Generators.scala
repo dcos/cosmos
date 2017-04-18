@@ -96,9 +96,23 @@ object Generators {
     }
   }
 
+  // <block>
+  // This is just here to tell you that you need to update the generator below,
+  // when you add a new packaging version
+  // This is a little hacky but worth the error
+  def checkExhaustiveness(
+    supportedPackage: universe.v4.model.SupportedPackageDefinition
+  ): Gen[universe.v4.model.SupportedPackageDefinition] = {
+    supportedPackage match {
+      case _: universe.v3.model.V3Package => Gen.oneOf(genV3Package, genV4Package)
+      case _: universe.v4.model.V4Package => Gen.oneOf(genV4Package, genV3Package)
+    }
+  }
+
   val genSupportedPackageDefinition: Gen[universe.v4.model.SupportedPackageDefinition] = {
     Gen.oneOf(genV4Package, genV3Package)
   }
+  // </block>
 
   private val genByteBuffer: Gen[ByteBuffer] = arbitrary[Array[Byte]].map(ByteBuffer.wrap)
 
