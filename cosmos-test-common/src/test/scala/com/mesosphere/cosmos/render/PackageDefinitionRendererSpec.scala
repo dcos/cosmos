@@ -1,13 +1,18 @@
 package com.mesosphere.cosmos.render
 
 import cats.syntax.either._
+import com.mesosphere.cosmos.bijection.CosmosConversions._
+import com.mesosphere.cosmos.circe.Decoders.decode64
 import com.mesosphere.cosmos.circe.Decoders.parse64
+import com.mesosphere.cosmos.label
+import com.mesosphere.cosmos.label.v1.circe.Decoders._
 import com.mesosphere.cosmos.thirdparty.marathon.circe.Decoders.decodeAppId
 import com.mesosphere.cosmos.thirdparty.marathon.model.AppId
 import com.mesosphere.cosmos.thirdparty.marathon.model.MarathonApp
 import com.mesosphere.universe.common.JsonUtil
 import com.mesosphere.universe.v3.model._
 import com.netaporter.uri.dsl._
+import com.twitter.bijection.Conversion.asMethod
 import io.circe.Json
 import io.circe.JsonObject
 import io.circe.ParsingFailure
@@ -198,11 +203,15 @@ class PackageDefinitionRendererSpec extends FreeSpec with Matchers with TableDri
       labelFocus.get[String](MarathonApp.releaseLabel) shouldBe Right("0")
       labelFocus.get[String](MarathonApp.repositoryLabel) shouldBe Right("http://someplace")
       labelFocus.get[String](MarathonApp.versionLabel) shouldBe Right("1.2.3")
-      labelFocus.get[String](MarathonApp.commandLabel).map(parse64(_)) shouldBe
-        Right(pkg.command.asJson)
-      labelFocus.get[String](MarathonApp.optionsLabel).map(parse64(_)) shouldBe Right(options)
-
-      // TODO: Fix this! labelFocus.get[String](MarathonApp.metadataLabel).map(decode64[MetadataLabel](_))
+      labelFocus.get[String](MarathonApp.commandLabel).map(
+        parse64(_)
+      ) shouldBe Right(pkg.command.asJson)
+      labelFocus.get[String](MarathonApp.optionsLabel).map(
+        parse64(_)
+      ) shouldBe Right(options.asJson)
+      labelFocus.get[String](MarathonApp.metadataLabel).map(
+        decode64[label.v1.model.PackageMetadata](_)
+      ) shouldBe Right(pkg.as[label.v1.model.PackageMetadata])
     }
 
   }

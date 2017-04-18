@@ -26,7 +26,6 @@ import java.nio.ByteBuffer
 import java.nio.charset.StandardCharsets
 import java.util.Base64
 
-// TODO: make sure that we test all of the cases tested in MarathonLabelsSpec
 
 object PackageDefinitionRenderer {
   private[this] final val MustacheFactory = new DefaultMustacheFactory()
@@ -70,6 +69,53 @@ object PackageDefinitionRenderer {
     } getOrElse Left(MissingMarathonV2AppTemplate)
   }
 
+  private[this] def requiredLabels(pkg: universe.v4.model.PackageDefinition): Json = {
+    Json.fromFields(
+      Map(
+        (MarathonApp.isFrameworkLabel, pkg.framework.getOrElse(false).toString)
+      ).mapValues(_.asJson)
+    )
+  }
+
+  private[this] def nonOverridableLabels(
+    pkg: universe.v4.model.PackageDefinition,
+    sourceUri: Uri,
+    options: Option[JsonObject]
+  ): Json = {
+    Json.fromFields(
+      (
+        (
+          MarathonApp.metadataLabel, encodeForLabel(pkg.as[label.v1.model.PackageMetadata].asJson)
+        ) ::
+        (
+          MarathonApp.registryVersionLabel, pkg.packagingVersion.show
+        ) ::
+        (
+          MarathonApp.nameLabel, pkg.name
+        ) ::
+        (
+          MarathonApp.versionLabel, pkg.version.toString
+        ) ::
+        (
+          MarathonApp.repositoryLabel, sourceUri.toString
+        ) ::
+        (
+          MarathonApp.releaseLabel, pkg.releaseVersion.value.toString
+        ) ::
+        (
+          MarathonApp.optionsLabel, encodeForLabel(options.getOrElse(JsonObject.empty).asJson)
+        ) ::
+        pkg.command.map { command =>
+          (
+            MarathonApp.commandLabel,
+            encodeForLabel(command.asJson(universe.v3.model.Command.encodeCommand))
+          )
+        }.toList
+      ).toMap.mapValues(_.asJson)
+    )
+  }
+
+
   /** Decorate the Marathon AppDefinition with package specific information.
    *
    *  As part of the rendering process we need to override or guarantee that certain labels
@@ -84,57 +130,12 @@ object PackageDefinitionRenderer {
     marathonAppId: Option[AppId],
     existingLabels: Json
   ): JsonObject = {
-    val requiredLabels = Json.fromFields(
-      Map(
-        (MarathonApp.isFrameworkLabel, pkg.framework.getOrElse(false).toString)
-      ).mapValues(_.asJson)
-    )
-
-    val nonOverridableLabels = Json.fromFields(
-      (
-        (
-          MarathonApp.metadataLabel,
-          encodeForLabel(pkg.as[label.v1.model.PackageMetadata].asJson)
-        ) ::
-        (
-          MarathonApp.registryVersionLabel,
-          pkg.packagingVersion.show
-        ) ::
-        (
-          MarathonApp.nameLabel,
-          pkg.name
-        ) ::
-        (
-          MarathonApp.versionLabel,
-          pkg.version.toString
-        ) ::
-        (
-          MarathonApp.repositoryLabel,
-          sourceUri.toString
-        ) ::
-        (
-          MarathonApp.releaseLabel,
-          pkg.releaseVersion.value.toString
-        ) ::
-        (
-          MarathonApp.optionsLabel,
-          encodeForLabel(options.getOrElse(JsonObject.empty).asJson)
-        ) ::
-        pkg.command.map { command =>
-          (
-            MarathonApp.commandLabel,
-            encodeForLabel(command.asJson(universe.v3.model.Command.encodeCommand))
-          )
-        }.toList
-      ).toMap.mapValues(_.asJson)
-    )
-
     (
       marathonAppId.map(id => JsonObject.singleton("id", id.asJson)).toList ++
       List(
-        JsonObject.singleton("labels", requiredLabels),
+        JsonObject.singleton("labels", requiredLabels(pkg)),
         JsonObject.singleton("labels", existingLabels),
-        JsonObject.singleton("labels", nonOverridableLabels)
+        JsonObject.singleton("labels", nonOverridableLabels(pkg, sourceUri, options))
       )
     ).foldLeft(marathonJson)(JsonUtil.merge)
   }
