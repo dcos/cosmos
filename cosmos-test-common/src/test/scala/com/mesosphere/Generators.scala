@@ -79,13 +79,19 @@ object Generators {
   }
 
   val genV4Package: Gen[universe.v4.model.V4Package] = {
-    genV3Package.map { v3 =>
+    for {
+      upgradesFrom <- Gen.option(Gen.listOf(genVersion))
+      downgradesTo <- Gen.option(Gen.listOf(genVersion))
+      v3 <- genV3Package
+    } yield {
       universe.v4.model.V4Package(
         name = v3.name,
         version = v3.version,
         releaseVersion = v3.releaseVersion,
         maintainer = v3.maintainer,
-        description = v3.description
+        description = v3.description,
+        upgradesFrom = upgradesFrom,
+        downgradesTo = downgradesTo
       )
     }
   }
