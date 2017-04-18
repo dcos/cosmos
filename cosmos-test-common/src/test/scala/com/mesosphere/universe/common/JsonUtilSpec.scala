@@ -37,29 +37,41 @@ class JsonUtilSpec extends FreeSpec with TableDrivenPropertyChecks {
     ("defaults JSON", "options JSON", "merged JSON"),
     (JsonObject.empty, JsonObject.empty, JsonObject.empty),
 
-    (JsonObject.empty,
-      JsonObject.singleton("a", Json.False),
-      JsonObject.singleton("a", Json.False)),
-
-    (JsonObject.singleton("a", Json.False),
+    (
       JsonObject.empty,
-      JsonObject.singleton("a", Json.False)),
-
-    (JsonObject.singleton("a", Json.False),
       JsonObject.singleton("a", Json.False),
-      JsonObject.singleton("a", Json.False)),
-
-    (JsonObject.singleton("a", Json.obj("a" -> Json.False)),
-      JsonObject.singleton("a", Json.obj()),
-      JsonObject.singleton("a", Json.obj("a" -> Json.False))),
-
-    (JsonObject.singleton("a", Json.obj("a" -> Json.False)),
+      JsonObject.singleton("a", Json.False)
+    ),
+    (
+      JsonObject.singleton("a", Json.False),
+      JsonObject.empty,
+      JsonObject.singleton("a", Json.False)
+    ),
+    (
+      JsonObject.singleton("a", Json.False),
+      JsonObject.singleton("a", Json.True),
+      JsonObject.singleton("a", Json.True)
+    ),
+    (
       JsonObject.singleton("a", Json.obj("a" -> Json.False)),
-      JsonObject.singleton("a", Json.obj("a" -> Json.False))),
-
-    (JsonObject.singleton("a", Json.obj("a" -> Json.False)),
+      JsonObject.singleton("a", Json.obj()),
+      JsonObject.singleton("a", Json.obj("a" -> Json.False))
+    ),
+    (
+      JsonObject.singleton("a", Json.obj("a" -> Json.False)),
+      JsonObject.singleton("a", Json.obj("a" -> Json.True)),
+      JsonObject.singleton("a", Json.obj("a" -> Json.True))
+    ),
+    (
+      JsonObject.singleton("a", Json.obj("a" -> Json.False)),
       JsonObject.singleton("a", Json.obj("b" -> Json.False)),
-      JsonObject.singleton("a", Json.obj("a" -> Json.False, "b" -> Json.False)))
+      JsonObject.singleton("a", Json.obj("a" -> Json.False, "b" -> Json.False))
+    ),
+    (
+      JsonObject.singleton("a", Json.obj("a" -> Json.False)),
+      JsonObject.singleton("a", Json.True),
+      JsonObject.singleton("a", Json.True)
+    )
   )
 
 }
