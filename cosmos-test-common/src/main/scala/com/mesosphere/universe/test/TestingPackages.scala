@@ -391,4 +391,15 @@ object TestingPackages {
       MaximalV4ModelV4PackageDefinition
     )
 
+  val packageDefinitions: TableFor1[universe.v4.model.PackageDefinition] =
+    new TableFor1(
+      "packageDefinition",
+      MinimalV3ModelV2PackageDefinition,
+      MaximalV3ModelV2PackageDefinition,
+      MinimalV3ModelV3PackageDefinition,
+      MaximalV3ModelV3PackageDefinition,
+      MinimalV4ModelV4PackageDefinition,
+      MaximalV4ModelV4PackageDefinition
+    )
+
 }
