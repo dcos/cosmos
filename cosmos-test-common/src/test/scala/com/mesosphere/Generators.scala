@@ -96,7 +96,6 @@ object Generators {
     }
   }
 
-  // <block>
   // This is just here to tell you that you need to update the generator below,
   // when you add a new packaging version
   // This is a little hacky but worth the error
@@ -112,7 +111,6 @@ object Generators {
   val genSupportedPackageDefinition: Gen[universe.v4.model.SupportedPackageDefinition] = {
     Gen.oneOf(genV4Package, genV3Package)
   }
-  // </block>
 
   private val genByteBuffer: Gen[ByteBuffer] = arbitrary[Array[Byte]].map(ByteBuffer.wrap)
 
