@@ -1,6 +1,6 @@
 package com.mesosphere.cosmos
 
-import _root_.io.circe.Json
+import _root_.io.circe.JsonObject
 import com.mesosphere.cosmos.http.RequestSession
 import com.mesosphere.cosmos.thirdparty.adminrouter.model.DcosVersion
 import com.mesosphere.cosmos.thirdparty.marathon.model.{AppId, MarathonAppResponse, MarathonAppsResponse}
@@ -14,7 +14,7 @@ class AdminRouter(
   mesos: MesosMasterClient
 ) {
 
-  def createApp(appJson: Json)(implicit session: RequestSession): Future[Response] = marathon.createApp(appJson)
+  def createApp(appJson: JsonObject)(implicit session: RequestSession): Future[Response] = marathon.createApp(appJson)
 
   def getAppOption(appId: AppId)(implicit session: RequestSession): Future[Option[MarathonAppResponse]] = marathon.getAppOption(appId)
 

@@ -128,8 +128,9 @@ final class PackageDefinitionOps(val pkgDef: universe.v4.model.PackageDefinition
   }
 
   def v3Resource: Option[universe.v3.model.V3Resource] = pkgDef match {
-    case v2: universe.v3.model.V2Package => v2.resource.map { case universe.v3.model.V2Resource(assets, images) =>
-      universe.v3.model.V3Resource(assets, images)
+    case v2: universe.v3.model.V2Package => v2.resource.map {
+      case universe.v3.model.V2Resource(assets, images) =>
+        universe.v3.model.V3Resource(assets, images)
     }
     case v3: universe.v3.model.V3Package => v3.resource
     case v4: universe.v4.model.V4Package => v4.resource

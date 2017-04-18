@@ -23,7 +23,7 @@ import com.mesosphere.universe.bijection.UniverseConversions._
 import com.mesosphere.universe.v3.syntax.PackageDefinitionOps._
 import com.twitter.bijection.Conversion.asMethod
 import com.twitter.util.Future
-import io.circe.Json
+import io.circe.JsonObject
 import io.circe.syntax._
 
 private[cosmos] final class PackageInstallHandler(
@@ -55,7 +55,7 @@ private[cosmos] final class PackageInstallHandler(
 
   private[this] def handlePackageConfig(
     pkg: universe.v4.model.PackageDefinition,
-    packageConfig: Either[PackageDefinitionRenderError, Json]
+    packageConfig: Either[PackageDefinitionRenderError, JsonObject]
   )(
     implicit session: RequestSession
   ): Future[rpc.v2.model.InstallResponse] = packageConfig match {
