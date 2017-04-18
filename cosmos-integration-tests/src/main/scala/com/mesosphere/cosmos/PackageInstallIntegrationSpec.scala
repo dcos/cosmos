@@ -14,7 +14,6 @@ import com.mesosphere.cosmos.rpc.v1.model.InstallRequest
 import com.mesosphere.cosmos.rpc.v1.model.InstallResponse
 import com.mesosphere.cosmos.rpc.v2.circe.Decoders._
 import com.mesosphere.cosmos.test.CosmosIntegrationTestClient
-import com.mesosphere.cosmos.thirdparty.marathon.circe.Encoders._
 import com.mesosphere.cosmos.thirdparty.marathon.model._
 import com.mesosphere.universe
 import com.mesosphere.universe.v2.model.PackageDetails
@@ -84,7 +83,7 @@ final class PackageInstallIntegrationSpec extends FreeSpec with BeforeAndAfterAl
     }
 
     "can successfully install packages from Universe" in {
-      forAll (UniversePackagesTable) { (expectedResponse, forceVersion, uriSet, labelsOpt) =>
+      forAll (UniversePackagesTable) { (expectedResponse, forceVersion, labelsOpt) =>
         val versionOption = if (forceVersion) Some(expectedResponse.packageVersion) else None
 
         installPackageAndAssert(
@@ -95,7 +94,6 @@ final class PackageInstallIntegrationSpec extends FreeSpec with BeforeAndAfterAl
         )
         // TODO Confirm that the correct config was sent to Marathon - see issue #38
         val packageInfo = Await.result(getMarathonApp(expectedResponse.appId))
-        assertResult(uriSet)(packageInfo.uris.toSet)
         labelsOpt.foreach(labels => assertResult(labels)(StandardLabels(packageInfo.labels)))
 
         // Assert that installing twice gives us a package already installed error
@@ -322,23 +320,16 @@ private object PackageInstallIntegrationSpec extends Matchers with TableDrivenPr
     packageRelease = "0"
   )
 
-  private val CassandraUris = Set(
-    "https://downloads.mesosphere.com/cassandra-mesos/artifacts/0.2.0-1/cassandra-mesos-0.2.0-1.tar.gz",
-    "https://downloads.mesosphere.com/java/jre-7u76-linux-x64.tar.gz"
-  )
-
   private val UniversePackagesTable = Table(
-    ("expected response", "force version", "URI list", "Labels"),
+    ("expected response", "force version", "Labels"),
     (
       InstallResponse("helloworld", PackageDetailsVersion("0.1.0"), AppId("helloworld")),
       false,
-      Set.empty[String],
       Some(HelloWorldLabels)
     ),
     (
       InstallResponse("cassandra", PackageDetailsVersion("0.2.0-1"), AppId("cassandra/dcos")),
       true,
-      CassandraUris,
       None
     )
   )
@@ -374,28 +365,31 @@ private object PackageInstallIntegrationSpec extends Matchers with TableDrivenPr
       licenses = None
     )
 
-    val marathonJson = MarathonApp(
-      id = AppId(name),
-      cpus = cpus,
-      mem = mem,
-      instances = 1,
-      cmd = Some(cmd),
-      container = Some(MarathonAppContainer(
-        `type` = "DOCKER",
-        docker = Some(MarathonAppContainerDocker(
-          image = s"python:$pythonVersion",
-          network = Some("HOST")
-        ))
-      )),
-      labels = Map("test-id" -> UUID.randomUUID().toString),
-      uris = List.empty
-    )
+    val marathonMustacheTemplate = s"""
+    |{
+    |  "id": "$name",
+    |  "cpus": $cpus,
+    |  "mem": $mem,
+    |  "instances": 1,
+    |  "cmd": $cmd,
+    |  "container": {
+    |    "type": "DOCKER",
+    |    "docker: {
+    |      "image": "python:$pythonVersion",
+    |      "network": "HOST"
+    |    }
+    |  },
+    |  "labels": {
+    |    "test-id": "${UUID.randomUUID().toString}",
+    |  },
+    |  "uris": []
+    |}""".stripMargin
 
     val packageFiles = PackageFiles(
       revision = "0",
       sourceUri = Uri.parse("in/memory/source"),
       packageJson = packageDefinition,
-      marathonJsonMustache = marathonJson.asJson.noSpaces
+      marathonJsonMustache = marathonMustacheTemplate
     )
 
     (name, packageFiles)

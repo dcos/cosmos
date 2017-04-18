@@ -2,13 +2,7 @@ package com.mesosphere.cosmos.thirdparty.marathon.model
 
 case class MarathonApp(
   id: AppId,
-  labels: Map[String, String],
-  uris: List[String],
-  cpus: Double,
-  mem: Double,
-  instances: Int,
-  cmd: Option[String],
-  container: Option[MarathonAppContainer]
+  labels: Map[String, String]
 )
 
 object MarathonApp {
