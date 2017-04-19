@@ -9,7 +9,8 @@ import com.mesosphere.cosmos.label.v1.circe.Decoders._
 import com.mesosphere.cosmos.thirdparty.marathon.circe.Decoders.decodeAppId
 import com.mesosphere.cosmos.thirdparty.marathon.model.AppId
 import com.mesosphere.cosmos.thirdparty.marathon.model.MarathonApp
-import com.mesosphere.universe.common.JsonUtil
+import com.mesosphere.universe
+import com.mesosphere.universe.test.TestingPackages
 import com.mesosphere.universe.v3.model._
 import com.netaporter.uri.dsl._
 import com.twitter.bijection.Conversion.asMethod
@@ -29,62 +30,70 @@ class PackageDefinitionRendererSpec extends FreeSpec with Matchers with TableDri
 
   "if .labels from .marathon.v2AppMustacheTemplate " - {
     "isn't Map[String, String] an error is returned" in {
-      val mustache =
-        """
-          |{
-          |  "labels": {
-          |    "idx": 0,
-          |    "string": "value"
-          |  }
-          |}
-        """.stripMargin
+      forAll(TestingPackages.packageDefinitions) { pkgDef =>
+        val mustache =
+          """
+            |{
+            |  "labels": {
+            |    "idx": 0,
+            |    "string": "value"
+            |  }
+            |}
+          """.
+            stripMargin
 
-      val pd = packageDefinition(mustache)
+        val pd = packageDefinition(pkgDef)(mustache)
 
-      PackageDefinitionRenderer.renderMarathonV2App("http://someplace", pd, None, None) match {
-        case Left(InvalidLabelSchema(err)) =>
-          assertResult("String: El(DownField(idx),true,false),El(DownField(labels),true,false)")(err.getMessage)
-        case _ =>
-          fail("expected InvalidLabelSchemaError")
+        PackageDefinitionRenderer.renderMarathonV2App("http://someplace", pd, None, None) match {
+          case Left(InvalidLabelSchema(err)) =>
+            assertResult("String: El(DownField(idx),true,false),El(DownField(labels),true,false)")(err.getMessage)
+          case _ =>
+            fail("expected InvalidLabelSchemaError")
+        }
       }
     }
 
     "does not exist, a default empty object is used" in {
-      val mustache =
-        """
-          |{
-          |  "env": {
-          |    "some": "thing"
-          |  }
-          |}
-        """.stripMargin
+      forAll(TestingPackages.packageDefinitions) { pkgDef =>
+        val mustache =
+          """
+            |{
+            |  "env": {
+            |    "some": "thing"
+            |  }
+            |}
+          """.
+            stripMargin
 
-      val pd = packageDefinition(mustache)
+        val pd = packageDefinition(pkgDef)(mustache)
 
-      val Right(some) = PackageDefinitionRenderer.renderMarathonV2App(
-        "http://someplace",
-        pd,
-        None,
-        None
-      ).right.get.asJson.hcursor.downField("env").downField("some").as[String]
+        val Right(some) = PackageDefinitionRenderer.renderMarathonV2App(
+          "http://someplace",
+          pd,
+          None,
+          None
+        ).right.get.asJson.hcursor.downField("env").downField("some").as[String]
 
-      assertResult("thing")(some)
+        assertResult("thing")(some)
+      }
     }
 
     "is Map[String, String] is left in tact" in {
-      val json = Json.obj(
-        "labels" -> Json.obj(
-          "a" -> "A".asJson,
-          "b" -> "B".asJson
+      forAll(TestingPackages.packageDefinitions) { pkgDef =>
+        val json = Json.obj(
+          "labels" -> Json.obj(
+            "a" -> "A".asJson,
+            "b" -> "B".asJson
+          )
         )
-      )
-      val pkg = packageDefinition(json.noSpaces)
+        val pkg = packageDefinition(pkgDef)(json.noSpaces)
 
-      val Right(rendered) = PackageDefinitionRenderer.renderMarathonV2App("http://someplace", pkg, None, None)
+        val Right(rendered) = PackageDefinitionRenderer.renderMarathonV2App("http://someplace", pkg, None, None)
 
-      val Right(labels) = rendered.asJson.cursor.get[Map[String, String]]("labels")
-      assertResult("A")(labels("a"))
-      assertResult("B")(labels("b"))
+        val Right(labels) = rendered.asJson.cursor.get[Map[String, String]]("labels")
+        assertResult("A")(labels("a"))
+        assertResult("B")(labels("b"))
+      }
     }
   }
 
@@ -187,7 +196,6 @@ class PackageDefinitionRendererSpec extends FreeSpec with Matchers with TableDri
         Some(options),
         Some(appId)
       ).right.get.asJson.hcursor
-
 
       renderedFocus.get[AppId]("id") shouldBe Right(appId)
       renderedFocus.get[String]("uri") shouldBe Right("http://someplace/blob")
@@ -377,6 +385,41 @@ class PackageDefinitionRendererSpec extends FreeSpec with Matchers with TableDri
         val Right(renderedValue) = rendered.cursor.get[String]("some")
         assertResult("http://someplace/blob")(renderedValue)
       }
+
+      "V4Package" in {
+        val mustache =
+          """{
+            |  "some": "{{resource.assets.uris.blob}}"
+            |}""".stripMargin
+        val mustacheBytes = ByteBuffer.wrap(mustache.getBytes(StandardCharsets.UTF_8))
+        val pkg = universe.v4.model.V4Package(
+          name = "test",
+          version = Version("1.2.3"),
+          releaseVersion = ReleaseVersion(0).get(),
+          maintainer = "maintainer",
+          description = "description",
+          marathon = Some(Marathon(mustacheBytes)),
+          resource = Some(V3Resource(
+            assets = Some(Assets(
+              uris = Some(Map(
+                "blob" -> "http://someplace/blob"
+              )),
+              container = None
+            ))
+          )),
+          upgradesFrom = Some(List()),
+          downgradesTo = Some(List())
+        )
+        val rendered = PackageDefinitionRenderer.renderMarathonV2App(
+          "http://someplace",
+          pkg,
+          None,
+          None
+        ).right.get.asJson
+
+        val Right(renderedValue) = rendered.cursor.get[String]("some")
+        assertResult("http://someplace/blob")(renderedValue)
+      }
     }
   }
 
@@ -472,16 +515,16 @@ class PackageDefinitionRendererSpec extends FreeSpec with Matchers with TableDri
   }
 
 
-  private[this] def packageDefinition(mustache: String) = {
-    V3Package(
-      packagingVersion = V3PackagingVersion,
-      name = "testing",
-      version = Version("a.b.c"),
-      maintainer = "foo@bar.baz",
-      description = "blah",
-      releaseVersion = ReleaseVersion(0).get,
-      marathon = Some(Marathon(ByteBuffer.wrap(mustache.getBytes(StandardCharsets.UTF_8))))
-    )
+  private[this] def packageDefinition(pkgDef: universe.v4.model.PackageDefinition)(mustache: String) = {
+    val marathon = Marathon(ByteBuffer.wrap(mustache.getBytes(StandardCharsets.UTF_8)))
+    pkgDef match {
+      case v2: universe.v3.model.V2Package =>
+        v2.copy(marathon = marathon)
+      case v3: universe.v3.model.V3Package =>
+        v3.copy(marathon = Some(marathon))
+      case v4: universe.v4.model.V4Package =>
+        v4.copy(marathon = Some(marathon))
+    }
   }
 
   private[this] def classpathJsonString(resourceName: String): String = {
