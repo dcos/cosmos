@@ -78,6 +78,40 @@ object Generators {
     )
   }
 
+  val genV4Package: Gen[universe.v4.model.V4Package] = {
+    for {
+      upgradesFrom <- Gen.option(Gen.listOf(genVersion))
+      downgradesTo <- Gen.option(Gen.listOf(genVersion))
+      v3 <- genV3Package
+    } yield {
+      universe.v4.model.V4Package(
+        name = v3.name,
+        version = v3.version,
+        releaseVersion = v3.releaseVersion,
+        maintainer = v3.maintainer,
+        description = v3.description,
+        upgradesFrom = upgradesFrom,
+        downgradesTo = downgradesTo
+      )
+    }
+  }
+
+  // This is just here to tell you that you need to update the generator below,
+  // when you add a new packaging version
+  // This is a little hacky but worth the error
+  def checkExhaustiveness(
+    supportedPackage: universe.v4.model.SupportedPackageDefinition
+  ): Gen[universe.v4.model.SupportedPackageDefinition] = {
+    supportedPackage match {
+      case _: universe.v3.model.V3Package => Gen.oneOf(genV3Package, genV4Package)
+      case _: universe.v4.model.V4Package => Gen.oneOf(genV4Package, genV3Package)
+    }
+  }
+
+  val genSupportedPackageDefinition: Gen[universe.v4.model.SupportedPackageDefinition] = {
+    Gen.oneOf(genV4Package, genV3Package)
+  }
+
   private val genByteBuffer: Gen[ByteBuffer] = arbitrary[Array[Byte]].map(ByteBuffer.wrap)
 
   private def maxSizedString(maxSize: Int, genChar: Gen[Char]): Gen[String] = for {
@@ -137,8 +171,8 @@ object Generators {
 
     implicit val arbV3Package: Arbitrary[universe.v3.model.V3Package] = Arbitrary(genV3Package)
 
-    implicit val arbSupportedPackage: Arbitrary[universe.v4.model.SupportedPackageDefinition] = {
-      Arbitrary(genV3Package)
+    implicit val arbSupportedPackageDefinition: Arbitrary[universe.v4.model.SupportedPackageDefinition] = {
+      Arbitrary(genSupportedPackageDefinition)
     }
 
     implicit val arbUuid: Arbitrary[UUID] = Arbitrary(Gen.uuid)

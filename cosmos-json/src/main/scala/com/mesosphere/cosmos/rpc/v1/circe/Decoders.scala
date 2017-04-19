@@ -72,7 +72,7 @@ object Decoders {
     deriveDecoder[UniverseAddRequest].map(identity)
   }
   implicit val decodeAddResponse: Decoder[AddResponse] = {
-    implicitly[Decoder[universe.v3.model.V3Package]].map(new AddResponse(_))
+    implicitly[Decoder[universe.v4.model.SupportedPackageDefinition]].map(new AddResponse(_))
   }
 
   implicit val decodeErrorResponse: Decoder[ErrorResponse] = deriveDecoder[ErrorResponse]
@@ -103,7 +103,7 @@ object Decoders {
         case InstalledName =>
           installedDecoder(cursor)
         case UninstallingName =>
-          val right = cursor.get[universe.v3.model.V3Package]("metadata").map(
+          val right = cursor.get[universe.v4.model.SupportedPackageDefinition]("metadata").map(
             value => Uninstalling(Right(value))
           )
           val left = cursor.get[PackageCoordinate]("packageCoordinate").map(
