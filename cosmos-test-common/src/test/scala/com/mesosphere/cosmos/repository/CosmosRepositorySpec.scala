@@ -11,12 +11,12 @@ import com.mesosphere.cosmos.test.TestUtil.Anonymous
 import com.mesosphere.cosmos.PackageNotFound
 import com.mesosphere.cosmos.VersionNotFound
 import com.mesosphere.universe.test.TestingPackages
-
-import scala.util.matching.Regex
+import com.mesosphere.universe.v3.syntax.PackageDefinitionOps._
 import com.twitter.common.util.Clock
+import org.scalatest.Matchers
+import org.scalatest.prop.TableDrivenPropertyChecks
 
-
-final class CosmosRepositorySpec extends FreeSpec {
+final class CosmosRepositorySpec extends FreeSpec with Matchers with TableDrivenPropertyChecks {
   def client(ls: List[universe.v4.model.PackageDefinition]): C.repository.UniverseClient = {
     new C.repository.UniverseClient {
       def apply(repository: PackageRepository)(implicit session: RequestSession): Future[universe.v3.model.Repository] = Future {
@@ -47,6 +47,17 @@ final class CosmosRepositorySpec extends FreeSpec {
       assertResult(Throw(new PackageNotFound("minimal")))(Try(Await.result(c.getPackageByReleaseVersion("minimal", ver))))
       assertResult(Return(TestingPackages.MaximalV3ModelV3PackageDefinition))(Try(Await.result(c.getPackageByReleaseVersion("MAXIMAL", ver))))
     }
+
+    "for all versions" in {
+      forAll(TestingPackages.packageDefinitions) { packageDefinition =>
+        val cosmosRepository = singletonRepository(Uri.parse("uri"), packageDefinition)
+        val version = packageDefinition.releaseVersion
+        val name = packageDefinition.name
+        val actualPackage = Await.result(
+          cosmosRepository.getPackageByReleaseVersion(name, version))
+        actualPackage shouldBe packageDefinition
+      }
+    }
   }
   "getPackageByPackageVersion" - {
     "not found" in {
@@ -72,9 +83,23 @@ final class CosmosRepositorySpec extends FreeSpec {
       val rep = C.rpc.v1.model.PackageRepository("test", u)
       val c = CosmosRepository(rep, client(List(TestingPackages.MinimalV3ModelV2PackageDefinition, TestingPackages.MaximalV3ModelV3PackageDefinition)))
       val ver = TestingPackages.MaximalV3ModelV3PackageDefinition.version
-      assertResult(Return((TestingPackages.MaximalV3ModelV3PackageDefinition,u)))(Try(Await.result(c.getPackageByPackageVersion("MAXIMAL", Some(ver)))))
+      assertResult(
+        Return((TestingPackages.MaximalV3ModelV3PackageDefinition,u)))(
+        Try(Await.result(c.getPackageByPackageVersion("MAXIMAL", Some(ver)))))
       val bad = TestingPackages.MinimalV3ModelV2PackageDefinition.version
       assertResult(Throw(new VersionNotFound("MAXIMAL", bad)))(Try(Await.result(c.getPackageByPackageVersion("MAXIMAL", Some(bad)))))
+    }
+    "for all versions" in {
+      forAll(TestingPackages.packageDefinitions) { packageDefinition =>
+        val uri = Uri.parse("/uri")
+        val cosmosRepository = singletonRepository(uri, packageDefinition)
+        val version = packageDefinition.version
+        val name = packageDefinition.name
+        val actual = Await.result(
+          cosmosRepository.getPackageByPackageVersion(name, Some(version))
+        )
+        actual shouldBe ((packageDefinition, uri))
+      }
     }
   }
 
@@ -119,6 +144,17 @@ final class CosmosRepositorySpec extends FreeSpec {
         Try(Await.result(c.getPackagesByPackageName("MAXIMAL")))
       }
       assertResult(Return(Nil))(Try(Await.result(c.getPackagesByPackageName("test"))))
+    }
+    "for all versions" in {
+      forAll(TestingPackages.packageDefinitions) { packageDefinition =>
+        val uri = Uri.parse("/uri")
+        val cosmosRepository = singletonRepository(uri, packageDefinition)
+        val name = packageDefinition.name
+        val actual = Await.result(
+          cosmosRepository.getPackagesByPackageName(name)
+        )
+        actual shouldBe List(packageDefinition)
+      }
     }
   }
   "createRegex" in {
@@ -210,5 +246,13 @@ final class CosmosRepositorySpec extends FreeSpec {
     assertResult(Return(Nil))(Try(Await.result(c.search(Some("minimal")))))
     millis = 0
     assertResult("minimal")(Try(Await.result(c.search(Some("minimal")))).get.head.name)
+  }
+
+  private[this] def singletonRepository(
+    uri: Uri,
+    packageDefinition: universe.v4.model.PackageDefinition
+  ): CosmosRepository = {
+    val packageRepository = C.rpc.v1.model.PackageRepository("test", uri)
+    CosmosRepository(packageRepository, client(List(packageDefinition)))
   }
 }
