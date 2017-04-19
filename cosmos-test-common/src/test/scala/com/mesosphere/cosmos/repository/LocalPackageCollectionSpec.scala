@@ -17,17 +17,17 @@ import scala.util.Try
 
 final class LocalPackageCollectionSpec extends FreeSpec with Matchers {
 
-  val expectedLatestCeph = universe.v3.model.V3Package(
-    packagingVersion=universe.v3.model.V3PackagingVersion,
+  val expectedLatestCeph = universe.v4.model.V4Package(
     name="ceph",
     version=universe.v3.model.Version("1.1"),
     releaseVersion=universe.v3.model.ReleaseVersion(3).get,
     maintainer="jose@mesosphere.com",
-    description="Great object store"
+    description="Great object store",
+    upgradesFrom = Some(List(universe.v3.model.Version("0.8.4"))),
+    downgradesTo = Some(List())
   )
 
   val expectedLambda05 = universe.v3.model.V3Package(
-    packagingVersion=universe.v3.model.V3PackagingVersion,
     name="lambda",
     version=universe.v3.model.Version("0.5"),
     releaseVersion=universe.v3.model.ReleaseVersion(2).get,
@@ -36,17 +36,18 @@ final class LocalPackageCollectionSpec extends FreeSpec with Matchers {
   )
 
   val expectedAllMarathon = Seq(
-    universe.v3.model.V3Package(
-      packagingVersion=universe.v3.model.V3PackagingVersion,
+    universe.v4.model.V4Package(
       name="marathon",
       version=universe.v3.model.Version("0.9"),
       releaseVersion=
         universe.v3.model.ReleaseVersion(4).get, // scalastyle:ignore magic.number
       maintainer="jose@mesosphere.com",
-      description="paas framework"
+      description="paas framework",
+      upgradesFrom = Some(List(universe.v3.model.Version("0.10"))),
+      downgradesTo = Some(List(universe.v3.model.Version("0.10")))
+
     ),
     universe.v3.model.V3Package(
-      packagingVersion=universe.v3.model.V3PackagingVersion,
       name="marathon",
       version=universe.v3.model.Version("0.8.4"),
       releaseVersion=universe.v3.model.ReleaseVersion(3).get,
@@ -54,7 +55,6 @@ final class LocalPackageCollectionSpec extends FreeSpec with Matchers {
       description="paas framework"
     ),
     universe.v3.model.V3Package(
-      packagingVersion=universe.v3.model.V3PackagingVersion,
       name="marathon",
       version=universe.v3.model.Version("1.0"),
       releaseVersion=universe.v3.model.ReleaseVersion(2).get,
@@ -62,7 +62,6 @@ final class LocalPackageCollectionSpec extends FreeSpec with Matchers {
       description="paas framework"
     ),
     universe.v3.model.V3Package(
-      packagingVersion=universe.v3.model.V3PackagingVersion,
       name="marathon",
       version=universe.v3.model.Version("0.10"),
       releaseVersion=universe.v3.model.ReleaseVersion(1).get,
@@ -73,7 +72,6 @@ final class LocalPackageCollectionSpec extends FreeSpec with Matchers {
 
   val expectedAllGreat = Seq(
     universe.v3.model.V3Package(
-      packagingVersion=universe.v3.model.V3PackagingVersion,
       name="lambda",
       version=universe.v3.model.Version("0.12"),
       releaseVersion=universe.v3.model.ReleaseVersion(3).get,
@@ -83,7 +81,6 @@ final class LocalPackageCollectionSpec extends FreeSpec with Matchers {
     expectedLambda05,
     expectedLatestCeph,
     universe.v3.model.V3Package(
-      packagingVersion=universe.v3.model.V3PackagingVersion,
       name="ceph",
       version=universe.v3.model.Version("0.8.4"),
       releaseVersion=universe.v3.model.ReleaseVersion(2).get,
@@ -91,7 +88,6 @@ final class LocalPackageCollectionSpec extends FreeSpec with Matchers {
       description="Great object store"
     ),
     universe.v3.model.V3Package(
-      packagingVersion=universe.v3.model.V3PackagingVersion,
       name="ceph",
       version=universe.v3.model.Version("1.5"),
       releaseVersion=universe.v3.model.ReleaseVersion(1).get,
@@ -100,7 +96,7 @@ final class LocalPackageCollectionSpec extends FreeSpec with Matchers {
     )
   )
 
-  val expected: Seq[universe.v3.model.V3Package] = expectedAllMarathon ++ expectedAllGreat
+  val expected: Seq[universe.v4.model.SupportedPackageDefinition] = expectedAllMarathon ++ expectedAllGreat
 
   "Test all of the read operations" in TestUtil.withObjectStorage { objectStorage =>
     val packageStorage = PackageStorage(objectStorage)
@@ -172,7 +168,6 @@ final class LocalPackageCollectionSpec extends FreeSpec with Matchers {
   "We should only return Installed packages" in {
     val expectedInstalled = rpc.v1.model.Installed(
       universe.v3.model.V3Package(
-        packagingVersion=universe.v3.model.V3PackagingVersion,
         name="lambda",
         version=universe.v3.model.Version("0.8"),
         releaseVersion=universe.v3.model.ReleaseVersion(3).get,
@@ -181,8 +176,7 @@ final class LocalPackageCollectionSpec extends FreeSpec with Matchers {
       )
     )
 
-    val package010 = universe.v3.model.V3Package(
-      packagingVersion=universe.v3.model.V3PackagingVersion,
+    val package010 = universe.v4.model.V4Package(
       name="lambda",
       version=universe.v3.model.Version("0.10"),
       releaseVersion=universe.v3.model.ReleaseVersion(3).get,
@@ -201,7 +195,6 @@ final class LocalPackageCollectionSpec extends FreeSpec with Matchers {
     val input = List[rpc.v1.model.LocalPackage](
       rpc.v1.model.Installing(
         universe.v3.model.V3Package(
-          packagingVersion=universe.v3.model.V3PackagingVersion,
           name="lambda",
           version=universe.v3.model.Version("0.12"),
           releaseVersion=universe.v3.model.ReleaseVersion(3).get,
@@ -212,7 +205,6 @@ final class LocalPackageCollectionSpec extends FreeSpec with Matchers {
       rpc.v1.model.Uninstalling(
         Right(
           universe.v3.model.V3Package(
-            packagingVersion=universe.v3.model.V3PackagingVersion,
             name="lambda",
             version=universe.v3.model.Version("0.11"),
             releaseVersion=universe.v3.model.ReleaseVersion(3).get,
