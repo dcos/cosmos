@@ -38,8 +38,9 @@ import org.scalatest.Assertion
 import org.scalatest.FreeSpec
 import org.scalatest.Matchers
 import org.scalatest.prop.PropertyChecks
+import org.scalatest.prop.TableDrivenPropertyChecks
 
-class EncodersDecodersSpec extends FreeSpec with PropertyChecks with Matchers {
+class EncodersDecodersSpec extends FreeSpec with PropertyChecks with Matchers with TableDrivenPropertyChecks {
   import Decoders._
   import Encoders._
 
@@ -196,109 +197,126 @@ class EncodersDecodersSpec extends FreeSpec with PropertyChecks with Matchers {
   "Operation" - {
 
     "type field is correct" in {
-      val v3Package = TestingPackages.MinimalV3ModelV3PackageDefinition
-      val uninstall: storage.v1.model.Operation = storage.v1.model.Uninstall(v3Package)
-      val expectedUninstallJson = Json.obj(
-        "packageDefinition" -> v3Package.asJson,
-        "type" -> "Uninstall".asJson
-      )
-      val actualUninstallJson = uninstall.asJson
-      assertResult(expectedUninstallJson)(actualUninstallJson)
+      forAll(TestingPackages.supportedPackageDefinitions) { supportedPackage =>
+        val uninstall: storage.v1.model.Operation = storage.v1.model.Uninstall(supportedPackage)
+        val expectedUninstallJson = Json.obj(
+          "packageDefinition" -> supportedPackage.asJson,
+          "type" -> "Uninstall".asJson
+        )
+        val actualUninstallJson = uninstall.asJson
+        assertResult(expectedUninstallJson)(actualUninstallJson)
+      }
     }
 
     "Install => Json => Install" in {
-      val install: storage.v1.model.Operation =
-        storage.v1.model.Install(
-          UUID.fromString("13c825fe-a8b8-46de-aa9b-61c848fb6522"),
-          TestingPackages.MinimalV3ModelV3PackageDefinition
-        )
-      val installPrime =
-        decode[storage.v1.model.Operation](install.asJson.noSpaces)
-      assertResult(install)(installPrime)
+      forAll(TestingPackages.supportedPackageDefinitions) { supportedPackage =>
+        val install: storage.v1.model.Operation =
+          storage.v1.model.Install(
+            UUID.fromString("13c825fe-a8b8-46de-aa9b-61c848fb6522"),
+            supportedPackage
+          )
+        val installPrime =
+          decode[storage.v1.model.Operation](install.asJson.noSpaces)
+        assertResult(install)(installPrime)
+      }
     }
 
     "UniverseInstall => Json => UniverseInstall" in {
-      val universeInstall: storage.v1.model.Operation =
-        storage.v1.model.UniverseInstall(
-          TestingPackages.MinimalV3ModelV3PackageDefinition
-        )
-      val universeInstallPrime =
-        decode[storage.v1.model.Operation](universeInstall.asJson.noSpaces)
-      assertResult(universeInstall)(universeInstallPrime)
+      forAll(TestingPackages.supportedPackageDefinitions) { supportedPackage =>
+        val universeInstall: storage.v1.model.Operation =
+          storage.v1.model.UniverseInstall(
+            supportedPackage
+          )
+        val universeInstallPrime =
+          decode[storage.v1.model.Operation](universeInstall.asJson.noSpaces)
+        assertResult(universeInstall)(universeInstallPrime)
+      }
     }
 
     "Uninstall => Json => Uninstall" in {
-      val uninstall: storage.v1.model.Operation =
-        storage.v1.model.Uninstall(TestingPackages.MinimalV3ModelV3PackageDefinition)
-      val uninstallPrime =
-        decode[storage.v1.model.Operation](uninstall.asJson.noSpaces)
-      assertResult(uninstall)(uninstallPrime)
+      forAll(TestingPackages.supportedPackageDefinitions) { supportedPackage =>
+        val uninstall: storage.v1.model.Operation =
+          storage.v1.model.Uninstall(supportedPackage)
+        val uninstallPrime =
+          decode[storage.v1.model.Operation](uninstall.asJson.noSpaces)
+        assertResult(uninstall)(uninstallPrime)
+      }
     }
   }
 
   "OperationFailure" in {
-    val operationFailure =
-      storage.v1.model.OperationFailure(
-        storage.v1.model.Uninstall(TestingPackages.MinimalV3ModelV3PackageDefinition),
-        ErrorResponse("foo", "bar")
-      )
-    val operationFailurePrime =
-      decode[storage.v1.model.OperationFailure](operationFailure.asJson.noSpaces)
-    assertResult(operationFailure)(operationFailurePrime)
+    forAll(TestingPackages.supportedPackageDefinitions) { supportedPackage =>
+      val operationFailure =
+        storage.v1.model.OperationFailure(
+          storage.v1.model.Uninstall(supportedPackage),
+          ErrorResponse("foo", "bar")
+        )
+      val operationFailurePrime =
+        decode[storage.v1.model.OperationFailure](operationFailure.asJson.noSpaces)
+      assertResult(operationFailure)(operationFailurePrime)
+    }
   }
 
   "PendingOperation" in {
-    val pendingOperation =
-      storage.v1.model.PendingOperation(
-        storage.v1.model.Uninstall(TestingPackages.MinimalV3ModelV3PackageDefinition),
-        None
-      )
-    val pendingOperationPrime =
-      decode[storage.v1.model.PendingOperation](pendingOperation.asJson.noSpaces)
-    assertResult(pendingOperation)(pendingOperationPrime)
+    forAll(TestingPackages.supportedPackageDefinitions) { supportedPackage =>
+      val pendingOperation =
+        storage.v1.model.PendingOperation(
+          storage.v1.model.Uninstall(supportedPackage),
+          None
+        )
+      val pendingOperationPrime =
+        decode[storage.v1.model.PendingOperation](pendingOperation.asJson.noSpaces)
+      assertResult(pendingOperation)(pendingOperationPrime)
+    }
   }
 
   "OperationStatus" - {
     "type field is correct" in {
-      val pending: storage.v1.model.OperationStatus = storage.v1.model.PendingStatus(
-        storage.v1.model.Uninstall(TestingPackages.MinimalV3ModelV3PackageDefinition),
-        None
-      )
-      val expectedJson =
-        Json.obj(
-          "operation" ->
-            Json.obj(
-              "packageDefinition" -> TestingPackages.MinimalV3ModelV3PackageDefinition.asJson,
-              "type" -> "Uninstall".asJson
-            ),
-          "failure" -> Json.Null,
-          "type" -> "PendingStatus".asJson)
-      val actualJson = pending.asJson
-      assertResult(expectedJson)(actualJson)
+      forAll(TestingPackages.supportedPackageDefinitions) { supportedPackage =>
+        val pending: storage.v1.model.OperationStatus = storage.v1.model.PendingStatus(
+          storage.v1.model.Uninstall(supportedPackage),
+          None
+        )
+        val expectedJson =
+          Json.obj(
+            "operation" ->
+              Json.obj(
+                "packageDefinition" -> supportedPackage.asJson,
+                "type" -> "Uninstall".asJson
+              ),
+            "failure" -> Json.Null,
+            "type" -> "PendingStatus".asJson)
+        val actualJson = pending.asJson
+        assertResult(expectedJson)(actualJson)
+      }
     }
 
     "PendingStatus => Json => PendingStatus" in {
-      val pending: storage.v1.model.OperationStatus =
-        storage.v1.model.PendingStatus(
-          storage.v1.model.Uninstall(TestingPackages.MinimalV3ModelV3PackageDefinition),
-          None
-        )
-      val pendingPrime =
-        decode[storage.v1.model.OperationStatus](pending.asJson.noSpaces)
-      assertResult(pending)(pendingPrime)
+      forAll(TestingPackages.supportedPackageDefinitions) { supportedPackage =>
+        val pending: storage.v1.model.OperationStatus =
+          storage.v1.model.PendingStatus(
+            storage.v1.model.Uninstall(supportedPackage),
+            None
+          )
+        val pendingPrime =
+          decode[storage.v1.model.OperationStatus](pending.asJson.noSpaces)
+        assertResult(pending)(pendingPrime)
+      }
     }
 
     "FailedStatus => Json => FailedStatus" in {
-      val failed: storage.v1.model.OperationStatus =
-        storage.v1.model.FailedStatus(
-          storage.v1.model.OperationFailure(
-            storage.v1.model.Uninstall(TestingPackages.MinimalV3ModelV3PackageDefinition),
-            ErrorResponse("foo", "bar")
+      forAll(TestingPackages.supportedPackageDefinitions) { supportedPackage =>
+        val failed: storage.v1.model.OperationStatus =
+          storage.v1.model.FailedStatus(
+            storage.v1.model.OperationFailure(
+              storage.v1.model.Uninstall(supportedPackage),
+              ErrorResponse("foo", "bar")
+            )
           )
-        )
-      val failedPrime =
-        decode[storage.v1.model.OperationStatus](failed.asJson.noSpaces)
-      assertResult(failed)(failedPrime)
+        val failedPrime =
+          decode[storage.v1.model.OperationStatus](failed.asJson.noSpaces)
+        assertResult(failed)(failedPrime)
+      }
     }
   }
 
