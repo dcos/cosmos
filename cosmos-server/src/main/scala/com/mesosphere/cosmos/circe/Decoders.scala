@@ -1,7 +1,7 @@
 package com.mesosphere.cosmos.circe
 
 import com.mesosphere.cosmos.CirceError
-import com.mesosphere.cosmos.model.ZooKeeperStorageEnvelope
+import com.mesosphere.cosmos.model.StorageEnvelope
 import com.mesosphere.universe.common.circe.Decoders._
 import io.circe.Decoder
 import io.circe.Decoder
@@ -35,7 +35,7 @@ object Decoders {
     parse(new String(Base64.getDecoder.decode(str), StandardCharsets.UTF_8))
   }
 
-  implicit val decodeZooKeeperStorageEnvelope: Decoder[ZooKeeperStorageEnvelope] =
-    deriveDecoder[ZooKeeperStorageEnvelope]
+  implicit val decodeStorageEnvelope: Decoder[StorageEnvelope] =
+    deriveDecoder[StorageEnvelope]
 
 }

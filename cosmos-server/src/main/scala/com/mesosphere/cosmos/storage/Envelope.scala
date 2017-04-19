@@ -8,7 +8,7 @@ import com.mesosphere.cosmos.finch.MediaTypedDecoder
 import com.mesosphere.cosmos.finch.MediaTypedEncoder
 import com.mesosphere.cosmos.http.MediaType
 import com.mesosphere.cosmos.http.MediaTypeOps
-import com.mesosphere.cosmos.model.ZooKeeperStorageEnvelope
+import com.mesosphere.cosmos.model.StorageEnvelope
 import com.mesosphere.universe.common.ByteBuffers
 import com.twitter.finagle.http.Fields
 import io.circe.syntax._
@@ -21,7 +21,7 @@ object Envelope {
     implicit val encoder = mediaTypedEncoder.encoder
     val mediaType = mediaTypedEncoder.mediaType
     val bytes = ByteBuffer.wrap(data.asJson.noSpaces.getBytes(StandardCharsets.UTF_8))
-    ZooKeeperStorageEnvelope(
+    StorageEnvelope(
       metadata = Map(Fields.ContentType -> mediaType.show),
       data = bytes
     ).asJson.noSpaces.getBytes(StandardCharsets.UTF_8)
@@ -31,7 +31,7 @@ object Envelope {
     implicit val decoder = mediaTypedDecoder.decoder
     val mediaType = mediaTypedDecoder.mediaType
 
-    val envelope = decode[ZooKeeperStorageEnvelope](new String(data, StandardCharsets.UTF_8))
+    val envelope = decode[StorageEnvelope](new String(data, StandardCharsets.UTF_8))
 
     val contentType = envelope.metadata
       .get(Fields.ContentType)
