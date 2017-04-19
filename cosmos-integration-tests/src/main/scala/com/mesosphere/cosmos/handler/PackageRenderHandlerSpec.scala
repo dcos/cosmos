@@ -38,12 +38,8 @@ class PackageRenderHandlerSpec extends FreeSpec {
           ))
         )),
         "labels" -> Json.fromFields(List(
-          "DCOS_PACKAGE_RELEASE" -> "0".asJson,
           "DCOS_PACKAGE_SOURCE" ->
             "https://downloads.mesosphere.com/universe/helloworld.zip".asJson,
-          "DCOS_PACKAGE_COMMAND" ->
-            ("eyJwaXAiOlsiZGNvczwxLjAiLCJnaXQraHR0cHM6Ly9naXRodWIuY29tL21lc29zcGhlcmUvZGNvcy1oZW" +
-              "xsb3dvcmxkLmdpdCNkY29zLWhlbGxvd29ybGQ9MC4xLjAiXX0=").asJson,
           "DCOS_PACKAGE_METADATA" ->
             ("eyJwYWNrYWdpbmdWZXJzaW9uIjoiMi4wIiwibmFtZSI6ImhlbGxvd29ybGQiLCJ2ZXJzaW9uIjoiMC4xLj" +
              "AiLCJtYWludGFpbmVyIjoic3VwcG9ydEBtZXNvc3BoZXJlLmlvIiwiZGVzY3JpcHRpb24iOiJFeGFtcGxl" +
@@ -53,10 +49,8 @@ class PackageRenderHandlerSpec extends FreeSpec {
              "Egc2FtcGxlIHByZS1pbnN0YWxsYXRpb24gbWVzc2FnZSIsInBvc3RJbnN0YWxsTm90ZXMiOiJBIHNhbXBs" +
              "ZSBwb3N0LWluc3RhbGxhdGlvbiBtZXNzYWdlIn0=").asJson,
           "DCOS_PACKAGE_OPTIONS" -> "e30=".asJson,
-          "DCOS_PACKAGE_REGISTRY_VERSION" -> "2.0".asJson,
           "DCOS_PACKAGE_VERSION" -> "0.1.0".asJson,
-          "DCOS_PACKAGE_NAME" -> "helloworld".asJson,
-          "DCOS_PACKAGE_IS_FRAMEWORK" -> "false".asJson
+          "DCOS_PACKAGE_NAME" -> "helloworld".asJson
         ))
       )))
       val renderRequest = RenderRequest("helloworld", Some(PackageDetailsVersion("0.1.0")))

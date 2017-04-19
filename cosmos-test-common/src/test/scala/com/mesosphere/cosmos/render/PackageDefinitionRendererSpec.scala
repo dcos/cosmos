@@ -141,8 +141,7 @@ class PackageDefinitionRendererSpec extends FreeSpec with Matchers with TableDri
           |  "id": "{{opt.id}}",
           |  "uri": "{{resource.assets.uris.blob}}",
           |  "labels": {
-          |    "DCOS_PACKAGE_NAME": "{{opt.name}}",
-          |    "DCOS_PACKAGE_COMMAND": "{{opt.cmd}}"
+          |    "DCOS_PACKAGE_NAME": "{{opt.name}}"
           |  }
           |}
         """.stripMargin
@@ -170,8 +169,7 @@ class PackageDefinitionRendererSpec extends FreeSpec with Matchers with TableDri
       val options = Json.obj(
         "opt" -> Json.obj(
           "id" -> "should-be-overridden-id".asJson,
-          "name" -> "testing-name".asJson,
-          "cmd" -> "should-be-overridden-cmd".asJson
+          "name" -> "testing-name".asJson
         ),
         "resource" -> Json.obj(
           "assets" -> Json.obj(
@@ -197,15 +195,9 @@ class PackageDefinitionRendererSpec extends FreeSpec with Matchers with TableDri
       // Test that all of the labels are set correctly
       val labelFocus = renderedFocus.downField("labels")
 
-      labelFocus.get[String](MarathonApp.isFrameworkLabel) shouldBe Right("false")
       labelFocus.get[String](MarathonApp.nameLabel) shouldBe Right("test")
-      labelFocus.get[String](MarathonApp.registryVersionLabel) shouldBe Right("2.0")
-      labelFocus.get[String](MarathonApp.releaseLabel) shouldBe Right("0")
       labelFocus.get[String](MarathonApp.repositoryLabel) shouldBe Right("http://someplace")
       labelFocus.get[String](MarathonApp.versionLabel) shouldBe Right("1.2.3")
-      labelFocus.get[String](MarathonApp.commandLabel).map(
-        parse64(_)
-      ) shouldBe Right(pkg.command.asJson)
       labelFocus.get[String](MarathonApp.optionsLabel).map(
         parse64(_)
       ) shouldBe Right(options.asJson)

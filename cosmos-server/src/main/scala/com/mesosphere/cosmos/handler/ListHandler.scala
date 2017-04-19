@@ -49,11 +49,9 @@ private[cosmos] final class ListHandler(
 
     def satisfiesRequest(app: thirdparty.marathon.model.MarathonApp): Boolean = {
       // corner case: packageReleaseVersion will be None if parsing the label fails
-      (app.packageReleaseVersion, app.packageName, app.packageRepository) match {
-        case (Some(_), Some(pkgName), Some(_)) =>
-          request.packageName.forall(_ == pkgName) && request.appId.forall(_ == app.id)
-        case _ => false
-      }
+      app.packageName.map { pkgName =>
+        request.packageName.forall(_ == pkgName) && request.appId.forall(_ == app.id)
+      } getOrElse false
     }
 
     adminRouter.listApps().map { response =>

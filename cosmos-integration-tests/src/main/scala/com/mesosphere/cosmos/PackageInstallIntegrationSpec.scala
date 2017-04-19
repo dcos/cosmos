@@ -4,6 +4,7 @@ import _root_.io.circe.Json
 import _root_.io.circe.JsonObject
 import _root_.io.circe.jawn._
 import _root_.io.circe.syntax._
+import com.mesosphere.cosmos.circe.Decoders.parse64
 import com.mesosphere.cosmos.http.CosmosRequests
 import com.mesosphere.cosmos.http.RequestSession
 import com.mesosphere.cosmos.repository.DefaultRepositories
@@ -33,7 +34,6 @@ import org.scalatest.FreeSpec
 import org.scalatest.Matchers
 import org.scalatest.Succeeded
 import org.scalatest.prop.TableDrivenPropertyChecks
-import scala.util.Right
 
 final class PackageInstallIntegrationSpec extends FreeSpec with BeforeAndAfterAll {
 
@@ -291,13 +291,6 @@ private object PackageInstallIntegrationSpec extends Matchers with TableDrivenPr
     ("cassandra", PackageDetailsVersion("foobar"))
   )
 
-  private val HelloWorldCommand: Json = Map(
-    "pip" -> List(
-      "dcos<1.0".asJson,
-      "git+https://github.com/mesosphere/dcos-helloworld.git#dcos-helloworld=0.1.0".asJson
-    ).asJson
-  ).asJson
-
   private val HelloWorldLabels = StandardLabels(
     packageMetadata = Map(
       "website" -> "https://github.com/mesosphere/dcos-helloworld".asJson,
@@ -312,12 +305,10 @@ private object PackageInstallIntegrationSpec extends Matchers with TableDrivenPr
       "version" -> "0.1.0".asJson,
       "preInstallNotes" -> "A sample pre-installation message".asJson
     ).asJson,
-    packageCommand = HelloWorldCommand,
-    packageRegistryVersion = "2.0",
     packageName = "helloworld",
     packageVersion = "0.1.0",
     packageSource = DefaultRepositories().getOrThrow(1).uri.toString,
-    packageRelease = "0"
+    userOptions = JsonObject.empty.asJson
   )
 
   private val UniversePackagesTable = Table(
@@ -418,32 +409,21 @@ private case object Unchanged extends PostInstallState
 
 case class StandardLabels(
   packageMetadata: Json,
-  packageCommand: Json,
-  packageRegistryVersion: String,
   packageName: String,
   packageVersion: String,
   packageSource: String,
-  packageRelease: String
+  userOptions: Json
 )
 
 object StandardLabels {
 
   def apply(labels: Map[String, String]): StandardLabels = {
     StandardLabels(
-      packageMetadata = decodeAndParse(labels("DCOS_PACKAGE_METADATA")),
-      packageCommand = decodeAndParse(labels("DCOS_PACKAGE_COMMAND")),
-      packageRegistryVersion = labels("DCOS_PACKAGE_REGISTRY_VERSION"),
+      packageMetadata = parse64(labels("DCOS_PACKAGE_METADATA")),
       packageName = labels("DCOS_PACKAGE_NAME"),
       packageVersion = labels("DCOS_PACKAGE_VERSION"),
       packageSource = labels("DCOS_PACKAGE_SOURCE"),
-      packageRelease = labels("DCOS_PACKAGE_RELEASE")
+      userOptions = parse64(labels("DCOS_PACKAGE_OPTIONS"))
     )
   }
-
-  private[this] def decodeAndParse(encoded: String): Json = {
-    val decoded = new String(Base64.getDecoder.decode(encoded), StandardCharsets.UTF_8)
-    val Right(parsed) = parse(decoded)
-    parsed
-  }
-
 }
