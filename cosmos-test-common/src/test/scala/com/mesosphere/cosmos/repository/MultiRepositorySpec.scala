@@ -13,7 +13,6 @@ import cats.data.Ior
 import com.mesosphere.universe
 import com.mesosphere.universe.test.TestingPackages
 import com.mesosphere.universe.v3.syntax.PackageDefinitionOps._
-import com.mesosphere.universe.v4.model.PackageDefinition
 import org.scalatest.Matchers
 import org.scalatest.prop.TableDrivenPropertyChecks
 
@@ -258,7 +257,9 @@ final class MultiRepositorySpec extends FreeSpec with Matchers with TableDrivenP
     }
   }
 
-  private[this] def singletonMultiRepository(packageDefinition: PackageDefinition, uri: Uri) = {
+  private[this] def singletonMultiRepository(
+    packageDefinition: universe.v4.model.PackageDefinition, uri: Uri
+  ): MultiRepository = {
     val repos = List(PackageRepository("singleton", uri))
     val storage = TestStorage(repos)
     val client = TestClient(repos, List(packageDefinition))
