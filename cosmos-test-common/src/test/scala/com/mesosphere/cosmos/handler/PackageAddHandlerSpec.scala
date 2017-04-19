@@ -43,19 +43,19 @@ final class PackageAddHandlerSpec extends FreeSpec with MockitoSugar with Proper
         implicit val session = RequestSession(None, None)
 
         "with package name only" in {
-          forAll { (packageDef: universe.v3.model.V3Package, sourceUri: Uri) =>
+          forAll { (packageDef: universe.v4.model.SupportedPackageDefinition, sourceUri: Uri) =>
             assertErrorOnPendingOperation(packageDef, sourceUri, None)
           }
         }
 
         "with package name and version" in {
-          forAll { (packageDef: universe.v3.model.V3Package, sourceUri: Uri) =>
+          forAll { (packageDef: universe.v4.model.SupportedPackageDefinition, sourceUri: Uri) =>
             assertErrorOnPendingOperation(packageDef, sourceUri, Some(packageDef.version))
           }
         }
 
         def assertErrorOnPendingOperation(
-          packageDef: universe.v3.model.V3Package,
+          packageDef: universe.v4.model.SupportedPackageDefinition,
           sourceUri: Uri,
           packageVersion: Option[universe.v3.model.Version]
         ): Assertion = {
@@ -78,8 +78,8 @@ final class PackageAddHandlerSpec extends FreeSpec with MockitoSugar with Proper
       "for upload add requests" in {
         implicit val session = RequestSession(None, Some(MediaTypes.PackageZip))
 
-        forAll { (v3Package: universe.v3.model.V3Package) =>
-          val packageData = TestUtil.buildPackage(v3Package)
+        forAll { (packageDef: universe.v4.model.SupportedPackageDefinition) =>
+          val packageData = TestUtil.buildPackage(packageDef)
           val addRequest = rpc.v1.model.UploadAddRequest(packageData)
 
           val handler = buildHandler { (_, stagedObjectStorage, producerView) =>
@@ -93,10 +93,10 @@ final class PackageAddHandlerSpec extends FreeSpec with MockitoSugar with Proper
             }
 
             when(producerView.add(any[rpc.v1.model.PackageCoordinate], any[Operation]))
-              .thenReturn(Future.exception(OperationInProgress(v3Package.packageCoordinate)))
+              .thenReturn(Future.exception(OperationInProgress(packageDef.packageCoordinate)))
           }
 
-          assertErrorResponse(handler(addRequest), v3Package.packageCoordinate)
+          assertErrorResponse(handler(addRequest), packageDef.packageCoordinate)
         }
       }
 
