@@ -5,7 +5,6 @@ import com.mesosphere.cosmos.Deps
 lazy val cosmos = project.in(file("."))
   .settings(sharedSettings)
   .aggregate(
-    bijection,
     common,
     integrationTests,
     jsonschema,
@@ -20,6 +19,7 @@ lazy val common = project.in(file("cosmos-common"))
   .settings(
     name := baseDirectory.value.name,
     libraryDependencies ++=
+      Deps.bijection ++
       Deps.circe ++
       Deps.finch ++
       Deps.findbugs ++
@@ -40,20 +40,9 @@ lazy val model = project.in(file("cosmos-model"))
     name := baseDirectory.value.name,
     libraryDependencies ++=
       Deps.circe ++
-      Deps.fastpars ++
+      Deps.fastparse ++
       Deps.scalaUri ++
       Deps.twitterUtilCore
-  )
-
-lazy val bijection = project.in(file("cosmos-bijection"))
-  .settings(sharedSettings)
-  .settings(
-    name := baseDirectory.value.name,
-    libraryDependencies ++=
-      Deps.bijection
-  )
-  .dependsOn(
-    model
   )
 
 lazy val jsonschema = project.in(file("cosmos-jsonschema"))
@@ -74,8 +63,7 @@ lazy val render = project.in(file("cosmos-render"))
   )
   .dependsOn(
     common,
-    jsonschema,
-    bijection
+    jsonschema
   )
 
 lazy val server = project.in(file("cosmos-server"))
@@ -97,7 +85,7 @@ lazy val server = project.in(file("cosmos-server"))
       Deps.scalaUri ++
       Deps.slf4j ++
       Deps.twitterCommons ++
-      Deps.twitterServe
+      Deps.twitterServer
   )
   .dependsOn(
     render,
