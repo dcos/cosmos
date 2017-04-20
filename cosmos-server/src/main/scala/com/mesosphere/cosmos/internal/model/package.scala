@@ -6,7 +6,6 @@ import com.mesosphere.cosmos.label
 import com.mesosphere.cosmos.label.v1.circe.Decoders._
 import com.mesosphere.cosmos.thirdparty.marathon.model.MarathonApp
 import com.mesosphere.universe
-import com.mesosphere.universe.bijection.UniverseConversions._
 import com.netaporter.uri.Uri
 import com.twitter.bijection.Injection
 import io.circe.JsonObject
@@ -20,14 +19,6 @@ package object model {
 
     def packageName: Option[String] = app.labels.get(MarathonApp.nameLabel)
 
-    def packageReleaseVersion: Option[universe.v3.model.ReleaseVersion] = {
-      app.labels.get(MarathonApp.releaseLabel).flatMap { label =>
-        Injection.invert[universe.v3.model.ReleaseVersion, String](
-          label
-        ).toOption
-      }
-    }
-
     def packageVersion: Option[universe.v3.model.Version] = {
       app.labels.get(MarathonApp.versionLabel).map(universe.v3.model.Version(_))
     }
@@ -37,6 +28,7 @@ package object model {
       originUri <- Try(Uri.parse(repoValue)).toOption
     } yield PackageOrigin(originUri)
 
+    // TODO: This needs to be optional in the next PR when we persist the PkgDef envelope
     def packageMetadata: label.v1.model.PackageMetadata = {
       decode64[label.v1.model.PackageMetadata](
         app.labels.get(MarathonApp.metadataLabel).getOrElse("")

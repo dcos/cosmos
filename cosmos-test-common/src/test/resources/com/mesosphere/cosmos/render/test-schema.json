@@ -16,7 +16,7 @@
         }
       },
       "required": [
-        "id", "name", "cmd"
+        "id", "name"
       ],
       "additionalProperties": false
     },
