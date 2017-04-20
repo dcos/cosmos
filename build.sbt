@@ -7,7 +7,6 @@ lazy val cosmos = project.in(file("."))
   .aggregate(
     bijection,
     common,
-    finch,
     integrationTests,
     jsonschema,
     model,
@@ -22,6 +21,7 @@ lazy val common = project.in(file("cosmos-common"))
     name := baseDirectory.value.name,
     libraryDependencies ++=
       Deps.circe ++
+      Deps.finch ++
       Deps.findbugs ++
       Deps.guava ++
       Deps.scalaCheck ++
@@ -39,10 +39,10 @@ lazy val model = project.in(file("cosmos-model"))
   .settings(
     name := baseDirectory.value.name,
     libraryDependencies ++=
-      Deps.scalaUri
-        ++ Deps.circe
-        ++ Deps.twitterUtilCore
-        ++ Deps.fastparse
+      Deps.circe ++
+      Deps.fastpars ++
+      Deps.scalaUri ++
+      Deps.twitterUtilCore
   )
 
 lazy val bijection = project.in(file("cosmos-bijection"))
@@ -56,24 +56,13 @@ lazy val bijection = project.in(file("cosmos-bijection"))
     model
   )
 
-lazy val finch = project.in(file("cosmos-finch"))
-  .settings(sharedSettings)
-  .settings(
-    name := baseDirectory.value.name,
-    libraryDependencies ++=
-      Deps.finch
-  )
-  .dependsOn(
-    common
-  )
-
 lazy val jsonschema = project.in(file("cosmos-jsonschema"))
   .settings(sharedSettings)
   .settings(
     name := baseDirectory.value.name,
     libraryDependencies ++=
-      Deps.circe
-        ++ Deps.jsonSchema
+      Deps.circe ++
+      Deps.jsonSchema
   )
 
 lazy val render = project.in(file("cosmos-render"))
@@ -99,19 +88,18 @@ lazy val server = project.in(file("cosmos-server"))
   .settings(
     name := baseDirectory.value.name,
     libraryDependencies ++=
-      Deps.circe
-        ++ Deps.twitterServer
-        ++ Deps.curator
-        ++ Deps.logback
-        ++ Deps.mustache
-        ++ Deps.scalaUri
-        ++ Deps.bijectionUtil
-        ++ Deps.aws
-        ++ Deps.slf4j
-        ++ Deps.twitterCommons
+      Deps.aws ++
+      Deps.bijectionUtil ++
+      Deps.circe ++
+      Deps.curator ++
+      Deps.logback ++
+      Deps.mustache ++
+      Deps.scalaUri ++
+      Deps.slf4j ++
+      Deps.twitterCommons ++
+      Deps.twitterServe
   )
   .dependsOn(
-    finch,
     render,
     common
   )
@@ -121,11 +109,11 @@ lazy val testCommon = project.in(file("cosmos-test-common"))
   .settings(
     name := baseDirectory.value.name,
     libraryDependencies ++=
-      Deps.curator
-        ++ Deps.mockito
-        ++ Deps.scalaCheck
-        ++ Deps.scalaCheckShapeless
-        ++ Deps.scalaTest
+      Deps.curator ++
+      Deps.mockito ++
+      Deps.scalaCheck ++
+      Deps.scalaCheckShapeless ++
+      Deps.scalaTest
   )
   .dependsOn(
     server
