@@ -10,7 +10,7 @@ import com.mesosphere.cosmos.storage.v1.model.OperationStatus
 import com.mesosphere.cosmos.storage.v1.model.PendingStatus
 import com.mesosphere.cosmos.storage.v1.model.Uninstall
 import com.mesosphere.cosmos.storage.v1.model.UniverseInstall
-import com.mesosphere.universe.v3.model.V3Package
+import com.mesosphere.universe
 import java.time.Instant
 import java.util.UUID
 import org.scalacheck.Gen
@@ -76,45 +76,63 @@ object GarbageCollectorSpec {
     Gen.choose(0L, Long.MaxValue).map(Instant.ofEpochMilli)
   }
 
-  def genInstall(genV3Package: Gen[V3Package] = Generators.genV3Package): Gen[Install] = {
+  def genInstall(
+    genSupportedPackageDefinition
+    : Gen[universe.v4.model.SupportedPackageDefinition] = Generators.genSupportedPackageDefinition
+  ): Gen[Install] = {
     for {
-      v3Package <- genV3Package
+      supportedPackage <- genSupportedPackageDefinition
       uuid <- Gen.uuid
-    } yield Install(uuid, v3Package)
+    } yield Install(uuid, supportedPackage)
   }
 
-  def genUniverseInstall(genV3Package: Gen[V3Package] = Generators.genV3Package): Gen[UniverseInstall] = {
-    genV3Package.map { v3Package =>
-      UniverseInstall(v3Package)
+  def genUniverseInstall(
+    genSupportedPackageDefinition
+    : Gen[universe.v4.model.SupportedPackageDefinition] = Generators.genSupportedPackageDefinition
+  ): Gen[UniverseInstall] = {
+    genSupportedPackageDefinition.map { supportedPackage =>
+      UniverseInstall(supportedPackage)
     }
   }
 
-  def genUninstall(genV3Package: Gen[V3Package] = Generators.genV3Package): Gen[Uninstall] = {
-    genV3Package.map { v3Package =>
-      Uninstall(v3Package)
+  def genUninstall(
+    genSupportedPackageDefinition
+    : Gen[universe.v4.model.SupportedPackageDefinition] = Generators.genSupportedPackageDefinition
+  ): Gen[Uninstall] = {
+    genSupportedPackageDefinition.map { supportedPackage =>
+      Uninstall(supportedPackage)
     }
   }
 
-  def genOperation(genV3Package: Gen[V3Package] = Generators.genV3Package): Gen[Operation] = {
-    Gen.oneOf(genInstall(genV3Package), genUniverseInstall(genV3Package), genUninstall(genV3Package))
+  def genOperation(
+    genSupportedPackageDefinition
+    : Gen[universe.v4.model.SupportedPackageDefinition] = Generators.genSupportedPackageDefinition
+  ): Gen[Operation] = {
+    Gen.oneOf(
+      genInstall(genSupportedPackageDefinition),
+      genUniverseInstall(genSupportedPackageDefinition),
+      genUninstall(genSupportedPackageDefinition))
   }
 
   val genErrorResponse: Gen[ErrorResponse] = {
     Gen.const(ErrorResponse("GeneratedError", "This is a generated Error"))
   }
 
-  def genOperationFailure(genV3Package: Gen[V3Package] = Generators.genV3Package): Gen[OperationFailure] = {
+  def genOperationFailure(
+    genSupportedPackageDefinition
+    : Gen[universe.v4.model.SupportedPackageDefinition] = Generators.genSupportedPackageDefinition
+  ): Gen[OperationFailure] = {
     for {
-      operation <- genOperation(genV3Package)
+      operation <- genOperation(genSupportedPackageDefinition)
       error <- genErrorResponse
     } yield OperationFailure(operation, error)
   }
 
   val genPendingStatus: Gen[PendingStatus] = {
     for {
-      v3Package <- Generators.genV3Package
-      pendingOperation <- genOperation(v3Package)
-      failedOperation <- Gen.option(genOperationFailure(v3Package))
+      supportedPackage <- Generators.genSupportedPackageDefinition
+      pendingOperation <- genOperation(supportedPackage)
+      failedOperation <- Gen.option(genOperationFailure(supportedPackage))
     } yield PendingStatus(pendingOperation, failedOperation)
   }
 
