@@ -10,7 +10,6 @@ lazy val cosmos = project.in(file("."))
     finch,
     http,
     integrationTests,
-    json,
     jsonschema,
     model,
     render,
@@ -23,12 +22,14 @@ lazy val common = project.in(file("cosmos-common"))
   .settings(
     name := baseDirectory.value.name,
     libraryDependencies ++=
-      Deps.scalaReflect
-        ++ Deps.scalaTest
-        ++ Deps.scalaCheck
+      Deps.scalaReflect ++
+      Deps.scalaTest ++
+      Deps.scalaCheck ++
+      Deps.scalaUri ++
+      Deps.circe
   )
   .dependsOn(
-    json
+    model
   )
 
 lazy val model = project.in(file("cosmos-model"))
@@ -40,18 +41,6 @@ lazy val model = project.in(file("cosmos-model"))
         ++ Deps.circe
         ++ Deps.twitterUtilCore
         ++ Deps.fastparse
-  )
-
-lazy val json = project.in(file("cosmos-json"))
-  .settings(sharedSettings)
-  .settings(
-    name := baseDirectory.value.name,
-    libraryDependencies ++=
-      Deps.scalaUri
-        ++ Deps.circe
-  )
-  .dependsOn(
-    model
   )
 
 lazy val bijection = project.in(file("cosmos-bijection"))
@@ -83,7 +72,7 @@ lazy val finch = project.in(file("cosmos-finch"))
       Deps.finch
   )
   .dependsOn(
-    json,
+    common,
     http
   )
 
@@ -104,7 +93,7 @@ lazy val render = project.in(file("cosmos-render"))
       Deps.mustache
   )
   .dependsOn(
-    json,
+    common,
     jsonschema,
     bijection
   )
