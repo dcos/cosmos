@@ -10,7 +10,7 @@ title: DC/OS Package
           enum: [application/vnd.dcos.package.install-response+json;charset=utf-8;version=v2]
       body:
         application/vnd.dcos.package.install-request+json;charset=utf-8;version=v1:
-          type: !include ../../../../../../../../cosmos-model/src/main/resources/com/mesosphere/cosmos/rpc/v1/model/InstallRequest-schema.json
+          type: !include ../../../../../../../../cosmos-common/src/main/resources/com/mesosphere/cosmos/rpc/v1/model/InstallRequest-schema.json
           example:
             packageName: cassandra
             packageVersion: 1.0.24-3.0.10
@@ -18,7 +18,7 @@ title: DC/OS Package
         200:
           body:
             application/vnd.dcos.package.install-response+json;charset=utf-8;version=v2:
-              type: !include ../../../../../../../../cosmos-model/src/main/resources/com/mesosphere/cosmos/rpc/v2/model/InstallResponse-schema.json
+              type: !include ../../../../../../../../cosmos-common/src/main/resources/com/mesosphere/cosmos/rpc/v2/model/InstallResponse-schema.json
               example:
                 packageName: cassandra
                 packageVersion: 1.0.24-3.0.10
@@ -31,7 +31,7 @@ title: DC/OS Package
           enum: [application/vnd.dcos.package.uninstall-response+json;charset=utf-8;version=v1]
       body:
         application/vnd.dcos.package.uninstall-request+json;charset=utf-8;version=v1:
-          type: !include ../../../../../../../../cosmos-model/src/main/resources/com/mesosphere/cosmos/rpc/v1/model/UninstallRequest-schema.json
+          type: !include ../../../../../../../../cosmos-common/src/main/resources/com/mesosphere/cosmos/rpc/v1/model/UninstallRequest-schema.json
           example:
             packageName: cassandra
             appId: /cassandra
@@ -39,7 +39,7 @@ title: DC/OS Package
         200:
           body:
             application/vnd.dcos.package.uninstall-response+json;charset=utf-8;version=v1:
-              type: !include ../../../../../../../../cosmos-model/src/main/resources/com/mesosphere/cosmos/rpc/v1/model/UninstallResponse-schema.json
+              type: !include ../../../../../../../../cosmos-common/src/main/resources/com/mesosphere/cosmos/rpc/v1/model/UninstallResponse-schema.json
               example:
                 results:
                   - packageName: cassandra
@@ -54,7 +54,7 @@ title: DC/OS Package
           enum: [application/vnd.dcos.package.describe-response+json;charset=utf-8;version=v2]
       body:
         application/vnd.dcos.package.describe-request+json;charset=utf-8;version=v1:
-          type: !include ../../../../../../../../cosmos-model/src/main/resources/com/mesosphere/cosmos/rpc/v1/model/DescribeRequest-schema.json
+          type: !include ../../../../../../../../cosmos-common/src/main/resources/com/mesosphere/cosmos/rpc/v1/model/DescribeRequest-schema.json
           example:
             packageName: cassandra
             packageVersion: 1.0.24-3.0.10
@@ -62,7 +62,7 @@ title: DC/OS Package
         200:
           body:
             application/vnd.dcos.package.describe-response+json;charset=utf-8;version=v2:
-              type: !include ../../../../../../../../cosmos-model/src/main/resources/com/mesosphere/cosmos/rpc/v2/model/DescribeResponse-schema.json
+              type: !include ../../../../../../../../cosmos-common/src/main/resources/com/mesosphere/cosmos/rpc/v2/model/DescribeResponse-schema.json
               example:
                 name: cassandra
                 version: 1.0.24-3.0.10
@@ -84,7 +84,7 @@ title: DC/OS Package
           enum: [application/vnd.dcos.package.render-response+json;charset=utf-8;version=v1]
       body:
         application/vnd.dcos.package.render-request+json;charset=utf-8;version=v1:
-          type: !include ../../../../../../../../cosmos-model/src/main/resources/com/mesosphere/cosmos/rpc/v1/model/RenderRequest-schema.json
+          type: !include ../../../../../../../../cosmos-common/src/main/resources/com/mesosphere/cosmos/rpc/v1/model/RenderRequest-schema.json
           example:
             packageName: cassandra
             packageVersion: 1.0.24-3.0.10
@@ -92,7 +92,7 @@ title: DC/OS Package
         200:
           body:
             application/vnd.dcos.package.render-response+json;charset=utf-8;version=v1:
-              type: !include ../../../../../../../../cosmos-model/src/main/resources/com/mesosphere/cosmos/rpc/v1/model/RenderResponse-schema.json
+              type: !include ../../../../../../../../cosmos-common/src/main/resources/com/mesosphere/cosmos/rpc/v1/model/RenderResponse-schema.json
               example:
                 marathonJson:
                   id: /cassandra
@@ -106,14 +106,14 @@ title: DC/OS Package
           enum: [application/vnd.dcos.package.list-versions-response+json;charset=utf-8;version=v1]
       body:
         application/vnd.dcos.package.list-versions-request+json;charset=utf-8;version=v1:
-          type: !include ../../../../../../../../cosmos-model/src/main/resources/com/mesosphere/cosmos/rpc/v1/model/ListVersionsRequest-schema.json
+          type: !include ../../../../../../../../cosmos-common/src/main/resources/com/mesosphere/cosmos/rpc/v1/model/ListVersionsRequest-schema.json
           example:
             packageName: cassandra
       responses:
         200:
           body:
             application/vnd.dcos.package.list-versions-response+json;charset=utf-8;version=v1:
-              type: !include ../../../../../../../../cosmos-model/src/main/resources/com/mesosphere/cosmos/rpc/v1/model/ListVersionsResponse-schema.json
+              type: !include ../../../../../../../../cosmos-common/src/main/resources/com/mesosphere/cosmos/rpc/v1/model/ListVersionsResponse-schema.json
               example:
                 results:
                   1.0.24-3.0.10: "24"
@@ -128,14 +128,14 @@ title: DC/OS Package
           enum: [application/vnd.dcos.package.search-response+json;charset=utf-8;version=v1]
       body:
         application/vnd.dcos.package.search-request+json;charset=utf-8;version=v1:
-          type: !include ../../../../../../../../cosmos-model/src/main/resources/com/mesosphere/cosmos/rpc/v1/model/SearchRequest-schema.json
+          type: !include ../../../../../../../../cosmos-common/src/main/resources/com/mesosphere/cosmos/rpc/v1/model/SearchRequest-schema.json
           example:
             query: database
       responses:
         200:
           body:
             application/vnd.dcos.package.search-response+json;charset=utf-8;version=v1:
-              type: !include ../../../../../../../../cosmos-model/src/main/resources/com/mesosphere/cosmos/rpc/v1/model/SearchResponse-schema.json
+              type: !include ../../../../../../../../cosmos-common/src/main/resources/com/mesosphere/cosmos/rpc/v1/model/SearchResponse-schema.json
               example:
                 packages:
                   - name: cassandra
@@ -156,13 +156,13 @@ title: DC/OS Package
           enum: [application/vnd.dcos.package.list-response+json;charset=utf-8;version=v1]
       body:
         application/vnd.dcos.package.list-request+json;charset=utf-8;version=v1:
-          type: !include ../../../../../../../../cosmos-model/src/main/resources/com/mesosphere/cosmos/rpc/v1/model/ListRequest-schema.json
+          type: !include ../../../../../../../../cosmos-common/src/main/resources/com/mesosphere/cosmos/rpc/v1/model/ListRequest-schema.json
           example: {}
       responses:
         200:
           body:
             application/vnd.dcos.package.list-response+json;charset=utf-8;version=v1:
-              type: !include ../../../../../../../../cosmos-model/src/main/resources/com/mesosphere/cosmos/rpc/v1/model/ListResponse-schema.json
+              type: !include ../../../../../../../../cosmos-common/src/main/resources/com/mesosphere/cosmos/rpc/v1/model/ListResponse-schema.json
               example:
                 packages:
                   - appId: /cassandra
@@ -188,7 +188,7 @@ title: DC/OS Package
           enum: [application/vnd.dcos.package.add-response+json;charset=utf-8;version=v1]
       body:
         application/vnd.dcos.package.add-request+json;charset=utf-8;version=v1:
-          type: !include ../../../../../../../../cosmos-model/src/main/resources/com/mesosphere/cosmos/rpc/v1/model/PackageAddRequest-schema.json
+          type: !include ../../../../../../../../cosmos-common/src/main/resources/com/mesosphere/cosmos/rpc/v1/model/PackageAddRequest-schema.json
           example:
             packageName: cassandra
             packageVersion: 1.0.24-3.0.10
@@ -197,7 +197,7 @@ title: DC/OS Package
         202:
           body:
             application/vnd.dcos.package.add-response+json;charset=utf-8;version=v1:
-              type: !include ../../../../../../../../cosmos-model/src/main/resources/com/mesosphere/cosmos/rpc/v1/model/PackageAddResponse-schema.json
+              type: !include ../../../../../../../../cosmos-common/src/main/resources/com/mesosphere/cosmos/rpc/v1/model/PackageAddResponse-schema.json
               example:
                 name: cassandra
                 version: 1.0.24-3.0.10
@@ -222,13 +222,13 @@ title: DC/OS Package
               [application/vnd.dcos.package.repository.list-response+json;charset=utf-8;version=v1]
         body:
           application/vnd.dcos.package.repository.list-request+json;charset=utf-8;version=v1:
-            type: !include ../../../../../../../../cosmos-model/src/main/resources/com/mesosphere/cosmos/rpc/v1/model/PackageRepositoryListRequest-schema.json
+            type: !include ../../../../../../../../cosmos-common/src/main/resources/com/mesosphere/cosmos/rpc/v1/model/PackageRepositoryListRequest-schema.json
             example: {}
         responses:
           200:
             body:
               application/vnd.dcos.package.repository.list-response+json;charset=utf-8;version=v1:
-                type: !include ../../../../../../../../cosmos-model/src/main/resources/com/mesosphere/cosmos/rpc/v1/model/PackageRepositoryListResponse-schema.json
+                type: !include ../../../../../../../../cosmos-common/src/main/resources/com/mesosphere/cosmos/rpc/v1/model/PackageRepositoryListResponse-schema.json
                 example:
                   repositories:
                     - name: Universe
@@ -244,7 +244,7 @@ title: DC/OS Package
             enum: [application/vnd.dcos.package.repository.add-response+json;charset=utf-8;version=v1]
         body:
           application/vnd.dcos.package.repository.add-request+json;charset=utf-8;version=v1:
-            type: !include ../../../../../../../../cosmos-model/src/main/resources/com/mesosphere/cosmos/rpc/v1/model/PackageRepositoryAddRequest-schema.json
+            type: !include ../../../../../../../../cosmos-common/src/main/resources/com/mesosphere/cosmos/rpc/v1/model/PackageRepositoryAddRequest-schema.json
             example:
               name: Local Universe
               uri: http://universe.marathon.mesos:8080/repo
@@ -252,7 +252,7 @@ title: DC/OS Package
           200:
             body:
               application/vnd.dcos.package.repository.add-response+json;charset=utf-8;version=v1:
-                type: !include ../../../../../../../../cosmos-model/src/main/resources/com/mesosphere/cosmos/rpc/v1/model/PackageRepositoryAddResponse-schema.json
+                type: !include ../../../../../../../../cosmos-common/src/main/resources/com/mesosphere/cosmos/rpc/v1/model/PackageRepositoryAddResponse-schema.json
                 example:
                   repositories:
                     - name: Universe
@@ -267,14 +267,14 @@ title: DC/OS Package
             enum: [application/vnd.dcos.package.repository.delete-response+json;charset=utf-8;version=v1]
         body:
           application/vnd.dcos.package.repository.delete-request+json;charset=utf-8;version=v1:
-            type: !include ../../../../../../../../cosmos-model/src/main/resources/com/mesosphere/cosmos/rpc/v1/model/PackageRepositoryDeleteRequest-schema.json
+            type: !include ../../../../../../../../cosmos-common/src/main/resources/com/mesosphere/cosmos/rpc/v1/model/PackageRepositoryDeleteRequest-schema.json
             example:
               name: Local Universe
         responses:
           200:
             body:
               application/vnd.dcos.package.repository.delete-response+json;charset=utf-8;version=v1:
-                type: !include ../../../../../../../../cosmos-model/src/main/resources/com/mesosphere/cosmos/rpc/v1/model/PackageRepositoryDeleteResponse-schema.json
+                type: !include ../../../../../../../../cosmos-common/src/main/resources/com/mesosphere/cosmos/rpc/v1/model/PackageRepositoryDeleteResponse-schema.json
                 example:
                   repositories:
                     - name: Universe
