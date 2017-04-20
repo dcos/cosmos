@@ -7,7 +7,6 @@ lazy val cosmos = project.in(file("."))
   .aggregate(
     common,
     integrationTests,
-    render,
     server,
     testCommon
   )
@@ -24,22 +23,12 @@ lazy val common = project.in(file("cosmos-common"))
       Deps.findbugs ++
       Deps.guava ++
       Deps.jsonSchema ++
+      Deps.mustache ++
       Deps.scalaCheck ++
       Deps.scalaReflect ++
       Deps.scalaTest ++
       Deps.scalaUri ++
       Deps.twitterUtilCore
-  )
-
-lazy val render = project.in(file("cosmos-render"))
-  .settings(sharedSettings)
-  .settings(
-    name := baseDirectory.value.name,
-    libraryDependencies ++=
-      Deps.mustache
-  )
-  .dependsOn(
-    common
   )
 
 lazy val server = project.in(file("cosmos-server"))
@@ -64,7 +53,6 @@ lazy val server = project.in(file("cosmos-server"))
       Deps.twitterServer
   )
   .dependsOn(
-    render,
     common
   )
 
