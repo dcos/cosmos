@@ -50,7 +50,7 @@ private[cosmos] final class ListHandler(
     def satisfiesRequest(app: thirdparty.marathon.model.MarathonApp): Boolean = {
       // corner case: packageReleaseVersion will be None if parsing the label fails
       app.packageName.exists { pkgName =>
-        request.packageName.exists(_ == pkgName) && request.appId.exists(_ == app.id)
+        request.packageName.forall(_ == pkgName) && request.appId.forall(_ == app.id)
       }
     }
 
