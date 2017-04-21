@@ -6,5 +6,9 @@
   {
     "name": "Hello World",
     "uri": "https://downloads.mesosphere.com/universe/helloworld.zip"
+  },
+  {
+    "name": "V4TestUniverse",
+    "uri": "https://s3-us-west-1.amazonaws.com/larioj-mesosphere/v4-test-universe.json"
   }
 ]
