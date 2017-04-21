@@ -15,7 +15,7 @@ import org.scalatest.prop.PropertyChecks
 final class DefaultInstallerSpec extends FreeSpec with Matchers with PropertyChecks {
   "Test that installing new package succeeds" in TestUtil.withObjectStorage { tempObjectStorage =>
     TestUtil.withObjectStorage { objectStorage =>
-      forAll { (expected: universe.v3.model.V3Package) =>
+      forAll { (expected: universe.v4.model.SupportedPackageDefinition) =>
         val packageStorage = PackageStorage(objectStorage)
         val adder = DefaultInstaller(
           StagedPackageStorage(tempObjectStorage),
@@ -41,7 +41,7 @@ final class DefaultInstallerSpec extends FreeSpec with Matchers with PropertyChe
   "Test that installing a package that already exists is a noop" in TestUtil.withObjectStorage {
     tempObjectStorage =>
       TestUtil.withObjectStorage { objectStorage =>
-        forAll { (expected: universe.v3.model.V3Package) =>
+        forAll { (expected: universe.v4.model.SupportedPackageDefinition) =>
           val packageStorage = PackageStorage(objectStorage)
           val adder = DefaultInstaller(
             StagedPackageStorage(tempObjectStorage),

@@ -41,6 +41,10 @@ final class PackageStorage private(objectStorage: ObjectStorage) {
           decode[universe.v3.model.V3Package](
             new String(data, StandardCharsets.UTF_8)
           )
+        case (universe.MediaTypes.universeV4Package, data) =>
+          decode[universe.v4.model.V4Package](
+            new String(data, StandardCharsets.UTF_8)
+          )
         case (mt, _) =>
           throw new RuntimeException(
             "Found incorrect media type when trying to " +
