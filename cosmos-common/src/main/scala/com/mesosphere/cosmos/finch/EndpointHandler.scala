@@ -15,7 +15,7 @@ abstract class EndpointHandler[Request, Response](successStatus: Status = Status
       val encodedResponse = response.asJson(context.responseEncoder.encoder)
 
       Output.payload(encodedResponse, successStatus)
-        .withHeader(Fields.ContentType -> context.responseEncoder.mediaType.show)
+        .withHeader(Fields.ContentType -> context.responseEncoder.mediaType(response).show)
     }
   }
 

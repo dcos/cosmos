@@ -12,9 +12,9 @@ import shapeless.HNil
 
 object FinchExtensions {
 
-  def beTheExpectedType(expected: MediaType): ValidationRule[MediaType] =
-    ValidationRule(s"match ${expected.show}") { actual =>
-      MediaTypeOps.compatible(expected, actual)
+  def beTheExpectedTypes(expectedTypes: List[MediaType]): ValidationRule[MediaType] =
+    ValidationRule(s"match ${expectedTypes.map(_.show).mkString(", ")}") { actual =>
+      expectedTypes.exists(expected => MediaTypeOps.compatible(expected, actual))
     }
 
   implicit val decodeMediaType: DecodeEntity[MediaType] = {

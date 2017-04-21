@@ -1,13 +1,9 @@
 package com.mesosphere.cosmos.circe
 
 import com.mesosphere.cosmos.CirceError
-import com.mesosphere.cosmos.model.StorageEnvelope
-import com.mesosphere.universe.common.circe.Decoders._
-import io.circe.Decoder
 import io.circe.Decoder
 import io.circe.Error
 import io.circe.Json
-import io.circe.generic.semiauto._
 import java.nio.charset.StandardCharsets
 import java.util.Base64
 
@@ -34,8 +30,5 @@ object Decoders {
   def parse64(str: String): Json = {
     parse(new String(Base64.getDecoder.decode(str), StandardCharsets.UTF_8))
   }
-
-  implicit val decodeStorageEnvelope: Decoder[StorageEnvelope] =
-    deriveDecoder[StorageEnvelope]
 
 }

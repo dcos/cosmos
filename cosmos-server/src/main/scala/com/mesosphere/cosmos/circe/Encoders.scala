@@ -3,7 +3,6 @@ package com.mesosphere.cosmos.circe
 import cats.data.Ior
 import com.mesosphere.cosmos.CosmosError
 import com.mesosphere.cosmos.http.MediaType
-import com.mesosphere.cosmos.model.StorageEnvelope
 import com.mesosphere.cosmos.rpc.v1.circe.Encoders._
 import com.mesosphere.cosmos.rpc.v1.model.ErrorResponse
 import com.mesosphere.cosmos.rpc.v1.model.LocalPackage
@@ -17,7 +16,6 @@ import com.mesosphere.cosmos.storage.v1.model.PendingStatus
 import com.mesosphere.cosmos.storage.v1.model.Uninstall
 import com.mesosphere.cosmos.storage.v1.model.UniverseInstall
 import com.mesosphere.universe
-import com.mesosphere.universe.common.circe.Encoders._
 import com.mesosphere.util.PackageUtil
 import com.twitter.finagle.http.Fields
 import com.twitter.finagle.http.Status
@@ -36,9 +34,6 @@ import org.jboss.netty.handler.codec.http.HttpMethod
 
 
 object Encoders {
-
-  implicit val encodeStorageEnvelope: Encoder[StorageEnvelope] =
-    deriveEncoder[StorageEnvelope]
 
   implicit val encodeInstall: Encoder[Install] =
     deriveEncoder[Install]
