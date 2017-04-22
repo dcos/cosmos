@@ -302,7 +302,6 @@ object Encoders {
       case ConversionError(failure) => failure
       case ServiceMarathonTemplateNotFound(name, universe.v3.model.Version(version)) =>
         s"Package: [$name] version: [$version] does not have a Marathon template defined and can not be rendered"
-      case EnvelopeError(msg) => msg
       case InstallQueueError(msg) => msg
       case NotImplemented(msg) => msg
       case OperationInProgress(coordinate) =>

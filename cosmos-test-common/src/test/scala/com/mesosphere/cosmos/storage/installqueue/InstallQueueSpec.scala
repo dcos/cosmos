@@ -5,7 +5,7 @@ import com.mesosphere.cosmos.OperationInProgress
 import com.mesosphere.cosmos.model.ZooKeeperUri
 import com.mesosphere.cosmos.rpc.v1.model.ErrorResponse
 import com.mesosphere.cosmos.rpc.v1.model.PackageCoordinate
-import com.mesosphere.cosmos.storage.Envelope
+import com.mesosphere.cosmos.model.StorageEnvelope
 import com.mesosphere.cosmos.storage.v1.circe.MediaTypedDecoders._
 import com.mesosphere.cosmos.storage.v1.circe.MediaTypedEncoders._
 import com.mesosphere.cosmos.storage.v1.model.FailedStatus
@@ -582,7 +582,7 @@ final class InstallQueueSpec extends fixture.FreeSpec with BeforeAndAfterAll {
         .forPath(
           statusPath(coordinate1)
         )
-    val operationStatus = Envelope.decodeData[OperationStatus](data)
+    val operationStatus = StorageEnvelope.decodeData[OperationStatus](data)
     assertResult(expected)(operationStatus)
   }
 
@@ -597,7 +597,7 @@ final class InstallQueueSpec extends fixture.FreeSpec with BeforeAndAfterAll {
       .creatingParentsIfNeeded()
       .forPath(
         statusPath(packageCoordinate),
-        Envelope.encodeData(contents)
+        StorageEnvelope.encodeData(contents)
       )
     ()
   }

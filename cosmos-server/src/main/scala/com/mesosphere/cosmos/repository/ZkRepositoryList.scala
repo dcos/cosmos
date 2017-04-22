@@ -7,7 +7,7 @@ import com.mesosphere.cosmos.RepositoryAlreadyPresent
 import com.mesosphere.cosmos.RepositoryNotPresent
 import com.mesosphere.cosmos.repository.DefaultRepositories._
 import com.mesosphere.cosmos.rpc.v1.model.PackageRepository
-import com.mesosphere.cosmos.storage.Envelope
+import com.mesosphere.cosmos.model.StorageEnvelope
 import com.mesosphere.cosmos.storage.v1.circe.MediaTypedDecoders._
 import com.mesosphere.cosmos.storage.v1.circe.MediaTypedEncoders._
 import com.netaporter.uri.Uri
@@ -41,7 +41,7 @@ final class ZkRepositoryList private (
     Stat.timeFuture(stats.stat("read")) {
       readFromZooKeeper.flatMap {
         case Some((_, bytes)) =>
-          Future(Envelope.decodeData[List[PackageRepository]](bytes))
+          Future(StorageEnvelope.decodeData[List[PackageRepository]](bytes))
         case None =>
           create(DefaultRepos)
       }
@@ -54,7 +54,7 @@ final class ZkRepositoryList private (
       readFromCache.flatMap {
         case Some((_, bytes)) =>
           readCacheStats.counter("hit").incr
-          Future(Envelope.decodeData[List[PackageRepository]](bytes))
+          Future(StorageEnvelope.decodeData[List[PackageRepository]](bytes))
         case None =>
           readCacheStats.counter("miss").incr
           read()
@@ -74,7 +74,7 @@ final class ZkRepositoryList private (
             addToList(
               index,
               packageRepository,
-              Envelope.decodeData[List[PackageRepository]](bytes)
+              StorageEnvelope.decodeData[List[PackageRepository]](bytes)
             )
           )
 
@@ -89,7 +89,7 @@ final class ZkRepositoryList private (
       Stat.timeFuture(stats.stat("delete")) {
         readFromZooKeeper.flatMap {
           case Some((stat, bytes)) =>
-            val originalData = Envelope.decodeData[List[PackageRepository]](bytes)
+            val originalData = StorageEnvelope.decodeData[List[PackageRepository]](bytes)
             val updatedData = originalData.filterNot(predicate)
             if (originalData.size == updatedData.size) {
               throw new RepositoryNotPresent(nameOrUri)
@@ -120,7 +120,7 @@ final class ZkRepositoryList private (
       new CreateHandler(promise, repositories)
     ).forPath(
       ZkRepositoryList.PackageRepositoriesPath,
-      Envelope.encodeData(repositories)
+      StorageEnvelope.encodeData(repositories)
     )
 
     promise
@@ -136,7 +136,7 @@ final class ZkRepositoryList private (
       new WriteHandler(promise, repositories)
     ).forPath(
       ZkRepositoryList.PackageRepositoriesPath,
-      Envelope.encodeData(repositories)
+      StorageEnvelope.encodeData(repositories)
     )
 
     promise

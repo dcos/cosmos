@@ -1,32 +1,30 @@
-package com.mesosphere.cosmos.storage
+package com.mesosphere.cosmos.model
 
-import com.mesosphere.cosmos.EnvelopeError
 import com.mesosphere.cosmos.finch.{MediaTypedDecoder, MediaTypedEncoder}
 import com.mesosphere.cosmos.http.{MediaType, MediaTypeSubType}
-import com.mesosphere.cosmos.storage.Envelope._
 import io.circe.generic.semiauto._
 import io.circe.{Decoder, Encoder}
 import org.scalatest.FreeSpec
 
-class EnvelopeSpec extends FreeSpec {
-  import EnvelopeSpec._
+class StorageEnvelopeSpec extends FreeSpec {
+  import StorageEnvelopeSpec._
 
   "Decoding the result of an encoding should yield back the original data" in {
     val exp = TestClass("fooooo")
-    val act = decodeData[TestClass](encodeData(exp))
+    val act = StorageEnvelope.decodeData[TestClass](StorageEnvelope.encodeData(exp))
     assertResult(exp)(act)
   }
 
   "Decoding the result of an encoding as a different type should throw an exception" in {
     val input = TestClass2("fooooo")
-    intercept[EnvelopeError] {
-      decodeData[TestClass](encodeData(input))
+    intercept[IllegalArgumentException] {
+      StorageEnvelope.decodeData[TestClass](StorageEnvelope.encodeData(input))
     }
     ()
   }
 }
 
-object  EnvelopeSpec {
+object  StorageEnvelopeSpec {
   private case class TestClass(name: String)
   private val TestClassMt = MediaType(
     "application",
