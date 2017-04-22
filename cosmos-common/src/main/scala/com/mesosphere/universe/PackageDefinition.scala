@@ -150,10 +150,10 @@ package v4.model {
       case v4: universe.v4.model.V4Package => v4.asJson
     }
 
-    private val mediaTypes = List(
-      MediaTypes.universeV2Package,
-      MediaTypes.universeV3Package,
-      MediaTypes.universeV4Package
+    private val mediaTypes = (
+      universe.v3.model.V2Package.mediaTypedEncoder.mediaTypes ++
+      universe.v3.model.V3Package.mediaTypedEncoder.mediaTypes ++
+      universe.v4.model.V4Package.mediaTypedEncoder.mediaTypes
     )
 
     implicit val mediaTypedDecoder: MediaTypedDecoder[PackageDefinition] = MediaTypedDecoder(
@@ -167,9 +167,12 @@ package v4.model {
         val mediaTypes: List[MediaType] = PackageDefinition.mediaTypes
 
         def mediaType(a: PackageDefinition): MediaType = a match {
-          case v2: universe.v3.model.V2Package => MediaTypes.universeV2Package
-          case v3: universe.v3.model.V3Package => MediaTypes.universeV3Package
-          case v4: universe.v4.model.V4Package => MediaTypes.universeV4Package
+          case v2: universe.v3.model.V2Package =>
+            universe.v3.model.V2Package.mediaTypedEncoder.mediaType(v2)
+          case v3: universe.v3.model.V3Package =>
+            universe.v3.model.V3Package.mediaTypedEncoder.mediaType(v3)
+          case v4: universe.v4.model.V4Package =>
+            universe.v4.model.V4Package.mediaTypedEncoder.mediaType(v4)
         }
       }
     }
@@ -188,17 +191,22 @@ package v4.model {
         hc.downField("packagingVersion").as[universe.v4.model.PackagingVersion].flatMap {
           case universe.v4.model.V4PackagingVersion => hc.as[universe.v4.model.V4Package]
           case universe.v3.model.V3PackagingVersion => hc.as[universe.v3.model.V3Package]
-          case universe.v3.model.V2PackagingVersion => Left(DecodingFailure(
-            s"V2Package is not a supported package definition",
-            hc.history
-          ))
+          case universe.v3.model.V2PackagingVersion =>
+            Left(
+              DecodingFailure(
+                s"V2Package is not a supported package definition",
+                hc.history
+              )
+            )
         }
       }
     }
 
-    implicit val encodeSupportedPackageDefinition: Encoder[SupportedPackageDefinition] = Encoder.instance {
-      case v3: universe.v3.model.V3Package => v3.asJson
-      case v4: universe.v4.model.V4Package => v4.asJson
+    implicit val encodeSupportedPackageDefinition: Encoder[SupportedPackageDefinition] = {
+      Encoder.instance {
+        case v3: universe.v3.model.V3Package => v3.asJson
+        case v4: universe.v4.model.V4Package => v4.asJson
+      }
     }
 
   }
