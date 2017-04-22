@@ -14,7 +14,7 @@ final class DispatchingMediaTypedEncoderSpec extends FreeSpec {
     "return the first encoder with a media type compatible with the argument" in {
       val Some(mediaTypedEncoder) = ThreeElementEncoder(CompoundMediaType(MediaType("foo", "bar")))
       assertResult(Json.fromInt(1))(mediaTypedEncoder.encoder(()))
-      assertResult(MediaType("foo", "bar"))(mediaTypedEncoder.mediaType)
+      assertResult(MediaType("foo", "bar"))(mediaTypedEncoder.mediaTypes.head)
     }
 
     "indicate failure if no compatible encoder is found" - {

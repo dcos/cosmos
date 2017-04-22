@@ -150,17 +150,22 @@ package v4.model {
       case v4: universe.v4.model.V4Package => v4.asJson
     }
 
+    private val mediaTypes = List(
+      MediaTypes.universeV2Package,
+      MediaTypes.universeV3Package,
+      MediaTypes.universeV4Package
+    )
+
     implicit val mediaTypedDecoder: MediaTypedDecoder[PackageDefinition] = MediaTypedDecoder(
-      List(
-        MediaTypes.universeV2Package,
-        MediaTypes.universeV3Package,
-        MediaTypes.universeV4Package
-      )
+      mediaTypes
     )
 
     implicit val mediaTypedEncoder: MediaTypedEncoder[PackageDefinition] = {
       new MediaTypedEncoder[PackageDefinition] {
         val encoder = PackageDefinition.encoder
+
+        val mediaTypes: List[MediaType] = PackageDefinition.mediaTypes
+
         def mediaType(a: PackageDefinition): MediaType = a match {
           case v2: universe.v3.model.V2Package => MediaTypes.universeV2Package
           case v3: universe.v3.model.V3Package => MediaTypes.universeV3Package

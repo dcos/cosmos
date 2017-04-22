@@ -270,7 +270,7 @@ final class RequestValidatorsSpec extends FreeSpec with Matchers with PropertyCh
           val produces = DispatchingMediaTypedEncoder(encoders)
           val result = factory.validate(accept = Some(mediaType.show), produces = produces)
           val Return(context) = result
-          assertResult(mediaType)(context.responseEncoder.mediaType)
+          assertResult(mediaType)(context.responseEncoder.mediaTypes.head)
         }
       }
 
@@ -304,7 +304,7 @@ final class RequestValidatorsSpec extends FreeSpec with Matchers with PropertyCh
         val produces = DispatchingMediaTypedEncoder(encoders)
         val result = factory.validate(accept = Some(accept.show), produces = produces)
         val Return(context) = result
-        assertResult(expected)(context.responseEncoder.mediaType)
+        assertResult(expected)(context.responseEncoder.mediaTypes.head)
       }
     }
 
