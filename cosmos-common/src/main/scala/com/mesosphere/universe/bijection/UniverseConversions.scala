@@ -298,7 +298,9 @@ object UniverseConversions {
       universe.v3.model.V3Resource(value.assets, value.images)
     } {
       case universe.v3.model.V3Resource(assets, images, Some(cli)) =>
-        throw new IllegalArgumentException("Version 3 resource value contains a cli so cannot convert to version 2 Resource")
+        throw new IllegalArgumentException(
+          "Version 3 resource value contains a cli so cannot convert to version 2 Resource"
+        )
       case universe.v3.model.V3Resource(assets, images, None) =>
         universe.v3.model.V2Resource(assets, images)
     }

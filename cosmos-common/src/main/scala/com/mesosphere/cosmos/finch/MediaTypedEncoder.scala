@@ -1,5 +1,6 @@
 package com.mesosphere.cosmos.finch
 
+import cats.data.NonEmptyList
 import com.mesosphere.cosmos.http.MediaType
 import io.circe.Encoder
 
@@ -9,7 +10,7 @@ trait MediaTypedEncoder[A] {
   val encoder: Encoder[A]
 
   /// Enumerate all of the possible media types for this type.
-  val mediaTypes: List[MediaType]
+  val mediaTypes: NonEmptyList[MediaType]
 
   /// Returns the specific media type based on the value of the type.
   def mediaType(a: A): MediaType
@@ -19,7 +20,7 @@ final class SimpleMediaTypedEncoder[A](
   val encoder: Encoder[A],
   mediaTypeForA: MediaType
 ) extends MediaTypedEncoder[A] {
-  val mediaTypes = List(mediaTypeForA)
+  val mediaTypes = NonEmptyList.of(mediaTypeForA)
   def mediaType(a: A): MediaType = mediaTypeForA
 }
 

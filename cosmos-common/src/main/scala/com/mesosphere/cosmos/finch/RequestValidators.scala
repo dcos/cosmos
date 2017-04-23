@@ -24,7 +24,7 @@ object RequestValidators {
     accepts: MediaTypedRequestDecoder[Req],
     produces: DispatchingMediaTypedEncoder[Res]
   ): Endpoint[EndpointContext[Req, Res]] = {
-    val contentTypeRule = beTheExpectedTypes(accepts.mediaTypedDecoder.mediaTypes)
+    val contentTypeRule = beTheExpectedTypes(accepts.mediaTypedDecoder.mediaTypes.toList)
     val contentTypeValidator = header(Fields.ContentType).as[MediaType].should(contentTypeRule)
 
     val bodyValidator = body[Req, Application.Json](accepts.decoder, accepts.classTag)

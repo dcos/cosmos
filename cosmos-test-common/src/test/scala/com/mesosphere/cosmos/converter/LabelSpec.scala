@@ -37,6 +37,11 @@ final class LabelSpec extends FreeSpec {
 
   }
 
+  // TODO: Create tests for this. It is possible that we already have tests for this
+  "universe.v4.model.PackageDefinition <=> rpc.v1.model.InstalledPackageInformation" in {
+    ???
+  }
+
   private[this] def roundTrip[A, B](a: A)(implicit
     aToB: Conversion[A, B],
     bToA: Conversion[B, A]

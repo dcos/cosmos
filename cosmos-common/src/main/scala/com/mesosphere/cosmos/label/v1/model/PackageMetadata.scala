@@ -1,6 +1,11 @@
 package com.mesosphere.cosmos.label.v1.model
 
 import com.mesosphere.universe
+import com.mesosphere.universe.v2.circe.Encoders._
+import com.mesosphere.universe.v2.circe.Decoders._
+import io.circe.Decoder
+import io.circe.Encoder
+import io.circe.generic.semiauto._
 
 /** Copy of [[com.mesosphere.universe.v2.model.PackageDetails]] with additional field `images` from
   * [[com.mesosphere.universe.v2.model.Resource]].
@@ -26,3 +31,9 @@ case class PackageMetadata(
   licenses: Option[List[universe.v2.model.License]] = None,
   images: Option[universe.v2.model.Images] = None
 )
+
+object PackageMetadata {
+
+  implicit val encoder: Encoder[PackageMetadata] = deriveEncoder[PackageMetadata]
+  implicit val decoder: Decoder[PackageMetadata] = deriveDecoder[PackageMetadata]
+}

@@ -6,7 +6,6 @@ import com.github.mustachejava.DefaultMustacheFactory
 import com.mesosphere.cosmos.bijection.CosmosConversions._
 import com.mesosphere.cosmos.jsonschema.JsonSchema
 import com.mesosphere.cosmos.label
-import com.mesosphere.cosmos.label.v1.circe.Encoders._
 import com.mesosphere.cosmos.model.StorageEnvelope
 import com.mesosphere.cosmos.thirdparty.marathon.circe.Encoders.encodeAppId
 import com.mesosphere.cosmos.thirdparty.marathon.model.AppId
@@ -70,6 +69,10 @@ object PackageDefinitionRenderer {
     } getOrElse Left(MissingMarathonV2AppTemplate)
   }
 
+  /* TODO: We need to continue to persist PackageMetadata because the UI uses it. File an issue
+   * once we provide them with the necessary functionality: service/describe and the UI had time
+   * to migrate.
+   */
   private[this] def nonOverridableLabels(
     pkg: universe.v4.model.PackageDefinition,
     sourceUri: Uri,

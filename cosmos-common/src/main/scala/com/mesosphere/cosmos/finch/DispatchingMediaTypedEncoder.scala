@@ -22,7 +22,7 @@ object DispatchingMediaTypedEncoder {
   def apply[A](encoders: Set[MediaTypedEncoder[A]]): DispatchingMediaTypedEncoder[A] = {
     new DispatchingMediaTypedEncoder(
       encoders.flatMap { encoder =>
-        encoder.mediaTypes.map { mediaType =>
+        encoder.mediaTypes.toList.map { mediaType =>
           mediaType -> encoder
         }
       }.toMap

@@ -1,5 +1,6 @@
 package com.mesosphere.universe
 
+import cats.data.NonEmptyList
 import cats.syntax.either._
 import com.mesosphere.cosmos.finch.MediaTypedDecoder
 import com.mesosphere.cosmos.finch.MediaTypedEncoder
@@ -152,8 +153,8 @@ package v4.model {
 
     private val mediaTypes = (
       universe.v3.model.V2Package.mediaTypedEncoder.mediaTypes ++
-      universe.v3.model.V3Package.mediaTypedEncoder.mediaTypes ++
-      universe.v4.model.V4Package.mediaTypedEncoder.mediaTypes
+      universe.v3.model.V3Package.mediaTypedEncoder.mediaTypes.toList ++
+      universe.v4.model.V4Package.mediaTypedEncoder.mediaTypes.toList
     )
 
     implicit val mediaTypedDecoder: MediaTypedDecoder[PackageDefinition] = MediaTypedDecoder(
@@ -164,7 +165,7 @@ package v4.model {
       new MediaTypedEncoder[PackageDefinition] {
         val encoder = PackageDefinition.encoder
 
-        val mediaTypes: List[MediaType] = PackageDefinition.mediaTypes
+        val mediaTypes: NonEmptyList[MediaType] = PackageDefinition.mediaTypes
 
         def mediaType(a: PackageDefinition): MediaType = a match {
           case v2: universe.v3.model.V2Package =>

@@ -16,7 +16,7 @@ import io.circe.syntax._
 import java.nio.ByteBuffer
 import java.nio.charset.StandardCharsets
 
-case class StorageEnvelope private (metadata: Map[String, String], data: ByteBuffer) {
+final case class StorageEnvelope private (metadata: Map[String, String], data: ByteBuffer) {
   def decodeData[T](implicit mediaTypedDecoder: MediaTypedDecoder[T]): T = {
     implicit val decoder = mediaTypedDecoder.decoder
     val mediaTypes = mediaTypedDecoder.mediaTypes
@@ -34,7 +34,8 @@ case class StorageEnvelope private (metadata: Map[String, String], data: ByteBuf
       case Some(mt) =>
         throw new IllegalArgumentException(
           s"Error while trying to deserialize envelope data. " +
-          s"Expected Content-Type '${mediaTypes.map(_.show).mkString(", ")}' actual '${mt.show}'"
+          s"Expected Content-Type '${mediaTypes.toList.map(_.show).mkString(", ")}' " +
+          s"actual '${mt.show}'"
         )
       case None =>
         throw new IllegalArgumentException(
@@ -60,7 +61,7 @@ object StorageEnvelope {
     StorageEnvelope(data).asJson.noSpaces.getBytes(StandardCharsets.UTF_8)
   }
 
-  def decodeData[T](data: Array[Byte])(implicit mediaTypedDecoder: MediaTypedDecoder[T]): T = {
+  def decodeData[T : MediaTypedDecoder](data: Array[Byte]): T = {
     decode[StorageEnvelope](new String(data, StandardCharsets.UTF_8)).decodeData
   }
 

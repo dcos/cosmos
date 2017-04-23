@@ -5,7 +5,7 @@ import com.mesosphere.cosmos.bijection.CosmosConversions._
 import com.mesosphere.cosmos.circe.Decoders.decode64
 import com.mesosphere.cosmos.circe.Decoders.parse64
 import com.mesosphere.cosmos.label
-import com.mesosphere.cosmos.label.v1.circe.Decoders._
+import com.mesosphere.cosmos.model.StorageEnvelope
 import com.mesosphere.cosmos.thirdparty.marathon.circe.Decoders.decodeAppId
 import com.mesosphere.cosmos.thirdparty.marathon.model.AppId
 import com.mesosphere.cosmos.thirdparty.marathon.model.MarathonApp
@@ -212,6 +212,9 @@ class PackageDefinitionRendererSpec extends FreeSpec with Matchers with TableDri
       labelFocus.get[String](MarathonApp.metadataLabel).map(
         decode64[label.v1.model.PackageMetadata](_)
       ) shouldBe Right(pkg.as[label.v1.model.PackageMetadata])
+      labelFocus.get[String](MarathonApp.packageLabel).map(
+        decode64[StorageEnvelope](_)
+      ) shouldBe Right(StorageEnvelope(pkg))
     }
 
   }
