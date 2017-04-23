@@ -6,16 +6,17 @@ import com.mesosphere.universe.v3.model.Version
 import com.mesosphere.cosmos.rpc.v1.model.PackageRepository
 import org.scalatest.FreeSpec
 import com.mesosphere.cosmos.http.RequestSession
-import com.mesosphere.cosmos.test.TestUtil
 import com.mesosphere.cosmos.test.TestUtil.Anonymous
 import com.twitter.util.{Await, Future, Return, Throw, Try}
 import com.netaporter.uri.Uri
 import cats.data.Ior
-import cats.data.Ior.{Both, Left, Right}
 import com.mesosphere.universe
 import com.mesosphere.universe.test.TestingPackages
+import com.mesosphere.universe.v3.syntax.PackageDefinitionOps._
+import org.scalatest.Matchers
+import org.scalatest.prop.TableDrivenPropertyChecks
 
-final class MultiRepositorySpec extends FreeSpec {
+final class MultiRepositorySpec extends FreeSpec with Matchers with TableDrivenPropertyChecks {
 
   case class TestClient(repos: List[PackageRepository] = Nil, ls: List[universe.v4.model.PackageDefinition] = Nil)
     extends UniverseClient {
@@ -229,5 +230,39 @@ final class MultiRepositorySpec extends FreeSpec {
       assertResult(Return(List(Set(min2ver))))(Try(Await.result(c.search(Some("minimal"))).map(_.versions.keys)))
       assertResult(Return(List(Set(maxver))))(Try(Await.result(c.search(Some("MAXIMAL"))).map(_.versions.keys)))
     }
+
+    "getPackageByPackageVersion works for all packaging versions" in {
+      forAll(TestingPackages.packageDefinitions) { packageDefinition =>
+        val uri = Uri.parse("/test")
+        val multiRepository: MultiRepository = singletonMultiRepository(packageDefinition, uri)
+        val name = packageDefinition.name
+        val version = packageDefinition.version
+        val actual = Await.result(
+          multiRepository.getPackageByPackageVersion(name, Some(version))
+        )
+        actual shouldBe ((packageDefinition, uri))
+      }
+    }
+
+    "getPackagesByPackageName works for all packaging versions" in {
+      forAll(TestingPackages.packageDefinitions) { packageDefinition =>
+        val uri = Uri.parse("/test")
+        val multiRepository: MultiRepository = singletonMultiRepository(packageDefinition, uri)
+        val name = packageDefinition.name
+        val actual = Await.result(
+          multiRepository.getPackagesByPackageName(name)
+        )
+        actual shouldBe List(packageDefinition)
+      }
+    }
+  }
+
+  private[this] def singletonMultiRepository(
+    packageDefinition: universe.v4.model.PackageDefinition, uri: Uri
+  ): MultiRepository = {
+    val repos = List(PackageRepository("singleton", uri))
+    val storage = TestStorage(repos)
+    val client = TestClient(repos, List(packageDefinition))
+    new MultiRepository(storage, client)
   }
 }
