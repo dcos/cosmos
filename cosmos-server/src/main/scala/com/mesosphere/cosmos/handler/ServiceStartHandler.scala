@@ -4,7 +4,7 @@ import _root_.io.circe.syntax._
 import com.mesosphere.cosmos._
 import com.mesosphere.cosmos.finch.EndpointHandler
 import com.mesosphere.cosmos.http.RequestSession
-import com.mesosphere.cosmos.internal.model.LocalPackageOrigin
+import com.mesosphere.cosmos.model.LocalPackageOrigin
 import com.mesosphere.cosmos.render._
 import com.mesosphere.cosmos.repository.LocalPackageCollection
 import com.mesosphere.cosmos.rpc.v1.model.Installed

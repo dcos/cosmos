@@ -1,4 +1,4 @@
-package com.mesosphere.cosmos.internal.model
+package com.mesosphere.cosmos.model
 
 import com.netaporter.uri.Uri
 
@@ -11,7 +11,7 @@ object LocalPackageOrigin extends PackageOrigin {
   val uri = Uri.parse("urn:dcos:cosmos:local-repository")
 }
 
-case class ExternalRepoPackageOrigin private[model] (val uri: Uri) extends PackageOrigin
+final case class ExternalRepoPackageOrigin(val uri: Uri) extends PackageOrigin
 
 object PackageOrigin {
   def apply(uri: Uri): PackageOrigin = {

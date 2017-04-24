@@ -1,7 +1,6 @@
 package com.mesosphere.cosmos.handler
 
 import com.mesosphere.cosmos.http.RequestSession
-import com.mesosphere.cosmos.internal.model.MarathonAppOps
 import com.mesosphere.cosmos.repository.PackageCollection
 import com.mesosphere.cosmos.AdminRouter
 import com.mesosphere.cosmos.AmbiguousAppId

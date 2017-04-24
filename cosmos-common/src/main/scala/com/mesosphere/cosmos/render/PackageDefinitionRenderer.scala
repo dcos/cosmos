@@ -69,10 +69,6 @@ object PackageDefinitionRenderer {
     } getOrElse Left(MissingMarathonV2AppTemplate)
   }
 
-  /* TODO: We need to continue to persist PackageMetadata because the UI uses it. File an issue
-   * once we provide them with the necessary functionality: service/describe and the UI had time
-   * to migrate.
-   */
   private[this] def nonOverridableLabels(
     pkg: universe.v4.model.PackageDefinition,
     sourceUri: Uri,

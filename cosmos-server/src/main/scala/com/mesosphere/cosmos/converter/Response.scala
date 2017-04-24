@@ -121,7 +121,7 @@ object Response {
     }
   }
 
-  /// See comment for the v2Resource method for why this needs to always succeeds.
+  /// See comment for the v2Resource method for why this conversion should always succeed.
   implicit val v4PackageDefinitionToInstalledPackageInformation:
     Conversion[universe.v4.model.PackageDefinition,
       rpc.v1.model.InstalledPackageInformation] = {
@@ -195,7 +195,7 @@ object Response {
    *
    *  1. There is no way for us to return CLI information in the package/list RPC.
    *  2. We are going to deprecate the package/list RPC and replace it with service/list which
-   *     return a better data type.
+   *     returns a better data type.
    *  3. This conversion is only used for the package/list RPC and should not be used for anything
    *     else.
    */

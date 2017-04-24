@@ -6,8 +6,7 @@ import com.mesosphere.cosmos.converter.Label._
 import com.mesosphere.cosmos.converter.Response._
 import com.mesosphere.cosmos.finch.EndpointHandler
 import com.mesosphere.cosmos.http.RequestSession
-import com.mesosphere.cosmos.internal.model.MarathonAppOps
-import com.mesosphere.cosmos.internal.model.PackageOrigin
+import com.mesosphere.cosmos.model.PackageOrigin
 import com.mesosphere.cosmos.label
 import com.mesosphere.cosmos.repository.CosmosRepository
 import com.mesosphere.cosmos.rpc
@@ -68,32 +67,6 @@ private[cosmos] final class ListHandler(
       }
     }
   }
-
-  /* TODO: this may be helpful when we have PackageDefinition => Installation
-  private[this] def setSelectedAndFramework(
-    pkg: universe.v4.model.PackageDefinition
-  ): universe.v4.model.PackageDefinition = {
-    pkg match {
-      case pkg: V3Package =>
-        pkg.copy(
-          selected = pkg.selected orElse Some(false),
-          framework = pkg.framework orElse Some(false),
-          resource = pkg.resource.map(_.copy(cli = None))
-        )
-      case pkg: V4Package =>
-        pkg.copy(
-          selected = pkg.selected orElse Some(false),
-          framework = pkg.framework orElse Some(false),
-          resource = pkg.resource.map(_.copy(cli = None))
-        )
-      case pkg: V2Package =>
-        pkg.copy(
-          selected = pkg.selected orElse Some(false),
-          framework = pkg.framework orElse Some(false)
-        )
-    }
-  }
-  */
 
   private[this] def decodeInstalledPackageInformation(
     app: thirdparty.marathon.model.MarathonApp

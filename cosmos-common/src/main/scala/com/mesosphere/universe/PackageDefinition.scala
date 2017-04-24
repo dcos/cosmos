@@ -184,10 +184,10 @@ package v4.model {
 
   object SupportedPackageDefinition {
 
-    implicit val supportedPackageDefinitionOrdering: Ordering[SupportedPackageDefinition] =
+    implicit val ordering: Ordering[SupportedPackageDefinition] =
       universe.v4.model.PackageDefinition.packageDefinitionOrdering.on(identity)
 
-    implicit val decodeSupportedPackageDefinition: Decoder[SupportedPackageDefinition] = {
+    implicit val decoder: Decoder[SupportedPackageDefinition] = {
       Decoder.instance[SupportedPackageDefinition] { (hc: HCursor) =>
         hc.downField("packagingVersion").as[universe.v4.model.PackagingVersion].flatMap {
           case universe.v4.model.V4PackagingVersion => hc.as[universe.v4.model.V4Package]
@@ -203,7 +203,7 @@ package v4.model {
       }
     }
 
-    implicit val encodeSupportedPackageDefinition: Encoder[SupportedPackageDefinition] = {
+    implicit val encoder: Encoder[SupportedPackageDefinition] = {
       Encoder.instance {
         case v3: universe.v3.model.V3Package => v3.asJson
         case v4: universe.v4.model.V4Package => v4.asJson

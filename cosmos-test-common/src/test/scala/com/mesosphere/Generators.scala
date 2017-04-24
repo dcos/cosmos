@@ -78,6 +78,22 @@ object Generators {
     )
   }
 
+  val genV2Package: Gen[universe.v3.model.V2Package] = {
+    for {
+      v3 <- genV3Package
+      marathonTemplate <- genByteBuffer
+    } yield {
+      universe.v3.model.V2Package(
+        name = v3.name,
+        version = v3.version,
+        releaseVersion = v3.releaseVersion,
+        maintainer = v3.maintainer,
+        description = v3.description,
+        marathon = universe.v3.model.Marathon(marathonTemplate)
+      )
+    }
+  }
+
   val genV4Package: Gen[universe.v4.model.V4Package] = {
     for {
       upgradesFrom <- Gen.option(Gen.listOf(genVersion))
@@ -96,10 +112,27 @@ object Generators {
     }
   }
 
-  // This is just here to tell you that you need to update the generator below,
-  // when you add a new packaging version
-  // This is a little hacky but worth the error
-  def checkExhaustiveness(
+  /* This is just here to tell you that you need to update the generator below, when you
+   * add a new packaging version. This is a little hacky but worth the error
+   */
+  def checkPackageDefinitionExhaustiveness(
+    pkgDef: universe.v4.model.PackageDefinition
+  ): Gen[universe.v4.model.PackageDefinition] = {
+    pkgDef match {
+      case _: universe.v3.model.V2Package => ???
+      case _: universe.v3.model.V3Package => ???
+      case _: universe.v4.model.V4Package => ???
+    }
+  }
+
+  val genPackageDefinition: Gen[universe.v4.model.PackageDefinition] = {
+    Gen.oneOf(genV2Package, genV4Package, genV3Package)
+  }
+
+  /* This is just here to tell you that you need to update the generator below, when you
+   * add a new packaging version. This is a little hacky but worth the error
+   */
+  def checkSupportedPackageDefinitionExhaustiveness(
     supportedPackage: universe.v4.model.SupportedPackageDefinition
   ): Gen[universe.v4.model.SupportedPackageDefinition] = {
     supportedPackage match {
@@ -170,6 +203,10 @@ object Generators {
     implicit val arbByteBuffer: Arbitrary[ByteBuffer] = Arbitrary(genByteBuffer)
 
     implicit val arbV3Package: Arbitrary[universe.v3.model.V3Package] = Arbitrary(genV3Package)
+
+    implicit val arbPackageDefinition: Arbitrary[universe.v4.model.PackageDefinition] = {
+      Arbitrary(genPackageDefinition)
+    }
 
     implicit val arbSupportedPackageDefinition: Arbitrary[universe.v4.model.SupportedPackageDefinition] = {
       Arbitrary(genSupportedPackageDefinition)
