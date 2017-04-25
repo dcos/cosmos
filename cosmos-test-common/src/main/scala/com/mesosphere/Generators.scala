@@ -16,6 +16,12 @@ import scala.util.Try
 
 object Generators {
 
+  val genPackageName: Gen[String] = {
+    val maxPackageNameLength = 64
+    val genPackageNameChar = Gen.oneOf(Gen.numChar, Gen.alphaLowerChar)
+    maxSizedString(maxPackageNameLength, genPackageNameChar)
+  }
+
   def nonNegNum[A](implicit C: Choose[A], N: Numeric[A]): Gen[A] = {
     Gen.sized(size => Gen.chooseNum(N.zero, N.fromInt(size)))
   }
@@ -50,7 +56,7 @@ object Generators {
     } yield universe.v3.model.SemVer(major, minor, patch, preReleases, build)
   }
 
-  private val genVersion: Gen[universe.v3.model.Version] = {
+  val genVersion: Gen[universe.v3.model.Version] = {
     genSemVer.map(_.toString).map(universe.v3.model.Version(_))
   }
 
@@ -58,13 +64,39 @@ object Generators {
     num <- Gen.posNum[Long]
   } yield universe.v3.model.ReleaseVersion(num).get
 
-  val genV3Package: Gen[universe.v3.model.V3Package] = {
-    val maxPackageNameLength = 64
-    val genPackageNameChar = Gen.oneOf(Gen.numChar, Gen.alphaLowerChar)
-    val genPackageName = maxSizedString(maxPackageNameLength, genPackageNameChar)
+  def genUpgradesFrom(
+    requiredVersion: Option[universe.v3.model.Version]
+  ): Gen[Option[List[universe.v3.model.Version]]] = {
+    genVersionSet(requiredVersion).flatMap(genUpgradesFrom)
+  }
 
+  private def genUpgradesFrom(versionSet: VersionSet): Gen[Option[List[universe.v3.model.Version]]] = {
+    versionSet match {
+      case ExplicitVersions(versions) if versions.isEmpty => Gen.oneOf(None, Some(Nil))
+      case ExplicitVersions(versions) => Some(versions.toList)
+      case AllVersions =>
+        val genVersions = Gen.listOf(genVersion)
+        for {
+          redundantLeft <- genVersions
+          redundantRight <- genVersions
+        } yield Some(redundantLeft ++ (universe.v3.model.Version("*") :: redundantRight))
+    }
+  }
+
+  private def genVersionSet(requiredVersion: Option[universe.v3.model.Version]): Gen[VersionSet] = {
+    val genExplicit = Gen.containerOf[Set, universe.v3.model.Version](genVersion)
+      .map(otherVersions => ExplicitVersions(otherVersions union requiredVersion.toSet))
+
+    Gen.frequency((1, AllVersions), (10, genExplicit))
+  }
+
+  private sealed trait VersionSet
+  private case class ExplicitVersions(versions: Set[universe.v3.model.Version]) extends VersionSet
+  private case object AllVersions extends VersionSet
+
+  def genV3Package(genName: Gen[String] = genPackageName): Gen[universe.v3.model.V3Package] = {
     for {
-      name <- genPackageName
+      name <- genName
       version <- genVersion
       releaseVersion <- genReleaseVersion
       maintainer <- Gen.alphaStr
@@ -78,11 +110,30 @@ object Generators {
     )
   }
 
-  val genV4Package: Gen[universe.v4.model.V4Package] = {
+  def genV2Package(genName: Gen[String] = genPackageName): Gen[universe.v3.model.V2Package] = {
     for {
-      upgradesFrom <- Gen.option(Gen.listOf(genVersion))
+      v3 <- genV3Package(genName)
+      marathonTemplate <- genByteBuffer
+    } yield {
+      universe.v3.model.V2Package(
+        name = v3.name,
+        version = v3.version,
+        releaseVersion = v3.releaseVersion,
+        maintainer = v3.maintainer,
+        description = v3.description,
+        marathon = universe.v3.model.Marathon(marathonTemplate)
+      )
+    }
+  }
+
+  def genV4Package(
+    genName: Gen[String] = genPackageName,
+    genUpgrades: Gen[Option[List[universe.v3.model.Version]]] = genUpgradesFrom(requiredVersion = None)
+  ): Gen[universe.v4.model.V4Package] = {
+    for {
+      upgradesFrom <- genUpgrades
       downgradesTo <- Gen.option(Gen.listOf(genVersion))
-      v3 <- genV3Package
+      v3 <- genV3Package(genName)
     } yield {
       universe.v4.model.V4Package(
         name = v3.name,
@@ -96,20 +147,40 @@ object Generators {
     }
   }
 
-  // This is just here to tell you that you need to update the generator below,
-  // when you add a new packaging version
-  // This is a little hacky but worth the error
+  /* This is just here to tell you that you need to update the generator below, when you
+   * add a new packaging version. This is a little hacky but worth the error
+   */
+  def checkPackageDefinitionExhaustiveness(
+    pkgDef: universe.v4.model.PackageDefinition
+  ): Gen[universe.v4.model.PackageDefinition] = {
+    pkgDef match {
+      case _: universe.v3.model.V2Package => ???
+      case _: universe.v3.model.V3Package => ???
+      case _: universe.v4.model.V4Package => ???
+    }
+  }
+
+  def genPackageDefinition(
+    genName: Gen[String] = genPackageName,
+    genUpgrades: Gen[Option[List[universe.v3.model.Version]]] = genUpgradesFrom(requiredVersion = None)
+  ): Gen[universe.v4.model.PackageDefinition] = {
+    Gen.oneOf(genV2Package(genName), genV3Package(genName), genV4Package(genName, genUpgrades))
+  }
+
+  /* This is just here to tell you that you need to update the generator below,
+   * when you add a new packaging version. This is a little hacky but worth the error
+   */
   def checkExhaustiveness(
     supportedPackage: universe.v4.model.SupportedPackageDefinition
   ): Gen[universe.v4.model.SupportedPackageDefinition] = {
     supportedPackage match {
-      case _: universe.v3.model.V3Package => Gen.oneOf(genV3Package, genV4Package)
-      case _: universe.v4.model.V4Package => Gen.oneOf(genV4Package, genV3Package)
+      case _: universe.v3.model.V3Package => ???
+      case _: universe.v4.model.V4Package => ???
     }
   }
 
   val genSupportedPackageDefinition: Gen[universe.v4.model.SupportedPackageDefinition] = {
-    Gen.oneOf(genV4Package, genV3Package)
+    Gen.oneOf(genV4Package(), genV3Package())
   }
 
   private val genByteBuffer: Gen[ByteBuffer] = arbitrary[Array[Byte]].map(ByteBuffer.wrap)
@@ -169,7 +240,7 @@ object Generators {
 
     implicit val arbByteBuffer: Arbitrary[ByteBuffer] = Arbitrary(genByteBuffer)
 
-    implicit val arbV3Package: Arbitrary[universe.v3.model.V3Package] = Arbitrary(genV3Package)
+    implicit val arbV3Package: Arbitrary[universe.v3.model.V3Package] = Arbitrary(genV3Package())
 
     implicit val arbSupportedPackageDefinition: Arbitrary[universe.v4.model.SupportedPackageDefinition] = {
       Arbitrary(genSupportedPackageDefinition)

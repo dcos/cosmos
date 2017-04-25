@@ -3,6 +3,7 @@ package com.mesosphere.cosmos.repository
 import com.mesosphere.cosmos.http.RequestSession
 import com.mesosphere.cosmos.rpc
 import com.mesosphere.universe
+import com.mesosphere.universe.v3.syntax.PackageDefinitionOps._
 import com.netaporter.uri.Uri
 import com.twitter.util.Future
 
@@ -23,4 +24,22 @@ trait PackageCollection {
   )(implicit session: RequestSession): Future[(universe.v4.model.PackageDefinition, Uri)]
 
   def search(query: Option[String])(implicit session: RequestSession): Future[List[rpc.v1.model.SearchResult]]
+}
+
+object PackageCollection {
+
+  /**
+   * Return the versions of packages from `possibleUpgrades` that the package with the given
+   * `name` and `version` can be upgraded to.
+   */
+  def upgradesTo(
+    name: String,
+    version: universe.v3.model.Version,
+    possibleUpgrades: List[universe.v4.model.PackageDefinition]
+  ): List[universe.v3.model.Version] = {
+    possibleUpgrades.collect {
+      case pkg if pkg.name == name && pkg.canUpgradeFrom(version) => pkg.version
+    }
+  }
+
 }

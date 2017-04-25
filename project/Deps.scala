@@ -95,7 +95,7 @@ object Deps {
 
   // APLv2.0
   val scalaCheckShapeless = Seq(
-    "com.github.alexarchambault" %% "scalacheck-shapeless_1.13" % V.scalaCheckShapeless % "test"
+    "com.github.alexarchambault" %% "scalacheck-shapeless_1.13" % V.scalaCheckShapeless
   )
 
   // BSD 3-clause

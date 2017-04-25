@@ -8,6 +8,8 @@ import io.circe.syntax.EncoderOps
 
 final class PackageDefinitionOps(val pkgDef: universe.v4.model.PackageDefinition) extends AnyVal {
 
+  import PackageDefinitionOps._
+
   def packageCoordinate: PackageCoordinate =  {
     PackageCoordinate(name, version)
   }
@@ -136,6 +138,15 @@ final class PackageDefinitionOps(val pkgDef: universe.v4.model.PackageDefinition
     case v4: universe.v4.model.V4Package => v4.resource
   }
 
+  def upgradesFrom: Option[List[universe.v3.model.Version]] = pkgDef match {
+    case v4: universe.v4.model.V4Package => v4.upgradesFrom
+    case _ => None
+  }
+
+  def canUpgradeFrom(version: universe.v3.model.Version): Boolean = {
+    upgradesFrom.exists(_.exists(v => v == AnyVersion || v == version))
+  }
+
   // -------- Non top-level properties that we are safe to "jump" to --------------
 
   def images: Option[universe.v3.model.Images] = pkgDef match {
@@ -161,6 +172,8 @@ final class PackageDefinitionOps(val pkgDef: universe.v4.model.PackageDefinition
 
 object PackageDefinitionOps {
   import scala.language.implicitConversions
+
+  val AnyVersion: universe.v3.model.Version = universe.v3.model.Version("*")
 
   implicit def packageDefinitionToPackageDefinitionOps[P <: universe.v4.model.PackageDefinition](
     pkgDef: P
