@@ -11,21 +11,12 @@ final class MediaTypedDecoder[A] private(
 )
 
 object MediaTypedDecoder {
-
-  def apply[A](
-    mediaTypes: NonEmptyList[MediaType]
-  )(
-    implicit decoder: Decoder[A]
-  ): MediaTypedDecoder[A] = {
-    MediaTypedDecoder(decoder, mediaTypes)
+  def apply[A : Decoder](mediaTypes: NonEmptyList[MediaType]): MediaTypedDecoder[A] = {
+    new MediaTypedDecoder(implicitly[Decoder[A]], mediaTypes)
   }
 
   def apply[A : Decoder](mediaType: MediaType): MediaTypedDecoder[A] = {
-    apply[A](NonEmptyList.of(mediaType))
-  }
-
-  def apply[A](decoder: Decoder[A], mediaTypes: NonEmptyList[MediaType]): MediaTypedDecoder[A] = {
-    new MediaTypedDecoder(decoder, mediaTypes)
+    MediaTypedDecoder(NonEmptyList.of(mediaType))
   }
 
 }

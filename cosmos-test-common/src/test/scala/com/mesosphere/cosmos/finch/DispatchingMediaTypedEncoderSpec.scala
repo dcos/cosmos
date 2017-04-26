@@ -1,8 +1,11 @@
 package com.mesosphere.cosmos.finch
 
-import com.mesosphere.cosmos.http.{CompoundMediaType, MediaType}
+import cats.data.NonEmptyList
+import com.mesosphere.cosmos.http.CompoundMediaType
+import com.mesosphere.cosmos.http.MediaType
+import io.circe.Encoder
+import io.circe.Json
 import io.circe.syntax._
-import io.circe.{Encoder, Json}
 import org.scalatest.FreeSpec
 
 final class DispatchingMediaTypedEncoderSpec extends FreeSpec {
@@ -14,7 +17,7 @@ final class DispatchingMediaTypedEncoderSpec extends FreeSpec {
     "return the first encoder with a media type compatible with the argument" in {
       val Some(mediaTypedEncoder) = ThreeElementEncoder(CompoundMediaType(MediaType("foo", "bar")))
       assertResult(Json.fromInt(1))(mediaTypedEncoder.encoder(()))
-      assertResult(MediaType("foo", "bar"))(mediaTypedEncoder.mediaTypes.head)
+      assertResult(NonEmptyList.of(MediaType("foo", "bar")))(mediaTypedEncoder.mediaTypes)
     }
 
     "indicate failure if no compatible encoder is found" - {
