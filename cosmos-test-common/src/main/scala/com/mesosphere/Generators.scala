@@ -60,39 +60,31 @@ object Generators {
     genSemVer.map(_.toString).map(universe.v3.model.Version(_))
   }
 
+  val genVersionSpecification: Gen[universe.v3.model.VersionSpecification] = {
+    val genExact = genVersion.map(universe.v3.model.ExactVersion)
+    Gen.frequency((1, universe.v3.model.AnyVersion), (20, genExact))
+  }
+
   private val genReleaseVersion: Gen[universe.v3.model.ReleaseVersion] = for {
     num <- Gen.posNum[Long]
   } yield universe.v3.model.ReleaseVersion(num).get
 
   def genUpgradesFrom(
     requiredVersion: Option[universe.v3.model.Version]
-  ): Gen[Option[List[universe.v3.model.Version]]] = {
-    genVersionSet(requiredVersion).flatMap(genUpgradesFrom)
-  }
-
-  private def genUpgradesFrom(versionSet: VersionSet): Gen[Option[List[universe.v3.model.Version]]] = {
-    versionSet match {
-      case ExplicitVersions(versions) if versions.isEmpty => Gen.oneOf(None, Some(Nil))
-      case ExplicitVersions(versions) => Some(versions.toList)
-      case AllVersions =>
-        val genVersions = Gen.listOf(genVersion)
+  ): Gen[Option[List[universe.v3.model.VersionSpecification]]] = {
+    requiredVersion match {
+      case Some(required) =>
         for {
-          redundantLeft <- genVersions
-          redundantRight <- genVersions
-        } yield Some(redundantLeft ++ (universe.v3.model.Version("*") :: redundantRight))
+          leftVersions <- Gen.listOf(genVersionSpecification)
+          rightVersions <- Gen.listOf(genVersionSpecification)
+        } yield Some(leftVersions ++ (universe.v3.model.ExactVersion(required) :: rightVersions))
+      case _ =>
+        Gen.listOf(genVersionSpecification).flatMap {
+          case vs if vs.isEmpty => Gen.oneOf(None, Some(Nil))
+          case vs => Gen.const(Some(vs))
+        }
     }
   }
-
-  private def genVersionSet(requiredVersion: Option[universe.v3.model.Version]): Gen[VersionSet] = {
-    val genExplicit = Gen.containerOf[Set, universe.v3.model.Version](genVersion)
-      .map(otherVersions => ExplicitVersions(otherVersions union requiredVersion.toSet))
-
-    Gen.frequency((1, AllVersions), (10, genExplicit))
-  }
-
-  private sealed trait VersionSet
-  private case class ExplicitVersions(versions: Set[universe.v3.model.Version]) extends VersionSet
-  private case object AllVersions extends VersionSet
 
   def genV3Package(genName: Gen[String] = genPackageName): Gen[universe.v3.model.V3Package] = {
     for {
@@ -128,11 +120,11 @@ object Generators {
 
   def genV4Package(
     genName: Gen[String] = genPackageName,
-    genUpgrades: Gen[Option[List[universe.v3.model.Version]]] = genUpgradesFrom(requiredVersion = None)
+    genUpgrades: Gen[Option[List[universe.v3.model.VersionSpecification]]] = genUpgradesFrom(requiredVersion = None)
   ): Gen[universe.v4.model.V4Package] = {
     for {
       upgradesFrom <- genUpgrades
-      downgradesTo <- Gen.option(Gen.listOf(genVersion))
+      downgradesTo <- Gen.option(Gen.listOf(genVersionSpecification))
       v3 <- genV3Package(genName)
     } yield {
       universe.v4.model.V4Package(
@@ -162,7 +154,7 @@ object Generators {
 
   def genPackageDefinition(
     genName: Gen[String] = genPackageName,
-    genUpgrades: Gen[Option[List[universe.v3.model.Version]]] = genUpgradesFrom(requiredVersion = None)
+    genUpgrades: Gen[Option[List[universe.v3.model.VersionSpecification]]] = genUpgradesFrom(requiredVersion = None)
   ): Gen[universe.v4.model.PackageDefinition] = {
     Gen.oneOf(genV2Package(genName), genV3Package(genName), genV4Package(genName, genUpgrades))
   }
@@ -255,6 +247,8 @@ object Generators {
     implicit val arbLocalPackage: Arbitrary[rpc.v1.model.LocalPackage] = derived
 
     implicit val arbUploadAddRequest: Arbitrary[rpc.v1.model.UploadAddRequest] = derived
+
+    implicit val arbVersion: Arbitrary[universe.v3.model.Version] = Arbitrary(genVersion)
 
     private def derived[A: MkArbitrary]: Arbitrary[A] = implicitly[MkArbitrary[A]].arbitrary
 

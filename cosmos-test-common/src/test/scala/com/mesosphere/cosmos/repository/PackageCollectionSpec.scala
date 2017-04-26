@@ -74,8 +74,12 @@ object PackageCollectionSpec {
 
   def genIncompatibleUpgradesFrom(
     versionToAvoid: universe.v3.model.Version
-  ): Gen[Option[List[universe.v3.model.Version]]] = {
-    Gen.option(Gen.listOf(Generators.genVersion.suchThat(_ != versionToAvoid)))
+  ): Gen[Option[List[universe.v3.model.VersionSpecification]]] = {
+    val genVersionSpecification = Generators.genVersion
+      .suchThat(_ != versionToAvoid)
+      .map(universe.v3.model.ExactVersion)
+
+    Gen.option(Gen.listOf(genVersionSpecification))
   }
 
 }
