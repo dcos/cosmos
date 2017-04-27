@@ -19,7 +19,7 @@ class ListVersionsSpec extends FreeSpec with Matchers {
       )).asJson
       response.status shouldBe Status.Ok
       parse(response.contentString) shouldBe
-        expectedContent
+        Right(expectedContent)
     }
   }
 }
