@@ -475,12 +475,6 @@ case class ServiceMarathonTemplateNotFound(
   }
 }
 
-case class EnvelopeError(msg: String) extends CosmosError {
-  override val getData: Option[JsonObject] = {
-    Some(JsonObject.singleton("msg", msg.asJson))
-  }
-}
-
 case class InstallQueueError(msg: String) extends CosmosError {
   override val getData: Option[JsonObject] = {
     Some(JsonObject.singleton("msg", msg.asJson))

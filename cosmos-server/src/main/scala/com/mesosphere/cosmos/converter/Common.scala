@@ -1,7 +1,6 @@
 package com.mesosphere.cosmos.converter
 
 import com.mesosphere.cosmos.circe.Decoders.decode
-import com.mesosphere.cosmos.internal.model
 import com.mesosphere.cosmos.rpc.v1.circe.Decoders._
 import com.mesosphere.cosmos.rpc.v1.circe.Encoders._
 import com.mesosphere.cosmos.rpc.v1.model.PackageCoordinate

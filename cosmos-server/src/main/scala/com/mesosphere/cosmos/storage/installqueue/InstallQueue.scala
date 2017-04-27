@@ -5,7 +5,7 @@ import com.mesosphere.cosmos.OperationInProgress
 import com.mesosphere.cosmos.converter.Common.packageCoordinateToBase64String
 import com.mesosphere.cosmos.rpc.v1.model.ErrorResponse
 import com.mesosphere.cosmos.rpc.v1.model.PackageCoordinate
-import com.mesosphere.cosmos.storage.Envelope
+import com.mesosphere.cosmos.model.StorageEnvelope
 import com.mesosphere.cosmos.storage.v1.circe.MediaTypedDecoders._
 import com.mesosphere.cosmos.storage.v1.circe.MediaTypedEncoders._
 import com.mesosphere.cosmos.storage.v1.model.FailedStatus
@@ -157,7 +157,7 @@ final class InstallQueue private(
     client.getData.inBackground(
       handler(promise, CuratorEventType.GET_DATA) {
         case (KeeperException.Code.OK, event) =>
-          Try(Envelope.decodeData[OperationStatus](event.getData))
+          Try(StorageEnvelope.decodeData[OperationStatus](event.getData))
             .map { operationStatus =>
               Some(
                 WithZkStat(
@@ -185,7 +185,7 @@ final class InstallQueue private(
   ): Future[Unit] = {
     val promise = Promise[Unit]()
 
-    val data = Envelope.encodeData(operationStatus)
+    val data = StorageEnvelope.encodeData(operationStatus)
     stats.stat("nodeSize").add(data.length.toFloat)
 
     client.setData().withVersion(version).inBackground(
@@ -262,7 +262,7 @@ final class InstallQueue private(
   ): Future[Unit] = {
     val promise = Promise[Unit]()
 
-    val data = Envelope.encodeData(operationStatus)
+    val data = StorageEnvelope.encodeData(operationStatus)
     stats.stat("nodeSize").add(data.length.toFloat)
 
     client.create().creatingParentsIfNeeded().inBackground(
@@ -338,7 +338,9 @@ final class InstallQueue private(
               coordinate <- BijectionUtils.scalaTryToTwitterTry(
                 encodedPackageCoordinate.as[scala.util.Try[PackageCoordinate]]
               )
-              operationStatus <- Try(Envelope.decodeData[OperationStatus](childData.getData))
+              operationStatus <- Try(
+                StorageEnvelope.decodeData[OperationStatus](childData.getData)
+              )
             } yield coordinate -> operationStatus
           }
           .toSeq

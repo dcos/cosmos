@@ -6,7 +6,7 @@ import com.github.mustachejava.DefaultMustacheFactory
 import com.mesosphere.cosmos.bijection.CosmosConversions._
 import com.mesosphere.cosmos.jsonschema.JsonSchema
 import com.mesosphere.cosmos.label
-import com.mesosphere.cosmos.label.v1.circe.Encoders._
+import com.mesosphere.cosmos.model.StorageEnvelope
 import com.mesosphere.cosmos.thirdparty.marathon.circe.Encoders.encodeAppId
 import com.mesosphere.cosmos.thirdparty.marathon.model.AppId
 import com.mesosphere.cosmos.thirdparty.marathon.model.MarathonApp
@@ -80,7 +80,8 @@ object PackageDefinitionRenderer {
         (MarathonApp.nameLabel, pkg.name),
         (MarathonApp.versionLabel, pkg.version.toString),
         (MarathonApp.repositoryLabel, sourceUri.toString),
-        (MarathonApp.optionsLabel, encodeForLabel(options.getOrElse(JsonObject.empty).asJson))
+        (MarathonApp.optionsLabel, encodeForLabel(options.getOrElse(JsonObject.empty).asJson)),
+        (MarathonApp.packageLabel, encodeForLabel(StorageEnvelope(pkg).asJson))
       ).mapValues(_.asJson)
     )
   }

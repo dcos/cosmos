@@ -3,10 +3,10 @@ package com.mesosphere.cosmos.handler
 import com.mesosphere.cosmos.AdminRouter
 import com.mesosphere.cosmos.PackageNotFound
 import com.mesosphere.cosmos.converter.Label._
+import com.mesosphere.cosmos.converter.Response._
 import com.mesosphere.cosmos.finch.EndpointHandler
 import com.mesosphere.cosmos.http.RequestSession
-import com.mesosphere.cosmos.internal.model.MarathonAppOps
-import com.mesosphere.cosmos.internal.model.PackageOrigin
+import com.mesosphere.cosmos.model.PackageOrigin
 import com.mesosphere.cosmos.label
 import com.mesosphere.cosmos.repository.CosmosRepository
 import com.mesosphere.cosmos.rpc
@@ -34,9 +34,9 @@ private[cosmos] final class ListHandler(
     for {
       apps <- getApplications(adminRouter, request)
     } yield {
-      rpc.v1.model.ListResponse(apps.sortBy(install =>
-        (install.packageInformation.packageDefinition.name, install.appId)))
-
+      rpc.v1.model.ListResponse(
+        apps.sortBy(install => (install.packageInformation.packageDefinition.name, install.appId))
+      )
     }
   }
 
@@ -55,47 +55,25 @@ private[cosmos] final class ListHandler(
     }
 
     adminRouter.listApps().map { response =>
-      response.apps.collect {
-        case app if satisfiesRequest(app) =>
-          rpc.v1.model.Installation(
-            app.id,
-            decodeInstalledPackageInformation(app)
-          )
+      response.apps.flatMap { app =>
+        if (satisfiesRequest(app)) {
+          decodeInstalledPackageInformation(app).map { info =>
+            rpc.v1.model.Installation(
+              app.id,
+              info
+            )
+          }
+        } else None
       }
     }
   }
 
-  /* TODO: this may be helpful when we have PackageDefinition => Installation
-  private[this] def setSelectedAndFramework(
-    pkg: universe.v4.model.PackageDefinition
-  ): universe.v4.model.PackageDefinition = {
-    pkg match {
-      case pkg: V3Package =>
-        pkg.copy(
-          selected = pkg.selected orElse Some(false),
-          framework = pkg.framework orElse Some(false),
-          resource = pkg.resource.map(_.copy(cli = None))
-        )
-      case pkg: V4Package =>
-        pkg.copy(
-          selected = pkg.selected orElse Some(false),
-          framework = pkg.framework orElse Some(false),
-          resource = pkg.resource.map(_.copy(cli = None))
-        )
-      case pkg: V2Package =>
-        pkg.copy(
-          selected = pkg.selected orElse Some(false),
-          framework = pkg.framework orElse Some(false)
-        )
-    }
-  }
-  */
-
   private[this] def decodeInstalledPackageInformation(
     app: thirdparty.marathon.model.MarathonApp
-  ): rpc.v1.model.InstalledPackageInformation = {
-    // TODO: We nee to fix this in the next PR when we optionally persist this
-    app.packageMetadata.as[rpc.v1.model.InstalledPackageInformation]
+  ): Option[rpc.v1.model.InstalledPackageInformation] = {
+    app.packageDefinition.map(_.as[rpc.v1.model.InstalledPackageInformation]).orElse(
+      app.packageMetadata.as[Option[rpc.v1.model.InstalledPackageInformation]]
+    )
   }
 
 }

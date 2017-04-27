@@ -20,7 +20,13 @@ final class DispatchingMediaTypedEncoder[A] private(
 object DispatchingMediaTypedEncoder {
 
   def apply[A](encoders: Set[MediaTypedEncoder[A]]): DispatchingMediaTypedEncoder[A] = {
-    new DispatchingMediaTypedEncoder(encoders.map { e => e.mediaType -> e }.toMap)
+    new DispatchingMediaTypedEncoder(
+      encoders.flatMap { encoder =>
+        encoder.mediaTypes.toList.map { mediaType =>
+          mediaType -> encoder
+        }
+      }.toMap
+    )
   }
 
   def apply[A](mediaType: MediaType)(implicit

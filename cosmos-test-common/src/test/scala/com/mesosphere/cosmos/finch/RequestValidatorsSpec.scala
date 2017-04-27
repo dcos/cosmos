@@ -1,5 +1,6 @@
 package com.mesosphere.cosmos.finch
 
+import cats.data.NonEmptyList
 import com.mesosphere.cosmos.http.Authorization
 import com.mesosphere.cosmos.http.CompoundMediaTypeParser
 import com.mesosphere.cosmos.http.HttpRequest
@@ -270,7 +271,7 @@ final class RequestValidatorsSpec extends FreeSpec with Matchers with PropertyCh
           val produces = DispatchingMediaTypedEncoder(encoders)
           val result = factory.validate(accept = Some(mediaType.show), produces = produces)
           val Return(context) = result
-          assertResult(mediaType)(context.responseEncoder.mediaType)
+          assertResult(NonEmptyList.of(mediaType))(context.responseEncoder.mediaTypes)
         }
       }
 
@@ -304,7 +305,7 @@ final class RequestValidatorsSpec extends FreeSpec with Matchers with PropertyCh
         val produces = DispatchingMediaTypedEncoder(encoders)
         val result = factory.validate(accept = Some(accept.show), produces = produces)
         val Return(context) = result
-        assertResult(expected)(context.responseEncoder.mediaType)
+        assertResult(NonEmptyList.of(expected))(context.responseEncoder.mediaTypes)
       }
     }
 

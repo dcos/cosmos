@@ -1,8 +1,12 @@
 package com.mesosphere.universe
 
+import cats.data.NonEmptyList
 import cats.syntax.either._
-import com.mesosphere.universe.common.circe.Decoders._
+import com.mesosphere.cosmos.finch.MediaTypedDecoder
+import com.mesosphere.cosmos.finch.MediaTypedEncoder
+import com.mesosphere.cosmos.http.MediaType
 import com.mesosphere.universe
+import com.mesosphere.universe.common.circe.Decoders._
 import com.mesosphere.universe.v3.syntax.PackageDefinitionOps._
 import io.circe.Decoder
 import io.circe.DecodingFailure
@@ -48,8 +52,12 @@ package v3.model {
   }
 
   object V2Package {
-    implicit val decodeV3V2Package: Decoder[V2Package] = deriveDecoder[V2Package]
-    implicit val encodeV2Package: Encoder[V2Package] = deriveEncoder[V2Package]
+    implicit val decoder: Decoder[V2Package] = deriveDecoder[V2Package]
+    implicit val encoder: Encoder[V2Package] = deriveEncoder[V2Package]
+
+    implicit val mediaTypedEncoder: MediaTypedEncoder[V2Package] = MediaTypedEncoder(
+      MediaTypes.universeV2Package
+    )
   }
 
   /**
@@ -86,8 +94,12 @@ package v3.model {
   }
 
   object V3Package {
-    implicit val decodeV3V3Package: Decoder[V3Package] = deriveDecoder[V3Package]
-    implicit val encodeV3Package: Encoder[V3Package] = deriveEncoder[V3Package]
+    implicit val decoder: Decoder[V3Package] = deriveDecoder[V3Package]
+    implicit val encoder: Encoder[V3Package] = deriveEncoder[V3Package]
+
+    implicit val mediaTypedEncoder: MediaTypedEncoder[V3Package] = MediaTypedEncoder(
+      MediaTypes.universeV3Package
+    )
   }
 
 }
@@ -123,7 +135,7 @@ package v4.model {
       }
     }
 
-    implicit val decodePackageDefinition: Decoder[PackageDefinition] = {
+    implicit val decoder: Decoder[PackageDefinition] = {
       Decoder.instance[PackageDefinition] { (hc: HCursor) =>
         hc.downField("packagingVersion").as[universe.v4.model.PackagingVersion].flatMap {
           case universe.v3.model.V2PackagingVersion => hc.as[universe.v3.model.V2Package]
@@ -133,10 +145,39 @@ package v4.model {
       }
     }
 
-    implicit val encodePackageDefinition: Encoder[PackageDefinition] = Encoder.instance {
+    implicit val encoder: Encoder[PackageDefinition] = Encoder.instance {
       case v2: universe.v3.model.V2Package => v2.asJson
       case v3: universe.v3.model.V3Package => v3.asJson
       case v4: universe.v4.model.V4Package => v4.asJson
+    }
+
+    private val mediaTypes = (
+      universe.v3.model.V2Package.mediaTypedEncoder.mediaTypes ++
+      universe.v3.model.V3Package.mediaTypedEncoder.mediaTypes.toList ++
+      universe.v4.model.V4Package.mediaTypedEncoder.mediaTypes.toList
+    )
+
+    implicit val mediaTypedDecoder: MediaTypedDecoder[PackageDefinition] = MediaTypedDecoder(
+      mediaTypes
+    )(
+      decoder
+    )
+
+    implicit val mediaTypedEncoder: MediaTypedEncoder[PackageDefinition] = {
+      new MediaTypedEncoder[PackageDefinition] {
+        val encoder = PackageDefinition.encoder
+
+        val mediaTypes: NonEmptyList[MediaType] = PackageDefinition.mediaTypes
+
+        def mediaType(a: PackageDefinition): MediaType = a match {
+          case v2: universe.v3.model.V2Package =>
+            universe.v3.model.V2Package.mediaTypedEncoder.mediaType(v2)
+          case v3: universe.v3.model.V3Package =>
+            universe.v3.model.V3Package.mediaTypedEncoder.mediaType(v3)
+          case v4: universe.v4.model.V4Package =>
+            universe.v4.model.V4Package.mediaTypedEncoder.mediaType(v4)
+        }
+      }
     }
   }
 
@@ -145,25 +186,30 @@ package v4.model {
 
   object SupportedPackageDefinition {
 
-    implicit val supportedPackageDefinitionOrdering: Ordering[SupportedPackageDefinition] =
+    implicit val ordering: Ordering[SupportedPackageDefinition] =
       universe.v4.model.PackageDefinition.packageDefinitionOrdering.on(identity)
 
-    implicit val decodeSupportedPackageDefinition: Decoder[SupportedPackageDefinition] = {
+    implicit val decoder: Decoder[SupportedPackageDefinition] = {
       Decoder.instance[SupportedPackageDefinition] { (hc: HCursor) =>
         hc.downField("packagingVersion").as[universe.v4.model.PackagingVersion].flatMap {
           case universe.v4.model.V4PackagingVersion => hc.as[universe.v4.model.V4Package]
           case universe.v3.model.V3PackagingVersion => hc.as[universe.v3.model.V3Package]
-          case universe.v3.model.V2PackagingVersion => Left(DecodingFailure(
-            s"V2Package is not a supported package definition",
-            hc.history
-          ))
+          case universe.v3.model.V2PackagingVersion =>
+            Left(
+              DecodingFailure(
+                s"V2Package is not a supported package definition",
+                hc.history
+              )
+            )
         }
       }
     }
 
-    implicit val encodeSupportedPackageDefinition: Encoder[SupportedPackageDefinition] = Encoder.instance {
-      case v3: universe.v3.model.V3Package => v3.asJson
-      case v4: universe.v4.model.V4Package => v4.asJson
+    implicit val encoder: Encoder[SupportedPackageDefinition] = {
+      Encoder.instance {
+        case v3: universe.v3.model.V3Package => v3.asJson
+        case v4: universe.v4.model.V4Package => v4.asJson
+      }
     }
 
   }
@@ -196,12 +242,16 @@ package v4.model {
   ) extends universe.v4.model.SupportedPackageDefinition
 
   object V4Package {
-    implicit val decodeV4V4Package: Decoder[universe.v4.model.V4Package] = {
-      deriveDecoder[universe.v4.model.V4Package]
+    implicit val decoder: Decoder[V4Package] = {
+      deriveDecoder[V4Package]
     }
-    implicit val encodeV4V4Package: Encoder[universe.v4.model.V4Package] = {
-      deriveEncoder[universe.v4.model.V4Package]
+    implicit val encoder: Encoder[V4Package] = {
+      deriveEncoder[V4Package]
     }
+
+    implicit val mediaTypedEncoder: MediaTypedEncoder[V4Package] = MediaTypedEncoder(
+      MediaTypes.universeV4Package
+    )
   }
 
 }

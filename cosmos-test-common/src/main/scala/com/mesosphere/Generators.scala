@@ -7,9 +7,9 @@ import java.nio.ByteBuffer
 import java.util.UUID
 import org.scalacheck.Arbitrary
 import org.scalacheck.Arbitrary.arbitrary
-import org.scalacheck.Shapeless._
 import org.scalacheck.Gen
 import org.scalacheck.Gen.Choose
+import org.scalacheck.Shapeless._
 import org.scalacheck.derive.MkArbitrary
 import scala.util.Success
 import scala.util.Try
@@ -233,6 +233,10 @@ object Generators {
     implicit val arbByteBuffer: Arbitrary[ByteBuffer] = Arbitrary(genByteBuffer)
 
     implicit val arbV3Package: Arbitrary[universe.v3.model.V3Package] = Arbitrary(genV3Package())
+
+    implicit val arbPackageDefinition: Arbitrary[universe.v4.model.PackageDefinition] = {
+      Arbitrary(genPackageDefinition())
+    }
 
     implicit val arbSupportedPackageDefinition: Arbitrary[universe.v4.model.SupportedPackageDefinition] = {
       Arbitrary(genSupportedPackageDefinition)

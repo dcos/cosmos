@@ -1,6 +1,7 @@
 package com.mesosphere.cosmos.converter
 
-import com.mesosphere.cosmos.{label, rpc}
+import com.mesosphere.cosmos.label
+import com.mesosphere.cosmos.rpc
 import com.mesosphere.universe
 import com.twitter.bijection.Bijection
 
