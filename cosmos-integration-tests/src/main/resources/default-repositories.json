@@ -9,6 +9,6 @@
   },
   {
     "name": "V4TestUniverse",
-    "uri": "https://s3-us-west-1.amazonaws.com/larioj-mesosphere/v4-test-universe.json"
+    "uri": "https://downloads.mesosphere.com/universe/29733c90cf6c7e2a52cdff05a7a884253303b378/repo/repo-up-to-1.10.json"
   }
 ]
