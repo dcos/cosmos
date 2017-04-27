@@ -191,8 +191,8 @@ package v4.model {
     marathon: Option[universe.v3.model.Marathon] = None,
     resource: Option[universe.v3.model.V3Resource] = None,
     config: Option[JsonObject] = None,
-    upgradesFrom: Option[List[universe.v3.model.Version]] = None,
-    downgradesTo: Option[List[universe.v3.model.Version]] = None
+    upgradesFrom: Option[List[universe.v3.model.VersionSpecification]] = None,
+    downgradesTo: Option[List[universe.v3.model.VersionSpecification]] = None
   ) extends universe.v4.model.SupportedPackageDefinition
 
   object V4Package {

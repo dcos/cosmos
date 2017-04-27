@@ -319,8 +319,8 @@ object TestingPackages {
     MarathonTemplate,
     Resource,
     Config,
-    upgradesFrom = Some(List(universe.v3.model.Version("8.0"))),
-    downgradesTo = Some(List(universe.v3.model.Version("8.0")))
+    upgradesFrom = Some(List(universe.v3.model.ExactVersion(universe.v3.model.Version("8.0")))),
+    downgradesTo = Some(List(universe.v3.model.ExactVersion(universe.v3.model.Version("8.0"))))
   )
 
   val MinimalV4ModelMetadata = universe.v4.model.V4Metadata(
@@ -375,8 +375,8 @@ object TestingPackages {
     MarathonTemplate,
     Resource,
     Config,
-    upgradesFrom = Some(List(universe.v3.model.Version("8.0"))),
-    downgradesTo = Some(List(universe.v3.model.Version("8.0")))
+    upgradesFrom = Some(List(universe.v3.model.ExactVersion(universe.v3.model.Version("8.0")))),
+    downgradesTo = Some(List(universe.v3.model.ExactVersion(universe.v3.model.Version("8.0"))))
   )
 
   val MaximalV4ModelPackageDefinitionV4: universe.v4.model.PackageDefinition = MaximalV4ModelV4PackageDefinition
