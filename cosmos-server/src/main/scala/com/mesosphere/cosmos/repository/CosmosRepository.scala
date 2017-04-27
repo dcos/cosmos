@@ -7,8 +7,6 @@ import com.mesosphere.cosmos.rpc
 import com.mesosphere.universe
 import com.mesosphere.universe.v3.syntax.PackageDefinitionOps._
 import com.netaporter.uri.Uri
-import com.twitter.common.quantity.Amount
-import com.twitter.common.quantity.Time
 import com.twitter.common.util.Clock
 import com.twitter.util.Future
 import java.util.concurrent.TimeUnit
@@ -122,6 +120,15 @@ final class CosmosRepository (
         .toList
         .map { case (_, searchResult) => searchResult }
         .filter(predicate)
+    }
+  }
+
+  override def upgradesTo(
+    name: String,
+    version: universe.v3.model.Version
+  )(implicit session: RequestSession): Future[List[universe.v3.model.Version]] = {
+    synchronizedUpdate().map { internalRepository =>
+      PackageCollection.upgradesTo(name, version, internalRepository.packages)
     }
   }
 

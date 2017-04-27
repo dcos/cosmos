@@ -16,22 +16,33 @@ import com.twitter.util.Future
   */
 trait PackageCollection {
 
-  def getPackagesByPackageName(packageName: String)(implicit session: RequestSession): Future[List[universe.v4.model.PackageDefinition]]
+  def getPackagesByPackageName(
+    packageName: String
+  )(implicit session: RequestSession): Future[List[universe.v4.model.PackageDefinition]]
 
   def getPackageByPackageVersion(
     packageName: String,
     packageVersion: Option[universe.v3.model.Version]
   )(implicit session: RequestSession): Future[(universe.v4.model.PackageDefinition, Uri)]
 
-  def search(query: Option[String])(implicit session: RequestSession): Future[List[rpc.v1.model.SearchResult]]
+  def search(
+    query: Option[String]
+  )(implicit session: RequestSession): Future[List[rpc.v1.model.SearchResult]]
+
+  /**
+   * Return the versions of packages in this collection that the package with the given `name` and
+   * `version` can be upgraded to.
+   */
+  def upgradesTo(
+    name: String,
+    version: universe.v3.model.Version
+  )(implicit session: RequestSession): Future[List[universe.v3.model.Version]]
+
 }
 
 object PackageCollection {
 
-  /**
-   * Return the versions of packages from `possibleUpgrades` that the package with the given
-   * `name` and `version` can be upgraded to.
-   */
+  /** Helper for the corresponding instance method */
   def upgradesTo(
     name: String,
     version: universe.v3.model.Version,
