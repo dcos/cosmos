@@ -113,7 +113,7 @@ class PackageRenderHandlerSpec extends FreeSpec {
     }
 
     "works for v4 packages" in {
-      val renderRequest = RenderRequest("cosmos-test-helloworld")
+      val renderRequest = RenderRequest("helloworld", Some(PackageDetailsVersion("0.4.1")))
       val response = packageRender(renderRequest)
       assertResult(Status.Ok)(response.status)
       assertResult(MediaTypes.RenderResponse.show)(response.contentType.get)

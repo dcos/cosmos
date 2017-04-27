@@ -9,28 +9,28 @@ import com.mesosphere.cosmos.test.CosmosIntegrationTestClient.CosmosClient
 import com.netaporter.uri.dsl._
 import com.twitter.finagle.http._
 import org.scalatest.BeforeAndAfter
+import org.scalatest.BeforeAndAfterAll
 import org.scalatest.FreeSpec
 import org.scalatest.prop.TableDrivenPropertyChecks
 import scala.util.Right
 
-final class PackageRepositoryIntegrationSpec extends FreeSpec with BeforeAndAfter {
+final class PackageRepositoryIntegrationSpec extends FreeSpec with BeforeAndAfter with BeforeAndAfterAll {
 
   import PackageRepositoryIntegrationSpec._
 
   private val defaultRepos = DefaultRepositories().getOrThrow
   var originalRepositories: Seq[PackageRepository] = Seq.empty
 
-  before {
+  override def beforeAll(): Unit = {
     originalRepositories = listRepositories()
   }
 
-  after {
-    listRepositories().foreach { repo =>
-      deleteRepository(repo)
-    }
-    originalRepositories.foreach { repo =>
-      addRepository(repo)
-    }
+  override def afterAll(): Unit = {
+    replaceRepositoriesWith(originalRepositories)
+  }
+
+  before {
+    replaceRepositoriesWith(defaultRepos)
   }
 
   "Package repository endpoints" in {
@@ -139,6 +139,15 @@ private object PackageRepositoryIntegrationSpec extends TableDrivenPropertyCheck
   ): Response = {
     val request = CosmosRequests.packageRepositoryAdd(addRequest)
     CosmosClient.submit(request)
+  }
+
+  private def replaceRepositoriesWith(repositories: Seq[PackageRepository]): Unit = {
+    listRepositories().foreach { repo =>
+      deleteRepository(repo)
+    }
+    repositories.foreach { repo =>
+      addRepository(repo)
+    }
   }
 
 }

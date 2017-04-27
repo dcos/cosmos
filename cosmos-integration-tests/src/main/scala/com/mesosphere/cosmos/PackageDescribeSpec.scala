@@ -7,10 +7,6 @@ import com.mesosphere.cosmos.circe.Decoders.decode
 import com.mesosphere.cosmos.http.CosmosRequests
 import com.mesosphere.cosmos.rpc.v1.circe.Decoders._
 import com.mesosphere.cosmos.test.CosmosIntegrationTestClient.CosmosClient
-import com.mesosphere.cosmos.thirdparty.marathon.model.AppId
-import com.mesosphere.cosmos.thirdparty.marathon.model.MarathonApp
-import com.mesosphere.cosmos.thirdparty.marathon.model.MarathonAppContainer
-import com.mesosphere.cosmos.thirdparty.marathon.model.MarathonAppContainerDocker
 import com.mesosphere.universe
 import com.mesosphere.universe.v2.circe.Decoders._
 import com.twitter.finagle.http.Response
@@ -48,8 +44,27 @@ extends FreeSpec with TableDrivenPropertyChecks with Matchers {
     }
 
     "can successfully describe helloworld" in {
-      describeHelloworld()
-      describeHelloworld(Some(universe.v2.model.PackageDetailsVersion("0.1.0")))
+      describeHelloworld0(Some(universe.v2.model.PackageDetailsVersion("0.1.0")))
+    }
+
+    "can successfully describe helloworld v4 w/o updates" in {
+      val response = describeRequest(
+        rpc.v1.model.DescribeRequest(
+          "helloworld",
+          Some(universe.v2.model.PackageDetailsVersion("0.4.0")))
+      )
+      assertResult(Status.Ok)(response.status)
+    }
+
+    "fails to describe helloworld v4 w/ updates" in {
+      val response = describeRequestV2(
+        rpc.v1.model.DescribeRequest(
+          "helloworld",
+          Some(universe.v2.model.PackageDetailsVersion("0.4.1")))
+      )
+
+      info(response.status.toString)
+      assertResult(Status.BadRequest)(response.status)
     }
 
     "can successfully describe all versions from Universe" in {
@@ -111,7 +126,7 @@ extends FreeSpec with TableDrivenPropertyChecks with Matchers {
     assertResult(Right(content))(parse(response.contentString))
   }
 
-  private def describeHelloworld(
+  def describeHelloworld0(
     version: Option[universe.v2.model.PackageDetailsVersion] = None
   ): Assertion = {
     val response = describeRequest(
@@ -135,6 +150,13 @@ extends FreeSpec with TableDrivenPropertyChecks with Matchers {
     describeRequest: rpc.v1.model.DescribeRequest
   ): Response = {
     CosmosClient.submit(CosmosRequests.packageDescribeV1(describeRequest))
+  }
+
+  private def describeRequestV2
+  (
+    describeRequest: rpc.v1.model.DescribeRequest
+  ): Response = {
+    CosmosClient.submit(CosmosRequests.packageDescribeV2(describeRequest))
   }
 
 }

@@ -31,21 +31,19 @@ final class PackageRepositorySpec
 
   import PackageRepositorySpec._
 
-  def setDefaultRepositories(): Unit = {
-    listRepos().repositories.foreach { repo =>
-      deleteRepo(PackageRepositoryDeleteRequest(Some(repo.name), Some(repo.uri)))
-    }
-    defaultRepos.foreach { repo =>
-      addRepo(PackageRepositoryAddRequest(repo.name, repo.uri))
-    }
+  // TODO: Move all these into the integration spec
+  var originalRepositories: Seq[PackageRepository] = Seq.empty
+
+  override def beforeAll(): Unit = {
+    originalRepositories = listRepos().repositories
   }
 
   override def afterAll(): Unit = {
-    setDefaultRepositories()
+    replaceRepositoriesWith(originalRepositories)
   }
 
   before {
-    setDefaultRepositories()
+    replaceRepositoriesWith(defaultRepos)
   }
 
   "List sources endpoint" in {
@@ -387,6 +385,15 @@ object PackageRepositorySpec extends FreeSpec with TableDrivenPropertyChecks {
 
     state.foreach { repository =>
       addRepo(PackageRepositoryAddRequest(repository.name, repository.uri))
+    }
+  }
+
+  private def replaceRepositoriesWith(repositories: Seq[PackageRepository]): Unit = {
+    listRepos().repositories.foreach { repo =>
+      deleteRepo(PackageRepositoryDeleteRequest(Some(repo.name), Some(repo.uri)))
+    }
+    repositories.foreach { repo =>
+      addRepo(PackageRepositoryAddRequest(repo.name, repo.uri))
     }
   }
 }
