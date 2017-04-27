@@ -105,7 +105,7 @@ final class DefaultUniverseClient(
       } flatMap { case conn: HttpURLConnection =>
         // Set headers on request
         conn.setRequestProperty(
-          "Accept", s"${MediaTypes.UniverseV3Repository.show}, ${MediaTypes.UniverseV4Repository.show}"
+          "Accept", s"${MediaTypes.UniverseV4Repository.show}, ${MediaTypes.UniverseV3Repository.show}"
         )
         conn.setRequestProperty("Accept-Encoding", "gzip")
         conn.setRequestProperty(
@@ -166,14 +166,17 @@ final class DefaultUniverseClient(
   ): universe.v3.model.Repository = {
     val decodeScope = fetchScope.scope("decode")
 
+    val v3Compatible = contentType.isCompatibleWith(MediaTypes.UniverseV3Repository)
+
     // Decode the packages
     val repo = if (
-      contentType.isCompatibleWith(MediaTypes.UniverseV3Repository) ||
+      v3Compatible ||
         contentType.isCompatibleWith(MediaTypes.UniverseV4Repository)
     ) {
-      val v3Scope = decodeScope.scope("v3")
-      v3Scope.counter("count").incr()
-      Stat.time(v3Scope.stat("histogram")) {
+      val scopeName = if (v3Compatible) "v3" else "v4"
+      val scope = decodeScope.scope(scopeName)
+      scope.counter("count").incr()
+      Stat.time(scope.stat("histogram")) {
         decode[universe.v3.model.Repository](
           Source.fromInputStream(bodyInputStream).mkString
         )

@@ -44,7 +44,7 @@ extends FreeSpec with TableDrivenPropertyChecks with Matchers {
     }
 
     "can successfully describe helloworld" in {
-      describeHelloworld0(Some(universe.v2.model.PackageDetailsVersion("0.1.0")))
+      describeHelloworld(Some(universe.v2.model.PackageDetailsVersion("0.1.0")))
     }
 
     "can successfully describe helloworld v4 w/o updates" in {
@@ -100,7 +100,7 @@ extends FreeSpec with TableDrivenPropertyChecks with Matchers {
     assertResult(expectedMessage)(errorResponse.message)
   }
 
-  def describeHelloworld0(
+  def describeHelloworld(
     version: Option[universe.v2.model.PackageDetailsVersion] = None
   ): Assertion = {
     val response = describeRequest(
