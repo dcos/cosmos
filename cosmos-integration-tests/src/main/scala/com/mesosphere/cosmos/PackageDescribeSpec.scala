@@ -65,16 +65,6 @@ extends FreeSpec with TableDrivenPropertyChecks with Matchers {
       assertResult(Status.BadRequest)(response.status)
     }
 
-    "can successfully describe all versions from Universe" in {
-      forAll (PackageVersionsTable) { (packageName, versions) =>
-        packageListVersionsAndAssert(
-          packageName=packageName,
-          status=Status.Ok,
-          content=versions.asJson
-        )
-      }
-    }
-
     "should return an error if Describe is called on a v3 package without a marathon template" in {
       describeAndAssertError(
         "enterprise-security-cli",
@@ -108,20 +98,6 @@ extends FreeSpec with TableDrivenPropertyChecks with Matchers {
     assertResult(status)(response.status)
     val errorResponse = decode[rpc.v1.model.ErrorResponse](response.contentString)
     assertResult(expectedMessage)(errorResponse.message)
-  }
-
-  private def packageListVersionsAndAssert(
-    packageName: String,
-    status: Status,
-    content: Json
-  ): Assertion = {
-    val request = rpc.v1.model.ListVersionsRequest(
-      packageName,
-      includePackageVersions = true
-    )
-    val response = CosmosClient.submit(CosmosRequests.packageListVersions(request))
-    assertResult(status)(response.status)
-    assertResult(Right(content))(parse(response.contentString))
   }
 
   def describeHelloworld0(
@@ -169,7 +145,7 @@ private object PackageDescribeSpec extends TableDrivenPropertyChecks {
 
   val PackageVersionsTable = Table(
     ("package name", "versions"),
-    ("helloworld", Map("results" -> Map("0.4.0" -> "3", "0.4.1" -> "4")))
+    ("helloworld", Map("results" -> Map("0.1.0" -> "0")))
   )
 
   val LatestPackageVersionsTable = Table(
