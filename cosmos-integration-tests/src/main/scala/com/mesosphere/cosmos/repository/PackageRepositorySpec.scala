@@ -16,6 +16,7 @@ import com.twitter.finagle.http._
 import org.scalatest.AppendedClues
 import org.scalatest.Assertion
 import org.scalatest.BeforeAndAfter
+import org.scalatest.BeforeAndAfterAll
 import org.scalatest.FreeSpec
 import org.scalatest.concurrent.Eventually
 import org.scalatest.prop.TableDrivenPropertyChecks
@@ -24,26 +25,27 @@ import scala.util.Left
 import scala.util.Right
 
 final class PackageRepositorySpec
-  extends FreeSpec with BeforeAndAfter with Eventually with AppendedClues {
+  extends FreeSpec with BeforeAndAfter with Eventually with AppendedClues with BeforeAndAfterAll {
 
   lazy val logger = org.slf4j.LoggerFactory.getLogger(classOf[PackageRepositorySpec])
 
   import PackageRepositorySpec._
 
-  // TODO: Move all these into the integration spec
-  var originalRepositories: Seq[PackageRepository] = Seq.empty
-
-  before {
-    originalRepositories = listRepos().repositories
-  }
-
-  after {
+  def setDefaultRepositories(): Unit = {
     listRepos().repositories.foreach { repo =>
       deleteRepo(PackageRepositoryDeleteRequest(Some(repo.name), Some(repo.uri)))
     }
-    originalRepositories.foreach { repo =>
+    defaultRepos.foreach { repo =>
       addRepo(PackageRepositoryAddRequest(repo.name, repo.uri))
     }
+  }
+
+  override def afterAll(): Unit = {
+    setDefaultRepositories()
+  }
+
+  before {
+    setDefaultRepositories()
   }
 
   "List sources endpoint" in {
@@ -67,7 +69,7 @@ final class PackageRepositorySpec
         assertAdd(SourceMesosphere +: defaultRepos, SourceMesosphere, Some(0)) // prepend
       }
       "insert" in {
-        assertAdd(defaultRepos.head :: SourceExample :: defaultRepos(1) :: Nil, SourceExample, Some(1)) // insert
+        assertAdd(defaultRepos.head :: SourceExample :: defaultRepos.tail, SourceExample, Some(1)) // insert
       }
     }
 
