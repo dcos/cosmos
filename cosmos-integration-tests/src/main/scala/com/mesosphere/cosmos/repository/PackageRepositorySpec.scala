@@ -27,8 +27,6 @@ import scala.util.Right
 final class PackageRepositorySpec
   extends FreeSpec with BeforeAndAfter with Eventually with AppendedClues with BeforeAndAfterAll {
 
-  lazy val logger = org.slf4j.LoggerFactory.getLogger(classOf[PackageRepositorySpec])
-
   import PackageRepositorySpec._
 
   // TODO: Move all these into the integration spec
@@ -39,11 +37,11 @@ final class PackageRepositorySpec
   }
 
   override def afterAll(): Unit = {
-    replaceRepositoriesWith(originalRepositories)
+    ItUtil.replaceRepositoriesWith(originalRepositories)
   }
 
   before {
-    replaceRepositoriesWith(defaultRepos)
+    ItUtil.replaceRepositoriesWith(defaultRepos)
   }
 
   "List sources endpoint" in {
@@ -388,14 +386,6 @@ object PackageRepositorySpec extends FreeSpec with TableDrivenPropertyChecks {
     }
   }
 
-  private def replaceRepositoriesWith(repositories: Seq[PackageRepository]): Unit = {
-    listRepos().repositories.foreach { repo =>
-      deleteRepo(PackageRepositoryDeleteRequest(Some(repo.name), Some(repo.uri)))
-    }
-    repositories.foreach { repo =>
-      addRepo(PackageRepositoryAddRequest(repo.name, repo.uri))
-    }
-  }
 }
 
 private case class DeleteSourceAssertion(
