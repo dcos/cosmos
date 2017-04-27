@@ -99,9 +99,7 @@ final class MultiRepository(
     repositories().flatMap { repositories =>
       Future.collect {
         repositories.map { repository =>
-          repository.getPackagesByPackageName(name).map { packages =>
-            PackageCollection.upgradesTo(name, version, packages)
-          }
+          repository.upgradesTo(name, version)
         }
       }
     } map { versions => versions.flatten.toList }
