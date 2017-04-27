@@ -3,6 +3,7 @@ package com.mesosphere.cosmos.finch
 import cats.data.NonEmptyList
 import com.mesosphere.cosmos.http.MediaType
 import io.circe.Encoder
+import io.circe.Json
 
 /** Associates a media type with an [[io.circe.Encoder]] instance. */
 trait MediaTypedEncoder[A] {
@@ -14,6 +15,8 @@ trait MediaTypedEncoder[A] {
 
   /// Returns the specific media type based on the value of the type.
   def mediaType(a: A): MediaType
+
+  def apply(a: A): (Json, MediaType) = (encoder(a), mediaType(a))
 }
 
 final class SimpleMediaTypedEncoder[A](
