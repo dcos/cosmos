@@ -23,7 +23,7 @@ final class LocalPackageCollectionSpec extends FreeSpec with Matchers {
     releaseVersion=universe.v3.model.ReleaseVersion(3).get,
     maintainer="jose@mesosphere.com",
     description="Great object store",
-    upgradesFrom = Some(List(universe.v3.model.Version("0.8.4"))),
+    upgradesFrom = Some(List(universe.v3.model.ExactVersion(universe.v3.model.Version("0.8.4")))),
     downgradesTo = Some(List())
   )
 
@@ -43,8 +43,8 @@ final class LocalPackageCollectionSpec extends FreeSpec with Matchers {
         universe.v3.model.ReleaseVersion(4).get, // scalastyle:ignore magic.number
       maintainer="jose@mesosphere.com",
       description="paas framework",
-      upgradesFrom = Some(List(universe.v3.model.Version("0.10"))),
-      downgradesTo = Some(List(universe.v3.model.Version("0.10")))
+      upgradesFrom = Some(List(universe.v3.model.ExactVersion(universe.v3.model.Version("0.10")))),
+      downgradesTo = Some(List(universe.v3.model.ExactVersion(universe.v3.model.Version("0.10"))))
 
     ),
     universe.v3.model.V3Package(

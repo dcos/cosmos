@@ -136,6 +136,15 @@ final class PackageDefinitionOps(val pkgDef: universe.v4.model.PackageDefinition
     case v4: universe.v4.model.V4Package => v4.resource
   }
 
+  def upgradesFrom: List[universe.v3.model.VersionSpecification] = pkgDef match {
+    case v4: universe.v4.model.V4Package => v4.upgradesFrom.getOrElse(Nil)
+    case _ => Nil
+  }
+
+  def canUpgradeFrom(version: universe.v3.model.Version): Boolean = {
+    upgradesFrom.exists(_.matches(version))
+  }
+
   // -------- Non top-level properties that we are safe to "jump" to --------------
 
   def images: Option[universe.v3.model.Images] = pkgDef match {

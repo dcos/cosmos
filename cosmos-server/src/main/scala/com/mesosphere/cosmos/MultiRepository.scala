@@ -92,6 +92,19 @@ final class MultiRepository(
     }
   }
 
+  override def upgradesTo(
+    name: String,
+    version: universe.v3.model.Version
+  )(implicit session: RequestSession): Future[List[universe.v3.model.Version]] = {
+    repositories().flatMap { repositories =>
+      Future.collect {
+        repositories.map { repository =>
+          repository.upgradesTo(name, version)
+        }
+      }
+    } map { versions => versions.flatten.toList }
+  }
+
   def getRepository(uri: Uri): Future[Option[CosmosRepository]] = {
     repositories().map { repositories =>
       repositories.find(_.repository.uri == uri)
