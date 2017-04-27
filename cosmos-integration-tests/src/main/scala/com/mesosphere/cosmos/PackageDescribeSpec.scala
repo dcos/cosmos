@@ -56,14 +56,12 @@ extends FreeSpec with TableDrivenPropertyChecks with Matchers {
       assertResult(Status.Ok)(response.status)
     }
 
-    "fails to describe helloworld v4 w/ updates" in {
+    "fails to describe helloworld v4 w/ updates when requesting v2 describe response" in {
       val response = describeRequestV2(
         rpc.v1.model.DescribeRequest(
           "helloworld",
           Some(universe.v2.model.PackageDetailsVersion("0.4.1")))
       )
-
-      info(response.status.toString)
       assertResult(Status.BadRequest)(response.status)
     }
 
@@ -171,7 +169,7 @@ private object PackageDescribeSpec extends TableDrivenPropertyChecks {
 
   val PackageVersionsTable = Table(
     ("package name", "versions"),
-    ("helloworld", Map("results" -> Map("0.1.0" -> "0")))
+    ("helloworld", Map("results" -> Map("0.4.0" -> "3", "0.4.1" -> "4")))
   )
 
   val LatestPackageVersionsTable = Table(
