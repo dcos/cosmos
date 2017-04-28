@@ -33,10 +33,12 @@ final class PackageRepositorySpec
   var originalRepositories: Seq[PackageRepository] = Seq.empty
 
   override def beforeAll(): Unit = {
+    super.beforeAll()
     originalRepositories = listRepos().repositories
   }
 
   override def afterAll(): Unit = {
+    super.afterAll()
     ItUtil.replaceRepositoriesWith(originalRepositories)
   }
 

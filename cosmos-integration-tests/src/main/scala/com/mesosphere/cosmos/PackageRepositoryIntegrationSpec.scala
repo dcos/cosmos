@@ -21,10 +21,12 @@ final class PackageRepositoryIntegrationSpec extends FreeSpec with BeforeAndAfte
   var originalRepositories: Seq[PackageRepository] = Seq.empty
 
   override def beforeAll(): Unit = {
+    super.beforeAll()
     originalRepositories = listRepositories()
   }
 
   override def afterAll(): Unit = {
+    super.afterAll()
     replaceRepositoriesWith(originalRepositories)
   }
 

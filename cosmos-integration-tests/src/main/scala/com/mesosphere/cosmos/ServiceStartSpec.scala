@@ -129,6 +129,28 @@ final class ServiceStartSpec extends FreeSpec with InstallQueueFixture with Befo
       assertResult(classOf[ServiceAlreadyStarted].getSimpleName)(typedErrorResponse.`type`)
     }
 
+    "can successfully start a service from a v4 package" in {
+      val packageName = "helloworld"
+      val packageVersion = universe.v3.model.Version("0.4.1")
+      val addResponse = addUniversePackage(packageName, Some(packageVersion))
+      assertResult(Status.Accepted)(addResponse.status)
+
+      awaitEmptyInstallQueue()
+
+      val startResponse = startService(packageName)
+      assertResult(Status.Ok)(startResponse.status)
+      assertResult(Some(rpc.MediaTypes.ServiceStartResponse.show))(startResponse.contentType)
+
+      val typedResponse = decode[rpc.v1.model.ServiceStartResponse](startResponse.contentString)
+      assertResult(packageName)(typedResponse.packageName)
+
+      val Some(appId) = typedResponse.appId
+      assertResult("/helloworld")(appId.toString)
+
+      val marathonApp = getMarathonApp(appId)
+      assertResult(appId)(marathonApp.id)
+    }
+
   }
 
 }
@@ -141,8 +163,11 @@ object ServiceStartSpec {
     CosmosClient.submit(request)
   }
 
-  def addUniversePackage(packageName: String): Response = {
-    val addRequest = rpc.v1.model.UniverseAddRequest(packageName, packageVersion = None)
+  def addUniversePackage(
+    packageName: String,
+    packageVersion: Option[universe.v3.model.Version] = None
+  ): Response = {
+    val addRequest = rpc.v1.model.UniverseAddRequest(packageName, packageVersion = packageVersion)
     val request = CosmosRequests.packageAdd(addRequest)
     CosmosClient.submit(request)
   }
