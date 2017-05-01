@@ -18,13 +18,13 @@ import org.scalatest.prop.TableDrivenPropertyChecks
 import scala.util.Right
 
 final class PackageDescribeSpec
-extends FreeSpec with TableDrivenPropertyChecks with Matchers {
+  extends FreeSpec with TableDrivenPropertyChecks with Matchers {
 
   import PackageDescribeSpec._
 
   "The package describe endpoint" - {
     "returns an error when package w/ version not found" in {
-      forAll (PackageDummyVersionsTable) { (packageName, packageVersion) =>
+      forAll(PackageDummyVersionsTable) { (packageName, packageVersion) =>
         describeAndAssertError(
           packageName = packageName,
           status = Status.BadRequest,
@@ -44,6 +44,7 @@ extends FreeSpec with TableDrivenPropertyChecks with Matchers {
     }
 
     "can successfully describe helloworld" in {
+      describeHelloworld()
       describeHelloworld(Some(universe.v2.model.PackageDetailsVersion("0.1.0")))
     }
 
@@ -57,10 +58,12 @@ extends FreeSpec with TableDrivenPropertyChecks with Matchers {
     }
 
     "fails to describe helloworld v4 w/ updates when requesting v2 describe response" in {
-      val response = describeRequestV2(
-        rpc.v1.model.DescribeRequest(
-          "helloworld",
-          Some(universe.v2.model.PackageDetailsVersion("0.4.1")))
+      val response = CosmosClient.submit(
+        CosmosRequests.packageDescribeV2(
+          rpc.v1.model.DescribeRequest(
+            "helloworld",
+            Some(universe.v2.model.PackageDetailsVersion("0.4.1")))
+        )
       )
       assertResult(Status.BadRequest)(response.status)
     }
@@ -100,7 +103,7 @@ extends FreeSpec with TableDrivenPropertyChecks with Matchers {
     assertResult(expectedMessage)(errorResponse.message)
   }
 
-  def describeHelloworld(
+  private def describeHelloworld(
     version: Option[universe.v2.model.PackageDetailsVersion] = None
   ): Assertion = {
     val response = describeRequest(
@@ -126,13 +129,6 @@ extends FreeSpec with TableDrivenPropertyChecks with Matchers {
     CosmosClient.submit(CosmosRequests.packageDescribeV1(describeRequest))
   }
 
-  private def describeRequestV2
-  (
-    describeRequest: rpc.v1.model.DescribeRequest
-  ): Response = {
-    CosmosClient.submit(CosmosRequests.packageDescribeV2(describeRequest))
-  }
-
 }
 
 private object PackageDescribeSpec extends TableDrivenPropertyChecks {
@@ -141,11 +137,6 @@ private object PackageDescribeSpec extends TableDrivenPropertyChecks {
     ("package name", "version"),
     ("helloworld", universe.v2.model.PackageDetailsVersion("a.b.c")),
     ("cassandra", universe.v2.model.PackageDetailsVersion("foobar"))
-  )
-
-  val PackageVersionsTable = Table(
-    ("package name", "versions"),
-    ("helloworld", Map("results" -> Map("0.1.0" -> "0")))
   )
 
   val LatestPackageVersionsTable = Table(
@@ -174,7 +165,7 @@ private object PackageDescribeSpec extends TableDrivenPropertyChecks {
     framework = None
   )
 
-  val HelloworldConfigDef = Json.obj(
+  val HelloworldConfigDef: Json = Json.obj(
     "$schema" -> "http://json-schema.org/schema#".asJson,
     "type" -> "object".asJson,
     "properties" -> Json.obj(

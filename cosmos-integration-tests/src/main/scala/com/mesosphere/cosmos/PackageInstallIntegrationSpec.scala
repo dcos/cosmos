@@ -315,7 +315,7 @@ private object PackageInstallIntegrationSpec extends Matchers with TableDrivenPr
     ("expected response", "force version", "Labels"),
     (
       InstallResponse("helloworld", PackageDetailsVersion("0.1.0"), AppId("helloworld")),
-      true,
+      false,
       Some(HelloWorldLabels)
     ),
     (

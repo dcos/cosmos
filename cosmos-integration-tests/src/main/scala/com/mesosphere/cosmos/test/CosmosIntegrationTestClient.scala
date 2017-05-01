@@ -102,24 +102,6 @@ object CosmosIntegrationTestClient extends Matchers {
       }
     }
 
-    def packageSearch(requestBody: SearchRequest): SearchResponse = {
-      val request = CosmosRequests.packageSearch(requestBody)
-      val Right(response) = callEndpoint[SearchResponse](request)
-      response
-    }
-
-    def packageRepositoryAdd(requestBody: PackageRepositoryAddRequest): PackageRepositoryAddResponse = {
-      val request = CosmosRequests.packageRepositoryAdd(requestBody)
-      val Right(response) = callEndpoint[PackageRepositoryAddResponse](request)
-      response
-    }
-
-    def packageRepositoryDelete(requestBody: PackageRepositoryDeleteRequest): PackageRepositoryDeleteResponse = {
-      val request = CosmosRequests.packageRepositoryDelete(requestBody)
-      val Right(response) = callEndpoint[PackageRepositoryDeleteResponse](request)
-      response
-    }
-
     /** Ensures that we create Finagle requests correctly.
       *
       * Specifically, prevents confusion around the `uri` parameter of

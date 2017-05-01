@@ -43,8 +43,8 @@ final class ServiceStartSpec extends FreeSpec with InstallQueueFixture with Befo
 
     "can successfully 'run' an uploaded package without a Marathon template" in {
       val packageDef = TestingPackages.MinimalV3ModelV3PackageDefinition
-      val uploadResponse = addUploadedPackage(packageDef)
-      assertResult(Status.Accepted)(uploadResponse.status)
+      val addResult = addUploadedPackage(packageDef)
+      assert(addResult.isRight)
 
       awaitEmptyInstallQueue()
 
@@ -60,8 +60,8 @@ final class ServiceStartSpec extends FreeSpec with InstallQueueFixture with Befo
 
     "can successfully run an uploaded package with a Marathon template" in {
       val packageDef = TestingPackages.HelloWorldV3Package
-      val uploadResponse = addUploadedPackage(packageDef)
-      assertResult(Status.Accepted)(uploadResponse.status)
+      val addResult = addUploadedPackage(packageDef)
+      assert(addResult.isRight)
 
       awaitEmptyInstallQueue()
 
@@ -82,8 +82,8 @@ final class ServiceStartSpec extends FreeSpec with InstallQueueFixture with Befo
 
     "can successfully run an installed package from Universe with a Marathon template" in {
       val packageName = "cassandra"
-      val addResponse = addUniversePackage(packageName)
-      assertResult(Status.Accepted)(addResponse.status)
+      val addResult = addUniversePackage(packageName)
+      assert(addResult.isRight)
 
       awaitEmptyInstallQueue()
 
@@ -103,8 +103,8 @@ final class ServiceStartSpec extends FreeSpec with InstallQueueFixture with Befo
 
     "return a ServiceAlreadyStarted when trying to start a service twice" in {
       val packageName = "kafka"
-      val addResponse = addUniversePackage(packageName)
-      assertResult(Status.Accepted)(addResponse.status)
+      val addResult = addUniversePackage(packageName)
+      assert(addResult.isRight)
 
       awaitEmptyInstallQueue()
 
@@ -132,17 +132,19 @@ final class ServiceStartSpec extends FreeSpec with InstallQueueFixture with Befo
     "can successfully start a service from a v4 package" in {
       val packageName = "helloworld"
       val packageVersion = universe.v3.model.Version("0.4.1")
-      val addResponse = addUniversePackage(packageName, Some(packageVersion))
-      assertResult(Status.Accepted)(addResponse.status)
+      val addResult = addUniversePackage(packageName, Some(packageVersion))
+      assert(addResult.isRight)
 
       awaitEmptyInstallQueue()
 
-      val startResponse = startService(packageName)
+      val startResponse = startService(packageName, Some(packageVersion))
       assertResult(Status.Ok)(startResponse.status)
       assertResult(Some(rpc.MediaTypes.ServiceStartResponse.show))(startResponse.contentType)
 
       val typedResponse = decode[rpc.v1.model.ServiceStartResponse](startResponse.contentString)
       assertResult(packageName)(typedResponse.packageName)
+
+      assertResult(packageVersion)(typedResponse.packageVersion)
 
       val Some(appId) = typedResponse.appId
       assertResult("/helloworld")(appId.toString)
@@ -157,19 +159,25 @@ final class ServiceStartSpec extends FreeSpec with InstallQueueFixture with Befo
 
 object ServiceStartSpec {
 
-  def addUploadedPackage(v3Package: universe.v3.model.V3Package): Response = {
+  def addUploadedPackage(
+    v3Package: universe.v3.model.V3Package
+  ): Either[rpc.v1.model.ErrorResponse, rpc.v1.model.AddResponse] = {
     val packageData = Buf.ByteArray.Owned(TestUtil.buildPackage(v3Package))
     val request = CosmosRequests.packageAdd(packageData)
-    CosmosClient.submit(request)
+    CosmosClient.callEndpoint[rpc.v1.model.AddResponse](
+      request, Status.Accepted
+    )
   }
 
   def addUniversePackage(
     packageName: String,
     packageVersion: Option[universe.v3.model.Version] = None
-  ): Response = {
+  ): Either[rpc.v1.model.ErrorResponse, rpc.v1.model.AddResponse] = {
     val addRequest = rpc.v1.model.UniverseAddRequest(packageName, packageVersion = packageVersion)
     val request = CosmosRequests.packageAdd(addRequest)
-    CosmosClient.submit(request)
+    CosmosClient.callEndpoint[rpc.v1.model.AddResponse](
+      request, Status.Accepted
+    )
   }
 
   def getMarathonApp(appId: AppId): MarathonApp = {
@@ -177,8 +185,16 @@ object ServiceStartSpec {
     response.app
   }
 
-  def startService(packageName: String): Response = {
-    val request = CosmosRequests.serviceStart(rpc.v1.model.ServiceStartRequest(packageName))
+  def startService(
+    packageName: String,
+    packageVersion: Option[universe.v3.model.Version] = None
+  ): Response = {
+    val request = CosmosRequests.serviceStart(
+      rpc.v1.model.ServiceStartRequest(
+        packageName,
+        packageVersion
+      )
+    )
     CosmosClient.submit(request)
   }
 
