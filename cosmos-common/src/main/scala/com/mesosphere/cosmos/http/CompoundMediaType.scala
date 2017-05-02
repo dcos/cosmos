@@ -5,10 +5,15 @@ case class CompoundMediaType(mediaTypes: Set[MediaType]) {
     mediaTypes.map(_.show).mkString(",")
   }
 }
+
 object CompoundMediaType {
   val empty = new CompoundMediaType(Set.empty)
 
   def apply(mt: MediaType): CompoundMediaType = {
     new CompoundMediaType(Set(mt))
+  }
+
+  def apply(mediaTypes: MediaType*): CompoundMediaType = {
+    new CompoundMediaType(mediaTypes.toSet)
   }
 }

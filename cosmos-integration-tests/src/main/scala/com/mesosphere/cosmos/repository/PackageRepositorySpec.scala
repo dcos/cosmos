@@ -67,7 +67,7 @@ final class PackageRepositorySpec
         assertAdd(SourceMesosphere +: defaultRepos, SourceMesosphere, Some(0)) // prepend
       }
       "insert" in {
-        assertAdd(defaultRepos.head :: SourceExample :: defaultRepos.tail, SourceExample, Some(1)) // insert
+        assertAdd(defaultRepos.take(1) ++ (SourceExample :: defaultRepos.drop(1)), SourceExample, Some(1)) // insert
       }
     }
 

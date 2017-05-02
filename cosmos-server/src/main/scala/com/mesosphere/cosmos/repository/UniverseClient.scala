@@ -14,6 +14,7 @@ import com.mesosphere.cosmos.UnsupportedContentType
 import com.mesosphere.cosmos.UnsupportedRedirect
 import com.mesosphere.cosmos.UnsupportedRepositoryVersion
 import com.mesosphere.cosmos.circe.Decoders.decode
+import com.mesosphere.cosmos.http.CompoundMediaType
 import com.mesosphere.cosmos.http.MediaType
 import com.mesosphere.cosmos.http.MediaTypeOps._
 import com.mesosphere.cosmos.http.MediaTypeParseError
@@ -105,7 +106,7 @@ final class DefaultUniverseClient(
       } flatMap { case conn: HttpURLConnection =>
         // Set headers on request
         conn.setRequestProperty(
-          "Accept", s"${MediaTypes.UniverseV4Repository.show}, ${MediaTypes.UniverseV3Repository.show}"
+          "Accept", CompoundMediaType(MediaTypes.UniverseV4Repository, MediaTypes.UniverseV3Repository).show
         )
         conn.setRequestProperty("Accept-Encoding", "gzip")
         conn.setRequestProperty(
@@ -166,15 +167,17 @@ final class DefaultUniverseClient(
   ): universe.v3.model.Repository = {
     val decodeScope = fetchScope.scope("decode")
 
-    val v3Compatible = contentType.isCompatibleWith(MediaTypes.UniverseV3Repository)
-
     // Decode the packages
-    val repo = if (
-      v3Compatible ||
-        contentType.isCompatibleWith(MediaTypes.UniverseV4Repository)
-    ) {
-      val scopeName = if (v3Compatible) "v3" else "v4"
-      val scope = decodeScope.scope(scopeName)
+    val repo = if (contentType.isCompatibleWith(MediaTypes.UniverseV4Repository)) {
+      val scope = decodeScope.scope("v4")
+      scope.counter("count").incr()
+      Stat.time(scope.stat("histogram")) {
+        decode[universe.v3.model.Repository](
+          Source.fromInputStream(bodyInputStream).mkString
+        )
+      }
+    } else if (contentType.isCompatibleWith(MediaTypes.UniverseV3Repository)) {
+      val scope = decodeScope.scope("v3")
       scope.counter("count").incr()
       Stat.time(scope.stat("histogram")) {
         decode[universe.v3.model.Repository](

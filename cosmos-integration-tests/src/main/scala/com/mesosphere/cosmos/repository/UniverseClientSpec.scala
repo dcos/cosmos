@@ -33,6 +33,11 @@ final class UniverseClientSpec extends FreeSpec with Matchers {
       PackageRepository("repo", baseRepoUri / repoFilename)
     }
 
+    def v4Repository(repoFilename: String): PackageRepository = {
+      val baseRepoUri = "https://downloads.mesosphere.com/universe/ebdcd8b7522e37f33184d343ae2a02ad0b63903b/repo"
+      PackageRepository("repo", baseRepoUri / repoFilename)
+    }
+
     "apply()" - {
       "URI/URL syntax" - {
         "relative URI" in {
@@ -66,9 +71,8 @@ final class UniverseClientSpec extends FreeSpec with Matchers {
 
       "1.10 json" in {
         val version = DcosReleaseVersionParser.parseUnsafe("1.10")
-        val baseRepoUri = "https://downloads.mesosphere.com/universe/ebdcd8b7522e37f33184d343ae2a02ad0b63903b/repo"
         val repoFilename = "repo-up-to-1.10.json"
-        val repository = PackageRepository("repo", baseRepoUri / repoFilename)
+        val repository = v4Repository(repoFilename)
         val repo = Await.result(universeClient(repository, version))
         getVersions(repo, "helloworld") shouldBe
           List(Version("0.4.0"), Version("0.4.1"))
