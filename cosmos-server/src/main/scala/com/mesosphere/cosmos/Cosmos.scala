@@ -132,8 +132,11 @@ with Logging {
   protected final def buildEndpoints(components: Components): Endpoint[Json] = {
     import components._
 
+    val janitor = new MarathonSDKJanitor(adminRouter)
+    janitor.start()
+
     val packageInstallHandler = new PackageInstallHandler(repositories, packageRunner)
-    val packageUninstallHandler = new UninstallHandler(adminRouter, repositories)
+    val packageUninstallHandler = new UninstallHandler(adminRouter, repositories, janitor)
     val packageDescribeHandler = new PackageDescribeHandler(repositories)
     val packageRenderHandler = new PackageRenderHandler(repositories)
     val packageListVersionsHandler = new ListVersionsHandler(repositories)

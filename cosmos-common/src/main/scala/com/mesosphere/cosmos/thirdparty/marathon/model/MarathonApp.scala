@@ -13,15 +13,19 @@ import scala.util.Try
 /** Partial Marathon AppDefinition.
  *
  *  This is not a full Marathon AppDefinition. Marathon's AppDefinition is a moving target.
- *  We should only decode the parts that Cosmos cares about. That is the `id` and the `labels`.
+ *  We should only decode the parts that Cosmos cares about.
  *  This is okay as long as we don't have an encoder for this class.
  */
 case class MarathonApp(
   id: AppId,
-  labels: Map[String, String]
+  labels: Map[String, String],
+  state: String,
+  env: Map[String, String],
+  portDefinitions: List[Map[String, String]]
 )
 
 object MarathonApp {
+  // Package Labels:
   val frameworkNameLabel = "DCOS_PACKAGE_FRAMEWORK_NAME"
   val metadataLabel = "DCOS_PACKAGE_METADATA"
   val nameLabel = "DCOS_PACKAGE_NAME"
@@ -29,6 +33,14 @@ object MarathonApp {
   val versionLabel = "DCOS_PACKAGE_VERSION"
   val optionsLabel = "DCOS_PACKAGE_OPTIONS"
   val packageLabel = "DCOS_PACKAGE_DEFINITION"
+
+  // Service Labels:
+  val migrationApiPathLabel = "DCOS_MIGRATION_API_PATH"
+  val servicePortIndexLabel = "DCOS_SERVICE_PORT_INDEX"
+  val serviceSchemeLabel = "DCOS_SERVICE_SCHEME"
+
+  // Task Env
+  val uninstallEnabledEnv = "SDK_UNINSTALL"
 
   implicit final class Ops(val app: MarathonApp) extends AnyVal {
 
