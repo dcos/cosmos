@@ -316,7 +316,7 @@ final class DefaultUniverseClient(
           // source is universe-server.
           universe.v3.model.Tag(tag).get
       },
-      details.selected.orElse(Some(false)),
+      details.selected,
       details.scm,
       details.website,
       details.framework,

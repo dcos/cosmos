@@ -161,7 +161,6 @@ private object PackageDescribeSpec extends TableDrivenPropertyChecks {
     preInstallNotes = Some("A sample pre-installation message"),
     postInstallNotes = Some("A sample post-installation message"),
     tags = List("mesosphere", "example", "subcommand"),
-    selected = Some(false),
     framework = None
   )
 
