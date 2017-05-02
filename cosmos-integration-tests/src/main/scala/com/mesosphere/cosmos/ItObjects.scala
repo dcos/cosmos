@@ -41,6 +41,7 @@ object ItObjects {
     """.stripMargin
   }
 
+  // scalastyle:off
   val helloWorldPackageDefinition0: String = {
     """
       |{
@@ -160,6 +161,7 @@ object ItObjects {
       |
     """.stripMargin
   }
+  // scalastyle:on
 
   val defaultHelloWorldPackageDefinition: (Json, Json) = {
     parse(helloWorldPackageDefinition0).toOption.get -> helloWorldPackageSource1.asJson
