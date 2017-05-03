@@ -14,6 +14,7 @@ import com.mesosphere.cosmos.UnsupportedContentType
 import com.mesosphere.cosmos.UnsupportedRedirect
 import com.mesosphere.cosmos.UnsupportedRepositoryVersion
 import com.mesosphere.cosmos.circe.Decoders.decode
+import com.mesosphere.cosmos.http.CompoundMediaType
 import com.mesosphere.cosmos.http.MediaType
 import com.mesosphere.cosmos.http.MediaTypeOps._
 import com.mesosphere.cosmos.http.MediaTypeParseError
@@ -104,7 +105,9 @@ final class DefaultUniverseClient(
           throw RepositoryUriSyntax(repository, t)
       } flatMap { case conn: HttpURLConnection =>
         // Set headers on request
-        conn.setRequestProperty("Accept", MediaTypes.UniverseV3Repository.show)
+        conn.setRequestProperty(
+          "Accept", CompoundMediaType(MediaTypes.UniverseV4Repository, MediaTypes.UniverseV3Repository).show
+        )
         conn.setRequestProperty("Accept-Encoding", "gzip")
         conn.setRequestProperty(
           "User-Agent",
@@ -165,10 +168,18 @@ final class DefaultUniverseClient(
     val decodeScope = fetchScope.scope("decode")
 
     // Decode the packages
-    val repo = if (contentType.isCompatibleWith(MediaTypes.UniverseV3Repository)) {
-      val v3Scope = decodeScope.scope("v3")
-      v3Scope.counter("count").incr()
-      Stat.time(v3Scope.stat("histogram")) {
+    val repo = if (contentType.isCompatibleWith(MediaTypes.UniverseV4Repository)) {
+      val scope = decodeScope.scope("v4")
+      scope.counter("count").incr()
+      Stat.time(scope.stat("histogram")) {
+        decode[universe.v3.model.Repository](
+          Source.fromInputStream(bodyInputStream).mkString
+        )
+      }
+    } else if (contentType.isCompatibleWith(MediaTypes.UniverseV3Repository)) {
+      val scope = decodeScope.scope("v3")
+      scope.counter("count").incr()
+      Stat.time(scope.stat("histogram")) {
         decode[universe.v3.model.Repository](
           Source.fromInputStream(bodyInputStream).mkString
         )
@@ -308,7 +319,7 @@ final class DefaultUniverseClient(
           // source is universe-server.
           universe.v3.model.Tag(tag).get
       },
-      details.selected.orElse(Some(false)),
+      details.selected,
       details.scm,
       details.website,
       details.framework,

@@ -176,7 +176,7 @@ object PackageDefinitionRenderer {
     }
   }
 
-  private[this] def encodeForLabel(json: Json): String = {
+  def encodeForLabel(json: Json): String = {
     val bytes = JsonUtil.dropNullKeysPrinter.pretty(json).getBytes(StandardCharsets.UTF_8)
     Base64.getEncoder.encodeToString(bytes)
   }

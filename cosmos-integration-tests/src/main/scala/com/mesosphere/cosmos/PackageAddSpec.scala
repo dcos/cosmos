@@ -33,16 +33,23 @@ import org.scalatest.Assertion
 import org.scalatest.BeforeAndAfter
 import org.scalatest.BeforeAndAfterAll
 import org.scalatest.FreeSpec
+import org.scalatest.prop.TableDrivenPropertyChecks
 
 final class PackageAddSpec
-  extends FreeSpec with InstallQueueFixture with BeforeAndAfterAll with BeforeAndAfter {
+  extends FreeSpec
+    with InstallQueueFixture
+    with BeforeAndAfterAll
+    with BeforeAndAfter
+    with TableDrivenPropertyChecks {
 
   import PackageAddSpec._
 
   "/package/add of an uploaded package file" - {
 
     "single package" in {
-      assertSuccessfulAdd(TestingPackages.MaximalV3ModelV3PackageDefinition)
+      forAll(TestingPackages.supportedPackageDefinitions) { supportedPackage =>
+        assertSuccessfulAdd(supportedPackage)
+      }
     }
 
     "same package coordinate twice" in {
@@ -51,7 +58,7 @@ final class PackageAddSpec
 
       // Adding the package again should not overwrite the existing package
       val newV3Package = expectedV3Package.copy(
-        description=expectedV3Package.description + " plus some changes"
+        description = expectedV3Package.description + " plus some changes"
       )
       assertSuccessfulResponse(newV3Package)
 

@@ -4,6 +4,14 @@ import com.mesosphere.cosmos.http.{MediaType, MediaTypeSubType}
 
 object MediaTypes {
 
+  private[this] def universeRepository(version: String): MediaType = {
+    MediaType(
+      "application",
+      MediaTypeSubType("vnd.dcos.universe.repo", Some("json")),
+      Map("charset" -> "utf-8", "version" -> version)
+    )
+  }
+
   private[this] def universePackage(version: String): MediaType = {
     MediaType(
       "application",
@@ -15,11 +23,8 @@ object MediaTypes {
   val applicationZip = MediaType("application", MediaTypeSubType("zip"))
   val UniverseV2Repository: MediaType = applicationZip
 
-  val UniverseV3Repository = MediaType(
-    "application",
-    MediaTypeSubType("vnd.dcos.universe.repo", Some("json")),
-    Map("charset" -> "utf-8", "version" -> "v3")
-  )
+  val UniverseV3Repository: MediaType = universeRepository("v3")
+  val UniverseV4Repository: MediaType = universeRepository("v4")
 
   val universeV4Package: MediaType = universePackage("v4")
 
