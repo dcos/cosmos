@@ -3,7 +3,6 @@ package com.mesosphere.cosmos
 import _root_.io.circe.Json
 import _root_.io.circe.syntax._
 import _root_.io.circe.jawn._
-import com.mesosphere.cosmos.repository.DefaultRepositories
 import com.mesosphere.universe.MediaTypes
 import com.twitter.finagle.http.Fields
 import cats.syntax.either._
@@ -14,17 +13,16 @@ import org.scalatest.prop.TableFor2
 
 object ItObjects {
 
-  val helloWorldPackageSource1: String = {
-    DefaultRepositories().getOrThrow(1).uri.toString
+  val helloWorldRepo: String = {
+    ItUtil.getRepoByName("Hello World")
   }
 
-  val helloWorldPackageSource2: String = {
-    DefaultRepositories().getOrThrow(2).uri.toString
+  val v4TestUniverse: String = {
+    ItUtil.getRepoByName("V4TestUniverse")
   }
 
   val helloWorldMarathonMustache: String = {
-    """
-      |{
+    """{
       |  "id": "helloworld",
       |  "cpus": 1.0,
       |  "mem": 512,
@@ -41,7 +39,7 @@ object ItObjects {
     """.stripMargin
   }
 
-  // scalastyle:off
+  // scalastyle:off line.size.limit
   val helloWorldPackageDefinition0: String = {
     """
       |{
@@ -161,38 +159,63 @@ object ItObjects {
       |
     """.stripMargin
   }
-  // scalastyle:on
+  // scalastyle:on line.size.limit
 
   val defaultHelloWorldPackageDefinition: (Json, Json) = {
-    parse(helloWorldPackageDefinition0).toOption.get -> helloWorldPackageSource1.asJson
+    parse(helloWorldPackageDefinition0).toOption.get -> helloWorldRepo.asJson
   }
 
   val helloWorldPackageDefinitions: TableFor2[Json, Json] =
     new TableFor2(
       "Package Definition" -> "Package Source",
       defaultHelloWorldPackageDefinition,
-      parse(helloWorldPackageDefinition3).toOption.get -> helloWorldPackageSource2.asJson,
-      parse(helloWorldPackageDefinition4).toOption.get -> helloWorldPackageSource2.asJson
+      parse(helloWorldPackageDefinition3).toOption.get -> v4TestUniverse.asJson,
+      parse(helloWorldPackageDefinition4).toOption.get -> v4TestUniverse.asJson
     )
+
+  val metadataFields: Set[String] = {
+    Set(
+      "packagingVersion",
+      "name",
+      "version",
+      "maintainer",
+      "description",
+      "tags",
+      "selected",
+      "scm",
+      "website",
+      "framework",
+      "preInstallNotes",
+      "postInstallNotes",
+      "postUninstallNotes",
+      "licenses",
+      "images"
+    )
+  }
+
+  val detailsFields: Set[String] = {
+    metadataFields - "images"
+  }
 
   def helloWorldPackageMetadata(
     packageDefinition: Json
   ): Json = {
-    packageDefinition.asObject.get.filterKeys { k =>
-      Set(
-        "website",
-        "name",
-        "postInstallNotes",
-        "description",
-        "packagingVersion",
-        "tags",
-        "selected",
-        "framework",
-        "maintainer",
-        "version",
-        "preInstallNotes"
-      ).contains(k)
-    }
+    packageDefinition
+      .asObject
+      .get
+      .filterKeys(metadataFields)
+      .add("selected", false.asJson)
+      .add("framework", false.asJson)
+      .asJson
+  }
+
+  def helloWorldPackageDetails(
+    packageDefinition: Json
+  ): Json = {
+    packageDefinition
+      .asObject
+      .get
+      .filterKeys(detailsFields)
       .add("selected", false.asJson)
       .add("framework", false.asJson)
       .asJson
@@ -225,7 +248,7 @@ object ItObjects {
   def decodedHelloWorldLabels(
     packageDefinition: Json,
     options: Json,
-    packageSource: Json = helloWorldPackageSource2.asJson
+    packageSource: Json = v4TestUniverse.asJson
   ): Map[String, Json] = {
     val pkg = packageDefinition.asObject.get
     Map(
@@ -241,7 +264,7 @@ object ItObjects {
   def renderHelloWorldMarathonMustacheDecodedLabels(
     packageDefinition: Json,
     options: Json,
-    packageSource: Json = helloWorldPackageSource2.asJson
+    packageSource: Json = v4TestUniverse.asJson
   ): Json = {
     val mustache = renderHelloWorldMarathonMustacheNoLabels(options)
     val labels = decodedHelloWorldLabels(packageDefinition, options, packageSource)
@@ -258,7 +281,7 @@ object ItObjects {
   def helloWorldRenderResponseDecodedLabels(
     packageDefinition: Json,
     options: Json,
-    packageSource: Json = helloWorldPackageSource2.asJson
+    packageSource: Json = v4TestUniverse.asJson
   ): Json = {
     val marathonJson = renderHelloWorldMarathonMustacheDecodedLabels(
       packageDefinition,
@@ -306,7 +329,7 @@ object ItObjects {
       .top.get
   }
 
-  private[this] def base64Decode(json: Json): Json = {
+  def base64Decode(json: Json): Json = {
     json.asString.flatMap { str =>
       parseByteBuffer(
         ByteBuffer.wrap(Base64.getDecoder.decode(str))

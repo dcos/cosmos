@@ -1,6 +1,7 @@
 package com.mesosphere.cosmos
 
 import com.mesosphere.cosmos.http.CosmosRequests
+import com.mesosphere.cosmos.repository.DefaultRepositories
 import com.mesosphere.cosmos.rpc.v1.circe.Decoders._
 import com.mesosphere.cosmos.test.CosmosIntegrationTestClient.CosmosClient
 
@@ -37,6 +38,14 @@ object ItUtil {
     repositories.foreach { repo =>
       addRepository(repo)
     }
+  }
+
+  def getRepoByName(name: String): String = {
+    DefaultRepositories()
+      .getOrThrow
+      .find(_.name == name)
+      .map(_.uri.toString)
+      .get
   }
 
 }

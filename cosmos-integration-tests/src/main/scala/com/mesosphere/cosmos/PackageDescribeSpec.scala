@@ -11,11 +11,14 @@ import com.mesosphere.universe
 import com.mesosphere.universe.v2.circe.Decoders._
 import com.twitter.finagle.http.Response
 import com.twitter.finagle.http.Status
+import java.util.Base64
+import org.scalatest.AppendedClues._
 import org.scalatest.Assertion
 import org.scalatest.FreeSpec
 import org.scalatest.Matchers
 import org.scalatest.prop.TableDrivenPropertyChecks
 import scala.util.Right
+import cats.syntax.either._
 
 final class PackageDescribeSpec
   extends FreeSpec with TableDrivenPropertyChecks with Matchers {
@@ -43,29 +46,34 @@ final class PackageDescribeSpec
       }
     }
 
-    "can successfully describe helloworld" in {
-      describeHelloworld()
-      describeHelloworld(Some(universe.v2.model.PackageDetailsVersion("0.1.0")))
+    "when requesting a v1 response" - {
+      "can successfully describe helloworld" - {
+        "without version" in {
+          describeHelloworld()
+        }
+        "with version" in {
+          describeHelloworld(Some(universe.v2.model.PackageDetailsVersion("0.1.0")))
+        }
+      }
+
+      "should return correct Json" in {
+        forAll(ItObjects.helloWorldPackageDefinitions) { (packageDefinition, _) =>
+          testV1PackageDescribe(packageDefinition)
+        }
+      }
     }
 
-    "can successfully describe helloworld v4 w/o updates" in {
-      val response = describeRequest(
-        rpc.v1.model.DescribeRequest(
-          "helloworld",
-          Some(universe.v2.model.PackageDetailsVersion("0.4.0")))
-      )
-      assertResult(Status.Ok)(response.status)
-    }
-
-    "fails to describe helloworld v4 w/ updates when requesting v2 describe response" in {
-      val response = CosmosClient.submit(
-        CosmosRequests.packageDescribeV2(
-          rpc.v1.model.DescribeRequest(
-            "helloworld",
-            Some(universe.v2.model.PackageDetailsVersion("0.4.1")))
+    "when requesting a v2 response" - {
+      "fails to describe helloworld v4 w/ updates when requesting v2 describe response" in {
+        val response = CosmosClient.submit(
+          CosmosRequests.packageDescribeV2(
+            rpc.v1.model.DescribeRequest(
+              "helloworld",
+              Some(universe.v2.model.PackageDetailsVersion("0.4.1")))
+          )
         )
-      )
-      assertResult(Status.BadRequest)(response.status)
+        assertResult(Status.BadRequest)(response.status)
+      }
     }
 
     "should return an error if Describe is called on a v3 package without a marathon template" in {
@@ -102,6 +110,50 @@ final class PackageDescribeSpec
     val errorResponse = decode[rpc.v1.model.ErrorResponse](response.contentString)
     assertResult(expectedMessage)(errorResponse.message)
   }
+
+  private def testV1PackageDescribe(
+    packageDefinition: Json
+  ): Assertion = {
+    val Right(name) =
+      packageDefinition.cursor.get[String]("name")
+    val Right(version) =
+      packageDefinition.cursor.get[String]("version")
+        .map(universe.v2.model.PackageDetailsVersion)
+
+    val response = describeRequest(rpc.v1.model.DescribeRequest(name, Some(version)))
+
+    response.status shouldBe Status.Ok withClue response.contentString
+
+    val Right(encodedMustache) =
+      packageDefinition.hcursor.downField("marathon").get[String]("v2AppMustacheTemplate")
+
+    val expectedMarathonMustache =
+      new String(Base64.getDecoder.decode(encodedMustache))
+
+    val expectedCommand =
+      packageDefinition.hcursor.get[Json]("command").toOption
+
+    val expectedConfig =
+      packageDefinition.hcursor.get[Json]("config").toOption
+
+    val expectedResource =
+      packageDefinition.hcursor.get[Json]("resource").toOption
+
+    val expectedContent = ItObjects.dropNullKeys(
+      Json.obj(
+        "package" -> ItObjects.helloWorldPackageDetails(packageDefinition),
+        "marathonMustache" -> expectedMarathonMustache.asJson,
+        "command" -> expectedCommand.asJson,
+        "config" -> expectedConfig.asJson,
+        "resource" -> expectedResource.asJson
+      )
+    )
+
+    val Right(actualContent) = parse(response.contentString)
+
+    actualContent shouldBe expectedContent
+  }
+
 
   private def describeHelloworld(
     version: Option[universe.v2.model.PackageDetailsVersion] = None
@@ -161,7 +213,8 @@ private object PackageDescribeSpec extends TableDrivenPropertyChecks {
     preInstallNotes = Some("A sample pre-installation message"),
     postInstallNotes = Some("A sample post-installation message"),
     tags = List("mesosphere", "example", "subcommand"),
-    framework = None
+    selected = Some(false),
+    framework = Some(false)
   )
 
   val HelloworldConfigDef: Json = Json.obj(
