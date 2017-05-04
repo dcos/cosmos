@@ -136,6 +136,11 @@ final class PackageDefinitionOps(val pkgDef: universe.v4.model.PackageDefinition
     case v4: universe.v4.model.V4Package => v4.resource
   }
 
+  def downgradesTo: List[universe.v3.model.VersionSpecification] = pkgDef match {
+    case v4: universe.v4.model.V4Package => v4.downgradesTo.getOrElse(Nil)
+    case _ => Nil
+  }
+
   def upgradesFrom: List[universe.v3.model.VersionSpecification] = pkgDef match {
     case v4: universe.v4.model.V4Package => v4.upgradesFrom.getOrElse(Nil)
     case _ => Nil
