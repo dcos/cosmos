@@ -3,11 +3,8 @@ package com.mesosphere.cosmos
 import _root_.io.circe.Json
 import _root_.io.circe.jawn._
 import _root_.io.circe.syntax._
-import com.mesosphere.cosmos.http.CosmosRequests
 import com.mesosphere.cosmos.http.HttpRequest
-import com.mesosphere.cosmos.rpc.v1.circe.Decoders._
 import com.mesosphere.cosmos.test.CosmosIntegrationTestClient.CosmosClient
-import com.mesosphere.cosmos.thirdparty.marathon.model.AppId
 import com.mesosphere.universe
 import com.mesosphere.universe.v3.syntax.PackageDefinitionOps._
 import com.twitter.finagle.http.Response
@@ -70,7 +67,7 @@ class ServiceDescribeSpec
       Given("a running service and its appId")
       val name = packageDefinition.name
       val version = packageDefinition.version.toString
-      val Right(install) = packageInstall(name, Some(version))
+      val Right(install) = ItUtil.packageInstall(name, Some(version))
       val appId = install.appId
 
       When("the user makes a request to the service/describe endpoint")
@@ -83,23 +80,11 @@ class ServiceDescribeSpec
       testCode(content, packageDefinition, expectedUpgrades, resolvedOptions)
 
       // clean up
-      packageUninstall(name, appId, all = true)
+      ItUtil.packageUninstall(name, appId, all = true)
     }
   }
 
-  def packageInstall(
-    name: String,
-    version: Option[String]
-  ): Either[rpc.v1.model.ErrorResponse, rpc.v1.model.InstallResponse] = {
-    val detailsVersion = version.map(universe.v2.model.PackageDetailsVersion)
-    CosmosClient.callEndpoint[rpc.v1.model.InstallResponse](
-      CosmosRequests.packageInstallV2(
-        rpc.v1.model.InstallRequest(name, detailsVersion)
-      )
-    )
-  }
-
-  def serviceDescribe(appId: String): Response = {
+  private def serviceDescribe(appId: String): Response = {
     val body = Json.obj(
       "appId" -> appId.asJson
     )
@@ -109,22 +94,6 @@ class ServiceDescribeSpec
         body = body.noSpaces,
         contentType = Some(contentType),
         accept = Some(accept)
-      )
-    )
-  }
-
-  def packageUninstall(
-    name: String,
-    appId: AppId,
-    all: Boolean
-  ): Either[rpc.v1.model.ErrorResponse, rpc.v1.model.UninstallResponse] = {
-    CosmosClient.callEndpoint[rpc.v1.model.UninstallResponse](
-      CosmosRequests.packageUninstall(
-        rpc.v1.model.UninstallRequest(
-          packageName = name,
-          appId = Some(appId),
-          all = Some(all)
-        )
       )
     )
   }
