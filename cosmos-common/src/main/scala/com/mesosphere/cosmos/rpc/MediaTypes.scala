@@ -45,4 +45,7 @@ object MediaTypes {
 
   val ServiceStartRequest = dcosService("start-request", 1)
   val ServiceStartResponse = dcosService("start-response", 1)
+
+  val ServiceDescribeRequest = dcosService("describe-request", 1)
+  val ServiceDescribeResponse = dcosService("describe-response", 1)
 }

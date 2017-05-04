@@ -3,6 +3,7 @@ package com.mesosphere.cosmos
 import com.mesosphere.cosmos.http.RequestSession
 import com.mesosphere.cosmos.repository._
 import com.mesosphere.universe
+import com.mesosphere.universe.v4.model.PackageDefinition
 import com.netaporter.uri.Uri
 import com.twitter.util.Future
 
@@ -103,6 +104,18 @@ final class MultiRepository(
         }
       }
     } map { versions => versions.flatten.toList }
+  }
+
+  override def downgradesTo(
+    packageDefinition: PackageDefinition)(implicit
+    session: RequestSession): Future[List[universe.v3.model.Version]] = {
+    repositories().flatMap { repositories =>
+      Future.collect {
+        repositories.map { repository =>
+          repository.downgradesTo(packageDefinition)
+        }
+      } map (_.flatten.toList.distinct)
+    }
   }
 
   def getRepository(uri: Uri): Future[Option[CosmosRepository]] = {

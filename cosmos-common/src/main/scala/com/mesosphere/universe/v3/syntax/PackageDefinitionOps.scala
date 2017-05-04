@@ -150,6 +150,10 @@ final class PackageDefinitionOps(val pkgDef: universe.v4.model.PackageDefinition
     upgradesFrom.exists(_.matches(version))
   }
 
+  def canDowngradeTo(version: universe.v3.model.Version): Boolean = {
+    downgradesTo.exists(_.matches(version))
+  }
+
   // -------- Non top-level properties that we are safe to "jump" to --------------
 
   def images: Option[universe.v3.model.Images] = pkgDef match {

@@ -23,9 +23,9 @@ class ServiceDescribeSpec
     with Matchers
     with TableDrivenPropertyChecks {
 
-  val path: String = "service/describe"
-  val contentType: String = "application/vnd.dcos.service.describe-request+json;charset=utf-8;version=v1"
-  val accept: String = "application/vnd.dcos.service.describe-response+json;charset=utf-8;version=v1"
+  private val path: String = "service/describe"
+  private val contentType: String = "application/vnd.dcos.service.describe-request+json;charset=utf-8;version=v1"
+  private val accept: String = "application/vnd.dcos.service.describe-response+json;charset=utf-8;version=v1"
 
   feature("The service/describe endpoint") {
     scenario("The user would like to know the upgrades available to a service") {
@@ -59,8 +59,14 @@ class ServiceDescribeSpec
       }
     }
   }
+  private val helloWorldPackageDefinitions
+  : TableFor3[universe.v4.model.PackageDefinition, List[String], Json] = {
+    Table(
+      ("Package Definition", "Upgrades To", "Resolved Options")
+    )
+  }
 
-  def serviceDescribeTest(
+  private def serviceDescribeTest(
     testCode: (Json, universe.v4.model.PackageDefinition, List[String], Json) => Assertion
   ): Unit = {
     forAll(helloWorldPackageDefinitions) { (packageDefinition, expectedUpgrades, resolvedOptions) =>
@@ -95,13 +101,6 @@ class ServiceDescribeSpec
         contentType = Some(contentType),
         accept = Some(accept)
       )
-    )
-  }
-
-  private val helloWorldPackageDefinitions
-  : TableFor3[universe.v4.model.PackageDefinition, List[String], Json] = {
-    Table(
-      ("Package Definition", "Upgrades To", "Resolved Options")
     )
   }
 
