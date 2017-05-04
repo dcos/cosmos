@@ -5,17 +5,19 @@ import _root_.io.circe.jawn._
 import _root_.io.circe.syntax._
 import com.mesosphere.cosmos.http.HttpRequest
 import com.mesosphere.cosmos.test.CosmosIntegrationTestClient.CosmosClient
+import com.mesosphere.cosmos.thirdparty.marathon.model.AppId
 import com.mesosphere.universe
 import com.mesosphere.universe.v3.syntax.PackageDefinitionOps._
 import com.twitter.finagle.http.Response
 import com.twitter.finagle.http.Status
+import java.util.UUID
 import org.scalatest.AppendedClues._
 import org.scalatest.Assertion
 import org.scalatest.FeatureSpec
 import org.scalatest.GivenWhenThen
 import org.scalatest.Matchers
 import org.scalatest.prop.TableDrivenPropertyChecks
-import org.scalatest.prop.TableFor3
+import org.scalatest.prop.TableFor4
 
 class ServiceDescribeSpec
   extends FeatureSpec
@@ -29,64 +31,70 @@ class ServiceDescribeSpec
 
   feature("The service/describe endpoint") {
     scenario("The user would like to know the upgrades available to a service") {
-      serviceDescribeTest { (content, _, expectedUpgrades, _) =>
+      serviceDescribeTest { (content, _, expectedUpgrades, _, _) =>
         Then("the user should be able to observe the upgrades available to that service")
         val Right(actualUpgrades) = content.hcursor.get[Json]("upgradesTo")
         expectedUpgrades.asJson shouldBe actualUpgrades
       }
     }
     scenario("The user would like to know the downgrades available to a service") {
-      serviceDescribeTest { (content, packageDefinition, _, _) =>
+      serviceDescribeTest { (content, _, _, expectedDowngrades, _) =>
         Then("the user should be able to observe the downgrades available to that service")
-        val expectedDowngrades = packageDefinition.downgradesTo
         val Right(actualDowngrades) = content.hcursor.get[Json]("downgradesTo")
         expectedDowngrades.asJson shouldBe actualDowngrades
       }
     }
     scenario("The user would like to know the options used to run a service") {
-      serviceDescribeTest { (content, _, _, expectedOptions) =>
+      serviceDescribeTest { (content, _, _, _, expectedOptions) =>
         Then("the user should be able to observe the options used to run that service")
         val Right(actualOptions) = content.hcursor.get[Json]("resolvedOptions")
         actualOptions shouldBe expectedOptions
       }
     }
     scenario("The user would like to know the package definition used to run a service") {
-      serviceDescribeTest { (content, packageDefinition, expectedUpgrades, _) =>
+      serviceDescribeTest { (content, packageDefinition, expectedUpgrades, _, _) =>
         Then("the user should be able to observe the package definition used to run that service")
         val expectedDefinition = packageDefinition.asJson
         val Right(actualDefinition) = content.hcursor.get[Json]("package")
-        actualDefinition shouldBe expectedDefinition
+        ItObjects.dropNullKeys(actualDefinition) shouldBe
+          ItObjects.dropNullKeys(expectedDefinition)
       }
     }
   }
   private val helloWorldPackageDefinitions
-  : TableFor3[universe.v4.model.PackageDefinition, List[String], Json] = {
+  : TableFor4[universe.v4.model.PackageDefinition, List[String], List[String], Json] = {
     Table(
-      ("Package Definition", "Upgrades To", "Resolved Options")
+      ("Package Definition", "Upgrades To", "Downgrades To", "Resolved Options"),
+      (ItObjects.helloWorldPackage0, List(), List(), ItObjects.helloWorldResolvedOptions()),
+      (ItObjects.helloWorldPackage3, List("0.4.1"), List(), ItObjects.helloWorldResolvedOptions()),
+      (ItObjects.helloWorldPackage4, List(), List("0.4.0"), ItObjects.helloWorldResolvedOptions())
     )
   }
 
   private def serviceDescribeTest(
-    testCode: (Json, universe.v4.model.PackageDefinition, List[String], Json) => Assertion
+    testCode: (Json, universe.v4.model.PackageDefinition, List[String], List[String], Json) => Assertion
   ): Unit = {
-    forAll(helloWorldPackageDefinitions) { (packageDefinition, expectedUpgrades, resolvedOptions) =>
-      Given("a running service and its appId")
-      val name = packageDefinition.name
-      val version = packageDefinition.version.toString
-      val Right(install) = ItUtil.packageInstall(name, Some(version))
-      val appId = install.appId
+    forAll(helloWorldPackageDefinitions) {
+      (packageDefinition, expectedUpgrades, expectedDowngrades, resolvedOptions) =>
+        Given("a running service and its appId")
+        val appId = AppId(UUID.randomUUID().toString)
+        val name = packageDefinition.name
+        val version = packageDefinition.version.toString
+        val Right(install) = ItUtil.packageInstall(name, Some(version), appId = Some(appId))
 
-      When("the user makes a request to the service/describe endpoint")
-      val response = serviceDescribe(appId.toString)
-      response.status shouldBe Status.Ok withClue response.contentString
-      response.contentType shouldBe Some(accept)
-      val Right(content) = parse(response.contentString)
+        install.appId shouldBe appId
 
-      // the actual test
-      testCode(content, packageDefinition, expectedUpgrades, resolvedOptions)
+        When("the user makes a request to the service/describe endpoint")
+        val response = serviceDescribe(appId.toString)
+        response.status shouldBe Status.Ok withClue response.contentString
+        response.contentType shouldBe Some(accept)
+        val Right(content) = parse(response.contentString)
 
-      // clean up
-      ItUtil.packageUninstall(name, appId, all = true)
+        // the actual test
+        testCode(content, packageDefinition, expectedUpgrades, expectedDowngrades, resolvedOptions)
+
+        // clean up
+        ItUtil.packageUninstall(name, appId, all = true)
     }
   }
 

@@ -1,12 +1,13 @@
 package com.mesosphere.cosmos
 
 import _root_.io.circe.Json
-import _root_.io.circe.syntax._
 import _root_.io.circe.jawn._
-import com.mesosphere.universe.MediaTypes
-import com.twitter.finagle.http.Fields
+import _root_.io.circe.syntax._
 import cats.syntax.either._
+import com.mesosphere.universe
+import com.mesosphere.universe.MediaTypes
 import com.mesosphere.universe.common.JsonUtil
+import com.twitter.finagle.http.Fields
 import java.nio.ByteBuffer
 import java.util.Base64
 import org.scalatest.prop.TableFor2
@@ -197,16 +198,32 @@ object ItObjects {
     metadataFields - "images"
   }
 
-  def helloWorldPackageMetadata(
-    packageDefinition: Json
-  ): Json = {
-    packageDefinition
-      .asObject
-      .get
-      .filterKeys(metadataFields)
-      .add("selected", false.asJson)
-      .add("framework", false.asJson)
-      .asJson
+  val List(
+  helloWorldPackage0,
+  helloWorldPackage3,
+  helloWorldPackage4
+  ): List[universe.v4.model.PackageDefinition] = {
+    List(
+      helloWorldPackageDefinition0,
+      helloWorldPackageDefinition3,
+      helloWorldPackageDefinition4
+    ).map(stringToPackageDefinition)
+  }
+
+  val helloWorldDefaultPort: Int = 8080
+
+  def helloWorldResolvedOptions(port: Int = helloWorldDefaultPort): Json = {
+    Json.obj(
+      "port" -> port.asJson
+    )
+  }
+
+  def stringToPackageDefinition(
+    packageDefinition: String
+  ): universe.v4.model.PackageDefinition = {
+    parse(packageDefinition).toOption.flatMap { json =>
+      json.hcursor.as[universe.v4.model.PackageDefinition].toOption
+    }.get
   }
 
   def helloWorldPackageDetails(
@@ -221,15 +238,76 @@ object ItObjects {
       .asJson
   }
 
-  def helloWorldPackageDefinitionEnvelope(
-    packageDefinition: Json
+  def decodeEncodedPartsOfRenderResponse(renderResponse: Json): Json = {
+    decodePackageDefinition _ andThen
+      decodePackageMetadata andThen
+      decodeOptions apply
+      renderResponse
+  }
+
+  private[this] def decodePackageMetadata(renderResponse: Json): Json = {
+    renderResponse
+      .hcursor
+      .downField("marathonJson")
+      .downField("labels")
+      .downField("DCOS_PACKAGE_METADATA")
+      .withFocus(base64Decode)
+      .top.get
+  }
+
+  def base64Decode(json: Json): Json = {
+    json.asString.flatMap { str =>
+      parseByteBuffer(
+        ByteBuffer.wrap(Base64.getDecoder.decode(str))
+      ).toOption
+    }.get
+  }
+
+  private[this] def decodePackageDefinition(renderResponse: Json): Json = {
+    renderResponse
+      .hcursor
+      .downField("marathonJson")
+      .downField("labels")
+      .downField("DCOS_PACKAGE_DEFINITION")
+      .withFocus(base64Decode)
+      .downField("data")
+      .withFocus(base64Decode)
+      .top.get
+  }
+
+  private[this] def decodeOptions(renderResponse: Json): Json = {
+    renderResponse
+      .hcursor
+      .downField("marathonJson")
+      .downField("labels")
+      .downField("DCOS_PACKAGE_OPTIONS")
+      .withFocus(base64Decode)
+      .top.get
+  }
+
+  def helloWorldRenderResponseDecodedLabels(
+    packageDefinition: Json,
+    options: Json,
+    packageSource: Json = v4TestUniverse.asJson
   ): Json = {
-    Json.obj(
-      "metadata" -> Json.obj(
-        Fields.ContentType -> getContentType(packageDefinition)
-      ),
-      "data" -> packageDefinition
+    val marathonJson = renderHelloWorldMarathonMustacheDecodedLabels(
+      packageDefinition,
+      options,
+      packageSource
     )
+    Json.obj(
+      "marathonJson" -> marathonJson
+    )
+  }
+
+  def renderHelloWorldMarathonMustacheDecodedLabels(
+    packageDefinition: Json,
+    options: Json,
+    packageSource: Json = v4TestUniverse.asJson
+  ): Json = {
+    val mustache = renderHelloWorldMarathonMustacheNoLabels(options)
+    val labels = decodedHelloWorldLabels(packageDefinition, options, packageSource)
+    mustache.asObject.get.add("labels", labels.asJson).asJson
   }
 
   def renderHelloWorldMarathonMustacheNoLabels(options: Json): Json = {
@@ -261,80 +339,27 @@ object ItObjects {
     )
   }
 
-  def renderHelloWorldMarathonMustacheDecodedLabels(
-    packageDefinition: Json,
-    options: Json,
-    packageSource: Json = v4TestUniverse.asJson
+  def helloWorldPackageMetadata(
+    packageDefinition: Json
   ): Json = {
-    val mustache = renderHelloWorldMarathonMustacheNoLabels(options)
-    val labels = decodedHelloWorldLabels(packageDefinition, options, packageSource)
-    mustache.asObject.get.add("labels", labels.asJson).asJson
+    packageDefinition
+      .asObject
+      .get
+      .filterKeys(metadataFields)
+      .add("selected", false.asJson)
+      .add("framework", false.asJson)
+      .asJson
   }
 
-  def decodeEncodedPartsOfRenderResponse(renderResponse: Json): Json = {
-    decodePackageDefinition _ andThen
-      decodePackageMetadata _ andThen
-      decodeOptions _ apply
-      renderResponse
-  }
-
-  def helloWorldRenderResponseDecodedLabels(
-    packageDefinition: Json,
-    options: Json,
-    packageSource: Json = v4TestUniverse.asJson
+  def helloWorldPackageDefinitionEnvelope(
+    packageDefinition: Json
   ): Json = {
-    val marathonJson = renderHelloWorldMarathonMustacheDecodedLabels(
-      packageDefinition,
-      options,
-      packageSource
-    )
     Json.obj(
-      "marathonJson" -> marathonJson
+      "metadata" -> Json.obj(
+        Fields.ContentType -> getContentType(packageDefinition)
+      ),
+      "data" -> packageDefinition
     )
-  }
-
-  def dropNullKeys(json: Json): Json = {
-    parse(JsonUtil.dropNullKeysPrinter.pretty(json)).toOption.get
-  }
-
-  private[this] def decodePackageMetadata(renderResponse: Json): Json = {
-    renderResponse
-      .hcursor
-      .downField("marathonJson")
-      .downField("labels")
-      .downField("DCOS_PACKAGE_METADATA")
-      .withFocus(base64Decode)
-      .top.get
-  }
-
-  private[this] def decodePackageDefinition(renderResponse: Json): Json = {
-    renderResponse
-      .hcursor
-      .downField("marathonJson")
-      .downField("labels")
-      .downField("DCOS_PACKAGE_DEFINITION")
-      .withFocus(base64Decode)
-      .downField("data")
-      .withFocus(base64Decode)
-      .top.get
-  }
-
-  private[this] def decodeOptions(renderResponse: Json): Json = {
-    renderResponse
-      .hcursor
-      .downField("marathonJson")
-      .downField("labels")
-      .downField("DCOS_PACKAGE_OPTIONS")
-      .withFocus(base64Decode)
-      .top.get
-  }
-
-  def base64Decode(json: Json): Json = {
-    json.asString.flatMap { str =>
-      parseByteBuffer(
-        ByteBuffer.wrap(Base64.getDecoder.decode(str))
-      ).toOption
-    }.get
   }
 
   private[this] def getContentType(packageDefinition: Json): Json = {
@@ -344,6 +369,10 @@ object ItObjects {
       case "3.0" => MediaTypes.universeV3Package.show.asJson
       case "4.0" => MediaTypes.universeV4Package.show.asJson
     }
+  }
+
+  def dropNullKeys(json: Json): Json = {
+    parse(JsonUtil.dropNullKeysPrinter.pretty(json)).toOption.get
   }
 
 }

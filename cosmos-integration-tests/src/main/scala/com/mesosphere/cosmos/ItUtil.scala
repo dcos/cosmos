@@ -1,5 +1,6 @@
 package com.mesosphere.cosmos
 
+import _root_.io.circe.JsonObject
 import com.mesosphere.cosmos.http.CosmosRequests
 import com.mesosphere.cosmos.repository.DefaultRepositories
 import com.mesosphere.cosmos.rpc.v1.circe.Decoders._
@@ -52,12 +53,14 @@ object ItUtil {
 
   def packageInstall(
     name: String,
-    version: Option[String]
+    version: Option[String],
+    options: Option[JsonObject] = None,
+    appId: Option[AppId] = None
   ): Either[rpc.v1.model.ErrorResponse, rpc.v1.model.InstallResponse] = {
     val detailsVersion = version.map(universe.v2.model.PackageDetailsVersion)
     CosmosClient.callEndpoint[rpc.v1.model.InstallResponse](
       CosmosRequests.packageInstallV2(
-        rpc.v1.model.InstallRequest(name, detailsVersion)
+        rpc.v1.model.InstallRequest(name, detailsVersion, options, appId)
       )
     )
   }
