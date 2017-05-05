@@ -68,6 +68,7 @@ class ServiceDescribeSpec
       }
     }
   }
+
   private val helloWorldPackageDefinitions
   : TableFor5[universe.v4.model.PackageDefinition, List[String], List[String], Json, Json] = {
     Table(
@@ -103,18 +104,22 @@ class ServiceDescribeSpec
         response.contentType shouldBe Some(accept)
         val Right(content) = parse(response.contentString)
 
-        // the actual test
-        testCode(
-          content,
-          packageDefinition,
-          expectedUpgrades,
-          expectedDowngrades,
-          expectedResolvedOptions,
-          expectedUserProvidedOptions
-        )
-
-        // clean up
-        ItUtil.packageUninstall(name, appId, all = true)
+        try {
+          // the actual test
+          testCode(
+            content,
+            packageDefinition,
+            expectedUpgrades,
+            expectedDowngrades,
+            expectedResolvedOptions,
+            expectedUserProvidedOptions
+          )
+          ()
+        } finally {
+          // clean up
+          ItUtil.packageUninstall(name, appId, all = true)
+          ()
+        }
     }
   }
 
