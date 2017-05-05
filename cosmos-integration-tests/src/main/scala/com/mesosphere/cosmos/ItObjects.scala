@@ -233,6 +233,35 @@ object ItObjects {
     )
   }
 
+  def renderHelloWorldMarathonMustacheNoLabels(options: Json): Json = {
+    val defaultPort = 8080
+    val port = options
+      .hcursor
+      .downField("port")
+      .as[Int]
+      .toOption
+      .getOrElse(defaultPort)
+    val Right(rendered) = parse(helloWorldMarathonMustache
+      .replaceAllLiterally("{{port}}", port.toString))
+    rendered
+  }
+
+  def decodedHelloWorldLabels(
+    packageDefinition: Json,
+    options: Json,
+    packageSource: Json = v4TestUniverse.asJson
+  ): Map[String, Json] = {
+    val pkg = packageDefinition.asObject.get
+    Map(
+      "DCOS_PACKAGE_SOURCE" -> packageSource,
+      "DCOS_PACKAGE_METADATA" -> helloWorldPackageMetadata(packageDefinition),
+      "DCOS_PACKAGE_DEFINITION" -> helloWorldPackageDefinitionEnvelope(packageDefinition),
+      "DCOS_PACKAGE_OPTIONS" -> options,
+      "DCOS_PACKAGE_VERSION" -> pkg("version").asJson,
+      "DCOS_PACKAGE_NAME" -> pkg("name").asJson
+    )
+  }
+
   def renderHelloWorldMarathonMustacheDecodedLabels(
     packageDefinition: Json,
     options: Json,
@@ -316,35 +345,6 @@ object ItObjects {
       case "3.0" => MediaTypes.universeV3Package.show.asJson
       case "4.0" => MediaTypes.universeV4Package.show.asJson
     }
-  }
-
-  def renderHelloWorldMarathonMustacheNoLabels(options: Json): Json = {
-    val defaultPort = 8080
-    val port = options
-      .hcursor
-      .downField("port")
-      .as[Int]
-      .toOption
-      .getOrElse(defaultPort)
-    val Right(rendered) = parse(helloWorldMarathonMustache
-      .replaceAllLiterally("{{port}}", port.toString))
-    rendered
-  }
-
-  def decodedHelloWorldLabels(
-    packageDefinition: Json,
-    options: Json,
-    packageSource: Json = v4TestUniverse.asJson
-  ): Map[String, Json] = {
-    val pkg = packageDefinition.asObject.get
-    Map(
-      "DCOS_PACKAGE_SOURCE" -> packageSource,
-      "DCOS_PACKAGE_METADATA" -> helloWorldPackageMetadata(packageDefinition),
-      "DCOS_PACKAGE_DEFINITION" -> helloWorldPackageDefinitionEnvelope(packageDefinition),
-      "DCOS_PACKAGE_OPTIONS" -> options,
-      "DCOS_PACKAGE_VERSION" -> pkg("version").asJson,
-      "DCOS_PACKAGE_NAME" -> pkg("name").asJson
-    )
   }
 
   val List(helloWorldPackage0, helloWorldPackage3, helloWorldPackage4): List[universe.v4.model.PackageDefinition] = {
