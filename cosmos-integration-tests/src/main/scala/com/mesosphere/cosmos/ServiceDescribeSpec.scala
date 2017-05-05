@@ -3,6 +3,7 @@ package com.mesosphere.cosmos
 import _root_.io.circe.Json
 import _root_.io.circe.jawn._
 import _root_.io.circe.syntax._
+import cats.syntax.either._
 import com.mesosphere.cosmos.http.HttpRequest
 import com.mesosphere.cosmos.test.CosmosIntegrationTestClient.CosmosClient
 import com.mesosphere.cosmos.thirdparty.marathon.model.AppId
@@ -33,31 +34,30 @@ class ServiceDescribeSpec
     scenario("The user would like to know the upgrades available to a service") {
       serviceDescribeTest { (content, _, expectedUpgrades, _, _) =>
         Then("the user should be able to observe the upgrades available to that service")
-        val Right(actualUpgrades) = content.hcursor.get[Json]("upgradesTo")
-        expectedUpgrades.asJson shouldBe actualUpgrades
+        val actualUpgrades = content.hcursor.get[Json]("upgradesTo")
+        actualUpgrades shouldBe Right(expectedUpgrades.asJson)
       }
     }
     scenario("The user would like to know the downgrades available to a service") {
       serviceDescribeTest { (content, _, _, expectedDowngrades, _) =>
         Then("the user should be able to observe the downgrades available to that service")
-        val Right(actualDowngrades) = content.hcursor.get[Json]("downgradesTo")
-        expectedDowngrades.asJson shouldBe actualDowngrades
+        val actualDowngrades = content.hcursor.get[Json]("downgradesTo")
+        actualDowngrades shouldBe Right(expectedDowngrades.asJson)
       }
     }
     scenario("The user would like to know the options used to run a service") {
       serviceDescribeTest { (content, _, _, _, expectedOptions) =>
         Then("the user should be able to observe the options used to run that service")
-        val Right(actualOptions) = content.hcursor.get[Json]("resolvedOptions")
-        actualOptions shouldBe expectedOptions
+        val actualOptions = content.hcursor.get[Json]("resolvedOptions")
+        actualOptions shouldBe Right(expectedOptions)
       }
     }
     scenario("The user would like to know the package definition used to run a service") {
-      serviceDescribeTest { (content, packageDefinition, expectedUpgrades, _, _) =>
+      serviceDescribeTest { (content, packageDefinition, _, _, _) =>
         Then("the user should be able to observe the package definition used to run that service")
-        val expectedDefinition = packageDefinition.asJson
-        val Right(actualDefinition) = content.hcursor.get[Json]("package")
-        ItObjects.dropNullKeys(actualDefinition) shouldBe
-          ItObjects.dropNullKeys(expectedDefinition)
+        val expectedDefinition = ItObjects.dropNullKeys(packageDefinition.asJson)
+        val actualDefinition = content.hcursor.get[Json]("package").map(ItObjects.dropNullKeys)
+        actualDefinition shouldBe Right(expectedDefinition)
       }
     }
   }

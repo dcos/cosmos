@@ -198,34 +198,6 @@ object ItObjects {
     metadataFields - "images"
   }
 
-  val List(
-  helloWorldPackage0,
-  helloWorldPackage3,
-  helloWorldPackage4
-  ): List[universe.v4.model.PackageDefinition] = {
-    List(
-      helloWorldPackageDefinition0,
-      helloWorldPackageDefinition3,
-      helloWorldPackageDefinition4
-    ).map(stringToPackageDefinition)
-  }
-
-  val helloWorldDefaultPort: Int = 8080
-
-  def helloWorldResolvedOptions(port: Int = helloWorldDefaultPort): Json = {
-    Json.obj(
-      "port" -> port.asJson
-    )
-  }
-
-  def stringToPackageDefinition(
-    packageDefinition: String
-  ): universe.v4.model.PackageDefinition = {
-    parse(packageDefinition).toOption.flatMap { json =>
-      json.hcursor.as[universe.v4.model.PackageDefinition].toOption
-    }.get
-  }
-
   def helloWorldPackageDetails(
     packageDefinition: Json
   ): Json = {
@@ -240,8 +212,8 @@ object ItObjects {
 
   def decodeEncodedPartsOfRenderResponse(renderResponse: Json): Json = {
     decodePackageDefinition _ andThen
-      decodePackageMetadata andThen
-      decodeOptions apply
+      decodePackageMetadata _ andThen
+      decodeOptions _ apply
       renderResponse
   }
 
@@ -373,6 +345,31 @@ object ItObjects {
 
   def dropNullKeys(json: Json): Json = {
     parse(JsonUtil.dropNullKeysPrinter.pretty(json)).toOption.get
+  }
+
+
+  val List(helloWorldPackage0, helloWorldPackage3, helloWorldPackage4): List[universe.v4.model.PackageDefinition] = {
+    List(
+      helloWorldPackageDefinition0,
+      helloWorldPackageDefinition3,
+      helloWorldPackageDefinition4
+    ).map(stringToPackageDefinition)
+  }
+
+  val helloWorldDefaultPort: Int = 8080
+
+  def helloWorldResolvedOptions(port: Int = helloWorldDefaultPort): Json = {
+    Json.obj(
+      "port" -> port.asJson
+    )
+  }
+
+  def stringToPackageDefinition(
+    packageDefinition: String
+  ): universe.v4.model.PackageDefinition = {
+    parse(packageDefinition).toOption.flatMap { json =>
+      json.hcursor.as[universe.v4.model.PackageDefinition].toOption
+    }.get
   }
 
 }
