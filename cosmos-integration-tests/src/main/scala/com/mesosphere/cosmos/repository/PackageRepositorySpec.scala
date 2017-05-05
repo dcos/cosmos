@@ -16,6 +16,7 @@ import com.twitter.finagle.http._
 import org.scalatest.AppendedClues
 import org.scalatest.Assertion
 import org.scalatest.BeforeAndAfter
+import org.scalatest.BeforeAndAfterAll
 import org.scalatest.FreeSpec
 import org.scalatest.concurrent.Eventually
 import org.scalatest.prop.TableDrivenPropertyChecks
@@ -24,26 +25,25 @@ import scala.util.Left
 import scala.util.Right
 
 final class PackageRepositorySpec
-  extends FreeSpec with BeforeAndAfter with Eventually with AppendedClues {
-
-  lazy val logger = org.slf4j.LoggerFactory.getLogger(classOf[PackageRepositorySpec])
+  extends FreeSpec with BeforeAndAfter with Eventually with AppendedClues with BeforeAndAfterAll {
 
   import PackageRepositorySpec._
 
   // TODO: Move all these into the integration spec
   var originalRepositories: Seq[PackageRepository] = Seq.empty
 
-  before {
+  override def beforeAll(): Unit = {
+    super.beforeAll()
     originalRepositories = listRepos().repositories
   }
 
-  after {
-    listRepos().repositories.foreach { repo =>
-      deleteRepo(PackageRepositoryDeleteRequest(Some(repo.name), Some(repo.uri)))
-    }
-    originalRepositories.foreach { repo =>
-      addRepo(PackageRepositoryAddRequest(repo.name, repo.uri))
-    }
+  override def afterAll(): Unit = {
+    super.afterAll()
+    ItUtil.replaceRepositoriesWith(originalRepositories)
+  }
+
+  before {
+    ItUtil.replaceRepositoriesWith(defaultRepos)
   }
 
   "List sources endpoint" in {
@@ -67,7 +67,7 @@ final class PackageRepositorySpec
         assertAdd(SourceMesosphere +: defaultRepos, SourceMesosphere, Some(0)) // prepend
       }
       "insert" in {
-        assertAdd(defaultRepos.head :: SourceExample :: defaultRepos(1) :: Nil, SourceExample, Some(1)) // insert
+        assertAdd(defaultRepos.take(1) ++ (SourceExample :: defaultRepos.drop(1)), SourceExample, Some(1)) // insert
       }
     }
 
@@ -387,6 +387,7 @@ object PackageRepositorySpec extends FreeSpec with TableDrivenPropertyChecks {
       addRepo(PackageRepositoryAddRequest(repository.name, repository.uri))
     }
   }
+
 }
 
 private case class DeleteSourceAssertion(

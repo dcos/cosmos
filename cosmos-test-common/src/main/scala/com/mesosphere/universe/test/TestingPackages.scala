@@ -13,6 +13,7 @@ import org.scalatest.prop.TableFor2
 object TestingPackages {
   val PackagingVersion = universe.v3.model.V3PackagingVersion
   val Name = "MAXIMAL"
+  val MinimalName = "minimal"
   val Version = universe.v3.model.Version("9.87.654.3210")
   val Maintainer = "max@mesosphere.io"
   val MaxReleaseVersion = universe.v3.model.ReleaseVersion(Long.MaxValue).get
@@ -249,7 +250,7 @@ object TestingPackages {
 
   val MinimalV3ModelMetadata = universe.v3.model.V3Metadata(
     PackagingVersion,
-    Name,
+    MinimalName,
     Version,
     Maintainer,
     Description
@@ -303,7 +304,7 @@ object TestingPackages {
 
   val MaximalV4ModelMetadata = universe.v4.model.V4Metadata(
     universe.v4.model.V4PackagingVersion,
-    Name,
+    Name + "v4",
     Version,
     Maintainer,
     Description,
@@ -325,7 +326,7 @@ object TestingPackages {
 
   val MinimalV4ModelMetadata = universe.v4.model.V4Metadata(
     universe.v4.model.V4PackagingVersion,
-    Name,
+    MinimalName + "v4",
     Version,
     Maintainer,
     Description
@@ -348,7 +349,7 @@ object TestingPackages {
 
   val MinimalV4ModelV4PackageDefinition: universe.v4.model.V4Package = universe.v4.model.V4Package(
     packagingVersion = universe.v4.model.V4PackagingVersion,
-    name = "minimal",
+    name = "minimalv4",
     version = universe.v3.model.Version("1.2.3"),
     releaseVersion = universe.v3.model.ReleaseVersion(0).get,
     maintainer = "minimal@mesosphere.io",
@@ -357,7 +358,7 @@ object TestingPackages {
 
   val MaximalV4ModelV4PackageDefinition: universe.v4.model.V4Package = universe.v4.model.V4Package(
     universe.v4.model.V4PackagingVersion,
-    Name,
+    Name + "v4",
     Version,
     releaseVersion = universe.v3.model.ReleaseVersion(Long.MaxValue).get,
     Maintainer,

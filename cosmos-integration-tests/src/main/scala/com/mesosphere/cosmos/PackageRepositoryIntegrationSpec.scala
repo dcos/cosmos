@@ -1,36 +1,37 @@
 package com.mesosphere.cosmos
 
+import com.mesosphere.cosmos.ItUtil._
 import com.mesosphere.cosmos.http.CosmosRequests
 import com.mesosphere.cosmos.repository.DefaultRepositories
 import com.mesosphere.cosmos.repository.PackageRepositorySpec
-import com.mesosphere.cosmos.rpc.v1.circe.Decoders._
 import com.mesosphere.cosmos.rpc.v1.model._
 import com.mesosphere.cosmos.test.CosmosIntegrationTestClient.CosmosClient
 import com.netaporter.uri.dsl._
 import com.twitter.finagle.http._
 import org.scalatest.BeforeAndAfter
+import org.scalatest.BeforeAndAfterAll
 import org.scalatest.FreeSpec
 import org.scalatest.prop.TableDrivenPropertyChecks
-import scala.util.Right
 
-final class PackageRepositoryIntegrationSpec extends FreeSpec with BeforeAndAfter {
+final class PackageRepositoryIntegrationSpec extends FreeSpec with BeforeAndAfter with BeforeAndAfterAll {
 
   import PackageRepositoryIntegrationSpec._
 
   private val defaultRepos = DefaultRepositories().getOrThrow
   var originalRepositories: Seq[PackageRepository] = Seq.empty
 
-  before {
+  override def beforeAll(): Unit = {
+    super.beforeAll()
     originalRepositories = listRepositories()
   }
 
-  after {
-    listRepositories().foreach { repo =>
-      deleteRepository(repo)
-    }
-    originalRepositories.foreach { repo =>
-      addRepository(repo)
-    }
+  override def afterAll(): Unit = {
+    super.afterAll()
+    replaceRepositoriesWith(originalRepositories)
+  }
+
+  before {
+    replaceRepositoriesWith(defaultRepos)
   }
 
   "Package repository endpoints" in {
@@ -109,30 +110,6 @@ final class PackageRepositoryIntegrationSpec extends FreeSpec with BeforeAndAfte
 }
 
 private object PackageRepositoryIntegrationSpec extends TableDrivenPropertyChecks {
-
-  private def listRepositories(): Seq[PackageRepository] = {
-    val request = CosmosRequests.packageRepositoryList
-    val Right(response) = CosmosClient.callEndpoint[PackageRepositoryListResponse](request)
-    response.repositories
-  }
-
-  private def addRepository(
-    source: PackageRepository
-  ): PackageRepositoryAddResponse = {
-    val repoAddRequest = PackageRepositoryAddRequest(source.name, source.uri)
-    val request = CosmosRequests.packageRepositoryAdd(repoAddRequest)
-    val Right(response) = CosmosClient.callEndpoint[PackageRepositoryAddResponse](request)
-    response
-  }
-
-  private def deleteRepository(
-    source: PackageRepository
-  ): PackageRepositoryDeleteResponse = {
-    val repoDeleteRequest = PackageRepositoryDeleteRequest(name = Some(source.name))
-    val request = CosmosRequests.packageRepositoryDelete(repoDeleteRequest)
-    val Right(response) = CosmosClient.callEndpoint[PackageRepositoryDeleteResponse](request)
-    response
-  }
 
   private def sendAddRequest(
     addRequest: PackageRepositoryAddRequest

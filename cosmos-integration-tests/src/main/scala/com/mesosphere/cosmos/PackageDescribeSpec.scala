@@ -7,28 +7,27 @@ import com.mesosphere.cosmos.circe.Decoders.decode
 import com.mesosphere.cosmos.http.CosmosRequests
 import com.mesosphere.cosmos.rpc.v1.circe.Decoders._
 import com.mesosphere.cosmos.test.CosmosIntegrationTestClient.CosmosClient
-import com.mesosphere.cosmos.thirdparty.marathon.model.AppId
-import com.mesosphere.cosmos.thirdparty.marathon.model.MarathonApp
-import com.mesosphere.cosmos.thirdparty.marathon.model.MarathonAppContainer
-import com.mesosphere.cosmos.thirdparty.marathon.model.MarathonAppContainerDocker
 import com.mesosphere.universe
 import com.mesosphere.universe.v2.circe.Decoders._
 import com.twitter.finagle.http.Response
 import com.twitter.finagle.http.Status
+import java.util.Base64
+import org.scalatest.AppendedClues._
 import org.scalatest.Assertion
 import org.scalatest.FreeSpec
 import org.scalatest.Matchers
 import org.scalatest.prop.TableDrivenPropertyChecks
 import scala.util.Right
+import cats.syntax.either._
 
 final class PackageDescribeSpec
-extends FreeSpec with TableDrivenPropertyChecks with Matchers {
+  extends FreeSpec with TableDrivenPropertyChecks with Matchers {
 
   import PackageDescribeSpec._
 
   "The package describe endpoint" - {
     "returns an error when package w/ version not found" in {
-      forAll (PackageDummyVersionsTable) { (packageName, packageVersion) =>
+      forAll(PackageDummyVersionsTable) { (packageName, packageVersion) =>
         describeAndAssertError(
           packageName = packageName,
           status = Status.BadRequest,
@@ -47,18 +46,33 @@ extends FreeSpec with TableDrivenPropertyChecks with Matchers {
       }
     }
 
-    "can successfully describe helloworld" in {
-      describeHelloworld()
-      describeHelloworld(Some(universe.v2.model.PackageDetailsVersion("0.1.0")))
+    "when requesting a v1 response" - {
+      "can successfully describe helloworld" - {
+        "without version" in {
+          describeHelloworld()
+        }
+        "with version" in {
+          describeHelloworld(Some(universe.v2.model.PackageDetailsVersion("0.1.0")))
+        }
+      }
+
+      "should return correct Json" in {
+        forAll(ItObjects.helloWorldPackageDefinitions) { (packageDefinition, _) =>
+          testV1PackageDescribe(packageDefinition)
+        }
+      }
     }
 
-    "can successfully describe all versions from Universe" in {
-      forAll (PackageVersionsTable) { (packageName, versions) =>
-        packageListVersionsAndAssert(
-          packageName=packageName,
-          status=Status.Ok,
-          content=versions.asJson
+    "when requesting a v2 response" - {
+      "fails to describe helloworld v4 w/ updates when requesting v2 describe response" in {
+        val response = CosmosClient.submit(
+          CosmosRequests.packageDescribeV2(
+            rpc.v1.model.DescribeRequest(
+              "helloworld",
+              Some(universe.v2.model.PackageDetailsVersion("0.4.1")))
+          )
         )
+        assertResult(Status.BadRequest)(response.status)
       }
     }
 
@@ -97,19 +111,49 @@ extends FreeSpec with TableDrivenPropertyChecks with Matchers {
     assertResult(expectedMessage)(errorResponse.message)
   }
 
-  private def packageListVersionsAndAssert(
-    packageName: String,
-    status: Status,
-    content: Json
+  private def testV1PackageDescribe(
+    packageDefinition: Json
   ): Assertion = {
-    val request = rpc.v1.model.ListVersionsRequest(
-      packageName,
-      includePackageVersions = true
+    val Right(name) =
+      packageDefinition.cursor.get[String]("name")
+    val Right(version) =
+      packageDefinition.cursor.get[String]("version")
+        .map(universe.v2.model.PackageDetailsVersion)
+
+    val response = describeRequest(rpc.v1.model.DescribeRequest(name, Some(version)))
+
+    response.status shouldBe Status.Ok withClue response.contentString
+
+    val Right(encodedMustache) =
+      packageDefinition.hcursor.downField("marathon").get[String]("v2AppMustacheTemplate")
+
+    val expectedMarathonMustache =
+      new String(Base64.getDecoder.decode(encodedMustache))
+
+    val expectedCommand =
+      packageDefinition.hcursor.get[Json]("command").toOption
+
+    val expectedConfig =
+      packageDefinition.hcursor.get[Json]("config").toOption
+
+    val expectedResource =
+      packageDefinition.hcursor.get[Json]("resource").toOption
+
+    val expectedContent = ItObjects.dropNullKeys(
+      Json.obj(
+        "package" -> ItObjects.helloWorldPackageDetails(packageDefinition),
+        "marathonMustache" -> expectedMarathonMustache.asJson,
+        "command" -> expectedCommand.asJson,
+        "config" -> expectedConfig.asJson,
+        "resource" -> expectedResource.asJson
+      )
     )
-    val response = CosmosClient.submit(CosmosRequests.packageListVersions(request))
-    assertResult(status)(response.status)
-    assertResult(Right(content))(parse(response.contentString))
+
+    val Right(actualContent) = parse(response.contentString)
+
+    actualContent shouldBe expectedContent
   }
+
 
   private def describeHelloworld(
     version: Option[universe.v2.model.PackageDetailsVersion] = None
@@ -147,11 +191,6 @@ private object PackageDescribeSpec extends TableDrivenPropertyChecks {
     ("cassandra", universe.v2.model.PackageDetailsVersion("foobar"))
   )
 
-  val PackageVersionsTable = Table(
-    ("package name", "versions"),
-    ("helloworld", Map("results" -> Map("0.1.0" -> "0")))
-  )
-
   val LatestPackageVersionsTable = Table(
     ("package name", "expected version"),
     ("arangodb", universe.v2.model.PackageDetailsVersion("0.3.0")),
@@ -175,10 +214,10 @@ private object PackageDescribeSpec extends TableDrivenPropertyChecks {
     postInstallNotes = Some("A sample post-installation message"),
     tags = List("mesosphere", "example", "subcommand"),
     selected = Some(false),
-    framework = None
+    framework = Some(false)
   )
 
-  val HelloworldConfigDef = Json.obj(
+  val HelloworldConfigDef: Json = Json.obj(
     "$schema" -> "http://json-schema.org/schema#".asJson,
     "type" -> "object".asJson,
     "properties" -> Json.obj(

@@ -22,8 +22,12 @@ final class UniverseConversionsSpec extends FreeSpec with Matchers with TableDri
       MinimalV3ModelPackageDefinitionV2 -> MinimalV2ModelPackageDetails,
       MaximalV3ModelPackageDefinitionV3 -> expectV3(MaximalV2ModelPackageDetails),
       MinimalV3ModelPackageDefinitionV3 -> expectV3(MinimalV2ModelPackageDetails),
-      MaximalV4ModelPackageDefinitionV4 -> expectV4(MaximalV2ModelPackageDetails),
-      MinimalV4ModelPackageDefinitionV4 -> expectV4(MinimalV2ModelPackageDetails)
+      MaximalV4ModelPackageDefinitionV4 -> expectV4(
+        MaximalV2ModelPackageDetails.copy(name = MaximalV4ModelPackageDefinitionV4.name)
+      ),
+      MinimalV4ModelPackageDefinitionV4 -> expectV4(
+        MinimalV2ModelPackageDetails.copy(name = MinimalV4ModelPackageDefinitionV4.name)
+      )
     )
 
   "Conversion[universe.v4.model.PackageDefinition, universe.v2.model.PackageDetails]" in {

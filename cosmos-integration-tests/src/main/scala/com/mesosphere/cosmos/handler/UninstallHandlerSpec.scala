@@ -10,6 +10,8 @@ import com.mesosphere.cosmos.rpc.v1.model.UninstallResponse
 import com.mesosphere.cosmos.test.CosmosIntegrationTestClient
 import com.mesosphere.cosmos.test.CosmosIntegrationTestClient.CosmosClient
 import com.mesosphere.cosmos.thirdparty.marathon.model.AppId
+import com.mesosphere.universe.v2.model.PackageDetails
+import com.mesosphere.universe.v2.model.PackageDetailsVersion
 import com.netaporter.uri.dsl._
 import com.twitter.finagle.http.Response
 import com.twitter.finagle.http.Fields
@@ -54,7 +56,11 @@ final class UninstallHandlerSpec extends FreeSpec {
       assertResult(Status.Ok, s"install failed: $installRequest1")(installResponse1.status)
 
       val appId2 = AppId(UUID.randomUUID().toString)
-      val installRequest2 = InstallRequest("helloworld", appId = Some(appId2))
+      val installRequest2 = InstallRequest(
+        "helloworld",
+        packageVersion = Some(PackageDetailsVersion("0.4.1")),
+        appId = Some(appId2)
+      )
       val installResponse2 = submitInstallRequest(installRequest2)
       assertResult(Status.Ok, s"install failed: $installRequest2")(installResponse2.status)
 

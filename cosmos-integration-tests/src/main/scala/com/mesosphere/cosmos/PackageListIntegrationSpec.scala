@@ -1,6 +1,5 @@
 package com.mesosphere.cosmos
 
-import cats.syntax.either._
 import com.mesosphere.cosmos.http.CosmosRequests
 import com.mesosphere.cosmos.repository.DefaultRepositories
 import com.mesosphere.cosmos.rpc.v1.circe.Decoders._
@@ -62,6 +61,26 @@ final class PackageListIntegrationSpec
     }
   }
 
+  "Package list endpoint responds with" - {
+    "(issue #124) packages sorted by name and app id" in {
+      val names = List(
+        "linkerd",
+        "linkerd",
+        "zeppelin",
+        "jenkins",
+        "cassandra")
+      val installResponses = names map packageInstall
+      try {
+        val packages = packageList().packages.map(app => (app.packageInformation.packageDefinition.name, app.appId))
+        val resultNames = packages.map(_._1)
+        assert(packages == packages.sorted)
+        assert(names.sorted == resultNames.sorted)
+      } finally {
+        installResponses.foreach(ir => packageUninstall(ir))
+      }
+    }
+  }
+
   private[this] def withInstalledPackage(packageName: String)(f: InstallResponse => Any): Any = {
     val installRequest =
       InstallRequest(packageName, appId = Some(AppId(UUID.randomUUID().toString)))
@@ -93,28 +112,22 @@ final class PackageListIntegrationSpec
   }
 
   private[this] def withDeletedRepository(repository: PackageRepository)(action: => Any): Any = {
-    val repoDeleteRequest = PackageRepositoryDeleteRequest(name = Some(repository.name))
-    val request = CosmosRequests.packageRepositoryDelete(repoDeleteRequest)
-    val actualDelete = CosmosClient.callEndpoint[PackageRepositoryDeleteResponse](request)
+
+    val originalRepositories = ItUtil.listRepositories()
+      .withClue("when getting original repositories")
+
+    val actualDelete = ItUtil.deleteRepository(repository)
       .withClue("when deleting repo")
 
     try {
-      assertResult(Right(None)) {
-        actualDelete.map(_.repositories.find(_.name == repository.name))
+      assertResult(None) {
+        actualDelete.repositories.find(_.name == repository.name)
       }
 
       action
     } finally {
-      val repoAddRequest = PackageRepositoryAddRequest(repository.name, repository.uri)
-      val request = CosmosRequests.packageRepositoryAdd(repoAddRequest)
-      val actualAdd = CosmosClient.callEndpoint[PackageRepositoryAddResponse](request)
+      ItUtil.replaceRepositoriesWith(originalRepositories)
         .withClue("when restoring deleted repo")
-
-      val _ = inside(actualAdd) { case Right(PackageRepositoryAddResponse(repositories)) =>
-        inside(repositories.find(_.name == repository.name)) { case Some(addedRepository) =>
-          assertResult(repository)(addedRepository)
-        }
-      }
     }
   }
 
@@ -127,26 +140,6 @@ final class PackageListIntegrationSpec
 
     inside (actualList) { case Right(ListResponse(packages)) =>
       inside (packages.find(_.appId == installResponse.appId)) { pf }
-    }
-  }
-
-  "Package list endpoint responds with" - {
-    "(issue #124) packages sorted by name and app id" in {
-      val names = List(
-        "linkerd",
-        "linkerd",
-        "zeppelin",
-        "jenkins",
-        "cassandra")
-      val installResponses = names map packageInstall
-      try {
-        val packages = packageList().packages.map(app => (app.packageInformation.packageDefinition.name, app.appId))
-        val resultNames = packages.map(_._1)
-        assert(packages == packages.sorted)
-        assert(names.sorted == resultNames.sorted)
-      } finally {
-        installResponses.foreach(ir => packageUninstall(ir))
-      }
     }
   }
 
