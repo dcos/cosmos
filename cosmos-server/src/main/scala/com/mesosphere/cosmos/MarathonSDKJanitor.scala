@@ -1,5 +1,5 @@
 package com.mesosphere.cosmos
-import java.time.Duration
+
 import java.util.concurrent.{BlockingQueue, Executors, LinkedBlockingQueue}
 
 import com.mesosphere.cosmos.http.RequestSession
@@ -17,17 +17,21 @@ class MarathonSDKJanitor(adminRouter: AdminRouter) extends SDKJanitor {
   val queue = new LinkedBlockingQueue[JanitorRequest]()
   val executor = Executors.newFixedThreadPool(1)
 
-  override def delete(appId: AppId, session: RequestSession): Boolean = {
+  override def delete(appId: AppId, session: RequestSession): Unit = {
     // TODO: Add to ZK
 
     // Queue work.
-    queue.add(new JanitorRequest(appId, session, 0, 0))
+    queue.add(new JanitorRequest(appId, session, 0, System.currentTimeMillis(), 0)) match {
+      case false => throw new Exception("ahhhh")
+      case true => logger.info("Successfully added delete request to queue for {}", appId)
+    }
   }
 
   /** Encapsulate the meat of a request. */
   class JanitorRequest(val appId: AppId,
                        val session: RequestSession,
                        val failures: Int,
+                       val created: Long,
                        val lastAttempt: Long)
 
   /** Runnable that knows how to wait and then clean up. */
@@ -37,14 +41,14 @@ class MarathonSDKJanitor(adminRouter: AdminRouter) extends SDKJanitor {
       logger.info("Starting work loop...")
       while (true) {
         try {
-          logger.info("Queuing for work.")
+          logger.debug("Queuing for work.")
           // Wait for work.
           val request = queue.take()
-          logger.info("Took request to delete {}", request.appId)
+          logger.debug("Took request to delete {}", request.appId)
 
           // Is this work ready to be retested?
           if (System.currentTimeMillis() - request.lastAttempt < TIME_BETWEEN_CHECKS_MILLISECONDS) {
-            logger.info("{} was last checked at {}. Adding back to queue and waiting.",
+            logger.debug("{} was last checked at {}. Adding back to queue and waiting.",
               request.appId,
               request.lastAttempt.toString)
             queue.add(request)
@@ -57,7 +61,7 @@ class MarathonSDKJanitor(adminRouter: AdminRouter) extends SDKJanitor {
             val futureAppResponse = adminRouter.getApp(request.appId)(session = request.session)
             val app = Await.result(futureAppResponse).app
 
-            if (checkUninstall(app)) delete(request) else requeue(request)
+            if (checkUninstall(app, request.created)) delete(request) else requeue(request, false)
           }
         } catch {
           case ie: InterruptedException =>
@@ -69,10 +73,12 @@ class MarathonSDKJanitor(adminRouter: AdminRouter) extends SDKJanitor {
     }
 
     /** Check the status of the app's uninstall. Return false if uninstall is still in progress. */
-    def checkUninstall(app: MarathonApp): Boolean = {
+    def checkUninstall(app: MarathonApp, created: Long): Boolean = {
       logger.info("Checking the status of the uninstall for app: {}", app.id)
       // TODO: Actually check :)
-      false
+
+      // For now, just naively wait for 2 minutes.
+      if (System.currentTimeMillis() > created + 120000) true else false
     }
 
     def delete(request: JanitorRequest): Unit = {
@@ -89,9 +95,9 @@ class MarathonSDKJanitor(adminRouter: AdminRouter) extends SDKJanitor {
         case retryRequest if 500 until 599 contains retryRequest =>
           logger.info("Encountered Marathon error: {} when deleting {}. Retrying.", retryRequest,
             request.appId)
-          requeue(request)
+          requeue(request, true)
           ()
-        case HttpStatus.SC_ACCEPTED =>
+        case HttpStatus.SC_OK =>
           // TODO: Remove from ZK
           logger.info("Deleted app: {}", request.appId)
           ()
@@ -104,7 +110,7 @@ class MarathonSDKJanitor(adminRouter: AdminRouter) extends SDKJanitor {
       }
 
       /** Determine if the request should be requeued. If it should, do so. */
-      def requeue(request: JanitorRequest): Boolean = {
+      def requeue(request: JanitorRequest, error: Boolean): Boolean = {
         logger.info("Evaluating if request to delete {} should be added back to the queue.", request.appId)
         if (request.failures + 1 >= MAXIMUM_FAILURES) {
           logger.info("The request to delete {} has failed {} times, exceeding the limit. Failing the request.",
@@ -112,11 +118,12 @@ class MarathonSDKJanitor(adminRouter: AdminRouter) extends SDKJanitor {
           fail(request)
           false
         } else {
-          logger.info("The request to delete {} has not exceeded the limit. Adding it back to the queue.",
+          logger.info("The request to delete {} has not exceeded the failure limit. Adding it back to the queue.",
             request.appId)
           queue.add(new JanitorRequest(request.appId,
             request.session,
-            request.failures + 1,
+            if (error) request.failures + 1 else request.failures,
+            request.created,
             System.currentTimeMillis()))
         }
       }

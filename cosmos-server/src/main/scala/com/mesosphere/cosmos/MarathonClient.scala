@@ -2,6 +2,7 @@ package com.mesosphere.cosmos
 
 import _root_.io.circe.Json
 import _root_.io.circe.JsonObject
+import _root_.io.circe.parser._
 import com.mesosphere.cosmos.http.RequestSession
 import com.mesosphere.cosmos.thirdparty.marathon.circe.Decoders._
 import com.mesosphere.cosmos.thirdparty.marathon.model.{AppId, MarathonAppResponse, MarathonAppsResponse}
@@ -21,6 +22,22 @@ class MarathonClient(
     client(post("v2" / "apps" , Json.fromJsonObject(appJson)))
   }
 
+  def updateApp(appId: AppId, appJson: JsonObject)(implicit session: RequestSession): Future[Response] = {
+    client(put("v2" / "apps" / appId.toUri, Json.fromJsonObject(appJson)))
+  }
+
+  def getRawApp(appId: AppId)(implicit session: RequestSession): Future[JsonObject] = {
+    client(get("v2" / "apps" / appId.toUri)).map(response => response.contentString)
+      .flatMap { content =>
+        parse(content) match {
+          case Left(failure) => throw failure
+          case Right(json) =>
+            val app = json.asObject.get.apply("app").get.asObject.get
+            Future.value(app)
+        }
+      }
+  }
+
   def getAppOption(appId: AppId)(implicit session: RequestSession): Future[Option[MarathonAppResponse]] = {
     val uri = "v2" / "apps" / appId.toUri
     client(get(uri)).map { response =>
@@ -36,6 +53,21 @@ class MarathonClient(
     getAppOption(appId).map { appOption =>
       appOption.getOrElse(throw MarathonAppNotFound(appId))
     }
+  }
+
+  def setAppEnvvar(appId: AppId, envvar: String, value: String)(implicit session: RequestSession): Future[Response] = {
+    val uri = "v2" / "apps" / appId.toUri
+    client(get(uri)).map(response => response.contentString)
+      .map { content =>
+        parse(content) match {
+          case Left(failure) => throw failure
+          case Right(json) =>
+            val app = json.asObject.get.apply("app").get.asObject.get
+              .remove("uris").remove("version")
+            app.add("env", Json.fromJsonObject(app.apply("env").get.asObject.get.add(envvar, Json.fromString(value))))
+        }
+      }
+      .flatMap(jsonObj => client(put(uri, Json.fromJsonObject(jsonObj))))
   }
 
   def listApps()(implicit session: RequestSession): Future[MarathonAppsResponse] = {

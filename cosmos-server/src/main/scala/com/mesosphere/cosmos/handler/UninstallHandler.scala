@@ -1,12 +1,10 @@
 package com.mesosphere.cosmos.handler
 
-import java.util.Collections
-
 import com.mesosphere.cosmos.http.RequestSession
 import com.mesosphere.cosmos.repository.PackageCollection
-import com.mesosphere.cosmos.{AdminRouter, AmbiguousAppId, IncompleteUninstall, MarathonAppDeleteError, MultipleFrameworkIds, PackageNotInstalled, SDKJanitor, ServiceUnavailable, UninstallNonExistentAppForPackage, rpc}
+import com.mesosphere.cosmos.{AdminRouter, AmbiguousAppId, IncompleteUninstall, MarathonAppDeleteError, MultipleFrameworkIds,
+  PackageNotInstalled, SDKJanitor, ServiceUnavailable, UninstallNonExistentAppForPackage, rpc}
 import com.mesosphere.cosmos.finch.EndpointHandler
-import com.mesosphere.cosmos.rpc.v1.model.UninstallResult
 import com.mesosphere.cosmos.thirdparty.marathon.model.AppId
 import com.mesosphere.cosmos.thirdparty.marathon.model.MarathonApp
 import com.mesosphere.universe
@@ -14,7 +12,8 @@ import com.mesosphere.universe.bijection.UniverseConversions._
 import com.mesosphere.universe.v3.syntax.PackageDefinitionOps._
 import com.twitter.bijection.Conversion.asMethod
 import com.twitter.finagle.http.Status
-import com.twitter.util.{Await, Future}
+import com.twitter.util.Future
+import io.circe.Json
 import org.slf4j.Logger
 
 private[cosmos] final class UninstallHandler(
@@ -25,6 +24,7 @@ private[cosmos] final class UninstallHandler(
   lazy val logger: Logger = org.slf4j.LoggerFactory.getLogger(getClass)
 
   val SDK_SERVICE_LABEL = "DCOS_COMMONS_API_VERSION"
+  val SDK_UNINSTALL_ENVVAR = "SDK_UNINSTALL"
 
   private type FwIds = List[String]
 
@@ -109,10 +109,24 @@ private[cosmos] final class UninstallHandler(
 
   private def runSdkUninstall(op: UninstallOperation, appId: AppId)
                              (implicit session: RequestSession): Future[UninstallDetails] = {
-
-    // Let the janitor know that it has a new uninstall to monitor.
-    sDKJanitor.delete(appId, session)
-    Future.value(UninstallDetails.from(op))
+    adminRouter.getRawApp(appId)
+      .map { appJson =>
+        appJson.apply("env")
+        appJson.remove("uris")
+          .remove("version")
+          .add("env", Json.fromJsonObject(appJson.apply("env").get.asObject.get.add(SDK_UNINSTALL_ENVVAR, Json.fromString(""))))
+      }
+      .flatMap(appJson => adminRouter.updateApp(appId,appJson))
+      .onSuccess { _ =>
+        sDKJanitor.delete(appId, session)
+      }.map { response =>
+        response.status match {
+          case Status.Ok => MarathonAppDeleteSuccess
+          case _ =>
+            logger.error("Encountered error in marathon request {}", response.contentString)
+            throw MarathonAppDeleteError(appId)
+        }
+      }.flatMap( _ => Future.value(UninstallDetails.from(op)))
   }
 
   private def lookupFrameworkIds(

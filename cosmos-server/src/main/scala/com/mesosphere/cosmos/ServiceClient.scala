@@ -37,6 +37,13 @@ abstract class ServiceClient(baseUri: Uri) {
       .buildPost(Buf.Utf8(jsonBody.noSpaces))
   }
 
+  protected def put(uri: Uri, jsonBody: Json)(implicit session: RequestSession): Request = {
+    baseRequestBuilder(uri)
+      .setHeader(Fields.Accept, MediaTypes.applicationJson.show)
+      .setHeader(Fields.ContentType, MediaTypes.applicationJson.show)
+      .buildPut(Buf.Utf8(jsonBody.noSpaces))
+  }
+
   protected def postForm(uri: Uri, postBody: String)(implicit session: RequestSession): Request = {
     baseRequestBuilder(uri)
       .setHeader(Fields.Accept, MediaTypes.applicationJson.show)
