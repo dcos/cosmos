@@ -14,7 +14,8 @@ case class ServiceDescribeResponse(
   `package`: universe.v4.model.PackageDefinition,
   upgradesTo: List[universe.v3.model.Version],
   downgradesTo: List[universe.v3.model.Version],
-  resolvedOptions: Option[JsonObject]
+  resolvedOptions: Option[JsonObject],
+  userProvidedOptions: Option[JsonObject]
 )
 
 object ServiceDescribeResponse {

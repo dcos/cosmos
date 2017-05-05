@@ -18,7 +18,7 @@ import org.scalatest.FeatureSpec
 import org.scalatest.GivenWhenThen
 import org.scalatest.Matchers
 import org.scalatest.prop.TableDrivenPropertyChecks
-import org.scalatest.prop.TableFor4
+import org.scalatest.prop.TableFor5
 
 class ServiceDescribeSpec
   extends FeatureSpec
@@ -32,50 +32,63 @@ class ServiceDescribeSpec
 
   feature("The service/describe endpoint") {
     scenario("The user would like to know the upgrades available to a service") {
-      serviceDescribeTest { (content, _, expectedUpgrades, _, _) =>
+      serviceDescribeTest { (content, _, expectedUpgrades, _, _, _) =>
         Then("the user should be able to observe the upgrades available to that service")
         val actualUpgrades = content.hcursor.get[Json]("upgradesTo")
         actualUpgrades shouldBe Right(expectedUpgrades.asJson)
       }
     }
     scenario("The user would like to know the downgrades available to a service") {
-      serviceDescribeTest { (content, _, _, expectedDowngrades, _) =>
+      serviceDescribeTest { (content, _, _, expectedDowngrades, _, _) =>
         Then("the user should be able to observe the downgrades available to that service")
         val actualDowngrades = content.hcursor.get[Json]("downgradesTo")
         actualDowngrades shouldBe Right(expectedDowngrades.asJson)
       }
     }
     scenario("The user would like to know the options used to run a service") {
-      serviceDescribeTest { (content, _, _, _, expectedOptions) =>
+      serviceDescribeTest { (content, _, _, _, expectedResolvedOptions, _) =>
         Then("the user should be able to observe the options used to run that service")
-        val actualOptions = content.hcursor.get[Json]("resolvedOptions")
-        actualOptions shouldBe Right(expectedOptions)
+        val actualResolvedOptions = content.hcursor.get[Json]("resolvedOptions")
+        actualResolvedOptions shouldBe Right(expectedResolvedOptions)
       }
     }
     scenario("The user would like to know the package definition used to run a service") {
-      serviceDescribeTest { (content, packageDefinition, _, _, _) =>
+      serviceDescribeTest { (content, packageDefinition, _, _, _, _) =>
         Then("the user should be able to observe the package definition used to run that service")
         val expectedDefinition = ItObjects.dropNullKeys(packageDefinition.asJson)
         val actualDefinition = content.hcursor.get[Json]("package").map(ItObjects.dropNullKeys)
         actualDefinition shouldBe Right(expectedDefinition)
       }
     }
+    scenario("The user would like to know the options he provided to run a service") {
+      serviceDescribeTest { (content, _, _, _, _, expectedUserProvidedOptions) =>
+        Then("the user should be able to observe the options the user provided to run a service")
+        val actualUserProvidedOptions = content.hcursor.get[Json]("userProvidedOptions")
+        actualUserProvidedOptions shouldBe Right(expectedUserProvidedOptions)
+      }
+    }
   }
   private val helloWorldPackageDefinitions
-  : TableFor4[universe.v4.model.PackageDefinition, List[String], List[String], Json] = {
+  : TableFor5[universe.v4.model.PackageDefinition, List[String], List[String], Json, Json] = {
     Table(
-      ("Package Definition", "Upgrades To", "Downgrades To", "Resolved Options"),
-      (ItObjects.helloWorldPackage0, List(), List(), ItObjects.helloWorldResolvedOptions()),
-      (ItObjects.helloWorldPackage3, List("0.4.1"), List(), ItObjects.helloWorldResolvedOptions()),
-      (ItObjects.helloWorldPackage4, List(), List("0.4.0"), ItObjects.helloWorldResolvedOptions())
+      ("Package Definition", "Upgrades To", "Downgrades To", "Resolved Options", "User Supplied Options"),
+      (ItObjects.helloWorldPackage0, List(), List(), ItObjects.helloWorldResolvedOptions(), Json.obj()),
+      (ItObjects.helloWorldPackage3, List("0.4.1"), List(), ItObjects.helloWorldResolvedOptions(), Json.obj()),
+      (ItObjects.helloWorldPackage4, List(), List("0.4.0"), ItObjects.helloWorldResolvedOptions(), Json.obj())
     )
   }
 
   private def serviceDescribeTest(
-    testCode: (Json, universe.v4.model.PackageDefinition, List[String], List[String], Json) => Assertion
+    testCode: (Json, universe.v4.model.PackageDefinition, List[String], List[String], Json, Json) => Assertion
   ): Unit = {
     forAll(helloWorldPackageDefinitions) {
-      (packageDefinition, expectedUpgrades, expectedDowngrades, resolvedOptions) =>
+      (
+        packageDefinition,
+        expectedUpgrades,
+        expectedDowngrades,
+        expectedResolvedOptions,
+        expectedUserProvidedOptions
+      ) =>
         Given("a running service and its appId")
         val appId = AppId(UUID.randomUUID().toString)
         val name = packageDefinition.name
@@ -91,7 +104,14 @@ class ServiceDescribeSpec
         val Right(content) = parse(response.contentString)
 
         // the actual test
-        testCode(content, packageDefinition, expectedUpgrades, expectedDowngrades, resolvedOptions)
+        testCode(
+          content,
+          packageDefinition,
+          expectedUpgrades,
+          expectedDowngrades,
+          expectedResolvedOptions,
+          expectedUserProvidedOptions
+        )
 
         // clean up
         ItUtil.packageUninstall(name, appId, all = true)

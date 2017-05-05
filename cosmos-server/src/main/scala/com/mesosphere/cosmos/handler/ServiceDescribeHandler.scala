@@ -27,11 +27,13 @@ private[cosmos] final class ServiceDescribeHandler(
       upgradesTo <- packageCollection.upgradesTo(packageDefinition.name, packageDefinition.version)
       downgradesTo <- packageCollection.downgradesTo(packageDefinition)
     } yield {
+      val userProvidedOptions = marathonAppResponse.app.serviceOptions
       rpc.v1.model.ServiceDescribeResponse(
         `package` = packageDefinition,
         upgradesTo = upgradesTo,
         downgradesTo = downgradesTo,
-        resolvedOptions = getResolvedOptions(packageDefinition, marathonAppResponse.app.serviceOptions)
+        resolvedOptions = getResolvedOptions(packageDefinition, userProvidedOptions),
+        userProvidedOptions = userProvidedOptions
       )
     }
   }
