@@ -13,7 +13,7 @@ import scala.util.Try
 /** Partial Marathon AppDefinition.
  *
  *  This is not a full Marathon AppDefinition. Marathon's AppDefinition is a moving target.
- *  We should only decode the parts that Cosmos cares about.
+ *  We should only decode the parts that Cosmos cares about. That is the `id` and the `labels`.
  *  This is okay as long as we don't have an encoder for this class.
  */
 case class MarathonApp(
