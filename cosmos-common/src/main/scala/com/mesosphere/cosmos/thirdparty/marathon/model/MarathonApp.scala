@@ -18,14 +18,10 @@ import scala.util.Try
  */
 case class MarathonApp(
   id: AppId,
-  labels: Map[String, String],
-  state: String,
-  env: Map[String, String],
-  portDefinitions: List[Map[String, String]]
+  labels: Map[String, String]
 )
 
 object MarathonApp {
-  // Package Labels:
   val frameworkNameLabel = "DCOS_PACKAGE_FRAMEWORK_NAME"
   val metadataLabel = "DCOS_PACKAGE_METADATA"
   val nameLabel = "DCOS_PACKAGE_NAME"
@@ -33,14 +29,6 @@ object MarathonApp {
   val versionLabel = "DCOS_PACKAGE_VERSION"
   val optionsLabel = "DCOS_PACKAGE_OPTIONS"
   val packageLabel = "DCOS_PACKAGE_DEFINITION"
-
-  // Service Labels:
-  val migrationApiPathLabel = "DCOS_MIGRATION_API_PATH"
-  val servicePortIndexLabel = "DCOS_SERVICE_PORT_INDEX"
-  val serviceSchemeLabel = "DCOS_SERVICE_SCHEME"
-
-  // Task Env
-  val uninstallEnabledEnv = "SDK_UNINSTALL"
 
   implicit final class Ops(val app: MarathonApp) extends AnyVal {
 

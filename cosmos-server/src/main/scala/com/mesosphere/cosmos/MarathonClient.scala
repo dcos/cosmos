@@ -55,21 +55,6 @@ class MarathonClient(
     }
   }
 
-  def setAppEnvvar(appId: AppId, envvar: String, value: String)(implicit session: RequestSession): Future[Response] = {
-    val uri = "v2" / "apps" / appId.toUri
-    client(get(uri)).map(response => response.contentString)
-      .map { content =>
-        parse(content) match {
-          case Left(failure) => throw failure
-          case Right(json) =>
-            val app = json.asObject.get.apply("app").get.asObject.get
-              .remove("uris").remove("version")
-            app.add("env", Json.fromJsonObject(app.apply("env").get.asObject.get.add(envvar, Json.fromString(value))))
-        }
-      }
-      .flatMap(jsonObj => client(put(uri, Json.fromJsonObject(jsonObj))))
-  }
-
   def listApps()(implicit session: RequestSession): Future[MarathonAppsResponse] = {
     val uri = "v2" / "apps"
     client(get(uri)).flatMap(decodeTo[MarathonAppsResponse](HttpMethod.GET, uri, _))
