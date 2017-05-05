@@ -43,7 +43,7 @@ private[cosmos] final class ServiceDescribeHandler(
     app.packageDefinition.map(Future.value).getOrElse {
       val (name, version) =
         app.packageName.flatMap(name => app.packageVersion.map(name -> _))
-          .getOrElse(throw new RuntimeException(
+          .getOrElse(throw new IllegalStateException(
             "The name and version of the service were not found in the labels"))
       packageCollection
         .getPackageByPackageVersion(name, Some(version))

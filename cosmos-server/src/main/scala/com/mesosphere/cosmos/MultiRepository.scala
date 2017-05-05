@@ -107,8 +107,8 @@ final class MultiRepository(
   }
 
   override def downgradesTo(
-    packageDefinition: PackageDefinition)(implicit
-    session: RequestSession): Future[List[universe.v3.model.Version]] = {
+    packageDefinition: PackageDefinition
+  )(implicit session: RequestSession): Future[List[universe.v3.model.Version]] = {
     repositories().flatMap { repositories =>
       Future.collect {
         repositories.map { repository =>

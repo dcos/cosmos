@@ -43,9 +43,8 @@ trait PackageCollection {
     * `version` can be downgrade to.
     */
   def downgradesTo(
-    packageDefinition: universe.v4.model.PackageDefinition)(implicit
-    session: RequestSession
-  ): Future[List[universe.v3.model.Version]]
+    packageDefinition: universe.v4.model.PackageDefinition
+  )(implicit session: RequestSession): Future[List[universe.v3.model.Version]]
 
 }
 

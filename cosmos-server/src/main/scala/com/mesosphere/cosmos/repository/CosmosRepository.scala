@@ -134,9 +134,8 @@ final class CosmosRepository (
   }
 
   override def downgradesTo(
-    packageDefinition: universe.v4.model.PackageDefinition)(implicit
-    session: RequestSession
-  ): Future[List[universe.v3.model.Version]] = {
+    packageDefinition: universe.v4.model.PackageDefinition
+  )(implicit session: RequestSession): Future[List[universe.v3.model.Version]] = {
     synchronizedUpdate().map { internalRepository =>
       PackageCollection.downgradesTo(packageDefinition, internalRepository.packages)
     }
