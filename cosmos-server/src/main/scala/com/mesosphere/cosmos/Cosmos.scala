@@ -22,6 +22,7 @@ import com.mesosphere.cosmos.handler.PackageRepositoryAddHandler
 import com.mesosphere.cosmos.handler.PackageRepositoryDeleteHandler
 import com.mesosphere.cosmos.handler.PackageRepositoryListHandler
 import com.mesosphere.cosmos.handler.PackageSearchHandler
+import com.mesosphere.cosmos.handler.ServiceDescribeHandler
 import com.mesosphere.cosmos.handler.ServiceStartHandler
 import com.mesosphere.cosmos.handler.UninstallHandler
 import com.mesosphere.cosmos.repository.DefaultInstaller
@@ -146,6 +147,7 @@ with Logging {
     val packageRepoAddHandler = new PackageRepositoryAddHandler(sourcesStorage)
     val packageRepoDeleteHandler = new PackageRepositoryDeleteHandler(sourcesStorage)
     val capabilitiesHandler = new CapabilitiesHandler
+    val serviceDescribeHandler = new ServiceDescribeHandler(adminRouter, repositories)
 
     val packageAddHandler = enableIfSome(objectStorages, "package add") {
       case (_, stagedStorage) => new PackageAddHandler(repositories, stagedStorage, producerView)
@@ -177,6 +179,7 @@ with Logging {
 
     // Service endpoints
     val serviceStart = standardEndpoint("service" :: "start", serviceStartHandler)
+    val serviceDescribe = standardEndpoint("service" :: "describe", serviceDescribeHandler)
 
     // Capabilities
     val capabilities = route(get("capabilities"), capabilitiesHandler)(RequestValidators.noBody)
@@ -194,6 +197,7 @@ with Logging {
       :+: packageRepositoryList
       :+: packageSearch
       :+: packageUninstall
+      :+: serviceDescribe
       :+: serviceStart).map(degenerateCoproduct)
   }
   // scalastyle:on method.length
