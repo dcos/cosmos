@@ -1,12 +1,13 @@
 package com.mesosphere.cosmos
 
 import _root_.io.circe.Json
-import _root_.io.circe.syntax._
 import _root_.io.circe.jawn._
-import com.mesosphere.universe.MediaTypes
-import com.twitter.finagle.http.Fields
+import _root_.io.circe.syntax._
 import cats.syntax.either._
+import com.mesosphere.universe
+import com.mesosphere.universe.MediaTypes
 import com.mesosphere.universe.common.JsonUtil
+import com.twitter.finagle.http.Fields
 import java.nio.ByteBuffer
 import java.util.Base64
 import org.scalatest.prop.TableFor2
@@ -344,6 +345,30 @@ object ItObjects {
       case "3.0" => MediaTypes.universeV3Package.show.asJson
       case "4.0" => MediaTypes.universeV4Package.show.asJson
     }
+  }
+
+  val List(helloWorldPackage0, helloWorldPackage3, helloWorldPackage4): List[universe.v4.model.PackageDefinition] = {
+    List(
+      helloWorldPackageDefinition0,
+      helloWorldPackageDefinition3,
+      helloWorldPackageDefinition4
+    ).map(stringToPackageDefinition)
+  }
+
+  val helloWorldDefaultPort: Int = 8080
+
+  def helloWorldResolvedOptions(port: Int = helloWorldDefaultPort): Json = {
+    Json.obj(
+      "port" -> port.asJson
+    )
+  }
+
+  def stringToPackageDefinition(
+    packageDefinition: String
+  ): universe.v4.model.PackageDefinition = {
+    parse(packageDefinition).toOption.flatMap { json =>
+      json.hcursor.as[universe.v4.model.PackageDefinition].toOption
+    }.get
   }
 
 }

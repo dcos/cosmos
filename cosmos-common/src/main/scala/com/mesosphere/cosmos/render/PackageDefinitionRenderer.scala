@@ -14,6 +14,7 @@ import com.mesosphere.universe
 import com.mesosphere.universe.common.ByteBuffers
 import com.mesosphere.universe.common.JsonUtil
 import com.mesosphere.universe.v3.syntax.PackageDefinitionOps._
+import com.mesosphere.universe.v4.model.PackageDefinition
 import com.netaporter.uri.Uri
 import com.twitter.bijection.Conversion.asMethod
 import io.circe.Json
@@ -38,9 +39,7 @@ object PackageDefinitionRenderer {
     marathonAppId: Option[AppId]
   ): Either[PackageDefinitionRenderError, JsonObject] = {
     pkgDef.marathon.map { marathon =>
-      val defaultOptionsAndUserOptions = (
-        pkgDef.config.map(JsonSchema.extractDefaultsFromSchema).toList ++ options.toList
-      ).foldLeft(JsonObject.empty)(JsonUtil.merge)
+      val defaultOptionsAndUserOptions: JsonObject = mergeDefaultAndUserOptions(pkgDef, options)
 
       validateOptionsAgainstSchema(pkgDef, defaultOptionsAndUserOptions).flatMap { _ =>
         /* Now that we know the users options are valid for the schema, we build up a composite
@@ -67,6 +66,14 @@ object PackageDefinitionRenderer {
         }
       }
     } getOrElse Left(MissingMarathonV2AppTemplate)
+  }
+
+  def mergeDefaultAndUserOptions(
+    pkgDef: PackageDefinition,
+    userSuppliedOptions: Option[JsonObject]
+  ): JsonObject = {
+    (pkgDef.config.map(JsonSchema.extractDefaultsFromSchema).toList ++ userSuppliedOptions.toList)
+      .foldLeft(JsonObject.empty)(JsonUtil.merge)
   }
 
   private[this] def nonOverridableLabels(

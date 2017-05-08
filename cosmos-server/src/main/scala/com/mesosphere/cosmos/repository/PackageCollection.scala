@@ -38,6 +38,14 @@ trait PackageCollection {
     version: universe.v3.model.Version
   )(implicit session: RequestSession): Future[List[universe.v3.model.Version]]
 
+  /**
+    * Return the versions of packages in this collection that the package
+    * `packageDefinition` can be downgrade to.
+    */
+  def downgradesTo(
+    packageDefinition: universe.v4.model.PackageDefinition
+  )(implicit session: RequestSession): Future[List[universe.v3.model.Version]]
+
 }
 
 object PackageCollection {
@@ -49,7 +57,20 @@ object PackageCollection {
     possibleUpgrades: List[universe.v4.model.PackageDefinition]
   ): List[universe.v3.model.Version] = {
     possibleUpgrades.collect {
-      case pkg if pkg.name == name && pkg.canUpgradeFrom(version) => pkg.version
+      case possibleUpgrade
+        if possibleUpgrade.name == name &&
+          possibleUpgrade.canUpgradeFrom(version) => possibleUpgrade.version
+    }
+  }
+
+  def downgradesTo(
+    packageDefinition: universe.v4.model.PackageDefinition,
+    possibleDowngrades: List[universe.v4.model.PackageDefinition]
+  ): List[universe.v3.model.Version] = {
+    possibleDowngrades.collect {
+      case possibleDowngrade
+        if packageDefinition.name == possibleDowngrade.name &&
+          packageDefinition.canDowngradeTo(possibleDowngrade.version) => possibleDowngrade.version
     }
   }
 

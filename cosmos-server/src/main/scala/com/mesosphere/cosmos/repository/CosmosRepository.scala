@@ -5,6 +5,7 @@ import com.mesosphere.cosmos.VersionNotFound
 import com.mesosphere.cosmos.http.RequestSession
 import com.mesosphere.cosmos.rpc
 import com.mesosphere.universe
+import com.mesosphere.universe.v3.model.Version
 import com.mesosphere.universe.v3.syntax.PackageDefinitionOps._
 import com.netaporter.uri.Uri
 import com.twitter.common.util.Clock
@@ -131,6 +132,15 @@ final class CosmosRepository (
       PackageCollection.upgradesTo(name, version, internalRepository.packages)
     }
   }
+
+  override def downgradesTo(
+    packageDefinition: universe.v4.model.PackageDefinition
+  )(implicit session: RequestSession): Future[List[universe.v3.model.Version]] = {
+    synchronizedUpdate().map { internalRepository =>
+      PackageCollection.downgradesTo(packageDefinition, internalRepository.packages)
+    }
+  }
+
 
   private[this] def synchronizedUpdate()(
     implicit session: RequestSession
