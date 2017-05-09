@@ -1,5 +1,4 @@
 import com.mesosphere.cosmos.CosmosBuild._
-import com.mesosphere.cosmos.CosmosIntegrationTestServer
 import com.mesosphere.cosmos.Deps
 
 lazy val cosmos = project.in(file("."))
@@ -34,10 +33,7 @@ lazy val common = project.in(file("cosmos-common"))
 lazy val server = project.in(file("cosmos-server"))
   .settings(sharedSettings)
   .settings(filterSettings)
-  // The sbt-dcos plugin provides these one-JAR settings, but they are combined with the
-  // integration test settings; since we need to customize the latter, we have to handle these too
-  .settings(oneJarSettings)
-  .settings(mainClass in oneJar := Some("com.mesosphere.cosmos.Cosmos"))
+  .settings(BuildPlugin.allOneJarSettings("com.mesosphere.cosmos.Cosmos"))
   .settings(
     name := baseDirectory.value.name,
     libraryDependencies ++=
@@ -79,21 +75,14 @@ lazy val integrationTests = project.in(file("cosmos-integration-tests"))
   .settings(sharedSettings)
   .settings(
     name := baseDirectory.value.name,
-    // The sbt-dcos plugin provides this, but we need to customize it
-    testOptions in IntegrationTest ++= {
-      lazy val itServer = new CosmosIntegrationTestServer(
-        (javaHome in run).value.map(_.getCanonicalPath),
-        // The resources we need are in src/main/resources, not src/it/resources
-        (resourceDirectories in Compile).value,
-        // The one-JAR to use is produced by cosmos-server
-        (oneJar in server).value
-      )
-
-      Seq(
-        Tests.Setup(() => itServer.setup((streams in runMain).value.log)),
-        Tests.Cleanup(() => itServer.cleanup())
-      )
-    },
+    testOptions in IntegrationTest ++= BuildPlugin.itTestOptions(
+      (javaHome in run).value,
+      // The resources we need are in src/main/resources
+      (resourceDirectories in Compile).value,
+      // The one-JAR to use is produced by cosmos-server
+      (oneJar in server).value,
+      (streams in runMain).value
+    ),
     // Uses (compile in Compile) instead of (compile in IntegrationTest), the default
     definedTests in IntegrationTest := {
       val frameworkMap = (loadedTestFrameworks in IntegrationTest).value
