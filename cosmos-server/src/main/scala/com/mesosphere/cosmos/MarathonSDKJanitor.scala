@@ -5,10 +5,12 @@ import java.util.concurrent.Delayed
 import java.util.concurrent.Executors
 import java.util.concurrent.TimeUnit
 
+import com.google.common.util.concurrent.ThreadFactoryBuilder
 import com.mesosphere.cosmos.MarathonSdkJanitor._
 import com.mesosphere.cosmos.http.RequestSession
 import com.mesosphere.cosmos.thirdparty.marathon.model.AppId
 import com.mesosphere.cosmos.thirdparty.marathon.model.MarathonApp
+import com.twitter.finagle.http._
 import com.twitter.util.Await
 import org.apache.http.HttpStatus
 import org.slf4j.Logger
@@ -18,26 +20,27 @@ final class MarathonSdkJanitor(adminRouter: AdminRouter) {
   lazy val logger: Logger = org.slf4j.LoggerFactory.getLogger(getClass)
 
   val queue = new DelayQueue[JanitorRequest]()
-  val executor = Executors.newFixedThreadPool(1)
+  val executor = Executors.newFixedThreadPool(1, new ThreadFactoryBuilder()
+    .setDaemon(true)
+    .setNameFormat("sdk-janitor-thread-%d")
+    .build())
+  @volatile var running = true
 
   def delete(appId: AppId, session: RequestSession): Unit = {
     // TODO: Add to ZK
 
-    // Queue work.
     queue.add(JanitorRequest(appId, session, 0, System.currentTimeMillis(), 0))
-    // Handle false to make style checker happy.
     logger.info("Successfully added delete request to queue for {}", appId)
   }
 
   /** Runnable that knows how to wait and then clean up. */
-  class Janitor() extends Runnable {
+  final class Janitor() extends Runnable {
 
     override def run(): Unit = {
       logger.info("Starting work loop...")
-      while (true) {
+      while (running) {
         try {
           logger.debug("Queuing for work.")
-          // Wait for work.
           val request = queue.take()
           logger.debug("Took request to delete {}", request.appId)
 
@@ -48,7 +51,7 @@ final class MarathonSdkJanitor(adminRouter: AdminRouter) {
           val futureAppResponse = adminRouter.getApp(request.appId)(session = request.session)
           val app = Await.result(futureAppResponse).app
 
-          if (checkUninstall(app, request.created)) delete(request) else requeue(request)
+          if (checkUninstall(app, request.created)(request.session)) delete(request) else requeue(request)
         } catch {
           case ie: InterruptedException =>
             logger.error("Janitor request queue was interrupted", ie)
@@ -59,34 +62,49 @@ final class MarathonSdkJanitor(adminRouter: AdminRouter) {
     }
 
     /** Check the status of the app's uninstall. Return false if uninstall is still in progress. */
-    def checkUninstall(app: MarathonApp, created: Long): Boolean = {
+    def checkUninstall(app: MarathonApp, created: Long)(implicit session: RequestSession): Boolean = {
       logger.info("Checking the status of the uninstall for app: {}", app.id)
-      // TODO: Actually check :)
 
-      // For now, just naively wait for 2 minutes.
-      if (System.currentTimeMillis() > created + 120000) true else false
+      Await.result(adminRouter.getSdkServicePlanStatus(
+        service = app.id.toString,
+        apiVersion = app.labels.get(SdkApiVersionLabel).getOrElse("v1"),
+        plan = "deploy"
+      )(session = session)).status match {
+        case Status.Ok => true
+        case _ => false
+      }
     }
 
     def delete(request: JanitorRequest): Unit = {
-      // App is ready to be deleted. Do so.
       logger.info("{} is ready to be deleted. Telling Marathon to delete it.",
         request.appId)
-      val deleteResult = Await.result(adminRouter.deleteApp(request.appId)(session = request.session))
-      deleteResult.statusCode match {
-        case badRequest if 400 until 499 contains badRequest =>
-          logger.info("Encountered Marathon error: {} when deleting {}. Failing.", badRequest,
-            request.appId)
-          fail(request)
-          ()
-        case retryRequest if 500 until 599 contains retryRequest =>
-          logger.info("Encountered Marathon error: {} when deleting {}. Retrying.", retryRequest,
-            request.appId)
+      try {
+        val deleteResult = Await.result(adminRouter.deleteApp(request.appId)(session = request.session))
+        deleteResult.statusCode match {
+          case badRequest if 400 until 499 contains badRequest =>
+            logger.error("Encountered Marathon error: {} when deleting {}. Failing.", badRequest,
+              request.appId)
+            fail(request)
+            ()
+          case retryRequest if 500 until 599 contains retryRequest =>
+            logger.error("Encountered Marathon error: {} when deleting {}. Retrying.", retryRequest,
+              request.appId)
+            requeue(request.copy(failures = request.failures + 1))
+            ()
+          case HttpStatus.SC_OK =>
+            // TODO: Remove from ZK
+            logger.info("Deleted app: {}", request.appId)
+            ()
+          case default =>
+            logger.error("Encountered unexpected status: {} when deleting {}. Retrying.", default, request.appId)
+            requeue(request.copy(failures = request.failures + 1))
+            ()
+        }
+      } catch {
+        case e: Exception =>
+          logger.error("Encountered exception when trying to delete Marathon app for %s. Retrying.".format(request.appId.toString), e)
           requeue(request.copy(failures = request.failures + 1))
-          ()
-        case HttpStatus.SC_OK =>
-          // TODO: Remove from ZK
-          logger.info("Deleted app: {}", request.appId)
-          ()
+
       }
     }
 
@@ -112,13 +130,14 @@ final class MarathonSdkJanitor(adminRouter: AdminRouter) {
     }
 
   def start(): Unit = {
-    logger.info("Starting the janitor thread...")
+    logger.info("Starting the janitor...")
     executor.submit(new Janitor())
     ()
   }
 
   def stop(): Unit = {
-    logger.info("Stopping the janitor thread...")
+    logger.info("Stopping the janitor...")
+    running = false
     executor.shutdown()
   }
 }
@@ -126,6 +145,7 @@ final class MarathonSdkJanitor(adminRouter: AdminRouter) {
 object MarathonSdkJanitor {
   val MaximumFailures: Int = 5
   val TimeBetweenChecksMilliseconds: Int = 10000
+  val SdkApiVersionLabel = "DCOS_COMMONS_API_VERSION"
 
   /** Encapsulate the meat of a request. */
   case class JanitorRequest(appId: AppId,
@@ -135,16 +155,7 @@ object MarathonSdkJanitor {
                             lastAttempt: Long) extends Delayed {
 
     override def compareTo(o: Delayed): Int = {
-      val ownDelay = getDelay(TimeUnit.MILLISECONDS)
-      val otherDelay = o.getDelay(TimeUnit.MILLISECONDS)
-
-      if (ownDelay < otherDelay) {
-        -1
-      } else if (ownDelay == otherDelay) {
-        0
-      } else {
-        1
-      }
+      getDelay(TimeUnit.MILLISECONDS).compare(o.getDelay(TimeUnit.MILLISECONDS))
     }
 
     override def getDelay(unit: TimeUnit): Long = {

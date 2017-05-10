@@ -27,19 +27,19 @@ import io.circe.JsonObject
 import org.slf4j.Logger
 
 private[cosmos] final class UninstallHandler(
-                                              adminRouter: AdminRouter,
-                                              packageCache: PackageCollection,
-                                              marathonSdkJanitor: MarathonSdkJanitor
+  adminRouter: AdminRouter,
+  packageCache: PackageCollection,
+  marathonSdkJanitor: MarathonSdkJanitor
 ) extends EndpointHandler[rpc.v1.model.UninstallRequest, rpc.v1.model.UninstallResponse] {
   lazy val logger: Logger = org.slf4j.LoggerFactory.getLogger(getClass)
 
   private type FwIds = List[String]
 
   override def apply(
-                req: rpc.v1.model.UninstallRequest
-              )(
-                implicit session: RequestSession
-              ): Future[rpc.v1.model.UninstallResponse] = {
+    req: rpc.v1.model.UninstallRequest
+  )(
+    implicit session: RequestSession
+  ): Future[rpc.v1.model.UninstallResponse] = {
     getMarathonApps(req.packageName, req.appId)
       .map(apps => createUninstallOperations(req.packageName, apps))
       .map { uninstallOps =>
@@ -113,21 +113,22 @@ private[cosmos] final class UninstallHandler(
 
   private def runSdkUninstall(op: UninstallOperation)
                              (implicit session: RequestSession): Future[UninstallDetails] = {
-    adminRouter.updateApp(op.appId)((appJson: JsonObject) => {
+    adminRouter.modifyApp(op.appId)((appJson) => {
       appJson.remove("uris")
         .remove("version")
-        .add("env", Json.fromJsonObject(appJson.apply("env").get.asObject.get.add(SdkUninstallEnvvar, Json.fromString("true"))))
+        .add("env", Json.fromJsonObject(appJson("env").get.asObject.get.add(SdkUninstallEnvvar, Json.fromString("true"))))
     })
     .onSuccess { _ =>
       marathonSdkJanitor.delete(op.appId, session)
-    }.map { response =>
+    }.flatMap { response =>
       response.status match {
-        case Status.Ok => MarathonAppDeleteSuccess
+        case Status.Ok =>
+          Future.value(UninstallDetails.from(op))
         case _ =>
           logger.error("Encountered error in marathon request {}", response.contentString)
           throw MarathonAppDeleteError(op.appId)
       }
-    }.flatMap( _ => Future.value(UninstallDetails.from(op)))
+    }
   }
 
   private def lookupFrameworkIds(

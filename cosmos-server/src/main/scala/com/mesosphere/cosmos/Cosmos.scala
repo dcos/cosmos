@@ -106,6 +106,7 @@ with Logging {
 
     val janitor = new MarathonSdkJanitor(adminRouter)
     janitor.start()
+    onExit(janitor.stop())
 
     val sourcesStorage = ZkRepositoryList(zkClient)
     onExit(sourcesStorage.close())

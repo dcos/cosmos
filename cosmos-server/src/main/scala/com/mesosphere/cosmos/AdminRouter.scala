@@ -20,8 +20,8 @@ class AdminRouter(
 
   def getApp(appId: AppId)(implicit session: RequestSession): Future[MarathonAppResponse] = marathon.getApp(appId)
 
-  def updateApp(appId: AppId)(f: JsonObject => JsonObject)(implicit session: RequestSession): Future[Response] =
-    marathon.updateApp(appId)(f: JsonObject => JsonObject)
+  def modifyApp(appId: AppId)(f: JsonObject => JsonObject)(implicit session: RequestSession): Future[Response] =
+    marathon.modifyApp(appId)(f: JsonObject => JsonObject)
 
   def listApps()(implicit session: RequestSession): Future[MarathonAppsResponse] = marathon.listApps()
 
@@ -37,4 +37,7 @@ class AdminRouter(
 
   def getDcosVersion()(implicit session: RequestSession): Future[DcosVersion] = adminRouterClient.getDcosVersion()
 
+  def getSdkServicePlanStatus(service: String, apiVersion: String, plan: String)
+                             (implicit session: RequestSession): Future[Response] =
+    adminRouterClient.getSdkServicePlanStatus(service, apiVersion, plan)
 }
