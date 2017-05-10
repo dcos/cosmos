@@ -33,7 +33,7 @@ class MarathonClient(
         }
       }
       .flatMap(json => Future.value(f(json)))
-      .flatMap(json => client(post("v2" / "apps" , Json.fromJsonObject(json))))
+      .flatMap(json => client(put("v2" / "apps" / appId.toUri , Json.fromJsonObject(json))))
   }
 
   def getAppOption(appId: AppId)(implicit session: RequestSession): Future[Option[MarathonAppResponse]] = {
