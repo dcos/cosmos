@@ -23,7 +23,7 @@ class MarathonClient(
     client(post("v2" / "apps" , Json.fromJsonObject(appJson)))
   }
 
-  def updateApp(appId: AppId, appJson: JsonObject)(implicit session: RequestSession): Future[Response] = {
+  def update(appId: AppId, appJson: JsonObject)(implicit session: RequestSession): Future[Response] = {
     client(put("v2" / "apps" / appId.toUri, Json.fromJsonObject(appJson)))
   }
 
