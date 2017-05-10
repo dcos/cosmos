@@ -408,7 +408,7 @@ object CosmosApp {
     requirement.fold[EndpointHandler[Req, Res]](new NotConfiguredHandler(operationName))(f)
   }
 
-  private def standardEndpoint[Req, Res](
+  def standardEndpoint[Req, Res](
     path: Endpoint[HNil],
     handler: EndpointHandler[Req, Res]
   )(implicit
