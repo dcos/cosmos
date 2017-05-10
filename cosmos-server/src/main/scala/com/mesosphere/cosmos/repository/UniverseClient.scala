@@ -133,7 +133,10 @@ final class DefaultUniverseClient(
               throw UnsupportedRedirect(List(repository.uri.scheme.get), loc)
             case x =>
               fetchScope.scope("status").counter(x.toString).incr()
-              throw GenericHttpError("GET", repository.uri, x)
+              /* If we are unable to get the latest Universe we should not forward the status code returned.
+               * We should instead return 500 to the client and include the actuall error in the message.
+               */
+              throw GenericHttpError("GET", repository.uri, 500, x)
           }
         } handle {
           case t: IOException => throw RepositoryUriConnection(repository, t)

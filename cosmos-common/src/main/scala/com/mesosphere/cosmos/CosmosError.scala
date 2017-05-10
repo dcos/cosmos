@@ -230,14 +230,19 @@ case class UnsupportedRedirect(supported: List[String], actual: Option[String] =
   }
 }
 
-case class GenericHttpError(method: HttpMethod, uri: Uri, override val status: Status) extends CosmosError {
+case class GenericHttpError(
+  method: HttpMethod,
+  uri: Uri,
+  clientStatus: Status,
+  override val status: Status
+) extends CosmosError {
   override val getData: Option[JsonObject] = {
     Some(
       JsonObject.fromMap(
         Map(
           "method" -> method.asJson,
           "uri" -> uri.asJson,
-          "status" -> status.asJson
+          "status" -> clientStatus.asJson
         )
       )
     )
@@ -245,8 +250,13 @@ case class GenericHttpError(method: HttpMethod, uri: Uri, override val status: S
 }
 
 object GenericHttpError {
-  def apply(method: String, uri: Uri, status: Int): GenericHttpError = {
-    new GenericHttpError(HttpMethod.valueOf(method.toUpperCase), uri, Status.fromCode(status))
+  def apply(method: String, uri: Uri, clientStatus: Int, status: Int): GenericHttpError = {
+    GenericHttpError(
+      HttpMethod.valueOf(method.toUpperCase),
+      uri,
+      Status.fromCode(clientStatus),
+      Status.fromCode(status)
+    )
   }
 }
 
