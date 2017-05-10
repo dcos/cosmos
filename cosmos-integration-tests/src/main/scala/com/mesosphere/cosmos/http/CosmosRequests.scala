@@ -143,6 +143,15 @@ object CosmosRequests {
     )
   }
 
+  def serviceDescribe(describeRequest: rpc.v1.model.ServiceDescribeRequest): HttpRequest = {
+    HttpRequest.post(
+      path = "service/describe",
+      body = describeRequest,
+      contentType =  rpc.MediaTypes.ServiceDescribeRequest,
+      accept = rpc.MediaTypes.ServiceDescribeResponse
+    )
+  }
+
   private def packageDescribe(
     describeRequest: rpc.v1.model.DescribeRequest,
     accept: MediaType

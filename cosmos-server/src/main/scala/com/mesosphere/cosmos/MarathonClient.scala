@@ -4,7 +4,9 @@ import _root_.io.circe.Json
 import _root_.io.circe.JsonObject
 import com.mesosphere.cosmos.http.RequestSession
 import com.mesosphere.cosmos.thirdparty.marathon.circe.Decoders._
-import com.mesosphere.cosmos.thirdparty.marathon.model.{AppId, MarathonAppResponse, MarathonAppsResponse}
+import com.mesosphere.cosmos.thirdparty.marathon.model.AppId
+import com.mesosphere.cosmos.thirdparty.marathon.model.MarathonAppResponse
+import com.mesosphere.cosmos.thirdparty.marathon.model.MarathonAppsResponse
 import com.netaporter.uri.Uri
 import com.netaporter.uri.dsl._
 import com.twitter.finagle.Service
@@ -19,6 +21,10 @@ class MarathonClient(
 
   def createApp(appJson: JsonObject)(implicit session: RequestSession): Future[Response] = {
     client(post("v2" / "apps" , Json.fromJsonObject(appJson)))
+  }
+
+  def update(appId: AppId, appJson: JsonObject)(implicit session: RequestSession): Future[Response] = {
+    client(put("v2" / "apps" / appId.toUri, Json.fromJsonObject(appJson)))
   }
 
   def getAppOption(appId: AppId)(implicit session: RequestSession): Future[Option[MarathonAppResponse]] = {

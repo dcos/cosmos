@@ -7,17 +7,15 @@ import com.mesosphere.cosmos.http.MediaTypeOps
 import com.mesosphere.cosmos.http.MediaTypes
 import com.mesosphere.cosmos.http.RequestSession
 import com.netaporter.uri.Uri
+import com.twitter.finagle.http.Fields
 import com.twitter.finagle.http.Request
 import com.twitter.finagle.http.RequestBuilder
 import com.twitter.finagle.http.RequestConfig.Yes
 import com.twitter.finagle.http.Response
-import com.twitter.finagle.http.Fields
 import com.twitter.finagle.http.Status
 import com.twitter.io.Buf
 import com.twitter.util.Future
 import org.jboss.netty.handler.codec.http.HttpMethod
-import scala.util.Left
-import scala.util.Right
 
 abstract class ServiceClient(baseUri: Uri) {
 
@@ -35,6 +33,13 @@ abstract class ServiceClient(baseUri: Uri) {
       .setHeader(Fields.Accept, MediaTypes.applicationJson.show)
       .setHeader(Fields.ContentType, MediaTypes.applicationJson.show)
       .buildPost(Buf.Utf8(jsonBody.noSpaces))
+  }
+
+  protected def put(uri: Uri, jsonBody: Json)(implicit session: RequestSession): Request = {
+    baseRequestBuilder(uri)
+      .setHeader(Fields.Accept, MediaTypes.applicationJson.show)
+      .setHeader(Fields.ContentType, MediaTypes.applicationJson.show)
+      .buildPut(Buf.Utf8(jsonBody.noSpaces))
   }
 
   protected def postForm(uri: Uri, postBody: String)(implicit session: RequestSession): Request = {
