@@ -2,7 +2,8 @@ package com.mesosphere.cosmos
 
 import _root_.io.circe.Json
 import _root_.io.circe.JsonObject
-import _root_.io.circe.parser._
+import _root_.io.circe.optics.JsonPath._
+import com.mesosphere.cosmos.circe.Decoders
 import com.mesosphere.cosmos.http.RequestSession
 import com.mesosphere.cosmos.thirdparty.marathon.circe.Decoders._
 import com.mesosphere.cosmos.thirdparty.marathon.model.{AppId, MarathonAppResponse, MarathonAppsResponse}
@@ -22,20 +23,17 @@ class MarathonClient(
     client(post("v2" / "apps" , Json.fromJsonObject(appJson)))
   }
 
-  def updateApp(appId: AppId, appJson: JsonObject)(implicit session: RequestSession): Future[Response] = {
-    client(put("v2" / "apps" / appId.toUri, Json.fromJsonObject(appJson)))
-  }
-
-  def getRawApp(appId: AppId)(implicit session: RequestSession): Future[JsonObject] = {
+  def updateApp(appId: AppId)(f: JsonObject => JsonObject)(implicit session: RequestSession): Future[Response] = {
     client(get("v2" / "apps" / appId.toUri)).map(response => response.contentString)
       .flatMap { content =>
-        parse(content) match {
-          case Left(failure) => throw failure
-          case Right(json) =>
-            val app = json.asObject.get.apply("app").get.asObject.get
-            Future.value(app)
+        val _app = root.app.obj
+        _app.getOption(Decoders.parse(content)) match {
+          case Some(json) => Future.value(json)
+          case None => Future.exception(new Exception("Unable to parse app out of raw Marathon JSON"))
         }
       }
+      .flatMap(json => Future.value(f(json)))
+      .flatMap(json => client(post("v2" / "apps" , Json.fromJsonObject(json))))
   }
 
   def getAppOption(appId: AppId)(implicit session: RequestSession): Future[Option[MarathonAppResponse]] = {

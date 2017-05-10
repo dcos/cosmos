@@ -15,16 +15,13 @@ object Deps {
   )
 
   // APLv2.0
-  val circeCore = Seq(
+  val circe = Seq(
     "io.circe" %% "circe-core" % V.circe,
-    "io.circe" %% "circe-testing" % V.circe
-  )
-
-  // APLv2.0
-  val circe = circeCore ++ Seq(
+    "io.circe" %% "circe-testing" % V.circe,
     "io.circe" %% "circe-generic" % V.circe,
     "io.circe" %% "circe-jawn" % V.circe,
-    "io.circe" %% "circe-parser" % V.circe
+    "io.circe" %% "circe-parser" % V.circe,
+    "io.circe" %% "circe-optics" % V.circe
   )
 
   // APLv2.0

@@ -20,9 +20,8 @@ class AdminRouter(
 
   def getApp(appId: AppId)(implicit session: RequestSession): Future[MarathonAppResponse] = marathon.getApp(appId)
 
-  def getRawApp(appId: AppId)(implicit session: RequestSession): Future[JsonObject] = marathon.getRawApp(appId)
-
-  def updateApp(appId: AppId, appJson: JsonObject)(implicit session: RequestSession): Future[Response] = marathon.updateApp(appId, appJson)
+  def updateApp(appId: AppId)(f: JsonObject => JsonObject)(implicit session: RequestSession): Future[Response] =
+    marathon.updateApp(appId)(f: JsonObject => JsonObject)
 
   def listApps()(implicit session: RequestSession): Future[MarathonAppsResponse] = marathon.listApps()
 

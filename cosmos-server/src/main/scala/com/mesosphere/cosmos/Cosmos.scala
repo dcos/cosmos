@@ -104,6 +104,9 @@ with Logging {
     val zkClient = zookeeper.Clients.createAndInitialize(zkUri)
     onExit(zkClient.close())
 
+    val janitor = new MarathonSdkJanitor(adminRouter)
+    janitor.start()
+
     val sourcesStorage = ZkRepositoryList(zkClient)
     onExit(sourcesStorage.close())
 
@@ -125,7 +128,8 @@ with Logging {
       objectStorages,
       repositories,
       installQueue,
-      packageRunner
+      packageRunner,
+      janitor
     )
   }
 
@@ -133,11 +137,8 @@ with Logging {
   protected final def buildEndpoints(components: Components): Endpoint[Json] = {
     import components._
 
-    val janitor = new MarathonSDKJanitor(adminRouter)
-    janitor.start()
-
     val packageInstallHandler = new PackageInstallHandler(repositories, packageRunner)
-    val packageUninstallHandler = new UninstallHandler(adminRouter, repositories, janitor)
+    val packageUninstallHandler = new UninstallHandler(adminRouter, repositories, marathonSdkJanitor)
     val packageDescribeHandler = new PackageDescribeHandler(repositories)
     val packageRenderHandler = new PackageRenderHandler(repositories)
     val packageListVersionsHandler = new ListVersionsHandler(repositories)
@@ -402,7 +403,8 @@ object CosmosApp {
     val objectStorages: Option[(LocalPackageCollection, StagedPackageStorage)],
     val repositories: MultiRepository,
     val producerView: ProducerView,
-    val packageRunner: PackageRunner
+    val packageRunner: PackageRunner,
+    val marathonSdkJanitor: MarathonSdkJanitor
   )
 
   private def enableIfSome[A, Req, Res](requirement: Option[A], operationName: String)(
