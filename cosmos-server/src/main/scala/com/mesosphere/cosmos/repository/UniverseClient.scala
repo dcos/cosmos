@@ -121,7 +121,9 @@ final class DefaultUniverseClient(
           conn.getResponseCode match {
             case HttpURLConnection.HTTP_OK =>
               fetchScope.scope("status").counter("200").incr()
-              val contentType = parseContentType(Option(conn.getHeaderField(Fields.ContentType))).get
+              val contentType = parseContentType(
+                Option(conn.getHeaderField(Fields.ContentType))
+              ).get
               val contentEncoding = Option(conn.getHeaderField(Fields.ContentEncoding))
               (contentType, contentEncoding)
             case x @ (HttpURLConnection.HTTP_MOVED_PERM |
@@ -136,7 +138,7 @@ final class DefaultUniverseClient(
             case x =>
               fetchScope.scope("status").counter(x.toString).incr()
               /* If we are unable to get the latest Universe we should not forward the status code returned.
-               * We should instead return 500 to the client and include the actuall error in the message.
+               * We should instead return 500 to the client and include the actual error in the message.
                */
               throw GenericHttpError(
                 HttpMethod.GET,
