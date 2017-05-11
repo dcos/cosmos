@@ -518,8 +518,7 @@ case class ConversionFromPackageToV2DescribeResponse(
 }
 
 case class OptionsNotStored(
-  msg: String = "The service being updated does not have the user provided " +
-    "options stored. Please retry with options set"
+  msg: String
 ) extends CosmosError {
   override val getData: Option[JsonObject] = {
     Some(JsonObject.singleton("msg", msg.asJson))
@@ -527,7 +526,7 @@ case class OptionsNotStored(
 }
 
 case class AppIdChanged(
-  msg: String = "During a service update the app ID must not change"
+  msg: String
 ) extends CosmosError {
   override val getData: Option[JsonObject] = {
     Some(JsonObject.singleton("msg", msg.asJson))
@@ -535,8 +534,7 @@ case class AppIdChanged(
 }
 
 case class OptionsConflict(
-  msg: String = "Some of the stored options do not apply" +
-    " to the new package version. Please retry with options set"
+  msg: String
 ) extends CosmosError {
   override val getData: Option[JsonObject] = {
     Some(JsonObject.singleton("msg", msg.asJson))
@@ -544,7 +542,7 @@ case class OptionsConflict(
 }
 
 case class BadVersionUpdate(
-  msg: String = "This service does not update to the requested version"
+  msg: String
 ) extends CosmosError {
   override val getData: Option[JsonObject] = {
     Some(JsonObject.singleton("msg", msg.asJson))
