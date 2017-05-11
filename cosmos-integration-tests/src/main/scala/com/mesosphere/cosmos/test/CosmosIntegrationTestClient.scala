@@ -10,7 +10,6 @@ import com.mesosphere.cosmos.Trys
 import com.mesosphere.cosmos.Uris
 import com.mesosphere.cosmos.dcosUri
 import com.mesosphere.cosmos.http.Authorization
-import com.mesosphere.cosmos.http.CosmosRequests
 import com.mesosphere.cosmos.http.HttpRequest
 import com.mesosphere.cosmos.http.RequestSession
 import com.mesosphere.cosmos.model.ZooKeeperUri
@@ -21,6 +20,7 @@ import com.netaporter.uri.dsl._
 import com.twitter.conversions.storage._
 import com.twitter.finagle.Service
 import com.twitter.finagle.SimpleFilter
+import com.twitter.finagle.http.Status
 import com.twitter.finagle.http._
 import com.twitter.util.Await
 import com.twitter.util.Future
