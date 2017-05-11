@@ -141,8 +141,8 @@ final class DefaultUniverseClient(
               throw GenericHttpError(
                 HttpMethod.GET,
                 repository.uri,
-                Status.InternalServerError,
-                Status.fromCode(x)
+                Status.fromCode(x),
+                Status.InternalServerError
               )
           }
         } handle {
