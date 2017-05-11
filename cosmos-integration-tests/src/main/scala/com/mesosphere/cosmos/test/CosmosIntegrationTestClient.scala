@@ -180,7 +180,6 @@ object CosmosIntegrationTestClient extends Matchers {
       val response = Await.result {
         adminRouter.listDeployments()
       }
-      assert(response.status == Status.Ok || response.status == Status.Conflict)
       response.status == Status.Ok &&
         parse(response.contentString).toOption.flatMap(_.asArray).get.isEmpty
     }.dropWhile(done => !done).nonEmpty
