@@ -42,4 +42,6 @@ class AdminRouter(
   def getSdkServicePlanStatus(service: String, apiVersion: String, plan: String)
                              (implicit session: RequestSession): Future[Response] =
     adminRouterClient.getSdkServicePlanStatus(service, apiVersion, plan)
+
+  def listDeployments()(implicit session: RequestSession): Future[Response] = marathon.listDeployments()
 }
