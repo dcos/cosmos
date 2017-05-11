@@ -4,7 +4,6 @@ import com.mesosphere.cosmos.AdminRouter
 import com.mesosphere.cosmos.AmbiguousAppId
 import com.mesosphere.cosmos.IncompleteUninstall
 import com.mesosphere.cosmos.MarathonAppDeleteError
-import com.mesosphere.cosmos.MarathonSdkJanitor
 import com.mesosphere.cosmos.MultipleFrameworkIds
 import com.mesosphere.cosmos.PackageNotInstalled
 import com.mesosphere.cosmos.ServiceUnavailable
@@ -12,6 +11,7 @@ import com.mesosphere.cosmos.UninstallNonExistentAppForPackage
 import com.mesosphere.cosmos.handler.UninstallHandler._
 import com.mesosphere.cosmos.finch.EndpointHandler
 import com.mesosphere.cosmos.http.RequestSession
+import com.mesosphere.cosmos.janitor.SdkJanitor
 import com.mesosphere.cosmos.repository.PackageCollection
 import com.mesosphere.cosmos.rpc
 import com.mesosphere.cosmos.thirdparty.marathon.model.AppId
@@ -23,13 +23,12 @@ import com.twitter.bijection.Conversion.asMethod
 import com.twitter.finagle.http.Status
 import com.twitter.util.Future
 import io.circe.Json
-import io.circe.JsonObject
 import org.slf4j.Logger
 
 private[cosmos] final class UninstallHandler(
   adminRouter: AdminRouter,
   packageCache: PackageCollection,
-  marathonSdkJanitor: MarathonSdkJanitor
+  sdkJanitor: SdkJanitor
 ) extends EndpointHandler[rpc.v1.model.UninstallRequest, rpc.v1.model.UninstallResponse] {
   lazy val logger: Logger = org.slf4j.LoggerFactory.getLogger(getClass)
 
@@ -119,7 +118,7 @@ private[cosmos] final class UninstallHandler(
         .add("env", Json.fromJsonObject(appJson("env").get.asObject.get.add(SdkUninstallEnvvar, Json.fromString("true"))))
     })
     .onSuccess { _ =>
-      marathonSdkJanitor.delete(op.appId, session)
+      sdkJanitor.delete(op.appId, session)
     }.flatMap { response =>
       response.status match {
         case Status.Ok =>

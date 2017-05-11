@@ -25,6 +25,7 @@ import com.mesosphere.cosmos.handler.PackageSearchHandler
 import com.mesosphere.cosmos.handler.ServiceDescribeHandler
 import com.mesosphere.cosmos.handler.ServiceStartHandler
 import com.mesosphere.cosmos.handler.UninstallHandler
+import com.mesosphere.cosmos.janitor.SdkJanitor
 import com.mesosphere.cosmos.repository.DefaultInstaller
 import com.mesosphere.cosmos.repository.DefaultUniverseInstaller
 import com.mesosphere.cosmos.repository.LocalPackageCollection
@@ -68,6 +69,7 @@ import com.twitter.util.Await
 import com.twitter.util.Try
 import org.apache.curator.framework.CuratorFramework
 import org.slf4j.Logger
+
 import scala.concurrent.duration._
 import scala.language.implicitConversions
 import shapeless.:+:
@@ -104,7 +106,7 @@ with Logging {
     val zkClient = zookeeper.Clients.createAndInitialize(zkUri)
     onExit(zkClient.close())
 
-    val janitor = new MarathonSdkJanitor(adminRouter)
+    val janitor = SdkJanitor.initializeJanitor(zkClient, adminRouter)
     janitor.start()
     onExit(janitor.stop())
 
@@ -405,7 +407,7 @@ object CosmosApp {
     val repositories: MultiRepository,
     val producerView: ProducerView,
     val packageRunner: PackageRunner,
-    val marathonSdkJanitor: MarathonSdkJanitor
+    val marathonSdkJanitor: SdkJanitor
   )
 
   private def enableIfSome[A, Req, Res](requirement: Option[A], operationName: String)(
