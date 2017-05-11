@@ -10,7 +10,6 @@ import com.mesosphere.cosmos.Trys
 import com.mesosphere.cosmos.Uris
 import com.mesosphere.cosmos.dcosUri
 import com.mesosphere.cosmos.http.Authorization
-import cats.syntax.either._
 import com.mesosphere.cosmos.http.HttpRequest
 import com.mesosphere.cosmos.http.RequestSession
 import com.mesosphere.cosmos.model.ZooKeeperUri
@@ -32,7 +31,6 @@ import java.util.concurrent.atomic.AtomicInteger
 import org.scalatest.Matchers
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
-import scala.concurrent.duration._
 import scala.util.Either
 import scala.util.Left
 import scala.util.Right
@@ -172,17 +170,6 @@ object CosmosIntegrationTestClient extends Matchers {
       ObjectStorageUri.parse(getClientProperty("PackageStorageClient", "stagedUri")).get()
     }
 
-  }
-
-  def waitForDeployment(adminRouter: AdminRouter)(attempts: Int): Boolean = {
-    Stream.tabulate(attempts) { _ =>
-      Thread.sleep(1.second.toMillis)
-      val response = Await.result {
-        adminRouter.listDeployments()
-      }
-      response.status == Status.Ok &&
-        parse(response.contentString).toOption.flatMap(_.asArray).get.isEmpty
-    }.dropWhile(done => !done).nonEmpty
   }
 
   private[this] def getClientProperty(clientName: String, key: String): String = {
