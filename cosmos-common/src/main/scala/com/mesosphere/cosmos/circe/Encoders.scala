@@ -309,6 +309,11 @@ object Encoders {
       case InvalidPackage(underlying) => underlying.getMessage
       case ConversionFromPackageToV1AddResponse(msg) => msg
       case ConversionFromPackageToV2DescribeResponse(msg) => msg
+      case OptionsNotStored(msg) => msg
+      case AppIdChanged(msg) => msg
+      case OptionsConflict(msg) => msg
+      case BadVersionUpdate(msg) => msg
+      case ServiceUpdateError(msg) => msg
     }
   }
   // scalastyle:on cyclomatic.complexity method.length
