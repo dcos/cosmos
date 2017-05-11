@@ -249,17 +249,6 @@ case class GenericHttpError(
   }
 }
 
-object GenericHttpError {
-  def apply(method: String, uri: Uri, clientStatus: Int, status: Int): GenericHttpError = {
-    GenericHttpError(
-      HttpMethod.valueOf(method.toUpperCase),
-      uri,
-      Status.fromCode(clientStatus),
-      Status.fromCode(status)
-    )
-  }
-}
-
 case class AmbiguousAppId(packageName: String, appIds: List[AppId]) extends CosmosError {
   override val getData: Option[JsonObject] = {
     Some(

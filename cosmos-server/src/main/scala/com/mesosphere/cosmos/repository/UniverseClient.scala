@@ -28,6 +28,7 @@ import com.mesosphere.universe.v2.circe.Decoders._
 import com.netaporter.uri.Uri
 import com.twitter.bijection.Conversion.asMethod
 import com.twitter.finagle.http.Fields
+import com.twitter.finagle.http.Status
 import com.twitter.finagle.stats.NullStatsReceiver
 import com.twitter.finagle.stats.Stat
 import com.twitter.finagle.stats.StatsReceiver
@@ -51,6 +52,7 @@ import java.nio.file.Path
 import java.nio.file.Paths
 import java.util.zip.GZIPInputStream
 import java.util.zip.ZipInputStream
+import org.jboss.netty.handler.codec.http.HttpMethod
 import scala.collection.JavaConverters._
 import scala.io.Source
 import scala.util.Failure
@@ -136,7 +138,12 @@ final class DefaultUniverseClient(
               /* If we are unable to get the latest Universe we should not forward the status code returned.
                * We should instead return 500 to the client and include the actuall error in the message.
                */
-              throw GenericHttpError("GET", repository.uri, 500, x)
+              throw GenericHttpError(
+                HttpMethod.GET,
+                repository.uri,
+                Status.InternalServerError,
+                Status.fromCode(x)
+              )
           }
         } handle {
           case t: IOException => throw RepositoryUriConnection(repository, t)
