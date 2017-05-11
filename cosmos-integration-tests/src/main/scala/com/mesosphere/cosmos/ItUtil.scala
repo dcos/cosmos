@@ -1,12 +1,17 @@
 package com.mesosphere.cosmos
 
 import _root_.io.circe.JsonObject
+import _root_.io.circe.jawn.parse
+import cats.syntax.either._
 import com.mesosphere.cosmos.http.CosmosRequests
 import com.mesosphere.cosmos.repository.DefaultRepositories
 import com.mesosphere.cosmos.rpc.v1.circe.Decoders._
 import com.mesosphere.cosmos.test.CosmosIntegrationTestClient.CosmosClient
 import com.mesosphere.cosmos.thirdparty.marathon.model.AppId
 import com.mesosphere.universe
+import com.twitter.finagle.http.Status
+import com.twitter.util.Await
+import scala.concurrent.duration._
 
 object ItUtil {
 
@@ -79,6 +84,18 @@ object ItUtil {
         )
       )
     )
+  }
+
+  def waitForDeployment(adminRouter: AdminRouter)(attempts: Int): Boolean = {
+    Stream.tabulate(attempts) { _ =>
+      Thread.sleep(1.second.toMillis)
+      val response = Await.result {
+        adminRouter.listDeployments()
+      }
+      assert(response.status == Status.Ok || response.status == Status.Conflict)
+      response.status == Status.Ok &&
+        parse(response.contentString).toOption.flatMap(_.asArray).get.isEmpty
+    }.dropWhile(done => !done).nonEmpty
   }
 
 }
