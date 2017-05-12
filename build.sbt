@@ -91,13 +91,13 @@ lazy val integrationTests = project.in(file("cosmos-integration-tests"))
       Tests.discover(frameworkMap.values.toList, analysis, s.log)._1
     },
     testGrouping in IntegrationTest := {
-      (definedTests in IntegrationTest).value.map { test =>
+      List(
         Tests.Group(
-          test.name,
-          List(test),
+          "Integration tests",
+          (definedTests in IntegrationTest).value,
           Tests.InProcess
         )
-      }
+      )
     }
   )
   .dependsOn(
