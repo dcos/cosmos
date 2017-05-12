@@ -28,6 +28,7 @@ import com.twitter.util.Future
 import java.nio.charset.StandardCharsets
 import java.util.Base64
 import java.util.UUID
+import org.scalatest.AppendedClues._
 import org.scalatest.Assertion
 import org.scalatest.BeforeAndAfterAll
 import org.scalatest.FreeSpec
@@ -243,10 +244,15 @@ final class PackageInstallIntegrationSpec extends FreeSpec with BeforeAndAfterAl
       case Anything => // Don't care
     }
 
+    val attempts: Int = 60
+    ItUtil.waitForDeployment(CosmosIntegrationTestClient.adminRouter)(attempts)
+
     val request = CosmosRequests.packageInstallV1(installRequest)
     val response = CosmosClient.submit(request)
 
-    assertResult(expectedResult.status)(response.status)
+
+    assertResult(expectedResult.status)(response.status).withClue(
+      response.contentString)
     expectedResult match {
       case InstallSuccess(expectedBody) =>
         val Right(actualBody) = decode[InstallResponse](response.contentString)

@@ -98,13 +98,13 @@ class ServiceDescribeSpec
 
         install.appId shouldBe appId
 
-        When("the user makes a request to the service/describe endpoint")
-        val response = serviceDescribe(appId.toString)
-        response.status shouldBe Status.Ok withClue response.contentString
-        response.contentType shouldBe Some(accept)
-        val Right(content) = parse(response.contentString)
-
         try {
+          When("the user makes a request to the service/describe endpoint")
+          val response = serviceDescribe(appId.toString)
+          response.status shouldBe Status.Ok withClue response.contentString
+          response.contentType shouldBe Some(accept)
+          val Right(content) = parse(response.contentString)
+
           // the actual test
           testCode(
             content,
