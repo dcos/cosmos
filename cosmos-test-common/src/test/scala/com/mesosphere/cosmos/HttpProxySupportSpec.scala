@@ -125,20 +125,47 @@ final class HttpProxySupportSpec extends FreeSpec with BeforeAndAfter with Prope
 
         "translates env var into a property value" - {
 
-          "should allow excluded hosts to be separated by ','" in {
-            forAll (Gen.listOf(genNoProxyHost)) { hosts =>
-              assertResult(renderProperty(hosts)) {
-                HttpProxySupport.translateNoProxy(renderEnvVar(hosts, ','))
+          "single cases" - {
+
+            "single host" in {
+              assertResult("something") {
+                HttpProxySupport.translateNoProxy("something")
               }
             }
+
+            "traditional no_proxy value" in {
+              assertResult("127.0.0.1|*.example.com|localhost") {
+                HttpProxySupport.translateNoProxy("127.0.0.1,.example.com,localhost")
+              }
+            }
+
+            "JVM http.nonProxyHosts value" in {
+              val unchangedValue = "127.0.0.1|*.example.com|localhost"
+              assertResult(unchangedValue) {
+                HttpProxySupport.translateNoProxy(unchangedValue)
+              }
+            }
+
           }
 
-          "should allow excluded hosts to be separated by '|'" in {
-            forAll (Gen.listOf(genNoProxyHost)) { hosts =>
-              assertResult(renderProperty(hosts)) {
-                HttpProxySupport.translateNoProxy(renderEnvVar(hosts, '|'))
+          "exhaustive checks" - {
+
+            "should allow excluded hosts to be separated by ','" in {
+              forAll (Gen.listOf(genNoProxyHost)) { hosts =>
+                assertResult(renderProperty(hosts)) {
+                  HttpProxySupport.translateNoProxy(renderEnvVar(hosts, ','))
+                }
               }
             }
+
+            "should allow excluded hosts to be separated by '|'" in {
+              forAll (Gen.listOf(genNoProxyHost)) { hosts =>
+                assertResult(renderProperty(hosts)) {
+                  HttpProxySupport.translateNoProxy(renderEnvVar(hosts, '|'))
+                }
+              }
+            }
+
           }
 
         }
@@ -309,7 +336,7 @@ object HttpProxySupportSpec {
           case ImplicitWildcard => "."
         }
 
-        prefix + host.elements.mkString(".")
+        host.elements.mkString(prefix, ".", "")
       }
       .mkString(delimiter.toString)
   }
@@ -322,7 +349,7 @@ object HttpProxySupportSpec {
           case _ => "*."
         }
 
-        prefix + host.elements.mkString(".")
+        host.elements.mkString(prefix, ".", "")
       }
       .mkString("|")
   }

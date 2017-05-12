@@ -124,10 +124,9 @@ private[cosmos] object HttpProxySupport {
       noProxy.map(np => (HttpProxyNoHosts, translateNoProxy(np)))
   }
 
-  private[cosmos] def parseHostPortProperties(
-    hostProperty: String,
-    portProperty: String
-  )(proxyUri: Uri): List[(String, String)] = {
+  def parseHostPortProperties(hostProperty: String, portProperty: String)(
+    proxyUri: Uri
+  ): List[(String, String)] = {
     Uris.extractHostAndPort(proxyUri)
       .toOption
       .toList
@@ -140,7 +139,7 @@ private[cosmos] object HttpProxySupport {
    * Normalizes the input into the format required by the `http.nonProxyHosts` system property.
    * @see https://docs.oracle.com/javase/8/docs/api/java/net/doc-files/net-properties.html#Proxies
    */
-  private[cosmos] def translateNoProxy(noProxy: String): String = {
+  def translateNoProxy(noProxy: String): String = {
     noProxy
       .split(Array(',', '|'))
       .map(suffix => if (suffix.startsWith(".")) "*" + suffix else suffix)
