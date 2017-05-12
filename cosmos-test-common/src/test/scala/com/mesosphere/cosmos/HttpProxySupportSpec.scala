@@ -7,10 +7,12 @@ import java.net.Authenticator
 import java.net.Authenticator.RequestorType
 import java.net.URI
 import java.net.URL
+import org.scalacheck.Gen
 import org.scalatest.BeforeAndAfter
 import org.scalatest.FreeSpec
+import org.scalatest.prop.PropertyChecks
 
-final class HttpProxySupportSpec extends FreeSpec with BeforeAndAfter {
+final class HttpProxySupportSpec extends FreeSpec with BeforeAndAfter with PropertyChecks {
 
   import HttpProxySupportSpec._
 
@@ -121,29 +123,21 @@ final class HttpProxySupportSpec extends FreeSpec with BeforeAndAfter {
 
       "No Proxy" - {
 
-        "translates property values" - {
-
-          "single explicit domain" in {
-            assertResult("something") {
-              HttpProxySupport.translateNoProxy("something")
-            }
-          }
+        "translates env var into a property value" - {
 
           "should allow excluded hosts to be separated by ','" in {
-            assertResult("127.0.0.1|localhost") {
-              HttpProxySupport.translateNoProxy("127.0.0.1,localhost")
+            forAll (Gen.listOf(genNoProxyHost)) { hosts =>
+              assertResult(renderProperty(hosts)) {
+                HttpProxySupport.translateNoProxy(renderEnvVar(hosts, ','))
+              }
             }
           }
 
           "should allow excluded hosts to be separated by '|'" in {
-            assertResult("127.0.0.1|localhost") {
-              HttpProxySupport.translateNoProxy("127.0.0.1|localhost")
-            }
-          }
-
-          "should add wildcard in front of '.'-delimited domain suffixes" in {
-            assertResult("*.mesos|*.example.com") {
-              HttpProxySupport.translateNoProxy(".mesos,.example.com")
+            forAll (Gen.listOf(genNoProxyHost)) { hosts =>
+              assertResult(renderProperty(hosts)) {
+                HttpProxySupport.translateNoProxy(renderEnvVar(hosts, '|'))
+              }
             }
           }
 
@@ -296,5 +290,48 @@ object HttpProxySupportSpec {
   val HttpsHost: String = "https.proxyHost"
   val HttpsPort: String = "https.proxyPort"
   val NonHosts: String = "http.nonProxyHosts"
+
+  val genHostWildcard: Gen[HostWildcard] = Gen.oneOf(NoWildcard, ExplicitWildcard, ImplicitWildcard)
+
+  val genNoProxyHost: Gen[NoProxyHost] = {
+    for {
+      elements <- Gen.nonEmptyListOf(Gen.nonEmptyBuildableOf[String, Char](Gen.alphaLowerChar))
+      wildcard <- genHostWildcard
+    } yield NoProxyHost(elements, wildcard)
+  }
+
+  def renderEnvVar(hosts: List[NoProxyHost], delimiter: Char): String = {
+    hosts
+      .map { host =>
+        val prefix = host.wildcard match {
+          case NoWildcard => ""
+          case ExplicitWildcard => "*."
+          case ImplicitWildcard => "."
+        }
+
+        prefix + host.elements.mkString(".")
+      }
+      .mkString(delimiter.toString)
+  }
+
+  def renderProperty(hosts: List[NoProxyHost]): String = {
+    hosts
+      .map { host =>
+        val prefix = host.wildcard match {
+          case NoWildcard => ""
+          case _ => "*."
+        }
+
+        prefix + host.elements.mkString(".")
+      }
+      .mkString("|")
+  }
+
+  sealed trait HostWildcard
+  case object NoWildcard extends HostWildcard
+  case object ExplicitWildcard extends HostWildcard
+  case object ImplicitWildcard extends HostWildcard
+
+  case class NoProxyHost(elements: List[String], wildcard: HostWildcard)
 
 }

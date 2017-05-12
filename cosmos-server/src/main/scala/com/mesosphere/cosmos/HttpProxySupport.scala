@@ -136,9 +136,13 @@ private[cosmos] object HttpProxySupport {
       }
   }
 
+  /**
+   * Normalizes the input into the format required by the `http.nonProxyHosts` system property.
+   * @see https://docs.oracle.com/javase/8/docs/api/java/net/doc-files/net-properties.html#Proxies
+   */
   private[cosmos] def translateNoProxy(noProxy: String): String = {
     noProxy
-      .split(',')
+      .split(Array(',', '|'))
       .map(suffix => if (suffix.startsWith(".")) "*" + suffix else suffix)
       .mkString("|")
   }
