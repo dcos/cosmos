@@ -516,4 +516,45 @@ case class ConversionFromPackageToV2DescribeResponse(
     Some(JsonObject.singleton("msg", msg.asJson))
   }
 }
+
+case class OptionsNotStored(
+  msg: String
+) extends CosmosError {
+  override val getData: Option[JsonObject] = {
+    Some(JsonObject.singleton("msg", msg.asJson))
+  }
+}
+
+case class AppIdChanged(
+  msg: String
+) extends CosmosError {
+  override val getData: Option[JsonObject] = {
+    Some(JsonObject.singleton("msg", msg.asJson))
+  }
+}
+
+case class OptionsConflict(
+  msg: String
+) extends CosmosError {
+  override val getData: Option[JsonObject] = {
+    Some(JsonObject.singleton("msg", msg.asJson))
+  }
+}
+
+case class BadVersionUpdate(
+  msg: String
+) extends CosmosError {
+  override val getData: Option[JsonObject] = {
+    Some(JsonObject.singleton("msg", msg.asJson))
+  }
+}
+
+case class ServiceUpdateError(
+  msg: String
+) extends CosmosError {
+  override val getData: Option[JsonObject] = {
+    Some(JsonObject.singleton("msg", msg.asJson))
+  }
+}
+
 // scalastyle:on number.of.types
