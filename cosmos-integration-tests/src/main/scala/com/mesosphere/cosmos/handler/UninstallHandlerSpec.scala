@@ -10,7 +10,6 @@ import com.mesosphere.cosmos.rpc.v1.model.UninstallResponse
 import com.mesosphere.cosmos.test.CosmosIntegrationTestClient
 import com.mesosphere.cosmos.test.CosmosIntegrationTestClient.CosmosClient
 import com.mesosphere.cosmos.thirdparty.marathon.model.AppId
-import com.mesosphere.universe.v2.model.PackageDetails
 import com.mesosphere.universe.v2.model.PackageDetailsVersion
 import com.netaporter.uri.dsl._
 import com.twitter.finagle.http.Response
@@ -19,10 +18,19 @@ import com.twitter.finagle.http.Status
 import com.twitter.util.Await
 import io.circe.jawn._
 import java.util.UUID
+
+import com.mesosphere.cosmos.MarathonAppNotFound
+import com.mesosphere.cosmos.rpc.v1.model.PackageRepositoryAddRequest
+import com.mesosphere.cosmos.rpc.v1.model.PackageRepositoryAddResponse
+import com.netaporter.uri.Uri
+import com.twitter.io.Buf
 import org.scalatest.FreeSpec
+import org.scalatest.concurrent.Eventually
+import org.scalatest.time.SpanSugar
+
 import scala.util.Right
 
-final class UninstallHandlerSpec extends FreeSpec {
+final class UninstallHandlerSpec extends FreeSpec with Eventually with SpanSugar {
 
   import CosmosIntegrationTestClient._
   import UninstallHandlerSpec._
@@ -94,6 +102,33 @@ final class UninstallHandlerSpec extends FreeSpec {
       val cleanupRequest = UninstallRequest("helloworld", appId = None, all = Some(true))
       val cleanupResponse = submitUninstallRequest(cleanupRequest)
       assertResult(Status.Ok)(cleanupResponse.status)
+    }
+
+    "be able to uninstall SDK packages that support SDK uninstall" in {
+      // Add stub universe for service that supports uninstall.
+      val request = CosmosRequests.packageRepositoryAdd(PackageRepositoryAddRequest("uninstall-test",
+        Uri.parse("https://infinity-artifacts.s3.amazonaws.com/autodelete7d/hello-world/20170511-021834-SYUTRVh81sxb1HAY/stub-universe-hello-world.zip"),
+        index = Some(0)))
+      val _ = CosmosClient.callEndpoint[PackageRepositoryAddResponse](request)
+
+      val installRequest = InstallRequest("hello-world")
+      val installResponse = submitInstallRequest(installRequest)
+      assertResult(Status.Ok)(installResponse.status)
+
+      // Wait for the service to deploy.
+      eventually (timeout(5 minutes), interval(30 seconds)) {
+        assertResult(Status.Ok)(Await.result(adminRouter.getSdkServicePlanStatus("hello-world", "v1", "deploy")).status)
+      }
+
+      val uninstallRequest = UninstallRequest("hello-world", appId = None, Some(false))
+      val uninstallResponse = submitUninstallRequest(uninstallRequest)
+      assertResult(Status.Ok)(uninstallResponse.status)
+      assertResult(MediaTypes.UninstallResponse.show)(uninstallResponse.headerMap(Fields.ContentType))
+
+      // Wait for the service to be deleted.
+      eventually (timeout(5 minutes), interval(30 seconds)) {
+        assertThrows[MarathonAppNotFound](Await.result(adminRouter.getApp(AppId("/hello-world"))))
+      }
     }
   }
 
