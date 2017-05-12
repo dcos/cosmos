@@ -141,6 +141,12 @@ final class HttpProxySupportSpec extends FreeSpec with BeforeAndAfter {
             }
           }
 
+          "should add wildcard in front of '.'-delimited domain suffixes" in {
+            assertResult("*.mesos|*.example.com") {
+              HttpProxySupport.translateNoProxy(".mesos,.example.com")
+            }
+          }
+
         }
 
         "respects http.nonProxyHosts" in {

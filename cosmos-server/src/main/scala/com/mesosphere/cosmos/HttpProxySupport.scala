@@ -137,7 +137,10 @@ private[cosmos] object HttpProxySupport {
   }
 
   private[cosmos] def translateNoProxy(noProxy: String): String = {
-    noProxy.replaceAllLiterally(",", "|")
+    noProxy
+      .split(',')
+      .map(suffix => if (suffix.startsWith(".")) "*" + suffix else suffix)
+      .mkString("|")
   }
 
   private[this] def setPropertyIfUnset(key: String, value: String): Unit = {
