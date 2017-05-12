@@ -1,16 +1,24 @@
-# Cosmos [![In Progress](https://badge.waffle.io/dcos/cosmos.png?label=in+progress&title=In+Progress)](https://waffle.io/dcos/cosmos)
+# DC/OS Package Manager (Cosmos)
 
-An [orderly, harmonius, complete](http://www.thefreedictionary.com/cosmos) API for DC/OS services.
+Provides an API for the [orderly, harmonious, and complete](http://www.thefreedictionary.com/cosmos)
+management of DC/OS service packages.
 
 ## Running tests
+
+### Scala style checks
+This project enforces certain scalastyle rules. To run those check against the code run:
+
+```bash
+sbt scalastyle test:scalastyle it:scalastyle
+```
 
 ### Unit Tests
 There is a suite of unit tests that can be ran by running `sbt clean test`
 
 #### Scoverage
 
-To generate an [scoverage](https://github.com/scoverage/scalac-scoverage-plugin) report for unit tests
-run the following command:
+To generate an [scoverage](https://github.com/scoverage/scalac-scoverage-plugin) report for unit
+tests run the following command:
 
 ```bash
 sbt clean coverage test coverageReport coverageAggregate
@@ -18,7 +26,7 @@ sbt clean coverage test coverageReport coverageAggregate
 
 The generated report can then be found at `target/scala-2.11/scoverage-report/index.html`
 
-_NOTE_: You should never run coverage at the same time as one-jar because the produced one-jar will 
+_NOTE_: You should never run coverage at the same time as one-jar because the produced one-jar will
 contains scoverage instrumented class files and will fail to run.
 
 ### Integration Tests
@@ -36,23 +44,33 @@ being forked before the integration suite is ran.
 
 #### Running the tests
 
-The test runner will automatically start an in process zk cluster, create a temporary directory
-for repo caches, and start the Cosmos server.
+The test runner will automatically start an in process zk cluster and start the Cosmos server.
 
 The test suite will then be configured to interact with this cluster by setting the following
-system property:
+system properties:
+
 ```
--Dcom.mesosphere.cosmos.test.CosmosIntegrationTestClient.CosmosClient.uri
+-Dcom.mesosphere.cosmos.dcosUri
+-Dcom.mesosphere.cosmos.packageStorageUri
+-Dcom.mesosphere.cosmos.stagedPackageStorageUri
 ```
 
-Any system properties that are passed to sbt will be inherited by the test suite, but not the
-Cosmos server.
+or running the following command:
+
+```bash
+export COSMOS_AUTHORIZATION_HEADER="token=$(http --ignore-stdin <dcos-host-url>/acs/api/v1/auth/login uid=<dcos-user> password=<user-passwod> | jq -r ".token")"
+sbt -Dcom.mesosphere.cosmos.dcosUri=<dcos-host-url> \
+    -Dcom.mesosphere.cosmos.packageStorageUri=file:///tmp/cosmos/packages \
+    -Dcom.mesosphere.cosmos.stagedPackageStorageUri=file:///tmp/cosmos/staged-packages \
+    clean it:test
+```
 
 ## Running Cosmos
 
 Cosmos requires a ZooKeeper instance to be available. It looks for one at
 `zk://localhost:2181/cosmos` by default; to override with an alternate `<zk-uri>`, specify the flag
-`-com.mesosphere.cosmos.zookeeperUri=<zk-uri>` on the command line when starting Cosmos (see below).
+`-com.mesosphere.cosmos.zookeeperUri <zk-uri>` on the command line when starting Cosmos (see
+below).
 
 We also need a One-JAR to run Cosmos:
 
@@ -64,20 +82,36 @@ The jar will be created in the `cosmos-server/target/scala-2.11/` directory. Thi
 with:
 
 ```bash
-mkdir /tmp/cosmos
 java -jar cosmos-server/target/scala-2.11/cosmos-server_2.11-<version>-SNAPSHOT-one-jar.jar \
-     -com.mesosphere.cosmos.dcosUri=<dcos-host-url>
+     -com.mesosphere.cosmos.dcosUri <dcos-host-url> \
+     -com.mesosphere.cosmos.packageStorageUri file://<absolute-path-to-package-dir> \
+     -com.mesosphere.cosmos.stagedPackageStorageUri file://<absolute-path-to-staged-dir>
 ```
 
 It can also be exectued with ZooKeeper authentication with:
 
 ```bash
-mkdir /tmp/cosmos
 export ZOOKEEPER_USER <user>
 export ZOOKEEPER_SECRET <secret>
 java -jar cosmos-server/target/scala-2.11/cosmos-server_2.11-<version>-SNAPSHOT-one-jar.jar \
-     -com.mesosphere.cosmos.dcosUri=<dcos-host-url>
+     -com.mesosphere.cosmos.dcosUri <dcos-host-url> \
+     -com.mesosphere.cosmos.packageStorageUri file://<absolute-path-to-package-dir> \
+     -com.mesosphere.cosmos.stagedPackageStorageUri file://<absolute-path-to-staged-dir>
 ```
+
+## Project structure
+
+The code is organized into several subprojects, each of which has a JAR published to the
+Sonatype OSS repository. Here's an overview:
+
+* `cosmos-test-common`
+    * `src/main` directory: defines the code and resources used by both the unit and integration
+    tests.
+    * `src/test` directory: defines the unit tests and any resources they require.
+* `cosmos-integration-tests`
+    * `src/main` directory: defines the integration tests and any resources they require.
+* The remaining subprojects define the main code for Cosmos, always within their `src/main`
+directories.
 
 ## Versions & Compatibility
 
@@ -91,6 +125,7 @@ The following table outlines which version of Cosmos is bundled with each versio
 | &ge; 1.7.0            | 0.1.5          |
 | &ge; 1.8.0            | 0.2.0          |
 | &ge; 1.8.9            | 0.2.1          |
+| &ge; 1.9.0            | 0.3.0          |
 
 ### Universe
 
@@ -104,6 +139,7 @@ The below table is a compatibility matrix between Cosmos and Universe repository
 | ----- | ----------------------------- | ---------------------------------------------------------------- |
 | 0.1.x | Supported                     | Not Supported                                                    |
 | 0.2.x | Supported                     | Supported                                                        |
+| 0.3.0 | Supported                     | Supported                                                        |
 
 
 #### Packaging Version
@@ -116,6 +152,7 @@ The below table is a compatibility matrix between Cosmos and Universe packaging 
 | ----- | --------- | ------------- |
 | 0.1.x | Supported | Not Supported |
 | 0.2.x | Supported | Supported     |
+| 0.3.0 | Supported | Supported     |
 
 ### API Method Version Compatibility
 
@@ -173,3 +210,8 @@ A v2 install can succeed in the following scenarios:
 2. The package being installed was published as a Universe package with `packagingVersion` 3.0 and the package has a marathon template defined
 3. The package being installed was published as a Universe package with `packagingVersion` 3.0 and the package has a `.cli` object defined in it's resource set
 
+## Reporting Problems
+
+If you encounter a problem that seems to be related to a Cosmos bug, please create an issue at
+[DC/OS Jira](https://dcosjira.atlassian.net/secure/Dashboard.jspa). To create an issue click on the
+`Create` button at the top and add `cosmos` to the component.

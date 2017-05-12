@@ -1,0 +1,14 @@
+[
+  {
+    "name": "Universe",
+    "uri": "https://downloads.mesosphere.com/universe/02493e40f8564a39446d06c002f8dcc8e7f6d61f/repo-up-to-1.8.json"
+  },
+  {
+    "name": "Hello World",
+    "uri": "https://downloads.mesosphere.com/universe/helloworld.zip"
+  },
+  {
+    "name": "V4TestUniverse",
+    "uri": "https://downloads.mesosphere.com/universe/ebdcd8b7522e37f33184d343ae2a02ad0b63903b/repo/repo-up-to-1.10.json"
+  }
+]

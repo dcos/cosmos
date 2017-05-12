@@ -1,14 +1,17 @@
 package com.mesosphere.cosmos
 
+import _root_.io.circe.Json
+import _root_.io.circe.JsonObject
 import com.mesosphere.cosmos.http.RequestSession
-import com.mesosphere.cosmos.thirdparty.marathon.model.{AppId, MarathonAppResponse, MarathonAppsResponse}
 import com.mesosphere.cosmos.thirdparty.marathon.circe.Decoders._
+import com.mesosphere.cosmos.thirdparty.marathon.model.AppId
+import com.mesosphere.cosmos.thirdparty.marathon.model.MarathonAppResponse
+import com.mesosphere.cosmos.thirdparty.marathon.model.MarathonAppsResponse
 import com.netaporter.uri.Uri
 import com.netaporter.uri.dsl._
 import com.twitter.finagle.Service
 import com.twitter.finagle.http._
 import com.twitter.util.Future
-import io.circe.Json
 import org.jboss.netty.handler.codec.http.HttpMethod
 
 class MarathonClient(
@@ -16,8 +19,12 @@ class MarathonClient(
   client: Service[Request, Response]
 ) extends ServiceClient(marathonUri) {
 
-  def createApp(appJson: Json)(implicit session: RequestSession): Future[Response] = {
-    client(post("v2" / "apps" , appJson))
+  def createApp(appJson: JsonObject)(implicit session: RequestSession): Future[Response] = {
+    client(post("v2" / "apps" , Json.fromJsonObject(appJson)))
+  }
+
+  def update(appId: AppId, appJson: JsonObject)(implicit session: RequestSession): Future[Response] = {
+    client(put("v2" / "apps" / appId.toUri, Json.fromJsonObject(appJson)))
   }
 
   def getAppOption(appId: AppId)(implicit session: RequestSession): Future[Option[MarathonAppResponse]] = {
@@ -49,6 +56,10 @@ class MarathonClient(
       case true => client(delete(uriPath ? ("force" -> "true")))
       case false => client(delete(uriPath))
     }
+  }
+
+  def listDeployments()(implicit session: RequestSession): Future[Response] = {
+    client(get("v2" / "deployments"))
   }
 
 }

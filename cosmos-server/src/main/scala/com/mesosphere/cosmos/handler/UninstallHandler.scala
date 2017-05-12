@@ -1,6 +1,5 @@
 package com.mesosphere.cosmos.handler
 
-import com.mesosphere.cosmos.converter.Universe._
 import com.mesosphere.cosmos.http.RequestSession
 import com.mesosphere.cosmos.repository.PackageCollection
 import com.mesosphere.cosmos.AdminRouter
@@ -11,9 +10,13 @@ import com.mesosphere.cosmos.MultipleFrameworkIds
 import com.mesosphere.cosmos.PackageNotInstalled
 import com.mesosphere.cosmos.ServiceUnavailable
 import com.mesosphere.cosmos.UninstallNonExistentAppForPackage
+import com.mesosphere.cosmos.finch.EndpointHandler
 import com.mesosphere.cosmos.rpc
-import com.mesosphere.cosmos.thirdparty.marathon.model.{AppId, MarathonApp}
+import com.mesosphere.cosmos.thirdparty.marathon.model.AppId
+import com.mesosphere.cosmos.thirdparty.marathon.model.MarathonApp
 import com.mesosphere.universe
+import com.mesosphere.universe.bijection.UniverseConversions._
+import com.mesosphere.universe.v3.syntax.PackageDefinitionOps._
 import com.twitter.bijection.Conversion.asMethod
 import com.twitter.finagle.http.Status
 import com.twitter.util.Future
@@ -25,16 +28,19 @@ private[cosmos] final class UninstallHandler(
 
   private type FwIds = List[String]
 
-  private def lookupFrameworkIds(fwName: String)(implicit session: RequestSession): Future[FwIds] = {
-    adminRouter.getMasterState(fwName).map { masterState =>
-      masterState.frameworks
-        .filter(_.name == fwName)
-        .map(_.id)
-    }
+  private def lookupFrameworkIds(
+    fwName: String
+  )(
+    implicit session: RequestSession
+  ): Future[FwIds] = {
+    adminRouter.getFrameworks(fwName).map(_.map(_.id))
   }
+
   private def destroyMarathonAppsAndTearDownFrameworkIfPresent(
     uninstallOperations: List[UninstallOperation]
-  )(implicit session: RequestSession): Future[Seq[UninstallDetails]] = {
+  )(
+    implicit session: RequestSession
+  ): Future[Seq[UninstallDetails]] = {
     val fs = for {
       op <- uninstallOperations
       appId = op.appId
@@ -64,7 +70,12 @@ private[cosmos] final class UninstallHandler(
     }
     Future.collect(fs)
   }
-  private def destroyMarathonApp(appId: AppId)(implicit session: RequestSession): Future[MarathonAppDeleteSuccess] = {
+
+  private def destroyMarathonApp(
+    appId: AppId
+  )(
+    implicit session: RequestSession
+  ): Future[MarathonAppDeleteSuccess] = {
     adminRouter.deleteApp(appId, force = true) map { resp =>
       resp.status match {
         case Status.Ok => MarathonAppDeleteSuccess()
@@ -73,40 +84,30 @@ private[cosmos] final class UninstallHandler(
     }
   }
 
-  override def apply(req: rpc.v1.model.UninstallRequest)(implicit
-    session: RequestSession
+  override def apply(
+    req: rpc.v1.model.UninstallRequest
+  )(
+    implicit session: RequestSession
   ): Future[rpc.v1.model.UninstallResponse] = {
-    // the following implementation is based on what the current CLI implementation does.
-    // I've decided to follow it as close as possible so that we reduce any possible behavioral
-    // changes that could have unforeseen consequences.
-    //
-    // In the future this will probably be revisited once Cosmos is the actual authority on services
-    val f = req.appId match {
-      case Some(appId) =>
-        adminRouter.getAppOption(appId)
-            .map {
-              case Some(appResponse) =>
-                createUninstallOperations(req.packageName, List(appResponse.app))
-              case None =>
-                throw new UninstallNonExistentAppForPackage(req.packageName, appId)
-            }
-      case None =>
-        adminRouter.listApps()
-          .map { marathonApps =>
-            createUninstallOperations(req.packageName, marathonApps.apps)
-          }
-    }
+    /*
+    the following implementation is based on what the current CLI implementation does.
+    I've decided to follow it as close as possible so that we reduce any possible behavioral
+    changes that could have unforeseen consequences.
 
-    f.map { uninstallOperations =>
-      req.all match {
-        case Some(true) =>
-          uninstallOperations
-        case _ if uninstallOperations.size > 1 =>
-          throw AmbiguousAppId(req.packageName, uninstallOperations.map(_.appId))
-        case _ => // we've only got one package installed with the specified name, continue with it
-          uninstallOperations
+    In the future this will probably be revisited once Cosmos is the actual authority on services
+    */
+    getMarathonApps(req.packageName, req.appId)
+      .map(marathonApps => createUninstallOperations(req.packageName, marathonApps))
+      .map { uninstallOperations =>
+        req.all match {
+          case Some(true) =>
+            uninstallOperations
+          case _ if uninstallOperations.size > 1 =>
+            throw AmbiguousAppId(req.packageName, uninstallOperations.map(_.appId))
+          case _ => // we've only got one package installed with the specified name, continue with it
+            uninstallOperations
+        }
       }
-    }
       .flatMap(destroyMarathonAppsAndTearDownFrameworkIfPresent)
       .flatMap { uninstallDetails =>
         Future.collect(
@@ -131,18 +132,38 @@ private[cosmos] final class UninstallHandler(
       }
   }
 
-  private[this] def createUninstallOperations(requestedPackageName: String, apps: List[MarathonApp]): List[UninstallOperation] = {
+  private[this] def getMarathonApps(
+    packageName: String,
+    appId: Option[AppId]
+  )(
+    implicit session: RequestSession
+  ): Future[List[MarathonApp]] = {
+    appId match {
+      case Some(id) =>
+        adminRouter.getAppOption(id).map {
+          case Some(appResponse) => List(appResponse.app)
+          case _ => throw UninstallNonExistentAppForPackage(packageName, id)
+        }
+      case None =>
+        adminRouter.listApps().map(_.apps)
+    }
+  }
+
+  private[this] def createUninstallOperations(
+    requestedPackageName: String,
+    apps: List[MarathonApp]
+  ): List[UninstallOperation] = {
     val uninstallOperations = for {
       app <- apps
       labels = app.labels
-      packageName <- labels.get("DCOS_PACKAGE_NAME")
+      packageName <- labels.get(MarathonApp.nameLabel)
       if packageName == requestedPackageName
     } yield {
       UninstallOperation(
         appId = app.id,
         packageName = packageName,
         packageVersion = app.packageVersion.as[Option[universe.v2.model.PackageDetailsVersion]],
-        frameworkName = labels.get("DCOS_PACKAGE_FRAMEWORK_NAME")
+        frameworkName = labels.get(MarathonApp.frameworkNameLabel)
       )
     }
 

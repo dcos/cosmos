@@ -3,6 +3,7 @@ package com.mesosphere.cosmos
 import com.mesosphere.cosmos.http.RequestSession
 import com.mesosphere.cosmos.repository._
 import com.mesosphere.universe
+import com.mesosphere.universe.v4.model.PackageDefinition
 import com.netaporter.uri.Uri
 import com.twitter.util.Future
 
@@ -17,7 +18,7 @@ final class MultiRepository(
 
   override def getPackagesByPackageName(
       packageName: String
-  )(implicit session: RequestSession): Future[List[internal.model.PackageDefinition]] = {
+  )(implicit session: RequestSession): Future[List[universe.v4.model.PackageDefinition]] = {
     /* Fold over all the results in order and ignore PackageNotFound errors.
      * We have found our answer when we find a PackageDefinition or a generic exception.
      */
@@ -36,8 +37,8 @@ final class MultiRepository(
 
   override def getPackageByPackageVersion(
       packageName: String,
-      packageVersion: Option[universe.v3.model.PackageDefinition.Version]
-  )(implicit session: RequestSession): Future[(internal.model.PackageDefinition, Uri)] = {
+      packageVersion: Option[universe.v3.model.Version]
+  )(implicit session: RequestSession): Future[(universe.v4.model.PackageDefinition, Uri)] = {
     /* Fold over all the results in order and ignore PackageNotFound and VersionNotFound errors.
      * We have found our answer when we find a PackageDefinition or a generic exception.
      */
@@ -89,6 +90,31 @@ final class MultiRepository(
           }
           .toList
       }
+    }
+  }
+
+  override def upgradesTo(
+    name: String,
+    version: universe.v3.model.Version
+  )(implicit session: RequestSession): Future[List[universe.v3.model.Version]] = {
+    repositories().flatMap { repositories =>
+      Future.collect {
+        repositories.map { repository =>
+          repository.upgradesTo(name, version)
+        }
+      }
+    } map { versions => versions.flatten.toList }
+  }
+
+  override def downgradesTo(
+    packageDefinition: PackageDefinition
+  )(implicit session: RequestSession): Future[List[universe.v3.model.Version]] = {
+    repositories().flatMap { repositories =>
+      Future.collect {
+        repositories.map { repository =>
+          repository.downgradesTo(packageDefinition)
+        }
+      } map (_.flatten.toList.distinct)
     }
   }
 

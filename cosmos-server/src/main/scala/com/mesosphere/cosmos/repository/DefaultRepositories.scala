@@ -1,40 +1,42 @@
 package com.mesosphere.cosmos.repository
 
-import java.io.InputStreamReader
-
-import cats.data.Xor
+import cats.syntax.either._
 import com.google.common.io.CharStreams
 import com.mesosphere.cosmos.rpc.v1.circe.Decoders._
 import com.mesosphere.cosmos.rpc.v1.model.PackageRepository
 import com.twitter.util.Try
-import io.circe.parse._
+import io.circe.jawn.decode
+import java.io.InputStreamReader
+import scala.util.Either
+import scala.util.Left
+import scala.util.Right
 
 private[repository] class DefaultRepositories private[repository](resourceName: String) {
-  private val repos: Try[Xor[io.circe.Error, List[PackageRepository]]] = Try {
-    val is = this.getClass.getResourceAsStream(resourceName)
-    if (is == null) {
-      throw new IllegalStateException(s"Unable to load classpath resource: $resourceName")
+  private val repos: Try[Either[io.circe.Error, List[PackageRepository]]] = Try {
+    Option(this.getClass.getResourceAsStream(resourceName)) match {
+      case Some(is) =>
+        val json = CharStreams.toString(new InputStreamReader(is))
+        decode[List[PackageRepository]](json)
+      case _ =>
+        throw new IllegalStateException(s"Unable to load classpath resource: $resourceName")
     }
-    val json = CharStreams.toString(new InputStreamReader(is))
-
-    decode[List[PackageRepository]](json)
   }
 }
 
 object DefaultRepositories {
   private[this] val loaded = new DefaultRepositories("/default-repositories.json")
 
-  def apply() = loaded
+  def apply(): DefaultRepositories = loaded
 
   implicit class DefaultRepositoriesOps(val dr: DefaultRepositories) extends AnyVal {
-    def get(): Try[Xor[io.circe.Error, List[PackageRepository]]] = {
+    def get(): Try[Either[io.circe.Error, List[PackageRepository]]] = {
       dr.repos
     }
 
     def getOrThrow: List[PackageRepository] = {
       get().map {
-        case Xor.Right(list) => list
-        case Xor.Left(err) => throw err
+        case Right(list) => list
+        case Left(err) => throw err
       }.get
     }
 

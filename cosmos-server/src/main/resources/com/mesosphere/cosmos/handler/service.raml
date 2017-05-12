@@ -1,0 +1,25 @@
+#%RAML 1.0
+title: DC/OS Service
+/service:
+  /start:
+    post:
+      description: |
+        **Experimental.** Starts a DC/OS Service from a DC/OS package.
+      headers:
+        Accept:
+          enum: [application/vnd.dcos.sevice.start-response+json;charset=utf-8;version=v1]
+      body:
+        application/vnd.dcos.sevice.start-request+json;charset=utf-8;version=v1:
+          type: !include ../../../../../../../../cosmos-common/src/main/resources/com/mesosphere/cosmos/rpc/v1/model/ServiceStartRequest-schema.json
+          example:
+            packageName: cassandra
+            packageVersion: 1.0.24-3.0.10
+      responses:
+        200:
+          body:
+            application/vnd.dcos.sevice.start-response+json;charset=utf-8;version=v1:
+              type: !include ../../../../../../../../cosmos-common/src/main/resources/com/mesosphere/cosmos/rpc/v1/model/ServiceStartResponse-schema.json
+              example:
+                packageName: cassandra
+                packageVersion: 1.0.24-3.0.10
+                appId: /cassandra

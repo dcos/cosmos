@@ -1,283 +1,59 @@
 package com.mesosphere.cosmos
 
-import com.github.retronym.SbtOneJar._
-import scoverage.ScoverageKeys._
-import sbtfilter.Plugin._
+import com.mesosphere.sbt.BuildPlugin
+import com.mesosphere.sbt.Scalastyle
 import sbt.Keys._
 import sbt._
 
-object CosmosBuild extends Build {
+object CosmosBuild {
 
-  lazy val projectScalaVersion = "2.11.7"
-  lazy val projectVersion = "0.2.1"
-
-  object V {
-    val bijection = "0.9.2"
-    val circe = "0.2.1"
-    val curator = "2.9.1"
-    val finch = "0.9.3"
-    val finchServer = "0.9.1"
-    val jsonSchema = "2.2.6"
-    val logback = "1.1.3"
-    val mockito = "1.10.19"
-    val mustache = "0.9.1"
-    val scalaUri = "0.4.11"
-    val scalaTest = "2.2.4"
-    val scalaCheck = "1.12.5"
-    val twitterUtilCore = "6.30.0"
-    val zookeeper = "3.4.6"
-  }
-
-  object Deps {
-
-    val bijection = Seq(
-      "com.twitter" %% "bijection-core" % V.bijection
-    )
-
-    val circeCore = Seq(
-      "io.circe" %% "circe-core" % V.circe
-    )
-
-    val circe = circeCore ++ Seq(
-      "io.circe" %% "circe-generic" % V.circe,
-      "io.circe" %% "circe-parse" % V.circe
-    )
-
-    val curator = Seq(
-      "org.apache.curator" % "curator-recipes" % V.curator,
-      "org.apache.curator" % "curator-test" % V.curator % "test"
-    ).map(_.excludeAll(
-      // Exclude log4j and slf4j-log4j12 because we're using logback as our logging backend.
-      // exclude jmx items since we're only using the curator client, not it's server
-      // exclude jline from zk since we're not using it's console
-      ExclusionRule("log4j", "log4j"),
-      ExclusionRule("org.slf4j", "slf4j-log4j12"),
-      ExclusionRule("com.sun.jdmk", "jmxtools"),
-      ExclusionRule("com.sun.jmx", "jmxri"),
-      ExclusionRule("javax.jms", "jms"),
-      ExclusionRule("jline", "jline")
-    ))
-
-    val finch = Seq(
-      "com.github.finagle" %% "finch-core" % V.finch,
-      "com.github.finagle" %% "finch-circe" % V.finch
-    )
-
-    val finchServer = Seq(
-      "io.github.benwhitehead.finch" %% "finch-server" % V.finchServer
-    ).map(_.excludeAll(
-      // mustache is pulled in for the core application, so we exclude the transitive version
-      // pulled in my twitter-server
-      ExclusionRule("com.github.spullara.mustache.java", "compiler")
-    ))
-
-    val finchTest = Seq(
-      "com.github.finagle" %% "finch-test" % V.finch % "test"
-    )
-
-    val jsonSchema = Seq(
-      "com.github.fge" % "json-schema-validator" % V.jsonSchema
-    )
-
-    val logback = Seq(
-      "ch.qos.logback" % "logback-classic" % V.logback
-    )
-
-    val mockito = Seq(
-      "org.mockito" % "mockito-core" % V.mockito % "test"
-    )
-
-    val mustache = Seq(
-      "com.github.spullara.mustache.java" % "compiler" % V.mustache
-    )
-
-    val scalaCheck = Seq(
-      "org.scalacheck" %% "scalacheck" % V.scalaCheck % "test"
-    )
-
-    val scalaTest = Seq(
-      "org.scalatest"       %% "scalatest"        % V.scalaTest     % "test"
-    )
-
-    val scalaUri = Seq(
-      "com.netaporter" %% "scala-uri" % V.scalaUri
-    )
-
-    val twitterUtilCore = Seq(
-      "com.twitter" %% "util-core" % V.twitterUtilCore
-    )
-
-  }
-
-  val teamcityVersion = sys.env.get("TEAMCITY_VERSION")
-
-  val extraSettings = Defaults.coreDefaultSettings
-
-  val sharedSettings = extraSettings ++ Seq(
+  val sharedSettings: Seq[Def.Setting[_]] = BuildPlugin.publishSettings ++ Seq(
     organization := "com.mesosphere.cosmos",
-    scalaVersion := projectScalaVersion,
-    version := projectVersion,
+    scalaVersion := V.projectScalaVersion,
+    version := V.projectVersion,
 
+    Scalastyle.scalastyleConfig in Global :=
+      Some((baseDirectory in ThisBuild).value / "scalastyle-config.xml"),
+
+    // Required by One-JAR for multi-project builds: https://github.com/sbt/sbt-onejar#requirements
     exportJars := true,
 
-    externalResolvers := Seq(
-      Resolver.mavenLocal,
-      DefaultMavenRepository,
-      "finch-server" at "https://storage.googleapis.com/benwhitehead_me/maven/public",
-      "Twitter Maven" at "https://maven.twttr.com"
-      // Twitter maven has stability issues make sure it's LAST, it's needed for two transitive dependencies
-      // [warn]  ::::::::::::::::::::::::::::::::::::::::::::::
-      // [warn]  ::          UNRESOLVED DEPENDENCIES         ::
-      // [warn]  ::::::::::::::::::::::::::::::::::::::::::::::
-      // [warn]  :: com.twitter.common#metrics;0.0.37: not found
-      // [warn]  :: org.apache.thrift#libthrift;0.5.0: not found
-      // [warn]  ::::::::::::::::::::::::::::::::::::::::::::::
-      // [warn]
-      // [warn]  Note: Unresolved dependencies path:
-      // [warn]          com.twitter.common:metrics:0.0.37
-      // [warn]            +- com.twitter:finagle-stats_2.11:6.31.0
-      // [warn]            +- io.github.benwhitehead.finch:finch-server_2.11:0.9.0
-      // [warn]            +- com.mesosphere.cosmos:cosmos-server_2.11:0.2.0-SNAPSHOT
-      // [warn]          org.apache.thrift:libthrift:0.5.0
-      // [warn]            +- com.twitter:finagle-thrift_2.11:6.31.0
-      // [warn]            +- com.twitter:finagle-zipkin_2.11:6.31.0
-      // [warn]            +- com.twitter:twitter-server_2.11:1.16.0
-      // [warn]            +- io.github.benwhitehead.finch:finch-server_2.11:0.9.0
-      // [warn]            +- com.mesosphere.cosmos:cosmos-server_2.11:0.2.0-SNAPSHOT
-      //
+    resolvers ++= Seq(
+      "Twitter Maven" at "https://maven.twttr.com"  // For some Twitter dependencies
     ),
 
-    libraryDependencies ++= Deps.mockito ++ Deps.scalaTest ++ Deps.scalaCheck,
+    test in (This, Global, This) := (test in Test).value,
 
-    javacOptions in Compile ++= Seq(
-      "-source", "1.8",
-      "-target", "1.8",
-      "-Xlint:unchecked",
-      "-Xlint:deprecation"
-    ),
+    // Parallel changes to a shared cluster cause some tests to fail
+    parallelExecution in IntegrationTest := false,
 
-    scalacOptions ++= Seq(
-      "-deprecation", // Emit warning and location for usages of deprecated APIs.
-      "-encoding", "UTF-8",
-      "-explaintypes",
-      "-feature", // Emit warning and location for usages of features that should be imported explicitly.
-      "-target:jvm-1.8",
-      "-unchecked", // Enable additional warnings where generated code depends on assumptions.
-      "-Xfuture",
-      "-Xlint", // Enable recommended additional warnings.
-      "-Yresolve-term-conflict:package",
-      "-Ywarn-adapted-args", // Warn if an argument list is modified to match the receiver.
-      "-Ywarn-dead-code",
-      "-Ywarn-inaccessible",
-      "-Ywarn-infer-any",
-      "-Ywarn-nullary-override",
-      "-Ywarn-nullary-unit",
-      "-Ywarn-numeric-widen",
-      "-Ywarn-unused",
-      "-Ywarn-unused-import",
-      "-Ywarn-value-discard"
-    ),
-
-    scalacOptions in (Compile, console) ~= (_ filterNot (_ == "-Ywarn-unused-import")),
-
-    scalacOptions in (Test, console) ~= (_ filterNot (_ == "-Ywarn-unused-import")),
-
-    // Publishing options:
-    publishMavenStyle := true,
-
-    pomIncludeRepository := { x => false },
-
-    publishArtifact in Test := false,
-
-    parallelExecution in ThisBuild := false,
-
-    parallelExecution in Test := false,
-
-    fork := false,
-
-    cancelable in Global := true,
-
-    coverageOutputTeamCity := teamcityVersion.isDefined
+    pomExtra :=
+        <url>https://dcos.io</url>
+        <licenses>
+          <license>
+            <name>Apache License Version 2.0</name>
+            <url>https://github.com/dcos/cosmos/blob/master/LICENSE.txt</url>
+            <distribution>repo</distribution>
+          </license>
+        </licenses>
+        <scm>
+          <url>https://github.com/dcos/cosmos.git</url>
+          <connection>scm:git:https://github.com/dcos/cosmos.git</connection>
+        </scm>
+        <developers>
+          <developer>
+            <name>Ben Whitehead</name>
+          </developer>
+          <developer>
+            <name>Charles Ruhland</name>
+          </developer>
+          <developer>
+            <name>José Armando García Sancio</name>
+          </developer>
+          <developer>
+            <name>Tamar Ben-Shachar</name>
+          </developer>
+        </developers>
   )
 
-  private lazy val cosmosIntegrationTestServer = settingKey[CosmosIntegrationTestServer]("cosmos-it-server")
-
-  val itSettings = Defaults.itSettings ++ Seq(
-    test in IntegrationTest <<= (test in IntegrationTest).dependsOn(oneJar),
-    testOnly in IntegrationTest <<= (testOnly in IntegrationTest).dependsOn(oneJar),
-    cosmosIntegrationTestServer in IntegrationTest := new CosmosIntegrationTestServer(
-      (javaHome in run).value.map(_.getCanonicalPath),
-      (resourceDirectories in IntegrationTest).value,
-      (artifactPath in oneJar).value
-    ),
-    testOptions in IntegrationTest += Tests.Setup(() =>
-      (cosmosIntegrationTestServer in IntegrationTest).value.setup((streams in runMain).value.log)
-    ),
-    testOptions in IntegrationTest += Tests.Cleanup(() =>
-      (cosmosIntegrationTestServer in IntegrationTest).value.cleanup()
-    )
-  )
-
-  lazy val cosmos = Project("cosmos", file("."))
-    .settings(sharedSettings)
-    .aggregate(model, json, server)
-
-  lazy val model = Project("cosmos-model", file("cosmos-model"))
-    .settings(sharedSettings)
-    .settings(
-      libraryDependencies ++=
-        Deps.scalaUri
-        ++ Deps.circeCore
-        ++ Deps.twitterUtilCore
-        ++ Deps.scalaTest
-        ++ Deps.bijection
-    )
-
-  lazy val json = Project("cosmos-json", file("cosmos-json"))
-    .settings(sharedSettings)
-    .settings(
-      libraryDependencies ++=
-        Deps.scalaUri
-        ++ Deps.circe
-        ++ Deps.scalaTest
-    )
-    .dependsOn(model % "compile;test->test")
-
-  lazy val server = Project("cosmos-server", file("cosmos-server"))
-    .configs(IntegrationTest extend Test)
-    .settings(itSettings)
-    .settings(sharedSettings)
-    .settings(oneJarSettings)
-    .settings(mainClass in oneJar := Some("com.mesosphere.cosmos.Cosmos"))
-    .settings(filterSettings)
-    .settings(
-      libraryDependencies ++=
-        Deps.circe
-          ++ Deps.curator
-          ++ Deps.finch
-          ++ Deps.finchServer
-          ++ Deps.finchTest
-          ++ Deps.jsonSchema
-          ++ Deps.logback
-          ++ Deps.mustache
-          ++ Deps.scalaTest
-          ++ Deps.scalaUri
-    )
-    .dependsOn(json % "compile;test->test")
-
-  //////////////////////////////////////////////////////////////////////////////
-  // BUILD TASKS
-  //////////////////////////////////////////////////////////////////////////////
-
-  teamcityVersion.foreach { _ =>
-      // add some info into the teamcity build context so that they can be used
-      // by later steps
-      reportParameter("SCALA_VERSION", projectScalaVersion)
-      reportParameter("PROJECT_VERSION", projectVersion)
-  }
-
-  def reportParameter(key: String, value: String): Unit = {
-    println(s"##teamcity[setParameter name='env.SBT_$key' value='$value']")
-    println(s"##teamcity[setParameter name='system.sbt.$key' value='$value']")
-  }
 }

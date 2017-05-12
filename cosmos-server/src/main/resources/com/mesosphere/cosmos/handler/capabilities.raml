@@ -1,0 +1,19 @@
+#%RAML 1.0
+title: DC/OS Capabilities
+/capabilities:
+  get:
+    description: List all of the capabilities supported by DC/OS.
+    headers:
+      Accept:
+        enum: [application/vnd.dcos.capabilities+json;charset=utf-8;version=v1]
+    responses:
+      200:
+        body:
+          application/vnd.dcos.capabilities+json;charset=utf-8;version=v1:
+            type: !include ../../../../../../../../cosmos-common/src/main/resources/com/mesosphere/cosmos/rpc/v1/model/CapabilitiesResponse-schema.json
+            example:
+              capabilities:
+                - name: PACKAGE_MANAGEMENT
+                - name: SUPPORT_CLUSTER_REPORT
+                - name: METRONOME
+                - name: LOGGING
