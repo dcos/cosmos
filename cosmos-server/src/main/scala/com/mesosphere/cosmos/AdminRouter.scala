@@ -36,4 +36,6 @@ class AdminRouter(
 
   def getDcosVersion()(implicit session: RequestSession): Future[DcosVersion] = adminRouterClient.getDcosVersion()
 
+  def listDeployments()(implicit session: RequestSession): Future[Response] = marathon.listDeployments()
+
 }

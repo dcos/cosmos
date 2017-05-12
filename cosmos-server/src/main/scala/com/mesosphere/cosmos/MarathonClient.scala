@@ -58,4 +58,8 @@ class MarathonClient(
     }
   }
 
+  def listDeployments()(implicit session: RequestSession): Future[Response] = {
+    client(get("v2" / "deployments"))
+  }
+
 }
