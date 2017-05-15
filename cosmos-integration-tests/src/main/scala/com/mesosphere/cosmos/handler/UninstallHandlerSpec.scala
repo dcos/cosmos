@@ -136,7 +136,7 @@ final class UninstallHandlerSpec extends FreeSpec with Eventually with SpanSugar
 
       // Cleanup the stub.
       val removeRepoRequest = CosmosRequests.packageRepositoryDelete(PackageRepositoryDeleteRequest(Some("uninstall-test")))
-      val _ = CosmosClient.callEndpoint[PackageRepositoryDeleteResponse](removeRepoRequest)
+      CosmosClient.callEndpoint[PackageRepositoryDeleteResponse](removeRepoRequest)
     }
   }
 
