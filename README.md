@@ -58,7 +58,7 @@ system properties:
 or running the following command:
 
 ```bash
-export COSMOS_AUTHORIZATION_HEADER="token=$(http --ignore-stdin <dcos-host-url>/acs/api/v1/auth/login uid=<dcos-user> password=<user-passwod> | jq -r ".token")"
+export COSMOS_AUTHORIZATION_HEADER="token=$(http --ignore-stdin <dcos-host-url>/acs/api/v1/auth/login uid=<dcos-user> password=<user-password> | jq -r ".token")"
 sbt -Dcom.mesosphere.cosmos.dcosUri=<dcos-host-url> \
     -Dcom.mesosphere.cosmos.packageStorageUri=file:///tmp/cosmos/packages \
     -Dcom.mesosphere.cosmos.stagedPackageStorageUri=file:///tmp/cosmos/staged-packages \
@@ -88,7 +88,7 @@ java -jar cosmos-server/target/scala-2.11/cosmos-server_2.11-<version>-SNAPSHOT-
      -com.mesosphere.cosmos.stagedPackageStorageUri file://<absolute-path-to-staged-dir>
 ```
 
-It can also be exectued with ZooKeeper authentication with:
+It can also be executed with ZooKeeper authentication with:
 
 ```bash
 export ZOOKEEPER_USER <user>
@@ -214,4 +214,4 @@ A v2 install can succeed in the following scenarios:
 
 If you encounter a problem that seems to be related to a Cosmos bug, please create an issue at
 [DC/OS Jira](https://dcosjira.atlassian.net/secure/Dashboard.jspa). To create an issue click on the
-`Create` button at the top and add `cosmos` to the component.
+`Create` button at the top and add `cosmos` to the component field.
