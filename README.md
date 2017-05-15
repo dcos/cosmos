@@ -75,7 +75,7 @@ below).
 We also need a One-JAR to run Cosmos:
 
 ```bash
-sbt one-jar
+sbt oneJar
 ```
 
 The jar will be created in the `cosmos-server/target/scala-2.11/` directory. This can be executed
