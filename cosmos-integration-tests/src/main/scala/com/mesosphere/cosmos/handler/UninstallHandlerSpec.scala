@@ -110,7 +110,7 @@ final class UninstallHandlerSpec extends FreeSpec with Eventually with SpanSugar
     "be able to uninstall SDK packages that support SDK uninstall" in {
       // Add stub universe for service that supports uninstall.
       val request = CosmosRequests.packageRepositoryAdd(PackageRepositoryAddRequest("uninstall-test",
-        Uri.parse("https://infinity-artifacts.s3.amazonaws.com/autodelete7d/hello-world/20170511-021834-SYUTRVh81sxb1HAY/stub-universe-hello-world.zip"),
+        Uri.parse("https://s3-us-west-2.amazonaws.com/infinity-artifacts/uninstalltestfixture/stub-universe-uninstall-test-fixture.zip"),
         index = Some(0)))
       val _ = CosmosClient.callEndpoint[PackageRepositoryAddResponse](request)
 
