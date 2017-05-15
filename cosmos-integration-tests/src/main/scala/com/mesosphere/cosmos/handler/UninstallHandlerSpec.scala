@@ -22,8 +22,11 @@ import java.util.UUID
 import com.mesosphere.cosmos.MarathonAppNotFound
 import com.mesosphere.cosmos.rpc.v1.model.PackageRepositoryAddRequest
 import com.mesosphere.cosmos.rpc.v1.model.PackageRepositoryAddResponse
+import com.mesosphere.cosmos.rpc.v1.model.PackageRepositoryDeleteRequest
+import com.mesosphere.cosmos.rpc.v1.model.PackageRepositoryDeleteResponse
 import com.netaporter.uri.Uri
-import com.twitter.io.Buf
+import io.circe.Json
+import io.circe.JsonObject
 import org.scalatest.FreeSpec
 import org.scalatest.concurrent.Eventually
 import org.scalatest.time.SpanSugar
@@ -111,7 +114,8 @@ final class UninstallHandlerSpec extends FreeSpec with Eventually with SpanSugar
         index = Some(0)))
       val _ = CosmosClient.callEndpoint[PackageRepositoryAddResponse](request)
 
-      val installRequest = InstallRequest("hello-world")
+      val installRequest = InstallRequest("hello-world", options = Some(JsonObject.singleton("world",
+        Json.fromJsonObject(JsonObject.singleton("count", Json.fromInt(1))))))
       val installResponse = submitInstallRequest(installRequest)
       assertResult(Status.Ok)(installResponse.status)
 
@@ -129,6 +133,10 @@ final class UninstallHandlerSpec extends FreeSpec with Eventually with SpanSugar
       eventually (timeout(5 minutes), interval(30 seconds)) {
         assertThrows[MarathonAppNotFound](Await.result(adminRouter.getApp(AppId("/hello-world"))))
       }
+
+      // Cleanup the stub.
+      val removeRepoRequest = CosmosRequests.packageRepositoryDelete(PackageRepositoryDeleteRequest(Some("uninstall-test")))
+      val _ = CosmosClient.callEndpoint[PackageRepositoryDeleteResponse](removeRepoRequest)
     }
   }
 
