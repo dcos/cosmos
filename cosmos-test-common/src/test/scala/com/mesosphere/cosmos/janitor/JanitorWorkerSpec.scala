@@ -1,27 +1,29 @@
 package com.mesosphere.cosmos.janitor
 
-import java.io.IOException
+import java.lang.Thread.State
 import java.util.concurrent.DelayQueue
 
 import com.mesosphere.cosmos.AdminRouter
 import com.mesosphere.cosmos.MarathonAppNotFound
 import com.mesosphere.cosmos.http.RequestSession
 import com.mesosphere.cosmos.janitor.SdkJanitor.JanitorRequest
+import com.mesosphere.cosmos.janitor.SdkJanitor.Request
 import com.mesosphere.cosmos.thirdparty.marathon.model.AppId
 import com.mesosphere.cosmos.thirdparty.marathon.model.MarathonApp
 import com.mesosphere.cosmos.thirdparty.marathon.model.MarathonAppResponse
 import com.twitter.finagle.http.Response
 import com.twitter.finagle.http.Status
-import com.twitter.util.Awaitable.CanAwait
-import com.twitter.util.Duration
+import com.twitter.util.Await
 import com.twitter.util.Future
+import org.mockito.Mockito._
 import org.scalatest.BeforeAndAfterEach
 import org.scalatest.FreeSpec
+import org.scalatest.concurrent.Eventually
 import org.scalatest.mockito.MockitoSugar
-import org.mockito.Mockito._
-import org.mockito.Matchers._
+import org.scalatest.time.SpanSugar
 
-class JanitorWorkerSpec extends FreeSpec with MockitoSugar with BeforeAndAfterEach {
+final class JanitorWorkerSpec extends FreeSpec with MockitoSugar
+  with BeforeAndAfterEach with Eventually with SpanSugar {
   private val mockTracker = mock[Tracker]
   private val mockAdminRouter = mock[AdminRouter]
   private val mockSession = mock[RequestSession]
@@ -36,7 +38,7 @@ class JanitorWorkerSpec extends FreeSpec with MockitoSugar with BeforeAndAfterEa
     lastAttempt = 0L
   )
 
-  private[this] var queue: DelayQueue[JanitorRequest] = _
+  private[this] var queue: DelayQueue[Request] = _
   private[this] var worker: JanitorWorker = _
 
   override def beforeEach(): Unit = {
@@ -45,12 +47,22 @@ class JanitorWorkerSpec extends FreeSpec with MockitoSugar with BeforeAndAfterEa
     reset(mockTracker)
     reset(mockAdminRouter)
 
-    queue = new DelayQueue[JanitorRequest]()
-    worker = new JanitorWorker(queue, true, mockTracker, mockAdminRouter)
+    queue = new DelayQueue[Request]()
+    worker = new JanitorWorker(queue, mockTracker, mockAdminRouter)
   }
 
-
   "In the JanitorWorker" - {
+    "If stop is called, the work loop exits" in {
+      val thread = new Thread(worker)
+
+      thread.start()
+      worker.stop()
+
+      eventually (timeout(10 seconds), interval(1 seconds)) {
+        val _ = assertResult(State.TERMINATED)(thread.getState)
+      }
+
+    }
     "In doWork" - {
       "If the Marathon app is not found, the request is not requeued and is deleted from ZK" in {
         when(mockAdminRouter.getApp(appId)(mockSession)).thenThrow(new MarathonAppNotFound(appId))
@@ -63,29 +75,23 @@ class JanitorWorkerSpec extends FreeSpec with MockitoSugar with BeforeAndAfterEa
         worker.doWork(request)
 
         assertResult(1)(queue.size())
-        assertResult(1)(queue.peek().failures)
+        assertResult(1)(queue.peek().asInstanceOf[JanitorRequest].failures)
       }
       "If the app should be deleted, it is" in {
         when(mockAdminRouter.getApp(appId)(mockSession))
           .thenReturn(Future.value(MarathonAppResponse(new MarathonApp(appId, Map()))))
 
-        val mockFuture = mock[Future[Response]]
-        val mockResponse = mock[Response]
-        when(mockFuture.isReady(any[CanAwait])).thenReturn(true)
-        when(mockFuture.result(any[Duration])(any[CanAwait])).thenReturn(mockResponse)
+        val mockResponse = Response(status = Status.Ok)
+        val mockFuture = Future.value(mockResponse)
         when(mockAdminRouter.getSdkServicePlanStatus(
           service = appId.toString,
           apiVersion = "v1",
           plan = "deploy"
         )(mockSession)).thenReturn(mockFuture)
-        when(mockResponse.status).thenReturn(Status.Ok)
 
-        val mockDeleteFuture = mock[Future[Response]]
-        val mockDeleteResponse = mock[Response]
-        when(mockDeleteFuture.isReady(any[CanAwait])).thenReturn(true)
-        when(mockDeleteFuture.result(any[Duration])(any[CanAwait])).thenReturn(mockDeleteResponse)
+        val mockDeleteResponse = Response(status = Status.Ok)
+        val mockDeleteFuture = Future.value(mockDeleteResponse)
         when(mockAdminRouter.deleteApp(appId)(mockSession)).thenReturn(mockDeleteFuture)
-        when(mockDeleteResponse.statusCode).thenReturn(Status.Ok.code)
 
         worker.doWork(request)
         verify(mockTracker).deleteZkRecord(appId)
@@ -96,16 +102,13 @@ class JanitorWorkerSpec extends FreeSpec with MockitoSugar with BeforeAndAfterEa
         when(mockAdminRouter.getApp(appId)(mockSession))
           .thenReturn(Future.value(MarathonAppResponse(new MarathonApp(appId, Map()))))
 
-        val mockFuture = mock[Future[Response]]
-        val mockResponse = mock[Response]
-        when(mockFuture.isReady(any[CanAwait])).thenReturn(true)
-        when(mockFuture.result(any[Duration])(any[CanAwait])).thenReturn(mockResponse)
+        val mockResponse = Response(status = Status.Accepted)
+        val mockFuture = Future.value(mockResponse)
         when(mockAdminRouter.getSdkServicePlanStatus(
           service = appId.toString,
           apiVersion = "v1",
           plan = "deploy"
         )(mockSession)).thenReturn(mockFuture)
-        when(mockResponse.status).thenReturn(Status.Accepted)
 
         worker.doWork(request)
         verifyZeroInteractions(mockTracker)
@@ -116,12 +119,10 @@ class JanitorWorkerSpec extends FreeSpec with MockitoSugar with BeforeAndAfterEa
       val labels = Map(SdkJanitor.SdkApiVersionLabel -> "v1")
       val app = new MarathonApp(appId, labels)
 
-      val mockFuture = mock[Future[Response]]
       val mockResponse = mock[Response]
+      val mockFuture = Future.value(mockResponse)
 
       def setup(): Unit = {
-        when(mockFuture.isReady(any[CanAwait])).thenReturn(true)
-        when(mockFuture.result(any[Duration])(any[CanAwait])).thenReturn(mockResponse)
         when(mockAdminRouter.getSdkServicePlanStatus(
           service = appId.toString,
           apiVersion = "v1",
@@ -177,32 +178,30 @@ class JanitorWorkerSpec extends FreeSpec with MockitoSugar with BeforeAndAfterEa
       val mockResponse = mock[Response]
 
       def setup(): Unit = {
-        val mockFuture = mock[Future[Response]]
-        when(mockFuture.isReady(any[CanAwait])).thenReturn(true)
-        when(mockFuture.result(any[Duration])(any[CanAwait])).thenReturn(mockResponse)
+        val mockFuture = Future.value(mockResponse)
         when(mockAdminRouter.deleteApp(appId)(mockSession)).thenReturn(mockFuture)
         ()
       }
       "If the delete response is 4XX, fail the request" in {
         setup()
-        when(mockResponse.statusCode).thenReturn(Status.Unauthorized.code)
+        when(mockResponse.status).thenReturn(Status.Unauthorized)
 
         worker.delete(request)
         verify(mockTracker).failZkRecord(appId)
       }
       "If the delete response is 5XX, requeue the request" in {
         setup()
-        when(mockResponse.statusCode).thenReturn(Status.BadGateway.code)
+        when(mockResponse.status).thenReturn(Status.BadGateway)
 
         worker.delete(request)
         verifyZeroInteractions(mockTracker)
 
         assertResult(1)(queue.size())
-        assertResult(1)(queue.peek().failures)
+        assertResult(1)(queue.peek().asInstanceOf[JanitorRequest].failures)
       }
       "If the response is 200, don't requeue and delete the record" in {
         setup()
-        when(mockResponse.statusCode).thenReturn(Status.Ok.code)
+        when(mockResponse.status).thenReturn(Status.Ok)
 
         worker.delete(request)
         verify(mockTracker).deleteZkRecord(appId)
@@ -210,19 +209,19 @@ class JanitorWorkerSpec extends FreeSpec with MockitoSugar with BeforeAndAfterEa
       }
       "Any other response, requeue the request" in {
         setup()
-        when(mockResponse.statusCode).thenReturn(Status.TemporaryRedirect.code)
+        when(mockResponse.status).thenReturn(Status.TemporaryRedirect)
 
         worker.delete(request)
         assertResult(1)(queue.size())
-        assertResult(1)(queue.peek().failures)
+        assertResult(1)(queue.peek().asInstanceOf[JanitorRequest].failures)
       }
       "If an exception is thrown, requeue the request" in {
         setup()
-        when(mockResponse.statusCode).thenThrow(new NullPointerException())
+        when(mockResponse.status).thenThrow(new NullPointerException())
 
         worker.delete(request)
         assertResult(1)(queue.size())
-        assertResult(1)(queue.peek().failures)
+        assertResult(1)(queue.peek().asInstanceOf[JanitorRequest].failures)
       }
     }
     "In fail" - {

@@ -18,9 +18,8 @@ import org.slf4j.Logger
 final class SdkJanitor(
   tracker: Tracker,
   worker: Worker,
-  queue: DelayQueue[JanitorRequest] = new DelayQueue[JanitorRequest](),
-  @volatile var running: Boolean,
-  checkInterval: Int = DefaultTimeBetweenChecksMilliseconds
+  queue: DelayQueue[Request],
+  checkInterval: Int
 ) {
   lazy val logger: Logger = org.slf4j.LoggerFactory.getLogger(getClass)
 
@@ -43,7 +42,7 @@ final class SdkJanitor(
 
   def stop(timeout: Long = 0, timeUnit: TimeUnit = TimeUnit.SECONDS): Unit = {
     logger.info("Stopping the janitor...")
-    running = false
+    worker.stop()
     executor.shutdown()
     val _ = if (timeout > 0) executor.awaitTermination(timeout, timeUnit)
   }
@@ -56,19 +55,28 @@ object SdkJanitor {
   val UninstallFolder = "/uninstalls"
 
   def initializeJanitor(curator: CuratorFramework, adminRouter: AdminRouter): SdkJanitor = {
-    val running = true
-    val queue = new DelayQueue[JanitorRequest]()
+    val queue = new DelayQueue[Request]()
     val tracker = new JanitorTracker(curator)
-    val worker = new JanitorWorker(queue, running, tracker, adminRouter)
-    new SdkJanitor(tracker, worker, queue, running)
+    val worker = new JanitorWorker(queue, tracker, adminRouter)
+    new SdkJanitor(tracker, worker, queue, DefaultTimeBetweenChecksMilliseconds)
   }
 
+  sealed trait Request extends Delayed
+  case class ShutdownRequest() extends Request {
+    override def getDelay(unit: TimeUnit): Long = {
+      0L
+    }
+
+    override def compareTo(o: Delayed): Int = {
+      getDelay(TimeUnit.MILLISECONDS).compare(o.getDelay(TimeUnit.MILLISECONDS))
+    }
+  }
   case class JanitorRequest(appId: AppId,
                             session: RequestSession,
                             failures: Int,
                             created: Long,
                             checkInterval: Int,
-                            lastAttempt: Long) extends Delayed {
+                            lastAttempt: Long) extends Request {
 
     override def compareTo(o: Delayed): Int = {
       getDelay(TimeUnit.MILLISECONDS).compare(o.getDelay(TimeUnit.MILLISECONDS))
@@ -78,8 +86,4 @@ object SdkJanitor {
       unit.convert(checkInterval + lastAttempt - System.currentTimeMillis(), TimeUnit.MILLISECONDS)
     }
   }
-
-  sealed abstract class UninstallStatus(val status: String) extends Serializable
-  case object InProgress extends UninstallStatus("InProgress")
-  case object Failed extends UninstallStatus("Failed")
 }

@@ -1,7 +1,7 @@
 package com.mesosphere.cosmos.janitor
 
-import com.mesosphere.cosmos.janitor.SdkJanitor.Failed
-import com.mesosphere.cosmos.janitor.SdkJanitor.InProgress
+import com.mesosphere.cosmos.storage.v1.model.Failed
+import com.mesosphere.cosmos.storage.v1.model.InProgress
 import com.mesosphere.cosmos.thirdparty.marathon.model.AppId
 import org.apache.curator.framework.CuratorFramework
 import org.apache.curator.framework.CuratorFrameworkFactory
@@ -11,7 +11,7 @@ import org.apache.zookeeper.KeeperException
 import org.scalatest.BeforeAndAfterAll
 import org.scalatest.FreeSpec
 
-class JanitorTrackerSpec extends FreeSpec with BeforeAndAfterAll {
+final class JanitorTrackerSpec extends FreeSpec with BeforeAndAfterAll {
   val appId: AppId = AppId("/test")
   private[this] var zkCluster: TestingCluster = _
   private[this] var curator: CuratorFramework = _

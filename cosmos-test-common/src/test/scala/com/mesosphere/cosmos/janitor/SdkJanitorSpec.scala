@@ -3,7 +3,7 @@ package com.mesosphere.cosmos.janitor
 import java.util.concurrent.DelayQueue
 
 import com.mesosphere.cosmos.http.RequestSession
-import com.mesosphere.cosmos.janitor.SdkJanitor.JanitorRequest
+import com.mesosphere.cosmos.janitor.SdkJanitor.Request
 import com.mesosphere.cosmos.thirdparty.marathon.model.AppId
 import org.mockito.Mockito._
 import org.scalatest.BeforeAndAfterEach
@@ -16,12 +16,12 @@ final class SdkJanitorSpec extends FreeSpec with BeforeAndAfterEach with Mockito
   private val mockSession = mock[RequestSession]
   private val appId = AppId("/test")
 
-  private[this] var queue: DelayQueue[JanitorRequest] = _
+  private[this] var queue: DelayQueue[Request] = _
   private[this] var janitor: SdkJanitor = _
 
   override def beforeEach(): Unit = {
-    queue = new DelayQueue[JanitorRequest]()
-    janitor = new SdkJanitor(mockTracker, mockWorker, queue, true, 1)
+    queue = new DelayQueue[Request]()
+    janitor = new SdkJanitor(mockTracker, mockWorker, queue, 1)
   }
 
   "In the SDKJanitor" - {
@@ -39,7 +39,7 @@ final class SdkJanitorSpec extends FreeSpec with BeforeAndAfterEach with Mockito
     }
     "Stop sets running to false" in {
       janitor.stop()
-      assertResult(false)(janitor.running)
+      verify(mockWorker).stop()
     }
   }
 }

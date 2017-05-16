@@ -10,27 +10,36 @@ import com.mesosphere.cosmos.janitor.SdkJanitor._
 import com.mesosphere.cosmos.thirdparty.marathon.model.MarathonApp
 import com.twitter.finagle.http.Status
 import com.twitter.util.Await
-import org.apache.http.HttpStatus
 import org.slf4j.Logger
 
-trait Worker extends Runnable
+trait Worker extends Runnable {
+  def stop(): Unit
+}
 
 /** The work thread used by SdkJanitor */
 final class JanitorWorker(
-  queue: DelayQueue[JanitorRequest] = new DelayQueue[JanitorRequest](),
-  @volatile var running: Boolean,
+  queue: DelayQueue[Request],
   tracker: Tracker,
   adminRouter: AdminRouter
                          ) extends Worker {
+
+  @volatile var running: Boolean = true
   lazy val logger: Logger = org.slf4j.LoggerFactory.getLogger(getClass)
+
+  override def stop(): Unit = {
+    running = false
+    val _ = queue.add(ShutdownRequest())
+  }
 
   override def run(): Unit = {
     logger.info("Starting work loop...")
     while (running) {
       try {
         logger.info("Queuing for work.")
-        val request = queue.take()
-        doWork(request)
+        queue.take() match {
+          case janitorRequest: JanitorRequest => doWork(janitorRequest)
+          case _: ShutdownRequest => ()
+        }
       } catch {
         case ie: InterruptedException =>
           logger.error("Request queue was interrupted", ie)
@@ -69,10 +78,7 @@ final class JanitorWorker(
         service = app.id.toString,
         apiVersion = app.labels.getOrElse(SdkJanitor.SdkApiVersionLabel, "v1"),
         plan = "deploy"
-      )(session = session)).status match {
-        case Status.Ok => true
-        case _ => false
-      }
+      )(session = session)).status == Status.Ok
     } catch {
       case e: Exception =>
         logger.error("Encountered an exception checking the uninstall progress of %s".format(app.id), e)
@@ -85,18 +91,18 @@ final class JanitorWorker(
       request.appId)
     try {
       val deleteResult = Await.result(adminRouter.deleteApp(request.appId)(session = request.session))
-      deleteResult.statusCode match {
-        case badRequest if 400 until 499 contains badRequest =>
+      deleteResult.status match {
+        case badRequest if 400 until 499 contains badRequest.code =>
           logger.error("Encountered Marathon error: {} when deleting {}. Failing.", badRequest,
             request.appId)
           fail(request)
           ()
-        case retryRequest if 500 until 599 contains retryRequest =>
+        case retryRequest if 500 until 599 contains retryRequest.code =>
           logger.error("Encountered Marathon error: {} when deleting {}. Retrying.", retryRequest,
             request.appId)
           requeue(request.copy(failures = request.failures + 1))
           ()
-        case HttpStatus.SC_OK =>
+        case Status.Ok =>
           logger.info("Deleted app: {}", request.appId)
           tracker.deleteZkRecord(request.appId)
           ()
