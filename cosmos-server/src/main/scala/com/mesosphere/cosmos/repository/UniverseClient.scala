@@ -28,6 +28,7 @@ import com.mesosphere.universe.v2.circe.Decoders._
 import com.netaporter.uri.Uri
 import com.twitter.bijection.Conversion.asMethod
 import com.twitter.finagle.http.Fields
+import com.twitter.finagle.http.Status
 import com.twitter.finagle.stats.NullStatsReceiver
 import com.twitter.finagle.stats.Stat
 import com.twitter.finagle.stats.StatsReceiver
@@ -51,6 +52,7 @@ import java.nio.file.Path
 import java.nio.file.Paths
 import java.util.zip.GZIPInputStream
 import java.util.zip.ZipInputStream
+import org.jboss.netty.handler.codec.http.HttpMethod
 import scala.collection.JavaConverters._
 import scala.io.Source
 import scala.util.Failure
@@ -119,7 +121,9 @@ final class DefaultUniverseClient(
           conn.getResponseCode match {
             case HttpURLConnection.HTTP_OK =>
               fetchScope.scope("status").counter("200").incr()
-              val contentType = parseContentType(Option(conn.getHeaderField(Fields.ContentType))).get
+              val contentType = parseContentType(
+                Option(conn.getHeaderField(Fields.ContentType))
+              ).get
               val contentEncoding = Option(conn.getHeaderField(Fields.ContentEncoding))
               (contentType, contentEncoding)
             case x @ (HttpURLConnection.HTTP_MOVED_PERM |
@@ -133,7 +137,15 @@ final class DefaultUniverseClient(
               throw UnsupportedRedirect(List(repository.uri.scheme.get), loc)
             case x =>
               fetchScope.scope("status").counter(x.toString).incr()
-              throw GenericHttpError("GET", repository.uri, x)
+              /* If we are unable to get the latest Universe we should not forward the status code returned.
+               * We should instead return 500 to the client and include the actual error in the message.
+               */
+              throw GenericHttpError(
+                HttpMethod.GET,
+                repository.uri,
+                Status.fromCode(x),
+                Status.InternalServerError
+              )
           }
         } handle {
           case t: IOException => throw RepositoryUriConnection(repository, t)

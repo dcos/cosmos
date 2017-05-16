@@ -234,8 +234,8 @@ object Encoders {
           case None =>
             s"Unspecified Content-Encoding Accept-Encoding: $acceptMsg"
         }
-      case GenericHttpError(method, uri, status) =>
-        s"Unexpected down stream http error: ${method.getName} ${uri.toString} ${status.code}"
+      case GenericHttpError(method, uri, clientStatus, status) =>
+        s"Unexpected down stream http error: ${method.getName} ${uri.toString} ${clientStatus.code}"
       case AmbiguousAppId(pkgName, appIds) =>
         s"Multiple apps named [$pkgName] are installed: [${appIds.mkString(", ")}]"
       case MultipleFrameworkIds(pkgName, pkgVersion, fwName, ids) =>

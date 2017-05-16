@@ -1,13 +1,25 @@
 package com.mesosphere.cosmos
 
-import java.net.{Authenticator, URI, URL}
-import java.net.Authenticator.RequestorType
-
-import com.mesosphere.cosmos.HttpProxySupport.{CosmosHttpProxyPasswordAuthenticator, ProxyEnvVariables}
-import org.scalatest.FreeSpec
+import com.mesosphere.cosmos.HttpProxySupport.CosmosHttpProxyPasswordAuthenticator
+import com.mesosphere.cosmos.HttpProxySupport.ProxyEnvVariables
 import com.netaporter.uri.dsl._
+import java.net.Authenticator
+import java.net.Authenticator.RequestorType
+import java.net.URI
+import java.net.URL
+import org.scalacheck.Gen
+import org.scalatest.BeforeAndAfter
+import org.scalatest.FreeSpec
+import org.scalatest.prop.PropertyChecks
 
-class HttpProxySupportSpec extends FreeSpec {
+final class HttpProxySupportSpec extends FreeSpec with BeforeAndAfter with PropertyChecks {
+
+  import HttpProxySupportSpec._
+
+  after {
+    List(HttpHost, HttpPort, HttpsHost, HttpsPort, NonHosts).foreach(System.clearProperty)
+    Authenticator.setDefault(null)  // scalastyle:ignore null
+  }
 
   "HttpProxySupport should" - {
 
@@ -15,22 +27,31 @@ class HttpProxySupportSpec extends FreeSpec {
 
       "HTTP" - {
 
+        "parses property values" in {
+          val proxyUri = "http://localhost:3128"
+          val parsed = HttpProxySupport.parseHostPortProperties(HttpHost, HttpPort)(proxyUri)
+          assertResult(Map(HttpHost -> "localhost", HttpPort -> "3128"))(parsed.toMap)
+        }
+
         "respects http.proxyHost and http.proxyPort" in {
-          System.setProperty("http.proxyHost", "host")
-          System.setProperty("http.proxyPort", "port")
-          HttpProxySupport.initHttpProxyProperties(Some("http://localhost:3128"), "http.proxyHost", "http.proxyPort")
-          assertResult("host")(System.getProperty("http.proxyHost"))
-          assertResult("port")(System.getProperty("http.proxyPort"))
-          clearSystemProperty("http.proxyHost")
-          clearSystemProperty("http.proxyPort")
+          System.setProperty(HttpHost, "host")
+          System.setProperty(HttpPort, "port")
+
+          val httpProxyUri = "http://localhost:3128"
+          val proxyEnvVariables = ProxyEnvVariables(Some(httpProxyUri), None, None)
+          HttpProxySupport.initProxyConfig(proxyEnvVariables, _ => ())
+
+          assertResult("host")(System.getProperty(HttpHost))
+          assertResult("port")(System.getProperty(HttpPort))
         }
 
         "http.proxyHost and http.proxyPort will be set if not previously set" in {
-          HttpProxySupport.initHttpProxyProperties(Some("http://localhost:3128"), "http.proxyHost", "http.proxyPort")
-          assertResult("localhost")(System.getProperty("http.proxyHost"))
-          assertResult("3128")(System.getProperty("http.proxyPort"))
-          clearSystemProperty("http.proxyHost")
-          clearSystemProperty("http.proxyPort")
+          val httpProxyUri = "http://localhost:3128"
+          val proxyEnvVariables = ProxyEnvVariables(Some(httpProxyUri), None, None)
+          HttpProxySupport.initProxyConfig(proxyEnvVariables, _ => ())
+
+          assertResult("localhost")(System.getProperty(HttpHost))
+          assertResult("3128")(System.getProperty(HttpPort))
         }
 
         "will use http_proxy before HTTP_PROXY" in {
@@ -54,22 +75,31 @@ class HttpProxySupportSpec extends FreeSpec {
 
       "HTTPS" - {
 
+        "parses property values" in {
+          val proxyUri = "https://localhost:3128"
+          val parsed = HttpProxySupport.parseHostPortProperties(HttpsHost, HttpsPort)(proxyUri)
+          assertResult(Map(HttpsHost -> "localhost", HttpsPort -> "3128"))(parsed.toMap)
+        }
+
         "respects https.proxyHost and https.proxyPort" in {
-          System.setProperty("https.proxyHost", "host")
-          System.setProperty("https.proxyPort", "port")
-          HttpProxySupport.initHttpProxyProperties(Some("https://localhost:3128"), "https.proxyHost", "https.proxyPort")
-          assertResult("host")(System.getProperty("https.proxyHost"))
-          assertResult("port")(System.getProperty("https.proxyPort"))
-          clearSystemProperty("https.proxyHost")
-          clearSystemProperty("https.proxyPort")
+          System.setProperty(HttpsHost, "host")
+          System.setProperty(HttpsPort, "port")
+
+          val httpsProxyUri = "https://localhost:3128"
+          val proxyEnvVariables = ProxyEnvVariables(None, Some(httpsProxyUri), None)
+          HttpProxySupport.initProxyConfig(proxyEnvVariables, _ => ())
+
+          assertResult("host")(System.getProperty(HttpsHost))
+          assertResult("port")(System.getProperty(HttpsPort))
         }
 
         "https.proxyHost and https.proxyPort will be set if not previously set" in {
-          HttpProxySupport.initHttpProxyProperties(Some("https://localhost:3128"), "https.proxyHost", "https.proxyPort")
-          assertResult("localhost")(System.getProperty("https.proxyHost"))
-          assertResult("3128")(System.getProperty("https.proxyPort"))
-          clearSystemProperty("https.proxyHost")
-          clearSystemProperty("https.proxyPort")
+          val httpsProxyUri = "https://localhost:3128"
+          val proxyEnvVariables = ProxyEnvVariables(None, Some(httpsProxyUri), None)
+          HttpProxySupport.initProxyConfig(proxyEnvVariables, _ => ())
+
+          assertResult("localhost")(System.getProperty(HttpsHost))
+          assertResult("3128")(System.getProperty(HttpsPort))
         }
 
         "will use https_proxy before HTTPS_PROXY" in {
@@ -93,17 +123,67 @@ class HttpProxySupportSpec extends FreeSpec {
 
       "No Proxy" - {
 
+        "translates env var into a property value" - {
+
+          "single cases" - {
+
+            "single host" in {
+              assertResult("something") {
+                HttpProxySupport.translateNoProxy("something")
+              }
+            }
+
+            "traditional no_proxy value" in {
+              assertResult("127.0.0.1|*.example.com|localhost") {
+                HttpProxySupport.translateNoProxy("127.0.0.1,.example.com,localhost")
+              }
+            }
+
+            "JVM http.nonProxyHosts value" in {
+              val unchangedValue = "127.0.0.1|*.example.com|localhost"
+              assertResult(unchangedValue) {
+                HttpProxySupport.translateNoProxy(unchangedValue)
+              }
+            }
+
+          }
+
+          "exhaustive checks" - {
+
+            "should allow excluded hosts to be separated by ','" in {
+              forAll (Gen.listOf(genNoProxyHost)) { hosts =>
+                assertResult(renderProperty(hosts)) {
+                  HttpProxySupport.translateNoProxy(renderEnvVar(hosts, ','))
+                }
+              }
+            }
+
+            "should allow excluded hosts to be separated by '|'" in {
+              forAll (Gen.listOf(genNoProxyHost)) { hosts =>
+                assertResult(renderProperty(hosts)) {
+                  HttpProxySupport.translateNoProxy(renderEnvVar(hosts, '|'))
+                }
+              }
+            }
+
+          }
+
+        }
+
         "respects http.nonProxyHosts" in {
-          System.setProperty("http.nonProxyHosts", "*.google.com")
-          HttpProxySupport.initNoProxyProperties(Some("something"))
-          assertResult("*.google.com")(System.getProperty("http.nonProxyHosts"))
-          clearSystemProperty("http.nonProxyHosts")
+          System.setProperty(NonHosts, "*.google.com")
+
+          val proxyEnvVariables = ProxyEnvVariables(None, None, noProxy = Some("something"))
+          HttpProxySupport.initProxyConfig(proxyEnvVariables, _ => ())
+
+          assertResult("*.google.com")(System.getProperty(NonHosts))
         }
 
         "sets http.nonProxyHosts from env variable" in {
-          HttpProxySupport.initNoProxyProperties(Some("something"))
-          assertResult("something")(System.getProperty("http.nonProxyHosts"))
-          clearSystemProperty("http.nonProxyHosts")
+          val proxyEnvVariables = ProxyEnvVariables(None, None, noProxy = Some("something"))
+          HttpProxySupport.initProxyConfig(proxyEnvVariables, _ => ())
+
+          assertResult("something")(System.getProperty(NonHosts))
         }
 
         "will use no_proxy before NO_PROXY" in {
@@ -123,24 +203,21 @@ class HttpProxySupportSpec extends FreeSpec {
           assertResult(ProxyEnvVariables(None, None, Some("val_proxy_no")))(vars)
         }
 
-        "should allow excluded hosts to be separated by ','" in {
-          HttpProxySupport.initNoProxyProperties(Some("127.0.0.1,localhost"))
-          assertResult("127.0.0.1|localhost")(System.getProperty("http.nonProxyHosts"))
-          clearSystemProperty("http.nonProxyHosts")
-        }
-
-        "should allow excluded hosts to be separated by '|'" in {
-          HttpProxySupport.initNoProxyProperties(Some("127.0.0.1|localhost"))
-          assertResult("127.0.0.1|localhost")(System.getProperty("http.nonProxyHosts"))
-          clearSystemProperty("http.nonProxyHosts")
-        }
-
       }
 
       "Proxy Credentials" - {
 
-        val vars = ProxyEnvVariables(Some("http://localhost:3128"), Some("http://hostlocal:8213"), Some("no_proxy_vals"))
-        val authVars = ProxyEnvVariables(Some("http://test:testtest@localhost:3128"), Some("http://foo:bar@hostlocal:8213"), Some("no_proxy_vals"))
+        val vars = ProxyEnvVariables(
+          httpProxyUri = Some("http://localhost:3128"),
+          httpsProxyUri = Some("http://hostlocal:8213"),
+          noProxy = Some("no_proxy_vals")
+        )
+
+        val authVars = ProxyEnvVariables(
+          httpProxyUri = Some("http://test:testtest@localhost:3128"),
+          httpsProxyUri = Some("http://foo:bar@hostlocal:8213"),
+          noProxy = Some("no_proxy_vals")
+        )
 
         "can be set from http_proxy, https_proxy and no_proxy" in {
           var authenticatorSet = false
@@ -148,19 +225,12 @@ class HttpProxySupportSpec extends FreeSpec {
 
           HttpProxySupport.initProxyConfig(vars, setAuthenticator)
 
-          assertResult("localhost")(System.getProperty("http.proxyHost"))
-          assertResult("3128")(System.getProperty("http.proxyPort"))
-          assertResult("hostlocal")(System.getProperty("https.proxyHost"))
-          assertResult("8213")(System.getProperty("https.proxyPort"))
-          assertResult("no_proxy_vals")(System.getProperty("http.nonProxyHosts"))
+          assertResult("localhost")(System.getProperty(HttpHost))
+          assertResult("3128")(System.getProperty(HttpPort))
+          assertResult("hostlocal")(System.getProperty(HttpsHost))
+          assertResult("8213")(System.getProperty(HttpsPort))
+          assertResult("no_proxy_vals")(System.getProperty(NonHosts))
           assert(authenticatorSet)
-
-          clearSystemProperty("http.proxyHost")
-          clearSystemProperty("http.proxyPort")
-          clearSystemProperty("http.nonProxyHosts")
-          clearSystemProperty("https.proxyHost")
-          clearSystemProperty("https.proxyPort")
-          Authenticator.setDefault(null)  // scalastyle:ignore null
         }
 
         "are used in Authenticator (http)" in {
@@ -173,7 +243,6 @@ class HttpProxySupportSpec extends FreeSpec {
 
           assertResult("test")(authentication.getUserName)
           assertResult("testtest".toCharArray)(authentication.getPassword)
-
         }
 
         "are used in Authenticator (https)" in {
@@ -218,7 +287,12 @@ class HttpProxySupportSpec extends FreeSpec {
         }
 
         "are not provided when no password in url" in {
-          val vars = ProxyEnvVariables(Some("http://bill@localhost:3128"), Some("http://alice@hostlocal:8213"), Some("no_proxy_vals"))
+          val vars = ProxyEnvVariables(
+            httpProxyUri = Some("http://bill@localhost:3128"),
+            httpsProxyUri = Some("http://alice@hostlocal:8213"),
+            noProxy = Some("no_proxy_vals")
+          )
+
           val auth = new CosmosHttpProxyPasswordAuthenticator(vars) {
             override def getRequestorType: RequestorType = RequestorType.PROXY
             override def getRequestingURL: URL = URI.create("https://someplace:123").toURL
@@ -234,8 +308,57 @@ class HttpProxySupportSpec extends FreeSpec {
 
   }
 
-  private[this] def clearSystemProperty(name: String): Unit = {
-    val _ = System.clearProperty(name)
+}
+
+object HttpProxySupportSpec {
+
+  val HttpHost: String = "http.proxyHost"
+  val HttpPort: String = "http.proxyPort"
+  val HttpsHost: String = "https.proxyHost"
+  val HttpsPort: String = "https.proxyPort"
+  val NonHosts: String = "http.nonProxyHosts"
+
+  val genHostWildcard: Gen[HostWildcard] = Gen.oneOf(NoWildcard, ExplicitWildcard, ImplicitWildcard)
+
+  val genNoProxyHost: Gen[NoProxyHost] = {
+    for {
+      elements <- Gen.nonEmptyListOf(Gen.nonEmptyBuildableOf[String, Char](Gen.alphaLowerChar))
+      wildcard <- genHostWildcard
+    } yield NoProxyHost(elements, wildcard)
   }
+
+  def renderEnvVar(hosts: List[NoProxyHost], delimiter: Char): String = {
+    hosts
+      .map { host =>
+        val prefix = host.wildcard match {
+          case NoWildcard => ""
+          case ExplicitWildcard => "*."
+          case ImplicitWildcard => "."
+        }
+
+        host.elements.mkString(prefix, ".", "")
+      }
+      .mkString(delimiter.toString)
+  }
+
+  def renderProperty(hosts: List[NoProxyHost]): String = {
+    hosts
+      .map { host =>
+        val prefix = host.wildcard match {
+          case NoWildcard => ""
+          case _ => "*."
+        }
+
+        host.elements.mkString(prefix, ".", "")
+      }
+      .mkString("|")
+  }
+
+  sealed trait HostWildcard
+  case object NoWildcard extends HostWildcard
+  case object ExplicitWildcard extends HostWildcard
+  case object ImplicitWildcard extends HostWildcard
+
+  case class NoProxyHost(elements: List[String], wildcard: HostWildcard)
 
 }
