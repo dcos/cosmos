@@ -1,9 +1,9 @@
 package com.mesosphere.cosmos
 
-import java.net.Authenticator.RequestorType
-import java.net.{Authenticator, PasswordAuthentication}
-
 import com.netaporter.uri.Uri
+import java.net.Authenticator.RequestorType
+import java.net.Authenticator
+import java.net.PasswordAuthentication
 
 private[cosmos] object HttpProxySupport {
 
@@ -102,41 +102,54 @@ private[cosmos] object HttpProxySupport {
     ProxyEnvVariables(httpProxyUri, httpsProxyUri, noProxy)
   }
 
-  private[cosmos] def initProxyConfig(proxyEnvVariables: ProxyEnvVariables, setAuthenticator: Authenticator => Unit): Unit = {
-    val ProxyEnvVariables(httpProxyUri, httpsProxyUri, noProxy) = proxyEnvVariables
-
-    initHttpProxyProperties(httpProxyUri, HttpProxyHost, HttpProxyPort)
-    initHttpProxyProperties(httpsProxyUri, HttpsProxyHost, HttpsProxyPort)
-    initNoProxyProperties(noProxy)
+  private[cosmos] def initProxyConfig(
+    proxyEnvVariables: ProxyEnvVariables,
+    setAuthenticator: Authenticator => Unit
+  ): Unit = {
+    parseAllProperties(proxyEnvVariables)
+      .foreach { case (key, value) => setPropertyIfUnset(key, value) }
 
     val authenticator = new CosmosHttpProxyPasswordAuthenticator(proxyEnvVariables)
     setAuthenticator(authenticator)
   }
 
-  private[cosmos] def initHttpProxyProperties(proxyUri: Option[Uri], hostProperty: String, portProperty: String): Unit = {
-    proxyUri
-      .flatMap(Uris.extractHostAndPort(_).toOption)
-      .foreach {
-        case ConnectionDetails(h, p, _) =>
-          if (Option(System.getProperty(hostProperty)).isEmpty) {
-            System.setProperty(hostProperty, h)
-          }
-          if (Option(System.getProperty(portProperty)).isEmpty) {
-            System.setProperty(portProperty, p.toString)
-          }
+  private[this] def parseAllProperties(
+    proxyEnvVariables: ProxyEnvVariables
+  ): List[(String, String)] = {
+    val ProxyEnvVariables(httpProxyUri, httpsProxyUri, noProxy) = proxyEnvVariables
+    def parseWith[A, B](v: Option[A])(f: A => List[B]): List[B] = v.toList.flatMap(f)
+
+    parseWith(httpProxyUri)(parseHostPortProperties(HttpProxyHost, HttpProxyPort)) ++
+      parseWith(httpsProxyUri)(parseHostPortProperties(HttpsProxyHost, HttpsProxyPort)) ++
+      noProxy.map(np => (HttpProxyNoHosts, translateNoProxy(np)))
+  }
+
+  def parseHostPortProperties(hostProperty: String, portProperty: String)(
+    proxyUri: Uri
+  ): List[(String, String)] = {
+    Uris.extractHostAndPort(proxyUri)
+      .toOption
+      .toList
+      .flatMap { case ConnectionDetails(host, port, _) =>
+        List((hostProperty, host), (portProperty, port.toString))
       }
   }
 
-  private[cosmos] def initNoProxyProperties(noProxy: Option[String]): Unit = {
+  /**
+   * Normalizes the input into the format required by the `http.nonProxyHosts` system property.
+   * @see https://docs.oracle.com/javase/8/docs/api/java/net/doc-files/net-properties.html#Proxies
+   */
+  def translateNoProxy(noProxy: String): String = {
     noProxy
-      .map { pattern =>
-        pattern.replaceAllLiterally(",", "|")
-      }
-      .foreach { pattern =>
-        if (Option(System.getProperty(HttpProxyNoHosts)).isEmpty) {
-          System.setProperty(HttpProxyNoHosts, pattern)
-        }
-      }
+      .split(Array(',', '|'))
+      .map(suffix => if (suffix.startsWith(".")) "*" + suffix else suffix)
+      .mkString("|")
+  }
+
+  private[this] def setPropertyIfUnset(key: String, value: String): Unit = {
+    if (Option(System.getProperty(key)).isEmpty) {
+      val _ = System.setProperty(key, value)
+    }
   }
 
   private[this] def envVar(env: Map[String, String])(name: String): Option[String] = {

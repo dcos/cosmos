@@ -113,11 +113,14 @@ final class UniverseClientSpec extends FreeSpec with Matchers {
       val version = DcosReleaseVersionParser.parseUnsafe("0.0")
       val repoUri = baseRepoUri / "doesnotexist.json"
       val result = universeClient(PackageRepository("badRepo", repoUri), version)
-      val Throw(GenericHttpError(method, uri, status)) = Await.result(result.liftToTry)
+      val Throw(GenericHttpError(method, uri, clientStatus, status)) = Await.result(
+        result.liftToTry
+      )
 
       assertResult("GET")(method.getName)
       assertResult(repoUri)(uri)
-      assertResult(Status.Forbidden)(status)
+      assertResult(Status.Forbidden)(clientStatus)
+      assertResult(Status.InternalServerError)(status)
     }
 
   }

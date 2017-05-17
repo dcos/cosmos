@@ -60,7 +60,7 @@ abstract class ServiceClient(baseUri: Uri) {
       case Status.Ok =>
         Future.value(response)
       case s: Status =>
-        throw new GenericHttpError(method, uri, s)
+        throw GenericHttpError(method, uri, s, s)
     }
   }
 
