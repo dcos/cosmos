@@ -14,13 +14,22 @@ import com.mesosphere.cosmos.thirdparty.marathon.model.AppId
 import org.apache.curator.framework.CuratorFramework
 import org.slf4j.Logger
 
+trait Janitor {
+  def claimUninstall(appId: AppId): UninstallClaim
+  def releaseUninstall(appId: AppId): Unit
+  def delete(appId: AppId, session: RequestSession): Unit
+  def start(): Unit
+  def stop(timeout: Long = 0, timeUnit: TimeUnit = TimeUnit.SECONDS): Unit
+}
+
 /** Janitor Daemon for removing SDK based services as they complete their uninstalls. */
 final class SdkJanitor(
   tracker: Tracker,
   worker: Worker,
   queue: DelayQueue[Request],
+  lock: UninstallLock,
   checkInterval: Int
-) {
+) extends Janitor {
   lazy val logger: Logger = org.slf4j.LoggerFactory.getLogger(getClass)
 
   private val executor: ExecutorService = Executors.newFixedThreadPool(1, new ThreadFactoryBuilder()
@@ -28,23 +37,27 @@ final class SdkJanitor(
     .setNameFormat("sdk-janitor-thread-%d")
     .build())
 
-  def delete(appId: AppId, session: RequestSession): Unit = {
+  override def claimUninstall(appId: AppId): UninstallClaim = tracker.startUninstall(appId)
+
+  override def releaseUninstall(appId: AppId): Unit = tracker.completeUninstall(appId)
+
+  override def delete(appId: AppId, session: RequestSession): Unit = {
     queue.add(JanitorRequest(appId, session, 0, System.currentTimeMillis(), checkInterval, 0))
-    tracker.createZkRecord(appId)
     logger.info("Successfully added delete request to queue for {}", appId)
   }
 
-  def start(): Unit = {
+  override def start(): Unit = {
     logger.info("Starting the janitor...")
-    executor.submit(worker)
-    ()
+    val _ = executor.submit(worker)
+    logger.info("Janitor started.")
   }
 
-  def stop(timeout: Long = 0, timeUnit: TimeUnit = TimeUnit.SECONDS): Unit = {
+  override def stop(timeout: Long = 0, timeUnit: TimeUnit = TimeUnit.SECONDS): Unit = {
     logger.info("Stopping the janitor...")
     worker.stop()
     executor.shutdown()
     val _ = if (timeout > 0) executor.awaitTermination(timeout, timeUnit)
+    logger.info("Janitor stopped.")
   }
 }
 
@@ -54,12 +67,18 @@ object SdkJanitor {
   val SdkApiVersionLabel = "DCOS_COMMONS_API_VERSION"
   val UninstallFolder = "/uninstalls"
 
-  def initializeJanitor(curator: CuratorFramework, adminRouter: AdminRouter): SdkJanitor = {
+  def initializeJanitor(curator: CuratorFramework, adminRouter: AdminRouter): Janitor = {
     val queue = new DelayQueue[Request]()
-    val tracker = new JanitorTracker(curator)
+    val lock = new CuratorUninstallLock(curator)
+    val tracker = new JanitorTracker(curator, lock)
     val worker = new JanitorWorker(queue, tracker, adminRouter)
-    new SdkJanitor(tracker, worker, queue, DefaultTimeBetweenChecksMilliseconds)
+
+    new SdkJanitor(tracker, worker, queue, lock, DefaultTimeBetweenChecksMilliseconds)
   }
+
+  sealed trait UninstallClaim
+  case object UninstallClaimed extends UninstallClaim
+  case object UninstallAlreadyClaimed extends UninstallClaim
 
   sealed trait Request extends Delayed
   case class ShutdownRequest() extends Request {
@@ -87,3 +106,7 @@ object SdkJanitor {
     }
   }
 }
+
+
+// User runs uninstall
+// UninstallHandler checks if the uninstall has already been started (trys to acquire the lock)

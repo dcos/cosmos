@@ -61,9 +61,6 @@ final class JanitorWorker(
 
       if (checkUninstall(app)(request.session)) delete(request) else requeue(request)
     } catch {
-      case notFound: MarathonAppNotFound =>
-        logger.error("{} was not found in Marathon. Was it already deleted?", notFound.appId)
-        tracker.deleteZkRecord(request.appId)
       case e: Exception =>
         logger.error("Encountered exception during uninstall evaluation.", e)
         requeue(request.copy(failures = request.failures + 1))
@@ -104,7 +101,7 @@ final class JanitorWorker(
           ()
         case Status.Ok =>
           logger.info("Deleted app: {}", request.appId)
-          tracker.deleteZkRecord(request.appId)
+          tracker.completeUninstall(request.appId)
           ()
         case default =>
           logger.error("Encountered unexpected status: {} when deleting {}. Retrying.", default, request.appId)
@@ -120,7 +117,7 @@ final class JanitorWorker(
 
   def fail(request: JanitorRequest): Unit = {
     logger.error("Failed to delete app: {} after {} attempts.", request.appId, request.failures)
-    tracker.failZkRecord(request.appId)
+    tracker.failUninstall(request.appId)
   }
 
   /** Determine if the request should be requeued. If it should, do so. */

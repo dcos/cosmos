@@ -25,6 +25,7 @@ import com.mesosphere.cosmos.handler.PackageSearchHandler
 import com.mesosphere.cosmos.handler.ServiceDescribeHandler
 import com.mesosphere.cosmos.handler.ServiceStartHandler
 import com.mesosphere.cosmos.handler.UninstallHandler
+import com.mesosphere.cosmos.janitor.Janitor
 import com.mesosphere.cosmos.janitor.SdkJanitor
 import com.mesosphere.cosmos.repository.DefaultInstaller
 import com.mesosphere.cosmos.repository.DefaultUniverseInstaller
@@ -69,15 +70,15 @@ import com.twitter.util.Await
 import com.twitter.util.Try
 import org.apache.curator.framework.CuratorFramework
 import org.slf4j.Logger
-
-import scala.concurrent.duration._
-import scala.language.implicitConversions
 import shapeless.:+:
 import shapeless.CNil
 import shapeless.Coproduct
 import shapeless.HNil
 import shapeless.Inl
 import shapeless.Inr
+
+import scala.concurrent.duration._
+import scala.language.implicitConversions
 
 trait CosmosApp
 extends App
@@ -407,7 +408,7 @@ object CosmosApp {
     val repositories: MultiRepository,
     val producerView: ProducerView,
     val packageRunner: PackageRunner,
-    val marathonSdkJanitor: SdkJanitor
+    val marathonSdkJanitor: Janitor
   )
 
   private def enableIfSome[A, Req, Res](requirement: Option[A], operationName: String)(

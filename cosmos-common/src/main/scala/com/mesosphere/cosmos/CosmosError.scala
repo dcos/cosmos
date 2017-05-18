@@ -186,6 +186,27 @@ case class MarathonAppNotFound(appId: AppId) extends CosmosError {
   }
 }
 
+case class AppAlreadyUninstalling(appId: AppId) extends CosmosError {
+  override val status: Status = Status.Conflict
+  override val getData: Option[JsonObject] = {
+    Some(
+      JsonObject.fromMap(
+        Map("appId" -> appId.asJson)
+      )
+    )
+  }
+}
+
+case class FailedToStartUninstall(appId: AppId, explanation: String) extends CosmosError {
+  override val getData: Option[JsonObject] = {
+    Some(
+      JsonObject.fromMap(
+        Map("appId" -> appId.asJson, "explanation" -> explanation.asJson)
+      )
+    )
+  }
+}
+
 case class CirceError(circeError: _root_.io.circe.Error) extends CosmosError {
   override val getData = None
 }

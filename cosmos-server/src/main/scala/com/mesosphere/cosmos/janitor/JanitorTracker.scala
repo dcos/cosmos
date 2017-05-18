@@ -1,6 +1,5 @@
 package com.mesosphere.cosmos.janitor
 
-import java.net.InetAddress
 import java.nio.file.Paths
 
 import com.mesosphere.cosmos.janitor.SdkJanitor._
@@ -14,55 +13,89 @@ import org.apache.curator.framework.CuratorFramework
 import org.slf4j.Logger
 
 trait Tracker {
-  def createZkRecord(appId: AppId): Unit
-  def deleteZkRecord(appId: AppId): Unit
-  def failZkRecord(appId: AppId): Unit
-  def getZkRecord(appId: AppId): UninstallStatus
+  def startUninstall(appId: AppId): UninstallClaim
+  def failUninstall(appId: AppId): Unit
+  def completeUninstall(appId: AppId): Unit
 }
 
 /** Tracks work being done by the Janitor */
 final class JanitorTracker(
-  curator: CuratorFramework
+  curator: CuratorFramework,
+  lock: UninstallLock
 ) extends Tracker {
   lazy val logger: Logger = org.slf4j.LoggerFactory.getLogger(getClass)
 
-  private def zkRecordPath(appId: AppId): String = {
-    // uninstalls/<name>/host
-    // Replace slashes in the host so that it gets stored as a single node.
-    Paths.get(UninstallFolder, appId.toString, InetAddress.getLocalHost.toString.replaceAll("/", "")).toString
-  }
 
-  private def setZkData(appId: AppId, status: UninstallStatus): Unit = {
-    val _ = curator.setData()
-      .forPath(zkRecordPath(appId), StorageEnvelope.encodeData(status))
-  }
-
-  private def createZkData(appId: AppId, status: UninstallStatus): Unit = {
-    val _ = curator.create()
-      .creatingParentContainersIfNeeded()
-      .forPath(zkRecordPath(appId),
-        StorageEnvelope.encodeData(status))
-  }
-
-  override def createZkRecord(appId: AppId): Unit = {
-    Option(curator.checkExists().forPath(zkRecordPath(appId))) match {
-      case Some(thing) =>
-        logger.info("When storing UninstallStatus for {}, found stale status of {} in ZK", appId, getZkRecord(appId))
-        setZkData(appId, InProgress)
-      case _ =>
-        createZkData(appId, InProgress)
+  override def startUninstall(appId: AppId): UninstallClaim = {
+    // Does this JVM already own the lock?
+    if (lock.isLockedByThisProcess(appId)) {
+      UninstallAlreadyClaimed
+    } else {
+      // Does some other JVM already own the lock?
+      lock.lock(appId) match {
+        case true =>
+          logger.info("Acquired uninstall lock for app: {}", appId)
+          markInProgress(appId)
+          UninstallClaimed
+        case false =>
+          logger.info("Failed to acquire uninstall lock for app: {}", appId)
+          UninstallAlreadyClaimed
+      }
     }
   }
 
-  override def deleteZkRecord(appId: AppId): Unit = {
-    val _ = curator.delete().forPath(zkRecordPath(appId))
+  override def failUninstall(appId: AppId): Unit = {
+    markFailed(appId)
+    lock.unlock(appId)
   }
 
-  override def failZkRecord(appId: AppId): Unit = {
-    setZkData(appId, Failed)
+  override def completeUninstall(appId: AppId): Unit = {
+    lock.unlock(appId)
+    deleteZkRecord(appId)
   }
 
-  override def getZkRecord(appId: AppId): UninstallStatus = {
-    StorageEnvelope.decodeData[UninstallStatus](curator.getData.forPath(zkRecordPath(appId)))
+  private[janitor] def getStatus(appId: AppId): UninstallStatus = {
+    StorageEnvelope.decodeData[UninstallStatus](curator.getData.forPath(statusPath(appId)))
   }
+
+  private def statusPath(appId: AppId): String = {
+    // uninstalls/<name>/host
+    Paths.get(UninstallFolder, appId.toString, "status").toString
+  }
+
+  private def rootPath(appId: AppId): String = {
+    // uninstalls/<name>
+    Paths.get(UninstallFolder, appId.toString).toString
+  }
+
+  private def setStatus(appId: AppId, status: UninstallStatus): Unit = {
+    val _ = curator.setData()
+      .forPath(statusPath(appId), StorageEnvelope.encodeData(status))
+  }
+
+  private def createAndSetStatus(appId: AppId, status: UninstallStatus): Unit = {
+    val _ = curator.create()
+      .creatingParentContainersIfNeeded()
+      .forPath(statusPath(appId),
+        StorageEnvelope.encodeData(status))
+  }
+
+  private def markInProgress(appId: AppId): Unit = {
+    Option(curator.checkExists().forPath(statusPath(appId))) match {
+      case Some(thing) =>
+        logger.info("When storing UninstallStatus for {}, found stale status of {} in ZK", appId, getStatus(appId))
+        setStatus(appId, InProgress)
+      case _ =>
+        createAndSetStatus(appId, InProgress)
+    }
+  }
+
+  private def deleteZkRecord(appId: AppId): Unit = {
+    val _ = curator.delete().deletingChildrenIfNeeded().forPath(rootPath(appId))
+  }
+
+  private def markFailed(appId: AppId): Unit = {
+    setStatus(appId, Failed)
+  }
+
 }

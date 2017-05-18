@@ -214,6 +214,10 @@ object Encoders {
         s"Error while deleting marathon app '$appId'"
       case MarathonAppNotFound(appId) =>
         s"Unable to locate service with marathon appId: '$appId'"
+      case AppAlreadyUninstalling(appId) =>
+        s"A request to uninstall the service '$appId' is already in progress."
+      case FailedToStartUninstall(appId, explanation) =>
+        s"Failed to start an uninstall for the service '$appId': $explanation"
       case CirceError(circeError) => circeError.getMessage
       case MarathonTemplateMustBeJsonObject => "Rendered Marathon JSON must be a JSON object"
       case JsonSchemaMismatch(_) =>

@@ -64,12 +64,6 @@ final class JanitorWorkerSpec extends FreeSpec with MockitoSugar
 
     }
     "In doWork" - {
-      "If the Marathon app is not found, the request is not requeued and is deleted from ZK" in {
-        when(mockAdminRouter.getApp(appId)(mockSession)).thenThrow(new MarathonAppNotFound(appId))
-        worker.doWork(request)
-
-        verify(mockTracker).deleteZkRecord(appId)
-      }
       "If an exception is thrown, the request is requeued" in {
         when(mockAdminRouter.getApp(appId)(mockSession)).thenThrow(new RuntimeException("test!"))
         worker.doWork(request)
@@ -94,7 +88,7 @@ final class JanitorWorkerSpec extends FreeSpec with MockitoSugar
         when(mockAdminRouter.deleteApp(appId)(mockSession)).thenReturn(mockDeleteFuture)
 
         worker.doWork(request)
-        verify(mockTracker).deleteZkRecord(appId)
+        verify(mockTracker).completeUninstall(appId)
         verifyNoMoreInteractions(mockTracker)
         assertResult(0)(queue.size())
       }
@@ -187,7 +181,7 @@ final class JanitorWorkerSpec extends FreeSpec with MockitoSugar
         when(mockResponse.status).thenReturn(Status.Unauthorized)
 
         worker.delete(request)
-        verify(mockTracker).failZkRecord(appId)
+        verify(mockTracker).failUninstall(appId)
       }
       "If the delete response is 5XX, requeue the request" in {
         setup()
@@ -204,7 +198,7 @@ final class JanitorWorkerSpec extends FreeSpec with MockitoSugar
         when(mockResponse.status).thenReturn(Status.Ok)
 
         worker.delete(request)
-        verify(mockTracker).deleteZkRecord(appId)
+        verify(mockTracker).completeUninstall(appId)
         assertResult(0)(queue.size())
       }
       "Any other response, requeue the request" in {
@@ -225,15 +219,15 @@ final class JanitorWorkerSpec extends FreeSpec with MockitoSugar
       }
     }
     "In fail" - {
-      "Mark the request as failed in ZK" in {
+      "Notify the tracker to fail the uninstall" in {
         worker.fail(request)
-        verify(mockTracker).failZkRecord(appId)
+        verify(mockTracker).failUninstall(appId)
       }
     }
     "In requeue" - {
       "If the request has exceeded the failure limit, fail it" in {
         worker.requeue(request.copy(failures = SdkJanitor.MaximumFailures))
-        verify(mockTracker).failZkRecord(appId)
+        verify(mockTracker).failUninstall(appId)
         assertResult(0)(queue.size())
       }
       "If the request has not exceeded the failure limit, add it back to the queue." in {

@@ -105,7 +105,7 @@ final class UninstallHandlerSpec extends FreeSpec with Eventually with SpanSugar
       assertResult(Status.Ok)(cleanupResponse.status)
     }
 
-    "be able to uninstall SDK packages that support SDK uninstall" in {
+    "be able to uninstall SDK packages that support SDK uninstall and only one uninstall at a time" in {
       // Add stub universe for service that supports uninstall.
       val request = CosmosRequests.packageRepositoryAdd(PackageRepositoryAddRequest("uninstall-test",
         Uri.parse("https://s3-us-west-2.amazonaws.com/infinity-artifacts/uninstalltestfixture/stub-universe-uninstall-test-fixture.zip"),
@@ -128,6 +128,10 @@ final class UninstallHandlerSpec extends FreeSpec with Eventually with SpanSugar
         assertResult(Status.Ok)(uninstallResponse.status)
         assertResult(MediaTypes.UninstallResponse.show)(uninstallResponse.headerMap(Fields.ContentType))
 
+        // Try a second uninstall request
+        val secondResponse = submitUninstallRequest(uninstallRequest)
+        assertResult(Status.Conflict)(secondResponse.status)
+
         // Wait for the service to be deleted.
         eventually (timeout(10 minutes), interval(30 seconds)) {
           assertThrows[MarathonAppNotFound](Await.result(adminRouter.getApp(AppId("/hello-world"))))
@@ -140,7 +144,6 @@ final class UninstallHandlerSpec extends FreeSpec with Eventually with SpanSugar
       }
     }
   }
-
 }
 
 object UninstallHandlerSpec {
