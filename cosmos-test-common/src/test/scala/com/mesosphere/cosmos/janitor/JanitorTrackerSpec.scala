@@ -85,12 +85,12 @@ final class JanitorTrackerSpec extends FreeSpec with BeforeAndAfterAll with Befo
         assertResult(UninstallClaimed)(tracker.startUninstall(appId))
         assertResult(InProgress)(tracker.getStatus(appId))
 
-        tracker.failUninstall(appId)
-        assertResult(Failed)(tracker.getStatus(appId))
+        tracker.failUninstall(appId, List("1", "2", "3"))
+        assertResult(Failed(List("1", "2", "3")))(tracker.getStatus(appId))
         assertResult(false)(lock.isLockedByThisProcess(appId))
       }
     }
-    "In complete uninstall" - {
+    "In completeUninstall" - {
       "The lock is released and the entire zk record is deleted" in {
         assertResult(UninstallClaimed)(tracker.startUninstall(appId))
         assertResult(InProgress)(tracker.getStatus(appId))
@@ -102,50 +102,3 @@ final class JanitorTrackerSpec extends FreeSpec with BeforeAndAfterAll with Befo
     }
   }
 }
-
-//  "In the JanitorTracker" - {
-//    "In createZkRecord" - {
-//      "A record is created when none exists" in {
-//        tracker.createZkRecord(appId)
-//
-//        assertResult(InProgress)(tracker.getZkRecord(appId))
-//      }
-//      "The pre-existing record is overwritten if already present" in {
-//        tracker.createZkRecord(appId)
-//        tracker.failZkRecord(appId)
-//        assertResult(Failed)(tracker.getZkRecord(appId))
-//
-//        tracker.createZkRecord(appId)
-//        assertResult(InProgress)(tracker.getZkRecord(appId))
-//      }
-//    }
-//    "In deleteZkRecord" - {
-//      "A record is correctly deleted" in {
-//        tracker.createZkRecord(appId)
-//        assertResult(InProgress)(tracker.getZkRecord(appId))
-//
-//        tracker.deleteZkRecord(appId)
-//        assertThrows[KeeperException.NoNodeException](tracker.getZkRecord(appId))
-//      }
-//    }
-//    "In failZkRecord" - {
-//      "A record is marked as failed" in {
-//        tracker.createZkRecord(appId)
-//        assertResult(InProgress)(tracker.getZkRecord(appId))
-//
-//        tracker.failZkRecord(appId)
-//        assertResult(Failed)(tracker.getZkRecord(appId))
-//      }
-//    }
-//    "In getZkRecord" - {
-//      "A record is properly deserialized from ZK" in {
-//        tracker.createZkRecord(appId)
-//
-//        assertResult(InProgress)(tracker.getZkRecord(appId))
-//      }
-//      "A non-existent record throws an exception" in {
-//        assertThrows[KeeperException.NoNodeException](tracker.getZkRecord(AppId("/notthere")))
-//      }
-//    }
-//  }
-//}

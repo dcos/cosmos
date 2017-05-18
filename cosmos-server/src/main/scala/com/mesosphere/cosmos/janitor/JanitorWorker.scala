@@ -63,7 +63,7 @@ final class JanitorWorker(
     } catch {
       case e: Exception =>
         logger.error("Encountered exception during uninstall evaluation.", e)
-        requeue(request.copy(failures = request.failures + 1))
+        requeue(request.copy(failures = "Encountered exception: %s".format(e.getMessage) :: request.failures))
     }
   }
 
@@ -92,12 +92,12 @@ final class JanitorWorker(
         case badRequest if 400 until 499 contains badRequest.code =>
           logger.error("Encountered Marathon error: {} when deleting {}. Failing.", badRequest,
             request.appId)
-          fail(request)
+          fail(request.copy(failures = "Encountered Marathon error: %s".format(badRequest) :: request.failures))
           ()
         case retryRequest if 500 until 599 contains retryRequest.code =>
           logger.error("Encountered Marathon error: {} when deleting {}. Retrying.", retryRequest,
             request.appId)
-          requeue(request.copy(failures = request.failures + 1))
+          requeue(request.copy(failures = "Encountered Marathon error: %s".format(retryRequest) :: request.failures))
           ()
         case Status.Ok =>
           logger.info("Deleted app: {}", request.appId)
@@ -105,25 +105,25 @@ final class JanitorWorker(
           ()
         case default =>
           logger.error("Encountered unexpected status: {} when deleting {}. Retrying.", default, request.appId)
-          requeue(request.copy(failures = request.failures + 1))
+          requeue(request.copy(failures = "Encountered unexpected status: %s".format(default) :: request.failures))
           ()
       }
     } catch {
       case e: Exception =>
         logger.error("Encountered exception when trying to delete Marathon app for %s. Retrying.".format(request.appId.toString), e)
-        requeue(request.copy(failures = request.failures + 1))
+        requeue(request.copy(failures = "Encountered exception: %s".format(e.getMessage) :: request.failures))
     }
   }
 
   def fail(request: JanitorRequest): Unit = {
     logger.error("Failed to delete app: {} after {} attempts.", request.appId, request.failures)
-    tracker.failUninstall(request.appId)
+    tracker.failUninstall(request.appId, request.failures)
   }
 
   /** Determine if the request should be requeued. If it should, do so. */
   def requeue(request: JanitorRequest): Unit = {
     logger.info("Evaluating if request to delete {} should be added back to the queue.", request.appId)
-    if (request.failures >= MaximumFailures) {
+    if (request.failures.length >= MaximumFailures) {
       logger.info("The request to delete {} has failed {} times, exceeding the limit. Failing the request.",
         request.appId, MaximumFailures)
       fail(request)

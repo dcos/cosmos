@@ -14,7 +14,7 @@ import org.slf4j.Logger
 
 trait Tracker {
   def startUninstall(appId: AppId): UninstallClaim
-  def failUninstall(appId: AppId): Unit
+  def failUninstall(appId: AppId, reasons: List[String]): Unit
   def completeUninstall(appId: AppId): Unit
 }
 
@@ -44,8 +44,8 @@ final class JanitorTracker(
     }
   }
 
-  override def failUninstall(appId: AppId): Unit = {
-    markFailed(appId)
+  override def failUninstall(appId: AppId, reasons: List[String]): Unit = {
+    markFailed(appId, reasons)
     lock.unlock(appId)
   }
 
@@ -94,8 +94,8 @@ final class JanitorTracker(
     val _ = curator.delete().deletingChildrenIfNeeded().forPath(rootPath(appId))
   }
 
-  private def markFailed(appId: AppId): Unit = {
-    setStatus(appId, Failed)
+  private def markFailed(appId: AppId, reasons: List[String]): Unit = {
+    setStatus(appId, Failed(reasons))
   }
 
 }

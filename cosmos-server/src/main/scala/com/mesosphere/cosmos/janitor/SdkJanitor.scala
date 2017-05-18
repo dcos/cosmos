@@ -42,7 +42,7 @@ final class SdkJanitor(
   override def releaseUninstall(appId: AppId): Unit = tracker.completeUninstall(appId)
 
   override def delete(appId: AppId, session: RequestSession): Unit = {
-    queue.add(JanitorRequest(appId, session, 0, System.currentTimeMillis(), checkInterval, 0))
+    queue.add(JanitorRequest(appId, session, List(), System.currentTimeMillis(), checkInterval, 0))
     logger.info("Successfully added delete request to queue for {}", appId)
   }
 
@@ -92,7 +92,7 @@ object SdkJanitor {
   }
   case class JanitorRequest(appId: AppId,
                             session: RequestSession,
-                            failures: Int,
+                            failures: List[String],
                             created: Long,
                             checkInterval: Int,
                             lastAttempt: Long) extends Request {

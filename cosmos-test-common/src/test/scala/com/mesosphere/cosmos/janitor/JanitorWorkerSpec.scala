@@ -32,7 +32,7 @@ final class JanitorWorkerSpec extends FreeSpec with MockitoSugar
   private val request = JanitorRequest(
     appId,
     mockSession,
-    failures = 0,
+    failures = List(),
     created = System.currentTimeMillis(),
     checkInterval = 1,
     lastAttempt = 0L
@@ -69,7 +69,7 @@ final class JanitorWorkerSpec extends FreeSpec with MockitoSugar
         worker.doWork(request)
 
         assertResult(1)(queue.size())
-        assertResult(1)(queue.peek().asInstanceOf[JanitorRequest].failures)
+        assertResult(List("Encountered exception: test!"))(queue.peek().asInstanceOf[JanitorRequest].failures)
       }
       "If the app should be deleted, it is" in {
         when(mockAdminRouter.getApp(appId)(mockSession))
@@ -181,7 +181,7 @@ final class JanitorWorkerSpec extends FreeSpec with MockitoSugar
         when(mockResponse.status).thenReturn(Status.Unauthorized)
 
         worker.delete(request)
-        verify(mockTracker).failUninstall(appId)
+        verify(mockTracker).failUninstall(appId, List("Encountered Marathon error: Status(401)"))
       }
       "If the delete response is 5XX, requeue the request" in {
         setup()
@@ -191,7 +191,7 @@ final class JanitorWorkerSpec extends FreeSpec with MockitoSugar
         verifyZeroInteractions(mockTracker)
 
         assertResult(1)(queue.size())
-        assertResult(1)(queue.peek().asInstanceOf[JanitorRequest].failures)
+        assertResult(1)(queue.peek().asInstanceOf[JanitorRequest].failures.length)
       }
       "If the response is 200, don't requeue and delete the record" in {
         setup()
@@ -207,7 +207,7 @@ final class JanitorWorkerSpec extends FreeSpec with MockitoSugar
 
         worker.delete(request)
         assertResult(1)(queue.size())
-        assertResult(1)(queue.peek().asInstanceOf[JanitorRequest].failures)
+        assertResult(List("Encountered unexpected status: Status(307)"))(queue.peek().asInstanceOf[JanitorRequest].failures)
       }
       "If an exception is thrown, requeue the request" in {
         setup()
@@ -215,23 +215,25 @@ final class JanitorWorkerSpec extends FreeSpec with MockitoSugar
 
         worker.delete(request)
         assertResult(1)(queue.size())
-        assertResult(1)(queue.peek().asInstanceOf[JanitorRequest].failures)
+        assertResult(List("Encountered exception: null"))(queue.peek().asInstanceOf[JanitorRequest].failures)
       }
     }
     "In fail" - {
       "Notify the tracker to fail the uninstall" in {
         worker.fail(request)
-        verify(mockTracker).failUninstall(appId)
+        verify(mockTracker).failUninstall(appId, request.failures)
       }
     }
     "In requeue" - {
       "If the request has exceeded the failure limit, fail it" in {
-        worker.requeue(request.copy(failures = SdkJanitor.MaximumFailures))
-        verify(mockTracker).failUninstall(appId)
+        val failures = List("1", "2", "3", "4", "5")
+        worker.requeue(request.copy(failures = failures))
+        verify(mockTracker).failUninstall(appId, failures)
         assertResult(0)(queue.size())
       }
       "If the request has not exceeded the failure limit, add it back to the queue." in {
-        worker.requeue(request.copy(failures = SdkJanitor.MaximumFailures - 1))
+        val failures = List("1", "2", "3", "4")
+        worker.requeue(request.copy(failures = failures))
         verifyZeroInteractions(mockTracker)
         assertResult(1)(queue.size())
       }

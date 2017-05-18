@@ -17,29 +17,29 @@ import scala.util.Left
 
 sealed trait UninstallStatus
 case object InProgress extends UninstallStatus
-case object Failed extends UninstallStatus
+case class Failed(failures: List[String]) extends UninstallStatus
 
 object UninstallStatus {
   val UninstallStatusMediaType = MediaType.vndJson(List("dcos", "package"))("uninstall.status", 1)
 
-  implicit val decodeFailed: Decoder[Failed.type] =
-    deriveDecoder[Failed.type]
+  implicit val decodeFailed: Decoder[Failed] =
+    deriveDecoder[Failed]
   implicit val decodeInProgress: Decoder[InProgress.type] =
     deriveDecoder[InProgress.type]
 
-  implicit val encodeFailed: Encoder[Failed.type] =
-    deriveEncoder[Failed.type]
+  implicit val encodeFailed: Encoder[Failed] =
+    deriveEncoder[Failed]
   implicit val encodeInProgress: Encoder[InProgress.type] =
     deriveEncoder[InProgress.type]
 
   implicit val decodeUninstallStatus: Decoder[UninstallStatus] = {
     val InProgressName = InProgress.getClass.getSimpleName
-    val FailedName = Failed.getClass.getSimpleName
+    val FailedName = classOf[Failed].getSimpleName
 
     Decoder.instance { (hc: HCursor) =>
       hc.downField("type").as[String].flatMap {
         case InProgressName => hc.as[InProgress.type]
-        case FailedName => hc.as[Failed.type]
+        case FailedName => hc.as[Failed]
         case tp: String => Left(DecodingFailure(
           s"Encountered unknown type [$tp]" +
            " while trying to decode UninstallStatus", hc.history
@@ -53,7 +53,7 @@ object UninstallStatus {
       val (json: Json, subclass: String) = uninstallStatus match {
         case inProgress: InProgress.type =>
           (inProgress.asJson, inProgress.getClass.getSimpleName)
-        case failed: Failed.type =>
+        case failed: Failed =>
           (failed.asJson, failed.getClass.getSimpleName)
       }
       json.mapObject(_.add("type", subclass.asJson))
