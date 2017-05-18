@@ -32,9 +32,7 @@ import java.util.Base64
 object PackageDefinitionRenderer {
   private[this] final val MustacheFactory = new DefaultMustacheFactory {
     override def encode(value: String, writer: Writer): Unit = {
-      val string = value.asJson.noSpaces
-      // Remove the start and end quote. This is okay because JSON string's length must be >= 2.
-      writer.write(string.slice(1, string.length - 1))
+      writer.write(value)
     }
   }
 
@@ -175,7 +173,13 @@ object PackageDefinitionRenderer {
       jsonNull = null,  // scalastyle:ignore null
       jsonBoolean = identity,
       jsonNumber = n => n.toInt.getOrElse(n.toDouble),
-      jsonString = identity,
+      jsonString = value => {
+        /* Encode the string using a JSON string encoding and remove the beginning and ending ".
+         * The slicing operation always succeeds because the small JSON string is "".
+         */
+        val string = value.asJson.noSpaces
+        string.slice(1, string.length - 1)
+      },
       jsonArray = _.map(jsonToJava).asJava,
       jsonObject = _.toMap.mapValues(jsonToJava).asJava
     )
