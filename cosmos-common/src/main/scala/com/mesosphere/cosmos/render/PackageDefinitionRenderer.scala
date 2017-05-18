@@ -23,13 +23,21 @@ import io.circe.jawn.parse
 import io.circe.syntax._
 import java.io.StringReader
 import java.io.StringWriter
+import java.io.Writer
 import java.nio.ByteBuffer
 import java.nio.charset.StandardCharsets
 import java.util.Base64
 
 
 object PackageDefinitionRenderer {
-  private[this] final val MustacheFactory = new DefaultMustacheFactory()
+  private[this] final val MustacheFactory = new DefaultMustacheFactory {
+    override def encode(value: String, writer: Writer): Unit = {
+      val string = value.asJson.noSpaces
+      // Remove the start and end quote. This is okay because JSON string's length must be >= 2.
+      writer.write(string.slice(1, string.length - 1))
+    }
+  }
+
   private[this] implicit val jsf: JsonSchemaFactory = JsonSchemaFactory.byDefault()
 
   def renderMarathonV2App(
@@ -52,7 +60,10 @@ object PackageDefinitionRenderer {
           pkgDef.resourceJson.map(rj => JsonObject.singleton("resource", rj)).toList
         ).foldLeft(JsonObject.empty)(JsonUtil.merge)
 
-        renderTemplate(marathon.v2AppMustacheTemplate, mergedOptions).flatMap { mJson =>
+        renderTemplate(
+          new String(ByteBuffers.getBytes(marathon.v2AppMustacheTemplate), StandardCharsets.UTF_8),
+          mergedOptions
+        ).flatMap { mJson =>
           extractLabels(mJson.asJson).map { existingLabels =>
             decorateMarathonJson(
               mJson,
@@ -74,6 +85,31 @@ object PackageDefinitionRenderer {
   ): JsonObject = {
     (pkgDef.config.map(JsonSchema.extractDefaultsFromSchema).toList ++ userSuppliedOptions.toList)
       .foldLeft(JsonObject.empty)(JsonUtil.merge)
+  }
+
+  def renderTemplate(
+    template: String,
+    context: JsonObject
+  ): Either[PackageDefinitionRenderError, JsonObject] = {
+    val renderedJsonString = {
+      val strReader = new StringReader(template)
+      val mustache = MustacheFactory.compile(strReader, ".marathon.v2AppMustacheTemplate")
+      val params = jsonToJava(Json.fromJsonObject(context))
+      val output = new StringWriter()
+      mustache.execute(output, params)
+      output.toString
+    }
+
+    parse(renderedJsonString).map(_.asObject) match {
+      case Left(pe)           => Left(RenderedTemplateNotJson(pe))
+      case Right(None)        => Left(RenderedTemplateNotJsonObject)
+      case Right(Some(obj))   => Right(obj)
+    }
+  }
+
+  def encodeForLabel(json: Json): String = {
+    val bytes = JsonUtil.dropNullKeysPrinter.pretty(json).getBytes(StandardCharsets.UTF_8)
+    Base64.getEncoder.encodeToString(bytes)
   }
 
   private[this] def nonOverridableLabels(
@@ -133,28 +169,6 @@ object PackageDefinitionRenderer {
     }
   }
 
-
-  private[this] def renderTemplate(
-    template: ByteBuffer,
-    context: JsonObject
-  ): Either[PackageDefinitionRenderError, JsonObject] = {
-    val renderedJsonString = {
-      val templateString = new String(ByteBuffers.getBytes(template), StandardCharsets.UTF_8)
-      val strReader = new StringReader(templateString)
-      val mustache = MustacheFactory.compile(strReader, ".marathon.v2AppMustacheTemplate")
-      val params = jsonToJava(Json.fromJsonObject(context))
-      val output = new StringWriter()
-      mustache.execute(output, params)
-      output.toString
-    }
-
-    parse(renderedJsonString).map(_.asObject) match {
-      case Left(pe)           => Left(RenderedTemplateNotJson(pe))
-      case Right(None)        => Left(RenderedTemplateNotJsonObject)
-      case Right(Some(obj))   => Right(obj)
-    }
-  }
-
   private[this] def jsonToJava(json: Json): Any = {
     import scala.collection.JavaConverters._
     json.fold(
@@ -181,10 +195,5 @@ object PackageDefinitionRenderer {
       case Left(err) => Left(InvalidLabelSchema(err))
       case Right(labels) => Right(Json.fromFields(labels.mapValues(_.asJson)))
     }
-  }
-
-  def encodeForLabel(json: Json): String = {
-    val bytes = JsonUtil.dropNullKeysPrinter.pretty(json).getBytes(StandardCharsets.UTF_8)
-    Base64.getEncoder.encodeToString(bytes)
   }
 }
