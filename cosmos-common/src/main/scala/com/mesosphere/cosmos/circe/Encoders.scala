@@ -316,7 +316,9 @@ object Encoders {
       case OptionsNotStored(msg) => msg
       case AppIdChanged(msg) => msg
       case OptionsConflict(msg) => msg
-      case BadVersionUpdate(msg) => msg
+      case BadVersionUpdate(currentVersion, updateVersion, _) =>
+        s"The service of version $currentVersion cannot update to the requested " +
+        s"version $updateVersion"
       case ServiceUpdateError(msg) => msg
     }
   }
