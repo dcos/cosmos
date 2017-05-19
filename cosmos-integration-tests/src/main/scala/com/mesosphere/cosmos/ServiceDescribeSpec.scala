@@ -26,9 +26,7 @@ class ServiceDescribeSpec
     with Matchers
     with TableDrivenPropertyChecks {
 
-  private val path: String = "service/describe"
-  private val contentType: String = "application/vnd.dcos.service.describe-request+json;charset=utf-8;version=v1"
-  private val accept: String = "application/vnd.dcos.service.describe-response+json;charset=utf-8;version=v1"
+  import ServiceDescribeSpec._
 
   feature("The service/describe endpoint") {
     scenario("The user would like to know the upgrades available to a service") {
@@ -69,8 +67,19 @@ class ServiceDescribeSpec
     }
   }
 
-  private val helloWorldPackageDefinitions
-  : TableFor3[universe.v4.model.PackageDefinition, List[String], List[String]] = {
+}
+
+object ServiceDescribeSpec
+  extends FeatureSpec with GivenWhenThen with Matchers with TableDrivenPropertyChecks {
+
+  private val path: String = "service/describe"
+  private val contentType: String =
+    "application/vnd.dcos.service.describe-request+json;charset=utf-8;version=v1"
+  private val accept: String =
+    "application/vnd.dcos.service.describe-response+json;charset=utf-8;version=v1"
+
+  private val helloWorldPackageDefinitions:
+    TableFor3[universe.v4.model.PackageDefinition, List[String], List[String]] = {
     Table(
       ("Package Definition", "Upgrades To", "Downgrades To"),
       (ItObjects.helloWorldPackage0, List(), List()),
@@ -79,7 +88,21 @@ class ServiceDescribeSpec
     )
   }
 
-  private def serviceDescribeTest(
+  private def serviceDescribe(appId: String): Response = {
+    val body = Json.obj(
+      "appId" -> appId.asJson
+    )
+    CosmosClient.submit(
+      HttpRequest.post(
+        path = path,
+        body = body.noSpaces,
+        contentType = Some(contentType),
+        accept = Some(accept)
+      )
+    )
+  }
+
+  def serviceDescribeTest(
     testCode: (Json, universe.v4.model.PackageDefinition, List[String], List[String]) => Assertion
   ): Unit = {
     forAll(helloWorldPackageDefinitions) {
@@ -117,20 +140,6 @@ class ServiceDescribeSpec
           ()
         }
     }
-  }
-
-  private def serviceDescribe(appId: String): Response = {
-    val body = Json.obj(
-      "appId" -> appId.asJson
-    )
-    CosmosClient.submit(
-      HttpRequest.post(
-        path = path,
-        body = body.noSpaces,
-        contentType = Some(contentType),
-        accept = Some(accept)
-      )
-    )
   }
 
 }
