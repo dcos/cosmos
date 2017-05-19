@@ -355,14 +355,6 @@ object ItObjects {
     ).map(stringToPackageDefinition)
   }
 
-  val helloWorldDefaultPort: Int = 8080
-
-  def helloWorldResolvedOptions(port: Int = helloWorldDefaultPort): Json = {
-    Json.obj(
-      "port" -> port.asJson
-    )
-  }
-
   def stringToPackageDefinition(
     packageDefinition: String
   ): universe.v4.model.PackageDefinition = {
