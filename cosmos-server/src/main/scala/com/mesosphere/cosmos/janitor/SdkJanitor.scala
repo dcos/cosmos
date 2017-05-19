@@ -77,19 +77,21 @@ object SdkJanitor {
   }
 
   sealed trait UninstallClaim
-  case object UninstallClaimed extends UninstallClaim
-  case object UninstallAlreadyClaimed extends UninstallClaim
+  case object UninstallClaimGranted extends UninstallClaim
+  case object UninstallClaimDenied extends UninstallClaim
 
-  sealed trait Request extends Delayed
+  sealed trait Request extends Delayed {
+    override final def compareTo(o: Delayed): Int = {
+      getDelay(TimeUnit.MILLISECONDS).compare(o.getDelay(TimeUnit.MILLISECONDS))
+    }
+  }
+
   case class ShutdownRequest() extends Request {
     override def getDelay(unit: TimeUnit): Long = {
       0L
     }
-
-    override def compareTo(o: Delayed): Int = {
-      getDelay(TimeUnit.MILLISECONDS).compare(o.getDelay(TimeUnit.MILLISECONDS))
-    }
   }
+
   case class JanitorRequest(appId: AppId,
                             session: RequestSession,
                             failures: List[String],
@@ -97,16 +99,8 @@ object SdkJanitor {
                             checkInterval: Int,
                             lastAttempt: Long) extends Request {
 
-    override def compareTo(o: Delayed): Int = {
-      getDelay(TimeUnit.MILLISECONDS).compare(o.getDelay(TimeUnit.MILLISECONDS))
-    }
-
     override def getDelay(unit: TimeUnit): Long = {
       unit.convert(checkInterval + lastAttempt - System.currentTimeMillis(), TimeUnit.MILLISECONDS)
     }
   }
 }
-
-
-// User runs uninstall
-// UninstallHandler checks if the uninstall has already been started (trys to acquire the lock)

@@ -2,8 +2,8 @@ package com.mesosphere.cosmos.janitor
 
 import java.nio.file.Paths
 
-import com.mesosphere.cosmos.janitor.SdkJanitor.UninstallAlreadyClaimed
-import com.mesosphere.cosmos.janitor.SdkJanitor.UninstallClaimed
+import com.mesosphere.cosmos.janitor.SdkJanitor.UninstallClaimDenied
+import com.mesosphere.cosmos.janitor.SdkJanitor.UninstallClaimGranted
 import com.mesosphere.cosmos.janitor.SdkJanitor.UninstallFolder
 import com.mesosphere.cosmos.storage.v1.model.Failed
 import com.mesosphere.cosmos.storage.v1.model.InProgress
@@ -64,25 +64,25 @@ final class JanitorTrackerSpec extends FreeSpec with BeforeAndAfterAll with Befo
   "In the JanitorTracker" - {
     "In startUninstall" - {
       "If the lock is not owned, it is claimed and that status is marked as inprogress" in {
-        assertResult(UninstallClaimed)(tracker.startUninstall(appId))
+        assertResult(UninstallClaimGranted)(tracker.startUninstall(appId))
         assertResult(InProgress)(tracker.getStatus(appId))
       }
       "If the lock is already claimed, it cannot be claimed again by the same process" in {
-        assertResult(UninstallClaimed)(tracker.startUninstall(appId))
-        assertResult(UninstallAlreadyClaimed)(tracker.startUninstall(appId))
+        assertResult(UninstallClaimGranted)(tracker.startUninstall(appId))
+        assertResult(UninstallClaimDenied)(tracker.startUninstall(appId))
       }
       "If the lock is already claimed, it cannot be claimed again across processes" in {
-        assertResult(UninstallClaimed)(tracker.startUninstall(appId))
+        assertResult(UninstallClaimGranted)(tracker.startUninstall(appId))
 
         val otherLock = new CuratorUninstallLock(curator)
         val otherTracker = new JanitorTracker(curator, otherLock)
 
-        assertResult(UninstallAlreadyClaimed)(otherTracker.startUninstall(appId))
+        assertResult(UninstallClaimDenied)(otherTracker.startUninstall(appId))
       }
     }
     "In failUninstall" - {
       "The status is marked as failed, and the lock is released" in {
-        assertResult(UninstallClaimed)(tracker.startUninstall(appId))
+        assertResult(UninstallClaimGranted)(tracker.startUninstall(appId))
         assertResult(InProgress)(tracker.getStatus(appId))
 
         tracker.failUninstall(appId, List("1", "2", "3"))
@@ -92,7 +92,7 @@ final class JanitorTrackerSpec extends FreeSpec with BeforeAndAfterAll with Befo
     }
     "In completeUninstall" - {
       "The lock is released and the entire zk record is deleted" in {
-        assertResult(UninstallClaimed)(tracker.startUninstall(appId))
+        assertResult(UninstallClaimGranted)(tracker.startUninstall(appId))
         assertResult(InProgress)(tracker.getStatus(appId))
 
         tracker.completeUninstall(appId)

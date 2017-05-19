@@ -75,7 +75,7 @@ final class JanitorWorker(
         service = app.id.toString,
         apiVersion = app.labels.getOrElse(SdkJanitor.SdkApiVersionLabel, "v1"),
         plan = "deploy"
-      )(session = session)).status == Status.Ok
+      )).status == Status.Ok
     } catch {
       case e: Exception =>
         logger.error("Encountered an exception checking the uninstall progress of %s".format(app.id), e)

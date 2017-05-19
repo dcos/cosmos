@@ -29,17 +29,16 @@ final class JanitorTracker(
   override def startUninstall(appId: AppId): UninstallClaim = {
     // Does this JVM already own the lock?
     if (lock.isLockedByThisProcess(appId)) {
-      UninstallAlreadyClaimed
+      UninstallClaimDenied
     } else {
       // Does some other JVM already own the lock?
-      lock.lock(appId) match {
-        case true =>
-          logger.info("Acquired uninstall lock for app: {}", appId)
-          markInProgress(appId)
-          UninstallClaimed
-        case false =>
-          logger.info("Failed to acquire uninstall lock for app: {}", appId)
-          UninstallAlreadyClaimed
+      if (lock.lock(appId)) {
+        logger.info("Acquired uninstall lock for app: {}", appId)
+        markInProgress(appId)
+        UninstallClaimGranted
+      } else {
+        logger.info("Failed to acquire uninstall lock for app: {}", appId)
+        UninstallClaimDenied
       }
     }
   }

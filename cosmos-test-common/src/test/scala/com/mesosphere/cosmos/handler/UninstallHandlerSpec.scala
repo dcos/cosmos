@@ -49,7 +49,7 @@ class UninstallHandlerSpec extends FreeSpec with BeforeAndAfterEach with Mockito
 
   "In the UninstallHandler" - {
     "If a sdk uninstall is already locked, it is not run again" in {
-      when(mockSdkJanitor.claimUninstall(appId)).thenReturn(SdkJanitor.UninstallAlreadyClaimed)
+      when(mockSdkJanitor.claimUninstall(appId)).thenReturn(SdkJanitor.UninstallClaimDenied)
 
       assertThrows[AppAlreadyUninstalling](uninstallHandler.runSdkUninstall(UninstallOperation(
         appId,
@@ -63,7 +63,7 @@ class UninstallHandlerSpec extends FreeSpec with BeforeAndAfterEach with Mockito
       verifyNoMoreInteractions(mockSdkJanitor)
     }
     "If a sdk uninstall is unable to update the marathon app an error is returned" in {
-      when(mockSdkJanitor.claimUninstall(appId)).thenReturn(SdkJanitor.UninstallClaimed)
+      when(mockSdkJanitor.claimUninstall(appId)).thenReturn(SdkJanitor.UninstallClaimGranted)
 
       val router = new MockModifyAppAdminRouter(mock[AdminRouterClient],
         mock[MarathonClient],
@@ -85,7 +85,7 @@ class UninstallHandlerSpec extends FreeSpec with BeforeAndAfterEach with Mockito
       verifyNoMoreInteractions(mockSdkJanitor)
     }
     "If marathon is updated, then the janitor is told to delete the app" in {
-      when(mockSdkJanitor.claimUninstall(appId)).thenReturn(SdkJanitor.UninstallClaimed)
+      when(mockSdkJanitor.claimUninstall(appId)).thenReturn(SdkJanitor.UninstallClaimGranted)
 
       val router = new MockModifyAppAdminRouter(mock[AdminRouterClient],
         mock[MarathonClient],
