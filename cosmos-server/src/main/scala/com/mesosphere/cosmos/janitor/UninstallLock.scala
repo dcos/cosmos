@@ -5,7 +5,11 @@ import java.util.concurrent.Callable
 import java.util.concurrent.Executors
 import java.util.concurrent.TimeUnit
 
+import com.google.common.cache.CacheBuilder
+import com.google.common.cache.CacheLoader
+import com.google.common.cache.LoadingCache
 import com.google.common.util.concurrent.ThreadFactoryBuilder
+import com.mesosphere.cosmos.janitor.CuratorUninstallLock._
 import com.mesosphere.cosmos.thirdparty.marathon.model.AppId
 import org.apache.curator.framework.CuratorFramework
 import org.apache.curator.framework.recipes.locks.InterProcessMutex
@@ -31,20 +35,21 @@ trait UninstallLock {
   */
 final class CuratorUninstallLock(curator: CuratorFramework) extends UninstallLock {
   lazy val logger: Logger = org.slf4j.LoggerFactory.getLogger(getClass)
-  val locks = scala.collection.mutable.Map[AppId, InterProcessMutex]()
+  private val locks = CacheBuilder.newBuilder().build(new CacheLoader[AppId, InterProcessMutex] {
+    override def load(key: AppId): InterProcessMutex = {
+      new InterProcessMutex(curator, getLockPath(key))
+    }
+  }).asInstanceOf[LoadingCache[AppId, InterProcessMutex]] // Note, your IDE is going to say this is redundant.
+                                                          // The scala compiler will disagree.
 
+  /**
+    * InterProcessMutex locks threads rather than whole processes (jvms). As such, a single thread
+    * executor is used here to extend the locking to the whole process.
+    */
   val lockExecutor = Executors.newSingleThreadScheduledExecutor(new ThreadFactoryBuilder()
     .setDaemon(true)
     .setNameFormat("uninstall-lock-thread")
     .build())
-
-  private def getLockPath(appId: AppId): String = {
-    Paths.get(SdkJanitor.UninstallFolder, appId.toString, "lock").toString
-  }
-
-  private def getMutex(appId: AppId): InterProcessMutex = {
-    new InterProcessMutex(curator, getLockPath(appId))
-  }
 
   private def lockOnThread(mutex: InterProcessMutex): Boolean = {
     val lockCallable = new Callable[Boolean] {
@@ -65,44 +70,32 @@ final class CuratorUninstallLock(curator: CuratorFramework) extends UninstallLoc
   }
 
   override def isLockedByThisProcess(appId: AppId): Boolean = {
-    locks.get(appId) match {
-      case Some(mutex) => mutex.isAcquiredInThisProcess
-      case _ => false
-    }
+    locks.get(appId).isAcquiredInThisProcess
   }
 
   override def lock(appId: AppId): Boolean = {
     logger.info("Attempting to acquire lock for {}", getLockPath(appId))
-    locks.get(appId) match {
-      case Some(mutex) =>
-        logger.info("Lock {} already exists. Attempting to acquire it.", getLockPath(appId))
-        lockOnThread(mutex)
-      case _ =>
-        logger.info("Lock {} does not already exist. Creating it and acquiring it", getLockPath(appId))
-        val mutex = getMutex(appId)
-        lockOnThread(mutex) match {
-          case true =>
-            logger.info("Acquired lock for {}", getLockPath(appId))
-            locks.put(appId, mutex)
-            true
-          case false =>
-            logger.info("Lock for {} not acquired. Already owned", getLockPath(appId))
-            false
-        }
+    if (lockOnThread(locks.get(appId))) {
+      logger.info("Acquired lock for {}", getLockPath(appId))
+      true
+    } else {
+      logger.info("Lock for {} not acquired. Already owned", getLockPath(appId))
+      false
     }
   }
 
   override def unlock(appId: AppId): Unit = {
     logger.info("Attempting to release lock for {}", getLockPath(appId))
-    locks.get(appId) match {
-      case Some(mutex) =>
-        unlockOnThread(mutex)
-        logger.info("Released lock for {}", getLockPath(appId))
-      case _ => throw new IllegalMonitorStateException("You do not own the lock for " + getLockPath(appId))
-    }
+    unlockOnThread(locks.get(appId))
+    locks.invalidate(appId)
+    logger.info("Released lock for {}", getLockPath(appId))
   }
 }
 
 object CuratorUninstallLock {
   val AcquireTimeout = 0L
+
+  private def getLockPath(appId: AppId): String = {
+    Paths.get(SdkJanitor.UninstallFolder, appId.toString, "lock").toString
+  }
 }

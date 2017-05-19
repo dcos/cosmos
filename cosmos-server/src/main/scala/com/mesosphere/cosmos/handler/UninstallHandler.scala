@@ -120,12 +120,11 @@ private[cosmos] final class UninstallHandler(
       throw AppAlreadyUninstalling(op.appId)
     }
 
-    adminRouter.modifyApp(op.appId)((appJson) => {
-      setMarathonUninstall(appJson)
-    }).flatMap { response =>
+    adminRouter.modifyApp(op.appId)(setMarathonUninstall)
+      .map { response =>
       response.status match {
         case Status.Ok =>
-          Future.value(UninstallDetails.from(op))
+          UninstallDetails.from(op)
         case _ =>
           logger.error("Encountered error in marathon request {}", response.contentString)
           throw FailedToStartUninstall(op.appId, "Encountered error in marathon request %s".format(response.contentString))

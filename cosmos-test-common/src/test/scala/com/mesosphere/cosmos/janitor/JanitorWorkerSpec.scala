@@ -4,7 +4,6 @@ import java.lang.Thread.State
 import java.util.concurrent.DelayQueue
 
 import com.mesosphere.cosmos.AdminRouter
-import com.mesosphere.cosmos.MarathonAppNotFound
 import com.mesosphere.cosmos.http.RequestSession
 import com.mesosphere.cosmos.janitor.SdkJanitor.JanitorRequest
 import com.mesosphere.cosmos.janitor.SdkJanitor.Request
@@ -13,7 +12,6 @@ import com.mesosphere.cosmos.thirdparty.marathon.model.MarathonApp
 import com.mesosphere.cosmos.thirdparty.marathon.model.MarathonAppResponse
 import com.twitter.finagle.http.Response
 import com.twitter.finagle.http.Status
-import com.twitter.util.Await
 import com.twitter.util.Future
 import org.mockito.Mockito._
 import org.scalatest.BeforeAndAfterEach
@@ -113,10 +111,11 @@ final class JanitorWorkerSpec extends FreeSpec with MockitoSugar
       val labels = Map(SdkJanitor.SdkApiVersionLabel -> "v1")
       val app = new MarathonApp(appId, labels)
 
-      val mockResponse = mock[Response]
-      val mockFuture = Future.value(mockResponse)
+      var mockFuture: Future[Response] = Future.value(Response.apply(Status.Ok))
 
-      def setup(): Unit = {
+      def setup(status: Status): Unit = {
+        mockFuture = Future.value(Response.apply(status))
+
         when(mockAdminRouter.getSdkServicePlanStatus(
           service = appId.toString,
           apiVersion = "v1",
@@ -128,14 +127,13 @@ final class JanitorWorkerSpec extends FreeSpec with MockitoSugar
       "SDK version label is obeyed" - {
         "If not present, v1 is used" in {
           val noLabelsApp = new MarathonApp(appId, Map())
-          setup()
+          setup(Status.Ok)
 
-          when(mockResponse.status).thenReturn(Status.Ok)
           assertResult(true)(worker.checkUninstall(noLabelsApp)(mockSession))
         }
         "If present, value is used" in {
           val newApp = new MarathonApp(appId, Map(SdkJanitor.SdkApiVersionLabel -> "v2"))
-          setup()
+          setup(Status.Ok)
 
           reset(mockAdminRouter)
           when(mockAdminRouter.getSdkServicePlanStatus(
@@ -144,48 +142,46 @@ final class JanitorWorkerSpec extends FreeSpec with MockitoSugar
             plan = "deploy"
           )(mockSession)).thenReturn(mockFuture)
 
-          when(mockResponse.status).thenReturn(Status.Ok)
           assertResult(true)(worker.checkUninstall(newApp)(mockSession))
         }
       }
       "If the plan status is 200 OK, return true" in {
-        setup()
-
-        when(mockResponse.status).thenReturn(Status.Ok)
+        setup(Status.Ok)
 
         assertResult(true)(worker.checkUninstall(app)(mockSession))
       }
       "If the plan status is anything but 200 OK, return false" in {
-        setup()
-        when(mockResponse.status).thenReturn(Status.BadGateway)
+        setup(Status.BadGateway)
 
         assertResult(false)(worker.checkUninstall(app)(mockSession))
       }
       "If an exception is thrown, return false" in {
-        setup()
-        when(mockResponse.status).thenThrow(new NullPointerException())
+        setup(Status.Ok)
+        reset(mockAdminRouter)
+        when(mockAdminRouter.getSdkServicePlanStatus(
+          service = appId.toString,
+          apiVersion = "v1",
+          plan = "deploy"
+        )(mockSession)).thenThrow(new RuntimeException("A network error"))
 
         assertResult(false)(worker.checkUninstall(app)(mockSession))
       }
     }
     "In delete" - {
-      val mockResponse = mock[Response]
-
-      def setup(): Unit = {
+      def setup(status: Status): Unit = {
+        val mockResponse = Response.apply(status)
         val mockFuture = Future.value(mockResponse)
         when(mockAdminRouter.deleteApp(appId)(mockSession)).thenReturn(mockFuture)
         ()
       }
       "If the delete response is 4XX, fail the request" in {
-        setup()
-        when(mockResponse.status).thenReturn(Status.Unauthorized)
+        setup(Status.Unauthorized)
 
         worker.delete(request)
         verify(mockTracker).failUninstall(appId, List("Encountered Marathon error: Status(401)"))
       }
       "If the delete response is 5XX, requeue the request" in {
-        setup()
-        when(mockResponse.status).thenReturn(Status.BadGateway)
+        setup(Status.BadGateway)
 
         worker.delete(request)
         verifyZeroInteractions(mockTracker)
@@ -194,28 +190,26 @@ final class JanitorWorkerSpec extends FreeSpec with MockitoSugar
         assertResult(1)(queue.peek().asInstanceOf[JanitorRequest].failures.length)
       }
       "If the response is 200, don't requeue and delete the record" in {
-        setup()
-        when(mockResponse.status).thenReturn(Status.Ok)
+        setup(Status.Ok)
 
         worker.delete(request)
         verify(mockTracker).completeUninstall(appId)
         assertResult(0)(queue.size())
       }
       "Any other response, requeue the request" in {
-        setup()
-        when(mockResponse.status).thenReturn(Status.TemporaryRedirect)
+        setup(Status.TemporaryRedirect)
 
         worker.delete(request)
         assertResult(1)(queue.size())
         assertResult(List("Encountered unexpected status: Status(307)"))(queue.peek().asInstanceOf[JanitorRequest].failures)
       }
       "If an exception is thrown, requeue the request" in {
-        setup()
-        when(mockResponse.status).thenThrow(new NullPointerException())
+        setup(Status.Ok)
+        when(mockAdminRouter.deleteApp(appId)(mockSession)).thenThrow(new RuntimeException("A network error."))
 
         worker.delete(request)
         assertResult(1)(queue.size())
-        assertResult(List("Encountered exception: null"))(queue.peek().asInstanceOf[JanitorRequest].failures)
+        assertResult(List("Encountered exception: A network error."))(queue.peek().asInstanceOf[JanitorRequest].failures)
       }
     }
     "In fail" - {
