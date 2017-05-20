@@ -43,26 +43,12 @@ class ServiceDescribeSpec
         actualDowngrades shouldBe Right(expectedDowngrades.asJson)
       }
     }
-    scenario("The user cannot know the options used to run a service") {
-      serviceDescribeTest { (content, _, _, _) =>
-        Then("the user should not be able to observe the options used to run that service")
-        val actualResolvedOptions = content.hcursor.get[Json]("resolvedOptions")
-        assert(actualResolvedOptions.isLeft)
-      }
-    }
     scenario("The user would like to know the package definition used to run a service") {
       serviceDescribeTest { (content, packageDefinition, _, _) =>
         Then("the user should be able to observe the package definition used to run that service")
         val expectedDefinition = ItObjects.dropNullKeys(packageDefinition.asJson)
         val actualDefinition = content.hcursor.get[Json]("package").map(ItObjects.dropNullKeys)
         actualDefinition shouldBe Right(expectedDefinition)
-      }
-    }
-    scenario("The user cannot know the options they provided to run a service") {
-      serviceDescribeTest { (content, _, _, _) =>
-        Then("the user should not be able to observe the options they provided to run a service")
-        val actualUserProvidedOptions = content.hcursor.get[Json]("userProvidedOptions")
-        assert(actualUserProvidedOptions.isLeft)
       }
     }
   }
