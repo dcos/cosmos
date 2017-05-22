@@ -4,6 +4,7 @@ import cats.syntax.either._
 import com.mesosphere.cosmos.bijection.CosmosConversions._
 import com.mesosphere.cosmos.circe.Decoders.decode64
 import com.mesosphere.cosmos.circe.Decoders.parse64
+import com.mesosphere.cosmos.circe.Decoders.parse
 import com.mesosphere.cosmos.label
 import com.mesosphere.cosmos.model.StorageEnvelope
 import com.mesosphere.cosmos.thirdparty.marathon.circe.Decoders.decodeAppId
@@ -17,7 +18,6 @@ import com.twitter.bijection.Conversion.asMethod
 import io.circe.Json
 import io.circe.JsonObject
 import io.circe.ParsingFailure
-import io.circe.jawn._
 import io.circe.syntax._
 import java.nio.ByteBuffer
 import java.nio.charset.StandardCharsets
@@ -142,7 +142,7 @@ class PackageDefinitionRendererSpec extends FreeSpec with Matchers with TableDri
       "user specified appId" +
       "]" in {
       val s = classpathJsonString("/com/mesosphere/cosmos/render/test-schema.json")
-      val Right(schema) = parse(s).map(_.asObject.get)
+      val schema = parse(s).asObject.get
 
       val mustache =
         """
@@ -423,6 +423,49 @@ class PackageDefinitionRendererSpec extends FreeSpec with Matchers with TableDri
         val Right(renderedValue) = rendered.cursor.get[String]("some")
         assertResult("http://someplace/blob")(renderedValue)
       }
+    }
+  }
+
+  "renderTemplate" - {
+    "should not use html encoding for special characters" in {
+      /* This means that we don't support rendering arrays or objects!
+       * E.g.
+       * {
+       *   "array": {{arrayExample}},
+       *   "object": {{objectExample}}
+       * }
+       */
+      val template = """
+      |{
+      |  "string": "{{stringExample}}",
+      |  "int": {{intExample}},
+      |  "double": {{doubleExample}},
+      |  "boolean": {{booleanExample}}
+      |}
+      |""".stripMargin
+
+      val context = JsonObject.fromMap(
+        Map(
+          ("stringExample", "\n\'\"\\\r\t\b\f".asJson),
+          ("intExample", 42.asJson),
+          ("doubleExample", 42.1.asJson),
+          ("booleanExample", Json.False)
+        )
+      )
+
+      PackageDefinitionRenderer.renderTemplate(
+        template,
+        context
+      ) shouldBe Right(
+        JsonObject.fromMap(
+          Map(
+            ("string", "\n\'\"\\\r\t\b\f".asJson),
+            ("int", 42.asJson),
+            ("double", 42.1.asJson),
+            ("boolean", Json.False)
+          )
+        )
+      )
     }
   }
 
