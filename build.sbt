@@ -89,6 +89,15 @@ lazy val integrationTests = project.in(file("cosmos-integration-tests"))
       val analysis = (compile in Compile).value
       val s = (streams in IntegrationTest).value
       Tests.discover(frameworkMap.values.toList, analysis, s.log)._1
+    },
+    testGrouping in IntegrationTest := {
+      List(
+        Tests.Group(
+          "Integration tests",
+          (definedTests in IntegrationTest).value,
+          Tests.InProcess
+        )
+      )
     }
   )
   .dependsOn(
