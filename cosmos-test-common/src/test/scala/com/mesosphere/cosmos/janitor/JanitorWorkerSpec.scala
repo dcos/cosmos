@@ -111,10 +111,10 @@ final class JanitorWorkerSpec extends FreeSpec with MockitoSugar
       val labels = Map(SdkJanitor.SdkApiVersionLabel -> "v1")
       val app = new MarathonApp(appId, labels)
 
-      var mockFuture: Future[Response] = Future.value(Response.apply(Status.Ok))
+      var mockFuture: Future[Response] = Future.value(Response(Status.Ok))
 
       def setup(status: Status): Unit = {
-        mockFuture = Future.value(Response.apply(status))
+        mockFuture = Future.value(Response(status))
 
         when(mockAdminRouter.getSdkServicePlanStatus(
           service = appId.toString,
@@ -169,7 +169,7 @@ final class JanitorWorkerSpec extends FreeSpec with MockitoSugar
     }
     "In delete" - {
       def setup(status: Status): Unit = {
-        val mockResponse = Response.apply(status)
+        val mockResponse = Response(status)
         val mockFuture = Future.value(mockResponse)
         when(mockAdminRouter.deleteApp(appId)(mockSession)).thenReturn(mockFuture)
         ()

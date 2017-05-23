@@ -86,8 +86,9 @@ final class CuratorUninstallLock(curator: CuratorFramework) extends UninstallLoc
 
   override def unlock(appId: AppId): Unit = {
     logger.info("Attempting to release lock for {}", getLockPath(appId))
-    unlockOnThread(locks.get(appId))
+    val lock = locks.get(appId)
     locks.invalidate(appId)
+    unlockOnThread(lock)
     logger.info("Released lock for {}", getLockPath(appId))
   }
 }

@@ -5,6 +5,8 @@ import java.util.concurrent.DelayQueue
 import com.mesosphere.cosmos.http.RequestSession
 import com.mesosphere.cosmos.janitor.SdkJanitor.Request
 import com.mesosphere.cosmos.thirdparty.marathon.model.AppId
+import com.twitter.util.CountDownLatch
+import com.twitter.util.Duration
 import org.mockito.Mockito._
 import org.scalatest.BeforeAndAfterEach
 import org.scalatest.FreeSpec
@@ -12,7 +14,7 @@ import org.scalatest.mockito.MockitoSugar
 
 final class SdkJanitorSpec extends FreeSpec with BeforeAndAfterEach with MockitoSugar {
   private val mockTracker = mock[Tracker]
-  private val mockWorker = mock[Worker]
+  private var mockWorker: Worker = _
   private val mockSession = mock[RequestSession]
   private val mockLock = mock[UninstallLock]
   private val appId = AppId("/test")
@@ -22,6 +24,7 @@ final class SdkJanitorSpec extends FreeSpec with BeforeAndAfterEach with Mockito
 
   override def beforeEach(): Unit = {
     queue = new DelayQueue[Request]()
+    mockWorker = mock[Worker]
     janitor = new SdkJanitor(mockTracker, mockWorker, queue, mockLock, 1)
   }
 
@@ -42,10 +45,20 @@ final class SdkJanitorSpec extends FreeSpec with BeforeAndAfterEach with Mockito
       verify(mockTracker).completeUninstall(appId)
     }
     "Start submits the worker to the thread pool" in {
+      val latch = new CountDownLatch(1)
+      mockWorker = new Worker {
+
+        override def stop(): Unit = ???
+
+        override def run(): Unit = {
+          latch.countDown()
+        }
+      }
+
+      val janitor = new SdkJanitor(mockTracker, mockWorker, queue, mockLock, 1)
       janitor.start()
-      val wait = 100L
-      Thread.sleep(wait)
-      verify(mockWorker).run()
+
+      latch.await(Duration.fromSeconds(1))
     }
     "Stop sets running to false" in {
       janitor.stop()

@@ -6,6 +6,7 @@ import org.apache.curator.framework.CuratorFrameworkFactory
 import org.apache.curator.retry.ExponentialBackoffRetry
 import org.apache.curator.test.TestingCluster
 import org.scalatest.BeforeAndAfterAll
+import org.scalatest.BeforeAndAfterEach
 import org.scalatest.FreeSpec
 
 import scala.concurrent.Await
@@ -13,7 +14,7 @@ import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
 import scala.concurrent.duration.Duration
 
-class UninstallLockSpec extends FreeSpec with BeforeAndAfterAll {
+class UninstallLockSpec extends FreeSpec with BeforeAndAfterAll with BeforeAndAfterEach {
   val appId: AppId = AppId("/test")
   private[this] var zkCluster: TestingCluster = _
   private[this] var curator: CuratorFramework = _
@@ -34,6 +35,10 @@ class UninstallLockSpec extends FreeSpec with BeforeAndAfterAll {
       .retryPolicy(new ExponentialBackoffRetry(base, retries))
       .build()
     curator.start()
+  }
+
+  override protected def beforeEach(): Unit = {
+    super.beforeEach()
 
     lock = new CuratorUninstallLock(curator)
   }
