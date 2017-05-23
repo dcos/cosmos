@@ -562,10 +562,20 @@ case class OptionsConflict(
 }
 
 case class BadVersionUpdate(
-  msg: String
+  currentVersion: universe.v3.model.Version,
+  updateVersion: universe.v3.model.Version,
+  validVersions: List[universe.v3.model.Version]
 ) extends CosmosError {
   override val getData: Option[JsonObject] = {
-    Some(JsonObject.singleton("msg", msg.asJson))
+    Some(
+      JsonObject.fromMap(
+        Map(
+          "currentVersion" -> currentVersion.asJson,
+          "updateVersion" -> updateVersion.asJson,
+          "validVersions" -> validVersions.asJson
+        )
+      )
+    )
   }
 }
 
