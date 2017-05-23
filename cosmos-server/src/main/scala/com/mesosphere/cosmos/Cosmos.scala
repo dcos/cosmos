@@ -130,7 +130,7 @@ with Logging {
     )
   }
 
-  protected final def buildHandlers(components: Components): Handlers = {
+  final def buildHandlers(components: Components): Handlers = {
     import components._
 
     val packageAddHandler = enableIfSome(objectStorages, "package add") {
@@ -161,7 +161,7 @@ with Logging {
     )
   }
 
-  protected final def buildEndpoints(handlers: Handlers): Endpoints = {
+  final def buildEndpoints(handlers: Handlers): Endpoints = {
     import handlers._
 
     val pkg = "package"
