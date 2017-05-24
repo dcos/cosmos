@@ -1,11 +1,13 @@
 package com.mesosphere.cosmos
 
+import _root_.io.circe.Decoder
 import _root_.io.circe.DecodingFailure
+import _root_.io.circe.Encoder
 import _root_.io.circe.Json
 import _root_.io.circe.JsonObject
-import _root_.io.circe.syntax._
-import _root_.io.circe.generic.semiauto.deriveEncoder
 import _root_.io.circe.generic.semiauto.deriveDecoder
+import _root_.io.circe.generic.semiauto.deriveEncoder
+import _root_.io.circe.syntax._
 import cats.data.Ior
 import com.mesosphere.cosmos.circe.Encoders._
 import com.mesosphere.cosmos.http.MediaType
@@ -44,7 +46,7 @@ object CosmosError {
 }
 
 
-case class InvalidPackageVersionForAdd(
+final case class InvalidPackageVersionForAdd(
   packageName: String,
   packageVersion: universe.v3.model.Version
 ) extends CosmosError {
@@ -54,7 +56,7 @@ case class InvalidPackageVersionForAdd(
 
 object InvalidPackageVersionForAdd {
   def apply(packageCoordinate: rpc.v1.model.PackageCoordinate): InvalidPackageVersionForAdd = {
-    InvalidPackageVersionForAdd(packageCoordinate.name, packageCoordiate.version)
+    InvalidPackageVersionForAdd(packageCoordinate.name, packageCoordinate.version)
   }
 
   implicit val encoder: Encoder[InvalidPackageVersionForAdd] = deriveEncoder
@@ -62,9 +64,9 @@ object InvalidPackageVersionForAdd {
 }
 
 
-case class PackageNotFound(packageName: String) extends CosmosError {
-  override val data: Option[JsonObject] = CosmosError.deriveData(this)
-  override val message: String = ???
+final case class PackageNotFound(packageName: String) extends CosmosError {
+  override def data: Option[JsonObject] = CosmosError.deriveData(this)
+  override def message: String = ???
 }
 
 object PackageNotFound {
@@ -73,11 +75,11 @@ object PackageNotFound {
 }
 
 
-case class VersionNotFound(
+final case class VersionNotFound(
   packageName: String,
   packageVersion: universe.v3.model.Version
 ) extends CosmosError {
-  override val data: Option[JsonObject] = CosmosError.deriveData(this)
+  override def data: Option[JsonObject] = CosmosError.deriveData(this)
   override val message: String = ???
 }
 
@@ -87,10 +89,10 @@ object VersionNotFound {
 }
 
 
-case class PackageFileMissing(
-  packageName: String,
+final case class PackageFileMissing(
+  packageName: String
 ) extends CosmosError {
-  override val data: Option[JsonObject] = CosmosError.deriveData(this)
+  override def data: Option[JsonObject] = CosmosError.deriveData(this)
   override val message: String = ???
 }
 
@@ -100,8 +102,8 @@ object PackageFileMissing {
 }
 
 
-case class PackageFileNotJson(fileName: String, parseError: String) extends CosmosError {
-  override val data: Option[JsonObject] = CosmosError.deriveData(this)
+final case class PackageFileNotJson(fileName: String, parseError: String) extends CosmosError {
+  override def data: Option[JsonObject] = CosmosError.deriveData(this)
   override val message: String = ???
 }
 
@@ -111,8 +113,8 @@ object PackageFileNotJson {
 }
 
 
-case class UnableToParseMarathonAsJson(parseError: String) extends  CosmosError {
-  override val data: Option[JsonObject] = CosmosError.deriveData(this)
+final case class UnableToParseMarathonAsJson(parseError: String) extends  CosmosError {
+  override def data: Option[JsonObject] = CosmosError.deriveData(this)
   override val message: String = ???
 }
 
@@ -121,9 +123,9 @@ object UnableToParseMarathonAsJson {
   implicit val decoder: Decoder[UnableToParseMarathonAsJson] = deriveDecoder
 }
 
-case class PackageFileSchemaMismatch(fileName: String, decodingFailure: DecodingFailure) extends CosmosError {
+final case class PackageFileSchemaMismatch(fileName: String, decodingFailure: DecodingFailure) extends CosmosError {
   // TODO: See we can fix this
-  override val data: Option[JsonObject] = {
+  override def data: Option[JsonObject] = {
     Some(JsonObject.singleton("errorMessage", decodingFailure.getMessage().asJson))
   }
   override val message: String = ???
@@ -134,26 +136,26 @@ object PackageFileSchemaMismatch {
 }
 
 // TODO: Why aren't we return data? Make this a CosmosError again
-case class PackageAlreadyInstalled() extends RuntimeException {
+final case class PackageAlreadyInstalled() extends RuntimeException {
   override val status = Status.Conflict
   override val getData = None
 }
 
-case class ServiceAlreadyStarted() extends RuntimeException {
+final case class ServiceAlreadyStarted() extends RuntimeException {
   override val status = Status.Conflict
   override val getData = None
 }
 
-case class MarathonBadResponse(marathonError: MarathonError) extends CosmosError {
-  override val data: Option[JsonObject] = {
+final case class MarathonBadResponse(marathonError: MarathonError) extends CosmosError {
+  override def data: Option[JsonObject] = {
     marathonError.details.map(details => JsonObject.singleton("errors", details.asJson))
   }
   override val message: String = ???
 }
 
-case class MarathonGenericError(marathonStatus: Status) extends CosmosError {
+final case class MarathonGenericError(marathonStatus: Status) extends CosmosError {
   // TODO: This is part of the CosmosException override val status = Status.InternalServerError
-  override val data: Option[JsonObject] = CosmosError.deriveData(this)
+  override def data: Option[JsonObject] = CosmosError.deriveData(this)
   override val message: String = ???
 }
 
@@ -162,9 +164,9 @@ object MarathonGenericError {
   implicit val decoder: Decoder[MarathonGenericError] = deriveDecoder
 }
 
-case class MarathonBadGateway(marathonStatus: Status) extends CosmosError {
+final case class MarathonBadGateway(marathonStatus: Status) extends CosmosError {
   // TODO: This is part of the CosmosException override val status = Status.BadGateway
-  override val data: Option[JsonObject] = CosmosError.deriveData(this)
+  override def data: Option[JsonObject] = CosmosError.deriveData(this)
   override val message: String = ???
 }
 
@@ -174,8 +176,8 @@ object MarathonBadGateway {
 }
 
 
-case class IndexNotFound(repoUri: Uri) extends CosmosError {
-  override val data: Option[JsonObject] = CosmosError.deriveData(this)
+final case class IndexNotFound(repoUri: Uri) extends CosmosError {
+  override def data: Option[JsonObject] = CosmosError.deriveData(this)
   override val message: String = ???
 }
 
@@ -185,8 +187,8 @@ object IndexNotFound {
 }
 
 
-case class MarathonAppDeleteError(appId: AppId) extends CosmosError {
-  override val data: Option[JsonObject] = CosmosError.deriveData(this)
+final case class MarathonAppDeleteError(appId: AppId) extends CosmosError {
+  override def data: Option[JsonObject] = CosmosError.deriveData(this)
   override val message: String = ???
 }
 
@@ -195,8 +197,8 @@ object MarathonAppDeleteError {
   implicit val decoder: Decoder[MarathonAppDeleteError] = deriveDecoder
 }
 
-case class MarathonAppNotFound(appId: AppId) extends CosmosError {
-  override val data: Option[JsonObject] = CosmosError.deriveData(this)
+final case class MarathonAppNotFound(appId: AppId) extends CosmosError {
+  override def data: Option[JsonObject] = CosmosError.deriveData(this)
   override val message: String = ???
 }
 
@@ -205,7 +207,7 @@ object MarathonAppNotFound {
   implicit val decoder: Decoder[MarathonAppNotFound] = deriveDecoder
 }
 
-case class CirceError(circeError: _root_.io.circe.Error) extends CosmosError {
+final case class CirceError(circeError: _root_.io.circe.Error) extends CosmosError {
   override val data = None
   override val message: String = ???
 }
@@ -215,8 +217,8 @@ case object MarathonTemplateMustBeJsonObject extends CosmosError {
   override val message: String = ???
 }
 
-case class UnsupportedContentType(supported: List[MediaType], actual: Option[String] = None) extends CosmosError {
-  override val data: Option[JsonObject] = CosmosError.deriveData(this)
+final case class UnsupportedContentType(supported: List[MediaType], actual: Option[String] = None) extends CosmosError {
+  override def data: Option[JsonObject] = CosmosError.deriveData(this)
   override val message: String = ???
 }
 
@@ -233,7 +235,7 @@ object UnsupportedContentType {
 }
 
 
-case class UnsupportedContentEncoding(supported: List[String], actual: Option[String] = None) extends CosmosError {
+final case class UnsupportedContentEncoding(supported: List[String], actual: Option[String] = None) extends CosmosError {
   override def data: Option[JsonObject] = CosmosError.deriveData(this)
   override def message: String = ???
 }
@@ -243,7 +245,7 @@ object UnsupportedContentEncoding {
   implicit val decoder: Decoder[UnsupportedContentEncoding] = deriveDecoder
 }
 
-case class UnsupportedRedirect(supported: List[String], actual: Option[String] = None) extends CosmosError {
+final case class UnsupportedRedirect(supported: List[String], actual: Option[String] = None) extends CosmosError {
   override def data: Option[JsonObject] = CosmosError.deriveData(this)
   override def message: String = ???
 }
@@ -254,10 +256,10 @@ object UnsupportedRedirect {
 }
 
 // TODO: Move status to CosmosException
-case class GenericHttpError(
+final case class GenericHttpError(
   method: HttpMethod,
   uri: Uri,
-  clientStatus: Status,
+  clientStatus: Status
 ) extends CosmosError {
   override def data: Option[JsonObject] = CosmosError.deriveData(this)
   override def message: String = ???
@@ -268,7 +270,7 @@ object GenericHttpError {
   implicit val decoder: Decoder[GenericHttpError] = deriveDecoder
 }
 
-case class AmbiguousAppId(packageName: String, appIds: List[AppId]) extends CosmosError {
+final case class AmbiguousAppId(packageName: String, appIds: List[AppId]) extends CosmosError {
   override def data: Option[JsonObject] = CosmosError.deriveData(this)
   override def message: String = ???
 }
@@ -278,7 +280,7 @@ object AmbiguousAppId {
   implicit val decoder: Decoder[AmbiguousAppId] = deriveDecoder
 }
 
-case class MultipleFrameworkIds(
+final case class MultipleFrameworkIds(
   packageName: String,
   packageVersion: Option[universe.v2.model.PackageDetailsVersion],
   frameworkName: String,
@@ -293,7 +295,7 @@ object MultipleFrameworkIds {
   implicit val decoder: Decoder[MultipleFrameworkIds] = deriveDecoder
 }
 
-case class PackageNotInstalled(packageName: String) extends CosmosError {
+final case class PackageNotInstalled(packageName: String) extends CosmosError {
   override def data: Option[JsonObject] = CosmosError.deriveData(this)
   override def message: String = ???
 }
@@ -303,7 +305,7 @@ object PackageNotInstalled {
   implicit val decoder: Decoder[PackageNotInstalled] = deriveDecoder
 }
 
-case class JsonSchemaMismatch(errors: Iterable[Json]) extends CosmosError {
+final case class JsonSchemaMismatch(errors: Iterable[Json]) extends CosmosError {
   override def data: Option[JsonObject] = CosmosError.deriveData(this)
   override def message: String = ???
 }
@@ -313,7 +315,7 @@ object JsonSchemaMismatch {
   implicit val decoder: Decoder[JsonSchemaMismatch] = deriveDecoder
 }
 
-case class UninstallNonExistentAppForPackage(
+final case class UninstallNonExistentAppForPackage(
   packageName: String,
   appId: AppId
 ) extends CosmosError {
@@ -328,7 +330,7 @@ object UninstallNonExistentAppForPackage {
 
 
 // TODO: move Throwable to CosmosException: causedBy: Throwable
-case class ServiceUnavailable(
+final case class ServiceUnavailable(
   serviceName: String
 ) extends CosmosError {
   // TODO: move this to CosmosException: override val status = Status.ServiceUnavailable
@@ -343,7 +345,7 @@ object ServiceUnavailable {
 
 
 // TODO: Fix this cosmos error
-case class Unauthorized(
+final case class Unauthorized(
   serviceName: String,
   realm: Option[String]
 ) extends CosmosError with NoStackTrace {
@@ -367,7 +369,7 @@ case class Unauthorized(
 
 
 // TODO: Fix this cosmos error
-case class Forbidden(serviceName: String) extends CosmosError with NoStackTrace {
+final case class Forbidden(serviceName: String) extends CosmosError with NoStackTrace {
   override val getMessage: String = {
     s"Unable to complete request due to Forbidden response from service [$serviceName]"
   }
@@ -381,7 +383,7 @@ case class Forbidden(serviceName: String) extends CosmosError with NoStackTrace 
 
 
 // TODO: Move this to CosmosException: causedBy: Throwable
-case class IncompleteUninstall(
+final case class IncompleteUninstall(
   packageName: String
 ) extends CosmosError {
   override def data: Option[JsonObject] = CosmosError.deriveData(this)
@@ -394,7 +396,7 @@ object IncompleteUninstall {
 }
 
 
-case class ZooKeeperStorageError(msg: String) extends CosmosError {
+final case class ZooKeeperStorageError(msg: String) extends CosmosError {
   override def data: Option[JsonObject] = CosmosError.deriveData(this)
   override def message: String = ???
 }
@@ -406,7 +408,7 @@ object ZooKeeperStorageError {
 
 
 // TODO: Move this to CosmosException: causedBy: Throwable
-case class ConcurrentAccess extends CosmosError {
+final case class ConcurrentAccess() extends CosmosError {
   override def data: Option[JsonObject] = None
   override def message: String = ???
 }
@@ -419,7 +421,7 @@ final case class RepoNameOrUriMissing() extends CosmosError {
 
 
 final case class RepositoryAlreadyPresent(nameOrUri: Ior[String, Uri]) extends CosmosError {
-  override val data: Option[JsonObject] = {
+  override def data: Option[JsonObject] = {
     val jsonMap = nameOrUri match {
       case Ior.Both(n, u) => Map("name" -> n.asJson, "uri" -> u.asJson)
       case Ior.Left(n) => Map("name" -> n.asJson)
@@ -441,7 +443,7 @@ object RepositoryAddIndexOutOfBounds {
   implicit val decoder: Decoder[RepositoryAddIndexOutOfBounds] = deriveDecoder
 }
 
-case class UnsupportedRepositoryVersion(
+final case class UnsupportedRepositoryVersion(
   version: universe.v2.model.UniverseVersion
 ) extends CosmosError {
   override def data: Option[JsonObject] = CosmosError.deriveData(this)
@@ -453,7 +455,7 @@ object UnsupportedRepositoryVersion {
   implicit val decoder: Decoder[UnsupportedRepositoryVersion] = deriveDecoder
 }
 
-case class UnsupportedRepositoryUri(uri: Uri) extends CosmosError {
+final case class UnsupportedRepositoryUri(uri: Uri) extends CosmosError {
   override def data: Option[JsonObject] = CosmosError.deriveData(this)
   override def message: String = ???
 }
@@ -464,7 +466,7 @@ object UnsupportedRepositoryUri {
 }
 
 // TODO: fix this cosmos error
-case class RepositoryUriSyntax(
+final case class RepositoryUriSyntax(
   repository: rpc.v1.model.PackageRepository,
   causedBy: Throwable
 ) extends CosmosError(Some(causedBy)) {
@@ -474,7 +476,7 @@ case class RepositoryUriSyntax(
 }
 
 // TODO: fix this cosmos error
-case class RepositoryUriConnection(
+final case class RepositoryUriConnection(
   repository: rpc.v1.model.PackageRepository,
   causedBy: Throwable
 ) extends CosmosError(Some(causedBy)) {
@@ -485,7 +487,7 @@ case class RepositoryUriConnection(
 
 
 final case class RepositoryNotPresent(nameOrUri: Ior[String, Uri]) extends CosmosError {
-  override val data: Option[JsonObject] = {
+  override def data: Option[JsonObject] = {
     val jsonMap = nameOrUri match {
       case Ior.Both(n, u) => Map("name" -> n.asJson, "uri" -> u.asJson)
       case Ior.Left(n) => Map("name" -> n.asJson)
@@ -496,118 +498,127 @@ final case class RepositoryNotPresent(nameOrUri: Ior[String, Uri]) extends Cosmo
   override def message: String = ???
 }
 
-case class ConversionError(failure: String) extends CosmosError {
-  override val getData: Option[JsonObject] = {
-    Some(JsonObject.singleton("failure", failure.asJson))
-  }
+
+final case class ConversionError(failure: String) extends CosmosError {
+  override def data: Option[JsonObject] = CosmosError.deriveData(this)
+  override def message: String = ???
 }
 
-case class ServiceMarathonTemplateNotFound(
+object ConversionError {
+  implicit val encoder: Encoder[ConversionError] = deriveEncoder
+  implicit val decoder: Decoder[ConversionError] = deriveDecoder
+}
+
+
+final case class ServiceMarathonTemplateNotFound(
   packageName: String,
   packageVersion: universe.v3.model.Version
 ) extends CosmosError {
-  override val getData: Option[JsonObject] = {
-    Some(
-      JsonObject.fromMap(
-        Map(
-          "packageName" -> packageName.asJson,
-          "packageVersion" -> packageVersion.asJson
-        )
-      )
-    )
-  }
+  override def data: Option[JsonObject] = CosmosError.deriveData(this)
+  override def message: String = ???
 }
 
-case class InstallQueueError(msg: String) extends CosmosError {
-  override val getData: Option[JsonObject] = {
-    Some(JsonObject.singleton("msg", msg.asJson))
-  }
+object ServiceMarathonTemplateNotFound {
+  implicit val encoder: Encoder[ServiceMarathonTemplateNotFound] = deriveEncoder
+  implicit val decoder: Decoder[ServiceMarathonTemplateNotFound] = deriveDecoder
 }
 
-case class NotImplemented(msg: String) extends CosmosError {
-  override val status = Status.NotImplemented
 
-  override val getData: Option[JsonObject] = {
-    Some(JsonObject.singleton("msg", msg.asJson))
-  }
+final case class InstallQueueError(msg: String) extends CosmosError {
+  override def data: Option[JsonObject] = CosmosError.deriveData(this)
+  override def message: String = ???
 }
 
-case class OperationInProgress(coordinate: rpc.v1.model.PackageCoordinate) extends CosmosError {
-  override val status = Status.Conflict
-
-  override val getData: Option[JsonObject] = {
-    Some(JsonObject.singleton("coordinate", coordinate.asJson))
-  }
+object InstallQueueError {
+  implicit val encoder: Encoder[InstallQueueError] = deriveEncoder
+  implicit val decoder: Decoder[InstallQueueError] = deriveDecoder
 }
 
-case class InvalidPackage(reason: PackageUtil.PackageError) extends CosmosError(Some(reason)) {
+
+// TODO: Move this to CosmosException: override val status = Status.NotImplemented
+final case class NotImplemented(msg: String) extends CosmosError {
+  override def data: Option[JsonObject] = CosmosError.deriveData(this)
+  override def message: String = ???
+}
+
+object NotImplemented {
+  implicit val encoder: Encoder[NotImplemented] = deriveEncoder
+  implicit val decoder: Decoder[NotImplemented] = deriveDecoder
+}
+
+
+// TODO: Move this to CosmosException: override val status = Status.Conflict
+final case class OperationInProgress(coordinate: rpc.v1.model.PackageCoordinate) extends CosmosError {
+  override def data: Option[JsonObject] = CosmosError.deriveData(this)
+  override def message: String = ???
+}
+
+object OperationInProgress {
+  implicit val encoder: Encoder[OperationInProgress] = deriveEncoder
+  implicit val decoder: Decoder[OperationInProgress] = deriveDecoder
+}
+
+
+// TODO: Fix this cosmos error
+final case class InvalidPackage(
+  reason: PackageUtil.PackageError
+) extends CosmosError(Some(reason)) {
   override val getData: Option[JsonObject] = Some(reason.getData)
 }
 
-case class ConversionFromPackageToV1AddResponse(
-  msg: String = "A v4 package cannot be converted into a v1 AddResponse"
-) extends CosmosError {
-  override val getData: Option[JsonObject] = {
-    Some(JsonObject.singleton("msg", msg.asJson))
-  }
+
+final case class ConversionFromPackageToV1AddResponse() extends CosmosError {
+  override def data: Option[JsonObject] = None
+  override def msg: String = "A v4 package cannot be converted into a v1 AddResponse"
 }
 
-case class ConversionFromPackageToV2DescribeResponse(
-  msg: String = "A v4 package cannot be converted into a v2 DescribeResponse"
-) extends CosmosError {
-  override val getData: Option[JsonObject] = {
-    Some(JsonObject.singleton("msg", msg.asJson))
-  }
+
+final case class ConversionFromPackageToV2DescribeResponse() extends CosmosError {
+  override def data: Option[JsonObject] = None
+  override def msg: String = "A v4 package cannot be converted into a v2 DescribeResponse"
 }
 
-case class OptionsNotStored(
-  msg: String
+
+final case class OptionsNotStored(
+  override val msg: String
 ) extends CosmosError {
-  override val getData: Option[JsonObject] = {
-    Some(JsonObject.singleton("msg", msg.asJson))
-  }
+  override def data: Option[JsonObject] = None
 }
 
-case class AppIdChanged(
-  msg: String
+
+final case class AppIdChanged(
+  override val msg: String
 ) extends CosmosError {
-  override val getData: Option[JsonObject] = {
-    Some(JsonObject.singleton("msg", msg.asJson))
-  }
+  override def data: Option[JsonObject] = None
 }
 
-case class OptionsConflict(
-  msg: String
+
+final case class OptionsConflict(
+  override val msg: String
 ) extends CosmosError {
-  override val getData: Option[JsonObject] = {
-    Some(JsonObject.singleton("msg", msg.asJson))
-  }
+  override def data: Option[JsonObject] = None
 }
 
-case class BadVersionUpdate(
+
+final case class BadVersionUpdate(
   currentVersion: universe.v3.model.Version,
   updateVersion: universe.v3.model.Version,
   validVersions: List[universe.v3.model.Version]
 ) extends CosmosError {
-  override val getData: Option[JsonObject] = {
-    Some(
-      JsonObject.fromMap(
-        Map(
-          "currentVersion" -> currentVersion.asJson,
-          "updateVersion" -> updateVersion.asJson,
-          "validVersions" -> validVersions.asJson
-        )
-      )
-    )
-  }
+  override def data: Option[JsonObject] = CosmosError.deriveData(this)
+  override def message: String = ???
 }
 
-case class ServiceUpdateError(
-  msg: String
+object BadVersionUpdate {
+  implicit val encoder: Encoder[BadVersionUpdate] = deriveEncoder
+  implicit val decoder: Decoder[BadVersionUpdate] = deriveDecoder
+}
+
+
+final case class ServiceUpdateError(
+  override val msg: String
 ) extends CosmosError {
-  override val getData: Option[JsonObject] = {
-    Some(JsonObject.singleton("msg", msg.asJson))
-  }
+  override def data: Option[JsonObject] = None
 }
 
 // scalastyle:on number.of.types
