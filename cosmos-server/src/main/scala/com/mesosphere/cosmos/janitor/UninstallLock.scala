@@ -4,14 +4,12 @@ import java.nio.file.Paths
 import java.util.concurrent.Callable
 import java.util.concurrent.Executors
 import java.util.concurrent.TimeUnit
-import java.util.concurrent.locks.ReentrantLock
 import com.google.common.util.concurrent.ThreadFactoryBuilder
 import com.mesosphere.cosmos.janitor.CuratorUninstallLock._
 import com.mesosphere.cosmos.thirdparty.marathon.model.AppId
 import org.apache.curator.framework.CuratorFramework
 import org.apache.curator.framework.recipes.locks.InterProcessMutex
 import org.slf4j.Logger
-
 
 /**
   * Allows a cosmos instance to acquire a lock on a particular uninstall.
@@ -33,12 +31,6 @@ trait UninstallLock {
 final class CuratorUninstallLock(curator: CuratorFramework) extends UninstallLock {
   lazy val logger: Logger = org.slf4j.LoggerFactory.getLogger(getClass)
   private var locksCache = Map[AppId, InterProcessMutex]()
-  private val cacheLock = new ReentrantLock()
-//  private val locks = CacheBuilder.newBuilder().build(new CacheLoader[AppId, InterProcessMutex] {
-//    override def load(key: AppId): InterProcessMutex = {
-//      new InterProcessMutex(curator, getLockPath(key))
-//    }
-//  })
 
   /**
     * InterProcessMutex locks threads rather than whole processes (jvms). As such, a single thread
@@ -68,21 +60,17 @@ final class CuratorUninstallLock(curator: CuratorFramework) extends UninstallLoc
   }
 
   override def isLockedByThisProcess(appId: AppId): Boolean = {
-    cacheLock.lock()
-    try {
+    synchronized {
       locksCache.get(appId) match {
         case Some(lock) => lock.isAcquiredInThisProcess
         case _ => false
       }
-    } finally {
-      cacheLock.unlock()
     }
   }
 
   override def lock(appId: AppId): Boolean = {
     logger.info("Attempting to acquire lock for {}", getLockPath(appId))
-    cacheLock.lock()
-    try {
+    synchronized {
       val lock = locksCache.get(appId) match {
         case Some(existed) => existed
         case None => new InterProcessMutex(curator, getLockPath(appId))
@@ -99,16 +87,12 @@ final class CuratorUninstallLock(curator: CuratorFramework) extends UninstallLoc
         // Do not add the lock to the cache. It isn't acquired.
         false
       }
-
-    } finally {
-      cacheLock.unlock()
     }
   }
 
   override def unlock(appId: AppId): Unit = {
     logger.info("Attempting to release lock for {}", getLockPath(appId))
-    cacheLock.lock()
-    try {
+    synchronized {
       locksCache.get(appId) match {
         case Some(existed) =>
           unlockOnThread(existed)
@@ -118,11 +102,8 @@ final class CuratorUninstallLock(curator: CuratorFramework) extends UninstallLoc
         case _ =>
           logger.info("Lock does not exist for {}. Nothing to unlock.", getLockPath(appId))
       }
-    } finally {
-      cacheLock.unlock()
     }
   }
-
 }
 
 object CuratorUninstallLock {
