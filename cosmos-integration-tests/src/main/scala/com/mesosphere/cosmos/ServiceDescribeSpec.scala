@@ -18,7 +18,7 @@ import org.scalatest.FeatureSpec
 import org.scalatest.GivenWhenThen
 import org.scalatest.Matchers
 import org.scalatest.prop.TableDrivenPropertyChecks
-import org.scalatest.prop.TableFor5
+import org.scalatest.prop.TableFor3
 
 class ServiceDescribeSpec
   extends FeatureSpec
@@ -26,69 +26,76 @@ class ServiceDescribeSpec
     with Matchers
     with TableDrivenPropertyChecks {
 
-  private val path: String = "service/describe"
-  private val contentType: String = "application/vnd.dcos.service.describe-request+json;charset=utf-8;version=v1"
-  private val accept: String = "application/vnd.dcos.service.describe-response+json;charset=utf-8;version=v1"
+  import ServiceDescribeSpec._
 
   feature("The service/describe endpoint") {
     scenario("The user would like to know the upgrades available to a service") {
-      serviceDescribeTest { (content, _, expectedUpgrades, _, _, _) =>
+      serviceDescribeTest { (content, _, expectedUpgrades, _) =>
         Then("the user should be able to observe the upgrades available to that service")
         val actualUpgrades = content.hcursor.get[Json]("upgradesTo")
         actualUpgrades shouldBe Right(expectedUpgrades.asJson)
       }
     }
     scenario("The user would like to know the downgrades available to a service") {
-      serviceDescribeTest { (content, _, _, expectedDowngrades, _, _) =>
+      serviceDescribeTest { (content, _, _, expectedDowngrades) =>
         Then("the user should be able to observe the downgrades available to that service")
         val actualDowngrades = content.hcursor.get[Json]("downgradesTo")
         actualDowngrades shouldBe Right(expectedDowngrades.asJson)
       }
     }
-    scenario("The user would like to know the options used to run a service") {
-      serviceDescribeTest { (content, _, _, _, expectedResolvedOptions, _) =>
-        Then("the user should be able to observe the options used to run that service")
-        val actualResolvedOptions = content.hcursor.get[Json]("resolvedOptions")
-        actualResolvedOptions shouldBe Right(expectedResolvedOptions)
-      }
-    }
     scenario("The user would like to know the package definition used to run a service") {
-      serviceDescribeTest { (content, packageDefinition, _, _, _, _) =>
+      serviceDescribeTest { (content, packageDefinition, _, _) =>
         Then("the user should be able to observe the package definition used to run that service")
         val expectedDefinition = ItObjects.dropNullKeys(packageDefinition.asJson)
         val actualDefinition = content.hcursor.get[Json]("package").map(ItObjects.dropNullKeys)
         actualDefinition shouldBe Right(expectedDefinition)
       }
     }
-    scenario("The user would like to know the options he provided to run a service") {
-      serviceDescribeTest { (content, _, _, _, _, expectedUserProvidedOptions) =>
-        Then("the user should be able to observe the options the user provided to run a service")
-        val actualUserProvidedOptions = content.hcursor.get[Json]("userProvidedOptions")
-        actualUserProvidedOptions shouldBe Right(expectedUserProvidedOptions)
-      }
-    }
   }
 
-  private val helloWorldPackageDefinitions
-  : TableFor5[universe.v4.model.PackageDefinition, List[String], List[String], Json, Json] = {
+}
+
+object ServiceDescribeSpec
+  extends FeatureSpec with GivenWhenThen with Matchers with TableDrivenPropertyChecks {
+
+  private val path: String = "service/describe"
+  private val contentType: String =
+    "application/vnd.dcos.service.describe-request+json;charset=utf-8;version=v1"
+  private val accept: String =
+    "application/vnd.dcos.service.describe-response+json;charset=utf-8;version=v1"
+
+  private val helloWorldPackageDefinitions:
+    TableFor3[universe.v4.model.PackageDefinition, List[String], List[String]] = {
     Table(
-      ("Package Definition", "Upgrades To", "Downgrades To", "Resolved Options", "User Supplied Options"),
-      (ItObjects.helloWorldPackage0, List(), List(), ItObjects.helloWorldResolvedOptions(), Json.obj()),
-      (ItObjects.helloWorldPackage3, List("0.4.1"), List(), ItObjects.helloWorldResolvedOptions(), Json.obj()),
-      (ItObjects.helloWorldPackage4, List(), List("0.4.0"), ItObjects.helloWorldResolvedOptions(), Json.obj())
+      ("Package Definition", "Upgrades To", "Downgrades To"),
+      (ItObjects.helloWorldPackage0, List(), List()),
+      (ItObjects.helloWorldPackage3, List("0.4.1"), List()),
+      (ItObjects.helloWorldPackage4, List(), List("0.4.0"))
     )
   }
 
-  private def serviceDescribeTest(
-    testCode: (Json, universe.v4.model.PackageDefinition, List[String], List[String], Json, Json) => Assertion
+  private def serviceDescribe(appId: String): Response = {
+    val body = Json.obj(
+      "appId" -> appId.asJson
+    )
+    CosmosClient.submit(
+      HttpRequest.post(
+        path = path,
+        body = body.noSpaces,
+        contentType = Some(contentType),
+        accept = Some(accept)
+      )
+    )
+  }
+
+  def serviceDescribeTest(
+    testCode: (Json, universe.v4.model.PackageDefinition, List[String], List[String]) => Assertion
   ): Unit = {
     forAll(helloWorldPackageDefinitions) {
       (
         packageDefinition,
         expectedUpgrades,
-        expectedDowngrades,
-        expectedResolvedOptions,
-        expectedUserProvidedOptions
+        expectedDowngrades
       ) =>
         Given("a running service and its appId")
         val appId = AppId(UUID.randomUUID().toString)
@@ -110,9 +117,7 @@ class ServiceDescribeSpec
             content,
             packageDefinition,
             expectedUpgrades,
-            expectedDowngrades,
-            expectedResolvedOptions,
-            expectedUserProvidedOptions
+            expectedDowngrades
           )
           ()
         } finally {
@@ -123,19 +128,4 @@ class ServiceDescribeSpec
     }
   }
 
-  private def serviceDescribe(appId: String): Response = {
-    val body = Json.obj(
-      "appId" -> appId.asJson
-    )
-    CosmosClient.submit(
-      HttpRequest.post(
-        path = path,
-        body = body.noSpaces,
-        contentType = Some(contentType),
-        accept = Some(accept)
-      )
-    )
-  }
-
 }
-
