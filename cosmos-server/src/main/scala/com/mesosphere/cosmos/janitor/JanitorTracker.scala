@@ -1,7 +1,6 @@
 package com.mesosphere.cosmos.janitor
 
 import java.nio.file.Paths
-
 import com.mesosphere.cosmos.janitor.SdkJanitor._
 import com.mesosphere.cosmos.model.StorageEnvelope
 import com.mesosphere.cosmos.storage.v1.model.Failed

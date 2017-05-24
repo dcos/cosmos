@@ -4,10 +4,7 @@ import java.nio.file.Paths
 import java.util.concurrent.Callable
 import java.util.concurrent.Executors
 import java.util.concurrent.TimeUnit
-
-import com.google.common.cache.CacheBuilder
-import com.google.common.cache.CacheLoader
-import com.google.common.cache.LoadingCache
+import java.util.concurrent.locks.ReentrantLock
 import com.google.common.util.concurrent.ThreadFactoryBuilder
 import com.mesosphere.cosmos.janitor.CuratorUninstallLock._
 import com.mesosphere.cosmos.thirdparty.marathon.model.AppId
@@ -35,12 +32,13 @@ trait UninstallLock {
   */
 final class CuratorUninstallLock(curator: CuratorFramework) extends UninstallLock {
   lazy val logger: Logger = org.slf4j.LoggerFactory.getLogger(getClass)
-  private val locks = CacheBuilder.newBuilder().build(new CacheLoader[AppId, InterProcessMutex] {
-    override def load(key: AppId): InterProcessMutex = {
-      new InterProcessMutex(curator, getLockPath(key))
-    }
-  }).asInstanceOf[LoadingCache[AppId, InterProcessMutex]] // Note, your IDE is going to say this is redundant.
-                                                          // The scala compiler will disagree.
+  private var locksCache = Map[AppId, InterProcessMutex]()
+  private val cacheLock = new ReentrantLock()
+//  private val locks = CacheBuilder.newBuilder().build(new CacheLoader[AppId, InterProcessMutex] {
+//    override def load(key: AppId): InterProcessMutex = {
+//      new InterProcessMutex(curator, getLockPath(key))
+//    }
+//  })
 
   /**
     * InterProcessMutex locks threads rather than whole processes (jvms). As such, a single thread
@@ -70,27 +68,61 @@ final class CuratorUninstallLock(curator: CuratorFramework) extends UninstallLoc
   }
 
   override def isLockedByThisProcess(appId: AppId): Boolean = {
-    locks.get(appId).isAcquiredInThisProcess
+    cacheLock.lock()
+    try {
+      locksCache.get(appId) match {
+        case Some(lock) => lock.isAcquiredInThisProcess
+        case _ => false
+      }
+    } finally {
+      cacheLock.unlock()
+    }
   }
 
   override def lock(appId: AppId): Boolean = {
     logger.info("Attempting to acquire lock for {}", getLockPath(appId))
-    if (lockOnThread(locks.get(appId))) {
-      logger.info("Acquired lock for {}", getLockPath(appId))
-      true
-    } else {
-      logger.info("Lock for {} not acquired. Already owned", getLockPath(appId))
-      false
+    cacheLock.lock()
+    try {
+      val lock = locksCache.get(appId) match {
+        case Some(existed) => existed
+        case None => new InterProcessMutex(curator, getLockPath(appId))
+      }
+
+      if (lockOnThread(lock)) {
+        logger.info("Acquired lock for {}", getLockPath(appId))
+        // Add the lock to the cache. In the case that it already existed, we're
+        // simply rewriting it with itself.
+        locksCache += (appId -> lock)
+        true
+      } else {
+        logger.info("Lock for {} not acquired. Already owned", getLockPath(appId))
+        // Do not add the lock to the cache. It isn't acquired.
+        false
+      }
+
+    } finally {
+      cacheLock.unlock()
     }
   }
 
   override def unlock(appId: AppId): Unit = {
     logger.info("Attempting to release lock for {}", getLockPath(appId))
-    val lock = locks.get(appId)
-    locks.invalidate(appId)
-    unlockOnThread(lock)
-    logger.info("Released lock for {}", getLockPath(appId))
+    cacheLock.lock()
+    try {
+      locksCache.get(appId) match {
+        case Some(existed) =>
+          unlockOnThread(existed)
+          // Remove the lock from the cache.
+          locksCache -= appId
+          logger.info("Released lock for {}", getLockPath(appId))
+        case _ =>
+          logger.info("Lock does not exist for {}. Nothing to unlock.", getLockPath(appId))
+      }
+    } finally {
+      cacheLock.unlock()
+    }
   }
+
 }
 
 object CuratorUninstallLock {

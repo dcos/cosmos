@@ -1,5 +1,6 @@
 package com.mesosphere.cosmos.handler
 
+import com.google.common.annotations.VisibleForTesting
 import com.mesosphere.cosmos.AdminRouter
 import com.mesosphere.cosmos.AmbiguousAppId
 import com.mesosphere.cosmos.AppAlreadyUninstalling
@@ -76,8 +77,11 @@ private[cosmos] final class UninstallHandler(
       }
   }
 
-  private def runUninstalls(uninstallOps: List[UninstallOperation])
-                           (implicit session: RequestSession): Future[Seq[UninstallDetails]] = {
+  private def runUninstalls(
+    uninstallOps: List[UninstallOperation]
+  )(
+    implicit session: RequestSession
+  ): Future[Seq[UninstallDetails]] = {
     val futures = uninstallOps.map { op =>
       op.uninstallType match {
         case MarathonUninstall => runMarathonUninstall(op)
@@ -88,8 +92,11 @@ private[cosmos] final class UninstallHandler(
     Future.collect(futures)
   }
 
-  protected def runMarathonUninstall(op: UninstallOperation)
-                                    (implicit session: RequestSession): Future[UninstallDetails] = {
+  private[this] def runMarathonUninstall(
+    op: UninstallOperation
+  )(
+    implicit session: RequestSession
+  ): Future[UninstallDetails] = {
     destroyMarathonApp(op.appId)(session = session) flatMap { _ =>
       op.frameworkName match {
         case Some(fwName) =>
@@ -114,8 +121,12 @@ private[cosmos] final class UninstallHandler(
     }
   }
 
-  private[handler] def runSdkUninstall(op: UninstallOperation)
-                                     (implicit session: RequestSession): Future[UninstallDetails] = {
+  @VisibleForTesting
+  private[handler] def runSdkUninstall(
+    op: UninstallOperation
+  )(
+    implicit session: RequestSession
+  ): Future[UninstallDetails] = {
     if (sdkJanitor.claimUninstall(op.appId) == UninstallClaimDenied) {
       throw AppAlreadyUninstalling(op.appId)
     }
@@ -139,10 +150,13 @@ private[cosmos] final class UninstallHandler(
     }
   }
 
-  private[handler] def setMarathonUninstall(appJson: JsonObject): JsonObject = {
-    appJson.remove("uris")
-      .remove("version")
-      .add("env", Json.fromJsonObject(appJson("env").get.asObject.get.add(SdkUninstallEnvvar, Json.fromString("true"))))
+  private[this] def setMarathonUninstall(appJson: JsonObject): JsonObject = {
+    // Note, Marathon appends extraneous fields when you fetch the current configuration.
+    // Those are removed here to ensure the Marathon update succeeds.
+    // Presently, those fields are:
+    // - uris
+    // - version
+    appJson.add("env", Json.fromJsonObject(appJson("env").get.asObject.get.add(SdkUninstallEnvvar, Json.fromString("true"))))
   }
 
   private def lookupFrameworkIds(

@@ -76,7 +76,6 @@ import shapeless.Coproduct
 import shapeless.HNil
 import shapeless.Inl
 import shapeless.Inr
-
 import scala.concurrent.duration._
 import scala.language.implicitConversions
 
@@ -109,7 +108,7 @@ with Logging {
 
     val janitor = SdkJanitor.initializeJanitor(zkClient, adminRouter)
     janitor.start()
-    onExit(janitor.stop())
+    onExit(janitor.close())
 
     val sourcesStorage = ZkRepositoryList(zkClient)
     onExit(sourcesStorage.close())

@@ -1,9 +1,7 @@
 package com.mesosphere.cosmos.janitor
 
 import java.util.concurrent.DelayQueue
-
 import com.mesosphere.cosmos.AdminRouter
-import com.mesosphere.cosmos.MarathonAppNotFound
 import com.mesosphere.cosmos.http.RequestSession
 import com.mesosphere.cosmos.janitor.SdkJanitor.JanitorRequest
 import com.mesosphere.cosmos.janitor.SdkJanitor._

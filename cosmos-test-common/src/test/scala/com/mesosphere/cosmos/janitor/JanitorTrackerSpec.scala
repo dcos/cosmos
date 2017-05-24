@@ -1,7 +1,6 @@
 package com.mesosphere.cosmos.janitor
 
 import java.nio.file.Paths
-
 import com.mesosphere.cosmos.janitor.SdkJanitor.UninstallClaimDenied
 import com.mesosphere.cosmos.janitor.SdkJanitor.UninstallClaimGranted
 import com.mesosphere.cosmos.janitor.SdkJanitor.UninstallFolder

@@ -60,8 +60,8 @@ final class SdkJanitorSpec extends FreeSpec with BeforeAndAfterEach with Mockito
 
       latch.await(Duration.fromSeconds(1))
     }
-    "Stop sets running to false" in {
-      janitor.stop()
+    "Close tells the worker to stop" in {
+      janitor.close()
       verify(mockWorker).stop()
     }
   }

@@ -2,8 +2,6 @@ package com.mesosphere.cosmos
 
 import _root_.io.circe.Json
 import _root_.io.circe.JsonObject
-import _root_.io.circe.optics.JsonPath._
-import _root_.io.circe.DecodingFailure
 import com.mesosphere.cosmos.circe.Decoders
 import com.mesosphere.cosmos.http.RequestSession
 import com.mesosphere.cosmos.thirdparty.marathon.circe.Decoders._
@@ -28,13 +26,18 @@ class MarathonClient(
 
   def modifyApp(appId: AppId)(f: JsonObject => JsonObject)(implicit session: RequestSession): Future[Response] = {
     client(get("v2" / "apps" / appId.toUri)).flatMap { response =>
-      val _app = root.app.obj
-      val json = _app.getOption(Decoders.parse(response.contentString)).getOrElse {
-        val message = "Unable to decode app out of raw Marathon JSON"
-        throw CirceError(DecodingFailure(message, ops = Nil))
-      }
 
-      client(put("v2" / "apps" / appId.toUri, Json.fromJsonObject(f(json))))
+      val appJson = Decoders.parse(response.contentString).asObject.get
+        .apply("app").get.asObject.get
+          // Note, Marathon appends extraneous fields when you fetch the current configuration.
+          // Those are removed here to ensure the Marathon update succeeds.
+          // Presently, those fields are:
+          // - uris
+          // - version
+          .remove("uris")
+          .remove("version")
+
+      client(put("v2" / "apps" / appId.toUri, Json.fromJsonObject(f(appJson))))
     }
   }
 
