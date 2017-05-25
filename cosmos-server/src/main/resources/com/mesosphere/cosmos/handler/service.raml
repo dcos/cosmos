@@ -7,9 +7,9 @@ title: DC/OS Service
         **Experimental.** Starts a DC/OS Service from a DC/OS package.
       headers:
         Accept:
-          enum: [application/vnd.dcos.sevice.start-response+json;charset=utf-8;version=v1]
+          enum: [application/vnd.dcos.service.start-response+json;charset=utf-8;version=v1]
       body:
-        application/vnd.dcos.sevice.start-request+json;charset=utf-8;version=v1:
+        application/vnd.dcos.service.start-request+json;charset=utf-8;version=v1:
           type: !include ../../../../../../../../cosmos-common/src/main/resources/com/mesosphere/cosmos/rpc/v1/model/ServiceStartRequest-schema.json
           example:
             packageName: cassandra
@@ -17,9 +17,45 @@ title: DC/OS Service
       responses:
         200:
           body:
-            application/vnd.dcos.sevice.start-response+json;charset=utf-8;version=v1:
+            application/vnd.dcos.service.start-response+json;charset=utf-8;version=v1:
               type: !include ../../../../../../../../cosmos-common/src/main/resources/com/mesosphere/cosmos/rpc/v1/model/ServiceStartResponse-schema.json
               example:
                 packageName: cassandra
                 packageVersion: 1.0.24-3.0.10
                 appId: /cassandra
+  /describe:
+    post:
+      description: |
+        Describes a DC/OS Service
+      headers:
+        Accept:
+          enum: [application/vnd.dcos.service.describe-response+json;charset=utf-8;version=v1]
+      body:
+        application/vnd.dcos.service.describe-request+json;charset=utf-8;version=v1:
+          type: !include ../../../../../../../../cosmos-common/src/main/resources/com/mesosphere/cosmos/rpc/v1/model/ServiceDescribeRequest-schema.json
+          example:
+            appId: /cassandra
+      responses:
+        200:
+          body:
+            application/vnd.dcos.service.describe-response+json;charset=utf-8;version=v1:
+              type: !include ../../../../../../../../cosmos-common/src/main/resources/com/mesosphere/cosmos/rpc/v1/model/ServiceDescribeResponse-schema.json
+              example:
+                downgradesTo:
+                  - 1.0.23
+                upgradesTo:
+                  - 2.0.24
+                  - 2.0.25
+                package:
+                  name: cassandra
+                  version: 1.0.24-3.0.10
+                  packagingVersion: "4.0"
+                  releaseVersion: 24
+                  downgradesTo:
+                    - 1.0.23
+                  maintainer: support@mesosphere.io
+                  description: Apache Cassandra running on DC/OS
+                  tags:
+                    - data
+                    - database
+                    - nosql
