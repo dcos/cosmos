@@ -1,28 +1,37 @@
 package com.mesosphere.cosmos.handler
 
+import com.mesosphere.cosmos.MarathonAppNotFound
 import com.mesosphere.cosmos.http.CosmosRequests
 import com.mesosphere.cosmos.rpc.MediaTypes
 import com.mesosphere.cosmos.rpc.v1.circe.Decoders._
 import com.mesosphere.cosmos.rpc.v1.model.ErrorResponse
 import com.mesosphere.cosmos.rpc.v1.model.InstallRequest
+import com.mesosphere.cosmos.rpc.v1.model.PackageRepositoryAddRequest
+import com.mesosphere.cosmos.rpc.v1.model.PackageRepositoryAddResponse
+import com.mesosphere.cosmos.rpc.v1.model.PackageRepositoryDeleteRequest
+import com.mesosphere.cosmos.rpc.v1.model.PackageRepositoryDeleteResponse
 import com.mesosphere.cosmos.rpc.v1.model.UninstallRequest
 import com.mesosphere.cosmos.rpc.v1.model.UninstallResponse
 import com.mesosphere.cosmos.test.CosmosIntegrationTestClient
 import com.mesosphere.cosmos.test.CosmosIntegrationTestClient.CosmosClient
 import com.mesosphere.cosmos.thirdparty.marathon.model.AppId
-import com.mesosphere.universe.v2.model.PackageDetails
 import com.mesosphere.universe.v2.model.PackageDetailsVersion
+import com.netaporter.uri.Uri
 import com.netaporter.uri.dsl._
-import com.twitter.finagle.http.Response
 import com.twitter.finagle.http.Fields
+import com.twitter.finagle.http.Response
 import com.twitter.finagle.http.Status
 import com.twitter.util.Await
+import io.circe.Json
+import io.circe.JsonObject
 import io.circe.jawn._
 import java.util.UUID
 import org.scalatest.FreeSpec
+import org.scalatest.concurrent.Eventually
+import org.scalatest.time.SpanSugar
 import scala.util.Right
 
-final class UninstallHandlerSpec extends FreeSpec {
+final class UninstallHandlerSpec extends FreeSpec with Eventually with SpanSugar {
 
   import CosmosIntegrationTestClient._
   import UninstallHandlerSpec._
@@ -95,8 +104,46 @@ final class UninstallHandlerSpec extends FreeSpec {
       val cleanupResponse = submitUninstallRequest(cleanupRequest)
       assertResult(Status.Ok)(cleanupResponse.status)
     }
-  }
 
+    "be able to uninstall SDK packages that support SDK uninstall and only one uninstall at a time" in {
+      // Add stub universe for service that supports uninstall.
+      val request = CosmosRequests.packageRepositoryAdd(PackageRepositoryAddRequest("uninstall-test",
+        Uri.parse("https://s3-us-west-2.amazonaws.com/infinity-artifacts/uninstalltestfixture/stub-universe-uninstall-test-fixture.zip"),
+        index = Some(0)))
+      val _ = CosmosClient.callEndpoint[PackageRepositoryAddResponse](request)
+
+      val installRequest = InstallRequest("hello-world", options = Some(JsonObject.singleton("world",
+        Json.fromJsonObject(JsonObject.singleton("count", Json.fromInt(1))))))
+      val installResponse = submitInstallRequest(installRequest)
+      assertResult(Status.Ok)(installResponse.status)
+
+      try {
+        // Wait for the service to deploy.
+        eventually (timeout(10 minutes), interval(30 seconds)) {
+          assertResult(Status.Ok)(Await.result(adminRouter.getSdkServicePlanStatus("hello-world", "v1", "deploy")).status)
+        }
+
+        val uninstallRequest = UninstallRequest("hello-world", appId = None, Some(false))
+        val uninstallResponse = submitUninstallRequest(uninstallRequest)
+        assertResult(Status.Ok)(uninstallResponse.status)
+        assertResult(MediaTypes.UninstallResponse.show)(uninstallResponse.headerMap(Fields.ContentType))
+
+        // Try a second uninstall request
+        val secondResponse = submitUninstallRequest(uninstallRequest)
+        assertResult(Status.Conflict)(secondResponse.status)
+
+        // Wait for the service to be deleted.
+        eventually (timeout(10 minutes), interval(30 seconds)) {
+          assertThrows[MarathonAppNotFound](Await.result(adminRouter.getApp(AppId("/hello-world"))))
+        }
+      } finally {
+        // Cleanup the stub.
+        val removeRepoRequest = CosmosRequests.packageRepositoryDelete(PackageRepositoryDeleteRequest(Some("uninstall-test")))
+        CosmosClient.callEndpoint[PackageRepositoryDeleteResponse](removeRepoRequest)
+        ()
+      }
+    }
+  }
 }
 
 object UninstallHandlerSpec {

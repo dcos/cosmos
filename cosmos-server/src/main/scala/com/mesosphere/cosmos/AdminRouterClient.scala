@@ -20,4 +20,8 @@ class AdminRouterClient(
     client(get(uri)).flatMap(decodeTo[DcosVersion](HttpMethod.GET, uri, _))
   }
 
+  def getSdkServicePlanStatus(service: String, apiVersion: String, plan: String)(implicit session: RequestSession): Future[Response] = {
+    val uri = "service" / service / apiVersion / "plans" / plan
+    client(get(uri))
+  }
 }

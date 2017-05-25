@@ -25,6 +25,8 @@ import com.mesosphere.cosmos.handler.PackageSearchHandler
 import com.mesosphere.cosmos.handler.ServiceDescribeHandler
 import com.mesosphere.cosmos.handler.ServiceStartHandler
 import com.mesosphere.cosmos.handler.UninstallHandler
+import com.mesosphere.cosmos.janitor.Janitor
+import com.mesosphere.cosmos.janitor.SdkJanitor
 import com.mesosphere.cosmos.repository.DefaultInstaller
 import com.mesosphere.cosmos.repository.DefaultUniverseInstaller
 import com.mesosphere.cosmos.repository.LocalPackageCollection
@@ -69,14 +71,14 @@ import com.twitter.util.Await
 import com.twitter.util.Try
 import org.apache.curator.framework.CuratorFramework
 import org.slf4j.Logger
-import scala.concurrent.duration._
-import scala.language.implicitConversions
 import shapeless.:+:
 import shapeless.CNil
 import shapeless.Coproduct
 import shapeless.HNil
 import shapeless.Inl
 import shapeless.Inr
+import scala.concurrent.duration._
+import scala.language.implicitConversions
 
 trait CosmosApp
 extends App
@@ -105,6 +107,10 @@ with Logging {
     val zkClient = zookeeper.Clients.createAndInitialize(zkUri)
     onExit(zkClient.close())
 
+    val janitor = SdkJanitor.initializeJanitor(zkClient, adminRouter)
+    janitor.start()
+    onExit(janitor.close())
+
     val sourcesStorage = ZkRepositoryList(zkClient)
     onExit(sourcesStorage.close())
 
@@ -126,7 +132,8 @@ with Logging {
       objectStorages,
       repositories,
       installQueue,
-      packageRunner
+      packageRunner,
+      janitor
     )
   }
 
@@ -155,7 +162,7 @@ with Logging {
       packageRepositoryDelete = new PackageRepositoryDeleteHandler(sourcesStorage),
       packageRepositoryList = new PackageRepositoryListHandler(sourcesStorage),
       packageSearch = new PackageSearchHandler(repositories),
-      packageUninstall = new UninstallHandler(adminRouter, repositories),
+      packageUninstall = new UninstallHandler(adminRouter, repositories, marathonSdkJanitor),
       serviceDescribe = new ServiceDescribeHandler(adminRouter, repositories),
       serviceStart = serviceStartHandler
     )
@@ -386,7 +393,8 @@ object CosmosApp {
     val objectStorages: Option[(LocalPackageCollection, StagedPackageStorage)],
     val repositories: MultiRepository,
     val producerView: ProducerView,
-    val packageRunner: PackageRunner
+    val packageRunner: PackageRunner,
+    val marathonSdkJanitor: Janitor
   )
 
   final class Handlers(
