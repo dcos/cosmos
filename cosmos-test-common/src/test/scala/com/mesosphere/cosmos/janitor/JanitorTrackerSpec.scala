@@ -62,10 +62,6 @@ final class JanitorTrackerSpec extends FreeSpec with BeforeAndAfterAll with Befo
 
   "In the JanitorTracker" - {
     "In startUninstall" - {
-      "If the lock is not owned, it is claimed and that status is marked as inprogress" in {
-        assertResult(UninstallClaimGranted)(tracker.startUninstall(appId))
-        assertResult(InProgress)(tracker.getStatus(appId))
-      }
       "If the lock is already claimed, it cannot be claimed again by the same process" in {
         assertResult(UninstallClaimGranted)(tracker.startUninstall(appId))
         assertResult(UninstallClaimDenied)(tracker.startUninstall(appId))
@@ -80,19 +76,15 @@ final class JanitorTrackerSpec extends FreeSpec with BeforeAndAfterAll with Befo
       }
     }
     "In failUninstall" - {
-      "The status is marked as failed, and the lock is released" in {
+      "The lock is released" in {
         assertResult(UninstallClaimGranted)(tracker.startUninstall(appId))
-        assertResult(InProgress)(tracker.getStatus(appId))
-
         tracker.failUninstall(appId, List("1", "2", "3"))
-        assertResult(Failed(List("1", "2", "3")))(tracker.getStatus(appId))
         assertResult(false)(lock.isLockedByThisProcess(appId))
       }
     }
     "In completeUninstall" - {
       "The lock is released and the entire zk record is deleted" in {
         assertResult(UninstallClaimGranted)(tracker.startUninstall(appId))
-        assertResult(InProgress)(tracker.getStatus(appId))
 
         tracker.completeUninstall(appId)
         assertResult(false)(lock.isLockedByThisProcess(appId))
