@@ -1,5 +1,8 @@
 package com.mesosphere.util
 
+import io.circe.Encoder
+import io.circe.syntax._
+
 final case class RelativePath private(override val elements: Vector[String]) extends Path {
 
   override type Self = RelativePath
@@ -49,5 +52,9 @@ object RelativePath {
 
   sealed abstract class Error(override val getMessage: String) extends Exception
   case object Absolute extends Error("Expected relative path, but found absolute path")
+
+  implicit val encoder: Encoder[RelativePath] = Encoder.instance {
+    relativePath => relativePath.toString.asJson
+  }
 
 }

@@ -38,7 +38,7 @@ object Decoders {
 
   private[this] def convertToException[T](result: Either[Error, T]): T = result match {
     case Right(result) => result
-    case Left(error) => throw CirceError(error)
+    case Left(error) => throw CirceError(error).exception
   }
 
   private[this] def base64DecodeString(value: String): String = {
