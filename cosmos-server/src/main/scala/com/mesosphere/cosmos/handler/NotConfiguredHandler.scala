@@ -13,7 +13,7 @@ private[cosmos] final class NotConfiguredHandler[Req, Res](operationName: String
     Future.exception(
       NotImplemented(
         s"Cosmos has not been configured to support this operation: $operationName"
-      )
+      ).exception
     )
   }
 }

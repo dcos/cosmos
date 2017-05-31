@@ -35,7 +35,7 @@ final class CosmosRepository (
       internalRepository.packages.find { pkg =>
         pkg.name == packageName && pkg.releaseVersion == releaseVersion
       } getOrElse {
-        throw PackageNotFound(packageName)
+        throw PackageNotFound(packageName).exception
       }
     }
   }
@@ -55,8 +55,8 @@ final class CosmosRepository (
         case _ => ns.headOption
       }
       (packageVersion, ns, vs) match {
-        case (Some(ver), _ :: _ , None) => throw VersionNotFound(packageName, ver)
-        case (_, _ , None)              => throw PackageNotFound(packageName)
+        case (Some(ver), _ :: _ , None) => throw VersionNotFound(packageName, ver).exception
+        case (_, _ , None)              => throw PackageNotFound(packageName).exception
         case (_,_, Some(pkg))           => (pkg, repository.uri)
       }
     }

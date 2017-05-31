@@ -349,8 +349,8 @@ with Logging {
     val stats = statsReceiver.scope("errorFilter")
 
     val api = endpoints.handle {
-      case ce: CosmosError =>
-        stats.counter(s"definedError/${sanitizeClassName(ce.getClass)}").incr()
+      case ce: CosmosException =>
+        stats.counter(s"definedError/${sanitizeClassName(ce.error.getClass)}").incr()
         val output = Output.failure(
           ce,
           ce.status

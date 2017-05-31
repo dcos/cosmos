@@ -1,7 +1,6 @@
 package com.mesosphere.cosmos.handler
 
 import cats.syntax.either._
-import com.mesosphere.cosmos.InvalidPackage
 import com.mesosphere.cosmos.InvalidPackageVersionForAdd
 import com.mesosphere.cosmos.finch.EndpointHandler
 import com.mesosphere.cosmos.http.RequestSession
@@ -47,7 +46,7 @@ final class PackageAddHandler(
             case (v3Package: universe.v3.model.V3Package, _) =>
               UniverseInstall(v3Package)
             case (v2Package: universe.v3.model.V2Package, _) =>
-              throw InvalidPackageVersionForAdd(v2Package.packageCoordinate)
+              throw InvalidPackageVersionForAdd(v2Package.packageCoordinate).exception
           }
       case rpc.v1.model.UploadAddRequest(packageData) =>
         val packageStream = new ByteArrayInputStream(packageData)
@@ -96,8 +95,9 @@ final class PackageAddHandler(
   }
 
   private[this] def extractPackageMetadata(inputStream: InputStream): Future[Metadata] = {
-    pool(PackageUtil.extractMetadata(inputStream))
-      .map(_.valueOr(error => throw InvalidPackage(error)))
+    pool(PackageUtil.extractMetadata(inputStream)).map(
+      _.valueOr(error => throw error.exception)
+    )
   }
 
 }

@@ -22,7 +22,7 @@ private[cosmos] final class PackageRepositoryAddHandler(
         ) map { sources =>
           PackageRepositoryAddResponse(sources)
         }
-      case _ => throw UnsupportedRepositoryUri(request.uri)
+      case _ => throw UnsupportedRepositoryUri(request.uri).exception
     }
   }
 

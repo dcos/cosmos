@@ -2,6 +2,7 @@ package com.mesosphere.cosmos.repository
 
 import com.mesosphere.cosmos.AdminRouter
 import com.mesosphere.cosmos.BuildProperties
+import com.mesosphere.cosmos.CosmosException
 import com.mesosphere.cosmos.GenericHttpError
 import com.mesosphere.cosmos.IndexNotFound
 import com.mesosphere.cosmos.PackageFileMissing
@@ -104,7 +105,7 @@ final class DefaultUniverseClient(
     Stat.timeFuture(fetchScope.stat("histogram")) {
       Future { repository.uri.toURI.toURL.openConnection() } handle {
         case t @ (_: IllegalArgumentException | _: MalformedURLException | _: URISyntaxException) =>
-          throw RepositoryUriSyntax(repository, t)
+          throw CosmosException(RepositoryUriSyntax(repository, t.getMessage), t)
       } flatMap { case conn: HttpURLConnection =>
         // Set headers on request
         conn.setRequestProperty(
@@ -134,28 +135,33 @@ final class DefaultUniverseClient(
               fetchScope.scope("status").counter(x.toString).incr()
               // Different forms of redirect, HttpURLConnection won't follow a redirect across schemes
               val loc = Option(conn.getHeaderField("Location")).map(Uri.parse).flatMap(_.scheme)
-              throw UnsupportedRedirect(List(repository.uri.scheme.get), loc)
+              throw UnsupportedRedirect(List(repository.uri.scheme.get), loc).exception
             case x =>
               fetchScope.scope("status").counter(x.toString).incr()
               /* If we are unable to get the latest Universe we should not forward the status code returned.
                * We should instead return 500 to the client and include the actual error in the message.
                */
-              throw GenericHttpError(
-                HttpMethod.GET,
-                repository.uri,
-                Status.fromCode(x),
-                Status.InternalServerError
+              throw CosmosException(
+                GenericHttpError(
+                  HttpMethod.GET,
+                  repository.uri,
+                  Status.fromCode(x)
+                ),
+                Status.InternalServerError,
+                Map.empty,
+                None
               )
           }
         } handle {
-          case t: IOException => throw RepositoryUriConnection(repository, t)
+          case t: IOException =>
+            throw CosmosException(RepositoryUriConnection(repository, t.getMessage), t)
         } map { case (contentType, contentEncoding) =>
           contentEncoding match {
             case Some("gzip") =>
               fetchScope.scope("contentEncoding").counter("gzip").incr()
               (contentType, new GZIPInputStream(conn.getInputStream))
             case ce@Some(_) =>
-              throw UnsupportedContentEncoding(List("gzip"), ce)
+              throw UnsupportedContentEncoding(List("gzip"), ce).exception
             case _ =>
               fetchScope.scope("contentEncoding").counter("plain").incr()
               (contentType, conn.getInputStream)
@@ -203,7 +209,7 @@ final class DefaultUniverseClient(
         processUniverseV2(repositoryUri, bodyInputStream)
       }
     } else {
-      throw UnsupportedContentType.forMediaType(SupportedMediaTypes, Some(contentType))
+      throw UnsupportedContentType.forMediaType(SupportedMediaTypes, Some(contentType)).exception
     }
 
     // Sort the packages
@@ -245,8 +251,8 @@ final class DefaultUniverseClient(
 
     universeRepository.version match {
       case Some(version) if version.toString.startsWith("2.") => // Valid
-      case Some(version) => throw UnsupportedRepositoryVersion(version)
-      case _ => throw IndexNotFound(sourceUri)
+      case Some(version) => throw UnsupportedRepositoryVersion(version).exception
+      case _ => throw IndexNotFound(sourceUri).exception
     }
 
     val packageInfos = universeRepository.packages.mapValues(processPackageFiles)
@@ -297,7 +303,10 @@ final class DefaultUniverseClient(
         parseJson(entryPath, new String(buffer))
           .asObject
           .getOrElse {
-            throw PackageFileSchemaMismatch("config.json", DecodingFailure("Object", List()))
+            throw PackageFileSchemaMismatch(
+              "config.json",
+              DecodingFailure("Object", List())
+            ).exception
           }
       },
       resource = packageFiles.get("resource.json").map { case (entryPath, buffer) =>
@@ -311,9 +320,11 @@ final class DefaultUniverseClient(
     releaseVersion: Long
   ): universe.v3.model.V2Package = {
     val details = packageInfo.packageDetails.getOrElse(
-      throw PackageFileMissing("package.json"))
+      throw PackageFileMissing("package.json").exception
+    )
     val marathon = packageInfo.marathonMustache.getOrElse(
-      throw PackageFileMissing("marathon.json.mustache"))
+      throw PackageFileMissing("marathon.json.mustache").exception
+    )
 
     universe.v3.model.V2Package(
       universe.v3.model.V2PackagingVersion,
@@ -364,7 +375,7 @@ final class DefaultUniverseClient(
 
     decodedVersion match {
       case Right(version) => version
-      case Left(failure) => throw PackageFileSchemaMismatch("index.json", failure)
+      case Left(failure) => throw PackageFileSchemaMismatch("index.json", failure).exception
     }
   }
 
@@ -373,7 +384,7 @@ final class DefaultUniverseClient(
       content: String
   ): A = {
     parseJson(path, content).as[A] match {
-      case Left(err) => throw PackageFileSchemaMismatch(path.toString, err)
+      case Left(err) => throw PackageFileSchemaMismatch(path.toString, err).exception
       case Right(right) => right
     }
   }
@@ -383,7 +394,7 @@ final class DefaultUniverseClient(
       content: String
   ): Json = {
     parse(content) match {
-      case Left(err) => throw PackageFileNotJson(path.toString, err.message)
+      case Left(err) => throw PackageFileNotJson(path.toString, err.message).exception
       case Right(right) => right
     }
   }
@@ -398,10 +409,11 @@ object DefaultUniverseClient {
     List(MediaTypes.UniverseV3Repository, MediaTypes.UniverseV2Repository)
 
   def parseContentType(header: Option[String]): TwitterTry[MediaType] = {
-    TwitterTry(header.getOrElse(throw UnsupportedContentType(SupportedMediaTypes)))
+    TwitterTry(header.getOrElse(throw UnsupportedContentType(SupportedMediaTypes).exception))
       .flatMap(MediaTypeParser.parse)
       .handle {
-        case MediaTypeParseError(_, _) => throw UnsupportedContentType(SupportedMediaTypes)
+        case MediaTypeParseError(_, _) =>
+          throw UnsupportedContentType(SupportedMediaTypes).exception
       }
   }
 

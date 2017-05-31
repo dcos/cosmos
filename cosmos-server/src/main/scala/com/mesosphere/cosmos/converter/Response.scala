@@ -23,7 +23,7 @@ object Response {
     Conversion.fromFunction { (x: rpc.v2.model.InstallResponse) =>
       Try(
         x.appId.getOrElse(
-          throw ServiceMarathonTemplateNotFound(x.packageName, x.packageVersion)
+          throw ServiceMarathonTemplateNotFound(x.packageName, x.packageVersion).exception
         )
       ).map { appId =>
         rpc.v1.model.InstallResponse(
@@ -44,7 +44,7 @@ object Response {
             throw ServiceMarathonTemplateNotFound(
               packageDefinition.name,
               packageDefinition.version
-            )
+            ).exception
           )
         ),
         tryV2Resource(packageDefinition)
@@ -91,7 +91,7 @@ object Response {
           case v4: universe.v4.model.V4Package if notUsesUpdates(v4) =>
             Return(universe.v3.model.V3PackagingVersion)
           case _ =>
-            Throw(ConversionFromPackageToV2DescribeResponse())
+            Throw(ConversionFromPackageToV2DescribeResponse().exception)
         }
 
       packagingVersion.map { packagingVersion =>

@@ -23,7 +23,7 @@ import com.twitter.finagle.http.Status
 import org.jboss.netty.handler.codec.http.HttpMethod
 
 // scalastyle:off number.of.types
-final class CosmosException(
+final case class CosmosException(
   error: CosmosError,
   status: Status,
   headers: Map[String, String],
@@ -38,13 +38,22 @@ final class CosmosException(
   }
 }
 
+object CosmosException {
+  def apply(error: CosmosError): CosmosException = {
+    CosmosException(error, Status.BadRequest, Map.empty, None)
+  }
+
+  def apply(error: CosmosError, causedBy: Throwable): CosmosException = {
+    CosmosException(error, Status.BadRequest, Map.empty, Option(causedBy))
+  }
+}
 
 trait CosmosError {
   def message: String
   def data: Option[JsonObject]
 
   def exception: CosmosException = {
-    exception(Status.BadRequest, Map.empty, None)
+    CosmosException(this)
   }
 
   final def exception(
@@ -52,7 +61,7 @@ trait CosmosError {
     headers: Map[String, String],
     causedBy: Option[Throwable]
   ): CosmosException = {
-    new CosmosException(this, status, headers, causedBy)
+    CosmosException(this, status, headers, causedBy)
   }
 }
 

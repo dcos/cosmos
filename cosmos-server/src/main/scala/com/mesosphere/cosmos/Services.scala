@@ -84,11 +84,11 @@ object Services {
       service(request)
         .rescue {
           case ce: ChannelException =>
-            Future.exception(ServiceUnavailable(serviceName, ce))
+            Future.exception(CosmosException(ServiceUnavailable(serviceName), ce))
           case e: NoBrokersAvailableException =>
-            Future.exception(ServiceUnavailable(serviceName, e))
+            Future.exception(CosmosException(ServiceUnavailable(serviceName), e))
           case e: RequestException =>
-            Future.exception(ServiceUnavailable(serviceName, e))
+            Future.exception(CosmosException(ServiceUnavailable(serviceName), e))
         }
     }
   }
@@ -98,9 +98,12 @@ object Services {
       service(request)
         .map { response =>
           response.status match {
-            case Status.Unauthorized => throw Unauthorized(serviceName, response.headerMap.get("WWW-Authenticate"))
-            case Status.Forbidden => throw Forbidden(serviceName)
-            case _ => response
+            case Status.Unauthorized =>
+              throw Unauthorized(serviceName, response.headerMap.get("WWW-Authenticate")).exception
+            case Status.Forbidden =>
+              throw Forbidden(serviceName).exception
+            case _ =>
+              response
           }
         }
     }

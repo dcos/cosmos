@@ -39,7 +39,8 @@ package object repository {
         Some(pkg.version)
       )
     }.transform {
-      case Throw(VersionNotFound(_, _)) | Throw(PackageNotFound(_)) =>
+      case Throw(CosmosException(VersionNotFound(_, _), _, _, _)) |
+      Throw(CosmosException(PackageNotFound(_), _, _, _)) =>
         // Put the PackageDefinition in the package object storage.
         packageStorage.writePackageDefinition(pkg)
       case Throw(error) =>

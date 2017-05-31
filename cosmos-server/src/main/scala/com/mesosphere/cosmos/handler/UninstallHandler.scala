@@ -1,9 +1,8 @@
 package com.mesosphere.cosmos.handler
 
-import com.mesosphere.cosmos.http.RequestSession
-import com.mesosphere.cosmos.repository.PackageCollection
 import com.mesosphere.cosmos.AdminRouter
 import com.mesosphere.cosmos.AmbiguousAppId
+import com.mesosphere.cosmos.CosmosException
 import com.mesosphere.cosmos.IncompleteUninstall
 import com.mesosphere.cosmos.MarathonAppDeleteError
 import com.mesosphere.cosmos.MultipleFrameworkIds
@@ -11,6 +10,8 @@ import com.mesosphere.cosmos.PackageNotInstalled
 import com.mesosphere.cosmos.ServiceUnavailable
 import com.mesosphere.cosmos.UninstallNonExistentAppForPackage
 import com.mesosphere.cosmos.finch.EndpointHandler
+import com.mesosphere.cosmos.http.RequestSession
+import com.mesosphere.cosmos.repository.PackageCollection
 import com.mesosphere.cosmos.rpc
 import com.mesosphere.cosmos.thirdparty.marathon.model.AppId
 import com.mesosphere.cosmos.thirdparty.marathon.model.MarathonApp
@@ -57,11 +58,16 @@ private[cosmos] final class UninstallHandler(
                     UninstallDetails.from(op).copy(frameworkId = Some(fwId))
                   }
               case all =>
-                throw MultipleFrameworkIds(op.packageName, op.packageVersion, fwName, all)
+                throw MultipleFrameworkIds(
+                  op.packageName,
+                  op.packageVersion,
+                  fwName,
+                  all
+                ).exception
             }
               .handle {
-                case su: ServiceUnavailable =>
-                  throw IncompleteUninstall(op.packageName, su)
+                case su @ CosmosException(ServiceUnavailable(_), _, _, _) =>
+                  throw CosmosException(IncompleteUninstall(op.packageName), su)
               }
           case None =>
             Future.value(UninstallDetails.from(op))
@@ -79,7 +85,7 @@ private[cosmos] final class UninstallHandler(
     adminRouter.deleteApp(appId, force = true) map { resp =>
       resp.status match {
         case Status.Ok => MarathonAppDeleteSuccess()
-        case a => throw MarathonAppDeleteError(appId)
+        case a => throw MarathonAppDeleteError(appId).exception
       }
     }
   }
@@ -103,7 +109,7 @@ private[cosmos] final class UninstallHandler(
           case Some(true) =>
             uninstallOperations
           case _ if uninstallOperations.size > 1 =>
-            throw AmbiguousAppId(req.packageName, uninstallOperations.map(_.appId))
+            throw AmbiguousAppId(req.packageName, uninstallOperations.map(_.appId)).exception
           case _ => // we've only got one package installed with the specified name, continue with it
             uninstallOperations
         }
@@ -142,7 +148,7 @@ private[cosmos] final class UninstallHandler(
       case Some(id) =>
         adminRouter.getAppOption(id).map {
           case Some(appResponse) => List(appResponse.app)
-          case _ => throw UninstallNonExistentAppForPackage(packageName, id)
+          case _ => throw UninstallNonExistentAppForPackage(packageName, id).exception
         }
       case None =>
         adminRouter.listApps().map(_.apps)
@@ -168,7 +174,7 @@ private[cosmos] final class UninstallHandler(
     }
 
     if (uninstallOperations.isEmpty) {
-      throw new PackageNotInstalled(requestedPackageName)
+      throw PackageNotInstalled(requestedPackageName).exception
     }
     uninstallOperations
   }

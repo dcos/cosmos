@@ -67,7 +67,7 @@ final class PackageStorage private(objectStorage: ObjectStorage) {
             rpc.v1.model.Installed(packageDefinition)
           case None =>
             rpc.v1.model.Invalid(
-              exceptionErrorResponse(PackageFileMissing("metadata.json")),
+              exceptionErrorResponse(PackageFileMissing("metadata.json").exception),
               coordinate
             )
         }

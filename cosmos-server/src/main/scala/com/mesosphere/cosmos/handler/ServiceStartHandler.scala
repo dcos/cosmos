@@ -26,7 +26,7 @@ private[cosmos] final class ServiceStartHandler(
   ): universe.v4.model.SupportedPackageDefinition = {
     localPackage match {
       case installed: Installed => installed.metadata
-      case _ => throw PackageNotInstalled(packageName)
+      case _ => throw PackageNotInstalled(packageName).exception
     }
   }
 
@@ -64,16 +64,16 @@ private[cosmos] final class ServiceStartHandler(
               )
             }
           case Left(OptionsValidationFailure(validationErrors)) =>
-            Future.exception(JsonSchemaMismatch(validationErrors))
+            Future.exception(JsonSchemaMismatch(validationErrors).exception)
           case Left(InvalidLabelSchema(cause)) =>
-            Future.exception(CirceError(cause))
+            Future.exception(CirceError(cause).exception)
           case Left(RenderedTemplateNotJson(cause)) =>
-            Future.exception(CirceError(cause))
+            Future.exception(CirceError(cause).exception)
           case Left(RenderedTemplateNotJsonObject) =>
-            Future.exception(MarathonTemplateMustBeJsonObject)
+            Future.exception(MarathonTemplateMustBeJsonObject.exception)
           case Left(OptionsNotAllowed) =>
             val message = "No schema available to validate the provided options"
-            Future.exception(JsonSchemaMismatch(List(Map("message" -> message).asJson)))
+            Future.exception(JsonSchemaMismatch(List(Map("message" -> message).asJson)).exception)
         }
       }
   }

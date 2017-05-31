@@ -2,12 +2,13 @@ package com.mesosphere.cosmos.repository
 
 import cats.data.Ior
 import com.mesosphere.cosmos.ConcurrentAccess
+import com.mesosphere.cosmos.CosmosException
 import com.mesosphere.cosmos.RepositoryAddIndexOutOfBounds
 import com.mesosphere.cosmos.RepositoryAlreadyPresent
 import com.mesosphere.cosmos.RepositoryNotPresent
+import com.mesosphere.cosmos.model.StorageEnvelope
 import com.mesosphere.cosmos.repository.DefaultRepositories._
 import com.mesosphere.cosmos.rpc.v1.model.PackageRepository
-import com.mesosphere.cosmos.model.StorageEnvelope
 import com.mesosphere.cosmos.storage.v1.circe.MediaTypedDecoders._
 import com.mesosphere.cosmos.storage.v1.circe.MediaTypedEncoders._
 import com.netaporter.uri.Uri
@@ -92,7 +93,7 @@ final class ZkRepositoryList private (
             val originalData = StorageEnvelope.decodeData[List[PackageRepository]](bytes)
             val updatedData = originalData.filterNot(predicate)
             if (originalData.size == updatedData.size) {
-              throw new RepositoryNotPresent(nameOrUri)
+              throw RepositoryNotPresent(nameOrUri).exception
             }
 
             write(stat, updatedData)
@@ -175,14 +176,14 @@ final class ZkRepositoryList private (
       case (_, Some(u)) => Some(Ior.Right(u))
       case _ => None
     }
-    duplicates.foreach(d => throw RepositoryAlreadyPresent(d))
+    duplicates.foreach(d => throw RepositoryAlreadyPresent(d).exception)
 
     index match {
       case Some(i) if 0 <= i && i <= list.size =>
         val (leftSources, rightSources) = list.splitAt(i)
         leftSources ++ (elem :: rightSources)
       case Some(i) =>
-        throw RepositoryAddIndexOutOfBounds(i, list.size - 1)
+        throw RepositoryAddIndexOutOfBounds(i, list.size - 1).exception
       case None =>
         list :+ elem
     }
@@ -230,7 +231,7 @@ private final class WriteHandler(
       } else {
         val exception = if (code == KeeperException.Code.BADVERSION) {
           // BADVERSION is expected so let's display a friendlier error
-          ConcurrentAccess(KeeperException.create(code, event.getPath))
+          CosmosException(ConcurrentAccess(), KeeperException.create(code, event.getPath))
         } else {
           KeeperException.create(code, event.getPath)
         }
@@ -257,7 +258,7 @@ private final class CreateHandler(
       } else {
         val exception = if (code == KeeperException.Code.NODEEXISTS) {
           // NODEEXISTS is expected so let's display a friendlier error
-          ConcurrentAccess(KeeperException.create(code, event.getPath))
+          CosmosException(ConcurrentAccess(), KeeperException.create(code, event.getPath))
         } else {
           KeeperException.create(code, event.getPath)
         }

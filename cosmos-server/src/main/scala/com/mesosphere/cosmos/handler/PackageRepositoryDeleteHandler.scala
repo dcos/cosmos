@@ -17,7 +17,9 @@ private[cosmos] final class PackageRepositoryDeleteHandler(
   override def apply(request: PackageRepositoryDeleteRequest)(implicit
     session: RequestSession
   ): Future[PackageRepositoryDeleteResponse] = {
-    val nameOrUri = optionsToIor(request.name, request.uri).getOrElse(throw RepoNameOrUriMissing())
+    val nameOrUri = optionsToIor(request.name, request.uri).getOrElse(
+      throw RepoNameOrUriMissing().exception
+    )
     sourcesStorage.delete(nameOrUri).map { sources =>
       PackageRepositoryDeleteResponse(sources)
     }

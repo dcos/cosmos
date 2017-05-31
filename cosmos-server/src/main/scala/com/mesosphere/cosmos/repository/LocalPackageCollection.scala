@@ -125,10 +125,10 @@ object LocalPackageCollection {
         pkg
       case (Some(version), _ :: _, None) =>
         // Found an Installed package with that name but not with that version
-        throw VersionNotFound(packageName, version)
+        throw VersionNotFound(packageName, version).exception
       case _ =>
         // Didn't find the package
-        throw PackageNotFound(packageName)
+        throw PackageNotFound(packageName).exception
     }
   }
 

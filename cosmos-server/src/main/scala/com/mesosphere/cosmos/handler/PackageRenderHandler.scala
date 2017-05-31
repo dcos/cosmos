@@ -39,18 +39,18 @@ private[cosmos] final class PackageRenderHandler(
             Future.value(RenderResponse(json))
           case Left(pdre) => pdre match {
             case OptionsValidationFailure(validationErrors) =>
-              Future.exception(JsonSchemaMismatch(validationErrors))
-            case InvalidLabelSchema(cause) => Future.exception(CirceError(cause))
-            case RenderedTemplateNotJson(cause) => Future.exception(CirceError(cause))
+              Future.exception(JsonSchemaMismatch(validationErrors).exception)
+            case InvalidLabelSchema(cause) => Future.exception(CirceError(cause).exception)
+            case RenderedTemplateNotJson(cause) => Future.exception(CirceError(cause).exception)
             case RenderedTemplateNotJsonObject =>
-              Future.exception(MarathonTemplateMustBeJsonObject)
+              Future.exception(MarathonTemplateMustBeJsonObject.exception)
             case OptionsNotAllowed =>
               val error = Map(
                 "message" -> "No schema available to validate the provided options"
               ).asJson
-              Future.exception(JsonSchemaMismatch(List(error)))
+              Future.exception(JsonSchemaMismatch(List(error)).exception)
             case MissingMarathonV2AppTemplate =>
-              Future.exception(ServiceMarathonTemplateNotFound(pkg.name, pkg.version))
+              Future.exception(ServiceMarathonTemplateNotFound(pkg.name, pkg.version).exception)
           }
         }
       }

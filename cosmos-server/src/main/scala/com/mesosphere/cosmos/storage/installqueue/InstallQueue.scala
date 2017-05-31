@@ -133,12 +133,12 @@ final class InstallQueue private(
           val message =
             "Attempted to signal failure on an " +
               s"operation not in the install queue: $packageCoordinate"
-          Future.exception(InstallQueueError(message))
+          Future.exception(InstallQueueError(message).exception)
         case Some(WithZkStat(_, FailedStatus(_))) =>
           val message =
             "Attempted to signal failure on an " +
               s"operation that has failed: $packageCoordinate"
-          Future.exception(InstallQueueError(message))
+          Future.exception(InstallQueueError(message).exception)
         case Some(WithZkStat(stat, PendingStatus(operation, _))) =>
           setOperationStatus(
             packageCoordinate,
@@ -212,12 +212,12 @@ final class InstallQueue private(
           val message =
             "Attempted to signal success on an " +
               s"operation not in the install queue: $packageCoordinate"
-          Future.exception(InstallQueueError(message))
+          Future.exception(InstallQueueError(message).exception)
         case Some(WithZkStat(_, FailedStatus(_))) =>
           val message =
             "Attempted to signal success on an " +
               s"operation that has failed: $packageCoordinate"
-          Future.exception(InstallQueueError(message))
+          Future.exception(InstallQueueError(message).exception)
         case Some(WithZkStat(stat, PendingStatus(_, _))) =>
           deleteOperationStatus(packageCoordinate, stat.getVersion)
       }
@@ -314,9 +314,9 @@ final class InstallQueue private(
          * |add ends    |                            |
          * |------------|----------------------------|
          */
-        Future.exception(OperationInProgress(packageCoordinate))
+        Future.exception(OperationInProgress(packageCoordinate).exception)
       case Some(WithZkStat(_, PendingStatus(_, _))) =>
-        Future.exception(OperationInProgress(packageCoordinate))
+        Future.exception(OperationInProgress(packageCoordinate).exception)
       case Some(WithZkStat(stat, FailedStatus(failure))) =>
         setOperationStatus(
           packageCoordinate,
@@ -375,7 +375,9 @@ object InstallQueue {
           val code = KeeperException.Code.get(event.getResultCode)
           promise.update(handle(code, event))
         } else {
-          promise.setException(InstallQueueError("Called handler for incorrect event type"))
+          promise.setException(
+            InstallQueueError("Called handler for incorrect event type").exception
+          )
         }
       }
     }
