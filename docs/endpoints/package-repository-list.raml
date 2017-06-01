@@ -1,0 +1,23 @@
+#%RAML 1.0 Resource
+post:
+  description: |
+    List all of the package repositories (for example Universe) used by DC/OS. The list is
+    ordered by priority; if multiple repositories contain the same package, the package
+    closest to the start of the list will be used.
+  headers:
+    Accept:
+      enum:
+        [application/vnd.dcos.package.repository.list-response+json;charset=utf-8;version=v1]
+  body:
+    application/vnd.dcos.package.repository.list-request+json;charset=utf-8;version=v1:
+      type: !include ../schemas/cosmos/rpc/v1/model/PackageRepositoryListRequest-schema.json
+      example: {}
+  responses:
+    200:
+      body:
+        application/vnd.dcos.package.repository.list-response+json;charset=utf-8;version=v1:
+          type: !include ../schemas/cosmos/rpc/v1/model/PackageRepositoryListResponse-schema.json
+          example:
+            repositories:
+              - name: Universe
+                uri: https://universe.mesosphere.com/repo

@@ -1,0 +1,20 @@
+#%RAML 1.0 Resource
+post:
+  description: List all of the available versions for a given package name.
+  headers:
+    Accept:
+      enum: [application/vnd.dcos.package.list-versions-response+json;charset=utf-8;version=v1]
+  body:
+    application/vnd.dcos.package.list-versions-request+json;charset=utf-8;version=v1:
+      type: !include ../schemas/cosmos/rpc/v1/model/ListVersionsRequest-schema.json
+      example:
+        packageName: cassandra
+  responses:
+    200:
+      body:
+        application/vnd.dcos.package.list-versions-response+json;charset=utf-8;version=v1:
+          type: !include ../schemas/cosmos/rpc/v1/model/ListVersionsResponse-schema.json
+          example:
+            results:
+              1.0.24-3.0.10: "24"
+              1.0.23-3.0.10: "23"

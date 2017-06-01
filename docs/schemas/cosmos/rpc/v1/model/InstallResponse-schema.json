@@ -1,0 +1,21 @@
+{
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "type": "object",
+  "properties": {
+    "packageName": {
+      "type": "string"
+    },
+    "packageVersion": {
+      "type": "string"
+    },
+    "appId": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "packageName",
+    "packageVersion",
+    "appId"
+  ],
+  "additionalProperties": false
+}
