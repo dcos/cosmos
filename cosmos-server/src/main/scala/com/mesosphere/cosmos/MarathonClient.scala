@@ -33,14 +33,14 @@ class MarathonClient(
       response.status match {
         case Status.Ok => Some(decodeJsonTo[MarathonAppResponse](response))
         case Status.NotFound => None
-        case s: Status => throw GenericHttpError(HttpMethod.GET, uri, s, s)
+        case s: Status => throw GenericHttpError(HttpMethod.GET, uri, s).exception(s)
       }
     }
   }
 
   def getApp(appId: AppId)(implicit session: RequestSession): Future[MarathonAppResponse] = {
     getAppOption(appId).map { appOption =>
-      appOption.getOrElse(throw MarathonAppNotFound(appId))
+      appOption.getOrElse(throw MarathonAppNotFound(appId).exception)
     }
   }
 

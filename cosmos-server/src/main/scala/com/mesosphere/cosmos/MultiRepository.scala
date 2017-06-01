@@ -29,9 +29,9 @@ final class MultiRepository(
         }
       }
     } map { packages =>
-      packages
-        .find(!_.isEmpty)
-        .getOrElse(throw PackageNotFound(packageName))
+      packages.find(!_.isEmpty).getOrElse(
+        throw PackageNotFound(packageName).exception
+      )
     }
   }
 
@@ -49,16 +49,16 @@ final class MultiRepository(
             .getPackageByPackageVersion(packageName, packageVersion)
             .map(Some(_))
             .handle {
-              case PackageNotFound(_) => None
-              case VersionNotFound(_, _) => None
+              case CosmosException(PackageNotFound(_), _, _, _) => None
+              case CosmosException(VersionNotFound(_, _), _, _, _) => None
             }
         }
       } map (_.flatten)
     } map { packages =>
       packages.headOption.getOrElse {
         packageVersion match {
-          case Some(version) => throw VersionNotFound(packageName, version)
-          case None => throw PackageNotFound(packageName)
+          case Some(version) => throw VersionNotFound(packageName, version).exception
+          case None => throw PackageNotFound(packageName).exception
         }
       }
     }

@@ -60,7 +60,7 @@ abstract class ServiceClient(baseUri: Uri) {
       case Status.Ok =>
         Future.value(response)
       case s: Status =>
-        throw GenericHttpError(method, uri, s, s)
+        throw GenericHttpError(method, uri, s).exception(s)
     }
   }
 
@@ -71,13 +71,16 @@ abstract class ServiceClient(baseUri: Uri) {
           // Marathon and Mesos don't specify 'charset=utf-8' on it's json, so we are lax in our comparison here.
           MediaTypeOps.compatibleIgnoringParameters(MediaTypes.applicationJson, mediaType) match {
             case false =>
-              throw UnsupportedContentType.forMediaType(List(MediaTypes.applicationJson), Some(mediaType))
+              throw UnsupportedContentType.forMediaType(
+                List(MediaTypes.applicationJson),
+                Some(mediaType)
+              ).exception
             case true =>
               decode[A](response.contentString)
           }
         }.get
       case _ =>
-        throw UnsupportedContentType(List(MediaTypes.applicationJson))
+        throw UnsupportedContentType(List(MediaTypes.applicationJson)).exception
     }
   }
 

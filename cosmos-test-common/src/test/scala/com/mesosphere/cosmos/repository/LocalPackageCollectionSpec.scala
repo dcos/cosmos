@@ -135,7 +135,7 @@ final class LocalPackageCollectionSpec extends FreeSpec with Matchers {
       )
     )
     missingPackageVersion shouldBe Failure(
-      VersionNotFound("ceph", universe.v3.model.Version("1.55"))
+      VersionNotFound("ceph", universe.v3.model.Version("1.55")).exception
     )
 
 
@@ -149,7 +149,7 @@ final class LocalPackageCollectionSpec extends FreeSpec with Matchers {
       )
     )
     missingPackage shouldBe Failure(
-      PackageNotFound("queue")
+      PackageNotFound("queue").exception
     )
 
     // Find all lambda packages
@@ -236,10 +236,10 @@ final class LocalPackageCollectionSpec extends FreeSpec with Matchers {
     // Test empty results
     Try(
       LocalPackageCollection.installedPackage(input, "missing", None)
-    ) shouldBe Failure(PackageNotFound("missing"))
+    ) shouldBe Failure(PackageNotFound("missing").exception)
     Try(
       LocalPackageCollection.packageByPackageVersion(input, "missing", None)
-    ) shouldBe Failure(PackageNotFound("missing"))
+    ) shouldBe Failure(PackageNotFound("missing").exception)
     LocalPackageCollection.packageByPackageName(input, "missing") shouldBe Nil
   }
 }

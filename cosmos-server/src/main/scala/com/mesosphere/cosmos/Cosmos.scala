@@ -357,7 +357,7 @@ with Logging {
         ).withHeader(
           Fields.ContentType -> MediaTypes.ErrorResponse.show
         )
-        ce.getHeaders.foldLeft(output) { case (out, kv) => out.withHeader(kv) }
+        ce.headers.foldLeft(output) { case (out, kv) => out.withHeader(kv) }
       case fe @ (_: _root_.io.finch.Error | _: _root_.io.finch.Errors) =>
         stats.counter(s"finchError/${sanitizeClassName(fe.getClass)}").incr()
         Output.failure(
