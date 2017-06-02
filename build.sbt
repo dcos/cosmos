@@ -83,12 +83,14 @@ lazy val integrationTests = project.in(file("cosmos-integration-tests"))
       (oneJar in server).value,
       (streams in runMain).value
     ),
-    // Uses (compile in Compile) instead of (compile in IntegrationTest), the default
+    // Uses (compile in Compile) in addition to (compile in IntegrationTest), the default
     definedTests in IntegrationTest := {
       val frameworkMap = (loadedTestFrameworks in IntegrationTest).value
-      val analysis = (compile in Compile).value
+      val compileAnalysis = (compile in Compile).value
+      val itAnalysis = (compile in IntegrationTest).value
       val s = (streams in IntegrationTest).value
-      Tests.discover(frameworkMap.values.toList, analysis, s.log)._1
+      Tests.discover(frameworkMap.values.toList, compileAnalysis, s.log)._1 ++
+        Tests.discover(frameworkMap.values.toList, itAnalysis, s.log)._1
     }
   )
   .dependsOn(

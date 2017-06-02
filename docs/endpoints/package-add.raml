@@ -1,0 +1,33 @@
+#%RAML 1.0 Resource
+post:
+  description: |
+    **Experimental.** Adds a DC/OS Package to DC/OS. To add a DC/OS package from Universe use
+    the content type _application/vnd.dcos.package.add-request+json;charset=utf-8;version=v1_.
+    To add a package by uploading the file use the content type
+    _application/vnd.dcos.universe.package+zip;version=v1_.
+  headers:
+    Accept:
+      enum: [application/vnd.dcos.package.add-response+json;charset=utf-8;version=v1]
+  body:
+    application/vnd.dcos.package.add-request+json;charset=utf-8;version=v1:
+      type: !include ../schemas/cosmos/rpc/v1/model/PackageAddRequest-schema.json
+      example:
+        packageName: cassandra
+        packageVersion: 1.0.24-3.0.10
+    application/vnd.dcos.universe.package+zip;version=v1:
+  responses:
+    202:
+      body:
+        application/vnd.dcos.package.add-response+json;charset=utf-8;version=v1:
+          type: !include ../schemas/cosmos/rpc/v1/model/PackageAddResponse-schema.json
+          example:
+            name: cassandra
+            version: 1.0.24-3.0.10
+            packagingVersion: "3.0"
+            releaseVersion: 24
+            maintainer: support@mesosphere.io
+            description: Apache Cassandra running on DC/OS
+            tags:
+              - data
+              - database
+              - nosql

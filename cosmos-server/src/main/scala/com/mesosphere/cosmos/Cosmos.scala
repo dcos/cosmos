@@ -25,6 +25,8 @@ import com.mesosphere.cosmos.handler.PackageSearchHandler
 import com.mesosphere.cosmos.handler.ServiceDescribeHandler
 import com.mesosphere.cosmos.handler.ServiceStartHandler
 import com.mesosphere.cosmos.handler.UninstallHandler
+import com.mesosphere.cosmos.janitor.Janitor
+import com.mesosphere.cosmos.janitor.SdkJanitor
 import com.mesosphere.cosmos.repository.DefaultInstaller
 import com.mesosphere.cosmos.repository.DefaultUniverseInstaller
 import com.mesosphere.cosmos.repository.LocalPackageCollection
@@ -47,6 +49,7 @@ import com.mesosphere.cosmos.storage.installqueue.InstallQueue
 import com.mesosphere.cosmos.storage.installqueue.ProcessorView
 import com.mesosphere.cosmos.storage.installqueue.ProducerView
 import com.mesosphere.cosmos.storage.installqueue.ReaderView
+import com.mesosphere.universe
 import com.netaporter.uri.Uri
 import com.twitter.app.App
 import com.twitter.app.Flag
@@ -68,14 +71,14 @@ import com.twitter.util.Await
 import com.twitter.util.Try
 import org.apache.curator.framework.CuratorFramework
 import org.slf4j.Logger
-import scala.concurrent.duration._
-import scala.language.implicitConversions
 import shapeless.:+:
 import shapeless.CNil
 import shapeless.Coproduct
 import shapeless.HNil
 import shapeless.Inl
 import shapeless.Inr
+import scala.concurrent.duration._
+import scala.language.implicitConversions
 
 trait CosmosApp
 extends App
@@ -104,6 +107,10 @@ with Logging {
     val zkClient = zookeeper.Clients.createAndInitialize(zkUri)
     onExit(zkClient.close())
 
+    val janitor = SdkJanitor.initializeJanitor(zkClient, adminRouter)
+    janitor.start()
+    onExit(janitor.close())
+
     val sourcesStorage = ZkRepositoryList(zkClient)
     onExit(sourcesStorage.close())
 
@@ -125,26 +132,13 @@ with Logging {
       objectStorages,
       repositories,
       installQueue,
-      packageRunner
+      packageRunner,
+      janitor
     )
   }
 
-  // scalastyle:off method.length
-  protected final def buildEndpoints(components: Components): Endpoint[Json] = {
+  final def buildHandlers(components: Components): Handlers = {
     import components._
-
-    val packageInstallHandler = new PackageInstallHandler(repositories, packageRunner)
-    val packageUninstallHandler = new UninstallHandler(adminRouter, repositories)
-    val packageDescribeHandler = new PackageDescribeHandler(repositories)
-    val packageRenderHandler = new PackageRenderHandler(repositories)
-    val packageListVersionsHandler = new ListVersionsHandler(repositories)
-    val packageSearchHandler = new PackageSearchHandler(repositories)
-    val packageListHandler = new ListHandler(adminRouter, uri => repositories.getRepository(uri))
-    val packageRepoListHandler = new PackageRepositoryListHandler(sourcesStorage)
-    val packageRepoAddHandler = new PackageRepositoryAddHandler(sourcesStorage)
-    val packageRepoDeleteHandler = new PackageRepositoryDeleteHandler(sourcesStorage)
-    val capabilitiesHandler = new CapabilitiesHandler
-    val serviceDescribeHandler = new ServiceDescribeHandler(adminRouter, repositories)
 
     val packageAddHandler = enableIfSome(objectStorages, "package add") {
       case (_, stagedStorage) => new PackageAddHandler(repositories, stagedStorage, producerView)
@@ -155,49 +149,49 @@ with Logging {
         new ServiceStartHandler(localPackageCollection, packageRunner)
     }
 
-    // Package endpoints
-    val pkg = "package"
-    val packageInstall = standardEndpoint(pkg :: "install", packageInstallHandler)
-    val packageUninstall = standardEndpoint(pkg :: "uninstall", packageUninstallHandler)
-    val packageDescribe = standardEndpoint(pkg :: "describe", packageDescribeHandler)
-    val packageRender = standardEndpoint(pkg :: "render", packageRenderHandler)
-    val packageListVersions = standardEndpoint(pkg :: "list-versions", packageListVersionsHandler)
-    val packageSearch = standardEndpoint(pkg :: "search", packageSearchHandler)
-    val packageList = standardEndpoint(pkg :: "list", packageListHandler)
-
-    val repo = "repository"
-    val packageRepositoryList = standardEndpoint(pkg :: repo :: "list", packageRepoListHandler)
-    val packageRepositoryAdd = standardEndpoint(pkg :: repo :: "add", packageRepoAddHandler)
-    val packageRepositoryDelete =
-      standardEndpoint(pkg :: repo :: "delete", packageRepoDeleteHandler)
-
-    val packageAdd =
-      route(post("package" :: "add"), packageAddHandler)(RequestValidators.selectedBody)
-
-    // Service endpoints
-    val serviceStart = standardEndpoint("service" :: "start", serviceStartHandler)
-    val serviceDescribe = standardEndpoint("service" :: "describe", serviceDescribeHandler)
-
-    // Capabilities
-    val capabilities = route(get("capabilities"), capabilitiesHandler)(RequestValidators.noBody)
-
-    // Keep alphabetized
-    (capabilities
-      :+: packageAdd
-      :+: packageDescribe
-      :+: packageInstall
-      :+: packageList
-      :+: packageListVersions
-      :+: packageRender
-      :+: packageRepositoryAdd
-      :+: packageRepositoryDelete
-      :+: packageRepositoryList
-      :+: packageSearch
-      :+: packageUninstall
-      :+: serviceDescribe
-      :+: serviceStart).map(degenerateCoproduct)
+    new Handlers(
+      // Keep alphabetized
+      capabilities = new CapabilitiesHandler,
+      packageAdd = packageAddHandler,
+      packageDescribe = new PackageDescribeHandler(repositories),
+      packageInstall = new PackageInstallHandler(repositories, packageRunner),
+      packageList = new ListHandler(adminRouter, uri => repositories.getRepository(uri)),
+      packageListVersions = new ListVersionsHandler(repositories),
+      packageRender = new PackageRenderHandler(repositories),
+      packageRepositoryAdd = new PackageRepositoryAddHandler(sourcesStorage),
+      packageRepositoryDelete = new PackageRepositoryDeleteHandler(sourcesStorage),
+      packageRepositoryList = new PackageRepositoryListHandler(sourcesStorage),
+      packageSearch = new PackageSearchHandler(repositories),
+      packageUninstall = new UninstallHandler(adminRouter, repositories, marathonSdkJanitor),
+      serviceDescribe = new ServiceDescribeHandler(adminRouter, repositories),
+      serviceStart = serviceStartHandler
+    )
   }
-  // scalastyle:on method.length
+
+  final def buildEndpoints(handlers: Handlers): Endpoints = {
+    import handlers._
+
+    val pkg = "package"
+    val repo = "repository"
+
+    Endpoints(
+      // Keep alphabetized
+      capabilities = route(get("capabilities"), capabilities)(RequestValidators.noBody),
+      packageAdd = route(post(pkg :: "add"), packageAdd)(RequestValidators.selectedBody),
+      packageDescribe = standardEndpoint(pkg :: "describe", packageDescribe),
+      packageInstall = standardEndpoint(pkg :: "install", packageInstall),
+      packageList = standardEndpoint(pkg :: "list", packageList),
+      packageListVersions = standardEndpoint(pkg :: "list-versions", packageListVersions),
+      packageRender = standardEndpoint(pkg :: "render", packageRender),
+      packageRepositoryAdd = standardEndpoint(pkg :: repo :: "add", packageRepositoryAdd),
+      packageRepositoryDelete = standardEndpoint(pkg :: repo :: "delete", packageRepositoryDelete),
+      packageRepositoryList = standardEndpoint(pkg :: repo :: "list", packageRepositoryList),
+      packageSearch = standardEndpoint(pkg :: "search", packageSearch),
+      packageUninstall = standardEndpoint(pkg :: "uninstall", packageUninstall),
+      serviceDescribe = standardEndpoint("service" :: "describe", serviceDescribe),
+      serviceStart = standardEndpoint("service" :: "start", serviceStart)
+    )
+  }
 
   protected final def start(allEndpoints: Endpoint[Json]): Unit = {
     HttpProxySupport.configureProxySupport()
@@ -399,8 +393,65 @@ object CosmosApp {
     val objectStorages: Option[(LocalPackageCollection, StagedPackageStorage)],
     val repositories: MultiRepository,
     val producerView: ProducerView,
-    val packageRunner: PackageRunner
+    val packageRunner: PackageRunner,
+    val marathonSdkJanitor: Janitor
   )
+
+  final class Handlers(
+    // Keep alphabetized
+    val capabilities: EndpointHandler[Unit, rpc.v1.model.CapabilitiesResponse],
+    val packageAdd: EndpointHandler[rpc.v1.model.AddRequest, rpc.v1.model.AddResponse],
+    val packageDescribe: EndpointHandler[rpc.v1.model.DescribeRequest, universe.v4.model.PackageDefinition],
+    val packageInstall: EndpointHandler[rpc.v1.model.InstallRequest, rpc.v2.model.InstallResponse],
+    val packageList: EndpointHandler[rpc.v1.model.ListRequest, rpc.v1.model.ListResponse],
+    val packageListVersions: EndpointHandler[rpc.v1.model.ListVersionsRequest, rpc.v1.model.ListVersionsResponse],
+    val packageRender: EndpointHandler[rpc.v1.model.RenderRequest, rpc.v1.model.RenderResponse],
+    val packageRepositoryAdd: EndpointHandler[rpc.v1.model.PackageRepositoryAddRequest, rpc.v1.model.PackageRepositoryAddResponse],
+    val packageRepositoryDelete: EndpointHandler[rpc.v1.model.PackageRepositoryDeleteRequest, rpc.v1.model.PackageRepositoryDeleteResponse],
+    val packageRepositoryList: EndpointHandler[rpc.v1.model.PackageRepositoryListRequest, rpc.v1.model.PackageRepositoryListResponse],
+    val packageSearch: EndpointHandler[rpc.v1.model.SearchRequest, rpc.v1.model.SearchResponse],
+    val packageUninstall: EndpointHandler[rpc.v1.model.UninstallRequest, rpc.v1.model.UninstallResponse],
+    val serviceDescribe: EndpointHandler[rpc.v1.model.ServiceDescribeRequest, rpc.v1.model.ServiceDescribeResponse],
+    val serviceStart: EndpointHandler[rpc.v1.model.ServiceStartRequest, rpc.v1.model.ServiceStartResponse]
+  )
+
+  final case class Endpoints(
+    // Keep alphabetized
+    capabilities: Endpoint[Json],
+    packageAdd: Endpoint[Json],
+    packageDescribe: Endpoint[Json],
+    packageInstall: Endpoint[Json],
+    packageList: Endpoint[Json],
+    packageListVersions: Endpoint[Json],
+    packageRender: Endpoint[Json],
+    packageRepositoryAdd: Endpoint[Json],
+    packageRepositoryDelete: Endpoint[Json],
+    packageRepositoryList: Endpoint[Json],
+    packageSearch: Endpoint[Json],
+    packageUninstall: Endpoint[Json],
+    serviceDescribe: Endpoint[Json],
+    serviceStart: Endpoint[Json]
+  ) {
+
+    def combine: Endpoint[Json] = {
+      // Keep alphabetized
+      (capabilities
+        :+: packageAdd
+        :+: packageDescribe
+        :+: packageInstall
+        :+: packageList
+        :+: packageListVersions
+        :+: packageRender
+        :+: packageRepositoryAdd
+        :+: packageRepositoryDelete
+        :+: packageRepositoryList
+        :+: packageSearch
+        :+: packageUninstall
+        :+: serviceDescribe
+        :+: serviceStart).map(degenerateCoproduct)
+    }
+
+  }
 
   private def enableIfSome[A, Req, Res](requirement: Option[A], operationName: String)(
     f: A => EndpointHandler[Req, Res]
@@ -468,8 +519,9 @@ object Cosmos extends CosmosApp {
 
   override def main(): Unit = {
     val components = buildComponents()
-    val endpoints = buildEndpoints(components)
-    start(endpoints)
+    val handlers = buildHandlers(components)
+    val endpoints = buildEndpoints(handlers)
+    start(endpoints.combine)
   }
 
 }

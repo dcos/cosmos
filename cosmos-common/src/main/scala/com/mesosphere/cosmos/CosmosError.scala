@@ -260,6 +260,33 @@ final case class CirceError(circeError: _root_.io.circe.Error) extends CosmosErr
   override def message: String = circeError.getMessage
 }
 
+final case class AppAlreadyUninstalling(appId: AppId) extends CosmosError {
+  override def data: Option[JsonObject] = CosmosError.deriveData(this)
+  override def message: String = {
+    s"A request to uninstall the service '$appId' is already in progress."
+  }
+
+  override def exception: CosmosException = {
+    exception(Status.Conflict, Map.empty, None)
+  }
+}
+
+object AppAlreadyUninstalling {
+  implicit val encoder: Encoder[AppAlreadyUninstalling] = deriveEncoder
+}
+
+final case class FailedToStartUninstall(appId: AppId, explanation: String) extends CosmosError {
+  override def data: Option[JsonObject] = CosmosError.deriveData(this)
+  override def message: String = {
+    s"Failed to start an uninstall for the service '$appId': $explanation"
+  }
+}
+
+object FailedToStartUninstall {
+  implicit val encoder: Encoder[FailedToStartUninstall] = deriveEncoder
+}
+
+
 case object MarathonTemplateMustBeJsonObject extends CosmosError {
   override val data = None
   override def message: String = "Rendered Marathon JSON must be a JSON object"

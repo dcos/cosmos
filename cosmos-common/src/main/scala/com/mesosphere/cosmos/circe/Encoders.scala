@@ -166,5 +166,4 @@ object Encoders {
         )))
       )
   }
-
 }

@@ -1,0 +1,36 @@
+#%RAML 1.0 Resource
+post:
+  description: |
+    Describes a DC/OS Service
+  headers:
+    Accept:
+      enum: [application/vnd.dcos.service.describe-response+json;charset=utf-8;version=v1]
+  body:
+    application/vnd.dcos.service.describe-request+json;charset=utf-8;version=v1:
+      type: !include ../schemas/cosmos/rpc/v1/model/ServiceDescribeRequest-schema.json
+      example:
+        appId: /cassandra
+  responses:
+    200:
+      body:
+        application/vnd.dcos.service.describe-response+json;charset=utf-8;version=v1:
+          type: !include ../schemas/cosmos/rpc/v1/model/ServiceDescribeResponse-schema.json
+          example:
+            downgradesTo:
+              - 1.0.23
+            upgradesTo:
+              - 2.0.24
+              - 2.0.25
+            package:
+              name: cassandra
+              version: 1.0.24-3.0.10
+              packagingVersion: "4.0"
+              releaseVersion: 24
+              downgradesTo:
+                - 1.0.23
+              maintainer: support@mesosphere.io
+              description: Apache Cassandra running on DC/OS
+              tags:
+                - data
+                - database
+                - nosql

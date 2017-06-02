@@ -19,10 +19,19 @@ case class ServiceDescribeResponse(
 )
 
 object ServiceDescribeResponse {
-  implicit val encode: Encoder[ServiceDescribeResponse] = deriveEncoder
+
+  implicit val encode: Encoder[ServiceDescribeResponse] = {
+    deriveEncoder[ServiceDescribeResponse].contramap[ServiceDescribeResponse] { sdr =>
+      sdr.copy(resolvedOptions = None, userProvidedOptions = None)
+    }
+  }
+
   implicit val decode: Decoder[ServiceDescribeResponse] = deriveDecoder
+
   implicit val mediaTypedEncoder: MediaTypedEncoder[ServiceDescribeResponse] =
     MediaTypedEncoder(MediaTypes.ServiceDescribeResponse)
+
   implicit val dispatchingMediaTypedEncoder: DispatchingMediaTypedEncoder[ServiceDescribeResponse] =
     DispatchingMediaTypedEncoder(MediaTypes.ServiceDescribeResponse)
+
 }

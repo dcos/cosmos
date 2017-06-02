@@ -2,6 +2,7 @@ package com.mesosphere.cosmos
 
 import _root_.io.circe.Json
 import _root_.io.circe.JsonObject
+import com.mesosphere.cosmos.circe.Decoders
 import com.mesosphere.cosmos.http.RequestSession
 import com.mesosphere.cosmos.thirdparty.marathon.circe.Decoders._
 import com.mesosphere.cosmos.thirdparty.marathon.model.AppId
@@ -21,6 +22,23 @@ class MarathonClient(
 
   def createApp(appJson: JsonObject)(implicit session: RequestSession): Future[Response] = {
     client(post("v2" / "apps" , Json.fromJsonObject(appJson)))
+  }
+
+  def modifyApp(appId: AppId)(f: JsonObject => JsonObject)(implicit session: RequestSession): Future[Response] = {
+    client(get("v2" / "apps" / appId.toUri)).flatMap { response =>
+
+      val appJson = Decoders.parse(response.contentString).asObject.get
+        .apply("app").get.asObject.get
+          // Note, Marathon appends extraneous fields when you fetch the current configuration.
+          // Those are removed here to ensure the Marathon update succeeds.
+          // Presently, those fields are:
+          // - uris
+          // - version
+          .remove("uris")
+          .remove("version")
+
+      client(put("v2" / "apps" / appId.toUri, Json.fromJsonObject(f(appJson))))
+    }
   }
 
   def update(appId: AppId, appJson: JsonObject)(implicit session: RequestSession): Future[Response] = {
