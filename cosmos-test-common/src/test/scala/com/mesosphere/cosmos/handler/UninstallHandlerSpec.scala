@@ -131,12 +131,20 @@ with MockitoSugar {
   }
 }
 
-class MockModifyAppAdminRouter(adminRouterClient: AdminRouterClient,
-                      marathonClient: MarathonClient,
-                      mesosMasterClient: MesosMasterClient,
-                      response: Response) extends AdminRouter(adminRouterClient, marathonClient, mesosMasterClient) {
+class MockModifyAppAdminRouter(
+  adminRouterClient: AdminRouterClient,
+  marathonClient: MarathonClient,
+  mesosMasterClient: MesosMasterClient,
+  response: Response
+) extends AdminRouter(adminRouterClient, marathonClient, mesosMasterClient) {
 
-  override def modifyApp(appId: AppId)(f: (JsonObject) => JsonObject)(implicit session: RequestSession): Future[Response] = {
+  override def modifyApp(
+    appId: AppId
+  )(
+    f: (JsonObject) => JsonObject
+  )(
+    implicit session: RequestSession
+  ): Future[Response] = {
     Future.value(response)
   }
 }

@@ -1,5 +1,6 @@
 package com.mesosphere.cosmos.handler
 
+import com.mesosphere.cosmos.CosmosException
 import com.mesosphere.cosmos.MarathonAppNotFound
 import com.mesosphere.cosmos.http.CosmosRequests
 import com.mesosphere.cosmos.rpc.MediaTypes
@@ -134,11 +135,17 @@ final class UninstallHandlerSpec extends FreeSpec with Eventually with SpanSugar
 
         // Wait for the service to be deleted.
         eventually (timeout(10 minutes), interval(30 seconds)) {
-          assertThrows[MarathonAppNotFound](Await.result(adminRouter.getApp(AppId("/hello-world"))))
+          val exception = intercept[CosmosException](
+            Await.result(adminRouter.getApp(AppId("/hello-world")))
+          )
+
+          exception.error shouldBe a[MarathonAppNotFound]
         }
       } finally {
         // Cleanup the stub.
-        val removeRepoRequest = CosmosRequests.packageRepositoryDelete(PackageRepositoryDeleteRequest(Some("uninstall-test")))
+        val removeRepoRequest = CosmosRequests.packageRepositoryDelete(
+          PackageRepositoryDeleteRequest(Some("uninstall-test"))
+        )
         CosmosClient.callEndpoint[PackageRepositoryDeleteResponse](removeRepoRequest)
         ()
       }
