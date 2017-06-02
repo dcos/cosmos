@@ -34,7 +34,6 @@ import java.io.InputStreamReader
 import java.nio.charset.StandardCharsets
 import java.util.Base64
 import java.util.UUID
-import org.scalatest.Assertion
 import org.scalatest.FreeSpec
 import org.scalatest.Matchers
 import org.scalatest.prop.PropertyChecks
@@ -43,77 +42,6 @@ import org.scalatest.prop.TableDrivenPropertyChecks
 class EncodersDecodersSpec extends FreeSpec with PropertyChecks with Matchers with TableDrivenPropertyChecks {
   import Decoders._
   import Encoders._
-
-  "CosmosError" - {
-    "RepositoryUriSyntax" in {
-      assertRoundTrip("RepositoryUriSyntax", RepositoryUriSyntax.apply)
-    }
-
-
-    "RepositoryUriConnection" in {
-      assertRoundTrip("RepositoryUriConnection", RepositoryUriConnection.apply)
-    }
-
-    def assertRoundTrip(
-      errorType: String,
-      errorConstructor: (PackageRepository, Throwable) => Exception
-    ): Assertion = {
-      val repo = PackageRepository("repo", Uri.parse("http://example.com"))
-      val cause = "original failure message"
-      val error = errorConstructor(repo, new Throwable(cause))
-
-      val Right(roundTripError) = error.asJson.as[ErrorResponse]
-      assertResult(errorType)(roundTripError.`type`)
-      assertResult(Some(JsonObject.singleton("cause", cause.asJson)))(roundTripError.data)
-    }
-  }
-
-  "Throwable fields are dropped from encoded objects" - {
-    val throwable = new RuntimeException("BOOM!")
-
-    "PackageFileMissing" in {
-      assertThrowableDropped(PackageFileMissing(packageName = "kafka", cause = Some(throwable)), "cause")
-    }
-
-    "CirceError" in {
-      assertThrowableDropped(CirceError(circeError = ParsingFailure("failed", throwable)), "cerr")
-    }
-
-    "ServiceUnavailable" in {
-      val error = ServiceUnavailable(serviceName = "mesos", causedBy = throwable)
-      assertThrowableDropped(error, "causedBy")
-    }
-
-    "IncompleteUninstall" in {
-      val error = IncompleteUninstall(packageName = "spark", causedBy = throwable)
-      assertThrowableDropped(error, "causedBy")
-    }
-
-    "ConcurrentAccess" in {
-      assertThrowableDropped(ConcurrentAccess(causedBy = throwable), "causedBy")
-    }
-
-    "RepositoryUriSyntax" in {
-      val repo = PackageRepository("Universe", Uri.parse("universe/repo"))
-      val error = RepositoryUriSyntax(repository = repo, causedBy = throwable)
-      assertThrowableDropped(error, "causedBy")
-    }
-
-    "RepositoryUriConnection" in {
-      val repo = PackageRepository("Universe", Uri.parse("universe/repo"))
-      val error = RepositoryUriConnection(repository = repo, causedBy = throwable)
-      assertThrowableDropped(error, "causedBy")
-    }
-
-    def assertThrowableDropped[A <: CosmosError with Product](
-      error: A,
-      throwableFieldNames: String*
-    ): Assertion = {
-      val encodedFields = error.getData.getOrElse(JsonObject.empty)
-      throwableFieldNames.foreach(name => assert(!encodedFields.contains(name), name))
-      assertResult(error.productArity - throwableFieldNames.size)(encodedFields.size)
-    }
-  }
 
   "Encoder for io.circe.Error" - {
     "DecodingFailure should specify path instead of cursor history" - {
@@ -180,7 +108,8 @@ class EncodersDecodersSpec extends FreeSpec with PropertyChecks with Matchers wi
   }
 
   private[this] def encodeCirceError(err: io.circe.Error): Json = {
-    err.asInstanceOf[Exception].asJson // up-cast the error so that the implicit matches; io.circe.Error is too specific
+    // up-cast the error so that the implicit matches; io.circe.Error is too specific
+    err.asInstanceOf[Exception].asJson
   }
 
   private[this] def loadAndDecode(resourceName: String): Either[Error, Repository] = {

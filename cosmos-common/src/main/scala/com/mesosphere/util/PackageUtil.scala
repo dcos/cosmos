@@ -69,7 +69,7 @@ object PackageUtil {
     failure: String
   ) extends PackageError {
     override def data: Option[JsonObject] = CosmosError.deriveData(this)
-    override def message = s"Package entry was not JSON or did not match the expected schema: $path"
+    override def message: String = s"Package entry was not JSON or did not match the expected schema: $path"
   }
 
   object InvalidEntry {

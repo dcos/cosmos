@@ -90,10 +90,10 @@ with TableDrivenPropertyChecks {
             coordinate1,
             pendingUniverseInstall)
 
-          val addResult = intercept[OperationInProgress] {
+          val exception = intercept[CosmosException] {
             Await.result(installQueue.add(coordinate1, universeInstall))
           }
-          assertResult(coordinate1)(addResult.coordinate)
+          exception.error shouldBe OperationInProgress(coordinate1)
 
           checkInstallQueueContents(client,
             coordinate1,
@@ -105,7 +105,8 @@ with TableDrivenPropertyChecks {
           insertPackageStatusIntoQueue(
             client,
             coordinate1,
-            FailedStatus(OperationFailure(universeInstall, errorResponse1)))
+            FailedStatus(OperationFailure(universeInstall, errorResponse1))
+          )
 
           val addResult = Await.result(
             installQueue.add(coordinate1, universeInstall)
@@ -115,29 +116,36 @@ with TableDrivenPropertyChecks {
           checkInstallQueueContents(
             client,
             coordinate1,
-            PendingStatus(universeInstall, Some(OperationFailure(universeInstall, errorResponse1))))
+            PendingStatus(
+              universeInstall,
+              Some(OperationFailure(universeInstall, errorResponse1))
+            )
+          )
         }
 
         "on a coordinate that has an operation and a failure" in { testParameters =>
           val (client, installQueue) = testParameters
 
-          val pendingUniverseInstallWithFailure =
-            PendingStatus(universeInstall, Some(OperationFailure(universeInstall, errorResponse1)))
+          val pendingUniverseInstallWithFailure = PendingStatus(
+            universeInstall,
+            Some(OperationFailure(universeInstall, errorResponse1))
+          )
 
           insertPackageStatusIntoQueue(
             client,
             coordinate1,
             pendingUniverseInstallWithFailure)
 
-          val addResult = intercept[OperationInProgress] {
+          val exception = intercept[CosmosException] {
             Await.result(installQueue.add(coordinate1, universeInstall))
           }
-          assertResult(coordinate1)(addResult.coordinate)
+          exception.error shouldBe OperationInProgress(coordinate1)
 
           checkInstallQueueContents(
             client,
             coordinate1,
-            pendingUniverseInstallWithFailure)
+            pendingUniverseInstallWithFailure
+          )
         }
       }
 
@@ -169,7 +177,7 @@ with TableDrivenPropertyChecks {
               )
             )
 
-            exception.error shouldBe a [InstallQueueError]
+            exception.error shouldBe a[InstallQueueError]
             assertResult(notInQueueFailureMessageCoordinate1)(exception.error.message)
           }
 
@@ -182,7 +190,7 @@ with TableDrivenPropertyChecks {
               )
             )
 
-            exception.error shouldBe a [InstallQueueError]
+            exception.error shouldBe a[InstallQueueError]
             assertResult(notInQueueFailureMessageCoordinate1)(exception.error.message)
           }
 
@@ -210,7 +218,7 @@ with TableDrivenPropertyChecks {
               )
             )
 
-            exception.error shouldBe a [InstallQueueError]
+            exception.error shouldBe a[InstallQueueError]
             assertResult(alreadyFailedFailureMessageCoordinate1)(exception.error.message)
           }
 
@@ -265,7 +273,7 @@ with TableDrivenPropertyChecks {
               )
             )
 
-            exception.error shouldBe a [InstallQueueError]
+            exception.error shouldBe a[InstallQueueError]
             assertResult(notInQueueSuccessMessageCoordinate1)(exception.error.message)
           }
 
@@ -278,7 +286,7 @@ with TableDrivenPropertyChecks {
               )
             )
 
-            exception.error shouldBe a [InstallQueueError]
+            exception.error shouldBe a[InstallQueueError]
             assertResult(notInQueueSuccessMessageCoordinate1)(exception.error.message)
           }
 
@@ -303,7 +311,7 @@ with TableDrivenPropertyChecks {
               )
             )
 
-            exception.error shouldBe a [InstallQueueError]
+            exception.error shouldBe a[InstallQueueError]
             assertResult(alreadyFailedSuccessMessageCoordinate1)(exception.error.message)
           }
 
@@ -312,7 +320,11 @@ with TableDrivenPropertyChecks {
             insertPackageStatusIntoQueue(
               client,
               coordinate1,
-              PendingStatus(universeInstall, Some(OperationFailure(universeInstall, errorResponse1))))
+              PendingStatus(
+                universeInstall,
+                Some(OperationFailure(universeInstall, errorResponse1))
+              )
+            )
             Await.result(
               installQueue.success(coordinate1)
             )

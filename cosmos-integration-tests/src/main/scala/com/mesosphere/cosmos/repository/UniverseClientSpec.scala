@@ -1,18 +1,23 @@
 package com.mesosphere.cosmos.repository
 
-import java.io.IOException
-import java.net.MalformedURLException
+import com.mesosphere.cosmos.CosmosException
+import com.mesosphere.cosmos.GenericHttpError
+import com.mesosphere.cosmos.RepositoryUriConnection
+import com.mesosphere.cosmos.RepositoryUriSyntax
 import com.mesosphere.cosmos.rpc.v1.model.PackageRepository
 import com.mesosphere.cosmos.test.CosmosIntegrationTestClient
-import com.mesosphere.cosmos.{GenericHttpError, RepositoryUriConnection, RepositoryUriSyntax}
+import com.mesosphere.universe.v3.model.DcosReleaseVersion
+import com.mesosphere.universe.v3.model.DcosReleaseVersionParser
 import com.mesosphere.universe.v3.model.Repository
 import com.mesosphere.universe.v3.model.Version
-import com.mesosphere.universe.v3.model.{DcosReleaseVersion, DcosReleaseVersionParser}
 import com.mesosphere.universe.v3.syntax.PackageDefinitionOps._
 import com.netaporter.uri.Uri
 import com.netaporter.uri.dsl._
 import com.twitter.finagle.http.Status
-import com.twitter.util.{Await, Throw}
+import com.twitter.util.Await
+import com.twitter.util.Throw
+import java.io.IOException
+import java.net.MalformedURLException
 import org.scalatest.FreeSpec
 import org.scalatest.Matchers
 
@@ -42,7 +47,7 @@ final class UniverseClientSpec extends FreeSpec with Matchers {
       "URI/URL syntax" - {
         "relative URI" in {
           val expectedRepo = PackageRepository(name = "FooBar", uri = Uri.parse("foo/bar"))
-          val Throw(RepositoryUriSyntax(actualRepo, causedBy)) =
+          val Throw(CosmosException(RepositoryUriSyntax(actualRepo, _), _, _, Some(causedBy))) =
             Await.result(universeClient(expectedRepo, version1Dot8).liftToTry)
           assertResult(expectedRepo)(actualRepo)
           assert(causedBy.isInstanceOf[IllegalArgumentException])
@@ -50,7 +55,7 @@ final class UniverseClientSpec extends FreeSpec with Matchers {
 
         "unknown protocol" in {
           val expectedRepo = PackageRepository(name = "FooBar", uri = Uri.parse("foo://bar.com"))
-          val Throw(RepositoryUriSyntax(actualRepo, causedBy)) =
+          val Throw(CosmosException(RepositoryUriSyntax(actualRepo, _), _, _, Some(causedBy))) =
             Await.result(universeClient(expectedRepo, version1Dot8).liftToTry)
           assertResult(expectedRepo)(actualRepo)
           assert(causedBy.isInstanceOf[MalformedURLException])
@@ -59,7 +64,7 @@ final class UniverseClientSpec extends FreeSpec with Matchers {
 
       "Connection failure" in {
         val expectedRepo = PackageRepository(name = "BadRepo", uri = Uri.parse("http://foobar"))
-        val Throw(RepositoryUriConnection(actualRepo, causedBy)) =
+        val Throw(CosmosException(RepositoryUriConnection(actualRepo, _), _, _, Some(causedBy))) =
           Await.result(universeClient(expectedRepo, version1Dot8).liftToTry)
         assertResult(expectedRepo)(actualRepo)
         assert(causedBy.isInstanceOf[IOException])
@@ -113,7 +118,9 @@ final class UniverseClientSpec extends FreeSpec with Matchers {
       val version = DcosReleaseVersionParser.parseUnsafe("0.0")
       val repoUri = baseRepoUri / "doesnotexist.json"
       val result = universeClient(PackageRepository("badRepo", repoUri), version)
-      val Throw(GenericHttpError(method, uri, clientStatus, status)) = Await.result(
+      val Throw(
+        CosmosException(GenericHttpError(method, uri, clientStatus), status, _, _)
+      ) = Await.result(
         result.liftToTry
       )
 
