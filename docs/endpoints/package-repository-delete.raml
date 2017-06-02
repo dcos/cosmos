@@ -1,0 +1,20 @@
+#%RAML 1.0 Resource
+post:
+  description: Deletes a package repository (for example Universe) from DC/OS.
+  headers:
+    Accept:
+      enum: [application/vnd.dcos.package.repository.delete-response+json;charset=utf-8;version=v1]
+  body:
+    application/vnd.dcos.package.repository.delete-request+json;charset=utf-8;version=v1:
+      type: !include ../schemas/cosmos/rpc/v1/model/PackageRepositoryDeleteRequest-schema.json
+      example:
+        name: Local Universe
+  responses:
+    200:
+      body:
+        application/vnd.dcos.package.repository.delete-response+json;charset=utf-8;version=v1:
+          type: !include ../schemas/cosmos/rpc/v1/model/PackageRepositoryDeleteResponse-schema.json
+          example:
+            repositories:
+              - name: Universe
+                uri: https://universe.mesosphere.com/repo
