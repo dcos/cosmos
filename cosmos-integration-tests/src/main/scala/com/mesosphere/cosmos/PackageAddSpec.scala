@@ -107,7 +107,7 @@ final class PackageAddSpec
 
       val v3Package = decode[universe.v3.model.V3Package](response.contentString)
       assertResult(expectedPackage) {
-        (v3Package: universe.v4.model.PackageDefinition).as[Try[rpc.v2.model.DescribeResponse]].get()
+        (v3Package: universe.v4.model.PackageDefinition).as[rpc.v2.model.DescribeResponse]
       }
 
       assertExternalizedPackage(v3Package)
