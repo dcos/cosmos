@@ -1,9 +1,9 @@
 package com.mesosphere.cosmos
 
 import _root_.io.circe.Json
-import _root_.io.circe.jawn.parse
 import _root_.io.circe.syntax._
 import com.mesosphere.cosmos.circe.Decoders.decode
+import com.mesosphere.cosmos.circe.Decoders.parse
 import com.mesosphere.cosmos.http.CosmosRequests
 import com.mesosphere.cosmos.rpc.v1.circe.Decoders._
 import com.mesosphere.cosmos.test.CosmosIntegrationTestClient.CosmosClient
@@ -64,7 +64,7 @@ final class PackageDescribeSpec
     }
 
     "when requesting a v2 response" - {
-      "fails to describe helloworld v4 w/ updates when requesting v2 describe response" in {
+      "should succeed to describe helloworld v4 when requesting v2 describe response" in {
         val response = CosmosClient.submit(
           CosmosRequests.packageDescribeV2(
             rpc.v1.model.DescribeRequest(
@@ -72,7 +72,12 @@ final class PackageDescribeSpec
               Some(universe.v2.model.PackageDetailsVersion("0.4.1")))
           )
         )
-        assertResult(Status.BadRequest)(response.status)
+
+        response.status shouldBe Status.Ok
+        val packageInfo = parse(response.contentString)
+
+        packageInfo.hcursor.get[String]("name") shouldBe Right("helloworld")
+        packageInfo.hcursor.get[String]("version") shouldBe Right("0.4.1")
       }
     }
 
@@ -149,7 +154,7 @@ final class PackageDescribeSpec
       )
     )
 
-    val Right(actualContent) = parse(response.contentString)
+    val actualContent = parse(response.contentString)
 
     actualContent shouldBe expectedContent
   }
@@ -162,7 +167,7 @@ final class PackageDescribeSpec
       rpc.v1.model.DescribeRequest("helloworld", version)
     )
     assertResult(Status.Ok)(response.status)
-    val Right(packageInfo) = parse(response.contentString)
+    val packageInfo = parse(response.contentString)
 
     val Right(packageJson) =
       packageInfo.cursor.get[universe.v2.model.PackageDetails]("package")

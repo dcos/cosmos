@@ -79,45 +79,39 @@ object Response {
   }
 
   implicit val v4PackageDefinitionToV2DescribeResponse:
-    Conversion[universe.v4.model.PackageDefinition, Try[rpc.v2.model.DescribeResponse]] = {
+    Conversion[universe.v4.model.PackageDefinition, rpc.v2.model.DescribeResponse] = {
     Conversion.fromFunction { (pkg: universe.v4.model.PackageDefinition) =>
 
-      val packagingVersion: Try[universe.v3.model.PackagingVersion] =
-        pkg match {
-          case _: universe.v3.model.V2Package =>
-            Return(universe.v3.model.V2PackagingVersion)
-          case _: universe.v3.model.V3Package =>
-            Return(universe.v3.model.V3PackagingVersion)
-          case v4: universe.v4.model.V4Package if notUsesUpdates(v4) =>
-            Return(universe.v3.model.V3PackagingVersion)
-          case _ =>
-            Throw(ConversionFromPackageToV2DescribeResponse())
-        }
-
-      packagingVersion.map { packagingVersion =>
-        rpc.v2.model.DescribeResponse(
-          packagingVersion,
-          pkg.name,
-          pkg.version,
-          pkg.maintainer,
-          pkg.description,
-          pkg.tags,
-          pkg.selected.getOrElse(false),
-          pkg.scm,
-          pkg.website,
-          pkg.framework.getOrElse(false),
-          pkg.preInstallNotes,
-          pkg.postInstallNotes,
-          pkg.postUninstallNotes,
-          pkg.licenses,
-          pkg.minDcosReleaseVersion,
-          pkg.marathon,
-          pkg.v3Resource,
-          pkg.config,
-          pkg.command
-        )
+      val packagingVersion = pkg match {
+        case _: universe.v3.model.V2Package =>
+          universe.v3.model.V2PackagingVersion
+        case _: universe.v3.model.V3Package =>
+          universe.v3.model.V3PackagingVersion
+        case _: universe.v4.model.V4Package =>
+          universe.v3.model.V3PackagingVersion
       }
 
+      rpc.v2.model.DescribeResponse(
+        packagingVersion,
+        pkg.name,
+        pkg.version,
+        pkg.maintainer,
+        pkg.description,
+        pkg.tags,
+        pkg.selected.getOrElse(false),
+        pkg.scm,
+        pkg.website,
+        pkg.framework.getOrElse(false),
+        pkg.preInstallNotes,
+        pkg.postInstallNotes,
+        pkg.postUninstallNotes,
+        pkg.licenses,
+        pkg.minDcosReleaseVersion,
+        pkg.marathon,
+        pkg.v3Resource,
+        pkg.config,
+        pkg.command
+      )
     }
   }
 
@@ -236,9 +230,4 @@ object Response {
         v4.resource
       ).as[Try[Option[universe.v2.model.Resource]]]
   }
-
-  private[this] def notUsesUpdates(pkg: universe.v4.model.V4Package): Boolean = {
-    (pkg.downgradesTo.toList ++ pkg.upgradesFrom.toList).flatten.isEmpty
-  }
-
 }
