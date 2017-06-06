@@ -90,8 +90,8 @@ final class PackageDescribeSpec
         response.status shouldBe Status.Ok
 
         val packageInfo = parse(response.contentString)
-        packageInfo.hcursor.get[String]("name") shouldBe Right("helloworld")
-        packageInfo.hcursor.get[String]("version") shouldBe Right("0.4.1")
+        packageInfo.hcursor.downField("package").get[String]("name") shouldBe Right("helloworld")
+        packageInfo.hcursor.downField("package").get[String]("version") shouldBe Right("0.4.1")
       }
     }
 
