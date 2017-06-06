@@ -50,6 +50,10 @@ object CosmosRequests {
     packageDescribe(describeRequest, accept = rpc.MediaTypes.V2DescribeResponse)
   }
 
+  def packageDescribeV3(describeRequest: rpc.v1.model.DescribeRequest): HttpRequest = {
+    packageDescribe(describeRequest, accept = rpc.MediaTypes.V3DescribeResponse)
+  }
+
   def packageInstallV1(installRequest: rpc.v1.model.InstallRequest): HttpRequest = {
     packageInstall(installRequest, accept = rpc.MediaTypes.V1InstallResponse)
   }
