@@ -5,8 +5,6 @@ import com.mesosphere.cosmos.rpc.v1.circe.Encoders._
 import com.mesosphere.cosmos.rpc.v1.model.PackageRepositoryListRequest
 import com.mesosphere.cosmos.rpc.v1.model.RenderRequest
 import com.mesosphere.universe
-import com.mesosphere.universe.bijection.UniverseConversions._
-import com.twitter.bijection.Conversion.asMethod
 import com.twitter.io.Buf
 
 object CosmosRequests {
@@ -35,15 +33,6 @@ object CosmosRequests {
 
   def packageDescribeV1(describeRequest: rpc.v1.model.DescribeRequest): HttpRequest = {
     packageDescribe(describeRequest, accept = rpc.MediaTypes.V1DescribeResponse)
-  }
-
-  def packageDescribeV2(
-    packageName: String,
-    packageVersion: Option[universe.v3.model.Version]
-  ): HttpRequest = {
-    val oldVersion = packageVersion.as[Option[universe.v2.model.PackageDetailsVersion]]
-    val describeRequest = rpc.v1.model.DescribeRequest(packageName, oldVersion)
-    packageDescribeV2(describeRequest)
   }
 
   def packageDescribeV2(describeRequest: rpc.v1.model.DescribeRequest): HttpRequest = {
