@@ -24,7 +24,7 @@ class MarathonClient(
     client(post("v2" / "apps" , Json.fromJsonObject(appJson)))
   }
 
-  def modifyApp(appId: AppId)(f: JsonObject => JsonObject)(implicit session: RequestSession): Future[Response] = {
+  def modifyApp(appId: AppId, force: Boolean)(f: JsonObject => JsonObject)(implicit session: RequestSession): Future[Response] = {
     client(get("v2" / "apps" / appId.toUri)).flatMap { response =>
 
       val appJson = Decoders.parse(response.contentString).asObject.get
@@ -37,7 +37,9 @@ class MarathonClient(
           .remove("uris")
           .remove("version")
 
-      client(put("v2" / "apps" / appId.toUri, Json.fromJsonObject(f(appJson))))
+      var uri = "v2" / "apps" / appId.toUri
+      uri = if (force) uri ? ("force" -> "true") else uri
+      client(put(uri, Json.fromJsonObject(f(appJson))))
     }
   }
 

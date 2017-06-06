@@ -105,42 +105,86 @@ final class UninstallHandlerSpec extends FreeSpec with Eventually with SpanSugar
       assertResult(Status.Ok)(cleanupResponse.status)
     }
 
-    "be able to uninstall SDK packages that support SDK uninstall and only one uninstall at a time" in {
-      // Add stub universe for service that supports uninstall.
-      val request = CosmosRequests.packageRepositoryAdd(PackageRepositoryAddRequest("uninstall-test",
-        Uri.parse("https://s3-us-west-2.amazonaws.com/infinity-artifacts/uninstalltestfixture/stub-universe-uninstall-test-fixture.zip"),
-        index = Some(0)))
-      val _ = CosmosClient.callEndpoint[PackageRepositoryAddResponse](request)
+    "SDK Based services use custom uninstall behavior" - {
 
-      val installRequest = InstallRequest("hello-world", options = Some(JsonObject.singleton("world",
-        Json.fromJsonObject(JsonObject.singleton("count", Json.fromInt(1))))))
-      val installResponse = submitInstallRequest(installRequest)
-      assertResult(Status.Ok)(installResponse.status)
+      "Be able to uninstall a service in the middle of a Marathon deploy" in {
+        // Add stub universe for service that supports uninstall.
+        val request = CosmosRequests.packageRepositoryAdd(PackageRepositoryAddRequest(
+          "uninstall-test",
+          Uri.parse("https://s3-us-west-2.amazonaws.com/infinity-artifacts/uninstalltestfixture/v2/stub-universe-hello-world.json"),
+          index = Some(0))
+        )
+        val _ = CosmosClient.callEndpoint[PackageRepositoryAddResponse](request)
 
-      try {
-        // Wait for the service to deploy.
-        eventually (timeout(10 minutes), interval(30 seconds)) {
-          assertResult(Status.Ok)(Await.result(adminRouter.getSdkServicePlanStatus("hello-world", "v1", "deploy")).status)
+        try {
+          // Install the test fixture.
+          val installRequestOne = InstallRequest(
+            "hello-world",
+            options = Some(JsonObject.singleton("world", Json.fromJsonObject(JsonObject.singleton("count", Json.fromInt(1)))))
+          )
+          val installResponseOne = submitInstallRequest(installRequestOne)
+          assertResult(Status.Ok)(installResponseOne.status)
+
+
+          // Immediately turn around and try to uninstall it, while it's still being initially deployed.
+          val uninstallRequestOne = UninstallRequest("hello-world", appId = Option(AppId("/hello-world")), Some(false))
+          val uninstallResponseOne = submitUninstallRequest(uninstallRequestOne)
+          assertResult(Status.Ok)(uninstallResponseOne.status)
+          assertResult(MediaTypes.UninstallResponse.show)(uninstallResponseOne.headerMap(Fields.ContentType))
+
+          // Wait for the service to be deleted.
+          eventually(timeout(10 minutes), interval(30 seconds)) {
+            assertThrows[MarathonAppNotFound](Await.result(adminRouter.getApp(AppId("/hello-world"))))
+          }
+        } finally {
+          // Cleanup the stub.
+          val removeRepoRequest = CosmosRequests.packageRepositoryDelete(PackageRepositoryDeleteRequest(Some("uninstall-test")))
+          CosmosClient.callEndpoint[PackageRepositoryDeleteResponse](removeRepoRequest)
+          ()
         }
+      }
 
-        val uninstallRequest = UninstallRequest("hello-world", appId = None, Some(false))
-        val uninstallResponse = submitUninstallRequest(uninstallRequest)
-        assertResult(Status.Ok)(uninstallResponse.status)
-        assertResult(MediaTypes.UninstallResponse.show)(uninstallResponse.headerMap(Fields.ContentType))
+      "be able to uninstall SDK packages that support SDK uninstall and only one uninstall at a time" in {
+        // Add stub universe for service that supports uninstall.
+        val request = CosmosRequests.packageRepositoryAdd(PackageRepositoryAddRequest(
+          "uninstall-test",
+          Uri.parse("https://s3-us-west-2.amazonaws.com/infinity-artifacts/uninstalltestfixture/v2/stub-universe-hello-world.json"),
+          index = Some(0))
+        )
+        val _ = CosmosClient.callEndpoint[PackageRepositoryAddResponse](request)
 
-        // Try a second uninstall request
-        val secondResponse = submitUninstallRequest(uninstallRequest)
-        assertResult(Status.Conflict)(secondResponse.status)
+        val installRequest = InstallRequest(
+          "hello-world",
+          options = Some(JsonObject.singleton("world", Json.fromJsonObject(JsonObject.singleton("count", Json.fromInt(1)))))
+        )
+        val installResponse = submitInstallRequest(installRequest)
+        assertResult(Status.Ok)(installResponse.status)
 
-        // Wait for the service to be deleted.
-        eventually (timeout(10 minutes), interval(30 seconds)) {
-          assertThrows[MarathonAppNotFound](Await.result(adminRouter.getApp(AppId("/hello-world"))))
+        try {
+          // Wait for the service to deploy.
+          eventually(timeout(10 minutes), interval(30 seconds)) {
+            assertResult(Status.Ok)(Await.result(adminRouter.getSdkServicePlanStatus("hello-world", "v1", "deploy")).status)
+          }
+
+          val uninstallRequest = UninstallRequest("hello-world", appId = None, Some(false))
+          val uninstallResponse = submitUninstallRequest(uninstallRequest)
+          assertResult(Status.Ok)(uninstallResponse.status)
+          assertResult(MediaTypes.UninstallResponse.show)(uninstallResponse.headerMap(Fields.ContentType))
+
+          // Try a second uninstall request
+          val secondResponse = submitUninstallRequest(uninstallRequest)
+          assertResult(Status.Conflict)(secondResponse.status)
+
+          // Wait for the service to be deleted.
+          eventually(timeout(10 minutes), interval(30 seconds)) {
+            assertThrows[MarathonAppNotFound](Await.result(adminRouter.getApp(AppId("/hello-world"))))
+          }
+        } finally {
+          // Cleanup the stub.
+          val removeRepoRequest = CosmosRequests.packageRepositoryDelete(PackageRepositoryDeleteRequest(Some("uninstall-test")))
+          CosmosClient.callEndpoint[PackageRepositoryDeleteResponse](removeRepoRequest)
+          ()
         }
-      } finally {
-        // Cleanup the stub.
-        val removeRepoRequest = CosmosRequests.packageRepositoryDelete(PackageRepositoryDeleteRequest(Some("uninstall-test")))
-        CosmosClient.callEndpoint[PackageRepositoryDeleteResponse](removeRepoRequest)
-        ()
       }
     }
   }

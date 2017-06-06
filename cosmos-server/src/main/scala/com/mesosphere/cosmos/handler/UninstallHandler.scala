@@ -11,6 +11,7 @@ import com.mesosphere.cosmos.MultipleFrameworkIds
 import com.mesosphere.cosmos.PackageNotInstalled
 import com.mesosphere.cosmos.ServiceUnavailable
 import com.mesosphere.cosmos.UninstallNonExistentAppForPackage
+import com.mesosphere.cosmos.circe.Decoders
 import com.mesosphere.cosmos.finch.EndpointHandler
 import com.mesosphere.cosmos.handler.UninstallHandler._
 import com.mesosphere.cosmos.http.RequestSession
@@ -131,11 +132,20 @@ private[cosmos] final class UninstallHandler(
       throw AppAlreadyUninstalling(op.appId)
     }
 
-    adminRouter.modifyApp(op.appId)(setMarathonUninstall)
+    adminRouter.modifyApp(op.appId, force = true)(setMarathonUninstall)
       .map { response =>
       response.status match {
         case Status.Ok =>
-          UninstallDetails.from(op)
+          Decoders.parse(response.contentString).asObject match {
+            case Some(responseObject) =>
+              sdkJanitor.delete(
+                op.appId,
+                responseObject.apply("deploymentId").get.asString.get,
+                session)
+              UninstallDetails.from(op)
+            case _ =>
+              throw FailedToStartUninstall(op.appId, "Marathon update response is not a JSON Object: %s".format(response.contentString))
+          }
         case _ =>
           logger.error("Encountered error in marathon request {}", response.contentString)
           throw FailedToStartUninstall(op.appId, "Encountered error in marathon request %s".format(response.contentString))
@@ -144,9 +154,6 @@ private[cosmos] final class UninstallHandler(
     .onFailure { _ =>
       sdkJanitor.releaseUninstall(op.appId)
       logger.error("Failed to initiate uninstall for {}", op.appId)
-    }
-    .onSuccess { _ =>
-      sdkJanitor.delete(op.appId, session)
     }
   }
 
