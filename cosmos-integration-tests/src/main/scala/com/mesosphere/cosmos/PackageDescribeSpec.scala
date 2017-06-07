@@ -185,47 +185,48 @@ private object PackageDescribeSpec extends TableDrivenPropertyChecks {
     ("kafka", universe.v2.model.PackageDetailsVersion("1.1.2-0.10.0.0"))
   )
 
-
-	private[this] val helloWorldJson = """
-	{
-		"package": {
-			"config": {
-				"$schema": "http://json-schema.org/schema#",
-				"additionalProperties": false,
-				"properties": {
-					"port": {
-						"default": 8080,
-						"type": "integer"
-					}
-				},
-				"type": "object"
-			},
-			"description": "Example DCOS application package",
-			"downgradesTo": [
-			"0.4.0"
-			],
-			"maintainer": "support@mesosphere.io",
-			"marathon": {
-				"v2AppMustacheTemplate": "ewogICJpZCI6ICJoZWxsb3dvcmxkIiwKICAiY3B1cyI6IDEuMCwKICAibWVtIjogNTEyLAogICJpbnN0YW5jZXMiOiAxLAogICJjbWQiOiAicHl0aG9uMyAtbSBodHRwLnNlcnZlciB7e3BvcnR9fSIsCiAgImNvbnRhaW5lciI6IHsKICAgICJ0eXBlIjogIkRPQ0tFUiIsCiAgICAiZG9ja2VyIjogewogICAgICAiaW1hZ2UiOiAicHl0aG9uOjMiLAogICAgICAibmV0d29yayI6ICJIT1NUIgogICAgfQogIH0KfQo="
-			},
-			"minDcosReleaseVersion": "1.10",
-			"name": "helloworld",
-			"packagingVersion": "4.0",
-			"postInstallNotes": "A sample post-installation message",
-			"preInstallNotes": "A sample pre-installation message",
-			"releaseVersion": 4,
-			"tags": [
-			"mesosphere",
-			"example",
-			"subcommand"
-			],
-			"upgradesFrom": [
-			"0.4.0"
-			],
-			"version": "0.4.1",
-			"website": "https://github.com/mesosphere/dcos-helloworld"
-		}
-	}"""
+  // scalastyle:off line.size.limit
+  private[this] val helloWorldJson = """
+  {
+    "package": {
+      "config": {
+        "$schema": "http://json-schema.org/schema#",
+        "additionalProperties": false,
+        "properties": {
+          "port": {
+            "default": 8080,
+            "type": "integer"
+          }
+        },
+        "type": "object"
+      },
+      "description": "Example DCOS application package",
+      "downgradesTo": [
+      "0.4.0"
+      ],
+      "maintainer": "support@mesosphere.io",
+      "marathon": {
+        "v2AppMustacheTemplate": "ewogICJpZCI6ICJoZWxsb3dvcmxkIiwKICAiY3B1cyI6IDEuMCwKICAibWVtIjogNTEyLAogICJpbnN0YW5jZXMiOiAxLAogICJjbWQiOiAicHl0aG9uMyAtbSBodHRwLnNlcnZlciB7e3BvcnR9fSIsCiAgImNvbnRhaW5lciI6IHsKICAgICJ0eXBlIjogIkRPQ0tFUiIsCiAgICAiZG9ja2VyIjogewogICAgICAiaW1hZ2UiOiAicHl0aG9uOjMiLAogICAgICAibmV0d29yayI6ICJIT1NUIgogICAgfQogIH0KfQo="
+      },
+      "minDcosReleaseVersion": "1.10",
+      "name": "helloworld",
+      "packagingVersion": "4.0",
+      "postInstallNotes": "A sample post-installation message",
+      "preInstallNotes": "A sample pre-installation message",
+      "releaseVersion": 4,
+      "tags": [
+      "mesosphere",
+      "example",
+      "subcommand"
+      ],
+      "upgradesFrom": [
+      "0.4.0"
+      ],
+      "version": "0.4.1",
+      "website": "https://github.com/mesosphere/dcos-helloworld"
+    }
+  }"""
+  // scalastyle:on line.size.limit
 
   val HelloWorldPackageDefinition = parse(helloWorldJson)
 }
