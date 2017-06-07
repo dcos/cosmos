@@ -219,7 +219,7 @@ private object PackageDescribeSpec extends TableDrivenPropertyChecks {
       }
     }
     """
-    // scalastyle:off line.size.limit
+    // scalastyle:on line.size.limit
 
     parse(pkgJson)
   }
