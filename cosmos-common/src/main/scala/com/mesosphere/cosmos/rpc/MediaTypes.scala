@@ -33,8 +33,8 @@ object MediaTypes {
   val PackageRepositoryDeleteRequest = vnd("repository.delete-request")
   val PackageRepositoryDeleteResponse = vnd("repository.delete-response")
 
-  val V1DescribeResponse = vnd("describe-response", 1)
   val V2DescribeResponse = vnd("describe-response", 2)
+  val V3DescribeResponse = vnd("describe-response", 3)
   val V1InstallResponse = vnd("install-response", 1)
   val V2InstallResponse = vnd("install-response", 2)
   val V1ListResponse = vnd("list-response", 1)
