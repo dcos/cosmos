@@ -102,7 +102,7 @@ final class PackageDescribeSpec
 
   private def packageDescribeLatestAndAssert(
     packageName: String,
-    expectedVersion: universe.v2.model.PackageDetailsVersion
+    expectedVersion: universe.v3.model.Version
   ): Assertion = {
     val response = describeRequest(rpc.v1.model.DescribeRequest(packageName, None))
 
@@ -175,14 +175,14 @@ private object PackageDescribeSpec extends TableDrivenPropertyChecks {
 
   val LatestPackageVersionsTable = Table(
     ("package name", "expected version"),
-    ("arangodb", universe.v2.model.PackageDetailsVersion("0.3.0")),
-    ("avi", universe.v2.model.PackageDetailsVersion("16.2")),
-    ("cassandra", universe.v2.model.PackageDetailsVersion("1.0.6-2.2.5")),
-    ("confluent", universe.v2.model.PackageDetailsVersion("1.0.3-3.0.0")),
-    ("datadog", universe.v2.model.PackageDetailsVersion("5.4.3")),
-    ("hdfs", universe.v2.model.PackageDetailsVersion("2.5.2-0.1.9")),
-    ("jenkins", universe.v2.model.PackageDetailsVersion("0.2.3")),
-    ("kafka", universe.v2.model.PackageDetailsVersion("1.1.2-0.10.0.0"))
+    ("arangodb", universe.v3.model.Version("0.3.0")),
+    ("avi", universe.v3.model.Version("16.2")),
+    ("cassandra", universe.v3.model.Version("1.0.6-2.2.5")),
+    ("confluent", universe.v3.model.Version("1.0.3-3.0.0")),
+    ("datadog", universe.v3.model.Version("5.4.3")),
+    ("hdfs", universe.v3.model.Version("2.5.2-0.1.9")),
+    ("jenkins", universe.v3.model.Version("0.2.3")),
+    ("kafka", universe.v3.model.Version("1.1.2-0.10.0.0"))
   )
 
   // scalastyle:off line.size.limit
