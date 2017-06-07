@@ -31,10 +31,6 @@ object CosmosRequests {
     )
   }
 
-  def packageDescribeV1(describeRequest: rpc.v1.model.DescribeRequest): HttpRequest = {
-    packageDescribe(describeRequest, accept = rpc.MediaTypes.V1DescribeResponse)
-  }
-
   def packageDescribeV2(describeRequest: rpc.v1.model.DescribeRequest): HttpRequest = {
     packageDescribe(describeRequest, accept = rpc.MediaTypes.V2DescribeResponse)
   }

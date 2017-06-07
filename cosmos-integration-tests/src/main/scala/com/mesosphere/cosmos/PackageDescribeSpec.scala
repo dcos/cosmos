@@ -1,14 +1,14 @@
 package com.mesosphere.cosmos
 
 import _root_.io.circe.Json
-import _root_.io.circe.syntax._
+import cats.syntax.either._
 import com.mesosphere.cosmos.circe.Decoders.decode
 import com.mesosphere.cosmos.circe.Decoders.parse
 import com.mesosphere.cosmos.http.CosmosRequests
 import com.mesosphere.cosmos.rpc.v1.circe.Decoders._
 import com.mesosphere.cosmos.test.CosmosIntegrationTestClient.CosmosClient
 import com.mesosphere.universe
-import com.mesosphere.universe.v2.circe.Decoders._
+import com.mesosphere.universe.v3.syntax.PackageDefinitionOps._
 import com.twitter.finagle.http.Response
 import com.twitter.finagle.http.Status
 import java.util.Base64
@@ -17,8 +17,6 @@ import org.scalatest.Assertion
 import org.scalatest.FreeSpec
 import org.scalatest.Matchers
 import org.scalatest.prop.TableDrivenPropertyChecks
-import scala.util.Right
-import cats.syntax.either._
 
 final class PackageDescribeSpec
   extends FreeSpec with TableDrivenPropertyChecks with Matchers {
@@ -46,37 +44,22 @@ final class PackageDescribeSpec
       }
     }
 
-    "when requesting a v1 response" - {
+    "when requesting a v3 response" - {
       "can successfully describe helloworld" - {
         "without version" in {
           describeHelloworld()
         }
         "with version" in {
-          describeHelloworld(Some(universe.v2.model.PackageDetailsVersion("0.1.0")))
+          describeHelloworld(Some(universe.v2.model.PackageDetailsVersion("0.4.1")))
         }
       }
 
       "should return correct Json" in {
         forAll(ItObjects.helloWorldPackageDefinitions) { (packageDefinition, _) =>
-          testV1PackageDescribe(packageDefinition)
+          testV3PackageDescribe(packageDefinition)
         }
       }
-    }
 
-    "when requesting a v2 response" - {
-      "fails to describe helloworld v4 w/ updates when requesting v2 describe response" in {
-        val response = CosmosClient.submit(
-          CosmosRequests.packageDescribeV2(
-            rpc.v1.model.DescribeRequest(
-              "helloworld",
-              Some(universe.v2.model.PackageDetailsVersion("0.4.1")))
-          )
-        )
-        assertResult(Status.BadRequest)(response.status)
-      }
-    }
-
-    "when requesting a v3 response" - {
       "should succeed to describe helloworld v4" in {
         val response = CosmosClient.submit(
           CosmosRequests.packageDescribeV3(
@@ -92,6 +75,19 @@ final class PackageDescribeSpec
         val packageInfo = parse(response.contentString)
         packageInfo.hcursor.downField("package").get[String]("name") shouldBe Right("helloworld")
         packageInfo.hcursor.downField("package").get[String]("version") shouldBe Right("0.4.1")
+      }
+    }
+
+    "when requesting a v2 response" - {
+      "fails to describe helloworld v4 w/ updates when requesting v2 describe response" in {
+        val response = CosmosClient.submit(
+          CosmosRequests.packageDescribeV2(
+            rpc.v1.model.DescribeRequest(
+              "helloworld",
+              Some(universe.v2.model.PackageDetailsVersion("0.4.1")))
+          )
+        )
+        assertResult(Status.BadRequest)(response.status)
       }
     }
 
@@ -112,7 +108,7 @@ final class PackageDescribeSpec
 
     response.status shouldBe Status.Ok
 
-    val description = decode[rpc.v1.model.DescribeResponse](response.contentString)
+    val description = decode[rpc.v3.model.DescribeResponse](response.contentString)
     description.`package`.version shouldBe expectedVersion
   }
 
@@ -130,47 +126,20 @@ final class PackageDescribeSpec
     assertResult(expectedMessage)(errorResponse.message)
   }
 
-  private def testV1PackageDescribe(
+  private def testV3PackageDescribe(
     packageDefinition: Json
   ): Assertion = {
-    val Right(name) =
-      packageDefinition.cursor.get[String]("name")
-    val Right(version) =
-      packageDefinition.cursor.get[String]("version")
-        .map(universe.v2.model.PackageDetailsVersion)
+    val Right(name) = packageDefinition.cursor.get[String]("name")
+    val Right(version) = packageDefinition.cursor.get[String]("version").map(
+      universe.v2.model.PackageDetailsVersion
+    )
 
     val response = describeRequest(rpc.v1.model.DescribeRequest(name, Some(version)))
 
     response.status shouldBe Status.Ok withClue response.contentString
-
-    val Right(encodedMustache) =
-      packageDefinition.hcursor.downField("marathon").get[String]("v2AppMustacheTemplate")
-
-    val expectedMarathonMustache =
-      new String(Base64.getDecoder.decode(encodedMustache))
-
-    val expectedCommand =
-      packageDefinition.hcursor.get[Json]("command").toOption
-
-    val expectedConfig =
-      packageDefinition.hcursor.get[Json]("config").toOption
-
-    val expectedResource =
-      packageDefinition.hcursor.get[Json]("resource").toOption
-
-    val expectedContent = ItObjects.dropNullKeys(
-      Json.obj(
-        "package" -> ItObjects.helloWorldPackageDetails(packageDefinition),
-        "marathonMustache" -> expectedMarathonMustache.asJson,
-        "command" -> expectedCommand.asJson,
-        "config" -> expectedConfig.asJson,
-        "resource" -> expectedResource.asJson
-      )
-    )
-
     val actualContent = parse(response.contentString)
 
-    actualContent shouldBe expectedContent
+    actualContent.hcursor.downField("package").focus shouldBe Some(packageDefinition)
   }
 
 
@@ -180,24 +149,18 @@ final class PackageDescribeSpec
     val response = describeRequest(
       rpc.v1.model.DescribeRequest("helloworld", version)
     )
-    assertResult(Status.Ok)(response.status)
+
+    response.status shouldBe Status.Ok
+
     val packageInfo = parse(response.contentString)
 
-    val Right(packageJson) =
-      packageInfo.cursor.get[universe.v2.model.PackageDetails]("package")
-    assertResult(HelloworldPackageDef)(packageJson)
-
-    val Right(configJson) = packageInfo.cursor.get[Json]("config")
-    assertResult(HelloworldConfigDef)(configJson)
-
-    val Right(commandJson) = packageInfo.cursor.get[universe.v2.model.Command]("command")
-    assertResult(HelloworldCommandDef)(commandJson)
+    packageInfo shouldBe HelloWorldPackageDefinition
   }
 
   private def describeRequest(
     describeRequest: rpc.v1.model.DescribeRequest
   ): Response = {
-    CosmosClient.submit(CosmosRequests.packageDescribeV1(describeRequest))
+    CosmosClient.submit(CosmosRequests.packageDescribeV3(describeRequest))
   }
 
 }
@@ -222,33 +185,47 @@ private object PackageDescribeSpec extends TableDrivenPropertyChecks {
     ("kafka", universe.v2.model.PackageDetailsVersion("1.1.2-0.10.0.0"))
   )
 
-  val HelloworldPackageDef = universe.v2.model.PackageDetails(
-    packagingVersion = universe.v2.model.PackagingVersion("2.0"),
-    name = "helloworld",
-    version = universe.v2.model.PackageDetailsVersion("0.1.0"),
-    website = Some("https://github.com/mesosphere/dcos-helloworld"),
-    maintainer = "support@mesosphere.io",
-    description = "Example DCOS application package",
-    preInstallNotes = Some("A sample pre-installation message"),
-    postInstallNotes = Some("A sample post-installation message"),
-    tags = List("mesosphere", "example", "subcommand"),
-    selected = Some(false),
-    framework = Some(false)
-  )
 
-  val HelloworldConfigDef: Json = Json.obj(
-    "$schema" -> "http://json-schema.org/schema#".asJson,
-    "type" -> "object".asJson,
-    "properties" -> Json.obj(
-      "port" -> Json.obj(
-        "type" -> "integer".asJson,
-        "default" -> 8080.asJson
-      )
-    ),
-    "additionalProperties" -> Json.False
-  )
+	private[this] val helloWorldJson = """
+	{
+		"package": {
+			"config": {
+				"$schema": "http://json-schema.org/schema#",
+				"additionalProperties": false,
+				"properties": {
+					"port": {
+						"default": 8080,
+						"type": "integer"
+					}
+				},
+				"type": "object"
+			},
+			"description": "Example DCOS application package",
+			"downgradesTo": [
+			"0.4.0"
+			],
+			"maintainer": "support@mesosphere.io",
+			"marathon": {
+				"v2AppMustacheTemplate": "ewogICJpZCI6ICJoZWxsb3dvcmxkIiwKICAiY3B1cyI6IDEuMCwKICAibWVtIjogNTEyLAogICJpbnN0YW5jZXMiOiAxLAogICJjbWQiOiAicHl0aG9uMyAtbSBodHRwLnNlcnZlciB7e3BvcnR9fSIsCiAgImNvbnRhaW5lciI6IHsKICAgICJ0eXBlIjogIkRPQ0tFUiIsCiAgICAiZG9ja2VyIjogewogICAgICAiaW1hZ2UiOiAicHl0aG9uOjMiLAogICAgICAibmV0d29yayI6ICJIT1NUIgogICAgfQogIH0KfQo="
+			},
+			"minDcosReleaseVersion": "1.10",
+			"name": "helloworld",
+			"packagingVersion": "4.0",
+			"postInstallNotes": "A sample post-installation message",
+			"preInstallNotes": "A sample pre-installation message",
+			"releaseVersion": 4,
+			"tags": [
+			"mesosphere",
+			"example",
+			"subcommand"
+			],
+			"upgradesFrom": [
+			"0.4.0"
+			],
+			"version": "0.4.1",
+			"website": "https://github.com/mesosphere/dcos-helloworld"
+		}
+	}"""
 
-  val HelloworldCommandDef = universe.v2.model.Command(
-    List("dcos<1.0", "git+https://github.com/mesosphere/dcos-helloworld.git#dcos-helloworld=0.1.0")
-  )
+  val HelloWorldPackageDefinition = parse(helloWorldJson)
 }

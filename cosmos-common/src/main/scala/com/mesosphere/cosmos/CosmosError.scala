@@ -521,14 +521,6 @@ case class InvalidPackage(reason: PackageUtil.PackageError) extends CosmosError(
   override val getData: Option[JsonObject] = Some(reason.getData)
 }
 
-case class ConversionFromPackageToV1AddResponse(
-  msg: String = "A v4 package cannot be converted into a v1 AddResponse"
-) extends CosmosError {
-  override val getData: Option[JsonObject] = {
-    Some(JsonObject.singleton("msg", msg.asJson))
-  }
-}
-
 case class ConversionFromPackageToV2DescribeResponse(
   msg: String = "A v4 package cannot be converted into a v2 DescribeResponse"
 ) extends CosmosError {
