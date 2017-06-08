@@ -89,15 +89,12 @@ final class JanitorWorker(
       val response = Await.result(adminRouter.listDeployments()(session = request.session))
       Decoders.parse(response.contentString).asArray match {
         case Some(deployments) =>
-          deployments.foreach { deployment =>
-            // If the deployment is present in the list, it is not yet complete.
-            if (deployment.asObject.get.apply("id").get.asString.get == request.deploymentId) {
-              logger.info("Deployment still in progress. Deployment ID :{} AppId: {}", request.deploymentId, request.appId)
-              false
-            }
+          val complete = !deployments.exists { deployment =>
+            deployment.cursor.get[String]("id").right.get == request.deploymentId
           }
-          logger.info("Deployment complete. Deployment ID: {} AppId: {}", request.deploymentId, request.appId)
-          true
+          val status = if (complete) "complete" else "still in progress"
+          logger.info("Deployment %s. DeploymentId: %s AppId: %s".format(status, request.deploymentId, request.appId))
+          complete
         case _ =>
           logger.error("Marathon Deployments are not an array: {}", response.contentString)
           false

@@ -82,7 +82,7 @@ final class JanitorWorkerSpec extends FreeSpec with MockitoSugar
         )(mockSession)).thenReturn(mockFuture)
 
         val deploymentResponse = Response(status = Status.Ok)
-        deploymentResponse.setContentString("[{\"id\": \"some-other-id\"}]")
+        deploymentResponse.setContentString("""[{"id": "some-other-id"}]""")
         when(mockAdminRouter.listDeployments()(mockSession))
           .thenReturn(Future.value(deploymentResponse))
 
@@ -96,26 +96,28 @@ final class JanitorWorkerSpec extends FreeSpec with MockitoSugar
         assertResult(0)(queue.size())
       }
       "If the app is not ready to be deleted, it is requeued" - {
-        "when the deployment is not done" in {
+        "when the deployment is not done but the uninstall is" in {
           when(mockAdminRouter.getApp(appId)(mockSession))
             .thenReturn(Future.value(MarathonAppResponse(new MarathonApp(appId, Map()))))
 
-          val mockResponse = Response(status = Status.Accepted)
+          val mockResponse = Response(status = Status.Ok)
           val mockFuture = Future.value(mockResponse)
           when(mockAdminRouter.getSdkServicePlanStatus(
-                                                        service = appId.toString,
-                                                        apiVersion = "v1",
-                                                        plan = "deploy"
-                                                      )(mockSession)).thenReturn(mockFuture)
+            service = appId.toString,
+            apiVersion = "v1",
+            plan = "deploy"
+          )(mockSession)).thenReturn(mockFuture)
 
           val deploymentResponse = Response(status = Status.Ok)
-          deploymentResponse.setContentString("[{\"id\": \"deploymentid\"}]")
+          deploymentResponse.setContentString("""[{"id": "deploymentid"}]""")
           when(mockAdminRouter.listDeployments()(mockSession))
             .thenReturn(Future.value(deploymentResponse))
 
           worker.doWork(request)
           verifyZeroInteractions(mockTracker)
           assertResult(1)(queue.size())
+          assertResult(List())(queue.peek().asInstanceOf[JanitorRequest].failures)
+
         }
         "when the deployment is done, but the uninstall is not" in {
           when(mockAdminRouter.getApp(appId)(mockSession))
@@ -124,19 +126,20 @@ final class JanitorWorkerSpec extends FreeSpec with MockitoSugar
           val mockResponse = Response(status = Status.Accepted)
           val mockFuture = Future.value(mockResponse)
           when(mockAdminRouter.getSdkServicePlanStatus(
-                                                        service = appId.toString,
-                                                        apiVersion = "v1",
-                                                        plan = "deploy"
-                                                      )(mockSession)).thenReturn(mockFuture)
+            service = appId.toString,
+            apiVersion = "v1",
+            plan = "deploy"
+          )(mockSession)).thenReturn(mockFuture)
 
           val deploymentResponse = Response(status = Status.Ok)
-          deploymentResponse.setContentString("[{\"id\": \"some-other-id\"}]")
+          deploymentResponse.setContentString("""[{"id": "some-other-id"}]""")
           when(mockAdminRouter.listDeployments()(mockSession))
             .thenReturn(Future.value(deploymentResponse))
 
           worker.doWork(request)
           verifyZeroInteractions(mockTracker)
           assertResult(1)(queue.size())
+          assertResult(List())(queue.peek().asInstanceOf[JanitorRequest].failures)
         }
       }
     }

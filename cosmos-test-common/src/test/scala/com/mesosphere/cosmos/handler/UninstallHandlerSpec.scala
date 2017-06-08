@@ -88,7 +88,7 @@ class UninstallHandlerSpec extends FreeSpec with BeforeAndAfterEach with Mockito
       when(mockSdkJanitor.claimUninstall(appId)).thenReturn(SdkJanitor.UninstallClaimGranted)
 
       val updateResponse = Response.apply(Status.Ok)
-      updateResponse.setContentString("{\"deploymentId\": \"test-deployment\"}")
+      updateResponse.setContentString("""{"deploymentId": "test-deployment"}""")
 
       val router = new MockModifyAppAdminRouter(mock[AdminRouterClient],
         mock[MarathonClient],

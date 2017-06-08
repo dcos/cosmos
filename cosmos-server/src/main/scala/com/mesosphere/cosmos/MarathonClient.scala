@@ -37,8 +37,8 @@ class MarathonClient(
           .remove("uris")
           .remove("version")
 
-      var uri = "v2" / "apps" / appId.toUri
-      uri = if (force) uri ? ("force" -> "true") else uri
+      val uriPrefix = "v2" / "apps" / appId.toUri
+      val uri = if (force) uriPrefix ? ("force" -> "true") else uriPrefix
       client(put(uri, Json.fromJsonObject(f(appJson))))
     }
   }
