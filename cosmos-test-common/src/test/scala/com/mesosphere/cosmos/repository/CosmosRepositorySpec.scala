@@ -1,26 +1,34 @@
 package com.mesosphere.cosmos.repository
 
-import com.mesosphere.{cosmos => C}
-import com.mesosphere.cosmos.rpc.v1.model.PackageRepository
-import com.mesosphere.cosmos.http.RequestSession
-import com.mesosphere.universe
-import com.netaporter.uri.Uri
-import org.scalatest.FreeSpec
-import com.twitter.util.{Await, Future, Return, Throw, Try}
-import com.mesosphere.cosmos.test.TestUtil.Anonymous
 import com.mesosphere.cosmos.PackageNotFound
 import com.mesosphere.cosmos.VersionNotFound
+import com.mesosphere.cosmos.http.RequestSession
+import com.mesosphere.cosmos.rpc.v1.model.PackageRepository
+import com.mesosphere.cosmos.test.TestUtil.Anonymous
+import com.mesosphere.universe
 import com.mesosphere.universe.test.TestingPackages
 import com.mesosphere.universe.v3.syntax.PackageDefinitionOps._
+import com.mesosphere.{cosmos => C}
+import com.netaporter.uri.Uri
 import com.twitter.common.util.Clock
+import com.twitter.util.Await
+import com.twitter.util.Future
+import com.twitter.util.Return
+import com.twitter.util.Throw
+import com.twitter.util.Try
+import org.scalatest.FreeSpec
 import org.scalatest.Matchers
 import org.scalatest.prop.TableDrivenPropertyChecks
 
 final class CosmosRepositorySpec extends FreeSpec with Matchers with TableDrivenPropertyChecks {
   def client(ls: List[universe.v4.model.PackageDefinition]): C.repository.UniverseClient = {
     new C.repository.UniverseClient {
-      def apply(repository: PackageRepository)(implicit session: RequestSession): Future[universe.v3.model.Repository] = Future {
-        universe.v3.model.Repository(ls)
+      def apply(
+        repository: PackageRepository
+      )(
+        implicit session: RequestSession
+      ): Future[universe.v4.model.Repository] = Future {
+        universe.v4.model.Repository(ls)
       }
     }
   }
@@ -213,13 +221,16 @@ final class CosmosRepositorySpec extends FreeSpec with Matchers with TableDriven
                after: List[universe.v4.model.PackageDefinition]
                ): C.repository.UniverseClient = {
       new C.repository.UniverseClient {
-        def apply(repository: PackageRepository)
-                 (implicit session: RequestSession): Future[universe.v3.model.Repository] = Future {
+        def apply(
+          repository: PackageRepository
+        )(
+          implicit session: RequestSession
+        ): Future[universe.v4.model.Repository] = Future {
           if (count == 0) {
             count = count + 1
-            universe.v3.model.Repository(before)
+            universe.v4.model.Repository(before)
           } else {
-            universe.v3.model.Repository(after)
+            universe.v4.model.Repository(after)
           }
         }
       }

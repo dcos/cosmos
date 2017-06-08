@@ -62,7 +62,11 @@ import scala.util.Success
 import scala.util.{Try => ScalaTry}
 
 trait UniverseClient {
-  def apply(repository: PackageRepository)(implicit session: RequestSession): Future[universe.v3.model.Repository]
+  def apply(
+    repository: PackageRepository
+  )(
+    implicit session: RequestSession
+  ): Future[universe.v4.model.Repository]
 }
 
 final class DefaultUniverseClient(
@@ -79,7 +83,11 @@ final class DefaultUniverseClient(
 
   private[this] val cosmosVersion = BuildProperties().cosmosVersion
 
-  def apply(repository: PackageRepository)(implicit session: RequestSession): Future[universe.v3.model.Repository] = {
+  def apply(
+    repository: PackageRepository
+  )(
+    implicit session: RequestSession
+  ): Future[universe.v4.model.Repository] = {
     adminRouter.getDcosVersion().flatMap { dcosVersion =>
       apply(repository, dcosVersion.version).respond {
         case Return(_) =>
@@ -99,7 +107,7 @@ final class DefaultUniverseClient(
   private[repository] def apply(
       repository: PackageRepository,
       dcosReleaseVersion: universe.v3.model.DcosReleaseVersion
-  ): Future[universe.v3.model.Repository] = {
+  ): Future[universe.v4.model.Repository] = {
     fetchScope.counter("requestCount").incr()
     Stat.timeFuture(fetchScope.stat("histogram")) {
       Future { repository.uri.toURI.toURL.openConnection() } handle {
@@ -176,7 +184,7 @@ final class DefaultUniverseClient(
     contentType: MediaType,
     bodyInputStream: InputStream,
     repositoryUri: Uri
-  ): universe.v3.model.Repository = {
+  ): universe.v4.model.Repository = {
     val decodeScope = fetchScope.scope("decode")
 
     // Decode the packages
@@ -184,7 +192,7 @@ final class DefaultUniverseClient(
       val scope = decodeScope.scope("v4")
       scope.counter("count").incr()
       Stat.time(scope.stat("histogram")) {
-        decode[universe.v3.model.Repository](
+        decode[universe.v4.model.Repository](
           Source.fromInputStream(bodyInputStream).mkString
         )
       }
@@ -192,7 +200,7 @@ final class DefaultUniverseClient(
       val scope = decodeScope.scope("v3")
       scope.counter("count").incr()
       Stat.time(scope.stat("histogram")) {
-        decode[universe.v3.model.Repository](
+        decode[universe.v4.model.Repository](
           Source.fromInputStream(bodyInputStream).mkString
         )
       }
@@ -207,7 +215,7 @@ final class DefaultUniverseClient(
     }
 
     // Sort the packages
-    universe.v3.model.Repository(repo.packages.sorted.reverse)
+    universe.v4.model.Repository(repo.packages.sorted.reverse)
   }
 
   private[this] case class V2PackageInformation(
@@ -226,7 +234,7 @@ final class DefaultUniverseClient(
   private[this] def processUniverseV2(
       sourceUri: Uri,
       inputStream: InputStream
-  ): universe.v3.model.Repository = {
+  ): universe.v4.model.Repository = {
     val bundle = new ZipInputStream(inputStream)
     // getNextEntry() returns null when there are no more entries
     val universeRepository: V2ZipState = Iterator.continually {
@@ -254,7 +262,7 @@ final class DefaultUniverseClient(
       buildV2Package(packageInfo, releaseVersion)
     }
 
-    universe.v3.model.Repository(packages)
+    universe.v4.model.Repository(packages)
   }
 
   private[this] def processZipEntry(
