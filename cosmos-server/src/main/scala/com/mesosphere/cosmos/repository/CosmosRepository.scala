@@ -22,7 +22,7 @@ final class CosmosRepository (
   clock: Clock
 ) extends PackageCollection {
   private[this] val lastRepository = new AtomicReference(
-    Option.empty[(universe.v3.model.Repository, Long)]
+    Option.empty[(universe.v4.model.Repository, Long)]
   )
 
   def getPackageByReleaseVersion(
@@ -144,7 +144,7 @@ final class CosmosRepository (
 
   private[this] def synchronizedUpdate()(
     implicit session: RequestSession
-  ): Future[universe.v3.model.Repository] = {
+  ): Future[universe.v4.model.Repository] = {
     lastRepository.get() match {
       case Some((internalRepository, lastModified)) =>
         val now = TimeUnit.MILLISECONDS.toSeconds(clock.nowMillis)
