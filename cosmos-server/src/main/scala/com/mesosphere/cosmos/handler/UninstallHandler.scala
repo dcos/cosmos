@@ -4,6 +4,7 @@ import com.google.common.annotations.VisibleForTesting
 import com.mesosphere.cosmos.AdminRouter
 import com.mesosphere.cosmos.AmbiguousAppId
 import com.mesosphere.cosmos.AppAlreadyUninstalling
+import com.mesosphere.cosmos.CirceError
 import com.mesosphere.cosmos.FailedToStartUninstall
 import com.mesosphere.cosmos.IncompleteUninstall
 import com.mesosphere.cosmos.MarathonAppDeleteError
@@ -11,6 +12,7 @@ import com.mesosphere.cosmos.MultipleFrameworkIds
 import com.mesosphere.cosmos.PackageNotInstalled
 import com.mesosphere.cosmos.ServiceUnavailable
 import com.mesosphere.cosmos.UninstallNonExistentAppForPackage
+import com.mesosphere.cosmos.circe.Decoders
 import com.mesosphere.cosmos.finch.EndpointHandler
 import com.mesosphere.cosmos.handler.UninstallHandler._
 import com.mesosphere.cosmos.http.RequestSession
@@ -131,10 +133,12 @@ private[cosmos] final class UninstallHandler(
       throw AppAlreadyUninstalling(op.appId)
     }
 
-    adminRouter.modifyApp(op.appId)(setMarathonUninstall)
+    adminRouter.modifyApp(op.appId, force = true)(setMarathonUninstall)
       .map { response =>
       response.status match {
         case Status.Ok =>
+          val deploymentId = parseDeploymentId(response.contentString, op)
+          sdkJanitor.delete(op.appId, deploymentId, session)
           UninstallDetails.from(op)
         case _ =>
           logger.error("Encountered error in marathon request {}", response.contentString)
@@ -145,8 +149,16 @@ private[cosmos] final class UninstallHandler(
       sdkJanitor.releaseUninstall(op.appId)
       logger.error("Failed to initiate uninstall for {}", op.appId)
     }
-    .onSuccess { _ =>
-      sdkJanitor.delete(op.appId, session)
+  }
+
+  private[this] def parseDeploymentId(content: String, op: UninstallOperation): String = {
+    try {
+      Decoders.parse(content).cursor.get[String]("deploymentId") match {
+        case Right(deploymentId) => deploymentId
+        case Left(_) => throw FailedToStartUninstall(op.appId, DeploymentIdErrorMessage.format(content))
+      }
+    } catch {
+      case _: CirceError => throw FailedToStartUninstall(op.appId, DeploymentIdErrorMessage.format(content))
     }
   }
 
@@ -227,6 +239,7 @@ private[cosmos] final class UninstallHandler(
 object UninstallHandler {
   val SdkServiceLabel = "DCOS_COMMONS_UNINSTALL"
   val SdkUninstallEnvvar = "SDK_UNINSTALL"
+  val DeploymentIdErrorMessage = "Marathon update response is not a JSON Object: %s"
 
   private case class MarathonAppDeleteSuccess()
 
