@@ -131,15 +131,17 @@ The following table outlines which version of Cosmos is bundled with each versio
 
 #### Repository Format
 
-The below table is a compatibility matrix between Cosmos and Universe repository consumption format.
+The below table is a compatibility matrix between Cosmos and Universe repository consumption
+format.
 
 *Rows represent Cosmos versions, columns represent repository formats.*
 
-|       | application/zip (version-2.x) | application/vnd.dcos.universe.repo+json;charset=utf-8;version=v3 |
-| ----- | ----------------------------- | ---------------------------------------------------------------- |
-| 0.1.x | Supported                     | Not Supported                                                    |
-| 0.2.x | Supported                     | Supported                                                        |
-| 0.3.0 | Supported                     | Supported                                                        |
+|       | Version 2 | Version 3     | Version 4     |
+| ----- | ----------|-------------- | --------------|
+| 0.1.x | Supported | Not Supported | Not Supported |
+| 0.2.x | Supported | Supported     | Not Supported |
+| 0.3.x | Supported | Supported     | Not Supported |
+| 0.4.x | Supported | Supported     | Supported     |
 
 
 #### Packaging Version
@@ -148,67 +150,31 @@ The below table is a compatibility matrix between Cosmos and Universe packaging 
 
 *Rows represent Cosmos versions, columns represent packaging versions.*
 
-|       |    2.0    |      3.0      |
-| ----- | --------- | ------------- |
-| 0.1.x | Supported | Not Supported |
-| 0.2.x | Supported | Supported     |
-| 0.3.0 | Supported | Supported     |
+|       |    2.0    |      3.0      |      4.0      |
+| ----- | --------- | ------------- | ------------- |
+| 0.1.x | Supported | Not Supported | Not Supported |
+| 0.2.x | Supported | Supported     | Not Supported |
+| 0.3.x | Supported | Supported     | Not Supported |
+| 0.4.x | Supported | Supported     | Supported     |
 
-### API Method Version Compatibility
+## API Documentation
 
-The following requests have constraints based on the version of the package from universe, here we outline the circumstances where the request should succeed.
+Cosmos implements three different services. The documentation for each service is outlined below.
 
-#### `/package/describe`
+### Cosmos Version 0.3.x
 
-```
-Content-Type: application/vnd.dcos.package.describe-request+json;charset=utf-8;version=v1
-Accept:       application/vnd.dcos.package.describe-response+json;charset=utf-8;version=v1
-```
-A v1 describe can succeed in the following scenarios:
-
-1. The package being described was published as a Universe package with `packagingVersion` 2.0
-2. The package being described was published as a Universe package with `packagingVersion` 3.0 and the package has a marathon template defined
-
-```
-Content-Type: application/vnd.dcos.package.describe-request+json;charset=utf-8;version=v1
-Accept:       application/vnd.dcos.package.describe-response+json;charset=utf-8;version=v2
-```
-A v2 describe can succeed in the following scenarios:
-
-1. The package being described was published as a Universe package with `packagingVersion` 2.0
-2. The package being described was published as a Universe package with `packagingVersion` 3.0
-
-#### `/package/render`
-
-```
-Content-Type: application/vnd.dcos.package.render-request+json;charset=utf-8;version=v1
-Accept:       application/vnd.dcos.package.render-response+json;charset=utf-8;version=v1
-```
-A v1 render can succeed in the following scenarios:
-
-1. The package being rendered was published as a Universe package with `packagingVersion` 2.0
-2. The package being rendered was published as a Universe package with `packagingVersion` 3.0 and the package has a marathon template defined
-
-#### `/package/install`
-
-```
-Content-Type: application/vnd.dcos.package.install-request+json;charset=utf-8;version=v1
-Accept:       application/vnd.dcos.package.install-response+json;charset=utf-8;version=v1
-```
-A v1 install can succeed in the following scenarios:
-
-1. The package being installed was published as a Universe package with `packagingVersion` 2.0
-2. The package being installed was published as a Universe package with `packagingVersion` 3.0 and the package has a marathon template defined
-
-```
-Content-Type: application/vnd.dcos.package.install-request+json;charset=utf-8;version=v1
-Accept:       application/vnd.dcos.package.install-response+json;charset=utf-8;version=v2
-```
-A v2 install can succeed in the following scenarios:
-
-1. The package being installed was published as a Universe package with `packagingVersion` 2.0
-2. The package being installed was published as a Universe package with `packagingVersion` 3.0 and the package has a marathon template defined
-3. The package being installed was published as a Universe package with `packagingVersion` 3.0 and the package has a `.cli` object defined in it's resource set
+1. **Service Manager**
+   1. [HTML](https://downloads.dcos.io/cosmos/0.4.0-SNAPSHOT-232-master-2fdc5cf8ad/service.html)
+   1. [RAML](https://downloads.dcos.io/cosmos/0.4.0-SNAPSHOT-232-master-2fdc5cf8ad/service.raml)
+   1. [Swagger](https://downloads.dcos.io/cosmos/0.4.0-SNAPSHOT-232-master-2fdc5cf8ad/service.swagger)
+1. **Package Manager**
+   1. [HTML](https://downloads.dcos.io/cosmos/0.4.0-SNAPSHOT-232-master-2fdc5cf8ad/package.html)
+   1. [RAML](https://downloads.dcos.io/cosmos/0.4.0-SNAPSHOT-232-master-2fdc5cf8ad/package.raml)
+   1. [Swagger](https://downloads.dcos.io/cosmos/0.4.0-SNAPSHOT-232-master-2fdc5cf8ad/package.swagger)
+1. **Capability Manager**
+   1. [HTML](https://downloads.dcos.io/cosmos/0.4.0-SNAPSHOT-232-master-2fdc5cf8ad/capabilities.html)
+   1. [RAML](https://downloads.dcos.io/cosmos/0.4.0-SNAPSHOT-232-master-2fdc5cf8ad/capabilities.raml)
+   1. [Swagger](https://downloads.dcos.io/cosmos/0.4.0-SNAPSHOT-232-master-2fdc5cf8ad/capabilities.swagger)
 
 ## Reporting Problems
 

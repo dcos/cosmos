@@ -17,6 +17,7 @@ import com.mesosphere.cosmos.test.CosmosIntegrationTestClient.PackageStorageClie
 import com.mesosphere.cosmos.test.InstallQueueFixture
 import com.mesosphere.cosmos.test.TestUtil
 import com.mesosphere.universe
+import com.mesosphere.universe.bijection.UniverseConversions._
 import com.mesosphere.universe.test.TestingPackages
 import com.mesosphere.universe.v3.syntax.PackageDefinitionOps._
 import com.mesosphere.universe.{TestUtil => UTestUtil}
@@ -222,7 +223,12 @@ object PackageAddSpec {
     packageName: String,
     packageVersion: Option[universe.v3.model.Version]
   ): rpc.v2.model.DescribeResponse = {
-    val request = CosmosRequests.packageDescribeV2(packageName, packageVersion)
+    val request = CosmosRequests.packageDescribeV2(
+      rpc.v1.model.DescribeRequest(
+        packageName,
+        packageVersion.as[Option[universe.v2.model.PackageDetailsVersion]]
+      )
+    )
     val response = CosmosClient.submit(request)
     decode[rpc.v2.model.DescribeResponse](response.contentString)
   }
