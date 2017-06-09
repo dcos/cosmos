@@ -135,7 +135,11 @@ final class UninstallHandlerSpec extends FreeSpec with Eventually with SpanSugar
 
           // Wait for the service to be deleted.
           eventually(timeout(10 minutes), interval(30 seconds)) {
-            assertThrows[MarathonAppNotFound](Await.result(adminRouter.getApp(AppId("/hello-world"))))
+            val exception = intercept[CosmosException](
+              Await.result(adminRouter.getApp(AppId("/hello-world")))
+            )
+
+            exception.error shouldBe a[MarathonAppNotFound]
           }
         } finally {
           // Cleanup the stub.
