@@ -1,6 +1,7 @@
 package com.mesosphere.cosmos
 
 import com.mesosphere.cosmos.Uris._
+import com.mesosphere.cosmos.error.CosmosException
 import com.netaporter.uri.Uri
 import com.twitter.finagle.ChannelException
 import com.twitter.finagle.Filter

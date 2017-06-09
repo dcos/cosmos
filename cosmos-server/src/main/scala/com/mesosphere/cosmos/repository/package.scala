@@ -1,5 +1,6 @@
 package com.mesosphere.cosmos
 
+import com.mesosphere.cosmos.error.CosmosException
 import com.mesosphere.cosmos.storage.PackageStorage
 import com.mesosphere.universe
 import com.mesosphere.universe.v3.syntax.PackageDefinitionOps._

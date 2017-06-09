@@ -2,10 +2,10 @@ package com.mesosphere.cosmos.repository
 
 import cats.data.Ior
 import com.mesosphere.cosmos.ConcurrentAccess
-import com.mesosphere.cosmos.CosmosException
 import com.mesosphere.cosmos.RepositoryAddIndexOutOfBounds
 import com.mesosphere.cosmos.RepositoryAlreadyPresent
 import com.mesosphere.cosmos.RepositoryNotPresent
+import com.mesosphere.cosmos.error.CosmosException
 import com.mesosphere.cosmos.model.StorageEnvelope
 import com.mesosphere.cosmos.repository.DefaultRepositories._
 import com.mesosphere.cosmos.rpc.v1.model.PackageRepository

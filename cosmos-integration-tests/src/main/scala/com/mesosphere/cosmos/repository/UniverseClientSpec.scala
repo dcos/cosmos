@@ -1,9 +1,9 @@
 package com.mesosphere.cosmos.repository
 
-import com.mesosphere.cosmos.CosmosException
 import com.mesosphere.cosmos.GenericHttpError
 import com.mesosphere.cosmos.RepositoryUriConnection
 import com.mesosphere.cosmos.RepositoryUriSyntax
+import com.mesosphere.cosmos.error.CosmosException
 import com.mesosphere.cosmos.rpc.v1.model.PackageRepository
 import com.mesosphere.cosmos.test.CosmosIntegrationTestClient
 import com.mesosphere.universe

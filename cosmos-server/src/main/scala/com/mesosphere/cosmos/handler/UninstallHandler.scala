@@ -5,7 +5,6 @@ import com.mesosphere.cosmos.AdminRouter
 import com.mesosphere.cosmos.AmbiguousAppId
 import com.mesosphere.cosmos.AppAlreadyUninstalling
 import com.mesosphere.cosmos.CirceError
-import com.mesosphere.cosmos.CosmosException
 import com.mesosphere.cosmos.FailedToStartUninstall
 import com.mesosphere.cosmos.IncompleteUninstall
 import com.mesosphere.cosmos.MarathonAppDeleteError
@@ -14,6 +13,7 @@ import com.mesosphere.cosmos.PackageNotInstalled
 import com.mesosphere.cosmos.ServiceUnavailable
 import com.mesosphere.cosmos.UninstallNonExistentAppForPackage
 import com.mesosphere.cosmos.circe.Decoders
+import com.mesosphere.cosmos.error.CosmosException
 import com.mesosphere.cosmos.finch.EndpointHandler
 import com.mesosphere.cosmos.handler.UninstallHandler._
 import com.mesosphere.cosmos.http.RequestSession

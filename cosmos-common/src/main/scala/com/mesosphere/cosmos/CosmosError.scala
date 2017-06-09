@@ -8,9 +8,9 @@ import _root_.io.circe.generic.semiauto.deriveEncoder
 import _root_.io.circe.syntax._
 import cats.data.Ior
 import com.mesosphere.cosmos.circe.Encoders._
+import com.mesosphere.cosmos.error.CosmosException
 import com.mesosphere.cosmos.http.MediaType
 import com.mesosphere.cosmos.rpc.v1.circe.Encoders._
-import com.mesosphere.cosmos.rpc.v1.model.ErrorResponse
 import com.mesosphere.cosmos.thirdparty.marathon.circe.Encoders._
 import com.mesosphere.cosmos.thirdparty.marathon.model.AppId
 import com.mesosphere.cosmos.thirdparty.marathon.model.MarathonError
@@ -21,32 +21,6 @@ import com.mesosphere.util.PackageUtil
 import com.netaporter.uri.Uri
 import com.twitter.finagle.http.Status
 import org.jboss.netty.handler.codec.http.HttpMethod
-
-// scalastyle:off number.of.types
-final case class CosmosException(
-  error: CosmosError,
-  status: Status,
-  headers: Map[String, String],
-  causedBy: Option[Throwable]
-) extends RuntimeException(error.message, causedBy.orNull) {
-  def errorResponse: ErrorResponse = {
-    ErrorResponse(
-      error.getClass.getSimpleName,
-      error.message,
-      error.data
-    )
-  }
-}
-
-object CosmosException {
-  def apply(error: CosmosError): CosmosException = {
-    CosmosException(error, Status.BadRequest, Map.empty, None)
-  }
-
-  def apply(error: CosmosError, causedBy: Throwable): CosmosException = {
-    CosmosException(error, Status.BadRequest, Map.empty, Option(causedBy))
-  }
-}
 
 trait CosmosError {
   def message: String
