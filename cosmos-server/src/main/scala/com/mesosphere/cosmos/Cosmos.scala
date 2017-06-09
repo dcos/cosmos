@@ -393,7 +393,7 @@ object CosmosApp {
     val objectStorages: Option[(LocalPackageCollection, StagedPackageStorage)],
     val repositories: MultiRepository,
     val producerView: ProducerView,
-    val packageRunner: PackageRunner,
+    val packageRunner: MarathonPackageRunner,
     val marathonSdkJanitor: Janitor
   )
 

@@ -1,18 +1,22 @@
 package com.mesosphere.cosmos
 
+import cats.data.Ior
+import com.mesosphere.cosmos.http.RequestSession
 import com.mesosphere.cosmos.repository.PackageSourcesStorage
 import com.mesosphere.cosmos.repository.UniverseClient
-import com.mesosphere.universe.v3.model.Version
 import com.mesosphere.cosmos.rpc.v1.model.PackageRepository
-import org.scalatest.FreeSpec
-import com.mesosphere.cosmos.http.RequestSession
 import com.mesosphere.cosmos.test.TestUtil.Anonymous
-import com.twitter.util.{Await, Future, Return, Throw, Try}
-import com.netaporter.uri.Uri
-import cats.data.Ior
 import com.mesosphere.universe
 import com.mesosphere.universe.test.TestingPackages
+import com.mesosphere.universe.v3.model.Version
 import com.mesosphere.universe.v3.syntax.PackageDefinitionOps._
+import com.netaporter.uri.Uri
+import com.twitter.util.Await
+import com.twitter.util.Future
+import com.twitter.util.Return
+import com.twitter.util.Throw
+import com.twitter.util.Try
+import org.scalatest.FreeSpec
 import org.scalatest.Matchers
 import org.scalatest.prop.TableDrivenPropertyChecks
 
@@ -20,8 +24,8 @@ final class MultiRepositorySpec extends FreeSpec with Matchers with TableDrivenP
 
   case class TestClient(repos: List[PackageRepository] = Nil, ls: List[universe.v4.model.PackageDefinition] = Nil)
     extends UniverseClient {
-    def apply(repo: PackageRepository)(implicit session: RequestSession): Future[universe.v3.model.Repository] = {
-      Future(universe.v3.model.Repository(repos.filter( _ == repo).flatMap(_ => ls)))
+    def apply(repo: PackageRepository)(implicit session: RequestSession): Future[universe.v4.model.Repository] = {
+      Future(universe.v4.model.Repository(repos.filter( _ == repo).flatMap(_ => ls)))
     }
   }
 
@@ -40,8 +44,8 @@ final class MultiRepositorySpec extends FreeSpec with Matchers with TableDrivenP
       repo: PackageRepository
     )(implicit
       session: RequestSession
-    ): Future[universe.v3.model.Repository] = Future {
-      universe.v3.model.Repository(repos.filter( _._1 == repo).flatMap(_._2))
+    ): Future[universe.v4.model.Repository] = Future {
+      universe.v4.model.Repository(repos.filter( _._1 == repo).flatMap(_._2))
     }
   }
   "getRepository" - {

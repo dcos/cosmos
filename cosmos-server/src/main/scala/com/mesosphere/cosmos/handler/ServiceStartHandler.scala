@@ -17,7 +17,7 @@ import scala.util.Right
 
 private[cosmos] final class ServiceStartHandler(
   localPackageCollection: LocalPackageCollection,
-  packageRunner: PackageRunner
+  packageRunner: MarathonPackageRunner
 ) extends EndpointHandler[rpc.v1.model.ServiceStartRequest, rpc.v1.model.ServiceStartResponse] {
 
   private[this] def asPackageDefinition(

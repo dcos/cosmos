@@ -21,7 +21,6 @@ import com.mesosphere.cosmos.storage
 import com.mesosphere.cosmos.storage.v1.circe.Decoders._
 import com.mesosphere.universe
 import com.mesosphere.universe.test.TestingPackages
-import com.mesosphere.universe.v3.model.Repository
 import com.netaporter.uri.Uri
 import io.circe.DecodingFailure
 import io.circe.Error
@@ -112,12 +111,14 @@ class EncodersDecodersSpec extends FreeSpec with PropertyChecks with Matchers wi
     err.asInstanceOf[Exception].asJson
   }
 
-  private[this] def loadAndDecode(resourceName: String): Either[Error, Repository] = {
+  private[this] def loadAndDecode(
+    resourceName: String
+  ): Either[Error, universe.v4.model.Repository] = {
     Option(this.getClass.getResourceAsStream(resourceName)) match {
       case Some(is) =>
         val jsonString = CharStreams.toString(new InputStreamReader(is))
         is.close()
-        jawn.decode[Repository](jsonString)
+        jawn.decode[universe.v4.model.Repository](jsonString)
       case _ =>
         throw new IllegalStateException(s"Unable to load classpath resource: $resourceName")
     }

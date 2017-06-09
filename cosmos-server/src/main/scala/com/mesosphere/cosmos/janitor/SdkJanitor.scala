@@ -17,7 +17,7 @@ import org.slf4j.Logger
 trait Janitor extends Closeable {
   def claimUninstall(appId: AppId): UninstallClaim
   def releaseUninstall(appId: AppId): Unit
-  def delete(appId: AppId, session: RequestSession): Unit
+  def delete(appId: AppId, deploymentId: String, session: RequestSession): Unit
   def start(): Unit
 }
 
@@ -40,8 +40,8 @@ final class SdkJanitor(
 
   override def releaseUninstall(appId: AppId): Unit = tracker.completeUninstall(appId)
 
-  override def delete(appId: AppId, session: RequestSession): Unit = {
-    queue.add(JanitorRequest(appId, session, List(), System.currentTimeMillis(), checkInterval, 0))
+  override def delete(appId: AppId, deploymentId: String, session: RequestSession): Unit = {
+    queue.add(JanitorRequest(appId, deploymentId, session, List(), System.currentTimeMillis(), checkInterval, 0))
     logger.info("Successfully added delete request to queue for {}", appId)
   }
 
@@ -94,6 +94,7 @@ object SdkJanitor {
 
   case class JanitorRequest(
     appId: AppId,
+    deploymentId: String,
     session: RequestSession,
     failures: List[String],
     created: Long,

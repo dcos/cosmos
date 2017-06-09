@@ -107,10 +107,13 @@ with MockitoSugar {
     "If marathon is updated, then the janitor is told to delete the app" in {
       when(mockSdkJanitor.claimUninstall(appId)).thenReturn(SdkJanitor.UninstallClaimGranted)
 
+      val updateResponse = Response.apply(Status.Ok)
+      updateResponse.setContentString("""{"deploymentId": "test-deployment"}""")
+
       val router = new MockModifyAppAdminRouter(mock[AdminRouterClient],
         mock[MarathonClient],
         mock[MesosMasterClient],
-        Response.apply(Status.Ok))
+        updateResponse)
 
       uninstallHandler = new UninstallHandler(router, mockPackageCollection, mockSdkJanitor)
 
@@ -126,7 +129,7 @@ with MockitoSugar {
         SdkUninstall
       ))(mockSession)))
 
-      verify(mockSdkJanitor).delete(appId, mockSession)
+      verify(mockSdkJanitor).delete(appId, "test-deployment", mockSession)
     }
   }
 }
@@ -139,7 +142,8 @@ class MockModifyAppAdminRouter(
 ) extends AdminRouter(adminRouterClient, marathonClient, mesosMasterClient) {
 
   override def modifyApp(
-    appId: AppId
+    appId: AppId,
+    force: Boolean
   )(
     f: (JsonObject) => JsonObject
   )(

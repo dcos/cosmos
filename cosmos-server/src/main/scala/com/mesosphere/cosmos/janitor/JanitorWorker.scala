@@ -2,6 +2,7 @@ package com.mesosphere.cosmos.janitor
 
 import java.util.concurrent.DelayQueue
 import com.mesosphere.cosmos.AdminRouter
+import com.mesosphere.cosmos.circe.Decoders
 import com.mesosphere.cosmos.http.RequestSession
 import com.mesosphere.cosmos.janitor.SdkJanitor.JanitorRequest
 import com.mesosphere.cosmos.janitor.SdkJanitor._
@@ -57,7 +58,7 @@ final class JanitorWorker(
     try {
       val app = Await.result(adminRouter.getApp(request.appId)(session = request.session)).app
 
-      if (checkUninstall(app)(request.session)) delete(request) else requeue(request)
+      if (checkDeployment(request) && checkUninstall(app)(request.session)) delete(request) else requeue(request)
     } catch {
       case e: Exception =>
         logger.error("Encountered exception during uninstall evaluation.", e)
@@ -77,6 +78,30 @@ final class JanitorWorker(
     } catch {
       case e: Exception =>
         logger.error("Encountered an exception checking the uninstall progress of %s".format(app.id), e)
+        false
+    }
+  }
+
+  def checkDeployment(request: JanitorRequest): Boolean = {
+    logger.info("Checking the status of the deployment {} for app: {}", request.deploymentId, request.appId)
+
+    try {
+      val response = Await.result(adminRouter.listDeployments()(session = request.session))
+      Decoders.parse(response.contentString).asArray match {
+        case Some(deployments) =>
+          val complete = !deployments.exists { deployment =>
+            deployment.cursor.get[String]("id").right.get == request.deploymentId
+          }
+          val status = if (complete) "complete" else "still in progress"
+          logger.info("Deployment %s. DeploymentId: %s AppId: %s".format(status, request.deploymentId, request.appId))
+          complete
+        case _ =>
+          logger.error("Marathon Deployments are not an array: {}", response.contentString)
+          false
+      }
+    } catch {
+      case e: Exception =>
+        logger.error("Encountered an exception checking the deployment of %s".format(request.appId), e)
         false
     }
   }

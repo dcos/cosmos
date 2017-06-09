@@ -24,8 +24,8 @@ class RequestErrorsSpec extends FreeSpec {
     "Applicative handling" - {
       "Present but invalid Accept, Present but invalid Content-Type, Present but invalid Request Body" in {
         val accept = CompoundMediaTypeParser.parse(Seq(
-          MediaTypes.V1DescribeResponse.show + ";q=0.1",
-          MediaTypes.V2DescribeResponse.show + ";q=0.9"
+          MediaTypes.V2DescribeResponse.show + ";q=0.1",
+          MediaTypes.V3DescribeResponse.show + ";q=0.9"
         ).mkString(",")).get()
 
         val body = PackageRepositoryAddRequest(
@@ -59,8 +59,8 @@ class RequestErrorsSpec extends FreeSpec {
         assertResult("not_valid")(acceptError.str("type"))
         val expectedAcceptErrorMessage =
           "Item header 'Accept' deemed invalid by rule: Media type was " +
-        "[application/vnd.dcos.package.describe-response+json;charset=utf-8;version=v1;q=0.1, " +
-        "application/vnd.dcos.package.describe-response+json;charset=utf-8;version=v2;q=0.9] " +
+        "[application/vnd.dcos.package.describe-response+json;charset=utf-8;version=v2;q=0.1, " +
+        "application/vnd.dcos.package.describe-response+json;charset=utf-8;version=v3;q=0.9] " +
         "but should be one of [application/vnd.dcos.package.install-response+json;charset=utf-8;" +
         "version=v2, application/vnd.dcos.package.install-response+json;charset=utf-8;version=v1]"
         assertResult(expectedAcceptErrorMessage)(acceptError.str("message"))

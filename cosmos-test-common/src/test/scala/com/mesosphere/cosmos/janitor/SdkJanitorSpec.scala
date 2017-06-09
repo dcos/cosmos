@@ -30,7 +30,7 @@ final class SdkJanitorSpec extends FreeSpec with BeforeAndAfterEach with Mockito
 
   "In the SDKJanitor" - {
     "Delete adds request to queue" in {
-      janitor.delete(appId, mockSession)
+      janitor.delete(appId, "deploymentid", mockSession)
 
       assertResult(1)(queue.size())
     }

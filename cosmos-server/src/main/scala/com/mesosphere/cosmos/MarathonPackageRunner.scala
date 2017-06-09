@@ -11,9 +11,13 @@ import scala.util.Failure
 import scala.util.Success
 import scala.util.Try
 
-/** A [[com.mesosphere.cosmos.PackageRunner]] implementation for Marathon. */
-final class MarathonPackageRunner(adminRouter: AdminRouter) extends PackageRunner {
+final class MarathonPackageRunner(adminRouter: AdminRouter) {
 
+  /** Execute the package described by the given JSON configuration.
+   *
+   * @param renderedConfig the fully-specified configuration of the package to run
+   * @return The response from Marathon, if the request was successful.
+   */
   def launch(renderedConfig: JsonObject)(implicit session: RequestSession): Future[MarathonApp] = {
     adminRouter.createApp(renderedConfig)
       .map { response =>

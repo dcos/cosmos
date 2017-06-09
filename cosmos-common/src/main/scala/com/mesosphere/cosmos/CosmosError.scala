@@ -693,7 +693,6 @@ object NotImplemented {
   implicit val encoder: Encoder[NotImplemented] = deriveEncoder
 }
 
-
 final case class OperationInProgress(coordinate: rpc.v1.model.PackageCoordinate) extends CosmosError {
   override def data: Option[JsonObject] = CosmosError.deriveData(this)
   override def message: String = {
@@ -708,7 +707,6 @@ final case class OperationInProgress(coordinate: rpc.v1.model.PackageCoordinate)
 object OperationInProgress {
   implicit val encoder: Encoder[OperationInProgress] = deriveEncoder
 }
-
 
 final case class ConversionFromPackageToV1AddResponse() extends CosmosError {
   override def data: Option[JsonObject] = None

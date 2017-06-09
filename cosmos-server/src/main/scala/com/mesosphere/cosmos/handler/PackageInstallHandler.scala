@@ -3,9 +3,9 @@ package com.mesosphere.cosmos.handler
 import com.mesosphere.cosmos.CirceError
 import com.mesosphere.cosmos.CosmosException
 import com.mesosphere.cosmos.JsonSchemaMismatch
+import com.mesosphere.cosmos.MarathonPackageRunner
 import com.mesosphere.cosmos.MarathonTemplateMustBeJsonObject
 import com.mesosphere.cosmos.PackageAlreadyInstalled
-import com.mesosphere.cosmos.PackageRunner
 import com.mesosphere.cosmos.ServiceAlreadyStarted
 import com.mesosphere.cosmos.finch.EndpointHandler
 import com.mesosphere.cosmos.http.RequestSession
@@ -29,7 +29,7 @@ import io.circe.syntax._
 
 private[cosmos] final class PackageInstallHandler(
   packageCollection: PackageCollection,
-  packageRunner: PackageRunner
+  packageRunner: MarathonPackageRunner
 ) extends EndpointHandler[rpc.v1.model.InstallRequest, rpc.v2.model.InstallResponse] {
 
   override def apply(

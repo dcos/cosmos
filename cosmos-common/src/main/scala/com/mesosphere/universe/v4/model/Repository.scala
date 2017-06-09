@@ -1,4 +1,4 @@
-package com.mesosphere.universe.v3.model
+package com.mesosphere.universe.v4.model
 
 import com.mesosphere.universe
 import com.mesosphere.universe.common.circe.Decoders._

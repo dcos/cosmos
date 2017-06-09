@@ -27,8 +27,8 @@ final class CosmosRepositorySpec extends FreeSpec with Matchers with TableDriven
         repository: PackageRepository
       )(
         implicit session: RequestSession
-      ): Future[universe.v3.model.Repository] = Future {
-        universe.v3.model.Repository(ls)
+      ): Future[universe.v4.model.Repository] = Future {
+        universe.v4.model.Repository(ls)
       }
     }
   }
@@ -270,13 +270,16 @@ final class CosmosRepositorySpec extends FreeSpec with Matchers with TableDriven
                after: List[universe.v4.model.PackageDefinition]
                ): C.repository.UniverseClient = {
       new C.repository.UniverseClient {
-        def apply(repository: PackageRepository)
-                 (implicit session: RequestSession): Future[universe.v3.model.Repository] = Future {
+        def apply(
+          repository: PackageRepository
+        )(
+          implicit session: RequestSession
+        ): Future[universe.v4.model.Repository] = Future {
           if (count == 0) {
             count = count + 1
-            universe.v3.model.Repository(before)
+            universe.v4.model.Repository(before)
           } else {
-            universe.v3.model.Repository(after)
+            universe.v4.model.Repository(after)
           }
         }
       }
