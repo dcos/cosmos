@@ -1,6 +1,8 @@
 package com.mesosphere.cosmos
 
 import com.mesosphere.cosmos.error.CosmosException
+import com.mesosphere.cosmos.error.PackageNotFound
+import com.mesosphere.cosmos.error.VersionNotFound
 import com.mesosphere.cosmos.http.RequestSession
 import com.mesosphere.cosmos.repository._
 import com.mesosphere.universe

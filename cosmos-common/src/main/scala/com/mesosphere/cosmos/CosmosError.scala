@@ -1,6 +1,5 @@
 package com.mesosphere.cosmos
 
-import _root_.io.circe.DecodingFailure
 import _root_.io.circe.Encoder
 import _root_.io.circe.Json
 import _root_.io.circe.JsonObject
@@ -14,7 +13,6 @@ import com.mesosphere.cosmos.http.MediaType
 import com.mesosphere.cosmos.rpc.v1.circe.Encoders._
 import com.mesosphere.cosmos.thirdparty.marathon.circe.Encoders._
 import com.mesosphere.cosmos.thirdparty.marathon.model.AppId
-import com.mesosphere.cosmos.thirdparty.marathon.model.MarathonError
 import com.mesosphere.universe
 import com.mesosphere.universe.common.circe.Encoders._
 import com.mesosphere.universe.v2.circe.Encoders._
@@ -23,129 +21,6 @@ import com.netaporter.uri.Uri
 import com.twitter.finagle.http.Status
 import org.jboss.netty.handler.codec.http.HttpMethod
 
-
-
-final case class InvalidPackageVersionForAdd(
-  packageName: String,
-  packageVersion: universe.v3.model.Version
-) extends CosmosError {
-  override def data: Option[JsonObject] = CosmosError.deriveData(this)
-  override def message: String = {
-    s"Unable to add version [$packageVersion] of package [$packageName]. Packaging format " +
-    "not supported for this operation."
-  }
-}
-
-object InvalidPackageVersionForAdd {
-  def apply(packageCoordinate: rpc.v1.model.PackageCoordinate): InvalidPackageVersionForAdd = {
-    InvalidPackageVersionForAdd(packageCoordinate.name, packageCoordinate.version)
-  }
-
-  implicit val encoder: Encoder[InvalidPackageVersionForAdd] = deriveEncoder
-}
-
-
-final case class PackageNotFound(packageName: String) extends CosmosError {
-  override def data: Option[JsonObject] = CosmosError.deriveData(this)
-  override def message: String = s"Package [$packageName] not found"
-}
-
-object PackageNotFound {
-  implicit val encoder: Encoder[PackageNotFound] = deriveEncoder
-}
-
-
-final case class VersionNotFound(
-  packageName: String,
-  packageVersion: universe.v3.model.Version
-) extends CosmosError {
-  override def data: Option[JsonObject] = CosmosError.deriveData(this)
-  override def message: String = {
-    s"Version [$packageVersion] of package [$packageName] not found"
-  }
-}
-
-object VersionNotFound {
-  implicit val encoder: Encoder[VersionNotFound] = deriveEncoder
-}
-
-
-final case class PackageFileMissing(
-  packageName: String
-) extends CosmosError {
-  override def data: Option[JsonObject] = CosmosError.deriveData(this)
-  override def message: String = s"Package file [$packageName] not found"
-}
-
-object PackageFileMissing {
-  implicit val encoder: Encoder[PackageFileMissing] = deriveEncoder
-}
-
-
-final case class PackageFileNotJson(fileName: String, parseError: String) extends CosmosError {
-  override def data: Option[JsonObject] = CosmosError.deriveData(this)
-  override def message: String = s"Package file [$fileName] is not JSON: $parseError"
-}
-
-object PackageFileNotJson {
-  implicit val encoder: Encoder[PackageFileNotJson] = deriveEncoder
-}
-
-
-final case class UnableToParseMarathonAsJson(parseError: String) extends  CosmosError {
-  override def data: Option[JsonObject] = CosmosError.deriveData(this)
-  override def message: String = {
-    "Unable to parse filled-in Marathon template as JSON; there " +
-    "may be an error in the package's Marathon template or default " +
-    "configuration options, or in the installation request's options. " +
-    s"Parsing error was: $parseError"
-  }
-}
-
-object UnableToParseMarathonAsJson {
-  implicit val encoder: Encoder[UnableToParseMarathonAsJson] = deriveEncoder
-}
-
-final case class PackageFileSchemaMismatch(
-  fileName: String,
-  decodingFailure: DecodingFailure
-) extends CosmosError {
-  // TODO: See we can fix this
-  override def data: Option[JsonObject] = {
-    Some(JsonObject.singleton("errorMessage", decodingFailure.getMessage().asJson))
-  }
-  override def message: String = s"Package file [$fileName] does not match schema"
-}
-
-object PackageFileSchemaMismatch {
-  // TODO: need to investigate DecodingFailure
-}
-
-// TODO: Why aren't we return data?
-final case class PackageAlreadyInstalled() extends CosmosError {
-  override def data: Option[JsonObject] = None
-  override def message: String = "Package is already installed"
-
-  override def exception: CosmosException = {
-    exception(Status.Conflict, Map.empty, None)
-  }
-}
-
-final case class ServiceAlreadyStarted() extends CosmosError {
-  override def data: Option[JsonObject] = None
-  override def message: String = "The DC/OS service has already been started"
-
-  override def exception: CosmosException = {
-    exception(Status.Conflict, Map.empty, None)
-  }
-}
-
-final case class MarathonBadResponse(marathonError: MarathonError) extends CosmosError {
-  override def data: Option[JsonObject] = {
-    marathonError.details.map(details => JsonObject.singleton("errors", details.asJson))
-  }
-  override def message: String = marathonError.message
-}
 
 final case class MarathonGenericError(marathonStatus: Status) extends CosmosError {
   override def data: Option[JsonObject] = CosmosError.deriveData(this)

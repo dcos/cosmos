@@ -1,7 +1,7 @@
 package com.mesosphere.cosmos.handler
 
 import cats.syntax.either._
-import com.mesosphere.cosmos.InvalidPackageVersionForAdd
+import com.mesosphere.cosmos.error.InvalidPackageVersionForAdd
 import com.mesosphere.cosmos.finch.EndpointHandler
 import com.mesosphere.cosmos.http.RequestSession
 import com.mesosphere.cosmos.repository.PackageCollection

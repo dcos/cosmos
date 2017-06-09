@@ -1,6 +1,8 @@
 package com.mesosphere.cosmos
 
 import cats.data.Ior
+import com.mesosphere.cosmos.error.PackageNotFound
+import com.mesosphere.cosmos.error.VersionNotFound
 import com.mesosphere.cosmos.http.RequestSession
 import com.mesosphere.cosmos.repository.PackageSourcesStorage
 import com.mesosphere.cosmos.repository.UniverseClient

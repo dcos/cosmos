@@ -2,9 +2,12 @@ package com.mesosphere.cosmos
 
 import _root_.io.circe.JsonObject
 import com.mesosphere.cosmos.circe.Decoders.decode
+import com.mesosphere.cosmos.error.MarathonBadResponse
+import com.mesosphere.cosmos.error.ServiceAlreadyStarted
 import com.mesosphere.cosmos.http.RequestSession
 import com.mesosphere.cosmos.thirdparty.marathon.circe.Decoders._
-import com.mesosphere.cosmos.thirdparty.marathon.model.{MarathonApp, MarathonError}
+import com.mesosphere.cosmos.thirdparty.marathon.model.MarathonApp
+import com.mesosphere.cosmos.thirdparty.marathon.model.MarathonError
 import com.twitter.finagle.http.Status
 import com.twitter.util.Future
 import scala.util.Failure
