@@ -149,16 +149,11 @@ final class DefaultUniverseClient(
               /* If we are unable to get the latest Universe we should not forward the status code returned.
                * We should instead return 500 to the client and include the actual error in the message.
                */
-              throw CosmosException(
-                GenericHttpError(
-                  HttpMethod.GET,
-                  repository.uri,
-                  Status.fromCode(x)
-                ),
-                Status.InternalServerError,
-                Map.empty,
-                None
-              )
+              throw GenericHttpError(
+                HttpMethod.GET,
+                repository.uri,
+                Status.fromCode(x)
+              ).exception(Status.InternalServerError)
           }
         } handle {
           case t: IOException =>
