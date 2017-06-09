@@ -1,6 +1,5 @@
 package com.mesosphere.cosmos.error
 
-import com.mesosphere.cosmos.CosmosError
 import com.mesosphere.cosmos.rpc.v1.model.ErrorResponse
 import com.twitter.finagle.http.Status
 

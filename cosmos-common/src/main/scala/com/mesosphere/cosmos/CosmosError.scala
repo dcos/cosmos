@@ -9,6 +9,7 @@ import _root_.io.circe.syntax._
 import cats.data.Ior
 import com.mesosphere.cosmos.circe.Encoders._
 import com.mesosphere.cosmos.error.CosmosException
+import com.mesosphere.cosmos.error.CosmosError
 import com.mesosphere.cosmos.http.MediaType
 import com.mesosphere.cosmos.rpc.v1.circe.Encoders._
 import com.mesosphere.cosmos.thirdparty.marathon.circe.Encoders._
@@ -22,28 +23,6 @@ import com.netaporter.uri.Uri
 import com.twitter.finagle.http.Status
 import org.jboss.netty.handler.codec.http.HttpMethod
 
-trait CosmosError {
-  def message: String
-  def data: Option[JsonObject]
-
-  def exception: CosmosException = {
-    CosmosException(this)
-  }
-
-  final def exception(
-    status: Status,
-    headers: Map[String, String],
-    causedBy: Option[Throwable]
-  ): CosmosException = {
-    CosmosException(this, status, headers, causedBy)
-  }
-}
-
-object CosmosError {
-  def deriveData[T <: CosmosError](error: T)(implicit encoder: Encoder[T]): Option[JsonObject] = {
-    encoder(error).asObject
-  }
-}
 
 
 final case class InvalidPackageVersionForAdd(

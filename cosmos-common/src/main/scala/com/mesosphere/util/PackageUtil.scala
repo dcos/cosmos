@@ -1,7 +1,7 @@
 package com.mesosphere.util
 
 import cats.syntax.either._
-import com.mesosphere.cosmos.CosmosError
+import com.mesosphere.cosmos.error.CosmosError
 import com.mesosphere.universe
 import com.twitter.io.StreamIO
 import io.circe.Encoder
