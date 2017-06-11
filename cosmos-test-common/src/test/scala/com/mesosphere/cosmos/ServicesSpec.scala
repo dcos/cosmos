@@ -1,6 +1,7 @@
 package com.mesosphere.cosmos
 
 import com.mesosphere.cosmos.error.CosmosException
+import com.mesosphere.cosmos.error.ServiceUnavailable
 import com.netaporter.uri.dsl._
 import com.twitter.conversions.storage._
 import com.twitter.finagle.http.RequestBuilder

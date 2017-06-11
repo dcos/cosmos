@@ -1,12 +1,10 @@
 package com.mesosphere.cosmos.converter
 
-import com.mesosphere.cosmos.ConversionFromPackageToV2DescribeResponse
-import com.mesosphere.cosmos.ServiceMarathonTemplateNotFound
+import com.mesosphere.cosmos.error.ConversionFromPackageToV2DescribeResponse
+import com.mesosphere.cosmos.error.ServiceMarathonTemplateNotFound
 import com.mesosphere.cosmos.rpc
 import com.mesosphere.universe
 import com.mesosphere.universe.bijection.UniverseConversions._
-import com.mesosphere.universe.v3.model.V2Package
-import com.mesosphere.universe.v3.model.V3Package
 import com.mesosphere.universe.v3.syntax.PackageDefinitionOps._
 import com.twitter.bijection.Bijection._
 import com.twitter.bijection.Conversion
@@ -157,9 +155,9 @@ object Response {
   private[this] def v2Resource(
     pkg: universe.v4.model.PackageDefinition
   ): Option[universe.v2.model.Resource] = pkg match {
-    case v2: V2Package =>
+    case v2: universe.v3.model.V2Package =>
       v2.resource.map(_.as[universe.v2.model.Resource])
-    case v3: V3Package =>
+    case v3: universe.v3.model.V3Package =>
       v3.resource.map { resource =>
         universe.v2.model.Resource(
           resource.assets.as[Option[universe.v2.model.Assets]],

@@ -1,8 +1,8 @@
 package com.mesosphere.cosmos.handler
 
 import com.mesosphere.Generators.Implicits._
-import com.mesosphere.cosmos.OperationInProgress
 import com.mesosphere.cosmos.error.CosmosException
+import com.mesosphere.cosmos.error.OperationInProgress
 import com.mesosphere.cosmos.http.MediaType
 import com.mesosphere.cosmos.http.RequestSession
 import com.mesosphere.cosmos.repository.PackageCollection

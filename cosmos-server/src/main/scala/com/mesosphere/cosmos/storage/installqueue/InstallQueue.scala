@@ -1,11 +1,11 @@
 package com.mesosphere.cosmos.storage.installqueue
 
-import com.mesosphere.cosmos.InstallQueueError
-import com.mesosphere.cosmos.OperationInProgress
 import com.mesosphere.cosmos.converter.Common.packageCoordinateToBase64String
+import com.mesosphere.cosmos.error.InstallQueueError
+import com.mesosphere.cosmos.error.OperationInProgress
+import com.mesosphere.cosmos.model.StorageEnvelope
 import com.mesosphere.cosmos.rpc.v1.model.ErrorResponse
 import com.mesosphere.cosmos.rpc.v1.model.PackageCoordinate
-import com.mesosphere.cosmos.model.StorageEnvelope
 import com.mesosphere.cosmos.storage.v1.circe.MediaTypedDecoders._
 import com.mesosphere.cosmos.storage.v1.circe.MediaTypedEncoders._
 import com.mesosphere.cosmos.storage.v1.model.FailedStatus

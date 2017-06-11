@@ -2,9 +2,6 @@ package com.mesosphere.cosmos.repository
 
 import com.mesosphere.cosmos.AdminRouter
 import com.mesosphere.cosmos.BuildProperties
-import com.mesosphere.cosmos.RepositoryUriConnection
-import com.mesosphere.cosmos.RepositoryUriSyntax
-import com.mesosphere.cosmos.UnsupportedRepositoryVersion
 import com.mesosphere.cosmos.circe.Decoders.decode
 import com.mesosphere.cosmos.error.CosmosException
 import com.mesosphere.cosmos.error.GenericHttpError
@@ -12,9 +9,12 @@ import com.mesosphere.cosmos.error.IndexNotFound
 import com.mesosphere.cosmos.error.PackageFileMissing
 import com.mesosphere.cosmos.error.PackageFileNotJson
 import com.mesosphere.cosmos.error.PackageFileSchemaMismatch
+import com.mesosphere.cosmos.error.RepositoryUriConnection
+import com.mesosphere.cosmos.error.RepositoryUriSyntax
 import com.mesosphere.cosmos.error.UnsupportedContentEncoding
 import com.mesosphere.cosmos.error.UnsupportedContentType
 import com.mesosphere.cosmos.error.UnsupportedRedirect
+import com.mesosphere.cosmos.error.UnsupportedRepositoryVersion
 import com.mesosphere.cosmos.http.CompoundMediaType
 import com.mesosphere.cosmos.http.MediaType
 import com.mesosphere.cosmos.http.MediaTypeOps._

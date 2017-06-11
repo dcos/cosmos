@@ -2,15 +2,7 @@ package com.mesosphere.cosmos.circe
 
 import com.google.common.io.CharStreams
 import com.mesosphere.Generators.Implicits._
-import com.mesosphere.cosmos.ConcurrentAccess
-import com.mesosphere.cosmos.IncompleteUninstall
-import com.mesosphere.cosmos.RepositoryUriConnection
-import com.mesosphere.cosmos.RepositoryUriSyntax
-import com.mesosphere.cosmos.ServiceUnavailable
 import com.mesosphere.cosmos.circe.Decoders.decode64
-import com.mesosphere.cosmos.error.CirceError
-import com.mesosphere.cosmos.error.CosmosError
-import com.mesosphere.cosmos.error.PackageFileMissing
 import com.mesosphere.cosmos.http.MediaType
 import com.mesosphere.cosmos.http.MediaTypeSubType
 import com.mesosphere.cosmos.rpc.v1.circe.Decoders._
@@ -38,7 +30,8 @@ import org.scalatest.Matchers
 import org.scalatest.prop.PropertyChecks
 import org.scalatest.prop.TableDrivenPropertyChecks
 
-class EncodersDecodersSpec extends FreeSpec with PropertyChecks with Matchers with TableDrivenPropertyChecks {
+class EncodersDecodersSpec
+extends FreeSpec with PropertyChecks with Matchers with TableDrivenPropertyChecks {
   import Decoders._
   import Encoders._
 
@@ -87,7 +80,9 @@ class EncodersDecodersSpec extends FreeSpec with PropertyChecks with Matchers wi
 
     "ParsingFailure should" - {
       "explain where the parsing failure occurred" in {
-        val Left(err: ParsingFailure) = loadAndDecode("/com/mesosphere/cosmos/repository/malformed.json")
+        val Left(err: ParsingFailure) = loadAndDecode(
+          "/com/mesosphere/cosmos/repository/malformed.json"
+        )
         val encoded = encodeCirceError(err)
         val c = encoded.hcursor
         val Right(typ) = c.downField("type").as[String]

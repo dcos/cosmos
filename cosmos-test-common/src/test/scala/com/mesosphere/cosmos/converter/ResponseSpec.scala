@@ -1,7 +1,7 @@
 package com.mesosphere.cosmos.converter
 
-import com.mesosphere.cosmos.ServiceMarathonTemplateNotFound
 import com.mesosphere.cosmos.converter.Response._
+import com.mesosphere.cosmos.error.ServiceMarathonTemplateNotFound
 import com.mesosphere.cosmos.rpc
 import com.mesosphere.cosmos.thirdparty.marathon.model.AppId
 import com.mesosphere.universe
