@@ -1,9 +1,9 @@
 package com.mesosphere.cosmos.handler
 
-import com.mesosphere.cosmos.CirceError
-import com.mesosphere.cosmos.JsonSchemaMismatch
-import com.mesosphere.cosmos.MarathonTemplateMustBeJsonObject
 import com.mesosphere.cosmos.ServiceMarathonTemplateNotFound
+import com.mesosphere.cosmos.error.CirceError
+import com.mesosphere.cosmos.error.JsonSchemaMismatch
+import com.mesosphere.cosmos.error.MarathonTemplateMustBeJsonObject
 import com.mesosphere.cosmos.finch.EndpointHandler
 import com.mesosphere.cosmos.http.RequestSession
 import com.mesosphere.cosmos.render._

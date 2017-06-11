@@ -1,6 +1,6 @@
 package com.mesosphere.cosmos.circe
 
-import com.mesosphere.cosmos.CirceError
+import com.mesosphere.cosmos.error.CirceError
 import com.mesosphere.cosmos.finch.MediaTypedDecoder
 import com.mesosphere.cosmos.http.MediaType
 import io.circe.Decoder

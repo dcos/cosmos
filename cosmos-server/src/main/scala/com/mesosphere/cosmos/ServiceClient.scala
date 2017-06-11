@@ -3,6 +3,8 @@ package com.mesosphere.cosmos
 import _root_.io.circe.Decoder
 import _root_.io.circe.Json
 import com.mesosphere.cosmos.circe.Decoders.decode
+import com.mesosphere.cosmos.error.GenericHttpError
+import com.mesosphere.cosmos.error.UnsupportedContentType
 import com.mesosphere.cosmos.http.MediaTypeOps
 import com.mesosphere.cosmos.http.MediaTypes
 import com.mesosphere.cosmos.http.RequestSession

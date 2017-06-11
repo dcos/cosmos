@@ -1,10 +1,10 @@
 package com.mesosphere.cosmos.handler
 
-import com.mesosphere.cosmos.CirceError
-import com.mesosphere.cosmos.JsonSchemaMismatch
 import com.mesosphere.cosmos.MarathonPackageRunner
-import com.mesosphere.cosmos.MarathonTemplateMustBeJsonObject
+import com.mesosphere.cosmos.error.CirceError
 import com.mesosphere.cosmos.error.CosmosException
+import com.mesosphere.cosmos.error.JsonSchemaMismatch
+import com.mesosphere.cosmos.error.MarathonTemplateMustBeJsonObject
 import com.mesosphere.cosmos.error.PackageAlreadyInstalled
 import com.mesosphere.cosmos.error.ServiceAlreadyStarted
 import com.mesosphere.cosmos.finch.EndpointHandler

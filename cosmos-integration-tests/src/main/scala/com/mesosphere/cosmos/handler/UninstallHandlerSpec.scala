@@ -1,7 +1,7 @@
 package com.mesosphere.cosmos.handler
 
-import com.mesosphere.cosmos.MarathonAppNotFound
 import com.mesosphere.cosmos.error.CosmosException
+import com.mesosphere.cosmos.error.MarathonAppNotFound
 import com.mesosphere.cosmos.http.CosmosRequests
 import com.mesosphere.cosmos.rpc.MediaTypes
 import com.mesosphere.cosmos.rpc.v1.circe.Decoders._

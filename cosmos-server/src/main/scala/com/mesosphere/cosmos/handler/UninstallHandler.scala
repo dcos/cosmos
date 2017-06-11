@@ -2,18 +2,18 @@ package com.mesosphere.cosmos.handler
 
 import com.google.common.annotations.VisibleForTesting
 import com.mesosphere.cosmos.AdminRouter
-import com.mesosphere.cosmos.AmbiguousAppId
-import com.mesosphere.cosmos.AppAlreadyUninstalling
-import com.mesosphere.cosmos.CirceError
-import com.mesosphere.cosmos.FailedToStartUninstall
 import com.mesosphere.cosmos.IncompleteUninstall
-import com.mesosphere.cosmos.MarathonAppDeleteError
-import com.mesosphere.cosmos.MultipleFrameworkIds
-import com.mesosphere.cosmos.PackageNotInstalled
 import com.mesosphere.cosmos.ServiceUnavailable
-import com.mesosphere.cosmos.UninstallNonExistentAppForPackage
 import com.mesosphere.cosmos.circe.Decoders
+import com.mesosphere.cosmos.error.AmbiguousAppId
+import com.mesosphere.cosmos.error.AppAlreadyUninstalling
+import com.mesosphere.cosmos.error.CirceError
 import com.mesosphere.cosmos.error.CosmosException
+import com.mesosphere.cosmos.error.FailedToStartUninstall
+import com.mesosphere.cosmos.error.MarathonAppDeleteError
+import com.mesosphere.cosmos.error.MultipleFrameworkIds
+import com.mesosphere.cosmos.error.PackageNotInstalled
+import com.mesosphere.cosmos.error.UninstallNonExistentAppForPackage
 import com.mesosphere.cosmos.finch.EndpointHandler
 import com.mesosphere.cosmos.handler.UninstallHandler._
 import com.mesosphere.cosmos.http.RequestSession

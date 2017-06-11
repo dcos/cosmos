@@ -2,11 +2,11 @@ package com.mesosphere.cosmos.handler
 
 import com.mesosphere.cosmos.AdminRouter
 import com.mesosphere.cosmos.AdminRouterClient
-import com.mesosphere.cosmos.AppAlreadyUninstalling
-import com.mesosphere.cosmos.FailedToStartUninstall
 import com.mesosphere.cosmos.MarathonClient
 import com.mesosphere.cosmos.MesosMasterClient
+import com.mesosphere.cosmos.error.AppAlreadyUninstalling
 import com.mesosphere.cosmos.error.CosmosException
+import com.mesosphere.cosmos.error.FailedToStartUninstall
 import com.mesosphere.cosmos.handler.UninstallHandler.SdkUninstall
 import com.mesosphere.cosmos.handler.UninstallHandler.UninstallDetails
 import com.mesosphere.cosmos.handler.UninstallHandler.UninstallOperation
