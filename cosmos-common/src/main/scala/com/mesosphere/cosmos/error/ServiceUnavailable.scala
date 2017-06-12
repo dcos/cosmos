@@ -5,7 +5,6 @@ import io.circe.Encoder
 import io.circe.JsonObject
 import io.circe.generic.semiauto.deriveEncoder
 
-// TODO: move Throwable to CosmosException: causedBy: Throwable
 final case class ServiceUnavailable(
   serviceName: String
 ) extends CosmosError {
@@ -15,7 +14,7 @@ final case class ServiceUnavailable(
   }
 
   override def exception: CosmosException = {
-    exception(Status.ServiceUnavailable, Map.empty, None)
+    CosmosException(this, Status.ServiceUnavailable, Map.empty, None)
   }
 }
 

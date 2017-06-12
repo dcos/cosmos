@@ -15,7 +15,8 @@ final case class Unauthorized(
   }
 
   override def exception: CosmosException = {
-    exception(
+    CosmosException(
+      this,
       Status.Unauthorized,
       realm.map(r => Map("WWW-Authenticate" -> r)).getOrElse(Map.empty),
       None

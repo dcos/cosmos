@@ -12,7 +12,7 @@ final case class Forbidden(serviceName: String) extends CosmosError {
   }
 
   override def exception: CosmosException = {
-    exception(Status.Forbidden, Map.empty, None)
+    CosmosException(this, Status.Forbidden, Map.empty, None)
   }
 }
 

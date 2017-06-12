@@ -15,7 +15,7 @@ final case class AppAlreadyUninstalling(appId: AppId) extends CosmosError {
   }
 
   override def exception: CosmosException = {
-    exception(Status.Conflict, Map.empty, None)
+    CosmosException(this, Status.Conflict, Map.empty, None)
   }
 }
 

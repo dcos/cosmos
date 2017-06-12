@@ -1,6 +1,5 @@
 package com.mesosphere.cosmos.error
 
-import com.twitter.finagle.http.Status
 import io.circe.Encoder
 import io.circe.JsonObject
 
@@ -10,14 +9,6 @@ trait CosmosError {
 
   def exception: CosmosException = {
     CosmosException(this)
-  }
-
-  final def exception(
-    status: Status,
-    headers: Map[String, String],
-    causedBy: Option[Throwable]
-  ): CosmosException = {
-    CosmosException(this, status, headers, causedBy)
   }
 }
 

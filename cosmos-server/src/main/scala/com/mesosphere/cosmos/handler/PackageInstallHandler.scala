@@ -72,8 +72,8 @@ private[cosmos] final class PackageInstallHandler(
           )
         }
         .handle {
-          case CosmosException(ServiceAlreadyStarted(), _, _, _) =>
-            throw PackageAlreadyInstalled().exception
+          case CosmosException(ServiceAlreadyStarted, _, _, _) =>
+            throw PackageAlreadyInstalled.exception
         }
     case Left(OptionsValidationFailure(validationErrors)) =>
       Future.exception(JsonSchemaMismatch(validationErrors).exception)

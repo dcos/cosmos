@@ -127,7 +127,7 @@ final class ServiceStartSpec extends FreeSpec with InstallQueueFixture with Befo
       assertResult(Some(rpc.MediaTypes.ErrorResponse.show))(startAgainResponse.contentType)
 
       val typedErrorResponse = decode[ErrorResponse](startAgainResponse.contentString)
-      assertResult(classOf[ServiceAlreadyStarted].getSimpleName)(typedErrorResponse.`type`)
+      assertResult(ServiceAlreadyStarted.getClass.getSimpleName)(typedErrorResponse.`type`)
     }
 
     "can successfully start a service from a v4 package" in {

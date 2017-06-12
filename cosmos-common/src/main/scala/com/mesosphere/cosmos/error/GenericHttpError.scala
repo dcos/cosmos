@@ -20,7 +20,7 @@ final case class GenericHttpError(
   }
 
   def exception(status: Status): CosmosException = {
-    exception(status, Map.empty, None)
+    CosmosException(this, status, Map.empty, None)
   }
 }
 

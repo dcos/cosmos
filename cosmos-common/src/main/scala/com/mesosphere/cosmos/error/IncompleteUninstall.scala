@@ -4,7 +4,6 @@ import io.circe.Encoder
 import io.circe.JsonObject
 import io.circe.generic.semiauto.deriveEncoder
 
-// TODO: Move this to CosmosException: causedBy: Throwable
 final case class IncompleteUninstall(
   packageName: String
 ) extends CosmosError {

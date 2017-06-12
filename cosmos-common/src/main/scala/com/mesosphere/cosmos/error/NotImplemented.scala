@@ -12,7 +12,7 @@ final case class NotImplemented(operationName: String) extends CosmosError {
   }
 
   override def exception: CosmosException = {
-    exception(Status.NotImplemented, Map.empty, None)
+    CosmosException(this, Status.NotImplemented, Map.empty, None)
   }
 }
 

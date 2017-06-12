@@ -14,7 +14,7 @@ final case class OperationInProgress(coordinate: rpc.v1.model.PackageCoordinate)
   }
 
   override def exception: CosmosException = {
-    exception(Status.Conflict, Map.empty, None)
+    CosmosException(this, Status.Conflict, Map.empty, None)
   }
 }
 
