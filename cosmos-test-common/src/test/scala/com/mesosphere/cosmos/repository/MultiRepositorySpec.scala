@@ -1,6 +1,8 @@
 package com.mesosphere.cosmos
 
 import cats.data.Ior
+import com.mesosphere.cosmos.error.PackageNotFound
+import com.mesosphere.cosmos.error.VersionNotFound
 import com.mesosphere.cosmos.http.RequestSession
 import com.mesosphere.cosmos.repository.PackageSourcesStorage
 import com.mesosphere.cosmos.repository.UniverseClient
@@ -75,13 +77,21 @@ final class MultiRepositorySpec extends FreeSpec with Matchers with TableDrivenP
       val c = new MultiRepository(TestStorage(), TestClient())
       val ver = TestingPackages.MinimalV3ModelV2PackageDefinition.version
 
-      assertResult(Throw(new PackageNotFound("test")))(Try(Await.result(c.getPackagesByPackageName("test"))))
+      Try(Await.result(c.getPackagesByPackageName("test"))) shouldBe Throw(
+        new PackageNotFound("test").exception
+      )
 
-      assertResult(Throw(new VersionNotFound("test", ver)))(Try(Await.result(c.getPackageByPackageVersion("test", Some(ver)))))
-      assertResult(Throw(new PackageNotFound("test")))(Try(Await.result(c.getPackageByPackageVersion("test", None))))
+      Try(Await.result(c.getPackageByPackageVersion("test", Some(ver)))) shouldBe Throw(
+        new VersionNotFound("test", ver).exception
+      )
 
-      assertResult(Return(Nil))(Try(Await.result(c.search(Some("test")))))
-      assertResult(Return(Nil))(Try(Await.result(c.search(None))))
+      Try(Await.result(c.getPackageByPackageVersion("test", None))) shouldBe Throw(
+        new PackageNotFound("test").exception
+      )
+
+      Try(Await.result(c.search(Some("test")))) shouldBe Return(Nil)
+
+      Try(Await.result(c.search(None))) shouldBe Return(Nil)
     }
 
     "found minimal" in {
@@ -93,14 +103,20 @@ final class MultiRepositorySpec extends FreeSpec with Matchers with TableDrivenP
       val c = new MultiRepository(storage, client)
       val ver = TestingPackages.MinimalV3ModelV2PackageDefinition.version
 
-      assertResult(Return(cls))(Try(Await.result(c.getPackagesByPackageName("minimal"))))
-      assertResult(Throw(new PackageNotFound("MAXIMAL")))(Try(Await.result(c.getPackagesByPackageName("MAXIMAL"))))
+      Try(Await.result(c.getPackagesByPackageName("minimal"))) shouldBe Return(cls)
+      Try(Await.result(c.getPackagesByPackageName("MAXIMAL"))) shouldBe Throw(
+        PackageNotFound("MAXIMAL").exception
+      )
 
-      assertResult(Return((cls.head, u)))(Try(Await.result(c.getPackageByPackageVersion("minimal", None))))
-      assertResult(Return((cls.head, u)))(Try(Await.result(c.getPackageByPackageVersion("minimal", Some(ver)))))
+      Try(Await.result(c.getPackageByPackageVersion("minimal", None))) shouldBe Return(
+        (cls.head, u)
+      )
+      Try(Await.result(c.getPackageByPackageVersion("minimal", Some(ver)))) shouldBe Return(
+        (cls.head, u)
+      )
 
-      assertResult(Return(List("minimal")))(Try(Await.result(c.search(None)).map(_.name)))
-      assertResult(Return(List("minimal")))(Try(Await.result(c.search(Some("minimal"))).map(_.name)))
+      Try(Await.result(c.search(None)).map(_.name)) shouldBe Return(List("minimal"))
+      Try(Await.result(c.search(Some("minimal"))).map(_.name)) shouldBe Return(List("minimal"))
     }
 
     "invalid repo" in {
@@ -112,10 +128,17 @@ final class MultiRepositorySpec extends FreeSpec with Matchers with TableDrivenP
       val c = new MultiRepository(storage, client)
       val ver = TestingPackages.MinimalV3ModelV2PackageDefinition.version
 
-      assertResult(Throw(new PackageNotFound("minimal")))(Try(Await.result(c.getPackagesByPackageName("minimal"))))
+      Try(Await.result(c.getPackagesByPackageName("minimal"))) shouldBe Throw(
+        PackageNotFound("minimal").exception
+      )
 
-      assertResult(Throw(new PackageNotFound("minimal")))(Try(Await.result(c.getPackageByPackageVersion("minimal", None))))
-      assertResult(Throw(new VersionNotFound("minimal",ver)))(Try(Await.result(c.getPackageByPackageVersion("minimal", Some(ver)))))
+      Try(Await.result(c.getPackageByPackageVersion("minimal", None))) shouldBe Throw(
+        PackageNotFound("minimal").exception
+      )
+
+      Try(Await.result(c.getPackageByPackageVersion("minimal", Some(ver)))) shouldBe Throw(
+        VersionNotFound("minimal",ver).exception
+      )
     }
 
     "wrong query" in {
@@ -127,11 +150,21 @@ final class MultiRepositorySpec extends FreeSpec with Matchers with TableDrivenP
       val ver = TestingPackages.MinimalV3ModelV2PackageDefinition.version
       val badver = TestingPackages.MaximalV3ModelV3PackageDefinition.version
 
-      assertResult(Throw(new PackageNotFound("MAXIMAL")))(Try(Await.result(c.getPackagesByPackageName("MAXIMAL"))))
+      Try(Await.result(c.getPackagesByPackageName("MAXIMAL"))) shouldBe Throw(
+        PackageNotFound("MAXIMAL").exception
+      )
 
-      assertResult(Throw(new PackageNotFound("MAXIMAL")))(Try(Await.result(c.getPackageByPackageVersion("MAXIMAL", None))))
-      assertResult(Throw(new VersionNotFound("MAXIMAL", ver)))(Try(Await.result(c.getPackageByPackageVersion("MAXIMAL", Some(ver)))))
-      assertResult(Throw(new VersionNotFound("minimal", badver)))(Try(Await.result(c.getPackageByPackageVersion("minimal", Some(badver)))))
+      Try(Await.result(c.getPackageByPackageVersion("MAXIMAL", None))) shouldBe Throw(
+        PackageNotFound("MAXIMAL").exception
+      )
+
+      Try(Await.result(c.getPackageByPackageVersion("MAXIMAL", Some(ver)))) shouldBe Throw(
+        VersionNotFound("MAXIMAL", ver).exception
+      )
+
+      Try(Await.result(c.getPackageByPackageVersion("minimal", Some(badver)))) shouldBe Throw(
+        VersionNotFound("minimal", badver).exception
+      )
     }
 
     "from many" in {
@@ -146,20 +179,31 @@ final class MultiRepositorySpec extends FreeSpec with Matchers with TableDrivenP
       val maxver = TestingPackages.MaximalV3ModelV3PackageDefinition.version
 
       val expect = List(TestingPackages.MinimalV3ModelV2PackageDefinition)
-      assertResult(Return(expect))(Try(Await.result(c.getPackagesByPackageName("minimal"))))
 
-      assertResult(Return(minexp))(Try(Await.result(c.getPackageByPackageVersion("minimal", None))))
-      assertResult(Return(minexp))(Try(Await.result(c.getPackageByPackageVersion("minimal", Some(minver)))))
-      assertResult(Throw(new VersionNotFound("minimal", maxver)))(Try(Await.result(c.getPackageByPackageVersion("minimal", Some(maxver)))))
+      Try(Await.result(c.getPackagesByPackageName("minimal"))) shouldBe Return(expect)
+      Try(Await.result(c.getPackageByPackageVersion("minimal", None))) shouldBe Return(minexp)
+      Try(Await.result(c.getPackageByPackageVersion("minimal", Some(minver)))) shouldBe Return(
+        minexp
+      )
+      Try(Await.result(c.getPackageByPackageVersion("minimal", Some(maxver)))) shouldBe Throw(
+        VersionNotFound("minimal", maxver).exception
+      )
 
       val maxexp = (TestingPackages.MaximalV3ModelV3PackageDefinition, u)
-      assertResult(Return(maxexp))(Try(Await.result(c.getPackageByPackageVersion("MAXIMAL", None))))
-      assertResult(Return(maxexp))(Try(Await.result(c.getPackageByPackageVersion("MAXIMAL", Some(maxver)))))
-      assertResult(Throw(new VersionNotFound("MAXIMAL", minver)))(Try(Await.result(c.getPackageByPackageVersion("MAXIMAL", Some(minver)))))
 
-      assertResult(Return(List("MAXIMAL", "minimal")))(Try(Await.result(c.search(None)).map(_.name).sorted))
-      assertResult(Return(List("minimal")))(Try(Await.result(c.search(Some("minimal"))).map(_.name)))
-      assertResult(Return(List("MAXIMAL")))(Try(Await.result(c.search(Some("MAXIMAL"))).map(_.name)))
+      Try(Await.result(c.getPackageByPackageVersion("MAXIMAL", None))) shouldBe Return(maxexp)
+      Try(Await.result(c.getPackageByPackageVersion("MAXIMAL", Some(maxver)))) shouldBe Return(
+        maxexp
+      )
+      Try(Await.result(c.getPackageByPackageVersion("MAXIMAL", Some(minver)))) shouldBe Throw(
+        VersionNotFound("MAXIMAL", minver).exception
+      )
+
+      Try(Await.result(c.search(None)).map(_.name).sorted) shouldBe Return(
+        List("MAXIMAL", "minimal")
+      )
+      Try(Await.result(c.search(Some("minimal"))).map(_.name)) shouldBe Return(List("minimal"))
+      Try(Await.result(c.search(Some("MAXIMAL"))).map(_.name)) shouldBe Return(List("MAXIMAL"))
     }
 
     "multi repo multi same packages" in {
@@ -173,10 +217,16 @@ final class MultiRepositorySpec extends FreeSpec with Matchers with TableDrivenP
       val client = TestMultiClient(clientdata)
       val c = new MultiRepository(storage, client)
 
-      assertResult(Return(2))(Try(Await.result(c.getPackagesByPackageName("minimal")).length))
-      assertResult(Return(List(TestingPackages.MinimalV3ModelV2PackageDefinition,min2)))(Try(Await.result(c.getPackagesByPackageName("minimal"))))
-      assertResult(Return(List(TestingPackages.MaximalV3ModelV3PackageDefinition,max2)))(Try(Await.result(c.getPackagesByPackageName("MAXIMAL"))))
-      assertResult(Throw(new PackageNotFound("foobar")))(Try(Await.result(c.getPackagesByPackageName("foobar"))))
+      Try(Await.result(c.getPackagesByPackageName("minimal")).length) shouldBe Return(2)
+      Try(Await.result(c.getPackagesByPackageName("minimal"))) shouldBe Return(
+        List(TestingPackages.MinimalV3ModelV2PackageDefinition,min2)
+      )
+      Try(Await.result(c.getPackagesByPackageName("MAXIMAL"))) shouldBe Return(
+        List(TestingPackages.MaximalV3ModelV3PackageDefinition,max2)
+      )
+      Try(Await.result(c.getPackagesByPackageName("foobar"))) shouldBe Throw(
+        PackageNotFound("foobar").exception
+      )
 
       val minver = TestingPackages.MinimalV3ModelV2PackageDefinition.version
       val minexp = (TestingPackages.MinimalV3ModelV2PackageDefinition, Uri.parse("/minimal"))
@@ -209,30 +259,43 @@ final class MultiRepositorySpec extends FreeSpec with Matchers with TableDrivenP
       val client = TestMultiClient(clientdata)
       val c = new MultiRepository(storage, client)
 
-      assertResult(Return(1))(Try(Await.result(c.getPackagesByPackageName("minimal")).length))
+      Try(Await.result(c.getPackagesByPackageName("minimal")).length) shouldBe Return(1)
       //will return the first repo
-      assertResult(Return(List(min2)))(Try(Await.result(c.getPackagesByPackageName("minimal"))))
-      assertResult(Return(List(TestingPackages.MaximalV3ModelV3PackageDefinition)))(Try(Await.result(c.getPackagesByPackageName("MAXIMAL"))))
-      assertResult(Throw(new PackageNotFound("foobar")))(Try(Await.result(c.getPackagesByPackageName("foobar"))))
+      Try(Await.result(c.getPackagesByPackageName("minimal"))) shouldBe Return(List(min2))
+      Try(Await.result(c.getPackagesByPackageName("MAXIMAL"))) shouldBe Return(
+        List(TestingPackages.MaximalV3ModelV3PackageDefinition)
+      )
+      Try(Await.result(c.getPackagesByPackageName("foobar"))) shouldBe Throw(
+        PackageNotFound("foobar").exception
+      )
 
       val minexp1 = (min2, Uri.parse("/MAXIMAL"))
-      assertResult(Return(minexp1))(Try(Await.result(c.getPackageByPackageVersion("minimal", None))))
+      Try(Await.result(c.getPackageByPackageVersion("minimal", None))) shouldBe Return(minexp1)
 
       val minver = TestingPackages.MinimalV3ModelV2PackageDefinition.version
       val minexp2 = (TestingPackages.MinimalV3ModelV2PackageDefinition, Uri.parse("/minimal"))
-      assertResult(Return(minexp2))(Try(Await.result(c.getPackageByPackageVersion("minimal", Some(minver)))))
+      Try(Await.result(c.getPackageByPackageVersion("minimal", Some(minver)))) shouldBe Return(
+        minexp2
+      )
 
       val maxver = TestingPackages.MaximalV3ModelV3PackageDefinition.version
       val maxexp = (TestingPackages.MaximalV3ModelV3PackageDefinition, Uri.parse("/MAXIMAL"))
 
-      assertResult(Return(maxexp))(Try(Await.result(c.getPackageByPackageVersion("MAXIMAL", None))))
-      assertResult(Return(maxexp))(Try(Await.result(c.getPackageByPackageVersion("MAXIMAL", Some(maxver)))))
+      Try(Await.result(c.getPackageByPackageVersion("MAXIMAL", None))) shouldBe Return(maxexp)
+      Try(Await.result(c.getPackageByPackageVersion("MAXIMAL", Some(maxver)))) shouldBe Return(
+        maxexp
+      )
 
-      assertResult(Return(List("MAXIMAL", "minimal")))(Try(Await.result(c.search(None)).map(_.name).sorted))
-      assertResult(Return(List("minimal")))(Try(Await.result(c.search(Some("minimal"))).map(_.name)))
+      Try(Await.result(c.search(None)).map(_.name).sorted) shouldBe Return(List("MAXIMAL", "minimal"))
+      Try(Await.result(c.search(Some("minimal"))).map(_.name)) shouldBe Return(List("minimal"))
+
       val min2ver = min2.version
-      assertResult(Return(List(Set(min2ver))))(Try(Await.result(c.search(Some("minimal"))).map(_.versions.keys)))
-      assertResult(Return(List(Set(maxver))))(Try(Await.result(c.search(Some("MAXIMAL"))).map(_.versions.keys)))
+      Try(Await.result(c.search(Some("minimal"))).map(_.versions.keys)) shouldBe Return(
+        List(Set(min2ver))
+      )
+      Try(Await.result(c.search(Some("MAXIMAL"))).map(_.versions.keys)) shouldBe Return(
+        List(Set(maxver))
+      )
     }
 
     "getPackageByPackageVersion works for all packaging versions" in {

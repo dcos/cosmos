@@ -3,6 +3,7 @@ package com.mesosphere.cosmos
 import _root_.io.circe.Json
 import com.mesosphere.cosmos.circe.Decoders.decode
 import com.mesosphere.cosmos.converter.Response._
+import com.mesosphere.cosmos.error.InvalidPackageVersionForAdd
 import com.mesosphere.cosmos.http.CosmosRequests
 import com.mesosphere.cosmos.http.MediaType
 import com.mesosphere.cosmos.rpc.MediaTypes

@@ -1,7 +1,7 @@
 package com.mesosphere.cosmos.repository
 
-import com.mesosphere.cosmos.PackageNotFound
-import com.mesosphere.cosmos.VersionNotFound
+import com.mesosphere.cosmos.error.PackageNotFound
+import com.mesosphere.cosmos.error.VersionNotFound
 import com.mesosphere.cosmos.http.RequestSession
 import com.mesosphere.cosmos.rpc.v1.model.PackageRepository
 import com.mesosphere.cosmos.test.TestUtil.Anonymous
@@ -37,23 +37,46 @@ final class CosmosRepositorySpec extends FreeSpec with Matchers with TableDriven
       val rep = C.rpc.v1.model.PackageRepository("test", Uri.parse("uri"))
       val c = CosmosRepository(rep, client(Nil))
       val ver = TestingPackages.MinimalV3ModelV2PackageDefinition.releaseVersion
-      assertResult(Throw(new PackageNotFound("test")))(Try(Await.result(c.getPackageByReleaseVersion("test", ver))))
+      Try(Await.result(c.getPackageByReleaseVersion("test", ver))) shouldBe Throw(
+        PackageNotFound("test").exception
+      )
     }
     "found minimal" in {
       val rep = C.rpc.v1.model.PackageRepository("test", Uri.parse("uri"))
-      val c = CosmosRepository(rep, client(List(TestingPackages.MinimalV3ModelV2PackageDefinition)))
+      val c = CosmosRepository(
+        rep,
+        client(List(TestingPackages.MinimalV3ModelV2PackageDefinition))
+      )
       val ver = TestingPackages.MinimalV3ModelV2PackageDefinition.releaseVersion
-      assertResult(Throw(new PackageNotFound("test")))(Try(Await.result(c.getPackageByReleaseVersion("test", ver))))
-      assertResult(Return(TestingPackages.MinimalV3ModelV2PackageDefinition))(Try(Await.result(c.getPackageByReleaseVersion("minimal", ver))))
+      Try(Await.result(c.getPackageByReleaseVersion("test", ver))) shouldBe Throw(
+        PackageNotFound("test").exception
+      )
+      Try(Await.result(c.getPackageByReleaseVersion("minimal", ver))) shouldBe Return(
+        TestingPackages.MinimalV3ModelV2PackageDefinition
+      )
     }
     "found MAXIMAL" in {
       val rep = C.rpc.v1.model.PackageRepository("test", Uri.parse("uri"))
-      val c = CosmosRepository(rep, client(List(TestingPackages.MinimalV3ModelV2PackageDefinition, TestingPackages.MaximalV3ModelV3PackageDefinition)))
+      val c = CosmosRepository(
+        rep,
+        client(
+          List(
+            TestingPackages.MinimalV3ModelV2PackageDefinition,
+            TestingPackages.MaximalV3ModelV3PackageDefinition
+          )
+        )
+      )
       val ver = TestingPackages.MaximalV3ModelV3PackageDefinition.releaseVersion
-      assertResult(Throw(new PackageNotFound("test")))(Try(Await.result(c.getPackageByReleaseVersion("test", ver))))
+      Try(Await.result(c.getPackageByReleaseVersion("test", ver))) shouldBe Throw(
+        PackageNotFound("test").exception
+      )
 
-      assertResult(Throw(new PackageNotFound("minimal")))(Try(Await.result(c.getPackageByReleaseVersion("minimal", ver))))
-      assertResult(Return(TestingPackages.MaximalV3ModelV3PackageDefinition))(Try(Await.result(c.getPackageByReleaseVersion("MAXIMAL", ver))))
+      Try(Await.result(c.getPackageByReleaseVersion("minimal", ver))) shouldBe Throw(
+        PackageNotFound("minimal").exception
+      )
+      Try(Await.result(c.getPackageByReleaseVersion("MAXIMAL", ver))) shouldBe Return(
+        TestingPackages.MaximalV3ModelV3PackageDefinition
+      )
     }
 
     "for all versions" in {
@@ -72,30 +95,56 @@ final class CosmosRepositorySpec extends FreeSpec with Matchers with TableDriven
       val rep = C.rpc.v1.model.PackageRepository("test", Uri.parse("uri"))
       val c = CosmosRepository(rep, client(Nil))
       val ver = TestingPackages.MinimalV3ModelV2PackageDefinition.version
-      assertResult(Throw(new PackageNotFound("test")))(Try(Await.result(c.getPackageByPackageVersion("test", Some(ver)))))
-      assertResult(Throw(new PackageNotFound("test")))(Try(Await.result(c.getPackageByPackageVersion("test", None))))
+      Try(Await.result(c.getPackageByPackageVersion("test", Some(ver)))) shouldBe Throw(
+        PackageNotFound("test").exception
+      )
+      Try(Await.result(c.getPackageByPackageVersion("test", None))) shouldBe Throw(
+        PackageNotFound("test").exception
+      )
     }
     "found minimal" in {
       val u = Uri.parse("/uri")
       val rep = C.rpc.v1.model.PackageRepository("test", u)
-      val c = CosmosRepository(rep, client(List(TestingPackages.MinimalV3ModelV2PackageDefinition)))
+      val c = CosmosRepository(
+        rep,
+        client(List(TestingPackages.MinimalV3ModelV2PackageDefinition))
+      )
       val ver = TestingPackages.MinimalV3ModelV2PackageDefinition.version
-      assertResult(Return((TestingPackages.MinimalV3ModelV2PackageDefinition,u)))(Try(Await.result(c.getPackageByPackageVersion("minimal", Some(ver)))))
-      assertResult(Return((TestingPackages.MinimalV3ModelV2PackageDefinition,u)))(Try(Await.result(c.getPackageByPackageVersion("minimal", None))))
+      Try(Await.result(c.getPackageByPackageVersion("minimal", Some(ver)))) shouldBe Return(
+        (TestingPackages.MinimalV3ModelV2PackageDefinition, u)
+      )
+      Try(Await.result(c.getPackageByPackageVersion("minimal", None))) shouldBe Return(
+        (TestingPackages.MinimalV3ModelV2PackageDefinition, u)
+      )
+
       val bad = TestingPackages.MaximalV3ModelV3PackageDefinition.version
-      assertResult(Throw(new VersionNotFound("minimal", bad)))(Try(Await.result(c.getPackageByPackageVersion("minimal", Some(bad)))))
-      assertResult(Throw(new PackageNotFound("test")))(Try(Await.result(c.getPackageByPackageVersion("test", Some(ver)))))
+      Try(Await.result(c.getPackageByPackageVersion("minimal", Some(bad)))) shouldBe Throw(
+        VersionNotFound("minimal", bad).exception
+      )
+      Try(Await.result(c.getPackageByPackageVersion("test", Some(ver)))) shouldBe Throw(
+        PackageNotFound("test").exception
+      )
     }
     "found MAXIMAL" in {
       val u = Uri.parse("/uri")
       val rep = C.rpc.v1.model.PackageRepository("test", u)
-      val c = CosmosRepository(rep, client(List(TestingPackages.MinimalV3ModelV2PackageDefinition, TestingPackages.MaximalV3ModelV3PackageDefinition)))
+      val c = CosmosRepository(
+        rep,
+        client(
+          List(
+            TestingPackages.MinimalV3ModelV2PackageDefinition,
+            TestingPackages.MaximalV3ModelV3PackageDefinition
+          )
+        )
+      )
       val ver = TestingPackages.MaximalV3ModelV3PackageDefinition.version
-      assertResult(
-        Return((TestingPackages.MaximalV3ModelV3PackageDefinition,u)))(
-        Try(Await.result(c.getPackageByPackageVersion("MAXIMAL", Some(ver)))))
+      Try(Await.result(c.getPackageByPackageVersion("MAXIMAL", Some(ver)))) shouldBe Return(
+        (TestingPackages.MaximalV3ModelV3PackageDefinition, u)
+      )
       val bad = TestingPackages.MinimalV3ModelV2PackageDefinition.version
-      assertResult(Throw(new VersionNotFound("MAXIMAL", bad)))(Try(Await.result(c.getPackageByPackageVersion("MAXIMAL", Some(bad)))))
+      Try(Await.result(c.getPackageByPackageVersion("MAXIMAL", Some(bad)))) shouldBe Throw(
+        VersionNotFound("MAXIMAL", bad).exception
+      )
     }
     "for all versions" in {
       forAll(TestingPackages.packageDefinitions) { packageDefinition =>

@@ -1,11 +1,12 @@
 package com.mesosphere.cosmos.storage.installqueue
 
-import com.mesosphere.cosmos.InstallQueueError
-import com.mesosphere.cosmos.OperationInProgress
+import com.mesosphere.cosmos.error.CosmosException
+import com.mesosphere.cosmos.error.InstallQueueError
+import com.mesosphere.cosmos.error.OperationInProgress
+import com.mesosphere.cosmos.model.StorageEnvelope
 import com.mesosphere.cosmos.model.ZooKeeperUri
 import com.mesosphere.cosmos.rpc.v1.model.ErrorResponse
 import com.mesosphere.cosmos.rpc.v1.model.PackageCoordinate
-import com.mesosphere.cosmos.model.StorageEnvelope
 import com.mesosphere.cosmos.storage.v1.circe.MediaTypedDecoders._
 import com.mesosphere.cosmos.storage.v1.circe.MediaTypedEncoders._
 import com.mesosphere.cosmos.storage.v1.model.FailedStatus
@@ -29,10 +30,10 @@ import org.scalatest.fixture
 import org.scalatest.prop.TableDrivenPropertyChecks
 
 final class InstallQueueSpec
-  extends fixture.FreeSpec
-    with BeforeAndAfterAll
-    with Matchers
-    with TableDrivenPropertyChecks {
+extends fixture.FreeSpec
+with BeforeAndAfterAll
+with Matchers
+with TableDrivenPropertyChecks {
 
   import InstallQueue._
   import InstallQueueSpec._
@@ -89,10 +90,10 @@ final class InstallQueueSpec
             coordinate1,
             pendingUniverseInstall)
 
-          val addResult = intercept[OperationInProgress] {
+          val exception = intercept[CosmosException] {
             Await.result(installQueue.add(coordinate1, universeInstall))
           }
-          assertResult(coordinate1)(addResult.coordinate)
+          exception.error shouldBe OperationInProgress(coordinate1)
 
           checkInstallQueueContents(client,
             coordinate1,
@@ -104,7 +105,8 @@ final class InstallQueueSpec
           insertPackageStatusIntoQueue(
             client,
             coordinate1,
-            FailedStatus(OperationFailure(universeInstall, errorResponse1)))
+            FailedStatus(OperationFailure(universeInstall, errorResponse1))
+          )
 
           val addResult = Await.result(
             installQueue.add(coordinate1, universeInstall)
@@ -114,29 +116,36 @@ final class InstallQueueSpec
           checkInstallQueueContents(
             client,
             coordinate1,
-            PendingStatus(universeInstall, Some(OperationFailure(universeInstall, errorResponse1))))
+            PendingStatus(
+              universeInstall,
+              Some(OperationFailure(universeInstall, errorResponse1))
+            )
+          )
         }
 
         "on a coordinate that has an operation and a failure" in { testParameters =>
           val (client, installQueue) = testParameters
 
-          val pendingUniverseInstallWithFailure =
-            PendingStatus(universeInstall, Some(OperationFailure(universeInstall, errorResponse1)))
+          val pendingUniverseInstallWithFailure = PendingStatus(
+            universeInstall,
+            Some(OperationFailure(universeInstall, errorResponse1))
+          )
 
           insertPackageStatusIntoQueue(
             client,
             coordinate1,
             pendingUniverseInstallWithFailure)
 
-          val addResult = intercept[OperationInProgress] {
+          val exception = intercept[CosmosException] {
             Await.result(installQueue.add(coordinate1, universeInstall))
           }
-          assertResult(coordinate1)(addResult.coordinate)
+          exception.error shouldBe OperationInProgress(coordinate1)
 
           checkInstallQueueContents(
             client,
             coordinate1,
-            pendingUniverseInstallWithFailure)
+            pendingUniverseInstallWithFailure
+          )
         }
       }
 
@@ -162,23 +171,27 @@ final class InstallQueueSpec
         "Fail an operation " - {
           "when no parent path exists" in { testParameters =>
             val (_, installQueue) = testParameters
-            val error = intercept[InstallQueueError](
+            val exception = intercept[CosmosException](
               Await.result(
                 installQueue.failure(coordinate1, errorResponse1)
               )
             )
-            assertResult(notInQueueFailureMessageCoordinate1)(error.msg)
+
+            exception.error shouldBe a[InstallQueueError]
+            assertResult(notInQueueFailureMessageCoordinate1)(exception.error.message)
           }
 
           "when the parent path exists but the status does not" in { testParameters =>
             val (client, installQueue) = testParameters
             createParentPath(client)
-            val error = intercept[InstallQueueError](
+            val exception = intercept[CosmosException](
               Await.result(
                 installQueue.failure(coordinate1, errorResponse1)
               )
             )
-            assertResult(notInQueueFailureMessageCoordinate1)(error.msg)
+
+            exception.error shouldBe a[InstallQueueError]
+            assertResult(notInQueueFailureMessageCoordinate1)(exception.error.message)
           }
 
           "on a coordinate that has a pending operation but no failures" in { testParameters =>
@@ -199,12 +212,14 @@ final class InstallQueueSpec
               client,
               coordinate1,
               FailedStatus(OperationFailure(universeInstall, errorResponse1)))
-            val error = intercept[InstallQueueError](
+            val exception = intercept[CosmosException](
               Await.result(
                 installQueue.failure(coordinate1, errorResponse1)
               )
             )
-            assertResult(alreadyFailedFailureMessageCoordinate1)(error.msg)
+
+            exception.error shouldBe a[InstallQueueError]
+            assertResult(alreadyFailedFailureMessageCoordinate1)(exception.error.message)
           }
 
           "on a coordinate that has an operation and a failure" in { testParameters =>
@@ -212,7 +227,11 @@ final class InstallQueueSpec
             insertPackageStatusIntoQueue(
               client,
               coordinate1,
-              PendingStatus(universeInstall, Some(OperationFailure(universeInstall, errorResponse1))))
+              PendingStatus(
+                universeInstall,
+                Some(OperationFailure(universeInstall, errorResponse1))
+              )
+            )
             Await.result(
               installQueue.failure(coordinate1, errorResponse2)
             )
@@ -248,23 +267,27 @@ final class InstallQueueSpec
         "Success on an operation " - {
           "when no parent path exists" in { testParameters =>
             val (_, installQueue) = testParameters
-            val error = intercept[InstallQueueError](
+            val exception = intercept[CosmosException](
               Await.result(
                 installQueue.success(coordinate1)
               )
             )
-            assertResult(notInQueueSuccessMessageCoordinate1)(error.msg)
+
+            exception.error shouldBe a[InstallQueueError]
+            assertResult(notInQueueSuccessMessageCoordinate1)(exception.error.message)
           }
 
           "when the parent path exists but the status does not" in { testParameters =>
             val (client, installQueue) = testParameters
             createParentPath(client)
-            val error = intercept[InstallQueueError](
+            val exception = intercept[CosmosException](
               Await.result(
                 installQueue.success(coordinate1)
               )
             )
-            assertResult(notInQueueSuccessMessageCoordinate1)(error.msg)
+
+            exception.error shouldBe a[InstallQueueError]
+            assertResult(notInQueueSuccessMessageCoordinate1)(exception.error.message)
           }
 
           "on a coordinate that has a pending operation but no failures" in { testParameters =>
@@ -282,12 +305,14 @@ final class InstallQueueSpec
               client,
               coordinate1,
               FailedStatus(OperationFailure(universeInstall, errorResponse1)))
-            val error = intercept[InstallQueueError](
+            val exception = intercept[CosmosException](
               Await.result(
                 installQueue.success(coordinate1)
               )
             )
-            assertResult(alreadyFailedSuccessMessageCoordinate1)(error.msg)
+
+            exception.error shouldBe a[InstallQueueError]
+            assertResult(alreadyFailedSuccessMessageCoordinate1)(exception.error.message)
           }
 
           "on a coordinate that has an operation and a failure" in { testParameters =>
@@ -295,7 +320,11 @@ final class InstallQueueSpec
             insertPackageStatusIntoQueue(
               client,
               coordinate1,
-              PendingStatus(universeInstall, Some(OperationFailure(universeInstall, errorResponse1))))
+              PendingStatus(
+                universeInstall,
+                Some(OperationFailure(universeInstall, errorResponse1))
+              )
+            )
             Await.result(
               installQueue.success(coordinate1)
             )

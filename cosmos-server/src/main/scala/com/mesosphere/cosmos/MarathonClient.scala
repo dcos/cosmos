@@ -3,6 +3,8 @@ package com.mesosphere.cosmos
 import _root_.io.circe.Json
 import _root_.io.circe.JsonObject
 import com.mesosphere.cosmos.circe.Decoders
+import com.mesosphere.cosmos.error.GenericHttpError
+import com.mesosphere.cosmos.error.MarathonAppNotFound
 import com.mesosphere.cosmos.http.RequestSession
 import com.mesosphere.cosmos.thirdparty.marathon.circe.Decoders._
 import com.mesosphere.cosmos.thirdparty.marathon.model.AppId
@@ -53,14 +55,14 @@ class MarathonClient(
       response.status match {
         case Status.Ok => Some(decodeJsonTo[MarathonAppResponse](response))
         case Status.NotFound => None
-        case s: Status => throw GenericHttpError(HttpMethod.GET, uri, s, s)
+        case s: Status => throw GenericHttpError(HttpMethod.GET, uri, s).exception(s)
       }
     }
   }
 
   def getApp(appId: AppId)(implicit session: RequestSession): Future[MarathonAppResponse] = {
     getAppOption(appId).map { appOption =>
-      appOption.getOrElse(throw MarathonAppNotFound(appId))
+      appOption.getOrElse(throw MarathonAppNotFound(appId).exception)
     }
   }
 

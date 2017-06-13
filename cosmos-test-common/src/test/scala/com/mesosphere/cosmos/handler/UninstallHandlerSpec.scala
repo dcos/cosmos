@@ -2,10 +2,11 @@ package com.mesosphere.cosmos.handler
 
 import com.mesosphere.cosmos.AdminRouter
 import com.mesosphere.cosmos.AdminRouterClient
-import com.mesosphere.cosmos.AppAlreadyUninstalling
-import com.mesosphere.cosmos.FailedToStartUninstall
 import com.mesosphere.cosmos.MarathonClient
 import com.mesosphere.cosmos.MesosMasterClient
+import com.mesosphere.cosmos.error.AppAlreadyUninstalling
+import com.mesosphere.cosmos.error.CosmosException
+import com.mesosphere.cosmos.error.FailedToStartUninstall
 import com.mesosphere.cosmos.handler.UninstallHandler.SdkUninstall
 import com.mesosphere.cosmos.handler.UninstallHandler.UninstallDetails
 import com.mesosphere.cosmos.handler.UninstallHandler.UninstallOperation
@@ -22,9 +23,14 @@ import io.circe.JsonObject
 import org.mockito.Mockito._
 import org.scalatest.BeforeAndAfterEach
 import org.scalatest.FreeSpec
+import org.scalatest.Matchers
 import org.scalatest.mockito.MockitoSugar
 
-class UninstallHandlerSpec extends FreeSpec with BeforeAndAfterEach with MockitoSugar {
+class UninstallHandlerSpec
+extends FreeSpec
+with Matchers
+with BeforeAndAfterEach
+with MockitoSugar {
 
   private val appId = AppId("/test")
 
@@ -51,13 +57,19 @@ class UninstallHandlerSpec extends FreeSpec with BeforeAndAfterEach with Mockito
     "If a sdk uninstall is already locked, it is not run again" in {
       when(mockSdkJanitor.claimUninstall(appId)).thenReturn(SdkJanitor.UninstallClaimDenied)
 
-      assertThrows[AppAlreadyUninstalling](uninstallHandler.runSdkUninstall(UninstallOperation(
-        appId,
-        "test",
-        Option.empty,
-        Option.empty[String],
-        SdkUninstall
-      ))(mockSession))
+      val exception = intercept[CosmosException](
+        uninstallHandler.runSdkUninstall(
+          UninstallOperation(
+            appId,
+            "test",
+            Option.empty,
+            Option.empty[String],
+            SdkUninstall
+          )
+        )(mockSession)
+      )
+
+      exception.error shouldBe a[AppAlreadyUninstalling]
 
       verify(mockSdkJanitor).claimUninstall(appId)
       verifyNoMoreInteractions(mockSdkJanitor)
@@ -72,13 +84,21 @@ class UninstallHandlerSpec extends FreeSpec with BeforeAndAfterEach with Mockito
 
       uninstallHandler = new UninstallHandler(router, mockPackageCollection, mockSdkJanitor)
 
-      assertThrows[FailedToStartUninstall](Await.result(uninstallHandler.runSdkUninstall(UninstallOperation(
-        appId,
-        "test",
-        Option.empty,
-        Option.empty[String],
-        SdkUninstall
-      ))(mockSession)))
+      val exception = intercept[CosmosException](
+        Await.result(
+          uninstallHandler.runSdkUninstall(
+            UninstallOperation(
+              appId,
+              "test",
+              Option.empty,
+              Option.empty[String],
+              SdkUninstall
+            )
+          )(mockSession)
+        )
+      )
+
+      exception.error shouldBe a[FailedToStartUninstall]
 
       verify(mockSdkJanitor).claimUninstall(appId)
       verify(mockSdkJanitor).releaseUninstall(appId)
@@ -114,12 +134,21 @@ class UninstallHandlerSpec extends FreeSpec with BeforeAndAfterEach with Mockito
   }
 }
 
-class MockModifyAppAdminRouter(adminRouterClient: AdminRouterClient,
-                      marathonClient: MarathonClient,
-                      mesosMasterClient: MesosMasterClient,
-                      response: Response) extends AdminRouter(adminRouterClient, marathonClient, mesosMasterClient) {
+class MockModifyAppAdminRouter(
+  adminRouterClient: AdminRouterClient,
+  marathonClient: MarathonClient,
+  mesosMasterClient: MesosMasterClient,
+  response: Response
+) extends AdminRouter(adminRouterClient, marathonClient, mesosMasterClient) {
 
-  override def modifyApp(appId: AppId, force: Boolean)(f: (JsonObject) => JsonObject)(implicit session: RequestSession): Future[Response] = {
+  override def modifyApp(
+    appId: AppId,
+    force: Boolean
+  )(
+    f: (JsonObject) => JsonObject
+  )(
+    implicit session: RequestSession
+  ): Future[Response] = {
     Future.value(response)
   }
 }

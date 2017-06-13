@@ -1,5 +1,8 @@
 package com.mesosphere.cosmos
 
+import com.mesosphere.cosmos.error.CosmosException
+import com.mesosphere.cosmos.error.PackageNotFound
+import com.mesosphere.cosmos.error.VersionNotFound
 import com.mesosphere.cosmos.storage.PackageStorage
 import com.mesosphere.universe
 import com.mesosphere.universe.v3.syntax.PackageDefinitionOps._
@@ -39,7 +42,8 @@ package object repository {
         Some(pkg.version)
       )
     }.transform {
-      case Throw(VersionNotFound(_, _)) | Throw(PackageNotFound(_)) =>
+      case Throw(CosmosException(VersionNotFound(_, _), _, _, _)) |
+      Throw(CosmosException(PackageNotFound(_), _, _, _)) =>
         // Put the PackageDefinition in the package object storage.
         packageStorage.writePackageDefinition(pkg)
       case Throw(error) =>

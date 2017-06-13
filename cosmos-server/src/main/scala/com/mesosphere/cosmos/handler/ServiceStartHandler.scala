@@ -1,19 +1,26 @@
 package com.mesosphere.cosmos.handler
 
-import _root_.io.circe.syntax._
-import com.mesosphere.cosmos._
+import com.mesosphere.cosmos.MarathonPackageRunner
+import com.mesosphere.cosmos.error.CirceError
+import com.mesosphere.cosmos.error.JsonSchemaMismatch
+import com.mesosphere.cosmos.error.MarathonTemplateMustBeJsonObject
+import com.mesosphere.cosmos.error.PackageNotInstalled
 import com.mesosphere.cosmos.finch.EndpointHandler
 import com.mesosphere.cosmos.http.RequestSession
 import com.mesosphere.cosmos.model.LocalPackageOrigin
-import com.mesosphere.cosmos.render._
+import com.mesosphere.cosmos.render.InvalidLabelSchema
+import com.mesosphere.cosmos.render.MissingMarathonV2AppTemplate
+import com.mesosphere.cosmos.render.OptionsNotAllowed
+import com.mesosphere.cosmos.render.OptionsValidationFailure
+import com.mesosphere.cosmos.render.PackageDefinitionRenderer
+import com.mesosphere.cosmos.render.RenderedTemplateNotJson
+import com.mesosphere.cosmos.render.RenderedTemplateNotJsonObject
 import com.mesosphere.cosmos.repository.LocalPackageCollection
-import com.mesosphere.cosmos.rpc.v1.model.Installed
-import com.mesosphere.cosmos.rpc.v1.model.LocalPackage
+import com.mesosphere.cosmos.rpc
 import com.mesosphere.universe
 import com.mesosphere.universe.v3.syntax.PackageDefinitionOps._
 import com.twitter.util.Future
-import scala.util.Left
-import scala.util.Right
+import io.circe.syntax._
 
 private[cosmos] final class ServiceStartHandler(
   localPackageCollection: LocalPackageCollection,
@@ -21,12 +28,12 @@ private[cosmos] final class ServiceStartHandler(
 ) extends EndpointHandler[rpc.v1.model.ServiceStartRequest, rpc.v1.model.ServiceStartResponse] {
 
   private[this] def asPackageDefinition(
-    localPackage: LocalPackage,
+    localPackage: rpc.v1.model.LocalPackage,
     packageName: String
   ): universe.v4.model.SupportedPackageDefinition = {
     localPackage match {
-      case installed: Installed => installed.metadata
-      case _ => throw PackageNotInstalled(packageName)
+      case installed: rpc.v1.model.Installed => installed.metadata
+      case _ => throw PackageNotInstalled(packageName).exception
     }
   }
 
@@ -64,16 +71,16 @@ private[cosmos] final class ServiceStartHandler(
               )
             }
           case Left(OptionsValidationFailure(validationErrors)) =>
-            Future.exception(JsonSchemaMismatch(validationErrors))
+            Future.exception(JsonSchemaMismatch(validationErrors).exception)
           case Left(InvalidLabelSchema(cause)) =>
-            Future.exception(CirceError(cause))
+            Future.exception(CirceError(cause).exception)
           case Left(RenderedTemplateNotJson(cause)) =>
-            Future.exception(CirceError(cause))
+            Future.exception(CirceError(cause).exception)
           case Left(RenderedTemplateNotJsonObject) =>
-            Future.exception(MarathonTemplateMustBeJsonObject)
+            Future.exception(MarathonTemplateMustBeJsonObject.exception)
           case Left(OptionsNotAllowed) =>
             val message = "No schema available to validate the provided options"
-            Future.exception(JsonSchemaMismatch(List(Map("message" -> message).asJson)))
+            Future.exception(JsonSchemaMismatch(List(Map("message" -> message).asJson)).exception)
         }
       }
   }

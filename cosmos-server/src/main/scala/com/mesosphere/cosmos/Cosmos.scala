@@ -5,6 +5,7 @@ import _root_.io.finch._
 import _root_.io.finch.circe.dropNullKeys._
 import com.mesosphere.cosmos.app.Logging
 import com.mesosphere.cosmos.circe.Encoders._
+import com.mesosphere.cosmos.error.CosmosException
 import com.mesosphere.cosmos.finch.DispatchingMediaTypedEncoder
 import com.mesosphere.cosmos.finch.EndpointHandler
 import com.mesosphere.cosmos.finch.FinchExtensions._
@@ -71,14 +72,14 @@ import com.twitter.util.Await
 import com.twitter.util.Try
 import org.apache.curator.framework.CuratorFramework
 import org.slf4j.Logger
+import scala.concurrent.duration._
+import scala.language.implicitConversions
 import shapeless.:+:
 import shapeless.CNil
 import shapeless.Coproduct
 import shapeless.HNil
 import shapeless.Inl
 import shapeless.Inr
-import scala.concurrent.duration._
-import scala.language.implicitConversions
 
 trait CosmosApp
 extends App
@@ -343,15 +344,15 @@ with Logging {
     val stats = statsReceiver.scope("errorFilter")
 
     val api = endpoints.handle {
-      case ce: CosmosError =>
-        stats.counter(s"definedError/${sanitizeClassName(ce.getClass)}").incr()
+      case ce: CosmosException =>
+        stats.counter(s"definedError/${sanitizeClassName(ce.error.getClass)}").incr()
         val output = Output.failure(
           ce,
           ce.status
         ).withHeader(
           Fields.ContentType -> MediaTypes.ErrorResponse.show
         )
-        ce.getHeaders.foldLeft(output) { case (out, kv) => out.withHeader(kv) }
+        ce.headers.foldLeft(output) { case (out, kv) => out.withHeader(kv) }
       case fe @ (_: _root_.io.finch.Error | _: _root_.io.finch.Errors) =>
         stats.counter(s"finchError/${sanitizeClassName(fe.getClass)}").incr()
         Output.failure(

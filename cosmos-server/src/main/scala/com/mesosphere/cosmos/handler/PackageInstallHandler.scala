@@ -1,11 +1,12 @@
 package com.mesosphere.cosmos.handler
 
-import com.mesosphere.cosmos.CirceError
-import com.mesosphere.cosmos.JsonSchemaMismatch
 import com.mesosphere.cosmos.MarathonPackageRunner
-import com.mesosphere.cosmos.MarathonTemplateMustBeJsonObject
-import com.mesosphere.cosmos.PackageAlreadyInstalled
-import com.mesosphere.cosmos.ServiceAlreadyStarted
+import com.mesosphere.cosmos.error.CirceError
+import com.mesosphere.cosmos.error.CosmosException
+import com.mesosphere.cosmos.error.JsonSchemaMismatch
+import com.mesosphere.cosmos.error.MarathonTemplateMustBeJsonObject
+import com.mesosphere.cosmos.error.PackageAlreadyInstalled
+import com.mesosphere.cosmos.error.ServiceAlreadyStarted
 import com.mesosphere.cosmos.finch.EndpointHandler
 import com.mesosphere.cosmos.http.RequestSession
 import com.mesosphere.cosmos.render.InvalidLabelSchema
@@ -71,17 +72,17 @@ private[cosmos] final class PackageInstallHandler(
           )
         }
         .handle {
-          case ServiceAlreadyStarted() =>
-            throw PackageAlreadyInstalled()
+          case CosmosException(ServiceAlreadyStarted(), _, _, _) =>
+            throw PackageAlreadyInstalled().exception
         }
     case Left(OptionsValidationFailure(validationErrors)) =>
-      Future.exception(JsonSchemaMismatch(validationErrors))
+      Future.exception(JsonSchemaMismatch(validationErrors).exception)
     case Left(InvalidLabelSchema(cause)) =>
-      Future.exception(CirceError(cause))
+      Future.exception(CirceError(cause).exception)
     case Left(RenderedTemplateNotJson(cause)) =>
-      Future.exception(CirceError(cause))
+      Future.exception(CirceError(cause).exception)
     case Left(RenderedTemplateNotJsonObject) =>
-      Future.exception(MarathonTemplateMustBeJsonObject)
+      Future.exception(MarathonTemplateMustBeJsonObject.exception)
     case Left(OptionsNotAllowed) =>
       Future.exception(
         JsonSchemaMismatch(
@@ -90,7 +91,7 @@ private[cosmos] final class PackageInstallHandler(
               "message" -> "No schema available to validate the provided options"
             ).asJson
           )
-        )
+        ).exception
       )
     case Left(MissingMarathonV2AppTemplate) =>
       Future {

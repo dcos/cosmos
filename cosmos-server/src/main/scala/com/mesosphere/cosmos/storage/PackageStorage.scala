@@ -1,11 +1,10 @@
 package com.mesosphere.cosmos.storage
 
-import com.mesosphere.cosmos.PackageFileMissing
 import com.mesosphere.cosmos.circe.Decoders.decode
 import com.mesosphere.cosmos.circe.Encoders.exceptionErrorResponse
 import com.mesosphere.cosmos.converter.Common._
+import com.mesosphere.cosmos.error.PackageFileMissing
 import com.mesosphere.cosmos.rpc
-import com.mesosphere.cosmos.rpc.v1.model.PackageCoordinate
 import com.mesosphere.universe
 import com.mesosphere.universe.v3.syntax.PackageDefinitionOps.packageDefinitionToPackageDefinitionOps
 import com.mesosphere.util.AbsolutePath
@@ -54,7 +53,7 @@ final class PackageStorage private(objectStorage: ObjectStorage) {
     }
   }
 
-  private[this] def list(): Future[List[PackageCoordinate]] = {
+  private[this] def list(): Future[List[rpc.v1.model.PackageCoordinate]] = {
     objectStorage.listWithoutPaging(AbsolutePath.Root)
       .map(objectList => getPackageCoordinates(objectList.directories))
   }
@@ -67,7 +66,7 @@ final class PackageStorage private(objectStorage: ObjectStorage) {
             rpc.v1.model.Installed(packageDefinition)
           case None =>
             rpc.v1.model.Invalid(
-              exceptionErrorResponse(PackageFileMissing("metadata.json")),
+              exceptionErrorResponse(PackageFileMissing("metadata.json").exception),
               coordinate
             )
         }
@@ -86,11 +85,13 @@ object PackageStorage {
     new PackageStorage(objectStorage)
   }
 
-  private def getMetadataPath(packageCoordinate: PackageCoordinate): AbsolutePath = {
+  private def getMetadataPath(packageCoordinate: rpc.v1.model.PackageCoordinate): AbsolutePath = {
     AbsolutePath.Root / packageCoordinate.as[String] / "metadata.json"
   }
 
-  def getPackageCoordinates(directoryPaths: List[AbsolutePath]): List[PackageCoordinate] = {
+  def getPackageCoordinates(
+    directoryPaths: List[AbsolutePath]
+  ): List[rpc.v1.model.PackageCoordinate] = {
     for {
       directoryPath <- directoryPaths
       lastElement <- directoryPath.elements.lastOption

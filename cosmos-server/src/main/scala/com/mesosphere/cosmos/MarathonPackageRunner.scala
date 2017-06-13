@@ -2,9 +2,14 @@ package com.mesosphere.cosmos
 
 import _root_.io.circe.JsonObject
 import com.mesosphere.cosmos.circe.Decoders.decode
+import com.mesosphere.cosmos.error.MarathonBadGateway
+import com.mesosphere.cosmos.error.MarathonBadResponse
+import com.mesosphere.cosmos.error.MarathonGenericError
+import com.mesosphere.cosmos.error.ServiceAlreadyStarted
 import com.mesosphere.cosmos.http.RequestSession
 import com.mesosphere.cosmos.thirdparty.marathon.circe.Decoders._
-import com.mesosphere.cosmos.thirdparty.marathon.model.{MarathonApp, MarathonError}
+import com.mesosphere.cosmos.thirdparty.marathon.model.MarathonApp
+import com.mesosphere.cosmos.thirdparty.marathon.model.MarathonError
 import com.twitter.finagle.http.Status
 import com.twitter.util.Future
 import scala.util.Failure
@@ -23,16 +28,16 @@ final class MarathonPackageRunner(adminRouter: AdminRouter) {
       .map { response =>
         response.status match {
           case Status.Conflict =>
-            throw ServiceAlreadyStarted()
+            throw ServiceAlreadyStarted().exception
           case status if (400 until 500).contains(status.code) =>
             Try(decode[MarathonError](response.contentString)) match {
               case Success(marathonError) =>
-                throw MarathonBadResponse(marathonError)
+                throw MarathonBadResponse(marathonError).exception
               case Failure(_) =>
-                throw MarathonGenericError(status)
+                throw MarathonGenericError(status).exception
             }
           case status if (500 until 600).contains(status.code) =>
-            throw MarathonBadGateway(status)
+            throw MarathonBadGateway(status).exception
           case _ =>
             decode[MarathonApp](response.contentString)
         }

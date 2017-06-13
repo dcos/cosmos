@@ -1,8 +1,8 @@
 package com.mesosphere.cosmos.handler
 
 import com.mesosphere.Generators.Implicits._
-import com.mesosphere.cosmos.InvalidPackage
-import com.mesosphere.cosmos.OperationInProgress
+import com.mesosphere.cosmos.error.CosmosException
+import com.mesosphere.cosmos.error.OperationInProgress
 import com.mesosphere.cosmos.http.MediaType
 import com.mesosphere.cosmos.http.RequestSession
 import com.mesosphere.cosmos.repository.PackageCollection
@@ -19,6 +19,7 @@ import com.mesosphere.universe.TestUtil
 import com.mesosphere.universe.v3.syntax.PackageDefinitionOps._
 import com.mesosphere.util.AbsolutePath
 import com.mesosphere.util.PackageUtil
+import com.mesosphere.util.PackageUtil.PackageError
 import com.netaporter.uri.Uri
 import com.twitter.finagle.http.Status
 import com.twitter.util.Await
@@ -29,10 +30,15 @@ import org.mockito.Matchers._
 import org.mockito.Mockito._
 import org.scalatest.Assertion
 import org.scalatest.FreeSpec
+import org.scalatest.Matchers
 import org.scalatest.mockito.MockitoSugar
 import org.scalatest.prop.PropertyChecks
 
-final class PackageAddHandlerSpec extends FreeSpec with MockitoSugar with PropertyChecks {
+final class PackageAddHandlerSpec
+extends FreeSpec
+with Matchers
+with MockitoSugar
+with PropertyChecks {
 
   "The PackageAddHandler" - {
 
@@ -67,7 +73,7 @@ final class PackageAddHandlerSpec extends FreeSpec with MockitoSugar with Proper
               .thenReturn(Future.value((packageDef, sourceUri)))
 
             when(producerView.add(coordinate, UniverseInstall(packageDef)))
-              .thenReturn(Future.exception(OperationInProgress(coordinate)))
+              .thenReturn(Future.exception(OperationInProgress(coordinate).exception))
           }
 
           assertErrorResponse(handler(addRequest), coordinate)
@@ -92,8 +98,9 @@ final class PackageAddHandlerSpec extends FreeSpec with MockitoSugar with Proper
               Future.value(Some((MediaTypes.PackageZip, new ByteArrayInputStream(packageData))))
             }
 
-            when(producerView.add(any[rpc.v1.model.PackageCoordinate], any[Operation]))
-              .thenReturn(Future.exception(OperationInProgress(packageDef.packageCoordinate)))
+            when(producerView.add(any[rpc.v1.model.PackageCoordinate], any[Operation])).thenReturn(
+              Future.exception(OperationInProgress(packageDef.packageCoordinate).exception)
+            )
           }
 
           assertErrorResponse(handler(addRequest), packageDef.packageCoordinate)
@@ -104,9 +111,10 @@ final class PackageAddHandlerSpec extends FreeSpec with MockitoSugar with Proper
         response: Future[rpc.v1.model.AddResponse],
         expectedCoordinate: rpc.v1.model.PackageCoordinate
       ): Assertion = {
-        val inProgress = intercept[OperationInProgress](Await.result(response))
-        assertResult(Status.Conflict)(inProgress.status)
-        assertResult(expectedCoordinate)(inProgress.coordinate)
+        val exception = intercept[CosmosException](Await.result(response))
+
+        exception.status shouldBe Status.Conflict
+        exception.error.asInstanceOf[OperationInProgress].coordinate shouldBe expectedCoordinate
       }
 
     }
@@ -133,8 +141,10 @@ final class PackageAddHandlerSpec extends FreeSpec with MockitoSugar with Proper
           }
 
           val response = handler(uploadAddRequest)
-          val InvalidPackage(actualError) = intercept[InvalidPackage](Await.result(response))
-          assertResult(expectedError)(actualError)
+          val exception = intercept[CosmosException](Await.result(response))
+
+          exception.error shouldBe a[PackageError]
+          exception.error.asInstanceOf[PackageError] shouldBe expectedError
         }
       }
     }

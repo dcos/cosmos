@@ -1,6 +1,6 @@
 package com.mesosphere.cosmos.circe
 
-import com.mesosphere.cosmos.CirceError
+import com.mesosphere.cosmos.error.CirceError
 import com.mesosphere.cosmos.finch.MediaTypedDecoder
 import com.mesosphere.cosmos.http.MediaType
 import io.circe.Decoder
@@ -38,7 +38,7 @@ object Decoders {
 
   private[this] def convertToException[T](result: Either[Error, T]): T = result match {
     case Right(result) => result
-    case Left(error) => throw CirceError(error)
+    case Left(error) => throw CirceError(error).exception
   }
 
   private[this] def base64DecodeString(value: String): String = {

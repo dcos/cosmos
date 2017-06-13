@@ -1,9 +1,12 @@
 package com.mesosphere.util
 
 import cats.syntax.either._
+import com.mesosphere.cosmos.error.CosmosError
 import com.mesosphere.universe
 import com.twitter.io.StreamIO
+import io.circe.Encoder
 import io.circe.JsonObject
+import io.circe.generic.semiauto.deriveEncoder
 import io.circe.jawn.decode
 import io.circe.syntax._
 import java.io.InputStream
@@ -33,7 +36,7 @@ object PackageUtil {
           val metadataString = new String(metadataBytes, StandardCharsets.UTF_8)
 
           decode[universe.v4.model.Metadata](metadataString)
-            .leftMap(error => InvalidEntry(MetadataPath, error))
+            .leftMap(error => InvalidEntry(MetadataPath, error.getClass.getSimpleName))
         }
     } finally {
       zipIn.close()
@@ -48,25 +51,29 @@ object PackageUtil {
     zipOut.close()
   }
 
-  sealed abstract class PackageError(message: String, cause: Option[Throwable])
-    extends RuntimeException(message, cause.orNull) {
-    def getData: JsonObject
+  sealed trait PackageError extends CosmosError
+
+
+  final case class MissingEntry(path: RelativePath) extends PackageError {
+    override def data: Option[JsonObject] = CosmosError.deriveData(this)
+    override def message: String = s"Package entry not found: $path"
   }
 
-  case class MissingEntry(path: RelativePath)
-    extends PackageError(message = s"Package entry not found: $path", cause = None) {
-    override def getData: JsonObject = JsonObject.singleton("path", path.toString.asJson)
+  object MissingEntry {
+    implicit val encoder: Encoder[MissingEntry] = deriveEncoder
   }
 
-  case class InvalidEntry(path: RelativePath, cause: io.circe.Error)
-    extends PackageError(
-      message = s"Package entry was not JSON or did not match the expected schema: $path",
-      cause = Some(cause)
-    ) {
-    override def getData: JsonObject = JsonObject.fromMap(Map(
-      "path" -> path.toString.asJson,
-      "failure" -> cause.getClass.getSimpleName.asJson
-    ))
+
+  final case class InvalidEntry(
+    path: RelativePath,
+    failure: String
+  ) extends PackageError {
+    override def data: Option[JsonObject] = CosmosError.deriveData(this)
+    override def message: String = s"Package entry was not JSON or did not match the expected schema: $path"
+  }
+
+  object InvalidEntry {
+    implicit val encoder: Encoder[InvalidEntry] = deriveEncoder
   }
 
 }

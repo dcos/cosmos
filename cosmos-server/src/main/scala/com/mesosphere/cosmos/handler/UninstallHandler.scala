@@ -2,17 +2,18 @@ package com.mesosphere.cosmos.handler
 
 import com.google.common.annotations.VisibleForTesting
 import com.mesosphere.cosmos.AdminRouter
-import com.mesosphere.cosmos.AmbiguousAppId
-import com.mesosphere.cosmos.AppAlreadyUninstalling
-import com.mesosphere.cosmos.CirceError
-import com.mesosphere.cosmos.FailedToStartUninstall
-import com.mesosphere.cosmos.IncompleteUninstall
-import com.mesosphere.cosmos.MarathonAppDeleteError
-import com.mesosphere.cosmos.MultipleFrameworkIds
-import com.mesosphere.cosmos.PackageNotInstalled
-import com.mesosphere.cosmos.ServiceUnavailable
-import com.mesosphere.cosmos.UninstallNonExistentAppForPackage
 import com.mesosphere.cosmos.circe.Decoders
+import com.mesosphere.cosmos.error.AmbiguousAppId
+import com.mesosphere.cosmos.error.AppAlreadyUninstalling
+import com.mesosphere.cosmos.error.CirceError
+import com.mesosphere.cosmos.error.CosmosException
+import com.mesosphere.cosmos.error.FailedToStartUninstall
+import com.mesosphere.cosmos.error.IncompleteUninstall
+import com.mesosphere.cosmos.error.MarathonAppDeleteError
+import com.mesosphere.cosmos.error.MultipleFrameworkIds
+import com.mesosphere.cosmos.error.PackageNotInstalled
+import com.mesosphere.cosmos.error.ServiceUnavailable
+import com.mesosphere.cosmos.error.UninstallNonExistentAppForPackage
 import com.mesosphere.cosmos.finch.EndpointHandler
 import com.mesosphere.cosmos.handler.UninstallHandler._
 import com.mesosphere.cosmos.http.RequestSession
@@ -50,9 +51,12 @@ private[cosmos] final class UninstallHandler(
       .map(apps => createUninstallOperations(req.packageName, apps))
       .map { uninstallOps =>
         req.all match {
-          case Some(true) => uninstallOps
-          case _ if uninstallOps.size > 1 => throw AmbiguousAppId(req.packageName, uninstallOps.map(_.appId))
-          case _ => uninstallOps
+          case Some(true) =>
+            uninstallOps
+          case _ if uninstallOps.size > 1 =>
+            throw AmbiguousAppId(req.packageName, uninstallOps.map(_.appId)).exception
+          case _ =>
+            uninstallOps
         }
       }
       .flatMap(runUninstalls)
@@ -111,12 +115,11 @@ private[cosmos] final class UninstallHandler(
                   UninstallDetails.from(op).copy(frameworkId = Some(fwId))
                 }
             case all =>
-              throw MultipleFrameworkIds(op.packageName, op.packageVersion, fwName, all)
+              throw MultipleFrameworkIds(op.packageName, op.packageVersion, fwName, all).exception
+          } handle {
+            case su @ CosmosException(ServiceUnavailable(_), _, _, _) =>
+              throw CosmosException(IncompleteUninstall(op.packageName), su)
           }
-            .handle {
-              case su: ServiceUnavailable =>
-                throw IncompleteUninstall(op.packageName, su)
-            }
         case None =>
           Future.value(UninstallDetails.from(op))
       }
@@ -130,7 +133,7 @@ private[cosmos] final class UninstallHandler(
     implicit session: RequestSession
   ): Future[UninstallDetails] = {
     if (sdkJanitor.claimUninstall(op.appId) == UninstallClaimDenied) {
-      throw AppAlreadyUninstalling(op.appId)
+      throw AppAlreadyUninstalling(op.appId).exception
     }
 
     adminRouter.modifyApp(op.appId, force = true)(setMarathonUninstall)
@@ -142,7 +145,10 @@ private[cosmos] final class UninstallHandler(
           UninstallDetails.from(op)
         case _ =>
           logger.error("Encountered error in marathon request {}", response.contentString)
-          throw FailedToStartUninstall(op.appId, "Encountered error in marathon request %s".format(response.contentString))
+          throw FailedToStartUninstall(
+            op.appId,
+            s"Encountered error in marathon request ${response.contentString}"
+          ).exception
       }
     }
     .onFailure { _ =>
@@ -155,10 +161,15 @@ private[cosmos] final class UninstallHandler(
     try {
       Decoders.parse(content).cursor.get[String]("deploymentId") match {
         case Right(deploymentId) => deploymentId
-        case Left(_) => throw FailedToStartUninstall(op.appId, DeploymentIdErrorMessage.format(content))
+        case Left(_) =>
+          throw FailedToStartUninstall(
+            op.appId,
+            DeploymentIdErrorMessage.format(content)
+          ).exception
       }
     } catch {
-      case _: CirceError => throw FailedToStartUninstall(op.appId, DeploymentIdErrorMessage.format(content))
+      case ex: CosmosException if ex.error.isInstanceOf[CirceError] =>
+        throw FailedToStartUninstall(op.appId, DeploymentIdErrorMessage.format(content)).exception
     }
   }
 
@@ -168,7 +179,12 @@ private[cosmos] final class UninstallHandler(
     // Presently, those fields are:
     // - uris
     // - version
-    appJson.add("env", Json.fromJsonObject(appJson("env").get.asObject.get.add(SdkUninstallEnvvar, Json.fromString("true"))))
+    appJson.add(
+      "env",
+      Json.fromJsonObject(
+        appJson("env").get.asObject.get.add(SdkUninstallEnvvar, Json.fromString("true"))
+      )
+    )
   }
 
   private def lookupFrameworkIds(
@@ -184,10 +200,10 @@ private[cosmos] final class UninstallHandler(
   )(
     implicit session: RequestSession
   ): Future[MarathonAppDeleteSuccess] = {
-    adminRouter.deleteApp(appId, force = true) map { resp =>
+    adminRouter.deleteApp(appId, force = true).map { resp =>
       resp.status match {
         case Status.Ok => MarathonAppDeleteSuccess()
-        case a => throw MarathonAppDeleteError(appId)
+        case a => throw MarathonAppDeleteError(appId).exception
       }
     }
   }
@@ -202,7 +218,7 @@ private[cosmos] final class UninstallHandler(
       case Some(id) =>
         adminRouter.getAppOption(id).map {
           case Some(appResponse) => List(appResponse.app)
-          case _ => throw UninstallNonExistentAppForPackage(packageName, id)
+          case _ => throw UninstallNonExistentAppForPackage(packageName, id).exception
         }
       case None =>
         adminRouter.listApps().map(_.apps)
@@ -230,7 +246,7 @@ private[cosmos] final class UninstallHandler(
     }
 
     if (uninstallOperations.isEmpty) {
-      throw new PackageNotInstalled(requestedPackageName)
+      throw PackageNotInstalled(requestedPackageName).exception
     }
     uninstallOperations
   }
