@@ -303,16 +303,16 @@ private object PackageInstallIntegrationSpec extends Matchers with TableDrivenPr
       "name" -> "helloworld".asJson,
       "postInstallNotes" -> "A sample post-installation message".asJson,
       "description" -> "Example DCOS application package".asJson,
-      "packagingVersion" -> "2.0".asJson,
+      "packagingVersion" -> "4.0".asJson,
       "tags" -> List("mesosphere".asJson, "example".asJson, "subcommand".asJson).asJson,
       "selected" -> false.asJson,
       "framework" -> false.asJson,
       "maintainer" -> "support@mesosphere.io".asJson,
-      "version" -> "0.1.0".asJson,
+      "version" -> "0.4.2".asJson,
       "preInstallNotes" -> "A sample pre-installation message".asJson
     ).asJson,
     packageName = "helloworld",
-    packageVersion = "0.1.0",
+    packageVersion = "0.4.2",
     packageSource = DefaultRepositories().getOrThrow(1).uri.toString,
     userOptions = JsonObject.empty.asJson
   )
@@ -320,7 +320,7 @@ private object PackageInstallIntegrationSpec extends Matchers with TableDrivenPr
   private val UniversePackagesTable = Table(
     ("expected response", "force version", "Labels"),
     (
-      InstallResponse("helloworld", PackageDetailsVersion("0.1.0"), AppId("helloworld")),
+      InstallResponse("helloworld", PackageDetailsVersion("0.4.2"), AppId("helloworld")),
       false,
       Some(HelloWorldLabels)
     ),

@@ -16,6 +16,9 @@ final class ListVersionsSpec extends FreeSpec with Matchers {
       val response = CosmosClient.submit(request)
       val expectedContent = Map(
         "results" -> Map(
+          "0.4.2" -> "5",
+          "0.4.1" -> "4",
+          "0.4.0" -> "3",
           "0.1.0" -> "0"
         )
       ).asJson
