@@ -320,7 +320,7 @@ private object PackageInstallIntegrationSpec extends Matchers with TableDrivenPr
   private val UniversePackagesTable = Table(
     ("expected response", "force version", "Labels"),
     (
-      InstallResponse("helloworld", PackageDetailsVersion("0.1.0"), AppId("helloworld")),
+      InstallResponse("helloworld", PackageDetailsVersion("0.4.2"), AppId("helloworld")),
       false,
       Some(HelloWorldLabels)
     ),
