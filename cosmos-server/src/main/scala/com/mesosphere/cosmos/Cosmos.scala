@@ -14,8 +14,6 @@ import com.mesosphere.cosmos.finch.RequestValidators
 import com.mesosphere.cosmos.handler.CapabilitiesHandler
 import com.mesosphere.cosmos.handler.ListHandler
 import com.mesosphere.cosmos.handler.ListVersionsHandler
-import com.mesosphere.cosmos.handler.NotConfiguredHandler
-import com.mesosphere.cosmos.handler.PackageAddHandler
 import com.mesosphere.cosmos.handler.PackageDescribeHandler
 import com.mesosphere.cosmos.handler.PackageInstallHandler
 import com.mesosphere.cosmos.handler.PackageRenderHandler
@@ -24,35 +22,18 @@ import com.mesosphere.cosmos.handler.PackageRepositoryDeleteHandler
 import com.mesosphere.cosmos.handler.PackageRepositoryListHandler
 import com.mesosphere.cosmos.handler.PackageSearchHandler
 import com.mesosphere.cosmos.handler.ServiceDescribeHandler
-import com.mesosphere.cosmos.handler.ServiceStartHandler
 import com.mesosphere.cosmos.handler.UninstallHandler
-import com.mesosphere.cosmos.repository.DefaultInstaller
-import com.mesosphere.cosmos.repository.DefaultUniverseInstaller
-import com.mesosphere.cosmos.repository.LocalPackageCollection
-import com.mesosphere.cosmos.repository.OperationProcessor
 import com.mesosphere.cosmos.repository.PackageSourcesStorage
-import com.mesosphere.cosmos.repository.SyncFutureLeader
-import com.mesosphere.cosmos.repository.Uninstaller
 import com.mesosphere.cosmos.repository.UniverseClient
 import com.mesosphere.cosmos.repository.ZkRepositoryList
 import com.mesosphere.cosmos.rpc.MediaTypes
-import com.mesosphere.cosmos.rpc.v1.circe.MediaTypedBodyParsers._
 import com.mesosphere.cosmos.rpc.v1.circe.MediaTypedEncoders._
 import com.mesosphere.cosmos.rpc.v1.circe.MediaTypedRequestDecoders._
 import com.mesosphere.cosmos.rpc.v2.circe.MediaTypedEncoders._
 import com.mesosphere.cosmos.service.ServiceUninstaller
-import com.mesosphere.cosmos.storage.GarbageCollector
-import com.mesosphere.cosmos.storage.ObjectStorage
-import com.mesosphere.cosmos.storage.PackageStorage
-import com.mesosphere.cosmos.storage.StagedPackageStorage
-import com.mesosphere.cosmos.storage.installqueue.InstallQueue
-import com.mesosphere.cosmos.storage.installqueue.ProcessorView
-import com.mesosphere.cosmos.storage.installqueue.ProducerView
-import com.mesosphere.cosmos.storage.installqueue.ReaderView
 import com.mesosphere.universe
 import com.netaporter.uri.Uri
 import com.twitter.app.App
-import com.twitter.app.Flag
 import com.twitter.finagle.Http
 import com.twitter.finagle.ListeningServer
 import com.twitter.finagle.Service
@@ -69,9 +50,7 @@ import com.twitter.server.Lifecycle
 import com.twitter.server.Stats
 import com.twitter.util.Await
 import com.twitter.util.Try
-import org.apache.curator.framework.CuratorFramework
 import org.slf4j.Logger
-import scala.concurrent.duration._
 import scala.language.implicitConversions
 import shapeless.:+:
 import shapeless.CNil
@@ -109,17 +88,12 @@ with Logging {
     val sourcesStorage = ZkRepositoryList(zkClient)
     onExit(sourcesStorage.close())
 
-    val installQueue = InstallQueue(zkClient)
-    onExit(installQueue.close())
-
     val universeClient = UniverseClient(adminRouter)
 
     new Components(
       adminRouter,
       sourcesStorage,
-      configureObjectStorage(zkClient, installQueue),
       new MultiRepository(sourcesStorage, universeClient),
-      installQueue,
       new MarathonPackageRunner(adminRouter),
       ServiceUninstaller(adminRouter)
     )
@@ -128,19 +102,9 @@ with Logging {
   final def buildHandlers(components: Components): Handlers = {
     import components._
 
-    val packageAddHandler = enableIfSome(objectStorages, "package add") {
-      case (_, stagedStorage) => new PackageAddHandler(repositories, stagedStorage, producerView)
-    }
-
-    val serviceStartHandler = enableIfSome(objectStorages, "service start") {
-      case (localPackageCollection, _) =>
-        new ServiceStartHandler(localPackageCollection, packageRunner)
-    }
-
     new Handlers(
       // Keep alphabetized
       capabilities = new CapabilitiesHandler,
-      packageAdd = packageAddHandler,
       packageDescribe = new PackageDescribeHandler(repositories),
       packageInstall = new PackageInstallHandler(repositories, packageRunner),
       packageList = new ListHandler(adminRouter, uri => repositories.getRepository(uri)),
@@ -151,8 +115,7 @@ with Logging {
       packageRepositoryList = new PackageRepositoryListHandler(sourcesStorage),
       packageSearch = new PackageSearchHandler(repositories),
       packageUninstall = new UninstallHandler(adminRouter, repositories, marathonSdkJanitor),
-      serviceDescribe = new ServiceDescribeHandler(adminRouter, repositories),
-      serviceStart = serviceStartHandler
+      serviceDescribe = new ServiceDescribeHandler(adminRouter, repositories)
     )
   }
 
@@ -165,7 +128,6 @@ with Logging {
     Endpoints(
       // Keep alphabetized
       capabilities = route(get("capabilities"), capabilities)(RequestValidators.noBody),
-      packageAdd = route(post(pkg :: "add"), packageAdd)(RequestValidators.selectedBody),
       packageDescribe = standardEndpoint(pkg :: "describe", packageDescribe),
       packageInstall = standardEndpoint(pkg :: "install", packageInstall),
       packageList = standardEndpoint(pkg :: "list", packageList),
@@ -176,8 +138,7 @@ with Logging {
       packageRepositoryList = standardEndpoint(pkg :: repo :: "list", packageRepositoryList),
       packageSearch = standardEndpoint(pkg :: "search", packageSearch),
       packageUninstall = standardEndpoint(pkg :: "uninstall", packageUninstall),
-      serviceDescribe = standardEndpoint("service" :: "describe", serviceDescribe),
-      serviceStart = standardEndpoint("service" :: "start", serviceStart)
+      serviceDescribe = standardEndpoint("service" :: "describe", serviceDescribe)
     )
   }
 
@@ -208,74 +169,6 @@ with Logging {
     for (httpServer <- maybeHttpsServer) {
       Await.result(httpServer)
     }
-  }
-
-  private[this] def configureObjectStorage(
-    zkClient: CuratorFramework,
-    installQueue: ProcessorView with ReaderView
-  )(
-    implicit statsReceiver: StatsReceiver
-  ): Option[(LocalPackageCollection, StagedPackageStorage)] = {
-    def fromFlag(
-      flag: Flag[ObjectStorageUri],
-      description: String
-    ): Option[ObjectStorage] = {
-      val value = flag.get.map(_.toString).getOrElse("None")
-      logger.info(s"Using {} for the $description storage URI", value)
-      flag.get.map(uri => ObjectStorage.fromUri(uri)(statsReceiver))
-    }
-
-    val validObjectStorages = (
-      fromFlag(packageStorageUri, "package").map(PackageStorage(_)),
-      fromFlag(stagedPackageStorageUri, "staged package").map(StagedPackageStorage(_))
-    ) match {
-      case (Some(packageStorage), Some(stagedStorage)) =>
-        Some((packageStorage, stagedStorage, LocalPackageCollection(packageStorage, installQueue)))
-      case (None, None) =>
-        None
-      case (Some(_), None) =>
-        throw new IllegalArgumentException(
-          "Missing staged storage configuration. Staged storage configuration required if " +
-            "package storage provided."
-        )
-      case (None, Some(_)) =>
-        throw new IllegalArgumentException(
-          "Missing package storage configuration. Package storage configuration required if " +
-            "stage storage provided."
-        )
-    }
-
-    for ((packageStorage, stageStorage, _) <- validObjectStorages) {
-      configureBackgroundTasks(zkClient, installQueue, packageStorage, stageStorage)
-    }
-
-    validObjectStorages.map {
-      case (_, stagedStorage, localCollection) => (localCollection, stagedStorage)
-    }
-  }
-
-  private[this] def configureBackgroundTasks(
-    zkClient: CuratorFramework,
-    installQueue: ProcessorView with ReaderView,
-    packageStorage: PackageStorage,
-    stageStorage: StagedPackageStorage
-  ): Unit = {
-    val processingLeader = SyncFutureLeader(
-      zkClient,
-      OperationProcessor(
-        installQueue,
-        DefaultInstaller(stageStorage, packageStorage),
-        DefaultUniverseInstaller(packageStorage),
-        Uninstaller.Noop
-      ),
-      GarbageCollector(
-        stageStorage,
-        installQueue,
-        1.hour
-      )
-    )
-
-    onExit(processingLeader.close())
   }
 
   private[this] def configureDcosClients(): Try[AdminRouter] = {
@@ -378,9 +271,7 @@ object CosmosApp {
   final class Components(
     val adminRouter: AdminRouter,
     val sourcesStorage: PackageSourcesStorage,
-    val objectStorages: Option[(LocalPackageCollection, StagedPackageStorage)],
     val repositories: MultiRepository,
-    val producerView: ProducerView,
     val packageRunner: MarathonPackageRunner,
     val marathonSdkJanitor: ServiceUninstaller
   )
@@ -388,7 +279,6 @@ object CosmosApp {
   final class Handlers(
     // Keep alphabetized
     val capabilities: EndpointHandler[Unit, rpc.v1.model.CapabilitiesResponse],
-    val packageAdd: EndpointHandler[rpc.v1.model.AddRequest, rpc.v1.model.AddResponse],
     val packageDescribe: EndpointHandler[rpc.v1.model.DescribeRequest, universe.v4.model.PackageDefinition],
     val packageInstall: EndpointHandler[rpc.v1.model.InstallRequest, rpc.v2.model.InstallResponse],
     val packageList: EndpointHandler[rpc.v1.model.ListRequest, rpc.v1.model.ListResponse],
@@ -399,14 +289,12 @@ object CosmosApp {
     val packageRepositoryList: EndpointHandler[rpc.v1.model.PackageRepositoryListRequest, rpc.v1.model.PackageRepositoryListResponse],
     val packageSearch: EndpointHandler[rpc.v1.model.SearchRequest, rpc.v1.model.SearchResponse],
     val packageUninstall: EndpointHandler[rpc.v1.model.UninstallRequest, rpc.v1.model.UninstallResponse],
-    val serviceDescribe: EndpointHandler[rpc.v1.model.ServiceDescribeRequest, rpc.v1.model.ServiceDescribeResponse],
-    val serviceStart: EndpointHandler[rpc.v1.model.ServiceStartRequest, rpc.v1.model.ServiceStartResponse]
+    val serviceDescribe: EndpointHandler[rpc.v1.model.ServiceDescribeRequest, rpc.v1.model.ServiceDescribeResponse]
   )
 
   final case class Endpoints(
     // Keep alphabetized
     capabilities: Endpoint[Json],
-    packageAdd: Endpoint[Json],
     packageDescribe: Endpoint[Json],
     packageInstall: Endpoint[Json],
     packageList: Endpoint[Json],
@@ -417,14 +305,12 @@ object CosmosApp {
     packageRepositoryList: Endpoint[Json],
     packageSearch: Endpoint[Json],
     packageUninstall: Endpoint[Json],
-    serviceDescribe: Endpoint[Json],
-    serviceStart: Endpoint[Json]
+    serviceDescribe: Endpoint[Json]
   ) {
 
     def combine: Endpoint[Json] = {
       // Keep alphabetized
       (capabilities
-        :+: packageAdd
         :+: packageDescribe
         :+: packageInstall
         :+: packageList
@@ -435,16 +321,9 @@ object CosmosApp {
         :+: packageRepositoryList
         :+: packageSearch
         :+: packageUninstall
-        :+: serviceDescribe
-        :+: serviceStart).map(degenerateCoproduct)
+        :+: serviceDescribe).map(degenerateCoproduct)
     }
 
-  }
-
-  private def enableIfSome[A, Req, Res](requirement: Option[A], operationName: String)(
-    f: A => EndpointHandler[Req, Res]
-  ): EndpointHandler[Req, Res] = {
-    requirement.fold[EndpointHandler[Req, Res]](new NotConfiguredHandler(operationName))(f)
   }
 
   def standardEndpoint[Req, Res](

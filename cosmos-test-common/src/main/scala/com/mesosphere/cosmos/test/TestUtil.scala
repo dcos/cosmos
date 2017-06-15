@@ -2,9 +2,6 @@ package com.mesosphere.cosmos.test
 
 import com.mesosphere.cosmos._
 import com.mesosphere.cosmos.http.RequestSession
-import com.mesosphere.cosmos.storage.LocalObjectStorage
-import com.mesosphere.cosmos.storage.ObjectStorage
-import com.mesosphere.cosmos.storage.installqueue.ReaderView
 import com.mesosphere.universe
 import com.mesosphere.universe.test.TestingPackages
 import com.twitter.util.Future
@@ -13,19 +10,6 @@ import java.nio.file._
 import java.nio.file.attribute.BasicFileAttributes
 
 object TestUtil {
-
-  def withObjectStorage(testCode: ObjectStorage => Any): Any = {
-    withLocalObjectStorage(testCode)
-  }
-
-  def withLocalObjectStorage(testCode: LocalObjectStorage => Any): Any = {
-    implicit val stats = com.twitter.finagle.stats.NullStatsReceiver
-
-    val path = Files.createTempDirectory("cosmos-dlpc-")
-    try {
-      testCode(LocalObjectStorage(path))
-    } finally deleteRecursively(path)
-  }
 
   def deleteRecursively(path: Path): Unit = {
     val visitor = new SimpleFileVisitor[Path] {
@@ -108,8 +92,4 @@ object TestUtil {
     resourceDefinition = Some(TestingPackages.MaximalV2Resource)
   )
 
-  object EmptyReaderView extends ReaderView {
-    override def viewStatus(): Future[Map[rpc.v1.model.PackageCoordinate, storage.v1.model.OperationStatus]] =
-      Future.value(Map.empty)
-  }
 }
