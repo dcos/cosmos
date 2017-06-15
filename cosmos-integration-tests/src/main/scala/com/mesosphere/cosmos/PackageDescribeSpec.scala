@@ -50,7 +50,7 @@ final class PackageDescribeSpec
           describeHelloworld()
         }
         "with version" in {
-          describeHelloworld(Some(universe.v2.model.PackageDetailsVersion("0.1.0")))
+          describeHelloworld(Some(universe.v2.model.PackageDetailsVersion("0.4.2")))
         }
       }
 
@@ -146,7 +146,7 @@ final class PackageDescribeSpec
 
     val packageInfo = parse(response.contentString)
 
-    packageInfo shouldBe HelloWorld010PackageDefinition
+    packageInfo shouldBe HelloWorld042PackageDefinition
   }
 
   private def describeRequest(
@@ -177,32 +177,32 @@ private object PackageDescribeSpec extends TableDrivenPropertyChecks {
     ("kafka", universe.v3.model.Version("1.1.2-0.10.0.0"))
   )
 
-  val HelloWorld010PackageDefinition = {
+  val HelloWorld042PackageDefinition = {
     // scalastyle:off line.size.limit
     val pkgJson = """
     {
       "package" : {
-        "packagingVersion" : "2.0",
+        "packagingVersion" : "4.0",
         "name" : "helloworld",
-        "version" : "0.1.0",
-        "releaseVersion" : 0,
+        "version" : "0.4.2",
+        "releaseVersion" : 5,
         "maintainer" : "support@mesosphere.io",
         "description" : "Example DCOS application package",
-        "marathon" : {
-          "v2AppMustacheTemplate" : "ewogICJpZCI6ICJoZWxsb3dvcmxkIiwKICAiY3B1cyI6IDEuMCwKICAibWVtIjogNTEyLAogICJpbnN0YW5jZXMiOiAxLAogICJjbWQiOiAicHl0aG9uMyAtbSBodHRwLnNlcnZlciB7e3BvcnR9fSIsCiAgImNvbnRhaW5lciI6IHsKICAgICJ0eXBlIjogIkRPQ0tFUiIsCiAgICAiZG9ja2VyIjogewogICAgICAiaW1hZ2UiOiAicHl0aG9uOjMiLAogICAgICAibmV0d29yayI6ICJIT1NUIgogICAgfQogIH0KfQo="
-        },
-        "tags" : [
-        "mesosphere",
-        "example",
-        "subcommand"
-        ],
+        "tags" : [ "mesosphere", "example", "subcommand" ],
         "website" : "https://github.com/mesosphere/dcos-helloworld",
         "preInstallNotes" : "A sample pre-installation message",
         "postInstallNotes" : "A sample post-installation message",
+        "marathon" : {
+          "v2AppMustacheTemplate" : "ewogICJpZCI6ICJ7e25hbWV9fSIsCiAgImNwdXMiOiAxLjAsCiAgIm1lbSI6IDUxMiwKICAiaW5zdGFuY2VzIjogMSwKICAiY21kIjogInB5dGhvbjMgLW0gaHR0cC5zZXJ2ZXIge3twb3J0fX0iLAogICJjb250YWluZXIiOiB7CiAgICAidHlwZSI6ICJET0NLRVIiLAogICAgImRvY2tlciI6IHsKICAgICAgImltYWdlIjogInB5dGhvbjozIiwKICAgICAgIm5ldHdvcmsiOiAiSE9TVCIKICAgIH0KICB9Cn0K"
+        },
         "config" : {
           "$schema" : "http://json-schema.org/schema#",
           "type" : "object",
           "properties" : {
+            "name" : {
+              "type" : "string",
+              "default" : "helloworld"
+            },
             "port" : {
               "type" : "integer",
               "default" : 8080
@@ -210,12 +210,8 @@ private object PackageDescribeSpec extends TableDrivenPropertyChecks {
           },
           "additionalProperties" : false
         },
-        "command" : {
-          "pip" : [
-          "dcos<1.0",
-          "git+https://github.com/mesosphere/dcos-helloworld.git#dcos-helloworld=0.1.0"
-          ]
-        }
+        "upgradesFrom" : [ "*" ],
+        "downgradesTo" : [ "*" ]
       }
     }
     """

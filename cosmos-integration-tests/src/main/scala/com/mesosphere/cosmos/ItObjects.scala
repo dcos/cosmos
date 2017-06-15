@@ -14,17 +14,13 @@ import org.scalatest.prop.TableFor2
 
 object ItObjects {
 
-  val helloWorldRepo: String = {
-    ItUtil.getRepoByName("Hello World")
-  }
-
   val v4TestUniverse: String = {
     ItUtil.getRepoByName("V4TestUniverse")
   }
 
   val helloWorldMarathonMustache: String = {
     """{
-      |  "id": "helloworld",
+      |  "id": "{{name}}",
       |  "cpus": 1.0,
       |  "mem": 512,
       |  "instances": 1,
@@ -54,17 +50,22 @@ object ItObjects {
       |        "$schema": "http://json-schema.org/schema#",
       |        "additionalProperties": false,
       |        "properties": {
+      |            "name" : {
+      |                "type" : "string",
+      |                "default" : "helloworld"
+      |            },
       |            "port": {
       |                "default": 8080,
       |                "type": "integer"
       |            }
       |        },
+      |        "additionalProperties" : false,
       |        "type": "object"
       |    },
       |    "description": "Example DCOS application package",
       |    "maintainer": "support@mesosphere.io",
       |    "marathon": {
-      |        "v2AppMustacheTemplate": "ewogICJpZCI6ICJoZWxsb3dvcmxkIiwKICAiY3B1cyI6IDEuMCwKICAibWVtIjogNTEyLAogICJpbnN0YW5jZXMiOiAxLAogICJjbWQiOiAicHl0aG9uMyAtbSBodHRwLnNlcnZlciB7e3BvcnR9fSIsCiAgImNvbnRhaW5lciI6IHsKICAgICJ0eXBlIjogIkRPQ0tFUiIsCiAgICAiZG9ja2VyIjogewogICAgICAiaW1hZ2UiOiAicHl0aG9uOjMiLAogICAgICAibmV0d29yayI6ICJIT1NUIgogICAgfQogIH0KfQo="
+      |        "v2AppMustacheTemplate": "ewogICJpZCI6ICJ7e25hbWV9fSIsCiAgImNwdXMiOiAxLjAsCiAgIm1lbSI6IDUxMiwKICAiaW5zdGFuY2VzIjogMSwKICAiY21kIjogInB5dGhvbjMgLW0gaHR0cC5zZXJ2ZXIge3twb3J0fX0iLAogICJjb250YWluZXIiOiB7CiAgICAidHlwZSI6ICJET0NLRVIiLAogICAgImRvY2tlciI6IHsKICAgICAgImltYWdlIjogInB5dGhvbjozIiwKICAgICAgIm5ldHdvcmsiOiAiSE9TVCIKICAgIH0KICB9Cn0K"
       |    },
       |    "name": "helloworld",
       |    "packagingVersion": "2.0",
@@ -89,17 +90,22 @@ object ItObjects {
       |        "$schema": "http://json-schema.org/schema#",
       |        "additionalProperties": false,
       |        "properties": {
+      |            "name" : {
+      |                "type" : "string",
+      |                "default" : "helloworld"
+      |            },
       |            "port": {
       |                "default": 8080,
       |                "type": "integer"
       |            }
       |        },
+      |        "additionalProperties" : false,
       |        "type": "object"
       |    },
       |    "description": "Example DCOS application package",
       |    "maintainer": "support@mesosphere.io",
       |    "marathon": {
-      |        "v2AppMustacheTemplate": "ewogICJpZCI6ICJoZWxsb3dvcmxkIiwKICAiY3B1cyI6IDEuMCwKICAibWVtIjogNTEyLAogICJpbnN0YW5jZXMiOiAxLAogICJjbWQiOiAicHl0aG9uMyAtbSBodHRwLnNlcnZlciB7e3BvcnR9fSIsCiAgImNvbnRhaW5lciI6IHsKICAgICJ0eXBlIjogIkRPQ0tFUiIsCiAgICAiZG9ja2VyIjogewogICAgICAiaW1hZ2UiOiAicHl0aG9uOjMiLAogICAgICAibmV0d29yayI6ICJIT1NUIgogICAgfQogIH0KfQo="
+      |        "v2AppMustacheTemplate": "ewogICJpZCI6ICJ7e25hbWV9fSIsCiAgImNwdXMiOiAxLjAsCiAgIm1lbSI6IDUxMiwKICAiaW5zdGFuY2VzIjogMSwKICAiY21kIjogInB5dGhvbjMgLW0gaHR0cC5zZXJ2ZXIge3twb3J0fX0iLAogICJjb250YWluZXIiOiB7CiAgICAidHlwZSI6ICJET0NLRVIiLAogICAgImRvY2tlciI6IHsKICAgICAgImltYWdlIjogInB5dGhvbjozIiwKICAgICAgIm5ldHdvcmsiOiAiSE9TVCIKICAgIH0KICB9Cn0K"
       |    },
       |    "name": "helloworld",
       |    "packagingVersion": "4.0",
@@ -125,11 +131,16 @@ object ItObjects {
       |        "$schema": "http://json-schema.org/schema#",
       |        "additionalProperties": false,
       |        "properties": {
+      |            "name" : {
+      |                "type" : "string",
+      |                "default" : "helloworld"
+      |            },
       |            "port": {
       |                "default": 8080,
       |                "type": "integer"
       |            }
       |        },
+      |        "additionalProperties" : false,
       |        "type": "object"
       |    },
       |    "description": "Example DCOS application package",
@@ -138,7 +149,7 @@ object ItObjects {
       |    ],
       |    "maintainer": "support@mesosphere.io",
       |    "marathon": {
-      |        "v2AppMustacheTemplate": "ewogICJpZCI6ICJoZWxsb3dvcmxkIiwKICAiY3B1cyI6IDEuMCwKICAibWVtIjogNTEyLAogICJpbnN0YW5jZXMiOiAxLAogICJjbWQiOiAicHl0aG9uMyAtbSBodHRwLnNlcnZlciB7e3BvcnR9fSIsCiAgImNvbnRhaW5lciI6IHsKICAgICJ0eXBlIjogIkRPQ0tFUiIsCiAgICAiZG9ja2VyIjogewogICAgICAiaW1hZ2UiOiAicHl0aG9uOjMiLAogICAgICAibmV0d29yayI6ICJIT1NUIgogICAgfQogIH0KfQo="
+      |        "v2AppMustacheTemplate": "ewogICJpZCI6ICJ7e25hbWV9fSIsCiAgImNwdXMiOiAxLjAsCiAgIm1lbSI6IDUxMiwKICAiaW5zdGFuY2VzIjogMSwKICAiY21kIjogInB5dGhvbjMgLW0gaHR0cC5zZXJ2ZXIge3twb3J0fX0iLAogICJjb250YWluZXIiOiB7CiAgICAidHlwZSI6ICJET0NLRVIiLAogICAgImRvY2tlciI6IHsKICAgICAgImltYWdlIjogInB5dGhvbjozIiwKICAgICAgIm5ldHdvcmsiOiAiSE9TVCIKICAgIH0KICB9Cn0K"
       |    },
       |    "minDcosReleaseVersion": "1.10",
       |    "name": "helloworld",
@@ -160,16 +171,62 @@ object ItObjects {
       |
     """.stripMargin
   }
+
+  val helloWorldPackageDefinition042: String = {
+    """
+      |{
+      |    "config": {
+      |        "$schema": "http://json-schema.org/schema#",
+      |        "additionalProperties": false,
+      |        "properties": {
+      |            "name" : {
+      |                "type" : "string",
+      |                "default" : "helloworld"
+      |            },
+      |            "port": {
+      |                "default": 8080,
+      |                "type": "integer"
+      |            }
+      |        },
+      |        "additionalProperties" : false,
+      |        "type": "object"
+      |    },
+      |    "description": "Example DCOS application package",
+      |    "downgradesTo": [
+      |        "*"
+      |    ],
+      |    "maintainer": "support@mesosphere.io",
+      |    "marathon": {
+      |        "v2AppMustacheTemplate": "ewogICJpZCI6ICJ7e25hbWV9fSIsCiAgImNwdXMiOiAxLjAsCiAgIm1lbSI6IDUxMiwKICAiaW5zdGFuY2VzIjogMSwKICAiY21kIjogInB5dGhvbjMgLW0gaHR0cC5zZXJ2ZXIge3twb3J0fX0iLAogICJjb250YWluZXIiOiB7CiAgICAidHlwZSI6ICJET0NLRVIiLAogICAgImRvY2tlciI6IHsKICAgICAgImltYWdlIjogInB5dGhvbjozIiwKICAgICAgIm5ldHdvcmsiOiAiSE9TVCIKICAgIH0KICB9Cn0K"
+      |    },
+      |    "name": "helloworld",
+      |    "packagingVersion": "4.0",
+      |    "postInstallNotes": "A sample post-installation message",
+      |    "preInstallNotes": "A sample pre-installation message",
+      |    "releaseVersion": 5,
+      |    "tags": [
+      |        "mesosphere",
+      |        "example",
+      |        "subcommand"
+      |    ],
+      |    "upgradesFrom": [
+      |        "*"
+      |    ],
+      |    "version": "0.4.2",
+      |    "website": "https://github.com/mesosphere/dcos-helloworld"
+      |}
+      |
+    """.stripMargin
+  }
   // scalastyle:on line.size.limit
 
-  val defaultHelloWorldPackageDefinition: (Json, Json) = {
-    parse(helloWorldPackageDefinition0).toOption.get -> helloWorldRepo.asJson
-  }
+  val defaultHelloWorldPackageDefinition: (Json, Json) =
+    parse(helloWorldPackageDefinition042).toOption.get -> v4TestUniverse.asJson
 
   val helloWorldPackageDefinitions: TableFor2[Json, Json] =
     new TableFor2(
       "Package Definition" -> "Package Source",
-      defaultHelloWorldPackageDefinition,
+      parse(helloWorldPackageDefinition0).toOption.get -> v4TestUniverse.asJson,
       parse(helloWorldPackageDefinition3).toOption.get -> v4TestUniverse.asJson,
       parse(helloWorldPackageDefinition4).toOption.get -> v4TestUniverse.asJson
     )
@@ -241,8 +298,21 @@ object ItObjects {
       .as[Int]
       .toOption
       .getOrElse(defaultPort)
-    val Right(rendered) = parse(helloWorldMarathonMustache
-      .replaceAllLiterally("{{port}}", port.toString))
+
+    val defalutName = "helloworld"
+    val name = options
+      .hcursor
+      .downField("name")
+      .as[String]
+      .toOption
+      .getOrElse(defalutName)
+    val Right(rendered) = parse(
+      helloWorldMarathonMustache.replaceAllLiterally(
+        "{{port}}", port.toString
+      ).replaceAllLiterally(
+        "{{name}}", name
+      )
+    )
     rendered
   }
 
@@ -339,7 +409,10 @@ object ItObjects {
   }
 
   private[this] def getContentType(packageDefinition: Json): Json = {
-    val packagingVersion = packageDefinition.asObject.flatMap(_.apply("packagingVersion")).get.asString.get
+    val packagingVersion = packageDefinition.asObject.flatMap(
+      _.apply("packagingVersion")
+    ).get.asString.get
+
     packagingVersion match {
       case "2.0" => MediaTypes.universeV2Package.show.asJson
       case "3.0" => MediaTypes.universeV3Package.show.asJson

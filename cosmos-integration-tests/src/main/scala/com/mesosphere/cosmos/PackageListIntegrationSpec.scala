@@ -39,9 +39,9 @@ final class PackageListIntegrationSpec
   "Issue #251: Package list should include packages whose repositories have been removed" in {
     val expectedPackageInformation = InstalledPackageInformation(
       InstalledPackageInformationPackageDetails(
-        packagingVersion = PackagingVersion("2.0"),
+        packagingVersion = PackagingVersion("4.0"),
         name = "helloworld",
-        version = PackageDetailsVersion("0.1.0"),
+        version = PackageDetailsVersion("0.4.2"),
         website = Some("https://github.com/mesosphere/dcos-helloworld"),
         maintainer = "support@mesosphere.io",
         description = "Example DCOS application package",
@@ -53,7 +53,7 @@ final class PackageListIntegrationSpec
       )
     )
     withInstalledPackage("helloworld") { installResponse =>
-      withDeletedRepository(helloWorldRepository) {
+      withDeletedRepository(testRepository) {
         withInstalledPackageInListResponse(installResponse) { case Some(Installation(_, pkg)) =>
           assertResult(expectedPackageInformation)(pkg)
         }
@@ -71,7 +71,9 @@ final class PackageListIntegrationSpec
         "cassandra")
       val installResponses = names map packageInstall
       try {
-        val packages = packageList().packages.map(app => (app.packageInformation.packageDefinition.name, app.appId))
+        val packages = packageList().packages.map(
+          app => (app.packageInformation.packageDefinition.name, app.appId)
+        )
         val resultNames = packages.map(_._1)
         assert(packages == packages.sorted)
         assert(names.sorted == resultNames.sorted)
@@ -182,6 +184,8 @@ final class PackageListIntegrationSpec
 
 object PackageListIntegrationSpec {
 
-  private val Some(helloWorldRepository) = DefaultRepositories().getOrThrow.find(_.name == "Hello World")
+  private val Some(testRepository) = DefaultRepositories().getOrThrow.find(
+    _.name == "V4TestUniverse"
+  )
 
 }
