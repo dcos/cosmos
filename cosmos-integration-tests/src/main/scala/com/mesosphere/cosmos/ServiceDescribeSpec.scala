@@ -1,11 +1,13 @@
 package com.mesosphere.cosmos
 
 import _root_.io.circe.Json
+import _root_.io.circe.JsonObject
 import _root_.io.circe.jawn._
 import _root_.io.circe.syntax._
 import cats.syntax.either._
 import com.mesosphere.cosmos.http.HttpRequest
 import com.mesosphere.cosmos.test.CosmosIntegrationTestClient.CosmosClient
+import com.mesosphere.cosmos.thirdparty.marathon.circe.Encoders._
 import com.mesosphere.cosmos.thirdparty.marathon.model.AppId
 import com.mesosphere.universe
 import com.mesosphere.universe.v3.syntax.PackageDefinitionOps._
@@ -68,9 +70,9 @@ object ServiceDescribeSpec
     TableFor3[universe.v4.model.PackageDefinition, List[String], List[String]] = {
     Table(
       ("Package Definition", "Upgrades To", "Downgrades To"),
-      (ItObjects.helloWorldPackage0, List(), List()),
-      (ItObjects.helloWorldPackage3, List("0.4.1"), List()),
-      (ItObjects.helloWorldPackage4, List(), List("0.4.0"))
+      (ItObjects.helloWorldPackage0, List("0.4.2"), List()),
+      (ItObjects.helloWorldPackage3, List("0.4.2", "0.4.1"), List()),
+      (ItObjects.helloWorldPackage4, List("0.4.2"), List("0.4.0"))
     )
   }
 
@@ -101,7 +103,11 @@ object ServiceDescribeSpec
         val appId = AppId(UUID.randomUUID().toString)
         val name = packageDefinition.name
         val version = packageDefinition.version.toString
-        val Right(install) = ItUtil.packageInstall(name, Some(version), appId = Some(appId))
+        val Right(install) = ItUtil.packageInstall(
+          name,
+          Some(version),
+          options = Some(JsonObject.singleton("name", appId.asJson))
+        )
 
         install.appId shouldBe appId
 
