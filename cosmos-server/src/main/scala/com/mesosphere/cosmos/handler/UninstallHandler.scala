@@ -132,12 +132,12 @@ private[cosmos] final class UninstallHandler(
   )(
     implicit session: RequestSession
   ): Future[UninstallDetails] = {
+    // TODO: This throw escapes the Future monad.
     if (sdkJanitor.claimUninstall(op.appId) == UninstallClaimDenied) {
       throw AppAlreadyUninstalling(op.appId).exception
     }
 
-    adminRouter.modifyApp(op.appId, force = true)(setMarathonUninstall)
-      .map { response =>
+    adminRouter.modifyApp(op.appId, force = true)(setMarathonUninstall).map { response =>
       response.status match {
         case Status.Ok =>
           val deploymentId = parseDeploymentId(response.contentString, op)
@@ -150,8 +150,7 @@ private[cosmos] final class UninstallHandler(
             s"Encountered error in marathon request ${response.contentString}"
           ).exception
       }
-    }
-    .onFailure { _ =>
+    } onFailure { _ =>
       sdkJanitor.releaseUninstall(op.appId)
       logger.error("Failed to initiate uninstall for {}", op.appId)
     }

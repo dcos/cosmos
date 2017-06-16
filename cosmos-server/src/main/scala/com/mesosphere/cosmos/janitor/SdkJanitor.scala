@@ -28,7 +28,7 @@ final class SdkJanitor(
   queue: DelayQueue[Request],
   lock: UninstallLock,
   checkInterval: Int
-                      ) extends Janitor {
+) extends Janitor {
   lazy val logger: Logger = org.slf4j.LoggerFactory.getLogger(getClass)
 
   private val executor: ExecutorService = Executors.newFixedThreadPool(1, new ThreadFactoryBuilder()
