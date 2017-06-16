@@ -50,6 +50,7 @@ import com.twitter.server.Lifecycle
 import com.twitter.server.Stats
 import com.twitter.util.Await
 import com.twitter.util.Try
+import org.apache.curator.framework.CuratorFramework
 import org.slf4j.Logger
 import scala.language.implicitConversions
 import shapeless.:+:
@@ -92,6 +93,7 @@ with Logging {
 
     new Components(
       adminRouter,
+      zkClient,
       sourcesStorage,
       new MultiRepository(sourcesStorage, universeClient),
       new MarathonPackageRunner(adminRouter),
@@ -270,6 +272,7 @@ object CosmosApp {
 
   final class Components(
     val adminRouter: AdminRouter,
+    val zkClient: CuratorFramework,
     val sourcesStorage: PackageSourcesStorage,
     val repositories: MultiRepository,
     val packageRunner: MarathonPackageRunner,

@@ -67,12 +67,6 @@ object Decoders {
   implicit val decodePackageRepositoryDeleteResponse: Decoder[PackageRepositoryDeleteResponse] = {
     deriveDecoder[PackageRepositoryDeleteResponse]
   }
-  implicit val decodeAddRequest: Decoder[AddRequest] = {
-    deriveDecoder[UniverseAddRequest].map(identity)
-  }
-  implicit val decodeAddResponse: Decoder[AddResponse] = {
-    implicitly[Decoder[universe.v4.model.SupportedPackageDefinition]].map(new AddResponse(_))
-  }
 
   implicit val decodeErrorResponse: Decoder[ErrorResponse] = deriveDecoder[ErrorResponse]
 
@@ -125,6 +119,4 @@ object Decoders {
     }
   }
 
-  implicit val decodeServiceStartRequest: Decoder[ServiceStartRequest] = deriveDecoder[ServiceStartRequest]
-  implicit val decodeServiceStartResponse: Decoder[ServiceStartResponse] = deriveDecoder[ServiceStartResponse]
 }

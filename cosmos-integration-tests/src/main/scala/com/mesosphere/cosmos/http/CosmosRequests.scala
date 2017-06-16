@@ -22,15 +22,6 @@ object CosmosRequests {
     )
   }
 
-  def packageAdd(requestBody: rpc.v1.model.UniverseAddRequest): HttpRequest = {
-    HttpRequest.post(
-      path = "package/add",
-      body = requestBody,
-      contentType = rpc.MediaTypes.AddRequest,
-      accept = rpc.MediaTypes.AddResponse
-    )
-  }
-
   def packageDescribeV2(describeRequest: rpc.v1.model.DescribeRequest): HttpRequest = {
     packageDescribe(describeRequest, accept = rpc.MediaTypes.V2DescribeResponse)
   }
@@ -120,15 +111,6 @@ object CosmosRequests {
       body = uninstallRequest,
       contentType = rpc.MediaTypes.UninstallRequest,
       accept = rpc.MediaTypes.UninstallResponse
-    )
-  }
-
-  def serviceStart(startRequest: rpc.v1.model.ServiceStartRequest): HttpRequest = {
-    HttpRequest.post(
-      path = "service/start",
-      body = startRequest,
-      contentType = rpc.MediaTypes.ServiceStartRequest,
-      accept = rpc.MediaTypes.ServiceStartResponse
     )
   }
 

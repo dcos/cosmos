@@ -250,11 +250,9 @@ object Generators {
 
     implicit val arbLocalPackage: Arbitrary[rpc.v1.model.LocalPackage] = derived
 
-    implicit val arbUploadAddRequest: Arbitrary[rpc.v1.model.UploadAddRequest] = derived
-
     implicit val arbVersion: Arbitrary[universe.v3.model.Version] = Arbitrary(genVersion)
 
-    private def derived[A: MkArbitrary]: Arbitrary[A] = implicitly[MkArbitrary[A]].arbitrary
+    def derived[A: MkArbitrary]: Arbitrary[A] = implicitly[MkArbitrary[A]].arbitrary
 
   }
 
