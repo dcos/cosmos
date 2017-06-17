@@ -8,6 +8,7 @@ import com.mesosphere.cosmos.error.MarathonAppNotFound
 import com.mesosphere.cosmos.http.RequestSession
 import com.mesosphere.cosmos.thirdparty.marathon.circe.Decoders._
 import com.mesosphere.cosmos.thirdparty.marathon.model.AppId
+import com.mesosphere.cosmos.thirdparty.marathon.model.Deployment
 import com.mesosphere.cosmos.thirdparty.marathon.model.MarathonAppResponse
 import com.mesosphere.cosmos.thirdparty.marathon.model.MarathonAppsResponse
 import com.netaporter.uri.Uri
@@ -26,7 +27,14 @@ class MarathonClient(
     client(post("v2" / "apps" , Json.fromJsonObject(appJson)))
   }
 
-  def modifyApp(appId: AppId, force: Boolean)(f: JsonObject => JsonObject)(implicit session: RequestSession): Future[Response] = {
+  def modifyApp(
+    appId: AppId,
+    force: Boolean
+  )(
+    f: JsonObject => JsonObject
+  )(
+    implicit session: RequestSession
+  ): Future[Response] = {
     client(get("v2" / "apps" / appId.toUri)).flatMap { response =>
 
       val appJson = Decoders.parse(response.contentString).asObject.get
@@ -45,11 +53,20 @@ class MarathonClient(
     }
   }
 
-  def update(appId: AppId, appJson: JsonObject)(implicit session: RequestSession): Future[Response] = {
+  def update(
+    appId: AppId,
+    appJson: JsonObject
+  )(
+    implicit session: RequestSession
+  ): Future[Response] = {
     client(put("v2" / "apps" / appId.toUri, Json.fromJsonObject(appJson)))
   }
 
-  def getAppOption(appId: AppId)(implicit session: RequestSession): Future[Option[MarathonAppResponse]] = {
+  def getAppOption(
+    appId: AppId
+  )(
+    implicit session: RequestSession
+  ): Future[Option[MarathonAppResponse]] = {
     val uri = "v2" / "apps" / appId.toUri
     client(get(uri)).map { response =>
       response.status match {
@@ -71,7 +88,12 @@ class MarathonClient(
     client(get(uri)).flatMap(decodeTo[MarathonAppsResponse](HttpMethod.GET, uri, _))
   }
 
-  def deleteApp(appId: AppId, force: Boolean = false)(implicit session: RequestSession): Future[Response] = {
+  def deleteApp(
+    appId: AppId,
+    force: Boolean = false
+  )(
+    implicit session: RequestSession
+  ): Future[Response] = {
     val uriPath = "v2" / "apps" / appId.toUri
 
     force match {
@@ -80,8 +102,10 @@ class MarathonClient(
     }
   }
 
-  def listDeployments()(implicit session: RequestSession): Future[Response] = {
-    client(get("v2" / "deployments"))
+  def listDeployments()(implicit session: RequestSession): Future[List[Deployment]] = {
+    val uri = "v2" / "deployments"
+    client(get(uri)).flatMap(
+      decodeTo[List[Deployment]](HttpMethod.GET, uri, _)
+    )
   }
-
 }

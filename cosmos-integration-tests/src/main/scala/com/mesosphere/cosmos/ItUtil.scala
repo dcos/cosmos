@@ -2,7 +2,6 @@ package com.mesosphere.cosmos
 
 import _root_.io.circe.JsonObject
 import _root_.io.circe.jawn.parse
-import cats.syntax.either._
 import com.mesosphere.cosmos.http.CosmosRequests
 import com.mesosphere.cosmos.repository.DefaultRepositories
 import com.mesosphere.cosmos.rpc.v1.circe.Decoders._
@@ -18,7 +17,9 @@ object ItUtil {
 
   def listRepositories(): Seq[rpc.v1.model.PackageRepository] = {
     val request = CosmosRequests.packageRepositoryList
-    val Right(response) = CosmosClient.callEndpoint[rpc.v1.model.PackageRepositoryListResponse](request)
+    val Right(response) = CosmosClient.callEndpoint[rpc.v1.model.PackageRepositoryListResponse](
+      request
+    )
     response.repositories
   }
 
@@ -27,7 +28,9 @@ object ItUtil {
   ): rpc.v1.model.PackageRepositoryDeleteResponse = {
     val repoDeleteRequest = rpc.v1.model.PackageRepositoryDeleteRequest(name = Some(source.name))
     val request = CosmosRequests.packageRepositoryDelete(repoDeleteRequest)
-    val Right(response) = CosmosClient.callEndpoint[rpc.v1.model.PackageRepositoryDeleteResponse](request)
+    val Right(response) = CosmosClient.callEndpoint[rpc.v1.model.PackageRepositoryDeleteResponse](
+      request
+    )
     response
   }
 
@@ -36,7 +39,9 @@ object ItUtil {
   ): rpc.v1.model.PackageRepositoryAddResponse = {
     val repoAddRequest = rpc.v1.model.PackageRepositoryAddRequest(source.name, source.uri)
     val request = CosmosRequests.packageRepositoryAdd(repoAddRequest)
-    val Right(response) = CosmosClient.callEndpoint[rpc.v1.model.PackageRepositoryAddResponse](request)
+    val Right(response) = CosmosClient.callEndpoint[rpc.v1.model.PackageRepositoryAddResponse](
+      request
+    )
     response
   }
 
@@ -90,11 +95,11 @@ object ItUtil {
   def waitForDeployment(adminRouter: AdminRouter)(attempts: Int): Boolean = {
     Stream.tabulate(attempts) { _ =>
       Thread.sleep(1.second.toMillis)
-      val response = Await.result {
+      val deployments = Await.result {
         adminRouter.listDeployments()(CosmosIntegrationTestClient.Session)
       }
-      response.status == Status.Ok &&
-        parse(response.contentString).toOption.flatMap(_.asArray).get.isEmpty
+
+      deployments.isEmpty
     }.dropWhile(done => !done).nonEmpty
   }
 
