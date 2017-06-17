@@ -15,12 +15,13 @@ final class ServiceUninstaller(
   implicit timer: Timer
 ) {
   private[this] val commonsVersionLabel = "DCOS_COMMONS_API_VERSION"
-  val logger: org.slf4j.Logger = org.slf4j.LoggerFactory.getLogger(getClass)
+  private[this] val logger: org.slf4j.Logger = org.slf4j.LoggerFactory.getLogger(getClass)
+  private[this] val defaultRetries = 5
 
   def uninstall(
     appId: AppId,
     deploymentId: String,
-    retry: Int = 5
+    retries: Int = defaultRetries
   )(
     implicit session: RequestSession
   ): Future[Unit] = {
@@ -35,10 +36,11 @@ final class ServiceUninstaller(
     } yield ()
 
     work.rescue {
-      case ex if retry > 0  =>
-        // scalastyle:ignore magic.number
-        Future.sleep(Duration.fromSeconds(10)).before(
-          uninstall(appId, deploymentId, retry - 1)
+      case ex if retries > 0  =>
+        Future.sleep(
+          Duration.fromSeconds(10) // scalastyle:ignore magic.number
+        ).before(
+          uninstall(appId, deploymentId, retries - 1)
         )
     }
   }

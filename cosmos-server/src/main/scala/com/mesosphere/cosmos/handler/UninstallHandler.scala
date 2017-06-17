@@ -49,7 +49,8 @@ private[cosmos] final class UninstallHandler(
     getMarathonApps(req.packageName, req.appId)
       .map(apps => createUninstallOperations(req.packageName, apps))
       .map { uninstallOps =>
-        if (req.all.getOrElse(false) || uninstallOps.size <= 1) {
+        val all = req.all.contains(true)
+        if (all || uninstallOps.size <= 1) {
           uninstallOps
         } else {
           throw AmbiguousAppId(req.packageName, uninstallOps.map(_.appId)).exception
