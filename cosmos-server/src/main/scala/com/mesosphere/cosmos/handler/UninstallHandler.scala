@@ -133,6 +133,8 @@ private[cosmos] final class UninstallHandler(
       response.status match {
         case Status.Ok =>
           val deploymentId = parseDeploymentId(response.contentString, op)
+          // TODO: We are dropping a Future[Unit]. Why is scalac not complaining!?
+          // TODO: Print exception if this future fails!
           uninstaller.uninstall(op.appId, deploymentId)
           UninstallDetails.from(op)
         case _ =>
