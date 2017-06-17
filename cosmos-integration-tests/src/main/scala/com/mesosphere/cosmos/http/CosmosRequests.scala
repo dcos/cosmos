@@ -4,22 +4,11 @@ import com.mesosphere.cosmos.rpc
 import com.mesosphere.cosmos.rpc.v1.circe.Encoders._
 import com.mesosphere.cosmos.rpc.v1.model.PackageRepositoryListRequest
 import com.mesosphere.cosmos.rpc.v1.model.RenderRequest
-import com.mesosphere.universe
-import com.twitter.io.Buf
 
 object CosmosRequests {
 
   val capabilities: HttpRequest = {
     HttpRequest.get(path = "capabilities", accept = rpc.MediaTypes.CapabilitiesResponse)
-  }
-
-  def packageAdd(packageData: Buf): HttpRequest = {
-    HttpRequest.post(
-      path = "package/add",
-      body = packageData,
-      contentType = universe.MediaTypes.PackageZip,
-      accept = rpc.MediaTypes.AddResponse
-    )
   }
 
   def packageDescribeV2(describeRequest: rpc.v1.model.DescribeRequest): HttpRequest = {
