@@ -37,6 +37,7 @@ final class ServiceUninstaller(
 
     work.rescue {
       case ex if retries > 0  =>
+        // TODO: Don't print if ex is PredicateDoesNotObtain
         logger.info(s"Uninstall attempt for $appId didn't finish. $retries retries left.", ex)
         Future.sleep(
           Duration.fromSeconds(10) // scalastyle:ignore magic.number
