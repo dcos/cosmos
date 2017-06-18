@@ -16,7 +16,7 @@ final class ServiceUninstaller(
 ) {
   private[this] val commonsVersionLabel = "DCOS_COMMONS_API_VERSION"
   private[this] val logger: org.slf4j.Logger = org.slf4j.LoggerFactory.getLogger(getClass)
-  private[this] val defaultRetries = 5
+  private[this] val defaultRetries = 50
 
   def uninstall(
     appId: AppId,
@@ -37,6 +37,7 @@ final class ServiceUninstaller(
 
     work.rescue {
       case ex if retries > 0  =>
+        logger.info(s"Uninstall attempt for $appId didn't finish. $retries retries left.", ex)
         Future.sleep(
           Duration.fromSeconds(10) // scalastyle:ignore magic.number
         ).before(
