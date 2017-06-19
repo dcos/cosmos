@@ -188,8 +188,9 @@ final class PackageRepositorySpec
     "non-Zip-encoded repo bundle" in {
       // TODO: Use a more reliable URI
       val uriText = "https://mesosphere.com/"
-      val contentTypes =
-        "application/vnd.dcos.universe.repo+json;charset=utf-8;version=v3, application/zip"
+      val v4 = "application/vnd.dcos.universe.repo+json;charset=utf-8;version=v4"
+      val v3 = "application/vnd.dcos.universe.repo+json;charset=utf-8;version=v3"
+      val contentTypes = s"$v4, $v3, application/zip"
       val expectedMsg = s"Unsupported Content-Type: text/html;charset=utf-8 Accept: [$contentTypes]"
       assertInvalidRepo(uriText, expectedMsg)
     }

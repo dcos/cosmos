@@ -409,7 +409,7 @@ object DefaultUniverseClient {
   val PermanentRedirect: Int = 308
 
   val SupportedMediaTypes: List[MediaType] =
-    List(MediaTypes.UniverseV3Repository, MediaTypes.UniverseV2Repository)
+    List(MediaTypes.UniverseV4Repository, MediaTypes.UniverseV3Repository, MediaTypes.UniverseV2Repository)
 
   def parseContentType(header: Option[String]): TwitterTry[MediaType] = {
     TwitterTry(header.getOrElse(throw UnsupportedContentType(SupportedMediaTypes).exception))
