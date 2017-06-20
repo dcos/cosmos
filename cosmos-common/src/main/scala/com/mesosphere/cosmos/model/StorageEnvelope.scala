@@ -32,21 +32,17 @@ final case class StorageEnvelope private (metadata: Map[String, String], data: B
       )
     }
 
-    val storageData = metadata.get(Fields.ContentEncoding).map { encoding =>
-      if (encoding == StorageEnvelope.gzipEncoding) {
-        val byteStream = new ByteArrayOutputStream()
-        val gzipStream = new GZIPInputStream(new ByteArrayInputStream(ByteBuffers.getBytes(data)))
-
-        StreamIO.copy(gzipStream, byteStream)
-
-        byteStream.toByteArray()
-      } else {
-        throw new IllegalArgumentException(
-          s"Error while trying to deserialize envelope data. Unknown Content-Encoding: $encoding."
-        )
-      }
-    } getOrElse {
-      ByteBuffers.getBytes(data)
+    val storageData = metadata.get(Fields.ContentEncoding) match {
+      case Some(encoding) =>
+        if (encoding == StorageEnvelope.GzipEncoding) {
+          StorageEnvelope.decodeGzip(ByteBuffers.getBytes(data))
+        } else {
+          throw new IllegalArgumentException(
+            s"Error while trying to deserialize envelope data. Unknown Content-Encoding: $encoding."
+          )
+        }
+      case None =>
+        ByteBuffers.getBytes(data)
     }
 
     mediaTypedDecode(
@@ -57,25 +53,34 @@ final case class StorageEnvelope private (metadata: Map[String, String], data: B
 }
 
 object StorageEnvelope {
-  private val gzipEncoding = "gzip"
+  private def encodeGzip(bytes: Array[Byte]): Array[Byte] = {
+    val byteStream = new ByteArrayOutputStream()
+    val gzipStream = new GZIPOutputStream(byteStream)
+    gzipStream.write(bytes)
+    gzipStream.close()
+    byteStream.toByteArray()
+  }
+
+  val GzipEncoding: String = "gzip"
+
+  private def decodeGzip(bytes: Array[Byte]): Array[Byte] = {
+    val byteStream = new ByteArrayOutputStream()
+    val gzipStream = new GZIPInputStream(new ByteArrayInputStream(bytes))
+
+    StreamIO.copy(gzipStream, byteStream)
+
+    byteStream.toByteArray()
+  }
 
   def apply[T](data: T)(implicit mediaTypedEncoder: MediaTypedEncoder[T]): StorageEnvelope = {
     val (json, mediaType) = mediaTypedEncoder(data)
 
-    val bytes = {
-      val byteStream = new ByteArrayOutputStream()
-      val gzipStream = new GZIPOutputStream(byteStream)
-      gzipStream.write(json.noSpaces.getBytes(StandardCharsets.UTF_8))
-      gzipStream.close()
-      ByteBuffer.wrap(byteStream.toByteArray())
-    }
-
     StorageEnvelope(
       metadata = Map(
         Fields.ContentType -> mediaType.show,
-        Fields.ContentEncoding -> gzipEncoding
+        Fields.ContentEncoding -> GzipEncoding
       ),
-      data = bytes
+      data = ByteBuffer.wrap(encodeGzip(json.noSpaces.getBytes(StandardCharsets.UTF_8)))
     )
   }
 

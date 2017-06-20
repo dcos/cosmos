@@ -285,7 +285,8 @@ object ItObjects {
   ): Json = {
     Json.obj(
       "metadata" -> Json.obj(
-        Fields.ContentType -> getContentType(packageDefinition)
+        Fields.ContentType -> getContentType(packageDefinition),
+        Fields.ContentEncoding -> StorageEnvelope.GzipEncoding.asJson
       ),
       "data" -> packageDefinition
     )
