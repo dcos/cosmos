@@ -4,6 +4,7 @@ import _root_.io.circe.Json
 import _root_.io.circe.jawn._
 import _root_.io.circe.syntax._
 import cats.syntax.either._
+import com.mesosphere.cosmos.model.StorageEnvelope
 import com.mesosphere.universe
 import com.mesosphere.universe.MediaTypes
 import com.mesosphere.universe.common.JsonUtil
@@ -379,15 +380,15 @@ object ItObjects {
   }
 
   private[this] def decodePackageDefinition(renderResponse: Json): Json = {
-    renderResponse
+    val envelope = renderResponse
       .hcursor
       .downField("marathonJson")
       .downField("labels")
       .downField("DCOS_PACKAGE_DEFINITION")
       .withFocus(base64Decode)
-      .downField("data")
-      .withFocus(base64Decode)
-      .top.get
+      .as[StorageEnvelope].right.get
+
+    envelope.decodeData[universe.v4.model.PackageDefinition].asJson
   }
 
   private[this] def decodeOptions(renderResponse: Json): Json = {
