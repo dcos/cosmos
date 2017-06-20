@@ -381,27 +381,19 @@ object ItObjects {
   }
 
   private[this] def decodePackageDefinition(renderResponse: Json): Json = {
-    val pkg = renderResponse
-      .hcursor
-      .downField("marathonJson")
-      .downField("labels")
-      .downField("DCOS_PACKAGE_DEFINITION")
-      .withFocus(base64Decode)
-      .as[StorageEnvelope]
-      .right
-      .get
-      .decodeData[universe.v4.model.PackageDefinition]
-      .asJson
-
     renderResponse
       .hcursor
       .downField("marathonJson")
       .downField("labels")
       .downField("DCOS_PACKAGE_DEFINITION")
       .withFocus(base64Decode)
-      .downField("data")
-      .withFocus(_ => pkg)
-      .top
+      .withFocus { json =>
+        val envelope = json.as[StorageEnvelope].right.get
+        Json.obj(
+          "metadata" -> envelope.metadata.asJson,
+          "data" -> envelope.decodeData[universe.v4.model.PackageDefinition].asJson
+        )
+      }.top
       .get
   }
 
