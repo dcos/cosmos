@@ -1,11 +1,11 @@
 package com.mesosphere.cosmos.model
 
+import com.mesosphere.cosmos.circe.Decoders.decode
+import com.mesosphere.cosmos.circe.Decoders.mediaTypedDecode
 import com.mesosphere.cosmos.finch.MediaTypedDecoder
 import com.mesosphere.cosmos.finch.MediaTypedEncoder
 import com.mesosphere.cosmos.http.MediaType
 import com.mesosphere.cosmos.http.MediaTypeOps
-import com.mesosphere.cosmos.circe.Decoders.mediaTypedDecode
-import com.mesosphere.cosmos.circe.Decoders.decode
 import com.mesosphere.universe.common.ByteBuffers
 import com.mesosphere.universe.common.circe.Decoders.decodeByteBuffer
 import com.mesosphere.universe.common.circe.Encoders.encodeByteBuffer
@@ -15,8 +15,8 @@ import io.circe.Decoder
 import io.circe.Encoder
 import io.circe.generic.semiauto._
 import io.circe.syntax._
-import java.io.ByteArrayOutputStream
 import java.io.ByteArrayInputStream
+import java.io.ByteArrayOutputStream
 import java.nio.ByteBuffer
 import java.nio.charset.StandardCharsets
 import java.util.zip.GZIPInputStream
@@ -42,7 +42,7 @@ final case class StorageEnvelope private (metadata: Map[String, String], data: B
         byteStream.toByteArray()
       } else {
         throw new IllegalArgumentException(
-          "Error while trying to deserialize envelope data. Unknown Content-Encoding: gzip."
+          s"Error while trying to deserialize envelope data. Unknown Content-Encoding: $encoding."
         )
       }
     } getOrElse {
