@@ -12,7 +12,6 @@ import com.mesosphere.cosmos.http.Authorization
 import com.mesosphere.cosmos.http.HttpRequest
 import com.mesosphere.cosmos.http.RequestSession
 import com.mesosphere.cosmos.model.ZooKeeperUri
-import com.mesosphere.cosmos.rpc.v1.circe.Decoders._
 import com.mesosphere.cosmos.rpc.v1.model._
 import com.netaporter.uri.Uri
 import com.netaporter.uri.dsl._
@@ -82,23 +81,19 @@ object CosmosIntegrationTestClient extends Matchers {
 
     val uri: String = getClientProperty("CosmosClient", "uri")
 
+    def call[Res](request: HttpRequest)(implicit
+      decoder: Decoder[Res]
+    ): Either[ErrorResponse, Res] = {
+      val response = submit(request)
+      toEither(response)
+    }
+
     def callEndpoint[Res](request: HttpRequest, expectedStatus: Status = Status.Ok)(implicit
       decoder: Decoder[Res]
     ): Either[ErrorResponse, Res] = {
       val response = submit(request)
       assertResult(expectedStatus)(response.status)
-
-      if (response.status.code / 100 == 2) {
-        decode[Res](response.contentString) match {
-          case Left(_) => fail("Could not decode as successful response: " + response.contentString)
-          case Right(successfulResponse) => Right(successfulResponse)
-        }
-      } else {
-        decode[ErrorResponse](response.contentString) match {
-          case Left(_) => fail("Could not decode as error response: " + response.contentString)
-          case Right(errorResponse) => Left(errorResponse)
-        }
-      }
+      toEither(response)
     }
 
     /** Ensures that we create Finagle requests correctly.
@@ -119,6 +114,22 @@ object CosmosIntegrationTestClient extends Matchers {
 
       val finagleReq = HttpRequest.toFinagle(reqWithAuth)
       Await.result(client(finagleReq))
+    }
+
+    private def toEither[Res](response: Response)(implicit
+      decoder: Decoder[Res]
+    ): Either[ErrorResponse, Res] = {
+      if (response.status.code / 100 == 2) {
+        decode[Res](response.contentString) match {
+          case Left(_) => fail("Could not decode as successful response: " + response.contentString)
+          case Right(successfulResponse) => Right(successfulResponse)
+        }
+      } else {
+        decode[ErrorResponse](response.contentString) match {
+          case Left(_) => fail("Could not decode as error response: " + response.contentString)
+          case Right(errorResponse) => Left(errorResponse)
+        }
+      }
     }
 
     // Do not relax the visibility on this -- use `submit()` instead; see its Scaladoc for why

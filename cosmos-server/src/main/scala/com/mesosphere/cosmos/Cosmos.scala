@@ -95,6 +95,7 @@ with Logging {
       adminRouter,
       zkClient,
       sourcesStorage,
+      universeClient,
       new MultiRepository(sourcesStorage, universeClient),
       new MarathonPackageRunner(adminRouter),
       ServiceUninstaller(adminRouter)
@@ -112,7 +113,7 @@ with Logging {
       packageList = new ListHandler(adminRouter, uri => repositories.getRepository(uri)),
       packageListVersions = new ListVersionsHandler(repositories),
       packageRender = new PackageRenderHandler(repositories),
-      packageRepositoryAdd = new PackageRepositoryAddHandler(sourcesStorage),
+      packageRepositoryAdd = new PackageRepositoryAddHandler(sourcesStorage, universeClient),
       packageRepositoryDelete = new PackageRepositoryDeleteHandler(sourcesStorage),
       packageRepositoryList = new PackageRepositoryListHandler(sourcesStorage),
       packageSearch = new PackageSearchHandler(repositories),
@@ -274,6 +275,7 @@ object CosmosApp {
     val adminRouter: AdminRouter,
     val zkClient: CuratorFramework,
     val sourcesStorage: PackageSourcesStorage,
+    val universeClient: UniverseClient,
     val repositories: MultiRepository,
     val packageRunner: MarathonPackageRunner,
     val marathonSdkJanitor: ServiceUninstaller

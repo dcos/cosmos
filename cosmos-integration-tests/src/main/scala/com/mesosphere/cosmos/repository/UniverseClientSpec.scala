@@ -2,8 +2,8 @@ package com.mesosphere.cosmos.repository
 
 import com.mesosphere.cosmos.error.RepositoryUriConnection
 import com.mesosphere.cosmos.error.CosmosException
-import com.mesosphere.cosmos.error.GenericHttpError
 import com.mesosphere.cosmos.error.RepositoryUriSyntax
+import com.mesosphere.cosmos.error.UniverseClientHttpError
 import com.mesosphere.cosmos.rpc.v1.model.PackageRepository
 import com.mesosphere.cosmos.test.CosmosIntegrationTestClient
 import com.mesosphere.universe
@@ -117,15 +117,15 @@ final class UniverseClientSpec extends FreeSpec with Matchers {
     "should fail to fetch a nonexistent repo file" in {
       val version = universe.v3.model.DcosReleaseVersionParser.parseUnsafe("0.0")
       val repoUri = baseRepoUri / "doesnotexist.json"
-      val result = universeClient(PackageRepository("badRepo", repoUri), version)
+      val expectedPkgRepo = PackageRepository("badRepo", repoUri)
+      val result = universeClient(expectedPkgRepo, version)
       val Throw(
-        CosmosException(GenericHttpError(method, uri, clientStatus), status, _, _)
+        CosmosException(UniverseClientHttpError(actualPkgRepo, method, clientStatus), status, _, _)
       ) = Await.result(
         result.liftToTry
       )
-
       assertResult("GET")(method.getName)
-      assertResult(repoUri)(uri)
+      assertResult(expectedPkgRepo)(actualPkgRepo)
       assertResult(Status.Forbidden)(clientStatus)
       assertResult(Status.InternalServerError)(status)
     }
