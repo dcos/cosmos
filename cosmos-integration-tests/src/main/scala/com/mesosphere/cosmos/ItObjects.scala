@@ -4,6 +4,7 @@ import _root_.io.circe.Json
 import _root_.io.circe.jawn._
 import _root_.io.circe.syntax._
 import cats.syntax.either._
+import com.mesosphere.cosmos.model.StorageEnvelope
 import com.mesosphere.universe
 import com.mesosphere.universe.MediaTypes
 import com.mesosphere.universe.common.JsonUtil
@@ -284,7 +285,8 @@ object ItObjects {
   ): Json = {
     Json.obj(
       "metadata" -> Json.obj(
-        Fields.ContentType -> getContentType(packageDefinition)
+        Fields.ContentType -> getContentType(packageDefinition),
+        Fields.ContentEncoding -> StorageEnvelope.GzipEncoding.asJson
       ),
       "data" -> packageDefinition
     )
@@ -385,9 +387,14 @@ object ItObjects {
       .downField("labels")
       .downField("DCOS_PACKAGE_DEFINITION")
       .withFocus(base64Decode)
-      .downField("data")
-      .withFocus(base64Decode)
-      .top.get
+      .withFocus { json =>
+        val envelope = json.as[StorageEnvelope].right.get
+        Json.obj(
+          "metadata" -> envelope.metadata.asJson,
+          "data" -> envelope.decodeData[universe.v4.model.PackageDefinition].asJson
+        )
+      }.top
+      .get
   }
 
   private[this] def decodeOptions(renderResponse: Json): Json = {
