@@ -1,6 +1,5 @@
 package com.mesosphere.cosmos.handler
 
-import com.google.common.annotations.VisibleForTesting
 import com.mesosphere.cosmos.AdminRouter
 import com.mesosphere.cosmos.circe.Decoders
 import com.mesosphere.cosmos.error.AmbiguousAppId
@@ -123,9 +122,7 @@ private[cosmos] final class UninstallHandler(
     }
   }
 
-  // TODO: Remove this
-  @VisibleForTesting
-  private[handler] def runSdkUninstall(
+  private[this] def runSdkUninstall(
     op: UninstallOperation
   )(
     implicit session: RequestSession
@@ -134,9 +131,10 @@ private[cosmos] final class UninstallHandler(
       response.status match {
         case Status.Ok =>
           val deploymentId = parseDeploymentId(response.contentString, op)
-          // TODO: We are dropping a Future[Unit]. Why is scalac not complaining!?
-          // TODO: Print exception if this future fails!
-          uninstaller.uninstall(op.appId, deploymentId)
+          val _ = uninstaller.uninstall(op.appId, deploymentId).onFailure { exception =>
+            logger.error(s"Background uninstall for ${op.appId} failed", exception)
+          }
+
           UninstallDetails.from(op)
         case _ =>
           logger.error("Encountered error in marathon request {}", response.contentString)

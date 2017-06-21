@@ -1,10 +1,10 @@
 [
   {
-    "name": "Universe",
-    "uri": "https://downloads.mesosphere.com/universe/02493e40f8564a39446d06c002f8dcc8e7f6d61f/repo-up-to-1.8.json"
+    "name": "V4TestUniverse",
+    "uri": "https://downloads.mesosphere.com/universe/be1ef7a6469b1c5b0b517fae00d868667dd54f7c/repo/repo-up-to-1.10.json"
   },
   {
-    "name": "V4TestUniverse",
-    "uri": "https://downloads.mesosphere.com/universe/71a5c7876a4b32ccb44483359ca566ac63726344/repo/repo-up-to-1.10.json"
+    "name": "Universe",
+    "uri": "https://downloads.mesosphere.com/universe/02493e40f8564a39446d06c002f8dcc8e7f6d61f/repo-up-to-1.8.json"
   }
 ]

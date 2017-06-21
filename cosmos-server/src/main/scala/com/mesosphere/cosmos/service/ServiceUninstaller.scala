@@ -5,6 +5,7 @@ import com.mesosphere.cosmos.http.RequestSession
 import com.mesosphere.cosmos.thirdparty.marathon.model.AppId
 import com.mesosphere.cosmos.thirdparty.marathon.model.MarathonApp
 import com.twitter.finagle.http.Status
+import com.twitter.util.Try.PredicateDoesNotObtain
 import com.twitter.util.Duration
 import com.twitter.util.Future
 import com.twitter.util.Timer
@@ -35,8 +36,10 @@ final class ServiceUninstaller(
 
     work.rescue {
       case ex if retries > 0  =>
-        // TODO: Don't print if ex is PredicateDoesNotObtain
-        logger.info(s"Uninstall attempt for $appId didn't finish. $retries retries left.", ex)
+        if (!ex.isInstanceOf[PredicateDoesNotObtain]) {
+          logger.info(s"Uninstall attempt for $appId didn't finish. $retries retries left.", ex)
+        }
+
         Future.sleep(
           Duration.fromSeconds(10) // scalastyle:ignore magic.number
         ).before(
