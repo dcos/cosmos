@@ -104,8 +104,6 @@ class MarathonClient(
 
   def listDeployments()(implicit session: RequestSession): Future[List[Deployment]] = {
     val uri = "v2" / "deployments"
-    client(get(uri)).flatMap(
-      decodeTo[List[Deployment]](HttpMethod.GET, uri, _)
-    )
+    client(get(uri)).flatMap(decodeTo[List[Deployment]](HttpMethod.GET, uri, _))
   }
 }

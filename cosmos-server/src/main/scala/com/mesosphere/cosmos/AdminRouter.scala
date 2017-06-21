@@ -25,7 +25,9 @@ class AdminRouter(
     appId: AppId
   )(
     implicit session: RequestSession
-  ): Future[Option[MarathonAppResponse]] = marathon.getAppOption(appId)
+  ): Future[Option[MarathonAppResponse]] = {
+    marathon.getAppOption(appId)
+  }
 
   def getApp(appId: AppId)(implicit session: RequestSession): Future[MarathonAppResponse] = {
     marathon.getApp(appId)
@@ -38,14 +40,18 @@ class AdminRouter(
     f: JsonObject => JsonObject
   )(
     implicit session: RequestSession
-  ): Future[Response] = marathon.modifyApp(appId, force)(f)
+  ): Future[Response] = {
+    marathon.modifyApp(appId, force)(f)
+  }
 
   def update(
     appId: AppId,
     appJson: JsonObject
   )(
     implicit session: RequestSession
-  ): Future[Response] = marathon.update(appId, appJson)
+  ): Future[Response] = {
+    marathon.update(appId, appJson)
+  }
 
   def listApps()(implicit session: RequestSession): Future[MarathonAppsResponse] = {
     marathon.listApps()
@@ -56,19 +62,25 @@ class AdminRouter(
     force: Boolean = false
   )(
     implicit session: RequestSession
-  ): Future[Response] = marathon.deleteApp(appId, force)
+  ): Future[Response] = {
+    marathon.deleteApp(appId, force)
+  }
 
   def tearDownFramework(
     frameworkId: String
   )(
     implicit session: RequestSession
-  ): Future[MesosFrameworkTearDownResponse] = mesos.tearDownFramework(frameworkId)
+  ): Future[MesosFrameworkTearDownResponse] = {
+    mesos.tearDownFramework(frameworkId)
+  }
 
   def getFrameworks(
     frameworkName: String
   )(
     implicit session: RequestSession
-  ): Future[List[Framework]] = mesos.getFrameworks(frameworkName)
+  ): Future[List[Framework]] = {
+    mesos.getFrameworks(frameworkName)
+  }
 
   def getDcosVersion()(implicit session: RequestSession): Future[DcosVersion] = {
     adminRouterClient.getDcosVersion()

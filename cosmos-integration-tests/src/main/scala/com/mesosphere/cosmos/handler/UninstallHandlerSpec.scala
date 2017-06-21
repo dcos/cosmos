@@ -150,7 +150,7 @@ final class UninstallHandlerSpec extends FreeSpec with Eventually with SpanSugar
         }
       }
 
-      "be able to uninstall SDK packages that support SDK uninstall and only one uninstall at a time" in {
+      "be able to uninstall SDK packages after a second uninstall while the first is in progress" in {
         // Add stub universe for service that supports uninstall.
         // TODO: move this repo and package to Cosmos test repo
         val request = CosmosRequests.packageRepositoryAdd(PackageRepositoryAddRequest(

@@ -17,9 +17,9 @@ import com.mesosphere.cosmos.error.UninstallNonExistentAppForPackage
 import com.mesosphere.cosmos.finch.EndpointHandler
 import com.mesosphere.cosmos.handler.UninstallHandler._
 import com.mesosphere.cosmos.http.RequestSession
-import com.mesosphere.cosmos.janitor.ServiceUninstaller
 import com.mesosphere.cosmos.repository.PackageCollection
 import com.mesosphere.cosmos.rpc
+import com.mesosphere.cosmos.service.ServiceUninstaller
 import com.mesosphere.cosmos.thirdparty.marathon.model.AppId
 import com.mesosphere.cosmos.thirdparty.marathon.model.MarathonApp
 import com.mesosphere.universe

@@ -1,4 +1,4 @@
-package com.mesosphere.cosmos.janitor
+package com.mesosphere.cosmos.service
 
 import com.mesosphere.cosmos.AdminRouter
 import com.mesosphere.cosmos.http.RequestSession
@@ -14,23 +14,21 @@ final class ServiceUninstaller(
 )(
   implicit timer: Timer
 ) {
-  private[this] val commonsVersionLabel = "DCOS_COMMONS_API_VERSION"
   private[this] val logger: org.slf4j.Logger = org.slf4j.LoggerFactory.getLogger(getClass)
-  private[this] val defaultRetries = 50
 
   def uninstall(
     appId: AppId,
     deploymentId: String,
-    retries: Int = defaultRetries
+    retries: Int = ServiceUninstaller.DefaultRetries
   )(
     implicit session: RequestSession
   ): Future[Unit] = {
     val work = for {
-      deployed <- checkDeployment(deploymentId) if deployed
+      deployed <- checkDeploymentCompleted(deploymentId) if deployed
       marathonResponse <- adminRouter.getApp(appId)
-      uninstalled <- checkUninstall(
+      uninstalled <- checkSdkUninstallCompleted(
         marathonResponse.app.id,
-        marathonResponse.app.labels.getOrElse(commonsVersionLabel, "v1")
+        marathonResponse.app.labels.getOrElse(ServiceUninstaller.CommonsVersionLabel, "v1")
       ) if uninstalled
       deleted <- delete(appId) if deleted
     } yield ()
@@ -47,7 +45,7 @@ final class ServiceUninstaller(
     }
   }
 
-  private def checkDeployment(
+  private def checkDeploymentCompleted(
     deploymentId: String
   )(
     implicit session: RequestSession
@@ -62,7 +60,7 @@ final class ServiceUninstaller(
     }
   }
 
-  private def checkUninstall(
+  private def checkSdkUninstallCompleted(
     appId: AppId,
     apiVersion: String
   )(
@@ -104,4 +102,7 @@ object ServiceUninstaller {
   ): ServiceUninstaller = {
     new ServiceUninstaller(adminRouter)
   }
+
+  private val CommonsVersionLabel: String = "DCOS_COMMONS_API_VERSION"
+  private val DefaultRetries: Int = 50
 }
