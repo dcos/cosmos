@@ -313,7 +313,7 @@ private object PackageInstallIntegrationSpec extends Matchers with TableDrivenPr
     ).asJson,
     packageName = "helloworld",
     packageVersion = "0.4.2",
-    packageSource = DefaultRepositories().getOrThrow(1).uri.toString,
+    packageSource = DefaultRepositories().getOrThrow(0).uri.toString,
     userOptions = JsonObject.empty.asJson
   )
 
