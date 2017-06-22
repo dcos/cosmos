@@ -51,9 +51,6 @@ object Encoders {
   implicit val encodePackageRepositoryListResponse: Encoder[PackageRepositoryListResponse] = {
     deriveEncoder[PackageRepositoryListResponse]
   }
-  implicit val encodePackageRepository: Encoder[PackageRepository] = {
-    deriveEncoder[PackageRepository]
-  }
   implicit val encodePackageRepositoryAddRequest: Encoder[PackageRepositoryAddRequest] = {
     deriveEncoder[PackageRepositoryAddRequest]
   }

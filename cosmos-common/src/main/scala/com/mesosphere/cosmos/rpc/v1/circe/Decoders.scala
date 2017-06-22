@@ -1,15 +1,12 @@
 package com.mesosphere.cosmos.rpc.v1.circe
 
-import cats.syntax.either._
 import com.mesosphere.cosmos.rpc.v1.model._
-import com.mesosphere.cosmos.storage.v1.circe.Decoders._
 import com.mesosphere.cosmos.thirdparty.marathon.circe.Decoders._
 import com.mesosphere.universe
 import com.mesosphere.universe.common.circe.Decoders._
 import com.mesosphere.universe.v2.circe.Decoders._
 import io.circe._
 import io.circe.generic.semiauto._
-import scala.util.Left
 
 object Decoders {
   implicit val keyDecodePackageDefinitionVersion: KeyDecoder[universe.v3.model.Version] = {
@@ -52,9 +49,6 @@ object Decoders {
   implicit val decodePackageRepositoryListResponse: Decoder[PackageRepositoryListResponse] = {
     deriveDecoder[PackageRepositoryListResponse]
   }
-  implicit val decodePackageRepository: Decoder[PackageRepository] = {
-    deriveDecoder[PackageRepository]
-  }
   implicit val decodePackageRepositoryAddRequest: Decoder[PackageRepositoryAddRequest] = {
     deriveDecoder[PackageRepositoryAddRequest]
   }
@@ -72,51 +66,5 @@ object Decoders {
 
   implicit val decodePackageCoordinate: Decoder[PackageCoordinate] =
     deriveDecoder[PackageCoordinate]
-
-  implicit val decodeLocalPackage: Decoder[LocalPackage] = {
-    val NotInstalledName = classOf[NotInstalled].getSimpleName
-    val InstallingName = classOf[Installing].getSimpleName
-    val InstalledName = classOf[Installed].getSimpleName
-    val UninstallingName = classOf[Uninstalling].getSimpleName
-    val FailedName = classOf[Failed].getSimpleName
-    val InvalidName = classOf[Invalid].getSimpleName
-
-    val notInstalledDecoder = deriveDecoder[NotInstalled]
-    val installingDecoder = deriveDecoder[Installing]
-    val installedDecoder = deriveDecoder[Installed]
-    val failedDecoder = deriveDecoder[Failed]
-    val invalidDecoder = deriveDecoder[Invalid]
-
-    Decoder.instance { cursor =>
-      cursor.get[String]("status").flatMap {
-        case NotInstalledName =>
-          notInstalledDecoder(cursor)
-        case InstallingName =>
-          installingDecoder(cursor)
-        case InstalledName =>
-          installedDecoder(cursor)
-        case UninstallingName =>
-          val right = cursor.get[universe.v4.model.SupportedPackageDefinition]("metadata").map(
-            value => Uninstalling(Right(value))
-          )
-          val left = cursor.get[PackageCoordinate]("packageCoordinate").map(
-            value => Uninstalling(Left(value))
-          )
-
-          right orElse left
-        case FailedName =>
-          failedDecoder(cursor)
-        case InvalidName =>
-          invalidDecoder(cursor)
-        case status =>
-          Left(
-            DecodingFailure(
-              s"'$status' is not a valid status",
-              cursor.history
-            )
-          )
-      }
-    }
-  }
 
 }

@@ -1,30 +1,19 @@
 package com.mesosphere.cosmos.circe
 
 import com.google.common.io.CharStreams
-import com.mesosphere.Generators.Implicits._
-import com.mesosphere.cosmos.circe.Decoders.decode64
 import com.mesosphere.cosmos.http.MediaType
 import com.mesosphere.cosmos.http.MediaTypeSubType
-import com.mesosphere.cosmos.rpc.v1.circe.Decoders._
-import com.mesosphere.cosmos.rpc.v1.model.ErrorResponse
-import com.mesosphere.cosmos.rpc.v1.model.LocalPackage
-import com.mesosphere.cosmos.rpc.v1.model.PackageRepository
-import com.mesosphere.cosmos.storage
-import com.mesosphere.cosmos.storage.v1.circe.Decoders._
 import com.mesosphere.universe
 import com.mesosphere.universe.test.TestingPackages
-import com.netaporter.uri.Uri
 import io.circe.DecodingFailure
 import io.circe.Error
 import io.circe.Json
-import io.circe.JsonObject
 import io.circe.ParsingFailure
 import io.circe.jawn
 import io.circe.syntax._
 import java.io.InputStreamReader
 import java.nio.charset.StandardCharsets
 import java.util.Base64
-import java.util.UUID
 import org.scalatest.FreeSpec
 import org.scalatest.Matchers
 import org.scalatest.prop.PropertyChecks
@@ -116,139 +105,6 @@ extends FreeSpec with PropertyChecks with Matchers with TableDrivenPropertyCheck
         jawn.decode[universe.v4.model.Repository](jsonString)
       case _ =>
         throw new IllegalStateException(s"Unable to load classpath resource: $resourceName")
-    }
-  }
-
-  "Operation" - {
-
-    "type field is correct" in {
-      forAll(TestingPackages.supportedPackageDefinitions) { supportedPackage =>
-        val uninstall: storage.v1.model.Operation = storage.v1.model.Uninstall(supportedPackage)
-        val expectedUninstallJson = Json.obj(
-          "packageDefinition" -> supportedPackage.asJson,
-          "type" -> "Uninstall".asJson
-        )
-        val actualUninstallJson = uninstall.asJson
-        assertResult(expectedUninstallJson)(actualUninstallJson)
-      }
-    }
-
-    "Install => Json => Install" in {
-      forAll(TestingPackages.supportedPackageDefinitions) { supportedPackage =>
-        val install: storage.v1.model.Operation =
-          storage.v1.model.Install(
-            UUID.fromString("13c825fe-a8b8-46de-aa9b-61c848fb6522"),
-            supportedPackage
-          )
-        val installPrime =
-          decode[storage.v1.model.Operation](install.asJson.noSpaces)
-        assertResult(install)(installPrime)
-      }
-    }
-
-    "UniverseInstall => Json => UniverseInstall" in {
-      forAll(TestingPackages.supportedPackageDefinitions) { supportedPackage =>
-        val universeInstall: storage.v1.model.Operation =
-          storage.v1.model.UniverseInstall(
-            supportedPackage
-          )
-        val universeInstallPrime =
-          decode[storage.v1.model.Operation](universeInstall.asJson.noSpaces)
-        assertResult(universeInstall)(universeInstallPrime)
-      }
-    }
-
-    "Uninstall => Json => Uninstall" in {
-      forAll(TestingPackages.supportedPackageDefinitions) { supportedPackage =>
-        val uninstall: storage.v1.model.Operation =
-          storage.v1.model.Uninstall(supportedPackage)
-        val uninstallPrime =
-          decode[storage.v1.model.Operation](uninstall.asJson.noSpaces)
-        assertResult(uninstall)(uninstallPrime)
-      }
-    }
-  }
-
-  "OperationFailure" in {
-    forAll(TestingPackages.supportedPackageDefinitions) { supportedPackage =>
-      val operationFailure =
-        storage.v1.model.OperationFailure(
-          storage.v1.model.Uninstall(supportedPackage),
-          ErrorResponse("foo", "bar")
-        )
-      val operationFailurePrime =
-        decode[storage.v1.model.OperationFailure](operationFailure.asJson.noSpaces)
-      assertResult(operationFailure)(operationFailurePrime)
-    }
-  }
-
-  "PendingOperation" in {
-    forAll(TestingPackages.supportedPackageDefinitions) { supportedPackage =>
-      val pendingOperation =
-        storage.v1.model.PendingOperation(
-          storage.v1.model.Uninstall(supportedPackage),
-          None
-        )
-      val pendingOperationPrime =
-        decode[storage.v1.model.PendingOperation](pendingOperation.asJson.noSpaces)
-      assertResult(pendingOperation)(pendingOperationPrime)
-    }
-  }
-
-  "OperationStatus" - {
-    "type field is correct" in {
-      forAll(TestingPackages.supportedPackageDefinitions) { supportedPackage =>
-        val pending: storage.v1.model.OperationStatus = storage.v1.model.PendingStatus(
-          storage.v1.model.Uninstall(supportedPackage),
-          None
-        )
-        val expectedJson =
-          Json.obj(
-            "operation" ->
-              Json.obj(
-                "packageDefinition" -> supportedPackage.asJson,
-                "type" -> "Uninstall".asJson
-              ),
-            "failure" -> Json.Null,
-            "type" -> "PendingStatus".asJson)
-        val actualJson = pending.asJson
-        assertResult(expectedJson)(actualJson)
-      }
-    }
-
-    "PendingStatus => Json => PendingStatus" in {
-      forAll(TestingPackages.supportedPackageDefinitions) { supportedPackage =>
-        val pending: storage.v1.model.OperationStatus =
-          storage.v1.model.PendingStatus(
-            storage.v1.model.Uninstall(supportedPackage),
-            None
-          )
-        val pendingPrime =
-          decode[storage.v1.model.OperationStatus](pending.asJson.noSpaces)
-        assertResult(pending)(pendingPrime)
-      }
-    }
-
-    "FailedStatus => Json => FailedStatus" in {
-      forAll(TestingPackages.supportedPackageDefinitions) { supportedPackage =>
-        val failed: storage.v1.model.OperationStatus =
-          storage.v1.model.FailedStatus(
-            storage.v1.model.OperationFailure(
-              storage.v1.model.Uninstall(supportedPackage),
-              ErrorResponse("foo", "bar")
-            )
-          )
-        val failedPrime =
-          decode[storage.v1.model.OperationStatus](failed.asJson.noSpaces)
-        assertResult(failed)(failedPrime)
-      }
-    }
-  }
-
-  "For all LocalPackage; LocalPackage => JSON => LocalPackage" in {
-    forAll { (localPackage: LocalPackage) =>
-      val string = localPackage.asJson.noSpaces
-      decode[LocalPackage](string) shouldBe localPackage
     }
   }
 
