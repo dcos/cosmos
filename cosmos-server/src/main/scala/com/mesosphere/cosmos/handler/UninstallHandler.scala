@@ -1,6 +1,5 @@
 package com.mesosphere.cosmos.handler
 
-import com.google.common.annotations.VisibleForTesting
 import com.mesosphere.cosmos.AdminRouter
 import com.mesosphere.cosmos.circe.Decoders
 import com.mesosphere.cosmos.error.AmbiguousAppId
@@ -17,10 +16,9 @@ import com.mesosphere.cosmos.error.UninstallNonExistentAppForPackage
 import com.mesosphere.cosmos.finch.EndpointHandler
 import com.mesosphere.cosmos.handler.UninstallHandler._
 import com.mesosphere.cosmos.http.RequestSession
-import com.mesosphere.cosmos.janitor.Janitor
-import com.mesosphere.cosmos.janitor.SdkJanitor.UninstallClaimDenied
 import com.mesosphere.cosmos.repository.PackageCollection
 import com.mesosphere.cosmos.rpc
+import com.mesosphere.cosmos.service.ServiceUninstaller
 import com.mesosphere.cosmos.thirdparty.marathon.model.AppId
 import com.mesosphere.cosmos.thirdparty.marathon.model.MarathonApp
 import com.mesosphere.universe
@@ -36,7 +34,7 @@ import org.slf4j.Logger
 private[cosmos] final class UninstallHandler(
   adminRouter: AdminRouter,
   packageCache: PackageCollection,
-  sdkJanitor: Janitor
+  uninstaller: ServiceUninstaller
 ) extends EndpointHandler[rpc.v1.model.UninstallRequest, rpc.v1.model.UninstallResponse] {
   lazy val logger: Logger = org.slf4j.LoggerFactory.getLogger(getClass)
 
@@ -50,13 +48,11 @@ private[cosmos] final class UninstallHandler(
     getMarathonApps(req.packageName, req.appId)
       .map(apps => createUninstallOperations(req.packageName, apps))
       .map { uninstallOps =>
-        req.all match {
-          case Some(true) =>
-            uninstallOps
-          case _ if uninstallOps.size > 1 =>
-            throw AmbiguousAppId(req.packageName, uninstallOps.map(_.appId)).exception
-          case _ =>
-            uninstallOps
+        val all = req.all.contains(true)
+        if (all || uninstallOps.size <= 1) {
+          uninstallOps
+        } else {
+          throw AmbiguousAppId(req.packageName, uninstallOps.map(_.appId)).exception
         }
       }
       .flatMap(runUninstalls)
@@ -126,22 +122,19 @@ private[cosmos] final class UninstallHandler(
     }
   }
 
-  @VisibleForTesting
-  private[handler] def runSdkUninstall(
+  private[this] def runSdkUninstall(
     op: UninstallOperation
   )(
     implicit session: RequestSession
   ): Future[UninstallDetails] = {
-    if (sdkJanitor.claimUninstall(op.appId) == UninstallClaimDenied) {
-      throw AppAlreadyUninstalling(op.appId).exception
-    }
-
-    adminRouter.modifyApp(op.appId, force = true)(setMarathonUninstall)
-      .map { response =>
+    adminRouter.modifyApp(op.appId, force = true)(setMarathonUninstall).map { response =>
       response.status match {
         case Status.Ok =>
           val deploymentId = parseDeploymentId(response.contentString, op)
-          sdkJanitor.delete(op.appId, deploymentId, session)
+          val _ = uninstaller.uninstall(op.appId, deploymentId).onFailure { exception =>
+            logger.error(s"Background uninstall for ${op.appId} failed", exception)
+          }
+
           UninstallDetails.from(op)
         case _ =>
           logger.error("Encountered error in marathon request {}", response.contentString)
@@ -150,10 +143,6 @@ private[cosmos] final class UninstallHandler(
             s"Encountered error in marathon request ${response.contentString}"
           ).exception
       }
-    }
-    .onFailure { _ =>
-      sdkJanitor.releaseUninstall(op.appId)
-      logger.error("Failed to initiate uninstall for {}", op.appId)
     }
   }
 

@@ -26,8 +26,6 @@ import com.mesosphere.cosmos.handler.PackageSearchHandler
 import com.mesosphere.cosmos.handler.ServiceDescribeHandler
 import com.mesosphere.cosmos.handler.ServiceStartHandler
 import com.mesosphere.cosmos.handler.UninstallHandler
-import com.mesosphere.cosmos.janitor.Janitor
-import com.mesosphere.cosmos.janitor.SdkJanitor
 import com.mesosphere.cosmos.repository.DefaultInstaller
 import com.mesosphere.cosmos.repository.DefaultUniverseInstaller
 import com.mesosphere.cosmos.repository.LocalPackageCollection
@@ -42,6 +40,7 @@ import com.mesosphere.cosmos.rpc.v1.circe.MediaTypedBodyParsers._
 import com.mesosphere.cosmos.rpc.v1.circe.MediaTypedEncoders._
 import com.mesosphere.cosmos.rpc.v1.circe.MediaTypedRequestDecoders._
 import com.mesosphere.cosmos.rpc.v2.circe.MediaTypedEncoders._
+import com.mesosphere.cosmos.service.ServiceUninstaller
 import com.mesosphere.cosmos.storage.GarbageCollector
 import com.mesosphere.cosmos.storage.ObjectStorage
 import com.mesosphere.cosmos.storage.PackageStorage
@@ -100,7 +99,6 @@ with Logging {
     implicit val sr = statsReceiver
 
     val adminRouter = configureDcosClients().get
-    val packageRunner = new MarathonPackageRunner(adminRouter)
 
     val zkUri = zookeeperUri()
     logger.info("Using {} for the ZooKeeper connection", zkUri)
@@ -108,33 +106,22 @@ with Logging {
     val zkClient = zookeeper.Clients.createAndInitialize(zkUri)
     onExit(zkClient.close())
 
-    val janitor = SdkJanitor.initializeJanitor(zkClient, adminRouter)
-    janitor.start()
-    onExit(janitor.close())
-
     val sourcesStorage = ZkRepositoryList(zkClient)
     onExit(sourcesStorage.close())
 
     val installQueue = InstallQueue(zkClient)
     onExit(installQueue.close())
 
-    val objectStorages = configureObjectStorage(zkClient, installQueue)
-
     val universeClient = UniverseClient(adminRouter)
-
-    val repositories = new MultiRepository(
-      sourcesStorage,
-      universeClient
-    )
 
     new Components(
       adminRouter,
       sourcesStorage,
-      objectStorages,
-      repositories,
+      configureObjectStorage(zkClient, installQueue),
+      new MultiRepository(sourcesStorage, universeClient),
       installQueue,
-      packageRunner,
-      janitor
+      new MarathonPackageRunner(adminRouter),
+      ServiceUninstaller(adminRouter)
     )
   }
 
@@ -395,7 +382,7 @@ object CosmosApp {
     val repositories: MultiRepository,
     val producerView: ProducerView,
     val packageRunner: MarathonPackageRunner,
-    val marathonSdkJanitor: Janitor
+    val marathonSdkJanitor: ServiceUninstaller
   )
 
   final class Handlers(
