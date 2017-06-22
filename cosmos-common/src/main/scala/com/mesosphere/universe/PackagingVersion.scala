@@ -71,7 +71,20 @@ package v3.model {
     val show: String = "2.0"
 
     implicit val decodeV2PackagingVersion: Decoder[V2PackagingVersion.type] = {
-      universe.v4.model.PackagingVersion.decodePackagingVersionSubclass(this)
+      Decoder.instance { c: HCursor =>
+        c.as[String].flatMap { string =>
+          if (string == show) {
+            Right(this)
+          } else {
+            Left(
+              DecodingFailure(
+                s"Expected value [$show] for packaging version, but found [$string]",
+                c.history
+              )
+            )
+          }
+        }
+      }
     }
 
     implicit val encodeV2PackagingVersion: Encoder[V2PackagingVersion.type] = {
@@ -88,7 +101,20 @@ package v3.model {
     val show: String = "3.0"
 
     implicit val decodeV3PackagingVersion: Decoder[V3PackagingVersion.type] = {
-      universe.v4.model.PackagingVersion.decodePackagingVersionSubclass(this)
+      Decoder.instance { c: HCursor =>
+        c.as[String].flatMap { string =>
+          if (string == show) {
+            Right(this)
+          } else {
+            Left(
+              DecodingFailure(
+                s"Expected value [$show] for packaging version, but found [$string]",
+                c.history
+              )
+            )
+          }
+        }
+      }
     }
 
     implicit val encodeV3PackagingVersion: Encoder[V3PackagingVersion.type] = {
@@ -152,20 +178,6 @@ package v4.model {
         }
       }
     }
-
-    def decodePackagingVersionSubclass[V <: PackagingVersion](expected: V): Decoder[V] = {
-      Decoder.instance { c: HCursor =>
-        c.as[String].flatMap {
-          case expected.show => Right(expected)
-          case s => Left(
-            DecodingFailure(
-              s"Expected value [${expected.show}] for packaging version, but found [$s]",
-              c.history
-            )
-          )
-        }
-      }
-    }
   }
 
 
@@ -174,7 +186,20 @@ package v4.model {
     val show: String = "4.0"
 
     implicit val decodeV4V4PackagingVersion: Decoder[V4PackagingVersion.type] = {
-      universe.v4.model.PackagingVersion.decodePackagingVersionSubclass(this)
+      Decoder.instance { c: HCursor =>
+        c.as[String].flatMap { string =>
+          if (string == show) {
+            Right(this)
+          } else {
+            Left(
+              DecodingFailure(
+                s"Expected value [$show] for packaging version, but found [$string]",
+                c.history
+              )
+            )
+          }
+        }
+      }
     }
 
     implicit val encodeV4V4PackagingVersion: Encoder[V4PackagingVersion.type] = {
