@@ -128,8 +128,6 @@ final class RequestValidatorsSpec extends FreeSpec with Matchers with PropertyCh
       }
     }
 
-    // TODO package-add: Tests for body validation
-
     def genTestData(
       expectedContentTypeHeader: MediaType,
       actualContentTypeHeader: Option[String]

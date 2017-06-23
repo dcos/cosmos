@@ -4,10 +4,10 @@ import com.mesosphere.cosmos.http.MediaType
 
 object MediaTypes {
 
-  private[this] val dcos = MediaType.vndJson(List("dcos")) _
-  private[this] val dcosPackage = MediaType.vndJson(List("dcos", "package")) _
-  private[this] val dcosService = MediaType.vndJson(List("dcos", "service")) _
-  private[this] def vnd(kind: String, version: Int = 1) = dcosPackage(kind, version)
+  val dcos = MediaType.vndJson(List("dcos")) _
+  val dcosPackage = MediaType.vndJson(List("dcos", "package")) _
+  val dcosService = MediaType.vndJson(List("dcos", "service")) _
+  def vnd(kind: String, version: Int = 1): MediaType = dcosPackage(kind, version)
 
   val UninstallRequest = vnd("uninstall-request")
   val UninstallResponse = vnd("uninstall-response")
@@ -39,12 +39,6 @@ object MediaTypes {
   val V2InstallResponse = vnd("install-response", 2)
   val V1ListResponse = vnd("list-response", 1)
   val V2ListResponse = vnd("list-response", 2)
-
-  val AddRequest = vnd("add-request")
-  val AddResponse = vnd("add-response")
-
-  val ServiceStartRequest = dcosService("start-request", 1)
-  val ServiceStartResponse = dcosService("start-response", 1)
 
   val ServiceDescribeRequest = dcosService("describe-request", 1)
   val ServiceDescribeResponse = dcosService("describe-response", 1)
