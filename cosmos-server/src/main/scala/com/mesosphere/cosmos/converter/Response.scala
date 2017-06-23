@@ -1,21 +1,17 @@
 package com.mesosphere.cosmos.converter
 
-import com.mesosphere.cosmos.ConversionFromPackageToV1AddResponse
-import com.mesosphere.cosmos.ConversionFromPackageToV2DescribeResponse
-import java.nio.charset.StandardCharsets
-import com.mesosphere.cosmos.{ServiceMarathonTemplateNotFound, Trys, rpc}
+import com.mesosphere.cosmos.error.ConversionFromPackageToV2DescribeResponse
+import com.mesosphere.cosmos.error.ServiceMarathonTemplateNotFound
+import com.mesosphere.cosmos.rpc
 import com.mesosphere.universe
 import com.mesosphere.universe.bijection.UniverseConversions._
-import com.mesosphere.universe.common.ByteBuffers
-import com.mesosphere.universe.v3.model.{V2Package, V3Package}
 import com.mesosphere.universe.v3.syntax.PackageDefinitionOps._
-import com.twitter.bijection.Conversion.asMethod
-import com.twitter.bijection.{Conversion, Injection}
 import com.twitter.bijection.Bijection._
-import com.twitter.bijection.twitter_util.UtilBijections._
+import com.twitter.bijection.Conversion
+import com.twitter.bijection.Conversion.asMethod
 import com.twitter.util.Return
-import com.twitter.util.Try
 import com.twitter.util.Throw
+import com.twitter.util.Try
 
 object Response {
   implicit val internalV2InstallResponseToV1InstallResponse:
@@ -23,56 +19,13 @@ object Response {
     Conversion.fromFunction { (x: rpc.v2.model.InstallResponse) =>
       Try(
         x.appId.getOrElse(
-          throw ServiceMarathonTemplateNotFound(x.packageName, x.packageVersion)
+          throw ServiceMarathonTemplateNotFound(x.packageName, x.packageVersion).exception
         )
       ).map { appId =>
         rpc.v1.model.InstallResponse(
           packageName = x.packageName,
           packageVersion = x.packageVersion.as[universe.v2.model.PackageDetailsVersion],
           appId = appId
-        )
-      }
-    }
-  }
-
-  implicit val v4PackageDefinitionToV1DescribeResponse:
-    Conversion[universe.v4.model.PackageDefinition, Try[rpc.v1.model.DescribeResponse]] = {
-    Conversion.fromFunction { (packageDefinition: universe.v4.model.PackageDefinition) =>
-      Trys.join(
-        Try(
-          packageDefinition.marathon.map(_.v2AppMustacheTemplate).getOrElse(
-            throw ServiceMarathonTemplateNotFound(
-              packageDefinition.name,
-              packageDefinition.version
-            )
-          )
-        ),
-        tryV2Resource(packageDefinition)
-      ).map { case (b64MarathonTemplate, resources) =>
-        rpc.v1.model.DescribeResponse(
-          `package` = universe.v2.model.PackageDetails(
-            packagingVersion = packageDefinition.packagingVersion.as[universe.v2.model.PackagingVersion],
-            name = packageDefinition.name,
-            version = packageDefinition.version.as[universe.v2.model.PackageDetailsVersion],
-            maintainer = packageDefinition.maintainer,
-            description = packageDefinition.description,
-            tags = packageDefinition.tags.as[List[String]],
-            selected = packageDefinition.selected.orElse(Some(false)),
-            scm = packageDefinition.scm,
-            website = packageDefinition.website,
-            framework = packageDefinition.framework.orElse(Some(false)),
-            preInstallNotes = packageDefinition.preInstallNotes,
-            postInstallNotes = packageDefinition.postInstallNotes,
-            postUninstallNotes = packageDefinition.postUninstallNotes,
-            licenses = packageDefinition.licenses.as[Option[List[universe.v2.model.License]]]
-          ),
-          marathonMustache = new String(
-            ByteBuffers.getBytes(b64MarathonTemplate),
-            StandardCharsets.UTF_8
-          ),
-          command = packageDefinition.command.as[Option[universe.v2.model.Command]],
-          config = packageDefinition.config,
-          resource = resources
         )
       }
     }
@@ -91,7 +44,7 @@ object Response {
           case v4: universe.v4.model.V4Package if notUsesUpdates(v4) =>
             Return(universe.v3.model.V3PackagingVersion)
           case _ =>
-            Throw(ConversionFromPackageToV2DescribeResponse())
+            Throw(ConversionFromPackageToV2DescribeResponse().exception)
         }
 
       packagingVersion.map { packagingVersion =>
@@ -202,9 +155,9 @@ object Response {
   private[this] def v2Resource(
     pkg: universe.v4.model.PackageDefinition
   ): Option[universe.v2.model.Resource] = pkg match {
-    case v2: V2Package =>
+    case v2: universe.v3.model.V2Package =>
       v2.resource.map(_.as[universe.v2.model.Resource])
-    case v3: V3Package =>
+    case v3: universe.v3.model.V3Package =>
       v3.resource.map { resource =>
         universe.v2.model.Resource(
           resource.assets.as[Option[universe.v2.model.Assets]],
@@ -218,23 +171,6 @@ object Response {
           resource.images.as[Option[universe.v2.model.Images]]
         )
       }
-  }
-
-  private[this] def tryV2Resource(
-    pkg: universe.v4.model.PackageDefinition
-  ): Try[Option[universe.v2.model.Resource]] = pkg match {
-    case v2: V2Package =>
-      Injection.invert[Option[universe.v2.model.Resource], Option[universe.v3.model.V2Resource]](
-        v2.resource
-      ).as[Try[Option[universe.v2.model.Resource]]]
-    case v3: V3Package =>
-      Injection.invert[Option[universe.v2.model.Resource], Option[universe.v3.model.V3Resource]](
-        v3.resource
-      ).as[Try[Option[universe.v2.model.Resource]]]
-    case v4: universe.v4.model.V4Package =>
-      Injection.invert[Option[universe.v2.model.Resource], Option[universe.v3.model.V3Resource]](
-        v4.resource
-      ).as[Try[Option[universe.v2.model.Resource]]]
   }
 
   private[this] def notUsesUpdates(pkg: universe.v4.model.V4Package): Boolean = {

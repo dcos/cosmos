@@ -65,8 +65,8 @@ class PackageRenderHandlerSpec extends FreeSpec with Matchers with TableDrivenPr
 
     "render the package with the highest release version" +
       " from the lowest indexed repository when provided no version" in {
-      val (packageDefinition, version) = ItObjects.defaultHelloWorldPackageDefinition
-      testRender(packageDefinition, version, versioned = false)
+      val (packageDefinition, source) = ItObjects.defaultHelloWorldPackageDefinition
+      testRender(packageDefinition, source, versioned = false)
     }
 
     def testRender(

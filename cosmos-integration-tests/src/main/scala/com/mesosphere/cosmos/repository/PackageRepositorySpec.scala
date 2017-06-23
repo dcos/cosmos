@@ -5,10 +5,11 @@ import _root_.io.circe.Json
 import _root_.io.circe.JsonObject
 import _root_.io.circe.jawn._
 import _root_.io.circe.syntax._
-import com.mesosphere.cosmos._
+import com.mesosphere.cosmos.ItUtil
+import com.mesosphere.cosmos.error.RepoNameOrUriMissing
 import com.mesosphere.cosmos.http.CosmosRequests
 import com.mesosphere.cosmos.rpc.v1.circe.Decoders._
-import com.mesosphere.cosmos.rpc.v1.model._
+import com.mesosphere.cosmos.rpc
 import com.mesosphere.cosmos.test.CosmosIntegrationTestClient._
 import com.mesosphere.universe.common.circe.Encoders._
 import com.netaporter.uri.Uri
@@ -20,9 +21,6 @@ import org.scalatest.BeforeAndAfterAll
 import org.scalatest.FreeSpec
 import org.scalatest.concurrent.Eventually
 import org.scalatest.prop.TableDrivenPropertyChecks
-import scala.util.Either
-import scala.util.Left
-import scala.util.Right
 
 final class PackageRepositorySpec
   extends FreeSpec with BeforeAndAfter with Eventually with AppendedClues with BeforeAndAfterAll {
@@ -30,7 +28,7 @@ final class PackageRepositorySpec
   import PackageRepositorySpec._
 
   // TODO: Move all these into the integration spec
-  var originalRepositories: Seq[PackageRepository] = Seq.empty
+  var originalRepositories: Seq[rpc.v1.model.PackageRepository] = Seq.empty
 
   override def beforeAll(): Unit = {
     super.beforeAll()
@@ -48,7 +46,7 @@ final class PackageRepositorySpec
 
   "List sources endpoint" in {
       assertResult(
-        PackageRepositoryListResponse(defaultRepos)
+        rpc.v1.model.PackageRepositoryListResponse(defaultRepos)
       )(
         listRepos()
       )
@@ -104,15 +102,20 @@ final class PackageRepositorySpec
         setStorageState(startingSources)
 
         scenario.foreach { assertion =>
-          assertResult(Right(PackageRepositoryDeleteResponse(assertion.responseList))) {
+          assertResult(
+            Right(rpc.v1.model.PackageRepositoryDeleteResponse(assertion.responseList))
+          )(
             deleteRepo(assertion.request)
-          }
+          )
         }
       }
     }
 
     "should respond with an error when neither name nor uri are specified" in {
-      val Left(errorResponse) = deleteRepo(PackageRepositoryDeleteRequest(), status = Status.BadRequest)
+      val Left(errorResponse) = deleteRepo(
+        rpc.v1.model.PackageRepositoryDeleteRequest(),
+        status = Status.BadRequest
+      )
       assertResult(classOf[RepoNameOrUriMissing].getSimpleName)(errorResponse.`type`)
     }
   }
@@ -120,15 +123,15 @@ final class PackageRepositorySpec
   "Issue #209: repository versions must be validated" in {
     // TODO: Using an external test dependency. Change to something local once the test is working
     val repoUri = Uri.parse("https://github.com/mesosphere/universe/archive/version-1.x.zip")
-    val oldVersionRepository = PackageRepository("old-version", repoUri)
+    val oldVersionRepository = rpc.v1.model.PackageRepository("old-version", repoUri)
     val expectedList = defaultRepos :+ oldVersionRepository
     val expectedMsg = s"Repository version [1.0.0-rc1] is not supported"
     assertAdd(expectedList, oldVersionRepository)
 
     def assertUnsupportedVersion(): Assertion = {
-      val response = searchPackages(SearchRequest(None))
+      val response = searchPackages(rpc.v1.model.SearchRequest(None))
       assertResult(Status.BadRequest)(response.status)
-      val Right(err) = decode[ErrorResponse](response.contentString)
+      val Right(err) = decode[rpc.v1.model.ErrorResponse](response.contentString)
       assertResult(expectedMsg)(err.message)
     }
 
@@ -142,12 +145,12 @@ final class PackageRepositorySpec
   "Package repo should should not add unsupported uri protocols" - {
     "file" in {
       val uri = Uri.parse("file://foo/bar")
-      val bogusRepository = PackageRepository("foobar", uri)
+      val bogusRepository = rpc.v1.model.PackageRepository("foobar", uri)
       assertAddFailure(unsupportedUriMsg(uri), bogusRepository)
     }
     "no scheme" in {
       val uri = Uri.parse("foobar")
-      val bogusRepository = PackageRepository("foobar", uri)
+      val bogusRepository = rpc.v1.model.PackageRepository("foobar", uri)
       assertAddFailure(unsupportedUriMsg(uri), bogusRepository)
     }
     def unsupportedUriMsg(uri: Uri): String = {
@@ -162,13 +165,13 @@ final class PackageRepositorySpec
     }
 
     def assertBrokenUri(uriText: String): Assertion = {
-      val bogusRepository = PackageRepository("bogus", Uri.parse(uriText))
+      val bogusRepository = rpc.v1.model.PackageRepository("bogus", Uri.parse(uriText))
       assertAdd(defaultRepos :+ bogusRepository, bogusRepository)
 
       eventually {
-        val response = searchPackages(SearchRequest(None))
+        val response = searchPackages(rpc.v1.model.SearchRequest(None))
         assertResult(Status.BadRequest)(response.status)
-        assert(decode[ErrorResponse](response.contentString).isRight)
+        assert(decode[rpc.v1.model.ErrorResponse](response.contentString).isRight)
       }
     }
   }
@@ -185,21 +188,22 @@ final class PackageRepositorySpec
     "non-Zip-encoded repo bundle" in {
       // TODO: Use a more reliable URI
       val uriText = "https://mesosphere.com/"
-      val contentTypes =
-        "application/vnd.dcos.universe.repo+json;charset=utf-8;version=v3, application/zip"
+      val v4 = "application/vnd.dcos.universe.repo+json;charset=utf-8;version=v4"
+      val v3 = "application/vnd.dcos.universe.repo+json;charset=utf-8;version=v3"
+      val contentTypes = s"$v4, $v3, application/zip"
       val expectedMsg = s"Unsupported Content-Type: text/html;charset=utf-8 Accept: [$contentTypes]"
       assertInvalidRepo(uriText, expectedMsg)
     }
 
     def assertInvalidRepo(uriText: String, expectedMsg: String): Assertion = {
       def assertBadRequest(): Assertion = {
-        val response = searchPackages(SearchRequest(None))
+        val response = searchPackages(rpc.v1.model.SearchRequest(None))
         assertResult(Status.BadRequest)(response.status)
-        val Right(err) = decode[ErrorResponse](response.contentString)
+        val Right(err) = decode[rpc.v1.model.ErrorResponse](response.contentString)
         assertResult(expectedMsg)(err.message)
       }
 
-      val invalidRepo = PackageRepository("invalid", Uri.parse(uriText))
+      val invalidRepo = rpc.v1.model.PackageRepository("invalid", Uri.parse(uriText))
       assertAdd(defaultRepos :+ invalidRepo, invalidRepo)
 
       eventually { assertBadRequest() }
@@ -213,14 +217,14 @@ final class PackageRepositorySpec
 
     "by name only" in {
       val badName = "doesnotexist"
-      val request = PackageRepositoryDeleteRequest(name = Some(badName))
+      val request = rpc.v1.model.PackageRepositoryDeleteRequest(name = Some(badName))
 
       assertDeleteAbsentRepo(request)
     }
 
     "by uri only" in {
       val badUri = Uri.parse("/not/a/repo/uri")
-      val request = PackageRepositoryDeleteRequest(uri = Some(badUri))
+      val request = rpc.v1.model.PackageRepositoryDeleteRequest(uri = Some(badUri))
 
       assertDeleteAbsentRepo(request)
     }
@@ -228,7 +232,10 @@ final class PackageRepositorySpec
     "by name and uri" in {
       val badName = "nonrepo"
       val badUri = Uri.parse("/non/repo")
-      val request = PackageRepositoryDeleteRequest(name = Some(badName), uri = Some(badUri))
+      val request = rpc.v1.model.PackageRepositoryDeleteRequest(
+        name = Some(badName),
+        uri = Some(badUri)
+      )
 
       assertDeleteAbsentRepo(request)
     }
@@ -236,7 +243,10 @@ final class PackageRepositorySpec
     "by valid name and invalid uri" in {
       val validName = UniverseRepository.name
       val badUri = Uri.parse("/not/universe")
-      val request = PackageRepositoryDeleteRequest(name = Some(validName), uri = Some(badUri))
+      val request = rpc.v1.model.PackageRepositoryDeleteRequest(
+        name = Some(validName),
+        uri = Some(badUri)
+      )
 
       assertDeleteAbsentRepo(request)
     }
@@ -244,12 +254,17 @@ final class PackageRepositorySpec
     "by invalid name and valid uri" in {
       val badName = "notuniverse"
       val validUri = UniverseRepository.uri
-      val request = PackageRepositoryDeleteRequest(name = Some(badName), uri = Some(validUri))
+      val request = rpc.v1.model.PackageRepositoryDeleteRequest(
+        name = Some(badName),
+        uri = Some(validUri)
+      )
 
       assertDeleteAbsentRepo(request)
     }
 
-    def assertDeleteAbsentRepo(request: PackageRepositoryDeleteRequest): Assertion = {
+    def assertDeleteAbsentRepo(
+      request: rpc.v1.model.PackageRepositoryDeleteRequest
+    ): Assertion = {
       val Left(errorResponse) =
         deleteRepo(request, status = Status.BadRequest) withClue "when deleting a repo"
       val errorData = optionToJsonMap("name", request.name) ++ optionToJsonMap("uri", request.uri)
@@ -271,15 +286,15 @@ object PackageRepositorySpec extends FreeSpec with TableDrivenPropertyChecks {
   private val defaultRepos = DefaultRepositories().getOrThrow
   private[cosmos] val UniverseRepository = defaultRepos.head
 
-  private[cosmos] val SourceCliTest4 = PackageRepository(
+  private[cosmos] val SourceCliTest4 = rpc.v1.model.PackageRepository(
     "bar",
     Uri.parse("https://github.com/mesosphere/universe/archive/cli-test-4.zip")
   )
-  private[cosmos] val SourceMesosphere = PackageRepository(
+  private[cosmos] val SourceMesosphere = rpc.v1.model.PackageRepository(
     "baz",
     Uri.parse("https://mesosphere.com")
   )
-  private[cosmos] val SourceExample = PackageRepository(
+  private[cosmos] val SourceExample = rpc.v1.model.PackageRepository(
     "quux",
     Uri.parse("http://example.com")
   )
@@ -307,26 +322,33 @@ object PackageRepositorySpec extends FreeSpec with TableDrivenPropertyChecks {
   )
 
   private def assertAdd(
-    expectedResponseList: Seq[PackageRepository],
-    repository: PackageRepository,
+    expectedResponseList: Seq[rpc.v1.model.PackageRepository],
+    repository: rpc.v1.model.PackageRepository,
     index: Option[Int] = None
   ): Assertion = {
-    val addRequest = PackageRepositoryAddRequest(repository.name, repository.uri, index)
+    val addRequest = rpc.v1.model.PackageRepositoryAddRequest(
+      repository.name,
+      repository.uri,
+      index
+    )
     assertResult(expectedResponseList)(addRepo(addRequest).repositories)
   }
 
   private def assertAddFailure(
     expectedErrorMessage: String,
-    repository: PackageRepository
+    repository: rpc.v1.model.PackageRepository
   ): Assertion = {
     val repositoriesBeforeAdd = listRepos()
 
     assertResult(expectedErrorMessage) {
-      val repoAddRequest = PackageRepositoryAddRequest(repository.name, repository.uri)
+      val repoAddRequest = rpc.v1.model.PackageRepositoryAddRequest(
+        repository.name,
+        repository.uri
+      )
       val request = CosmosRequests.packageRepositoryAdd(repoAddRequest)
       val response = CosmosClient.submit(request)
       assertResult(Status.BadRequest)(response.status)
-      val Right(err) = decode[ErrorResponse](response.contentString)
+      val Right(err) = decode[rpc.v1.model.ErrorResponse](response.contentString)
       err.message
     }
 
@@ -335,62 +357,68 @@ object PackageRepositorySpec extends FreeSpec with TableDrivenPropertyChecks {
     }
   }
 
-  private def addRepo(addRequest: PackageRepositoryAddRequest): PackageRepositoryAddResponse  = {
+  private def addRepo(
+    addRequest: rpc.v1.model.PackageRepositoryAddRequest
+  ): rpc.v1.model.PackageRepositoryAddResponse  = {
     val request = CosmosRequests.packageRepositoryAdd(addRequest)
-    val Right(response) = CosmosClient.callEndpoint[PackageRepositoryAddResponse](request)
+    val Right(response) = CosmosClient.callEndpoint[rpc.v1.model.PackageRepositoryAddResponse](
+      request
+    )
     response
   }
 
   private def deleteRepo(
-    deleteRequest: PackageRepositoryDeleteRequest,
+    deleteRequest: rpc.v1.model.PackageRepositoryDeleteRequest,
     status: Status = Status.Ok
-  ): Either[ErrorResponse, PackageRepositoryDeleteResponse]  = {
+  ): Either[rpc.v1.model.ErrorResponse, rpc.v1.model.PackageRepositoryDeleteResponse]  = {
     val request = CosmosRequests.packageRepositoryDelete(deleteRequest)
-    CosmosClient.callEndpoint[PackageRepositoryDeleteResponse](request, status)
+    CosmosClient.callEndpoint[rpc.v1.model.PackageRepositoryDeleteResponse](request, status)
   }
 
-  private def listRepos(): PackageRepositoryListResponse = {
+  private def listRepos(): rpc.v1.model.PackageRepositoryListResponse = {
     val request = CosmosRequests.packageRepositoryList
-    val Right(response) = CosmosClient.callEndpoint[PackageRepositoryListResponse](request)
+    val Right(response) = CosmosClient.callEndpoint[rpc.v1.model.PackageRepositoryListResponse](
+      request
+    )
     response
   }
 
-  private def searchPackages(req: SearchRequest): Response = {
+  private def searchPackages(req: rpc.v1.model.SearchRequest): Response = {
     val request = CosmosRequests.packageSearch(req)
     CosmosClient.submit(request)
   }
 
   private[this] def deleteRequestByName(
-    source: PackageRepository
-  ): PackageRepositoryDeleteRequest = {
-    PackageRepositoryDeleteRequest(name = Some(source.name))
+    source: rpc.v1.model.PackageRepository
+  ): rpc.v1.model.PackageRepositoryDeleteRequest = {
+    rpc.v1.model.PackageRepositoryDeleteRequest(name = Some(source.name))
   }
 
   private[this] def deleteRequestByUri(
-    source: PackageRepository
-  ): PackageRepositoryDeleteRequest = {
-    PackageRepositoryDeleteRequest(uri = Some(source.uri))
+    source: rpc.v1.model.PackageRepository
+  ): rpc.v1.model.PackageRepositoryDeleteRequest = {
+    rpc.v1.model.PackageRepositoryDeleteRequest(uri = Some(source.uri))
   }
 
   private def setStorageState(
-    state: List[PackageRepository]
+    state: List[rpc.v1.model.PackageRepository]
   ): Unit = {
     // TODO: not ideal but okay for now
 
     listRepos()
       .repositories
       .map { repository =>
-        deleteRepo(PackageRepositoryDeleteRequest(uri = Some(repository.uri)))
+        deleteRepo(rpc.v1.model.PackageRepositoryDeleteRequest(uri = Some(repository.uri)))
       }
 
     state.foreach { repository =>
-      addRepo(PackageRepositoryAddRequest(repository.name, repository.uri))
+      addRepo(rpc.v1.model.PackageRepositoryAddRequest(repository.name, repository.uri))
     }
   }
 
 }
 
 private case class DeleteSourceAssertion(
-  request: PackageRepositoryDeleteRequest,
-  responseList: List[PackageRepository]
+  request: rpc.v1.model.PackageRepositoryDeleteRequest,
+  responseList: List[rpc.v1.model.PackageRepository]
 )

@@ -1,6 +1,7 @@
 package com.mesosphere.cosmos.handler
 
-import com.mesosphere.cosmos.MarathonAppNotFound
+import com.mesosphere.cosmos.error.CosmosException
+import com.mesosphere.cosmos.error.MarathonAppNotFound
 import com.mesosphere.cosmos.http.CosmosRequests
 import com.mesosphere.cosmos.rpc.MediaTypes
 import com.mesosphere.cosmos.rpc.v1.circe.Decoders._
@@ -105,21 +106,44 @@ final class UninstallHandlerSpec extends FreeSpec with Eventually with SpanSugar
       assertResult(Status.Ok)(cleanupResponse.status)
     }
 
-    "be able to uninstall SDK packages that support SDK uninstall and only one uninstall at a time" in {
-      // Add stub universe for service that supports uninstall.
-      val request = CosmosRequests.packageRepositoryAdd(PackageRepositoryAddRequest("uninstall-test",
-        Uri.parse("https://s3-us-west-2.amazonaws.com/infinity-artifacts/uninstalltestfixture/stub-universe-uninstall-test-fixture.zip"),
-        index = Some(0)))
-      val _ = CosmosClient.callEndpoint[PackageRepositoryAddResponse](request)
+    "SDK Based services use custom uninstall behavior" - {
 
-      val installRequest = InstallRequest("hello-world", options = Some(JsonObject.singleton("world",
-        Json.fromJsonObject(JsonObject.singleton("count", Json.fromInt(1))))))
-      val installResponse = submitInstallRequest(installRequest)
-      assertResult(Status.Ok)(installResponse.status)
+      "Be able to uninstall a service in the middle of a Marathon deploy" in {
+        // Install the test fixture.
+        val installRequestOne = InstallRequest(
+          "hello-world",
+          options = Some(JsonObject.singleton("world", Json.fromJsonObject(JsonObject.singleton("count", Json.fromInt(1)))))
+        )
+        val installResponseOne = submitInstallRequest(installRequestOne)
+        assertResult(Status.Ok)(installResponseOne.status)
 
-      try {
+
+        // Immediately turn around and try to uninstall it, while it's still being initially deployed.
+        val uninstallRequestOne = UninstallRequest("hello-world", appId = Option(AppId("/hello-world")), Some(false))
+        val uninstallResponseOne = submitUninstallRequest(uninstallRequestOne)
+        assertResult(Status.Ok)(uninstallResponseOne.status)
+        assertResult(MediaTypes.UninstallResponse.show)(uninstallResponseOne.headerMap(Fields.ContentType))
+
+        // Wait for the service to be deleted.
+        eventually(timeout(10 minutes), interval(10 seconds)) {
+          val exception = intercept[CosmosException](
+            Await.result(adminRouter.getApp(AppId("/hello-world")))
+          )
+
+          exception.error shouldBe a[MarathonAppNotFound]
+        }
+      }
+
+      "be able to uninstall SDK packages after a second uninstall while the first is in progress" in {
+        val installRequest = InstallRequest(
+          "hello-world",
+          options = Some(JsonObject.singleton("world", Json.fromJsonObject(JsonObject.singleton("count", Json.fromInt(1)))))
+        )
+        val installResponse = submitInstallRequest(installRequest)
+        assertResult(Status.Ok)(installResponse.status)
+
         // Wait for the service to deploy.
-        eventually (timeout(10 minutes), interval(30 seconds)) {
+        eventually(timeout(10 minutes), interval(10 seconds)) {
           assertResult(Status.Ok)(Await.result(adminRouter.getSdkServicePlanStatus("hello-world", "v1", "deploy")).status)
         }
 
@@ -130,17 +154,17 @@ final class UninstallHandlerSpec extends FreeSpec with Eventually with SpanSugar
 
         // Try a second uninstall request
         val secondResponse = submitUninstallRequest(uninstallRequest)
-        assertResult(Status.Conflict)(secondResponse.status)
+        assertResult(Status.Ok)(secondResponse.status)
+        assertResult(MediaTypes.UninstallResponse.show)(secondResponse.headerMap(Fields.ContentType))
 
         // Wait for the service to be deleted.
-        eventually (timeout(10 minutes), interval(30 seconds)) {
-          assertThrows[MarathonAppNotFound](Await.result(adminRouter.getApp(AppId("/hello-world"))))
+        eventually(timeout(10 minutes), interval(10 seconds)) {
+          val exception = intercept[CosmosException](
+            Await.result(adminRouter.getApp(AppId("/hello-world")))
+          )
+
+          exception.error shouldBe a[MarathonAppNotFound]
         }
-      } finally {
-        // Cleanup the stub.
-        val removeRepoRequest = CosmosRequests.packageRepositoryDelete(PackageRepositoryDeleteRequest(Some("uninstall-test")))
-        CosmosClient.callEndpoint[PackageRepositoryDeleteResponse](removeRepoRequest)
-        ()
       }
     }
   }

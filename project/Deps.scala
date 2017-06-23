@@ -19,9 +19,7 @@ object Deps {
     "io.circe" %% "circe-core" % V.circe,
     "io.circe" %% "circe-testing" % V.circe,
     "io.circe" %% "circe-generic" % V.circe,
-    "io.circe" %% "circe-jawn" % V.circe,
-    "io.circe" %% "circe-parser" % V.circe,
-    "io.circe" %% "circe-optics" % V.circe
+    "io.circe" %% "circe-jawn" % V.circe
   )
 
   // APLv2.0

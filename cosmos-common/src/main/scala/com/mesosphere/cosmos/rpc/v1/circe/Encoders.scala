@@ -31,7 +31,6 @@ object Encoders {
   implicit val encodeRenderRequest: Encoder[RenderRequest] = deriveEncoder[RenderRequest]
   implicit val encodeRenderResponse: Encoder[RenderResponse] = deriveEncoder[RenderResponse]
 
-  implicit val encodeDescribeResponse: Encoder[DescribeResponse] = deriveEncoder[DescribeResponse]
   implicit val encodeListVersionsRequest: Encoder[ListVersionsRequest] = deriveEncoder[ListVersionsRequest]
   implicit val encodeListVersionsResponse: Encoder[ListVersionsResponse] = deriveEncoder[ListVersionsResponse]
 

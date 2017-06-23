@@ -30,7 +30,6 @@ object Decoders {
   implicit val decodeRenderRequest: Decoder[RenderRequest] = deriveDecoder[RenderRequest]
   implicit val decodeRenderResponse: Decoder[RenderResponse] = deriveDecoder[RenderResponse]
 
-  implicit val decodeDescribeResponse: Decoder[DescribeResponse] = deriveDecoder[DescribeResponse]
   implicit val decodeListVersionsRequest: Decoder[ListVersionsRequest] = deriveDecoder[ListVersionsRequest]
   implicit val decodeListVersionsResponse: Decoder[ListVersionsResponse] = deriveDecoder[ListVersionsResponse]
 

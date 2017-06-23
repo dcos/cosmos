@@ -1,31 +1,36 @@
 package com.mesosphere.cosmos.handler
 
 import cats.data.Ior
-import com.mesosphere.cosmos.RepoNameOrUriMissing
+import com.mesosphere.cosmos.error.RepoNameOrUriMissing
 import com.mesosphere.cosmos.finch.EndpointHandler
 import com.mesosphere.cosmos.http.RequestSession
 import com.mesosphere.cosmos.repository.PackageSourcesStorage
-import com.mesosphere.cosmos.rpc.v1.model.{PackageRepositoryDeleteRequest, PackageRepositoryDeleteResponse}
+import com.mesosphere.cosmos.rpc
 import com.twitter.util.Future
 
 private[cosmos] final class PackageRepositoryDeleteHandler(
   sourcesStorage: PackageSourcesStorage
-) extends EndpointHandler[PackageRepositoryDeleteRequest, PackageRepositoryDeleteResponse] {
+) extends EndpointHandler[rpc.v1.model.PackageRepositoryDeleteRequest,
+                          rpc.v1.model.PackageRepositoryDeleteResponse] {
 
   import PackageRepositoryDeleteHandler._
 
-  override def apply(request: PackageRepositoryDeleteRequest)(implicit
-    session: RequestSession
-  ): Future[PackageRepositoryDeleteResponse] = {
-    val nameOrUri = optionsToIor(request.name, request.uri).getOrElse(throw RepoNameOrUriMissing())
+  override def apply(
+    request: rpc.v1.model.PackageRepositoryDeleteRequest
+  )(
+    implicit session: RequestSession
+  ): Future[rpc.v1.model.PackageRepositoryDeleteResponse] = {
+    val nameOrUri = optionsToIor(request.name, request.uri).getOrElse(
+      throw RepoNameOrUriMissing().exception
+    )
     sourcesStorage.delete(nameOrUri).map { sources =>
-      PackageRepositoryDeleteResponse(sources)
+      rpc.v1.model.PackageRepositoryDeleteResponse(sources)
     }
   }
 
 }
 
-private object PackageRepositoryDeleteHandler {
+object PackageRepositoryDeleteHandler {
 
   private def optionsToIor[A, B](aOpt: Option[A], bOpt: Option[B]): Option[Ior[A, B]] = {
     (aOpt, bOpt) match {

@@ -1,7 +1,7 @@
 package com.mesosphere.universe.v3.circe
 
+import com.mesosphere.universe
 import com.mesosphere.universe.test.TestingPackages
-import com.mesosphere.universe.v3.model._
 import com.mesosphere.universe.v3.syntax.PackageDefinitionOps._
 import io.circe.Json
 import io.circe.jawn.parse
@@ -10,38 +10,46 @@ import java.nio.ByteBuffer
 import java.nio.charset.StandardCharsets
 import org.scalatest.FreeSpec
 import scala.io.Source
-import scala.util.Left
-import scala.util.Right
 
 class RepositoryEncoderDecoderSpec extends FreeSpec {
 
   "Repository" - {
     "encode" in {
-      val repo = Repository(List(
-        V2Package(
-          V2PackagingVersion,
-          "cool-package",
-          Version("1.2.3"),
-          ReleaseVersion(1).get,
-          "bill@cool.co",
-          "some awesome package",
-          Marathon(ByteBuffer.wrap("testing".getBytes(StandardCharsets.UTF_8))),
-          List("abc", "def").map(Tag(_).get),
-          selected = Some(false)
-        ),
-        V3Package(
-          V3PackagingVersion,
-          "cool-package",
-          Version("3.2.1"),
-          ReleaseVersion(2).get,
-          "bill@cool.co",
-          "some awesome package",
-          List("abc", "def").map(Tag(_).get),
-          selected = Some(false),
-          marathon = Some(Marathon(ByteBuffer.wrap("testing".getBytes(StandardCharsets.UTF_8)))),
-          minDcosReleaseVersion = Some(DcosReleaseVersionParser.parseUnsafe("1.8"))
+      val repo = universe.v4.model.Repository(
+        List(
+          universe.v3.model.V2Package(
+            universe.v3.model.V2PackagingVersion,
+            "cool-package",
+            universe.v3.model.Version("1.2.3"),
+            universe.v3.model.ReleaseVersion(1).get,
+            "bill@cool.co",
+            "some awesome package",
+            universe.v3.model.Marathon(
+              ByteBuffer.wrap("testing".getBytes(StandardCharsets.UTF_8))
+            ),
+            List("abc", "def").map(universe.v3.model.Tag(_).get),
+            selected = Some(false)
+          ),
+          universe.v3.model.V3Package(
+            universe.v3.model.V3PackagingVersion,
+            "cool-package",
+            universe.v3.model.Version("3.2.1"),
+            universe.v3.model.ReleaseVersion(2).get,
+            "bill@cool.co",
+            "some awesome package",
+            List("abc", "def").map(universe.v3.model.Tag(_).get),
+            selected = Some(false),
+            marathon = Some(
+              universe.v3.model.Marathon(
+                ByteBuffer.wrap("testing".getBytes(StandardCharsets.UTF_8))
+              )
+            ),
+            minDcosReleaseVersion = Some(
+              universe.v3.model.DcosReleaseVersionParser.parseUnsafe("1.8")
+            )
+          )
         )
-      ))
+      )
 
       val json = repo.asJson
       val inputStream = this.getClass.getResourceAsStream(
@@ -57,7 +65,9 @@ class RepositoryEncoderDecoderSpec extends FreeSpec {
         "/com/mesosphere/universe/v3/circe/test-v3-repo-up-to-1.8.json"
       )
       val jsonString = Source.fromInputStream(inputStream, "UTF-8").mkString
-      val repo = Repository.decodeRepository.decodeJson(parse(jsonString).right.get).right.get
+      val repo = universe.v4.model.Repository.decodeRepository.decodeJson(
+        parse(jsonString).right.get
+      ).right.get
 
       val expected = 9
       assertResult(expected)(repo.packages.size)
@@ -68,13 +78,13 @@ class RepositoryEncoderDecoderSpec extends FreeSpec {
         .map(_.version)
 
       val expectedCassandraVersions = List(
-        Version("0.2.0-1"),
-        Version("0.2.0-2"),
-        Version("2.2.5-0.2.0"),
-        Version("1.0.2-2.2.5"),
-        Version("1.0.4-2.2.5"),
-        Version("1.0.5-2.2.5"),
-        Version("1.0.5-2.2.5")
+        universe.v3.model.Version("0.2.0-1"),
+        universe.v3.model.Version("0.2.0-2"),
+        universe.v3.model.Version("2.2.5-0.2.0"),
+        universe.v3.model.Version("1.0.2-2.2.5"),
+        universe.v3.model.Version("1.0.4-2.2.5"),
+        universe.v3.model.Version("1.0.5-2.2.5"),
+        universe.v3.model.Version("1.0.5-2.2.5")
       )
       assertResult(expectedCassandraVersions)(cassandraVersions)
     }
@@ -99,7 +109,7 @@ class RepositoryEncoderDecoderSpec extends FreeSpec {
         "[3.1]: El(DownField(packagingVersion),true,false),El(DownArray,true,false)," +
         "El(DownField(packages),true,false)"
 
-      val Left(decodingFailure) = Repository.decodeRepository.decodeJson(json)
+      val Left(decodingFailure) = universe.v4.model.Repository.decodeRepository.decodeJson(json)
 
       assertResult(expectedErrorMessage)(decodingFailure.getMessage())
     }
@@ -123,7 +133,7 @@ class RepositoryEncoderDecoderSpec extends FreeSpec {
         "El(DownArray,true,false),El(DownField(tags),true,false),El(DownArray,true,false)," +
         "El(DownField(packages),true,false)"
 
-      val Left(decodingFailure) = Repository.decodeRepository.decodeJson(json)
+      val Left(decodingFailure) = universe.v4.model.Repository.decodeRepository.decodeJson(json)
 
       assertResult(expectedErrorMessage)(decodingFailure.getMessage())
     }
@@ -148,7 +158,7 @@ class RepositoryEncoderDecoderSpec extends FreeSpec {
         "[-1]: El(DownField(releaseVersion),true,false),El(DownArray,true,false)," +
         "El(DownField(packages),true,false)"
 
-      val Left(decodingFailure) = Repository.decodeRepository.decodeJson(json)
+      val Left(decodingFailure) = universe.v4.model.Repository.decodeRepository.decodeJson(json)
 
       assertResult(expectedErrorMessage)(decodingFailure.getMessage())
     }

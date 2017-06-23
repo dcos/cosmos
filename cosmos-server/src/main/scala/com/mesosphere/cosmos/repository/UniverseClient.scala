@@ -2,18 +2,19 @@ package com.mesosphere.cosmos.repository
 
 import com.mesosphere.cosmos.AdminRouter
 import com.mesosphere.cosmos.BuildProperties
-import com.mesosphere.cosmos.GenericHttpError
-import com.mesosphere.cosmos.IndexNotFound
-import com.mesosphere.cosmos.PackageFileMissing
-import com.mesosphere.cosmos.PackageFileNotJson
-import com.mesosphere.cosmos.PackageFileSchemaMismatch
-import com.mesosphere.cosmos.RepositoryUriConnection
-import com.mesosphere.cosmos.RepositoryUriSyntax
-import com.mesosphere.cosmos.UnsupportedContentEncoding
-import com.mesosphere.cosmos.UnsupportedContentType
-import com.mesosphere.cosmos.UnsupportedRedirect
-import com.mesosphere.cosmos.UnsupportedRepositoryVersion
 import com.mesosphere.cosmos.circe.Decoders.decode
+import com.mesosphere.cosmos.error.CosmosException
+import com.mesosphere.cosmos.error.GenericHttpError
+import com.mesosphere.cosmos.error.IndexNotFound
+import com.mesosphere.cosmos.error.PackageFileMissing
+import com.mesosphere.cosmos.error.PackageFileNotJson
+import com.mesosphere.cosmos.error.PackageFileSchemaMismatch
+import com.mesosphere.cosmos.error.RepositoryUriConnection
+import com.mesosphere.cosmos.error.RepositoryUriSyntax
+import com.mesosphere.cosmos.error.UnsupportedContentEncoding
+import com.mesosphere.cosmos.error.UnsupportedContentType
+import com.mesosphere.cosmos.error.UnsupportedRedirect
+import com.mesosphere.cosmos.error.UnsupportedRepositoryVersion
 import com.mesosphere.cosmos.http.CompoundMediaType
 import com.mesosphere.cosmos.http.MediaType
 import com.mesosphere.cosmos.http.MediaTypeOps._
@@ -62,7 +63,11 @@ import scala.util.Success
 import scala.util.{Try => ScalaTry}
 
 trait UniverseClient {
-  def apply(repository: PackageRepository)(implicit session: RequestSession): Future[universe.v3.model.Repository]
+  def apply(
+    repository: PackageRepository
+  )(
+    implicit session: RequestSession
+  ): Future[universe.v4.model.Repository]
 }
 
 final class DefaultUniverseClient(
@@ -79,7 +84,11 @@ final class DefaultUniverseClient(
 
   private[this] val cosmosVersion = BuildProperties().cosmosVersion
 
-  def apply(repository: PackageRepository)(implicit session: RequestSession): Future[universe.v3.model.Repository] = {
+  def apply(
+    repository: PackageRepository
+  )(
+    implicit session: RequestSession
+  ): Future[universe.v4.model.Repository] = {
     adminRouter.getDcosVersion().flatMap { dcosVersion =>
       apply(repository, dcosVersion.version).respond {
         case Return(_) =>
@@ -99,12 +108,12 @@ final class DefaultUniverseClient(
   private[repository] def apply(
       repository: PackageRepository,
       dcosReleaseVersion: universe.v3.model.DcosReleaseVersion
-  ): Future[universe.v3.model.Repository] = {
+  ): Future[universe.v4.model.Repository] = {
     fetchScope.counter("requestCount").incr()
     Stat.timeFuture(fetchScope.stat("histogram")) {
       Future { repository.uri.toURI.toURL.openConnection() } handle {
         case t @ (_: IllegalArgumentException | _: MalformedURLException | _: URISyntaxException) =>
-          throw RepositoryUriSyntax(repository, t)
+          throw CosmosException(RepositoryUriSyntax(repository, t.getMessage), t)
       } flatMap { case conn: HttpURLConnection =>
         // Set headers on request
         conn.setRequestProperty(
@@ -134,7 +143,7 @@ final class DefaultUniverseClient(
               fetchScope.scope("status").counter(x.toString).incr()
               // Different forms of redirect, HttpURLConnection won't follow a redirect across schemes
               val loc = Option(conn.getHeaderField("Location")).map(Uri.parse).flatMap(_.scheme)
-              throw UnsupportedRedirect(List(repository.uri.scheme.get), loc)
+              throw UnsupportedRedirect(List(repository.uri.scheme.get), loc).exception
             case x =>
               fetchScope.scope("status").counter(x.toString).incr()
               /* If we are unable to get the latest Universe we should not forward the status code returned.
@@ -143,19 +152,19 @@ final class DefaultUniverseClient(
               throw GenericHttpError(
                 HttpMethod.GET,
                 repository.uri,
-                Status.fromCode(x),
-                Status.InternalServerError
-              )
+                Status.fromCode(x)
+              ).exception(Status.InternalServerError)
           }
         } handle {
-          case t: IOException => throw RepositoryUriConnection(repository, t)
+          case t: IOException =>
+            throw CosmosException(RepositoryUriConnection(repository, t.getMessage), t)
         } map { case (contentType, contentEncoding) =>
           contentEncoding match {
             case Some("gzip") =>
               fetchScope.scope("contentEncoding").counter("gzip").incr()
               (contentType, new GZIPInputStream(conn.getInputStream))
             case ce@Some(_) =>
-              throw UnsupportedContentEncoding(List("gzip"), ce)
+              throw UnsupportedContentEncoding(List("gzip"), ce).exception
             case _ =>
               fetchScope.scope("contentEncoding").counter("plain").incr()
               (contentType, conn.getInputStream)
@@ -176,7 +185,7 @@ final class DefaultUniverseClient(
     contentType: MediaType,
     bodyInputStream: InputStream,
     repositoryUri: Uri
-  ): universe.v3.model.Repository = {
+  ): universe.v4.model.Repository = {
     val decodeScope = fetchScope.scope("decode")
 
     // Decode the packages
@@ -184,7 +193,7 @@ final class DefaultUniverseClient(
       val scope = decodeScope.scope("v4")
       scope.counter("count").incr()
       Stat.time(scope.stat("histogram")) {
-        decode[universe.v3.model.Repository](
+        decode[universe.v4.model.Repository](
           Source.fromInputStream(bodyInputStream).mkString
         )
       }
@@ -192,7 +201,7 @@ final class DefaultUniverseClient(
       val scope = decodeScope.scope("v3")
       scope.counter("count").incr()
       Stat.time(scope.stat("histogram")) {
-        decode[universe.v3.model.Repository](
+        decode[universe.v4.model.Repository](
           Source.fromInputStream(bodyInputStream).mkString
         )
       }
@@ -203,11 +212,11 @@ final class DefaultUniverseClient(
         processUniverseV2(repositoryUri, bodyInputStream)
       }
     } else {
-      throw UnsupportedContentType.forMediaType(SupportedMediaTypes, Some(contentType))
+      throw UnsupportedContentType.forMediaType(SupportedMediaTypes, Some(contentType)).exception
     }
 
     // Sort the packages
-    universe.v3.model.Repository(repo.packages.sorted.reverse)
+    universe.v4.model.Repository(repo.packages.sorted.reverse)
   }
 
   private[this] case class V2PackageInformation(
@@ -226,7 +235,7 @@ final class DefaultUniverseClient(
   private[this] def processUniverseV2(
       sourceUri: Uri,
       inputStream: InputStream
-  ): universe.v3.model.Repository = {
+  ): universe.v4.model.Repository = {
     val bundle = new ZipInputStream(inputStream)
     // getNextEntry() returns null when there are no more entries
     val universeRepository: V2ZipState = Iterator.continually {
@@ -245,8 +254,8 @@ final class DefaultUniverseClient(
 
     universeRepository.version match {
       case Some(version) if version.toString.startsWith("2.") => // Valid
-      case Some(version) => throw UnsupportedRepositoryVersion(version)
-      case _ => throw IndexNotFound(sourceUri)
+      case Some(version) => throw UnsupportedRepositoryVersion(version).exception
+      case _ => throw IndexNotFound(sourceUri).exception
     }
 
     val packageInfos = universeRepository.packages.mapValues(processPackageFiles)
@@ -254,7 +263,7 @@ final class DefaultUniverseClient(
       buildV2Package(packageInfo, releaseVersion)
     }
 
-    universe.v3.model.Repository(packages)
+    universe.v4.model.Repository(packages)
   }
 
   private[this] def processZipEntry(
@@ -297,7 +306,10 @@ final class DefaultUniverseClient(
         parseJson(entryPath, new String(buffer))
           .asObject
           .getOrElse {
-            throw PackageFileSchemaMismatch("config.json", DecodingFailure("Object", List()))
+            throw PackageFileSchemaMismatch(
+              "config.json",
+              DecodingFailure("Object", List())
+            ).exception
           }
       },
       resource = packageFiles.get("resource.json").map { case (entryPath, buffer) =>
@@ -311,9 +323,11 @@ final class DefaultUniverseClient(
     releaseVersion: Long
   ): universe.v3.model.V2Package = {
     val details = packageInfo.packageDetails.getOrElse(
-      throw PackageFileMissing("package.json"))
+      throw PackageFileMissing("package.json").exception
+    )
     val marathon = packageInfo.marathonMustache.getOrElse(
-      throw PackageFileMissing("marathon.json.mustache"))
+      throw PackageFileMissing("marathon.json.mustache").exception
+    )
 
     universe.v3.model.V2Package(
       universe.v3.model.V2PackagingVersion,
@@ -364,7 +378,7 @@ final class DefaultUniverseClient(
 
     decodedVersion match {
       case Right(version) => version
-      case Left(failure) => throw PackageFileSchemaMismatch("index.json", failure)
+      case Left(failure) => throw PackageFileSchemaMismatch("index.json", failure).exception
     }
   }
 
@@ -373,7 +387,7 @@ final class DefaultUniverseClient(
       content: String
   ): A = {
     parseJson(path, content).as[A] match {
-      case Left(err) => throw PackageFileSchemaMismatch(path.toString, err)
+      case Left(err) => throw PackageFileSchemaMismatch(path.toString, err).exception
       case Right(right) => right
     }
   }
@@ -383,7 +397,7 @@ final class DefaultUniverseClient(
       content: String
   ): Json = {
     parse(content) match {
-      case Left(err) => throw PackageFileNotJson(path.toString, err.message)
+      case Left(err) => throw PackageFileNotJson(path.toString, err.message).exception
       case Right(right) => right
     }
   }
@@ -395,13 +409,14 @@ object DefaultUniverseClient {
   val PermanentRedirect: Int = 308
 
   val SupportedMediaTypes: List[MediaType] =
-    List(MediaTypes.UniverseV3Repository, MediaTypes.UniverseV2Repository)
+    List(MediaTypes.UniverseV4Repository, MediaTypes.UniverseV3Repository, MediaTypes.UniverseV2Repository)
 
   def parseContentType(header: Option[String]): TwitterTry[MediaType] = {
-    TwitterTry(header.getOrElse(throw UnsupportedContentType(SupportedMediaTypes)))
+    TwitterTry(header.getOrElse(throw UnsupportedContentType(SupportedMediaTypes).exception))
       .flatMap(MediaTypeParser.parse)
       .handle {
-        case MediaTypeParseError(_, _) => throw UnsupportedContentType(SupportedMediaTypes)
+        case MediaTypeParseError(_, _) =>
+          throw UnsupportedContentType(SupportedMediaTypes).exception
       }
   }
 

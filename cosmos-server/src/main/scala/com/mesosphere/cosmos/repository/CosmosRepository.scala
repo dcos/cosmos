@@ -1,7 +1,7 @@
 package com.mesosphere.cosmos.repository
 
-import com.mesosphere.cosmos.PackageNotFound
-import com.mesosphere.cosmos.VersionNotFound
+import com.mesosphere.cosmos.error.PackageNotFound
+import com.mesosphere.cosmos.error.VersionNotFound
 import com.mesosphere.cosmos.http.RequestSession
 import com.mesosphere.cosmos.rpc
 import com.mesosphere.universe
@@ -22,7 +22,7 @@ final class CosmosRepository (
   clock: Clock
 ) extends PackageCollection {
   private[this] val lastRepository = new AtomicReference(
-    Option.empty[(universe.v3.model.Repository, Long)]
+    Option.empty[(universe.v4.model.Repository, Long)]
   )
 
   def getPackageByReleaseVersion(
@@ -35,7 +35,7 @@ final class CosmosRepository (
       internalRepository.packages.find { pkg =>
         pkg.name == packageName && pkg.releaseVersion == releaseVersion
       } getOrElse {
-        throw PackageNotFound(packageName)
+        throw PackageNotFound(packageName).exception
       }
     }
   }
@@ -55,8 +55,8 @@ final class CosmosRepository (
         case _ => ns.headOption
       }
       (packageVersion, ns, vs) match {
-        case (Some(ver), _ :: _ , None) => throw VersionNotFound(packageName, ver)
-        case (_, _ , None)              => throw PackageNotFound(packageName)
+        case (Some(ver), _ :: _ , None) => throw VersionNotFound(packageName, ver).exception
+        case (_, _ , None)              => throw PackageNotFound(packageName).exception
         case (_,_, Some(pkg))           => (pkg, repository.uri)
       }
     }
@@ -144,7 +144,7 @@ final class CosmosRepository (
 
   private[this] def synchronizedUpdate()(
     implicit session: RequestSession
-  ): Future[universe.v3.model.Repository] = {
+  ): Future[universe.v4.model.Repository] = {
     lastRepository.get() match {
       case Some((internalRepository, lastModified)) =>
         val now = TimeUnit.MILLISECONDS.toSeconds(clock.nowMillis)
