@@ -43,7 +43,7 @@ object PackageSearchHandlerSpec {
       currentVersion = universe.v3.model.Version("1.2.3"),
       versions = Map(
         universe.v3.model.Version("1.2.3") ->
-          universe.v3.model.ReleaseVersion(0).get
+          universe.v3.model.ReleaseVersion(0)
       ),
       description = "a package",
       tags = Nil,

@@ -14,7 +14,7 @@ final class PackageDefinitionSpec extends FreeSpec with PropertyChecks {
       "succeed on non-negative numbers" in {
         forAll (nonNegNum[Long]) { n =>
           whenever (n >= 0) {
-            assert(ReleaseVersion(n).isReturn)
+            assert(ReleaseVersion.validate(n).isReturn)
           }
         }
       }
@@ -22,7 +22,7 @@ final class PackageDefinitionSpec extends FreeSpec with PropertyChecks {
       "fail on negative numbers" in {
         forAll (Gen.negNum[Long]) { n =>
           whenever (n < 0) {
-            assert(ReleaseVersion(n).isThrow)
+            assert(ReleaseVersion.validate(n).isThrow)
           }
         }
       }
@@ -31,15 +31,15 @@ final class PackageDefinitionSpec extends FreeSpec with PropertyChecks {
 
     "ReleaseVersion.value" in {
       forAll (nonNegNum[Long]) { n =>
-        assertResult(n)(ReleaseVersion(n).get.value)
+        assertResult(n)(ReleaseVersion(n).value)
       }
     }
 
     "ReleaseVersion$.ordering orders by value" in {
       forAll (nonNegNum[Long], nonNegNum[Long]) { (a, b) =>
         whenever (a >= 0 && b >= 0) {
-          val aVersion = ReleaseVersion(a).get
-          val bVersion = ReleaseVersion(b).get
+          val aVersion = ReleaseVersion(a)
+          val bVersion = ReleaseVersion(b)
 
           assertResult(Ordering[Long].compare(a, b)) {
             Ordering[ReleaseVersion].compare(aVersion, bVersion)
