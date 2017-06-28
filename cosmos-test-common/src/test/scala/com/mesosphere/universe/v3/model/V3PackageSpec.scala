@@ -9,21 +9,21 @@ import scala.util.Random
 class V3PackageSpec extends FreeSpec with Matchers {
   val input = List(
     // scalastyle:off magic.number
-    ("pkg1", Version("1.0-1"), ReleaseVersion(1).get),
-    ("pkg1", Version("1.0-2"), ReleaseVersion(2).get),
-    ("pkg1", Version("1.0-3"), ReleaseVersion(3).get),
-    ("pkg2", Version("1.0"), ReleaseVersion(1).get),
-    ("pkg2", Version("2.0"), ReleaseVersion(2).get),
-    ("pkg3", Version("1.0"), ReleaseVersion(3).get),
-    ("pkg4", Version("1.0"), ReleaseVersion(4).get),
-    ("pkg5", Version("1.0-1"), ReleaseVersion(1).get),
-    ("pkg5", Version("2.0-1"), ReleaseVersion(2).get),
-    ("pkg5", Version("1.1-1"), ReleaseVersion(3).get),
-    ("pkg6", Version("0.0.0.1"), ReleaseVersion(1).get),
-    ("pkg6", Version("0.0.0.5"), ReleaseVersion(2).get),
-    ("pkg6", Version("0.0.0.2"), ReleaseVersion(3).get),
-    ("pkg7", Version("0.0.1"), ReleaseVersion(1).get),
-    ("pkg7", Version("0.0.4.2"), ReleaseVersion(10).get)
+    ("pkg1", Version("1.0-1"), ReleaseVersion(1)),
+    ("pkg1", Version("1.0-2"), ReleaseVersion(2)),
+    ("pkg1", Version("1.0-3"), ReleaseVersion(3)),
+    ("pkg2", Version("1.0"), ReleaseVersion(1)),
+    ("pkg2", Version("2.0"), ReleaseVersion(2)),
+    ("pkg3", Version("1.0"), ReleaseVersion(3)),
+    ("pkg4", Version("1.0"), ReleaseVersion(4)),
+    ("pkg5", Version("1.0-1"), ReleaseVersion(1)),
+    ("pkg5", Version("2.0-1"), ReleaseVersion(2)),
+    ("pkg5", Version("1.1-1"), ReleaseVersion(3)),
+    ("pkg6", Version("0.0.0.1"), ReleaseVersion(1)),
+    ("pkg6", Version("0.0.0.5"), ReleaseVersion(2)),
+    ("pkg6", Version("0.0.0.2"), ReleaseVersion(3)),
+    ("pkg7", Version("0.0.1"), ReleaseVersion(1)),
+    ("pkg7", Version("0.0.4.2"), ReleaseVersion(10))
     // scalastyle:on magic.number
   )
 

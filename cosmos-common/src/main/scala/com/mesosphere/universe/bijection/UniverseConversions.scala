@@ -86,7 +86,7 @@ object UniverseConversions {
 
   implicit val v3ReleaseVersionToLong: Injection[universe.v3.model.ReleaseVersion, Long] = {
     val fwd = (x: universe.v3.model.ReleaseVersion) => x.value
-    val rev = (universe.v3.model.ReleaseVersion.apply _).andThen(
+    val rev = (universe.v3.model.ReleaseVersion.validate _).andThen(
       BijectionUtils.twitterTryToScalaTry
     )
 
@@ -261,7 +261,7 @@ object UniverseConversions {
     Injection[universe.v3.model.Tag,
       String /* "Tag" in universe.v2.model.PackageDefinition is only a String */] = {
     val fwd = (x: universe.v3.model.Tag) => x.value
-    val rev = (universe.v3.model.Tag.apply _).andThen(BijectionUtils.twitterTryToScalaTry)
+    val rev = (universe.v3.model.Tag.validate _).andThen(BijectionUtils.twitterTryToScalaTry)
 
     Injection.build(fwd)(rev)
   }

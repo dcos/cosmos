@@ -204,7 +204,7 @@ object OperationProcessorSpec {
       universe.v3.model.V3PackagingVersion,
       name,
       version,
-      universe.v3.model.ReleaseVersion(0).get,
+      universe.v3.model.ReleaseVersion(0),
       "does@not.matter",
       "doesn't matter"
     )

@@ -81,7 +81,7 @@ final class PackageAddHandler(
       // TODO package-add: Get creation time from storage
       packageMetadata.map { packageMetadata =>
         val timeOfAdd = Instant.now().getEpochSecond
-        val releaseVersion = universe.v3.model.ReleaseVersion(timeOfAdd).get()
+        val releaseVersion = universe.v3.model.ReleaseVersion(timeOfAdd)
         (packageMetadata, releaseVersion).as[universe.v4.model.SupportedPackageDefinition]
       }
     }

@@ -184,7 +184,7 @@ final class PackageAddSpec
     supportedPackageDefinition: universe.v4.model.SupportedPackageDefinition
   ): universe.v4.model.SupportedPackageDefinition = {
     // TODO package-add: Get release version from creation time in object storage
-    val fakeReleaseVersion = universe.v3.model.ReleaseVersion(0L).get()
+    val fakeReleaseVersion = universe.v3.model.ReleaseVersion(0L)
     supportedPackageDefinition match {
       case v3Package: universe.v3.model.V3Package =>
         v3Package.copy(command = None, releaseVersion = fakeReleaseVersion, selected = None)

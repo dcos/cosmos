@@ -67,7 +67,7 @@ object Generators {
 
   private val genReleaseVersion: Gen[universe.v3.model.ReleaseVersion] = for {
     num <- Gen.posNum[Long]
-  } yield universe.v3.model.ReleaseVersion(num).get
+  } yield universe.v3.model.ReleaseVersion(num)
 
   def genUpgradesFrom(
     requiredVersion: Option[universe.v3.model.Version]
@@ -194,7 +194,7 @@ object Generators {
   private val genTag: Gen[universe.v3.model.Tag] = {
     val genTagChar = arbitrary[Char].suchThat(!_.isWhitespace)
     val genTagString = genNonEmptyString(genTagChar)
-    genTagString.map(universe.v3.model.Tag(_).get)
+    genTagString.map(universe.v3.model.Tag(_))
   }
 
   private val genUri: Gen[Uri] = {
