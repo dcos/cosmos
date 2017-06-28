@@ -40,5 +40,4 @@ object ReleaseVersion {
         case Throw(e) => Left(DecodingFailure(e.getMessage, c.history))
       }
     }
-
 }
