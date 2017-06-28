@@ -343,7 +343,7 @@ final class DefaultUniverseClient(
           // unfortunately com.mesosphere.universe.v2.model.PackageDetails#tags is a list string due to the
           // more formal type not being defined. The likelihood of this failing is remote, especially when the
           // source is universe-server.
-          universe.v3.model.Tag.validate(tag).get
+          universe.v3.model.Tag(tag)
       },
       details.selected,
       details.scm,

@@ -1,9 +1,14 @@
 package com.mesosphere.universe.v3.model
 
 import cats.syntax.either._
-import com.twitter.util.{Return, Throw, Try}
+import com.twitter.util.Return
+import com.twitter.util.Throw
+import com.twitter.util.Try
+import io.circe.Decoder
+import io.circe.DecodingFailure
+import io.circe.Encoder
+import io.circe.HCursor
 import io.circe.syntax.EncoderOps
-import io.circe.{Decoder, DecodingFailure, Encoder, HCursor}
 
 final class ReleaseVersion private(val value: Long) extends AnyVal
 

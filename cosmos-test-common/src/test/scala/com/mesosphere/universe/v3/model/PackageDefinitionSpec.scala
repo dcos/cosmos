@@ -9,7 +9,7 @@ final class PackageDefinitionSpec extends FreeSpec with PropertyChecks {
 
   "PackageDefinition$.ReleaseVersion" - {
 
-    "ReleaseVersion$.apply should" - {
+    "ReleaseVersion$.validate should" - {
 
       "succeed on non-negative numbers" in {
         forAll (nonNegNum[Long]) { n =>
