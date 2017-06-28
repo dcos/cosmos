@@ -25,12 +25,12 @@ final class ReleaseVersionConverterSpec extends FreeSpec {
   "v3ReleaseVersionToLong should" - {
 
     "always succeed in the forward direction" in {
-      val version = universe.v3.model.ReleaseVersion(2).get
+      val version = universe.v3.model.ReleaseVersion(2)
       assertResult(2)(version.as[Long])
     }
 
     "succeed in the reverse direction on nonnegative numbers" in {
-      val version = universe.v3.model.ReleaseVersion(0).get
+      val version = universe.v3.model.ReleaseVersion(0)
       assertResult(Success(version))(
         0L.as[Try[universe.v3.model.ReleaseVersion]]
       )
@@ -60,13 +60,13 @@ final class ReleaseVersionConverterSpec extends FreeSpec {
     "always succeed in the forward direction" in {
       val version = 42L
       assertResult("42") {
-        universe.v3.model.ReleaseVersion(version).get.as[A].as[String]
+        universe.v3.model.ReleaseVersion(version).as[A].as[String]
       }
     }
 
     "succeed in the reverse direction on nonnegative version numbers" in {
       val version = 24L
-      assertResult(Success(universe.v3.model.ReleaseVersion(version).get)) {
+      assertResult(Success(universe.v3.model.ReleaseVersion(version))) {
         "24".as[A].as[Try[universe.v3.model.ReleaseVersion]]
       }
     }

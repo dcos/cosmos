@@ -108,7 +108,7 @@ final class UniverseConversionsSpec extends FreeSpec with Matchers with TableDri
   }
 
   "Injection[universe.v3.model.Tag, String]" in {
-    val tag = universe.v3.model.Tag("foobar").get
+    val tag = universe.v3.model.Tag("foobar")
     val stringFromTag = tag.as[String]
     assertResult(Success(tag))(Injection.invert[universe.v3.model.Tag, String](stringFromTag))
     assertResult(true)(Injection.invert[universe.v3.model.Tag, String]("foo bar\nfar").isFailure)
