@@ -38,7 +38,6 @@ object Encoders {
   implicit val encodeListResponse: Encoder[ListResponse] = deriveEncoder[ListResponse]
   implicit val encodeInstallation: Encoder[Installation] = deriveEncoder[Installation]
   implicit val encodeInstalledPackageInformationPackageDetails: Encoder[InstalledPackageInformationPackageDetails] = {
-    import com.mesosphere.universe.v2.circe.Encoders._ // import implicits at as narrow a scope as possible
     deriveEncoder[InstalledPackageInformationPackageDetails]
   }
   implicit val encodePackageInformation: Encoder[InstalledPackageInformation] = deriveEncoder[InstalledPackageInformation]
@@ -52,9 +51,6 @@ object Encoders {
   implicit val encodePackageRepositoryListResponse: Encoder[PackageRepositoryListResponse] = {
     deriveEncoder[PackageRepositoryListResponse]
   }
-  implicit val encodePackageRepository: Encoder[PackageRepository] = {
-    deriveEncoder[PackageRepository]
-  }
   implicit val encodePackageRepositoryAddRequest: Encoder[PackageRepositoryAddRequest] = {
     deriveEncoder[PackageRepositoryAddRequest]
   }
@@ -67,22 +63,10 @@ object Encoders {
   implicit val encodePackageRepositoryDeleteResponse: Encoder[PackageRepositoryDeleteResponse] = {
     deriveEncoder[PackageRepositoryDeleteResponse]
   }
-  implicit val encodeUniverseAddRequest: Encoder[UniverseAddRequest] = {
-    deriveEncoder[UniverseAddRequest]
-  }
-  implicit val encodeAddResponse: Encoder[AddResponse] = {
-    implicitly[Encoder[universe.v4.model.SupportedPackageDefinition]].contramap { addResponse =>
-      addResponse.packageDefinition
-    }
-  }
 
   implicit val encodeErrorResponse: Encoder[ErrorResponse] = deriveEncoder[ErrorResponse]
 
   implicit val encodePackageCoordinate: Encoder[PackageCoordinate] =
     deriveEncoder[PackageCoordinate]
 
-  implicit val encodeServiceStartRequest: Encoder[ServiceStartRequest] =
-    deriveEncoder[ServiceStartRequest]
-  implicit val encodeServiceStartResponse: Encoder[ServiceStartResponse] =
-    deriveEncoder[ServiceStartResponse]
 }

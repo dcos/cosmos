@@ -9,8 +9,6 @@ import com.mesosphere.cosmos.error.RepositoryNotPresent
 import com.mesosphere.cosmos.model.StorageEnvelope
 import com.mesosphere.cosmos.repository.DefaultRepositories._
 import com.mesosphere.cosmos.rpc.v1.model.PackageRepository
-import com.mesosphere.cosmos.storage.v1.circe.MediaTypedDecoders._
-import com.mesosphere.cosmos.storage.v1.circe.MediaTypedEncoders._
 import com.netaporter.uri.Uri
 import com.twitter.finagle.stats.Stat
 import com.twitter.finagle.stats.StatsReceiver

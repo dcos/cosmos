@@ -25,7 +25,7 @@ object Deps {
   // APLv2.0
   val curator = Seq(
     "org.apache.curator" % "curator-recipes" % V.curator,
-    "org.apache.curator" % "curator-test" % V.curator % "test"
+    "org.apache.curator" % "curator-test" % V.curator
   ).map(_.excludeAll(
     // Exclude log4j and slf4j-log4j12 because we're using logback as our logging backend.
     // exclude jmx items since we're only using the curator client, not it's server
@@ -76,7 +76,7 @@ object Deps {
 
   // MIT
   val mockito = Seq(
-    "org.mockito" % "mockito-core" % V.mockito % "test"
+    "org.mockito" % "mockito-core" % V.mockito
   )
 
   // APLv2.0
