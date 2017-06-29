@@ -41,8 +41,9 @@ private[cosmos] final class PackageRepositoryAddHandler(
   )(
     implicit session: RequestSession
   ): Future[Unit] = {
-    // We get the repo to see if the operation succeeds
-    // We don't need the actual response
+    /* We get the repo to see if the operation succeeds
+     * We don't need the actual response
+     */
     universeClient(repository).unit.handle {
       case ce: CosmosException =>
         throw ce.copy(status = Status.BadRequest)

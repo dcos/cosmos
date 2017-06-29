@@ -126,10 +126,4 @@ object ItUtil {
     }.dropWhile(done => !done).nonEmpty
   }
 
-
-  def insert[T](seq: Seq[T], index: Int, value: T): Seq[T] = {
-    val (front, back) = seq.splitAt(index)
-    front ++ Seq(value) ++ back
-  }
-
 }

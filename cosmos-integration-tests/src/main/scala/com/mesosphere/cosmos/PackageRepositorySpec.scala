@@ -74,7 +74,7 @@ class PackageRepositorySpec
       val repository = rpc.v1.model.PackageRepository(name, uri)
       val (status, actual) = ItUtil.addRepositoryEither(repository, Some(index))
       val expected = rpc.v1.model.PackageRepositoryAddResponse(
-        ItUtil.insert(originalRepositories, index, repository)
+        insert(originalRepositories, index, repository)
       )
       assertResult(Right(expected))(actual)
       assertResult(Status.Ok)(status)
@@ -239,6 +239,11 @@ class PackageRepositorySpec
       assertResult(Status.BadRequest)(status)
       info(expected.message)
     }
+  }
+
+  def insert[T](seq: Seq[T], index: Int, value: T): Seq[T] = {
+    val (front, back) = seq.splitAt(index)
+    front ++ Seq(value) ++ back
   }
 
 }
