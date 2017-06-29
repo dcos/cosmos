@@ -1,7 +1,6 @@
 package com.mesosphere.cosmos.error
 
 import com.mesosphere.cosmos.rpc
-import com.mesosphere.cosmos.rpc.v1.circe.Encoders._
 import io.circe.Encoder
 import io.circe.JsonObject
 import io.circe.generic.semiauto.deriveEncoder

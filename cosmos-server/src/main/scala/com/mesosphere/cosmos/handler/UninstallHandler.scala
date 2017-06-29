@@ -3,7 +3,6 @@ package com.mesosphere.cosmos.handler
 import com.mesosphere.cosmos.AdminRouter
 import com.mesosphere.cosmos.circe.Decoders
 import com.mesosphere.cosmos.error.AmbiguousAppId
-import com.mesosphere.cosmos.error.AppAlreadyUninstalling
 import com.mesosphere.cosmos.error.CirceError
 import com.mesosphere.cosmos.error.CosmosException
 import com.mesosphere.cosmos.error.FailedToStartUninstall
