@@ -60,30 +60,33 @@ class PackageRepositorySpec
       val uri = "https://github.com/mesosphere/universe/archive/cli-test-4.zip"
       val name = "cli-test-4"
       val repository = rpc.v1.model.PackageRepository(name, uri)
-      val actual = ItUtil.addRepositoryEither(repository)
+      val (status, actual) = ItUtil.addRepositoryEither(repository)
       val expected = rpc.v1.model.PackageRepositoryAddResponse(
         originalRepositories :+ repository
       )
       assertResult(Right(expected))(actual)
+      assertResult(Status.Ok)(status)
     }
     scenario("the user would like to add a repository at a specific priority") {
       val uri = "https://github.com/mesosphere/universe/archive/cli-test-4.zip"
       val name = "cli-test-4"
       val index = 0
       val repository = rpc.v1.model.PackageRepository(name, uri)
-      val actual = ItUtil.addRepositoryEither(repository, Some(index))
+      val (status, actual) = ItUtil.addRepositoryEither(repository, Some(index))
       val expected = rpc.v1.model.PackageRepositoryAddResponse(
         ItUtil.insert(originalRepositories, index, repository)
       )
       assertResult(Right(expected))(actual)
+      assertResult(Status.Ok)(status)
     }
     scenario("the user should receive an error when trying to add a duplicated repository") {
       val repository = defaultRepositories.head.copy(name = "dup")
       val expected = RepositoryAlreadyPresent(
         Ior.Right(repository.uri)
       ).exception.errorResponse
-      val actual = ItUtil.addRepositoryEither(repository)
+      val (status, actual) = ItUtil.addRepositoryEither(repository)
       assertResult(Left(expected))(actual)
+      assertResult(Status.BadRequest)(status)
       info(expected.message)
     }
     scenario("the user should receive an error when trying to add a repository out of bounds") {
@@ -91,24 +94,26 @@ class PackageRepositorySpec
       val name = "bounds"
       val index = Int.MaxValue
       val repository = rpc.v1.model.PackageRepository(name, uri)
-      val actual = ItUtil.addRepositoryEither(repository, Some(index))
+      val (status, actual) = ItUtil.addRepositoryEither(repository, Some(index))
       val expected = RepositoryAddIndexOutOfBounds(
         attempted = index,
         max = defaultRepositories.size - 1
       ).exception.errorResponse
       assertResult(Left(expected))(actual)
+      assertResult(Status.BadRequest)(status)
       info(expected.message)
     }
     scenario("Issue #204: the user should receive an error when trying to add a repository with a broken uri") {
       val uri = "http://fake.fake"
       val name = "unreachable"
       val repository = rpc.v1.model.PackageRepository(name, uri)
-      val actual = ItUtil.addRepositoryEither(repository)
+      val (status, actual) = ItUtil.addRepositoryEither(repository)
       val expected = RepositoryUriConnection(
         repository = repository,
         cause = uri.stripPrefix("http://")
       ).exception.errorResponse
       assertResult(Left(expected))(actual)
+      assertResult(Status.BadRequest)(status)
       info(expected.message)
     }
     scenario("Issue #219: the user should receive an error when trying to add a repository " +
@@ -118,8 +123,9 @@ class PackageRepositorySpec
       val uri = "https://github.com/mesosphere/dcos-cli/archive/master.zip"
       val repository = rpc.v1.model.PackageRepository(name, uri)
       val expected = IndexNotFound(uri).exception.errorResponse
-      val actual = ItUtil.addRepositoryEither(repository)
+      val (status, actual) = ItUtil.addRepositoryEither(repository)
       assertResult(Left(expected))(actual)
+      assertResult(Status.BadRequest)(status)
       info(expected.message)
     }
     scenario("Issue #219: the user should receive an error when trying to add a repository " +
@@ -134,21 +140,23 @@ class PackageRepositorySpec
           MediaTypes.UniverseV2Repository),
         Some("text/html;charset=utf-8")
       ).exception.errorResponse
-      val actual = ItUtil.addRepositoryEither(repository)
+      val (status, actual) = ItUtil.addRepositoryEither(repository)
       assertResult(Left(expected))(actual)
+      assertResult(Status.BadRequest)(status)
       info(expected.message)
     }
     scenario("the user should receive an error when trying to add a non-repository") {
       val uri = "https://www.mesosphere.com/uontehusantoehusanth"
       val name = "not-repository"
       val repository = rpc.v1.model.PackageRepository(name, uri)
-      val actual = ItUtil.addRepositoryEither(repository)
+      val (status, actual) = ItUtil.addRepositoryEither(repository)
       val expected = UniverseClientHttpError(
         PackageRepository(name, uri),
         HttpMethod.GET,
         Status.NotFound
       ).exception(Status.BadRequest).errorResponse
       assertResult(Left(expected))(actual)
+      assertResult(Status.BadRequest)(status)
       info(expected.message)
     }
     scenario("Issue #209: the user must receive an error when adding an unsupported repository version") {
@@ -157,8 +165,9 @@ class PackageRepositorySpec
       val version = UniverseVersion("1.0.0-rc1")
       val repository = rpc.v1.model.PackageRepository(name, uri)
       val expected = UnsupportedRepositoryVersion(version).exception.errorResponse
-      val actual = ItUtil.addRepositoryEither(repository)
+      val (status, actual) = ItUtil.addRepositoryEither(repository)
       assertResult(Left(expected))(actual)
+      assertResult(Status.BadRequest)(status)
       info(expected.message)
     }
     scenario("the user must receive an error when trying to add " +
@@ -167,8 +176,9 @@ class PackageRepositorySpec
       val uri = "file://foo/bar"
       val repository = rpc.v1.model.PackageRepository(name, uri)
       val expected = UnsupportedRepositoryUri(uri).exception.errorResponse
-      val actual = ItUtil.addRepositoryEither(repository)
+      val (status, actual) = ItUtil.addRepositoryEither(repository)
       assertResult(Left(expected))(actual)
+      assertResult(Status.BadRequest)(status)
       info(expected.message)
     }
   }
@@ -180,10 +190,11 @@ class PackageRepositorySpec
       val expected = rpc.v1.model.PackageRepositoryDeleteResponse(
         remainingRepositories
       )
-      val actual = ItUtil.deleteRepositoryEither(
+      val (status, actual) = ItUtil.deleteRepositoryEither(
         name = Some(deletedRepository.name)
       )
       assertResult(Right(expected))(actual)
+      assertResult(Status.Ok)(status)
     }
     scenario("the user would like to delete a repository by uri") {
       val deletedRepository = defaultRepositories.head
@@ -191,23 +202,26 @@ class PackageRepositorySpec
       val expected = rpc.v1.model.PackageRepositoryDeleteResponse(
         remainingRepositories
       )
-      val actual = ItUtil.deleteRepositoryEither(uri = Some(deletedRepository.uri))
+      val (status, actual) = ItUtil.deleteRepositoryEither(uri = Some(deletedRepository.uri))
       assertResult(Right(expected))(actual)
+      assertResult(Status.Ok)(status)
     }
     scenario("Issue #200: the user should receive an error when trying to delete a non-existent repository") {
       val name = "does-not-exist"
       val expected = RepositoryNotPresent(
         Ior.Left(name)
       ).exception.errorResponse
-      val actual = ItUtil.deleteRepositoryEither(Some(name))
+      val (status, actual) = ItUtil.deleteRepositoryEither(Some(name))
       assertResult(Left(expected))(actual)
+      assertResult(Status.BadRequest)(status)
       info(expected.message)
 
     }
     scenario("the user should receive an error when nether name nor uri are specified") {
-      val actual = ItUtil.deleteRepositoryEither()
+      val (status, actual) = ItUtil.deleteRepositoryEither()
       val expected = RepoNameOrUriMissing().exception.errorResponse
       assertResult(Left(expected))(actual)
+      assertResult(Status.BadRequest)(status)
       info(expected.message)
     }
     scenario("the user should receive an error when trying to delete " +
@@ -217,11 +231,12 @@ class PackageRepositorySpec
       val expected = RepositoryNotPresent(
         Ior.Both(repository.name, badUri)
       ).exception.errorResponse
-      val actual = ItUtil.deleteRepositoryEither(
+      val (status, actual) = ItUtil.deleteRepositoryEither(
         name = Some(repository.name),
         uri = Some(badUri)
       )
       assertResult(Left(expected))(actual)
+      assertResult(Status.BadRequest)(status)
       info(expected.message)
     }
   }

@@ -83,9 +83,9 @@ object CosmosIntegrationTestClient extends Matchers {
 
     def call[Res](request: HttpRequest)(implicit
       decoder: Decoder[Res]
-    ): Either[ErrorResponse, Res] = {
+    ): (Status, Either[ErrorResponse, Res]) = {
       val response = submit(request)
-      toEither(response)
+      (response.status, toEither(response))
     }
 
     def callEndpoint[Res](request: HttpRequest, expectedStatus: Status = Status.Ok)(implicit

@@ -9,6 +9,7 @@ import com.mesosphere.cosmos.test.CosmosIntegrationTestClient.CosmosClient
 import com.mesosphere.cosmos.thirdparty.marathon.model.AppId
 import com.mesosphere.universe
 import com.netaporter.uri.Uri
+import com.twitter.finagle.http.Status
 import com.twitter.util.Await
 import scala.concurrent.duration._
 
@@ -25,7 +26,7 @@ object ItUtil {
   def deleteRepositoryEither(
     name: Option[String] = None,
     uri: Option[Uri] = None
-  ): Either[rpc.v1.model.ErrorResponse, rpc.v1.model.PackageRepositoryDeleteResponse] = {
+  ): (Status, Either[rpc.v1.model.ErrorResponse, rpc.v1.model.PackageRepositoryDeleteResponse]) = {
     val repoDeleteRequest = rpc.v1.model.PackageRepositoryDeleteRequest(name, uri)
     val request = CosmosRequests.packageRepositoryDelete(repoDeleteRequest)
     CosmosClient.call[rpc.v1.model.PackageRepositoryDeleteResponse](
@@ -48,7 +49,7 @@ object ItUtil {
   def addRepositoryEither(
     source: rpc.v1.model.PackageRepository,
     index: Option[Int] = None
-  ): Either[rpc.v1.model.ErrorResponse, rpc.v1.model.PackageRepositoryAddResponse] = {
+  ): (Status, Either[rpc.v1.model.ErrorResponse, rpc.v1.model.PackageRepositoryAddResponse]) = {
     val repoAddRequest = rpc.v1.model.PackageRepositoryAddRequest(source.name, source.uri, index)
     val request = CosmosRequests.packageRepositoryAdd(repoAddRequest)
     CosmosClient.call[rpc.v1.model.PackageRepositoryAddResponse](
@@ -59,7 +60,11 @@ object ItUtil {
   def addRepository(
     source: rpc.v1.model.PackageRepository
   ): rpc.v1.model.PackageRepositoryAddResponse = {
-    val Right(response) = addRepositoryEither(source)
+    val repoAddRequest = rpc.v1.model.PackageRepositoryAddRequest(source.name, source.uri)
+    val request = CosmosRequests.packageRepositoryAdd(repoAddRequest)
+    val Right(response) = CosmosClient.callEndpoint[rpc.v1.model.PackageRepositoryAddResponse](
+      request
+    )
     response
   }
 
