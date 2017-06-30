@@ -100,7 +100,6 @@ final class UninstallHandlerSpec extends FreeSpec with Eventually with SpanSugar
       val Right(err) = decode[ErrorResponse](uninstallResponseBody)
       val expectedMessage = s"Multiple apps named [helloworld] are installed: [$appId1, $appId2]"
       assertResult(expectedMessage)(err.message)
-
       val cleanupRequest = UninstallRequest("helloworld", appId = None, all = Some(true))
       val cleanupResponse = submitUninstallRequest(cleanupRequest)
       assertResult(Status.Ok)(cleanupResponse.status)

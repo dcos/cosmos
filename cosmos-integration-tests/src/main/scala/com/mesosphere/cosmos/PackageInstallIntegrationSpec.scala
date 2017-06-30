@@ -151,7 +151,7 @@ final class PackageInstallIntegrationSpec extends FreeSpec with BeforeAndAfterAl
 
       val errorData = JsonObject.singleton("errors", List(schemaError).asJson)
       val errorResponse =
-        ErrorResponse("JsonSchemaMismatch", "Options JSON failed validation", Some(errorData))
+        ErrorResponse("OptionsValidationFailure", "Options JSON failed validation", Some(errorData))
 
       val appId = AppId("chronos-bad-json")
 
