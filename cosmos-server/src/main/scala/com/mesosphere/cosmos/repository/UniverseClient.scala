@@ -341,9 +341,9 @@ final class DefaultUniverseClient(
         tag =>
           // The format of the tag is enforced by the json schema for universe packagingVersion 2.0 and 3.0
           // unfortunately com.mesosphere.universe.v2.model.PackageDetails#tags is a list string due to the
-          // more formal type not being defined. The likely of this failing is remove, especially when the
+          // more formal type not being defined. The likelihood of this failing is remote, especially when the
           // source is universe-server.
-          universe.v3.model.Tag(tag).get
+          universe.v3.model.Tag(tag)
       },
       details.selected,
       details.scm,

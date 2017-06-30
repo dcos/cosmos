@@ -16,14 +16,14 @@ object TestingPackages {
   val MinimalName = "minimal"
   val Version = universe.v3.model.Version("9.87.654.3210")
   val Maintainer = "max@mesosphere.io"
-  val MaxReleaseVersion = universe.v3.model.ReleaseVersion(Long.MaxValue).get
-  val MinReleaseVersion = universe.v3.model.ReleaseVersion(0L).get
+  val MaxReleaseVersion = universe.v3.model.ReleaseVersion(Long.MaxValue)
+  val MinReleaseVersion = universe.v3.model.ReleaseVersion(0L)
   val Description = "A complete package definition"
   val MarathonTemplate = Some(universe.v3.model.Marathon(
     v2AppMustacheTemplate = ByteBuffer.wrap("marathon template".getBytes(StandardCharsets.UTF_8))
   ))
   val Tags = List("all", "the", "things").map(
-    s => universe.v3.model.Tag(s).get
+    s => universe.v3.model.Tag(s)
   )
   val Scm = Some("git")
   val Website = Some("mesosphere.com")
@@ -288,7 +288,7 @@ object TestingPackages {
     preInstallNotes = Some("A sample pre-installation message"),
     postInstallNotes = Some("A sample post-installation message"),
     tags = List("mesosphere", "example", "subcommand")
-      .map(s => universe.v3.model.Tag(s).get()),
+      .map(s => universe.v3.model.Tag(s)),
     marathon = Some(universe.v3.model.Marathon(HelloWorldMarathonTemplate)),
     config = Some(JsonObject.fromMap(Map(
       "$schema" -> "http://json-schema.org/schema#".asJson,
@@ -351,7 +351,7 @@ object TestingPackages {
     packagingVersion = universe.v4.model.V4PackagingVersion,
     name = "minimalv4",
     version = universe.v3.model.Version("1.2.3"),
-    releaseVersion = universe.v3.model.ReleaseVersion(0).get,
+    releaseVersion = universe.v3.model.ReleaseVersion(0),
     maintainer = "minimal@mesosphere.io",
     description = "A minimal package definition"
   )
@@ -360,7 +360,7 @@ object TestingPackages {
     universe.v4.model.V4PackagingVersion,
     Name + "v4",
     Version,
-    releaseVersion = universe.v3.model.ReleaseVersion(Long.MaxValue).get,
+    releaseVersion = universe.v3.model.ReleaseVersion(Long.MaxValue),
     Maintainer,
     Description,
     Tags,

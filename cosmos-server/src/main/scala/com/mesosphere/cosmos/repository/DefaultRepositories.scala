@@ -2,8 +2,7 @@ package com.mesosphere.cosmos.repository
 
 import cats.syntax.either._
 import com.google.common.io.CharStreams
-import com.mesosphere.cosmos.rpc.v1.circe.Decoders._
-import com.mesosphere.cosmos.rpc.v1.model.PackageRepository
+import com.mesosphere.cosmos.rpc
 import com.twitter.util.Try
 import io.circe.jawn.decode
 import java.io.InputStreamReader
@@ -12,11 +11,11 @@ import scala.util.Left
 import scala.util.Right
 
 private[repository] class DefaultRepositories private[repository](resourceName: String) {
-  private val repos: Try[Either[io.circe.Error, List[PackageRepository]]] = Try {
+  private val repos: Try[Either[io.circe.Error, List[rpc.v1.model.PackageRepository]]] = Try {
     Option(this.getClass.getResourceAsStream(resourceName)) match {
       case Some(is) =>
         val json = CharStreams.toString(new InputStreamReader(is))
-        decode[List[PackageRepository]](json)
+        decode[List[rpc.v1.model.PackageRepository]](json)
       case _ =>
         throw new IllegalStateException(s"Unable to load classpath resource: $resourceName")
     }
@@ -29,18 +28,20 @@ object DefaultRepositories {
   def apply(): DefaultRepositories = loaded
 
   implicit class DefaultRepositoriesOps(val dr: DefaultRepositories) extends AnyVal {
-    def get(): Try[Either[io.circe.Error, List[PackageRepository]]] = {
+    def get(): Try[Either[io.circe.Error, List[rpc.v1.model.PackageRepository]]] = {
       dr.repos
     }
 
-    def getOrThrow: List[PackageRepository] = {
+    def getOrThrow: List[rpc.v1.model.PackageRepository] = {
       get().map {
         case Right(list) => list
         case Left(err) => throw err
       }.get
     }
 
-    def getOrElse(orElse: List[PackageRepository]): List[PackageRepository] = {
+    def getOrElse(
+      orElse: List[rpc.v1.model.PackageRepository]
+    ): List[rpc.v1.model.PackageRepository] = {
       get().map(_.getOrElse(orElse)).getOrElse(orElse)
     }
   }
