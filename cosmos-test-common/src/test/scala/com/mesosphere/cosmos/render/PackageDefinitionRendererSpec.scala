@@ -3,8 +3,9 @@ package com.mesosphere.cosmos.render
 import cats.syntax.either._
 import com.mesosphere.cosmos.bijection.CosmosConversions._
 import com.mesosphere.cosmos.circe.Decoders.decode64
-import com.mesosphere.cosmos.circe.Decoders.parse64
 import com.mesosphere.cosmos.circe.Decoders.parse
+import com.mesosphere.cosmos.circe.Decoders.parse64
+import com.mesosphere.cosmos.error._
 import com.mesosphere.cosmos.label
 import com.mesosphere.cosmos.model.StorageEnvelope
 import com.mesosphere.cosmos.thirdparty.marathon.circe.Decoders.decodeAppId
@@ -17,7 +18,6 @@ import com.netaporter.uri.dsl._
 import com.twitter.bijection.Conversion.asMethod
 import io.circe.Json
 import io.circe.JsonObject
-import io.circe.ParsingFailure
 import io.circe.syntax._
 import java.nio.ByteBuffer
 import java.nio.charset.StandardCharsets
@@ -44,9 +44,11 @@ class PackageDefinitionRendererSpec extends FreeSpec with Matchers with TableDri
 
         val pd = packageDefinition(pkgDef)(mustache)
 
-        PackageDefinitionRenderer.renderMarathonV2App("http://someplace", pd, None, None) match {
-          case Left(InvalidLabelSchema(err)) =>
-            assertResult("String: El(DownField(idx),true,false),El(DownField(labels),true,false)")(err.getMessage)
+        val exception = intercept[CosmosError](PackageDefinitionRenderer.renderMarathonV2App("http://someplace", pd, None, None))
+
+        exception match {
+          case InvalidLabelSchema(err) =>
+            assertResult("String: El(DownField(idx),true,false),El(DownField(labels),true,false)")(err)
           case _ =>
             fail("expected InvalidLabelSchemaError")
         }
@@ -72,7 +74,7 @@ class PackageDefinitionRendererSpec extends FreeSpec with Matchers with TableDri
           pd,
           None,
           None
-        ).right.get.asJson.hcursor.downField("env").downField("some").as[String]
+        ).get.asJson.hcursor.downField("env").downField("some").as[String]
 
         assertResult("thing")(some)
       }
@@ -88,7 +90,7 @@ class PackageDefinitionRendererSpec extends FreeSpec with Matchers with TableDri
         )
         val pkg = packageDefinition(pkgDef)(json.noSpaces)
 
-        val Right(rendered) = PackageDefinitionRenderer.renderMarathonV2App("http://someplace", pkg, None, None)
+        val rendered = PackageDefinitionRenderer.renderMarathonV2App("http://someplace", pkg, None, None).get
 
         val Right(labels) = rendered.asJson.cursor.get[Map[String, String]]("labels")
         assertResult("A")(labels("a"))
@@ -116,12 +118,12 @@ class PackageDefinitionRendererSpec extends FreeSpec with Matchers with TableDri
           config = Some(buildConfig(Json.fromJsonObject(defaultsJson)))
         )
 
-        val Right(marathonJson) = PackageDefinitionRenderer.renderMarathonV2App(
+        val marathonJson = PackageDefinitionRenderer.renderMarathonV2App(
           "http://someplace",
           packageDefinition,
           Some(optionsJson),
           None
-        )
+        ).get
 
         val expectedOptions = keyValify(mergedJson)
         val hasAllOptions = expectedOptions.forall { case (k, v) =>
@@ -195,7 +197,7 @@ class PackageDefinitionRendererSpec extends FreeSpec with Matchers with TableDri
         pkg,
         Some(options),
         Some(appId)
-      ).right.get.asJson.hcursor
+      ).get.asJson.hcursor
 
       renderedFocus.get[AppId]("id") shouldBe Right(appId)
       renderedFocus.get[String]("uri") shouldBe Right("http://someplace/blob")
@@ -229,8 +231,9 @@ class PackageDefinitionRendererSpec extends FreeSpec with Matchers with TableDri
         description = "description"
       )
 
-      val Left(err) = PackageDefinitionRenderer.renderMarathonV2App("http://someplace", pkg, None, None)
-      assertResult(MissingMarathonV2AppTemplate)(err)
+      val response = PackageDefinitionRenderer.renderMarathonV2App("http://someplace", pkg, None, None)
+      assertResult(None)(response)
+
     }
 
     "result in error if options provided but no config defined" in {
@@ -250,8 +253,8 @@ class PackageDefinitionRendererSpec extends FreeSpec with Matchers with TableDri
         )
       ).asObject.get
 
-      val Left(err) = PackageDefinitionRenderer.renderMarathonV2App("http://someplace", pkg, Some(options), None)
-      assertResult(OptionsNotAllowed)(err)
+      val exception = intercept[CosmosError](PackageDefinitionRenderer.renderMarathonV2App("http://someplace", pkg, Some(options), None))
+      assertResult(OptionsNotAllowed)(exception)
     }
 
     "result in error if rendered template is not valid json" in {
@@ -266,9 +269,8 @@ class PackageDefinitionRendererSpec extends FreeSpec with Matchers with TableDri
         marathon = Some(Marathon(mustacheBytes))
       )
 
-      val Left(RenderedTemplateNotJson(ParsingFailure(_, cause))) =
-        PackageDefinitionRenderer.renderMarathonV2App("http://someplace", pkg, None, None)
-      assert(cause.isInstanceOf[jawn.IncompleteParseException])
+      val exception = intercept[CosmosError](PackageDefinitionRenderer.renderMarathonV2App("http://someplace", pkg, None, None))
+      assert(exception.isInstanceOf[jawn.IncompleteParseException])
     }
 
     "result in error if rendered template is valid json but is not valid json object" in {
@@ -283,8 +285,8 @@ class PackageDefinitionRendererSpec extends FreeSpec with Matchers with TableDri
         marathon = Some(Marathon(mustacheBytes))
       )
 
-      val Left(err) = PackageDefinitionRenderer.renderMarathonV2App("http://someplace", pkg, None, None)
-      assertResult(RenderedTemplateNotJsonObject)(err)
+      val exception = intercept[CosmosError](PackageDefinitionRenderer.renderMarathonV2App("http://someplace", pkg, None, None))
+      assertResult(RenderedTemplateNotJson)(exception)
     }
 
     "enforce appId is set to argument passed to argument if Some" in {
@@ -316,7 +318,7 @@ class PackageDefinitionRendererSpec extends FreeSpec with Matchers with TableDri
         pkg,
         Some(options),
         Some(appId)
-      ).right.get.asJson
+      ).get.asJson
 
       val Right(actualAppId) = rendered.cursor.get[AppId]("id")
       assertResult(appId)(actualAppId)
@@ -350,7 +352,7 @@ class PackageDefinitionRendererSpec extends FreeSpec with Matchers with TableDri
           pkg,
           None,
           None
-        ).right.get.asJson
+        ).get.asJson
 
         val Right(renderedValue) = rendered.cursor.get[String]("some")
         assertResult("http://someplace/blob")(renderedValue)
@@ -383,7 +385,7 @@ class PackageDefinitionRendererSpec extends FreeSpec with Matchers with TableDri
           pkg,
           None,
           None
-        ).right.get.asJson
+        ).get.asJson
 
         val Right(renderedValue) = rendered.cursor.get[String]("some")
         assertResult("http://someplace/blob")(renderedValue)
@@ -418,7 +420,7 @@ class PackageDefinitionRendererSpec extends FreeSpec with Matchers with TableDri
           pkg,
           None,
           None
-        ).right.get.asJson
+        ).get.asJson
 
         val Right(renderedValue) = rendered.cursor.get[String]("some")
         assertResult("http://someplace/blob")(renderedValue)
