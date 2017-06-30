@@ -111,7 +111,7 @@ class PackageDefinitionRendererSpec extends FreeSpec with Matchers with TableDri
           version = Version("1.2.3"),
           maintainer = "Mesosphere",
           description = "Testing user options",
-          releaseVersion = ReleaseVersion(0).get,
+          releaseVersion = ReleaseVersion(0),
           marathon = Some(Marathon(mustacheBytes)),
           config = Some(buildConfig(Json.fromJsonObject(defaultsJson)))
         )
@@ -159,7 +159,7 @@ class PackageDefinitionRendererSpec extends FreeSpec with Matchers with TableDri
       val pkg = V2Package(
         name = "test",
         version = Version("1.2.3"),
-        releaseVersion = ReleaseVersion(0).get(),
+        releaseVersion = ReleaseVersion(0),
         maintainer = "maintainer",
         description = "description",
         marathon = Marathon(mustacheBytes),
@@ -224,7 +224,7 @@ class PackageDefinitionRendererSpec extends FreeSpec with Matchers with TableDri
       val pkg = V3Package(
         name = "test",
         version = Version("1.2.3"),
-        releaseVersion = ReleaseVersion(0).get(),
+        releaseVersion = ReleaseVersion(0),
         maintainer = "maintainer",
         description = "description"
       )
@@ -239,7 +239,7 @@ class PackageDefinitionRendererSpec extends FreeSpec with Matchers with TableDri
       val pkg = V3Package(
         name = "test",
         version = Version("1.2.3"),
-        releaseVersion = ReleaseVersion(0).get(),
+        releaseVersion = ReleaseVersion(0),
         maintainer = "maintainer",
         description = "description",
         marathon = Some(Marathon(mustacheBytes))
@@ -260,7 +260,7 @@ class PackageDefinitionRendererSpec extends FreeSpec with Matchers with TableDri
       val pkg = V3Package(
         name = "test",
         version = Version("1.2.3"),
-        releaseVersion = ReleaseVersion(0).get(),
+        releaseVersion = ReleaseVersion(0),
         maintainer = "maintainer",
         description = "description",
         marathon = Some(Marathon(mustacheBytes))
@@ -277,7 +277,7 @@ class PackageDefinitionRendererSpec extends FreeSpec with Matchers with TableDri
       val pkg = V3Package(
         name = "test",
         version = Version("1.2.3"),
-        releaseVersion = ReleaseVersion(0).get(),
+        releaseVersion = ReleaseVersion(0),
         maintainer = "maintainer",
         description = "description",
         marathon = Some(Marathon(mustacheBytes))
@@ -293,7 +293,7 @@ class PackageDefinitionRendererSpec extends FreeSpec with Matchers with TableDri
       val pkg = V2Package(
         name = "test",
         version = Version("1.2.3"),
-        releaseVersion = ReleaseVersion(0).get(),
+        releaseVersion = ReleaseVersion(0),
         maintainer = "maintainer",
         description = "description",
         marathon = Marathon(mustacheBytes),
@@ -332,7 +332,7 @@ class PackageDefinitionRendererSpec extends FreeSpec with Matchers with TableDri
         val pkg = V2Package(
           name = "test",
           version = Version("1.2.3"),
-          releaseVersion = ReleaseVersion(0).get(),
+          releaseVersion = ReleaseVersion(0),
           maintainer = "maintainer",
           description = "description",
           marathon = Marathon(mustacheBytes),
@@ -365,7 +365,7 @@ class PackageDefinitionRendererSpec extends FreeSpec with Matchers with TableDri
         val pkg = V3Package(
           name = "test",
           version = Version("1.2.3"),
-          releaseVersion = ReleaseVersion(0).get(),
+          releaseVersion = ReleaseVersion(0),
           maintainer = "maintainer",
           description = "description",
           marathon = Some(Marathon(mustacheBytes)),
@@ -398,7 +398,7 @@ class PackageDefinitionRendererSpec extends FreeSpec with Matchers with TableDri
         val pkg = universe.v4.model.V4Package(
           name = "test",
           version = Version("1.2.3"),
-          releaseVersion = ReleaseVersion(0).get(),
+          releaseVersion = ReleaseVersion(0),
           maintainer = "maintainer",
           description = "description",
           marathon = Some(Marathon(mustacheBytes)),

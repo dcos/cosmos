@@ -21,23 +21,23 @@ class RepositoryEncoderDecoderSpec extends FreeSpec {
             universe.v3.model.V2PackagingVersion,
             "cool-package",
             universe.v3.model.Version("1.2.3"),
-            universe.v3.model.ReleaseVersion(1).get,
+            universe.v3.model.ReleaseVersion(1),
             "bill@cool.co",
             "some awesome package",
             universe.v3.model.Marathon(
               ByteBuffer.wrap("testing".getBytes(StandardCharsets.UTF_8))
             ),
-            List("abc", "def").map(universe.v3.model.Tag(_).get),
+            List("abc", "def").map(universe.v3.model.Tag(_)),
             selected = Some(false)
           ),
           universe.v3.model.V3Package(
             universe.v3.model.V3PackagingVersion,
             "cool-package",
             universe.v3.model.Version("3.2.1"),
-            universe.v3.model.ReleaseVersion(2).get,
+            universe.v3.model.ReleaseVersion(2),
             "bill@cool.co",
             "some awesome package",
-            List("abc", "def").map(universe.v3.model.Tag(_).get),
+            List("abc", "def").map(universe.v3.model.Tag(_)),
             selected = Some(false),
             marathon = Some(
               universe.v3.model.Marathon(

@@ -37,31 +37,7 @@ object RequestValidators {
     }
   }
 
-  // TODO package-add: Unit tests in RequestValidatorsSpec
-  def selectedBody[Req, Res](implicit
-    accepts: DispatchingMediaTypedBodyParser[Req],
-    produces: DispatchingMediaTypedEncoder[Res]
-  ): Endpoint[EndpointContext[Req, Res]] = {
-    val contentTypeValidator = header(Fields.ContentType)
-      .as[MediaType]
-      .map { contentType =>
-        accepts(contentType) match {
-          case Some(bodyParser) => contentType :: bodyParser :: HNil
-          case _ =>
-            throw incompatibleContentTypeHeader(accepts.mediaTypes, contentType)
-        }
-      }
-
-    val allValidators = baseValidator(produces) :: contentTypeValidator :: binaryBody
-    allValidators.map {
-      case authorization :: responseEncoder :: contentType :: bodyParser :: bodyBytes :: HNil =>
-        val requestBody = bodyParser(bodyBytes).get  // Exceptions will be caught by Endpoint.map()
-        val session = RequestSession(authorization, Some(contentType))
-        EndpointContext(requestBody, session, responseEncoder)
-    }
-  }
-
-  private[this] def baseValidator[Res](
+  def baseValidator[Res](
     produces: DispatchingMediaTypedEncoder[Res]
   ): Endpoint[Option[Authorization] :: MediaTypedEncoder[Res] :: HNil] = {
     val accept = header(Fields.Accept)
@@ -76,4 +52,5 @@ object RequestValidators {
     val auth = headerOption(Fields.Authorization).map(_.map(Authorization))
     auth :: accept
   }
+
 }

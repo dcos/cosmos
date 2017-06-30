@@ -4,7 +4,6 @@ import com.mesosphere.cosmos.AdminRouter
 import com.mesosphere.cosmos.AdminRouterClient
 import com.mesosphere.cosmos.MarathonClient
 import com.mesosphere.cosmos.MesosMasterClient
-import com.mesosphere.cosmos.ObjectStorageUri
 import com.mesosphere.cosmos.Services
 import com.mesosphere.cosmos.Trys
 import com.mesosphere.cosmos.Uris
@@ -160,19 +159,7 @@ object CosmosIntegrationTestClient extends Matchers {
     }
   }
 
-  object PackageStorageClient {
-
-    val packagesUri: ObjectStorageUri = {
-      ObjectStorageUri.parse(getClientProperty("PackageStorageClient", "packagesUri")).get()
-    }
-
-    val stagedUri: ObjectStorageUri = {
-      ObjectStorageUri.parse(getClientProperty("PackageStorageClient", "stagedUri")).get()
-    }
-
-  }
-
-  private[this] def getClientProperty(clientName: String, key: String): String = {
+  def getClientProperty(clientName: String, key: String): String = {
     val property = s"com.mesosphere.cosmos.test.CosmosIntegrationTestClient.$clientName.$key"
       Option(System.getProperty(property))
         .getOrElse(throw new AssertionError(s"Missing system property '$property' "))
