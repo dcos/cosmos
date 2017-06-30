@@ -62,8 +62,6 @@ object Decoders {
     deriveDecoder[PackageRepositoryDeleteResponse]
   }
 
-  implicit val decodeErrorResponse: Decoder[ErrorResponse] = deriveDecoder[ErrorResponse]
-
   implicit val decodePackageCoordinate: Decoder[PackageCoordinate] =
     deriveDecoder[PackageCoordinate]
 

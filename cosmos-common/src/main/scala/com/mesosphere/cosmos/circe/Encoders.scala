@@ -3,7 +3,6 @@ package com.mesosphere.cosmos.circe
 import cats.data.Ior
 import com.mesosphere.cosmos.error.CosmosException
 import com.mesosphere.cosmos.http.MediaType
-import com.mesosphere.cosmos.rpc.v1.circe.Encoders._
 import com.mesosphere.cosmos.rpc.v1.model.ErrorResponse
 import com.twitter.finagle.http.Status
 import io.circe.DecodingFailure

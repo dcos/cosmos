@@ -118,7 +118,7 @@ final class PackageListIntegrationSpec
     val originalRepositories = ItUtil.listRepositories()
       .withClue("when getting original repositories")
 
-    val actualDelete = ItUtil.deleteRepository(repository)
+    val actualDelete = ItUtil.deleteRepository(Some(repository.name))
       .withClue("when deleting repo")
 
     try {
