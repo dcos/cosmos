@@ -7,7 +7,6 @@ import _root_.io.circe.syntax._
 import com.mesosphere.cosmos.ItObjects
 import com.mesosphere.cosmos.http.CosmosRequests
 import com.mesosphere.cosmos.rpc.MediaTypes
-import com.mesosphere.cosmos.rpc.v1.circe.Decoders._
 import com.mesosphere.cosmos.rpc.v1.model.ErrorResponse
 import com.mesosphere.cosmos.rpc.v1.model.RenderRequest
 import com.mesosphere.cosmos.test.CosmosIntegrationTestClient.CosmosClient

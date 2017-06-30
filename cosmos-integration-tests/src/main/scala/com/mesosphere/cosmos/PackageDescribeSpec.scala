@@ -5,7 +5,6 @@ import cats.syntax.either._
 import com.mesosphere.cosmos.circe.Decoders.decode
 import com.mesosphere.cosmos.circe.Decoders.parse
 import com.mesosphere.cosmos.http.CosmosRequests
-import com.mesosphere.cosmos.rpc.v1.circe.Decoders._
 import com.mesosphere.cosmos.test.CosmosIntegrationTestClient.CosmosClient
 import com.mesosphere.universe
 import com.mesosphere.universe.v3.syntax.PackageDefinitionOps._

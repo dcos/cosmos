@@ -2,7 +2,6 @@ package com.mesosphere.cosmos.rpc.v1.model
 
 import com.mesosphere.cosmos.http.HttpRequest
 import com.mesosphere.cosmos.rpc.MediaTypes
-import com.mesosphere.cosmos.rpc.v1.circe.Decoders._
 import com.mesosphere.cosmos.test.CosmosIntegrationTestClient._
 import com.twitter.finagle.http.Fields
 import com.twitter.finagle.http.Status
