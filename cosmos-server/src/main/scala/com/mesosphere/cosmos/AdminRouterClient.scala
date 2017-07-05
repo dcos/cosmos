@@ -1,8 +1,9 @@
 package com.mesosphere.cosmos
 
 import com.mesosphere.cosmos.http.RequestSession
-import com.mesosphere.cosmos.thirdparty.adminrouter.model.DcosVersion
 import com.mesosphere.cosmos.thirdparty.adminrouter.circe.Decoders._
+import com.mesosphere.cosmos.thirdparty.adminrouter.model.DcosVersion
+import com.mesosphere.cosmos.thirdparty.marathon.model.AppId
 import com.netaporter.uri.Uri
 import com.netaporter.uri.dsl._
 import com.twitter.finagle.Service
@@ -20,8 +21,8 @@ class AdminRouterClient(
     client(get(uri)).flatMap(decodeTo[DcosVersion](HttpMethod.GET, uri, _))
   }
 
-  def getSdkServicePlanStatus(service: String, apiVersion: String, plan: String)(implicit session: RequestSession): Future[Response] = {
-    val uri = "service" / service / apiVersion / "plans" / plan
+  def getSdkServicePlanStatus(service: AppId, apiVersion: String, plan: String)(implicit session: RequestSession): Future[Response] = {
+    val uri = "service" / service.toUri / apiVersion / "plans" / plan
     client(get(uri))
   }
 }

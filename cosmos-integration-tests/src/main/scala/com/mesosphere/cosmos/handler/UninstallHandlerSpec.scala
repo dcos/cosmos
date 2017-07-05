@@ -140,7 +140,11 @@ final class UninstallHandlerSpec extends FreeSpec with Eventually with SpanSugar
 
         // Wait for the service to deploy.
         eventually(timeout(10 minutes), interval(10 seconds)) {
-          assertResult(Status.Ok)(Await.result(adminRouter.getSdkServicePlanStatus("hello-world", "v1", "deploy")).status)
+          assertResult(Status.Ok)(
+            Await.result(
+              adminRouter.getSdkServicePlanStatus(AppId("hello-world"), "v1", "deploy")
+            ).status
+          )
         }
 
         val uninstallRequest = UninstallRequest("hello-world", appId = None, Some(false))
