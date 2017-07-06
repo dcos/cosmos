@@ -76,12 +76,14 @@ lazy val integrationTests = project.in(file("cosmos-integration-tests"))
   .settings(
     name := baseDirectory.value.name,
     testOptions in IntegrationTest ++= BuildPlugin.itTestOptions(
-      (javaHome in run).value,
+      javaHomeValue = (javaHome in run).value,
       // The resources we need are in src/main/resources
-      (resourceDirectories in Compile).value,
+      classpathPrefix = (resourceDirectories in Compile).value,
       // The one-JAR to use is produced by cosmos-server
-      (oneJar in server).value,
-      (streams in runMain).value
+      oneJarValue = (oneJar in server).value,
+      // No additional properties needed for these tests
+      additionalProperties = Nil,
+      streamsValue = (streams in runMain).value
     ),
     // Uses (compile in Compile) in addition to (compile in IntegrationTest), the default
     definedTests in IntegrationTest := {

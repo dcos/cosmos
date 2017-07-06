@@ -51,8 +51,6 @@ system properties:
 
 ```
 -Dcom.mesosphere.cosmos.dcosUri
--Dcom.mesosphere.cosmos.packageStorageUri
--Dcom.mesosphere.cosmos.stagedPackageStorageUri
 ```
 
 or running the following command:
@@ -60,8 +58,6 @@ or running the following command:
 ```bash
 export COSMOS_AUTHORIZATION_HEADER="token=$(http --ignore-stdin <dcos-host-url>/acs/api/v1/auth/login uid=<dcos-user> password=<user-password> | jq -r ".token")"
 sbt -Dcom.mesosphere.cosmos.dcosUri=<dcos-host-url> \
-    -Dcom.mesosphere.cosmos.packageStorageUri=file:///tmp/cosmos/packages \
-    -Dcom.mesosphere.cosmos.stagedPackageStorageUri=file:///tmp/cosmos/staged-packages \
     clean it:test
 ```
 
@@ -83,9 +79,7 @@ with:
 
 ```bash
 java -jar cosmos-server/target/scala-2.11/cosmos-server_2.11-<version>-SNAPSHOT-one-jar.jar \
-     -com.mesosphere.cosmos.dcosUri <dcos-host-url> \
-     -com.mesosphere.cosmos.packageStorageUri file://<absolute-path-to-package-dir> \
-     -com.mesosphere.cosmos.stagedPackageStorageUri file://<absolute-path-to-staged-dir>
+     -com.mesosphere.cosmos.dcosUri <dcos-host-url>
 ```
 
 It can also be executed with ZooKeeper authentication with:
@@ -94,9 +88,7 @@ It can also be executed with ZooKeeper authentication with:
 export ZOOKEEPER_USER <user>
 export ZOOKEEPER_SECRET <secret>
 java -jar cosmos-server/target/scala-2.11/cosmos-server_2.11-<version>-SNAPSHOT-one-jar.jar \
-     -com.mesosphere.cosmos.dcosUri <dcos-host-url> \
-     -com.mesosphere.cosmos.packageStorageUri file://<absolute-path-to-package-dir> \
-     -com.mesosphere.cosmos.stagedPackageStorageUri file://<absolute-path-to-staged-dir>
+     -com.mesosphere.cosmos.dcosUri <dcos-host-url>
 ```
 
 ## Project structure
