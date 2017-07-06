@@ -69,14 +69,6 @@ package cosmos {
     "The ZooKeeper connection string"
   )
 
-  object packageStorageUri extends GlobalFlag[ObjectStorageUri](
-    "The URI where packages are stored"
-  )
-
-  object stagedPackageStorageUri extends GlobalFlag[ObjectStorageUri](
-    "The URI where packages are staged before permanent storage"
-  )
-
   object httpInterface extends GlobalFlag[Option[InetSocketAddress]](
     None,
     "The TCP Interface and port for the http server {[<hostname/ip>]:port}. (Set to " +
