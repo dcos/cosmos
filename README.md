@@ -9,11 +9,11 @@ management of DC/OS service packages.
 This project enforces certain scalastyle rules. To run those check against the code run:
 
 ```bash
-sbt scalastyle test:scalastyle it:scalastyle
+sbt scalastyle
 ```
 
 ### Unit Tests
-There is a suite of unit tests that can be ran by running `sbt clean test`
+There is a suite of unit tests that can be ran by running `sbt clean test:test`
 
 #### Scoverage
 
@@ -21,7 +21,7 @@ To generate an [scoverage](https://github.com/scoverage/scalac-scoverage-plugin)
 tests run the following command:
 
 ```bash
-sbt clean coverage test coverageReport coverageAggregate
+sbt clean coverage test:test coverageReport coverageAggregate
 ```
 
 The generated report can then be found at `target/scala-2.11/scoverage-report/index.html`
@@ -116,8 +116,9 @@ The following table outlines which version of Cosmos is bundled with each versio
 | &ge; 1.6.1            | 0.1.2          |
 | &ge; 1.7.0            | 0.1.5          |
 | &ge; 1.8.0            | 0.2.0          |
-| &ge; 1.8.9            | 0.2.1          |
+| &ge; 1.8.9            | 0.2.2          |
 | &ge; 1.9.0            | 0.3.0          |
+| &ge; 1.9.1            | 0.3.1          |
 | &ge; 1.10.0           | 0.4.0          |
 
 ### Universe
