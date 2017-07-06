@@ -7,17 +7,13 @@ import com.mesosphere.cosmos.rpc.MediaTypes
 import com.mesosphere.cosmos.rpc.v1.circe.Decoders._
 import com.mesosphere.cosmos.rpc.v1.model.ErrorResponse
 import com.mesosphere.cosmos.rpc.v1.model.InstallRequest
-import com.mesosphere.cosmos.rpc.v1.model.PackageRepositoryAddRequest
-import com.mesosphere.cosmos.rpc.v1.model.PackageRepositoryAddResponse
-import com.mesosphere.cosmos.rpc.v1.model.PackageRepositoryDeleteRequest
-import com.mesosphere.cosmos.rpc.v1.model.PackageRepositoryDeleteResponse
 import com.mesosphere.cosmos.rpc.v1.model.UninstallRequest
 import com.mesosphere.cosmos.rpc.v1.model.UninstallResponse
 import com.mesosphere.cosmos.test.CosmosIntegrationTestClient
 import com.mesosphere.cosmos.test.CosmosIntegrationTestClient.CosmosClient
+import com.mesosphere.cosmos.thirdparty.marathon.circe.Decoders._
 import com.mesosphere.cosmos.thirdparty.marathon.model.AppId
 import com.mesosphere.universe.v2.model.PackageDetailsVersion
-import com.netaporter.uri.Uri
 import com.netaporter.uri.dsl._
 import com.twitter.finagle.http.Fields
 import com.twitter.finagle.http.Response
@@ -98,8 +94,9 @@ final class UninstallHandlerSpec extends FreeSpec with Eventually with SpanSugar
       assertResult(Status.BadRequest)(uninstallResponse.status)
       assertResult(MediaTypes.ErrorResponse.show)(uninstallResponse.headerMap(Fields.ContentType))
       val Right(err) = decode[ErrorResponse](uninstallResponseBody)
-      val expectedMessage = s"Multiple apps named [helloworld] are installed: [$appId1, $appId2]"
-      assertResult(expectedMessage)(err.message)
+      val Some(data) = err.data
+      val Right(appIds) = Json.fromJsonObject(data).cursor.get[Set[AppId]]("appIds")
+      assertResult(Set(appId1, appId2))(appIds)
       val cleanupRequest = UninstallRequest("helloworld", appId = None, all = Some(true))
       val cleanupResponse = submitUninstallRequest(cleanupRequest)
       assertResult(Status.Ok)(cleanupResponse.status)
@@ -143,7 +140,11 @@ final class UninstallHandlerSpec extends FreeSpec with Eventually with SpanSugar
 
         // Wait for the service to deploy.
         eventually(timeout(10 minutes), interval(10 seconds)) {
-          assertResult(Status.Ok)(Await.result(adminRouter.getSdkServicePlanStatus("hello-world", "v1", "deploy")).status)
+          assertResult(Status.Ok)(
+            Await.result(
+              adminRouter.getSdkServicePlanStatus(AppId("hello-world"), "v1", "deploy")
+            ).status
+          )
         }
 
         val uninstallRequest = UninstallRequest("hello-world", appId = None, Some(false))

@@ -4,13 +4,13 @@ import com.mesosphere.cosmos.AdminRouter
 import com.mesosphere.cosmos.BuildProperties
 import com.mesosphere.cosmos.circe.Decoders.decode
 import com.mesosphere.cosmos.error.CosmosException
-import com.mesosphere.cosmos.error.GenericHttpError
 import com.mesosphere.cosmos.error.IndexNotFound
 import com.mesosphere.cosmos.error.PackageFileMissing
 import com.mesosphere.cosmos.error.PackageFileNotJson
 import com.mesosphere.cosmos.error.PackageFileSchemaMismatch
 import com.mesosphere.cosmos.error.RepositoryUriConnection
 import com.mesosphere.cosmos.error.RepositoryUriSyntax
+import com.mesosphere.cosmos.error.UniverseClientHttpError
 import com.mesosphere.cosmos.error.UnsupportedContentEncoding
 import com.mesosphere.cosmos.error.UnsupportedContentType
 import com.mesosphere.cosmos.error.UnsupportedRedirect
@@ -149,9 +149,9 @@ final class DefaultUniverseClient(
               /* If we are unable to get the latest Universe we should not forward the status code returned.
                * We should instead return 500 to the client and include the actual error in the message.
                */
-              throw GenericHttpError(
+              throw UniverseClientHttpError(
+                repository,
                 HttpMethod.GET,
-                repository.uri,
                 Status.fromCode(x)
               ).exception(Status.InternalServerError)
           }

@@ -87,7 +87,7 @@ class AdminRouter(
   }
 
   def getSdkServicePlanStatus(
-    service: String,
+    service: AppId,
     apiVersion: String,
     plan: String
   )(

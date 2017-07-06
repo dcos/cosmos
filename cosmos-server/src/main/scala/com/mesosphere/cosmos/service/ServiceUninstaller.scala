@@ -70,7 +70,7 @@ final class ServiceUninstaller(
     implicit session: RequestSession
   ): Future[Boolean] = {
     adminRouter.getSdkServicePlanStatus(
-      appId.toString,
+      appId,
       apiVersion,
       "deploy"
     ).map(_.status == Status.Ok)
