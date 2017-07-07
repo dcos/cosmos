@@ -269,8 +269,8 @@ class PackageDefinitionRendererSpec extends FreeSpec with Matchers with TableDri
         marathon = Some(Marathon(mustacheBytes))
       )
 
-      val exception = intercept[CosmosError](PackageDefinitionRenderer.renderMarathonV2App("http://someplace", pkg, None, None))
-      assert(exception.isInstanceOf[jawn.IncompleteParseException])
+      val err = intercept[CosmosError](PackageDefinitionRenderer.renderMarathonV2App("http://someplace", pkg, None, None))
+      assert(err.isInstanceOf[jawn.IncompleteParseException])
     }
 
     "result in error if rendered template is valid json but is not valid json object" in {
