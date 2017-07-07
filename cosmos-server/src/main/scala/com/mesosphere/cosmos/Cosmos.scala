@@ -4,7 +4,7 @@ import _root_.io.circe.Json
 import _root_.io.finch._
 import _root_.io.finch.circe.dropNullKeys._
 import com.mesosphere.cosmos.app.Logging
-import com.mesosphere.cosmos.circe.Encoders._
+//import com.mesosphere.cosmos.circe.Encoders._
 import com.mesosphere.cosmos.error.CosmosException
 import com.mesosphere.cosmos.finch.DispatchingMediaTypedEncoder
 import com.mesosphere.cosmos.finch.EndpointHandler
