@@ -1,12 +1,11 @@
 package com.mesosphere.cosmos.handler
 
-import com.mesosphere.cosmos.error._
+import com.mesosphere.cosmos.error.ServiceMarathonTemplateNotFound
 import com.mesosphere.cosmos.finch.EndpointHandler
 import com.mesosphere.cosmos.http.RequestSession
 import com.mesosphere.cosmos.render._
 import com.mesosphere.cosmos.repository.PackageCollection
-import com.mesosphere.cosmos.rpc.v1.model.RenderRequest
-import com.mesosphere.cosmos.rpc.v1.model.RenderResponse
+import com.mesosphere.cosmos.rpc
 import com.mesosphere.universe
 import com.mesosphere.universe.bijection.UniverseConversions._
 import com.mesosphere.universe.v3.syntax.PackageDefinitionOps._
@@ -15,13 +14,13 @@ import com.twitter.util.Future
 
 private[cosmos] final class PackageRenderHandler(
   packageCache: PackageCollection
-) extends EndpointHandler[RenderRequest, RenderResponse] {
+) extends EndpointHandler[rpc.v1.model.RenderRequest, rpc.v1.model.RenderResponse] {
 
   override def apply(
-    request: RenderRequest
+    request: rpc.v1.model.RenderRequest
   )(
     implicit session: RequestSession
-  ): Future[RenderResponse] = {
+  ): Future[rpc.v1.model.RenderResponse] = {
     packageCache
       .getPackageByPackageVersion(
         request.packageName,
@@ -33,7 +32,7 @@ private[cosmos] final class PackageRenderHandler(
 
         packageConfig match {
           case Some(renderedMarathonJson) =>
-            Future.value(RenderResponse(renderedMarathonJson))
+            Future.value(rpc.v1.model.RenderResponse(renderedMarathonJson))
           case None =>
             Future.exception(ServiceMarathonTemplateNotFound(pkg.name, pkg.version).exception)
         }
