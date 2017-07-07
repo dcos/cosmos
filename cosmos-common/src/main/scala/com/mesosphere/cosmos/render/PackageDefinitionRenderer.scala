@@ -4,6 +4,11 @@ import cats.syntax.either._
 import com.github.fge.jsonschema.main.JsonSchemaFactory
 import com.github.mustachejava.DefaultMustacheFactory
 import com.mesosphere.cosmos.bijection.CosmosConversions._
+import com.mesosphere.cosmos.circe.Decoders.convertToExceptionOfCirceError
+import com.mesosphere.cosmos.error.CirceError
+import com.mesosphere.cosmos.error.JsonSchemaMismatch
+import com.mesosphere.cosmos.error.MarathonTemplateMustBeJsonObject
+import com.mesosphere.cosmos.error.OptionsNotAllowed
 import com.mesosphere.cosmos.jsonschema.JsonSchema
 import com.mesosphere.cosmos.label
 import com.mesosphere.cosmos.model.StorageEnvelope
@@ -24,7 +29,6 @@ import io.circe.syntax._
 import java.io.StringReader
 import java.io.StringWriter
 import java.io.Writer
-import java.nio.ByteBuffer
 import java.nio.charset.StandardCharsets
 import java.util.Base64
 
@@ -46,38 +50,35 @@ object PackageDefinitionRenderer {
     pkgDef: universe.v4.model.PackageDefinition,
     options: Option[JsonObject],
     marathonAppId: Option[AppId]
-  ): Either[PackageDefinitionRenderError, JsonObject] = {
+  ): Option[JsonObject] = {
     pkgDef.marathon.map { marathon =>
       val defaultOptionsAndUserOptions: JsonObject = mergeDefaultAndUserOptions(pkgDef, options)
 
-      validateOptionsAgainstSchema(pkgDef, defaultOptionsAndUserOptions).flatMap { _ =>
-        /* Now that we know the users options are valid for the schema, we build up a composite
-         * json object to send into the mustache context for rendering. The following seq
-         * prepares for the merge of all the options, documents at later indices have higher
-         * priority than lower index objects order here is important, DO NOT carelessly re-order.
-         */
-        val mergedOptions = (
-          defaultOptionsAndUserOptions ::
-          pkgDef.resourceJson.map(rj => JsonObject.singleton("resource", rj)).toList
-        ).foldLeft(JsonObject.empty)(JsonUtil.merge)
+      validateOptionsAgainstSchema(pkgDef, defaultOptionsAndUserOptions)
+      /* Now that we know the users options are valid for the schema, we build up a composite
+       * json object to send into the mustache context for rendering. The following seq
+       * prepares for the merge of all the options, documents at later indices have higher
+       * priority than lower index objects order here is important, DO NOT carelessly re-order.
+       */
+      val mergedOptions = (
+        defaultOptionsAndUserOptions ::
+        pkgDef.resourceJson.map(rj => JsonObject.singleton("resource", rj)).toList
+      ).foldLeft(JsonObject.empty)(JsonUtil.merge)
 
-        renderTemplate(
-          new String(ByteBuffers.getBytes(marathon.v2AppMustacheTemplate), StandardCharsets.UTF_8),
-          mergedOptions
-        ).flatMap { mJson =>
-          extractLabels(mJson.asJson).map { existingLabels =>
-            decorateMarathonJson(
-              mJson,
-              sourceUri,
-              pkgDef,
-              options,
-              marathonAppId,
-              existingLabels
-            )
-          }
-        }
-      }
-    } getOrElse Left(MissingMarathonV2AppTemplate)
+      val mJson = renderTemplate(
+        new String(ByteBuffers.getBytes(marathon.v2AppMustacheTemplate), StandardCharsets.UTF_8),
+        mergedOptions
+      )
+      val existingLabels = extractLabels(mJson.asJson)
+      decorateMarathonJson(
+        mJson,
+        sourceUri,
+        pkgDef,
+        options,
+        marathonAppId,
+        existingLabels
+      )
+    }
   }
 
   def mergeDefaultAndUserOptions(
@@ -91,7 +92,7 @@ object PackageDefinitionRenderer {
   def renderTemplate(
     template: String,
     context: JsonObject
-  ): Either[PackageDefinitionRenderError, JsonObject] = {
+  ): JsonObject = {
     val renderedJsonString = {
       val strReader = new StringReader(template)
       val mustache = MustacheFactory.compile(strReader, ".marathon.v2AppMustacheTemplate")
@@ -102,9 +103,9 @@ object PackageDefinitionRenderer {
     }
 
     parse(renderedJsonString).map(_.asObject) match {
-      case Left(pe)           => Left(RenderedTemplateNotJson(pe))
-      case Right(None)        => Left(RenderedTemplateNotJsonObject)
-      case Right(Some(obj))   => Right(obj)
+      case Left(pe)           => throw CirceError(pe).exception
+      case Right(None)        => throw MarathonTemplateMustBeJsonObject.exception
+      case Right(Some(obj))   => obj
     }
   }
 
@@ -157,16 +158,20 @@ object PackageDefinitionRenderer {
   private[this] def validateOptionsAgainstSchema(
     pkgDef: universe.v4.model.PackageDefinition,
     options: JsonObject
-  ): Either[PackageDefinitionRenderError, Unit] = {
+  ): Unit = {
     (pkgDef.config, options.nonEmpty) match {
       // Success scenarios
-      case (None, false) => Right(())
-      case (Some(_), false) => Right(())
+      case (None, false) =>
+      case (Some(_), false) =>
       // Failure scenarios
-      case (None, true) => Left(OptionsNotAllowed)
+      case (None, true) => {
+        throw OptionsNotAllowed().exception
+      }
       case (Some(schema), true) =>
-        JsonSchema.jsonObjectMatchesSchema(options, schema)
-          .leftMap(OptionsValidationFailure)
+        JsonSchema.jsonObjectMatchesSchema(options, schema) match {
+          case Left(validationErrors) => throw JsonSchemaMismatch(validationErrors).exception
+          case Right(_) =>
+        }
     }
   }
 
@@ -190,7 +195,7 @@ object PackageDefinitionRenderer {
 
   private[this] def extractLabels(
     obj: Json
-  ): Either[PackageDefinitionRenderError, Json] = {
+  ): Json = {
     // This is a bit of a sketchy check since marathon could change underneath us, but we want
     // to try and surface this error to the user as soon as possible. The check that is being
     // performed here is to ensure that `.labels` of `obj` is a Map[String, String]. Marathon
@@ -198,9 +203,7 @@ object PackageDefinitionRenderer {
     // the user know here where we can craft a more informational error message.
     // If marathon ever changes its schema for labels then this code will most likely need a
     // new version with this version left intact for backward compatibility reasons.
-    obj.cursor.getOrElse[Map[String, String]]("labels")(Map.empty) match {
-      case Left(err) => Left(InvalidLabelSchema(err))
-      case Right(labels) => Right(Json.fromFields(labels.mapValues(_.asJson)))
-    }
+    val labels = convertToExceptionOfCirceError(obj.cursor.getOrElse[Map[String, String]]("labels")(Map.empty))
+    Json.fromFields(labels.mapValues(_.asJson))
   }
 }

@@ -12,7 +12,7 @@ import java.util.Base64
 object Decoders {
 
   def decode[T: Decoder](value: String): T = {
-    convertToException(io.circe.jawn.decode[T](value))
+    convertToExceptionOfCirceError(io.circe.jawn.decode[T](value))
   }
 
   def mediaTypedDecode[T](
@@ -21,11 +21,11 @@ object Decoders {
   )(
     implicit decoder: MediaTypedDecoder[T]
   ): T = {
-    convertToException(decoder(parse(value).hcursor, mediaType))
+    convertToExceptionOfCirceError(decoder(parse(value).hcursor, mediaType))
   }
 
   def parse(value: String): Json = {
-    convertToException(io.circe.jawn.parse(value))
+    convertToExceptionOfCirceError(io.circe.jawn.parse(value))
   }
 
   def decode64[T: Decoder](value: String): T = {
@@ -36,7 +36,7 @@ object Decoders {
     parse(base64DecodeString(value))
   }
 
-  private[this] def convertToException[T](result: Either[Error, T]): T = result match {
+  def convertToExceptionOfCirceError[T](result: Either[Error, T]): T = result match {
     case Right(result) => result
     case Left(error) => throw CirceError(error).exception
   }
