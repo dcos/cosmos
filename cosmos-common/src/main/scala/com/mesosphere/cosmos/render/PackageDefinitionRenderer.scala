@@ -4,10 +4,9 @@ import cats.syntax.either._
 import com.github.fge.jsonschema.main.JsonSchemaFactory
 import com.github.mustachejava.DefaultMustacheFactory
 import com.mesosphere.cosmos.bijection.CosmosConversions._
-import com.mesosphere.cosmos.error.InvalidLabelSchema
+import com.mesosphere.cosmos.error.CirceError
+import com.mesosphere.cosmos.error.JsonSchemaMismatch
 import com.mesosphere.cosmos.error.OptionsNotAllowed
-import com.mesosphere.cosmos.error.OptionsValidationFailure
-import com.mesosphere.cosmos.error.RenderedTemplateNotJson
 import com.mesosphere.cosmos.jsonschema.JsonSchema
 import com.mesosphere.cosmos.label
 import com.mesosphere.cosmos.model.StorageEnvelope
@@ -30,7 +29,8 @@ import java.io.StringWriter
 import java.io.Writer
 import java.nio.charset.StandardCharsets
 import java.util.Base64
-
+import com.mesosphere.cosmos.circe.Decoders
+import com.mesosphere.cosmos.error.MarathonTemplateMustBeJsonObject
 
 
 object PackageDefinitionRenderer {
@@ -62,8 +62,8 @@ object PackageDefinitionRenderer {
          */
         val mergedOptions = (
           defaultOptionsAndUserOptions ::
-            pkgDef.resourceJson.map(rj => JsonObject.singleton("resource", rj)).toList
-          ).foldLeft(JsonObject.empty)(JsonUtil.merge)
+          pkgDef.resourceJson.map(rj => JsonObject.singleton("resource", rj)).toList
+        ).foldLeft(JsonObject.empty)(JsonUtil.merge)
 
         renderTemplate(
           new String(ByteBuffers.getBytes(marathon.v2AppMustacheTemplate), StandardCharsets.UTF_8),
@@ -106,8 +106,8 @@ object PackageDefinitionRenderer {
     }
 
     parse(renderedJsonString).map(_.asObject) match {
-      case Left(pe)           => throw RenderedTemplateNotJson(pe.getMessage).exception
-      case Right(None)        => None
+      case Left(pe)           => throw CirceError(pe).exception
+      case Right(None)        => throw MarathonTemplateMustBeJsonObject.exception
       case Right(Some(obj))   => Some(obj)
     }
   }
@@ -168,11 +168,11 @@ object PackageDefinitionRenderer {
       case (Some(_), false) => true
       // Failure scenarios
       case (None, true) => {
-        throw OptionsNotAllowed("No schema available to validate the provided options").exception
+        throw OptionsNotAllowed().exception
       }
       case (Some(schema), true) =>
         JsonSchema.jsonObjectMatchesSchema(options, schema) match {
-          case Left(validationErrors) => throw OptionsValidationFailure(validationErrors).exception
+          case Left(validationErrors) => throw JsonSchemaMismatch(validationErrors).exception
           case Right(_) => true
         }
     }
@@ -207,7 +207,7 @@ object PackageDefinitionRenderer {
     // If marathon ever changes its schema for labels then this code will most likely need a
     // new version with this version left intact for backward compatibility reasons.
     obj.cursor.getOrElse[Map[String, String]]("labels")(Map.empty) match {
-      case Left(err) => throw InvalidLabelSchema(err.getMessage).exception
+      case Left(err) => throw CirceError(err).exception
       case Right(labels) => Some(Json.fromFields(labels.mapValues(_.asJson)))
     }
   }

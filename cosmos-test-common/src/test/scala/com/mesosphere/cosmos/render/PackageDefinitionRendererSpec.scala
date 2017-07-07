@@ -5,6 +5,8 @@ import com.mesosphere.cosmos.bijection.CosmosConversions._
 import com.mesosphere.cosmos.circe.Decoders.decode64
 import com.mesosphere.cosmos.circe.Decoders.parse
 import com.mesosphere.cosmos.circe.Decoders.parse64
+import com.mesosphere.cosmos.error.CosmosError
+import com.mesosphere.cosmos.error.CosmosError
 import com.mesosphere.cosmos.error._
 import com.mesosphere.cosmos.label
 import com.mesosphere.cosmos.model.StorageEnvelope
@@ -44,13 +46,13 @@ class PackageDefinitionRendererSpec extends FreeSpec with Matchers with TableDri
 
         val pd = packageDefinition(pkgDef)(mustache)
 
-        val exception = intercept[CosmosError](PackageDefinitionRenderer.renderMarathonV2App("http://someplace", pd, None, None))
+        val exception = intercept[CosmosException](PackageDefinitionRenderer.renderMarathonV2App("http://someplace", pd, None, None))
 
-        exception match {
-          case InvalidLabelSchema(err) =>
-            assertResult("String: El(DownField(idx),true,false),El(DownField(labels),true,false)")(err)
+        exception.error match {
+          case CirceError(err) =>
+            assertResult("String: El(DownField(idx),true,false),El(DownField(labels),true,false)")(err.getMessage)
           case _ =>
-            fail("expected InvalidLabelSchemaError")
+            fail("expected Circe Error")
         }
       }
     }
@@ -253,8 +255,8 @@ class PackageDefinitionRendererSpec extends FreeSpec with Matchers with TableDri
         )
       ).asObject.get
 
-      val exception = intercept[CosmosError](PackageDefinitionRenderer.renderMarathonV2App("http://someplace", pkg, Some(options), None))
-      assertResult(OptionsNotAllowed)(exception)
+      val exception = intercept[CosmosException](PackageDefinitionRenderer.renderMarathonV2App("http://someplace", pkg, Some(options), None))
+      assertResult(OptionsNotAllowed())(exception.error)
     }
 
     "result in error if rendered template is not valid json" in {
@@ -269,8 +271,8 @@ class PackageDefinitionRendererSpec extends FreeSpec with Matchers with TableDri
         marathon = Some(Marathon(mustacheBytes))
       )
 
-      val err = intercept[CosmosError](PackageDefinitionRenderer.renderMarathonV2App("http://someplace", pkg, None, None))
-      assert(err.isInstanceOf[jawn.IncompleteParseException])
+      val err = intercept[CosmosException](PackageDefinitionRenderer.renderMarathonV2App("http://someplace", pkg, None, None))
+      assert(err.error.message.equals("exhausted input"))
     }
 
     "result in error if rendered template is valid json but is not valid json object" in {
@@ -285,8 +287,8 @@ class PackageDefinitionRendererSpec extends FreeSpec with Matchers with TableDri
         marathon = Some(Marathon(mustacheBytes))
       )
 
-      val exception = intercept[CosmosError](PackageDefinitionRenderer.renderMarathonV2App("http://someplace", pkg, None, None))
-      assertResult(RenderedTemplateNotJson)(exception)
+      val exception = intercept[CosmosException](PackageDefinitionRenderer.renderMarathonV2App("http://someplace", pkg, None, None))
+      assertResult(MarathonTemplateMustBeJsonObject.message)(exception.getMessage)
     }
 
     "enforce appId is set to argument passed to argument if Some" in {
@@ -458,7 +460,7 @@ class PackageDefinitionRendererSpec extends FreeSpec with Matchers with TableDri
       PackageDefinitionRenderer.renderTemplate(
         template,
         context
-      ) shouldBe Right(
+      ) shouldBe Some(
         JsonObject.fromMap(
           Map(
             ("string", "\n\'\"\\\r\t\b\f".asJson),

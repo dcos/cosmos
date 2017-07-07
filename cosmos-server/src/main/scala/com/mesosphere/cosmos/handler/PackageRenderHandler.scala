@@ -17,8 +17,10 @@ private[cosmos] final class PackageRenderHandler(
   packageCache: PackageCollection
 ) extends EndpointHandler[RenderRequest, RenderResponse] {
 
-  override def apply(request: RenderRequest)(implicit
-                                             session: RequestSession
+  override def apply(
+    request: RenderRequest
+  )(
+    implicit session: RequestSession
   ): Future[RenderResponse] = {
     packageCache
       .getPackageByPackageVersion(
