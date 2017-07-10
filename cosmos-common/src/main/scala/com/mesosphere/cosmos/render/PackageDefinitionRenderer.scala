@@ -6,7 +6,7 @@ import com.github.mustachejava.DefaultMustacheFactory
 import com.mesosphere.cosmos.bijection.CosmosConversions._
 import com.mesosphere.cosmos.circe.Decoders.convertToExceptionOfCirceDecodingError
 import com.mesosphere.cosmos.circe.Decoders.populateCirceErrorMetaData
-import com.mesosphere.cosmos.error.CirceParsingError
+import com.mesosphere.cosmos.error.JsonParsingError
 import com.mesosphere.cosmos.error.JsonSchemaMismatch
 import com.mesosphere.cosmos.error.MarathonTemplateMustBeJsonObject
 import com.mesosphere.cosmos.error.OptionsNotAllowed
@@ -25,7 +25,6 @@ import com.netaporter.uri.Uri
 import com.twitter.bijection.Conversion.asMethod
 import io.circe.Json
 import io.circe.JsonObject
-import io.circe.ParsingFailure
 import io.circe.jawn.parse
 import io.circe.syntax._
 import java.io.StringReader
@@ -33,7 +32,6 @@ import java.io.StringWriter
 import java.io.Writer
 import java.nio.charset.StandardCharsets
 import java.util.Base64
-import jawn.ParseException
 
 
 object PackageDefinitionRenderer {
@@ -107,7 +105,7 @@ object PackageDefinitionRenderer {
 
     parse(renderedJsonString).map(_.asObject) match {
       case Left(pe)           =>
-        throw CirceParsingError(pe, populateCirceErrorMetaData(pe, renderedJsonString)).exception
+        throw JsonParsingError(pe, populateCirceErrorMetaData(pe, renderedJsonString)).exception
       case Right(None)        => throw MarathonTemplateMustBeJsonObject.exception
       case Right(Some(obj))   => obj
     }
@@ -209,7 +207,7 @@ object PackageDefinitionRenderer {
     // If marathon ever changes its schema for labels then this code will most likely need a
     // new version with this version left intact for backward compatibility reasons.
     val labels = convertToExceptionOfCirceDecodingError(
-      obj.cursor.getOrElse[Map[String, String]]("labels")(Map.empty))
+      obj.cursor.getOrElse[Map[String, String]]("labels")(Map.empty), obj.toString())
     Json.fromFields(labels.mapValues(_.asJson))
   }
 }
