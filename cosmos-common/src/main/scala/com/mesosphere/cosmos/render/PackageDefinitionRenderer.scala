@@ -4,8 +4,9 @@ import cats.syntax.either._
 import com.github.fge.jsonschema.main.JsonSchemaFactory
 import com.github.mustachejava.DefaultMustacheFactory
 import com.mesosphere.cosmos.bijection.CosmosConversions._
-import com.mesosphere.cosmos.circe.Decoders.convertToExceptionOfCirceError
-import com.mesosphere.cosmos.error.CirceError
+import com.mesosphere.cosmos.circe.Decoders.convertToExceptionOfCirceDecodingError
+import com.mesosphere.cosmos.circe.Decoders.populateCirceErrorMetaData
+import com.mesosphere.cosmos.error.CirceParsingError
 import com.mesosphere.cosmos.error.JsonSchemaMismatch
 import com.mesosphere.cosmos.error.MarathonTemplateMustBeJsonObject
 import com.mesosphere.cosmos.error.OptionsNotAllowed
@@ -24,6 +25,7 @@ import com.netaporter.uri.Uri
 import com.twitter.bijection.Conversion.asMethod
 import io.circe.Json
 import io.circe.JsonObject
+import io.circe.ParsingFailure
 import io.circe.jawn.parse
 import io.circe.syntax._
 import java.io.StringReader
@@ -31,6 +33,7 @@ import java.io.StringWriter
 import java.io.Writer
 import java.nio.charset.StandardCharsets
 import java.util.Base64
+import jawn.ParseException
 
 
 object PackageDefinitionRenderer {
@@ -103,7 +106,8 @@ object PackageDefinitionRenderer {
     }
 
     parse(renderedJsonString).map(_.asObject) match {
-      case Left(pe)           => throw CirceError(pe).exception
+      case Left(pe)           =>
+        throw CirceParsingError(pe, populateCirceErrorMetaData(pe, renderedJsonString)).exception
       case Right(None)        => throw MarathonTemplateMustBeJsonObject.exception
       case Right(Some(obj))   => obj
     }
@@ -113,6 +117,7 @@ object PackageDefinitionRenderer {
     val bytes = JsonUtil.dropNullKeysPrinter.pretty(json).getBytes(StandardCharsets.UTF_8)
     Base64.getEncoder.encodeToString(bytes)
   }
+
 
   private[this] def nonOverridableLabels(
     pkg: universe.v4.model.PackageDefinition,
@@ -203,7 +208,8 @@ object PackageDefinitionRenderer {
     // the user know here where we can craft a more informational error message.
     // If marathon ever changes its schema for labels then this code will most likely need a
     // new version with this version left intact for backward compatibility reasons.
-    val labels = convertToExceptionOfCirceError(obj.cursor.getOrElse[Map[String, String]]("labels")(Map.empty))
+    val labels = convertToExceptionOfCirceDecodingError(
+      obj.cursor.getOrElse[Map[String, String]]("labels")(Map.empty))
     Json.fromFields(labels.mapValues(_.asJson))
   }
 }

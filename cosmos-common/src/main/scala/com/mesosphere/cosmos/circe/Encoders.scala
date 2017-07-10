@@ -18,10 +18,10 @@ import org.jboss.netty.handler.codec.http.HttpMethod
 
 object Encoders {
 
-  /*
+
   implicit val exceptionEncoder: Encoder[Exception] = {
     Encoder.instance { e => exceptionErrorResponse(e).asJson }
-  }*/
+  }
 
   implicit val encodeStatus: Encoder[Status] = Encoder.encodeInt.contramap(_.code)
   implicit val encodeMediaType: Encoder[MediaType] = Encoder.encodeString.contramap(_.show)

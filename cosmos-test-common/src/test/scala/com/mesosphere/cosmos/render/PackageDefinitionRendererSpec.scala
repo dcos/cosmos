@@ -5,7 +5,8 @@ import com.mesosphere.cosmos.bijection.CosmosConversions._
 import com.mesosphere.cosmos.circe.Decoders.decode64
 import com.mesosphere.cosmos.circe.Decoders.parse
 import com.mesosphere.cosmos.circe.Decoders.parse64
-import com.mesosphere.cosmos.error.CirceError
+import com.mesosphere.cosmos.error.CirceDecodingError
+import com.mesosphere.cosmos.error.CirceParsingError
 import com.mesosphere.cosmos.error.CosmosException
 import com.mesosphere.cosmos.error.MarathonTemplateMustBeJsonObject
 import com.mesosphere.cosmos.error.OptionsNotAllowed
@@ -51,7 +52,7 @@ class PackageDefinitionRendererSpec extends FreeSpec with Matchers with TableDri
         val exception = intercept[CosmosException](PackageDefinitionRenderer.renderMarathonV2App("http://someplace", pd, None, None))
 
         exception.error match {
-          case CirceError(err) =>
+          case CirceDecodingError(err) =>
             assertResult("String: El(DownField(idx),true,false),El(DownField(labels),true,false)")(err.getMessage)
           case _ =>
             fail("expected Circe Error")
@@ -274,7 +275,7 @@ class PackageDefinitionRendererSpec extends FreeSpec with Matchers with TableDri
       )
 
       val exception = intercept[CosmosException](PackageDefinitionRenderer.renderMarathonV2App("http://someplace", pkg, None, None))
-      exception.error shouldBe a[CirceError]
+      exception.error shouldBe a[CirceParsingError]
       assertResult(exception.error.message)("exhausted input")
     }
 
