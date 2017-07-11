@@ -12,6 +12,7 @@ import io.circe.ParsingFailure
 import java.nio.charset.StandardCharsets
 import java.util.Base64
 import scala.reflect.ClassTag
+import scala.reflect.classTag
 
 object Decoders {
 
@@ -39,9 +40,6 @@ object Decoders {
   def parse64(value: String): Json = {
     parse(base64DecodeString(value))
   }
-  import scala.reflect.ClassTag
-  import scala.reflect._
-  import scala.reflect.runtime.universe._
 
   def convertToExceptionOfACosmosError[T: ClassTag](
     result: Either[Error, T],
@@ -51,21 +49,10 @@ object Decoders {
     case Left(ParsingFailure(message, underlying)) =>
       throw JsonParsingError(underlying.getClass.getName, message, inputValue).exception
     case Left(DecodingFailure(message, _)) =>
-      val l = classTag[T].runtimeClass.getName()
-      throw JsonDecodingError(l, message, inputValue).exception
+      throw JsonDecodingError(classTag[T].runtimeClass.getName(), message, inputValue).exception
   }
 
   private[this] def base64DecodeString(value: String): String = {
     new String(Base64.getDecoder.decode(value), StandardCharsets.UTF_8)
   }
-
-  def updateObject[T: ClassTag](result: Either[Error, T]): String = {
-    classTag[T].runtimeClass.getCanonicalName
-  }
-
-  def newInstance[T: TypeTag](result: Either[Error, T]): String = {
-    val clazz = typeTag[T].mirror.runtimeClass(typeOf[T])
-    clazz.newInstance.asInstanceOf[T].toString
-  }
-
 }
