@@ -4,8 +4,7 @@ import cats.syntax.either._
 import com.github.fge.jsonschema.main.JsonSchemaFactory
 import com.github.mustachejava.DefaultMustacheFactory
 import com.mesosphere.cosmos.bijection.CosmosConversions._
-import com.mesosphere.cosmos.circe.Decoders.convertToExceptionOfCirceDecodingError
-import com.mesosphere.cosmos.circe.Decoders.populateCirceErrorMetaData
+import com.mesosphere.cosmos.circe.Decoders.convertToExceptionOfACosmosError
 import com.mesosphere.cosmos.error.JsonParsingError
 import com.mesosphere.cosmos.error.JsonSchemaMismatch
 import com.mesosphere.cosmos.error.MarathonTemplateMustBeJsonObject
@@ -33,11 +32,10 @@ import java.io.Writer
 import java.nio.charset.StandardCharsets
 import java.util.Base64
 
-
 object PackageDefinitionRenderer {
   private[this] final val MustacheFactory = new DefaultMustacheFactory {
-    /* The encode method for DefaultMustacheFactory does HTML based encoding. We are not generating HTML.
-     * This disables it and just passes the raw value along.
+    /* The encode method for DefaultMustacheFactory does HTML based encoding.
+     * We are not generating HTML. This disables it and just passes the raw value along.
      */
     override def encode(value: String, writer: Writer): Unit = {
       writer.write(value)
@@ -105,7 +103,9 @@ object PackageDefinitionRenderer {
 
     parse(renderedJsonString).map(_.asObject) match {
       case Left(pe)           =>
-        throw JsonParsingError(pe, populateCirceErrorMetaData(pe, renderedJsonString)).exception
+        throw JsonParsingError(pe.underlying.getClass.getName,
+          pe.message,
+          renderedJsonString).exception
       case Right(None)        => throw MarathonTemplateMustBeJsonObject.exception
       case Right(Some(obj))   => obj
     }
@@ -206,7 +206,7 @@ object PackageDefinitionRenderer {
     // the user know here where we can craft a more informational error message.
     // If marathon ever changes its schema for labels then this code will most likely need a
     // new version with this version left intact for backward compatibility reasons.
-    val labels = convertToExceptionOfCirceDecodingError(
+    val labels = convertToExceptionOfACosmosError(
       obj.cursor.getOrElse[Map[String, String]]("labels")(Map.empty), obj.toString())
     Json.fromFields(labels.mapValues(_.asJson))
   }

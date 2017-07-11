@@ -18,7 +18,6 @@ import org.jboss.netty.handler.codec.http.HttpMethod
 
 object Encoders {
 
-
   implicit val exceptionEncoder: Encoder[Exception] = {
     Encoder.instance { e => exceptionErrorResponse(e).asJson }
   }

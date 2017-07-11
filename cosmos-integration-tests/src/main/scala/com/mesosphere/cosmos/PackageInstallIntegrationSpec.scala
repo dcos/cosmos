@@ -43,6 +43,44 @@ final class PackageInstallIntegrationSpec extends FreeSpec with BeforeAndAfterAl
 
   "The package install endpoint" - {
 
+
+    "installs an invalid package config and throws and error v1" in {
+      val errorResponse = ErrorResponse(
+        "CirceParsingError",
+        s"Unable to parse the json at line 3",
+        Some(JsonObject.fromMap(Map(
+          "packageName" -> "helloworld-invalid".asJson,
+          "packageVersion" -> "1.0.0".asJson
+        )))
+      )
+
+      installPackageAndAssert(
+        InstallRequest("helloworld-invalid", packageVersion = Some(PackageDetailsVersion("1.0.0"))),
+        expectedResult = InstallFailure(Status.BadRequest, errorResponse),
+        preInstallState = Anything,
+        postInstallState = Unchanged
+      )
+    }
+
+    "installs an invalid package config and throws and error v2" in {
+      val errorResponse = ErrorResponse(
+        "MarathonBadResponse",
+        s"Invalid JSON",
+        Some(JsonObject.fromMap(Map(
+          "packageName" -> "helloworld-invalid".asJson,
+          "packageVersion" -> "1.0.0".asJson
+        )))
+      )
+
+
+      installPackageAndAssert(
+        InstallRequest("helloworld-invalid", packageVersion = Some(PackageDetailsVersion("2.0.0"))),
+        expectedResult = InstallFailure(Status.BadRequest, errorResponse),
+        preInstallState = Anything,
+        postInstallState = Unchanged
+      )
+    }
+
     "reports an error if the requested package is not in the cache" in {
       forAll (PackageTable) { (packageName, _) =>
         val errorResponse = ErrorResponse(

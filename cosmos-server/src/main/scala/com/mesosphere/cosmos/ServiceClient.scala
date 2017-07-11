@@ -18,6 +18,7 @@ import com.twitter.finagle.http.Status
 import com.twitter.io.Buf
 import com.twitter.util.Future
 import org.jboss.netty.handler.codec.http.HttpMethod
+import scala.reflect.ClassTag
 
 abstract class ServiceClient(baseUri: Uri) {
 
@@ -66,7 +67,7 @@ abstract class ServiceClient(baseUri: Uri) {
     }
   }
 
-  protected def decodeJsonTo[A](response: Response)(implicit d: Decoder[A]): A = {
+  protected def decodeJsonTo[A: ClassTag](response: Response)(implicit d: Decoder[A]): A = {
     response.headerMap.get(Fields.ContentType) match {
       case Some(ct) =>
         http.MediaType.parse(ct).map { mediaType =>
@@ -86,7 +87,8 @@ abstract class ServiceClient(baseUri: Uri) {
     }
   }
 
-  protected def decodeTo[A](method: HttpMethod, uri: Uri, response: Response)(implicit d: Decoder[A]): Future[A] = {
+  protected def decodeTo[A: Decoder : ClassTag](method: HttpMethod, uri: Uri, response: Response):
+  Future[A] = {
     validateResponseStatus(method, uri, response)
       .map(decodeJsonTo[A])
   }
