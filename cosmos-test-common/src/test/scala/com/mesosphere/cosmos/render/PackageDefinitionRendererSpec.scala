@@ -54,7 +54,7 @@ class PackageDefinitionRendererSpec extends FreeSpec with Matchers with TableDri
           case js : JsonDecodingError =>
             assertResult("Unable to decode the JSON value as a String")(js.message)
           case _ =>
-            fail("expected JsonDecodingErrorit")
+            fail("expected JsonDecodingError")
         }
       }
     }
