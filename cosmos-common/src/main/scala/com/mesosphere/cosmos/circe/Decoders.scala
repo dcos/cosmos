@@ -49,7 +49,7 @@ object Decoders {
     case Left(ParsingFailure(message, underlying)) =>
       throw JsonParsingError(underlying.getClass.getName, message, inputValue).exception
     case Left(DecodingFailure(message, _)) =>
-      throw JsonDecodingError(classTag[T].runtimeClass.getName(), message, inputValue).exception
+      throw JsonDecodingError(classTag[T].runtimeClass.getName, message, inputValue).exception
   }
 
   private[this] def base64DecodeString(value: String): String = {

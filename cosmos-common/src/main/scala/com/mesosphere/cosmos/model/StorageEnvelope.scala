@@ -5,7 +5,10 @@ import com.mesosphere.cosmos.circe.Decoders.mediaTypedDecode
 import com.mesosphere.cosmos.finch.MediaTypedDecoder
 import com.mesosphere.cosmos.finch.MediaTypedEncoder
 import com.mesosphere.cosmos.http.MediaType
+import com.mesosphere.cosmos.http.MediaTypeOps
 import com.mesosphere.universe.common.ByteBuffers
+import com.mesosphere.universe.common.circe.Decoders.decodeByteBuffer
+import com.mesosphere.universe.common.circe.Encoders.encodeByteBuffer
 import com.twitter.finagle.http.Fields
 import com.twitter.io.StreamIO
 import io.circe.Decoder
@@ -19,6 +22,7 @@ import java.nio.charset.StandardCharsets
 import java.util.zip.GZIPInputStream
 import java.util.zip.GZIPOutputStream
 import scala.reflect.ClassTag
+
 
 final case class StorageEnvelope private (metadata: Map[String, String], data: ByteBuffer) {
   def decodeData[T: MediaTypedDecoder : ClassTag]: T = {
