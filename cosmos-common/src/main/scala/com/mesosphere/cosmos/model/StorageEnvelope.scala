@@ -5,7 +5,6 @@ import com.mesosphere.cosmos.circe.Decoders.mediaTypedDecode
 import com.mesosphere.cosmos.finch.MediaTypedDecoder
 import com.mesosphere.cosmos.finch.MediaTypedEncoder
 import com.mesosphere.cosmos.http.MediaType
-import com.mesosphere.cosmos.http.MediaTypeOps
 import com.mesosphere.universe.common.ByteBuffers
 import com.mesosphere.universe.common.circe.Decoders.decodeByteBuffer
 import com.mesosphere.universe.common.circe.Encoders.encodeByteBuffer
