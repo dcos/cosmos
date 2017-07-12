@@ -52,7 +52,7 @@ class PackageDefinitionRendererSpec extends FreeSpec with Matchers with TableDri
 
         exception.error match {
           case js : JsonDecodingError =>
-            assertResult("Unable to decode the JSON value as a String")(js.message)
+            assertResult("Unable to decode the JSON value as a scala.collection.immutable.Map")(js.message)
           case _ =>
             fail("expected JsonDecodingError")
         }
