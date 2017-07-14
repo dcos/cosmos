@@ -87,7 +87,7 @@ abstract class ServiceClient(baseUri: Uri) {
     }
   }
 
-  protected def decodeTo[A: Decoder : ClassTag](
+  protected def decodeTo[A: Decoder: ClassTag](
     method: HttpMethod,
     uri: Uri,
     response: Response

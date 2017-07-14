@@ -16,7 +16,7 @@ import scala.reflect.classTag
 
 object Decoders {
 
-  def decode[T: Decoder : ClassTag](value: String): T = {
+  def decode[T: Decoder: ClassTag](value: String): T = {
     convertToCosmosException(io.circe.jawn.decode[T](value), value)
   }
 

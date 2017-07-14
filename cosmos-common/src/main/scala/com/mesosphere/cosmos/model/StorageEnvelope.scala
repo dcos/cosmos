@@ -24,7 +24,7 @@ import scala.reflect.ClassTag
 
 
 final case class StorageEnvelope private (metadata: Map[String, String], data: ByteBuffer) {
-  def decodeData[T: MediaTypedDecoder : ClassTag]: T = {
+  def decodeData[T: MediaTypedDecoder: ClassTag]: T = {
     val contentType = metadata.get(Fields.ContentType).flatMap { contentTypeValue =>
       MediaType.parse(contentTypeValue).toOption
     } getOrElse {
@@ -89,7 +89,7 @@ object StorageEnvelope {
     StorageEnvelope(data).asJson.noSpaces.getBytes(StandardCharsets.UTF_8)
   }
 
-  def decodeData[T: MediaTypedDecoder : ClassTag](data: Array[Byte]): T = {
+  def decodeData[T: MediaTypedDecoder: ClassTag](data: Array[Byte]): T = {
     decode[StorageEnvelope](new String(data, StandardCharsets.UTF_8)).decodeData
   }
 
