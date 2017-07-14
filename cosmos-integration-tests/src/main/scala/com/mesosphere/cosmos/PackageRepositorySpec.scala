@@ -89,7 +89,7 @@ class PackageRepositorySpec
       assertResult(Status.BadRequest)(status)
       info(expected.message)
     }
-    scenario("the user should be able to add a repository at the end of the list") {
+    scenario("the user should be able to add a repository at the end of the list using an index") {
       val uri = "https://github.com/mesosphere/universe/archive/cli-test-4.zip"
       val name = "bounds"
       val index = defaultRepositories.size

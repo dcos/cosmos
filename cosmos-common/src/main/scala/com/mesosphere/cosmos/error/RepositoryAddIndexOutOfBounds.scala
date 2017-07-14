@@ -6,7 +6,10 @@ import io.circe.generic.semiauto.deriveEncoder
 
 final case class RepositoryAddIndexOutOfBounds(attempted: Int, max: Int) extends CosmosError {
   override def data: Option[JsonObject] = CosmosError.deriveData(this)
-  override def message: String = s"Index ($attempted) is out of range. Index value must be between 0 and $max inclusive."
+  override def message: String = s"Index ($attempted) is out of range. Index value " + s"${
+      if (max == 0) "can be at most 0"
+      else s"must be between 0 and $max inclusive."
+  }"
 }
 
 object RepositoryAddIndexOutOfBounds {
