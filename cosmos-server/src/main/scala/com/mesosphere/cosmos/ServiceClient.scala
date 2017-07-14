@@ -87,8 +87,11 @@ abstract class ServiceClient(baseUri: Uri) {
     }
   }
 
-  protected def decodeTo[A: Decoder : ClassTag](method: HttpMethod, uri: Uri, response: Response):
-  Future[A] = {
+  protected def decodeTo[A: Decoder : ClassTag](
+    method: HttpMethod,
+    uri: Uri,
+    response: Response
+  ): Future[A] = {
     validateResponseStatus(method, uri, response)
       .map(decodeJsonTo[A])
   }

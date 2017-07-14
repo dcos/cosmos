@@ -17,7 +17,7 @@ import scala.reflect.classTag
 object Decoders {
 
   def decode[T: Decoder : ClassTag](value: String): T = {
-    convertToExceptionOfACosmosError(io.circe.jawn.decode[T](value), value)
+    convertToCosmosException(io.circe.jawn.decode[T](value), value)
   }
 
   def mediaTypedDecode[T: ClassTag](
@@ -26,11 +26,11 @@ object Decoders {
   )(
     implicit decoder: MediaTypedDecoder[T]
   ): T = {
-    convertToExceptionOfACosmosError(decoder(parse(value).hcursor, mediaType), value)
+    convertToCosmosException(decoder(parse(value).hcursor, mediaType), value)
   }
 
   def parse(value: String): Json = {
-    convertToExceptionOfACosmosError(io.circe.jawn.parse(value), value)
+    convertToCosmosException(io.circe.jawn.parse(value), value)
   }
 
   def decode64[T: Decoder: ClassTag](value: String): T = {
@@ -41,7 +41,7 @@ object Decoders {
     parse(base64DecodeString(value))
   }
 
-  def convertToExceptionOfACosmosError[T: ClassTag](
+  def convertToCosmosException[T: ClassTag](
     result: Either[Error, T],
     inputValue: String
   ): T = result match {

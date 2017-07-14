@@ -1,11 +1,10 @@
 package com.mesosphere.cosmos.render
 
-import cats.syntax.either._
 import com.github.fge.jsonschema.main.JsonSchemaFactory
 import com.github.mustachejava.DefaultMustacheFactory
 import com.mesosphere.cosmos.bijection.CosmosConversions._
-import com.mesosphere.cosmos.circe.Decoders.convertToExceptionOfACosmosError
-import com.mesosphere.cosmos.error.JsonParsingError
+import com.mesosphere.cosmos.circe.Decoders.convertToCosmosException
+import com.mesosphere.cosmos.circe.Decoders.parse
 import com.mesosphere.cosmos.error.JsonSchemaMismatch
 import com.mesosphere.cosmos.error.MarathonTemplateMustBeJsonObject
 import com.mesosphere.cosmos.error.OptionsNotAllowed
@@ -24,7 +23,6 @@ import com.netaporter.uri.Uri
 import com.twitter.bijection.Conversion.asMethod
 import io.circe.Json
 import io.circe.JsonObject
-import io.circe.jawn.parse
 import io.circe.syntax._
 import java.io.StringReader
 import java.io.StringWriter
@@ -101,13 +99,9 @@ object PackageDefinitionRenderer {
       output.toString
     }
 
-    parse(renderedJsonString).map(_.asObject) match {
-      case Left(pe)           =>
-        throw JsonParsingError(pe.underlying.getClass.getName,
-          pe.message,
-          renderedJsonString).exception
-      case Right(None)        => throw MarathonTemplateMustBeJsonObject.exception
-      case Right(Some(obj))   => obj
+    parse(renderedJsonString).asObject match {
+      case None => throw MarathonTemplateMustBeJsonObject.exception
+      case Some(json) => json
     }
   }
 
@@ -206,8 +200,10 @@ object PackageDefinitionRenderer {
     // the user know here where we can craft a more informational error message.
     // If marathon ever changes its schema for labels then this code will most likely need a
     // new version with this version left intact for backward compatibility reasons.
-    val labels = convertToExceptionOfACosmosError(
-      obj.cursor.getOrElse[Map[String, String]]("labels")(Map.empty), obj.toString())
+    val labels = convertToCosmosException(
+      obj.cursor.getOrElse[Map[String, String]]("labels")(Map.empty),
+      obj.noSpaces
+    )
     Json.fromFields(labels.mapValues(_.asJson))
   }
 }
