@@ -89,6 +89,18 @@ class PackageRepositorySpec
       assertResult(Status.BadRequest)(status)
       info(expected.message)
     }
+    scenario("the user should be able to add a repository at the end of the list") {
+      val uri = "https://github.com/mesosphere/universe/archive/cli-test-4.zip"
+      val name = "bounds"
+      val index = defaultRepositories.size
+      val repository = rpc.v1.model.PackageRepository(name, uri)
+      val (status, actual) = ItUtil.addRepositoryEither(repository, Some(index))
+      val expected = rpc.v1.model.PackageRepositoryAddResponse(
+        originalRepositories :+ repository
+      )
+      assertResult(Right(expected))(actual)
+      assertResult(Status.Ok)(status)
+    }
     scenario("the user should receive an error when trying to add a repository out of bounds") {
       val uri = "https://github.com/mesosphere/universe/archive/cli-test-4.zip"
       val name = "bounds"
@@ -97,7 +109,7 @@ class PackageRepositorySpec
       val (status, actual) = ItUtil.addRepositoryEither(repository, Some(index))
       val expected = RepositoryAddIndexOutOfBounds(
         attempted = index,
-        max = defaultRepositories.size - 1
+        max = defaultRepositories.size
       ).exception.errorResponse
       assertResult(Left(expected))(actual)
       assertResult(Status.BadRequest)(status)

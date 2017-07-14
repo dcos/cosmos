@@ -181,7 +181,7 @@ final class ZkRepositoryList private (
         val (leftSources, rightSources) = list.splitAt(i)
         leftSources ++ (elem :: rightSources)
       case Some(i) =>
-        throw RepositoryAddIndexOutOfBounds(i, list.size - 1).exception
+        throw RepositoryAddIndexOutOfBounds(i, list.size).exception
       case None =>
         list :+ elem
     }
