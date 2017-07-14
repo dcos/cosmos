@@ -56,6 +56,7 @@ class PackageRepositorySpec
   }
 
   feature("The package/repository/add endpoint") {
+
     scenario("the user would like to add a repository at the default priority (lowest priority)") {
       val uri = "https://github.com/mesosphere/universe/archive/cli-test-4.zip"
       val name = "cli-test-4"
@@ -67,6 +68,7 @@ class PackageRepositorySpec
       assertResult(Right(expected))(actual)
       assertResult(Status.Ok)(status)
     }
+
     scenario("the user would like to add a repository at a specific priority") {
       val uri = "https://github.com/mesosphere/universe/archive/cli-test-4.zip"
       val name = "cli-test-4"
@@ -79,6 +81,7 @@ class PackageRepositorySpec
       assertResult(Right(expected))(actual)
       assertResult(Status.Ok)(status)
     }
+
     scenario("the user should receive an error when trying to add a duplicated repository") {
       val repository = defaultRepositories.head.copy(name = "dup")
       val expected = RepositoryAlreadyPresent(
@@ -89,6 +92,7 @@ class PackageRepositorySpec
       assertResult(Status.BadRequest)(status)
       info(expected.message)
     }
+
     scenario("the user should be able to add a repository at the end of the list using an index") {
       val uri = "https://github.com/mesosphere/universe/archive/cli-test-4.zip"
       val name = "bounds"
@@ -115,6 +119,7 @@ class PackageRepositorySpec
       assertResult(Status.BadRequest)(status)
       info(expected.message)
     }
+
     scenario("Issue #204: the user should receive an error when trying to add a repository with a broken uri") {
       val uri = "http://fake.fake"
       val name = "unreachable"
@@ -128,6 +133,7 @@ class PackageRepositorySpec
       assertResult(Status.BadRequest)(status)
       info(expected.message)
     }
+
     scenario("Issue #219: the user should receive an error when trying to add a repository " +
       "with a bad file layout") {
       // TODO: Use a more reliable URI
@@ -140,6 +146,7 @@ class PackageRepositorySpec
       assertResult(Status.BadRequest)(status)
       info(expected.message)
     }
+
     scenario("Issue #219: the user should receive an error when trying to add a repository " +
       "that is a non-zip-encoded repository bundle") {
       // TODO: Use a more reliable URI
@@ -157,6 +164,7 @@ class PackageRepositorySpec
       assertResult(Status.BadRequest)(status)
       info(expected.message)
     }
+
     scenario("the user should receive an error when trying to add a non-repository") {
       val uri = "https://www.mesosphere.com/uontehusantoehusanth"
       val name = "not-repository"
@@ -171,6 +179,7 @@ class PackageRepositorySpec
       assertResult(Status.BadRequest)(status)
       info(expected.message)
     }
+
     scenario("Issue #209: the user must receive an error when adding an unsupported repository version") {
       val name = "old-versioned-repository"
       val uri = "https://github.com/mesosphere/universe/archive/version-1.x.zip"
@@ -182,6 +191,7 @@ class PackageRepositorySpec
       assertResult(Status.BadRequest)(status)
       info(expected.message)
     }
+
     scenario("the user must receive an error when trying to add " +
       "a repository with an unsupported protocol") {
       val name = "unsupported"
@@ -196,6 +206,7 @@ class PackageRepositorySpec
   }
 
   feature("The package/repository/delete endpoint") {
+
     scenario("the user would like to delete a repository by name") {
       val deletedRepository = defaultRepositories.head
       val remainingRepositories = defaultRepositories.tail
@@ -208,6 +219,7 @@ class PackageRepositorySpec
       assertResult(Right(expected))(actual)
       assertResult(Status.Ok)(status)
     }
+
     scenario("the user would like to delete a repository by uri") {
       val deletedRepository = defaultRepositories.head
       val remainingRepositories = defaultRepositories.tail
@@ -218,6 +230,7 @@ class PackageRepositorySpec
       assertResult(Right(expected))(actual)
       assertResult(Status.Ok)(status)
     }
+
     scenario("Issue #200: the user should receive an error when trying to delete a non-existent repository") {
       val name = "does-not-exist"
       val expected = RepositoryNotPresent(
@@ -227,8 +240,8 @@ class PackageRepositorySpec
       assertResult(Left(expected))(actual)
       assertResult(Status.BadRequest)(status)
       info(expected.message)
-
     }
+
     scenario("the user should receive an error when nether name nor uri are specified") {
       val (status, actual) = ItUtil.deleteRepositoryEither()
       val expected = RepoNameOrUriMissing().exception.errorResponse
@@ -236,6 +249,7 @@ class PackageRepositorySpec
       assertResult(Status.BadRequest)(status)
       info(expected.message)
     }
+
     scenario("the user should receive an error when trying to delete " +
       "a repository whose name exists but uri does not match") {
       val repository = defaultRepositories.head
@@ -251,6 +265,7 @@ class PackageRepositorySpec
       assertResult(Status.BadRequest)(status)
       info(expected.message)
     }
+
   }
 
   def insert[T](seq: Seq[T], index: Int, value: T): Seq[T] = {
