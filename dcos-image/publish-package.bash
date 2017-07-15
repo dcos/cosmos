@@ -90,4 +90,3 @@ if [[ ${1:-} ]] && declare -F | cut -d' ' -f3 | fgrep -qx -- "${1:-}"
 then "$@"
 else package
 fi
-
