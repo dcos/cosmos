@@ -1,34 +1,39 @@
 package com.mesosphere.cosmos.circe
 
-import com.mesosphere.cosmos.error.CirceError
+import com.mesosphere.cosmos.error.JsonDecodingError
+import com.mesosphere.cosmos.error.JsonParsingError
 import com.mesosphere.cosmos.finch.MediaTypedDecoder
 import com.mesosphere.cosmos.http.MediaType
 import io.circe.Decoder
+import io.circe.DecodingFailure
 import io.circe.Error
 import io.circe.Json
+import io.circe.ParsingFailure
 import java.nio.charset.StandardCharsets
 import java.util.Base64
+import scala.reflect.ClassTag
+import scala.reflect.classTag
 
 object Decoders {
 
-  def decode[T: Decoder](value: String): T = {
-    convertToExceptionOfCirceError(io.circe.jawn.decode[T](value))
+  def decode[T: Decoder: ClassTag](value: String): T = {
+    convertToCosmosException(io.circe.jawn.decode[T](value), value)
   }
 
-  def mediaTypedDecode[T](
+  def mediaTypedDecode[T: ClassTag](
     value: String,
     mediaType: MediaType
   )(
     implicit decoder: MediaTypedDecoder[T]
   ): T = {
-    convertToExceptionOfCirceError(decoder(parse(value).hcursor, mediaType))
+    convertToCosmosException(decoder(parse(value).hcursor, mediaType), value)
   }
 
   def parse(value: String): Json = {
-    convertToExceptionOfCirceError(io.circe.jawn.parse(value))
+    convertToCosmosException(io.circe.jawn.parse(value), value)
   }
 
-  def decode64[T: Decoder](value: String): T = {
+  def decode64[T: Decoder: ClassTag](value: String): T = {
     decode[T](base64DecodeString(value))
   }
 
@@ -36,13 +41,18 @@ object Decoders {
     parse(base64DecodeString(value))
   }
 
-  def convertToExceptionOfCirceError[T](result: Either[Error, T]): T = result match {
-    case Right(result) => result
-    case Left(error) => throw CirceError(error).exception
+  def convertToCosmosException[T: ClassTag](
+    result: Either[Error, T],
+    inputValue: String
+  ): T = result match {
+    case Right(value) => value
+    case Left(ParsingFailure(message, underlying)) =>
+      throw JsonParsingError(underlying.getClass.getName, message, inputValue).exception
+    case Left(DecodingFailure(message, _)) =>
+      throw JsonDecodingError(classTag[T].runtimeClass.getName, message, inputValue).exception
   }
 
   private[this] def base64DecodeString(value: String): String = {
     new String(Base64.getDecoder.decode(value), StandardCharsets.UTF_8)
   }
-
 }

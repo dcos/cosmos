@@ -3,7 +3,7 @@ package com.mesosphere.cosmos.handler
 import com.mesosphere.cosmos.AdminRouter
 import com.mesosphere.cosmos.circe.Decoders
 import com.mesosphere.cosmos.error.AmbiguousAppId
-import com.mesosphere.cosmos.error.CirceError
+import com.mesosphere.cosmos.error.JsonParsingError
 import com.mesosphere.cosmos.error.CosmosException
 import com.mesosphere.cosmos.error.FailedToStartUninstall
 import com.mesosphere.cosmos.error.IncompleteUninstall
@@ -156,7 +156,7 @@ private[cosmos] final class UninstallHandler(
           ).exception
       }
     } catch {
-      case ex: CosmosException if ex.error.isInstanceOf[CirceError] =>
+      case ex: CosmosException if ex.error.isInstanceOf[JsonParsingError] =>
         throw FailedToStartUninstall(op.appId, DeploymentIdErrorMessage.format(content)).exception
     }
   }
