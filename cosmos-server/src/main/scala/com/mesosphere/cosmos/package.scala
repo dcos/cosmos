@@ -15,27 +15,19 @@ package object cosmos {
   implicit val globalTimer: Timer = new ScheduledThreadPoolTimer()
 
   def getHttpInterface: Option[InetSocketAddress] = {
-    httpInterface().orElse(
-      _root_.io.github.benwhitehead.finch.httpInterface()
-    )
+    httpInterface()
   }
 
   def getHttpsInterface: Option[InetSocketAddress] = {
-    httpsInterface.getWithDefault.orElse(
-      _root_.io.github.benwhitehead.finch.httpsInterface.getWithDefault
-    )
+    httpsInterface.getWithDefault
   }
 
   def getCertificatePath: Option[Path] = {
-    certificatePath.getWithDefault.orElse(
-      _root_.io.github.benwhitehead.finch.certificatePath.getWithDefault
-    )
+    certificatePath.getWithDefault
   }
 
   def getKeyPath: Option[Path] = {
-    keyPath.getWithDefault.orElse(
-      _root_.io.github.benwhitehead.finch.keyPath.getWithDefault
-    )
+    keyPath.getWithDefault
   }
 }
 
@@ -70,7 +62,7 @@ package cosmos {
   )
 
   object httpInterface extends GlobalFlag[Option[InetSocketAddress]](
-    None,
+    Some(new InetSocketAddress("127.0.0.1", 7070)), //scalastyle:ignore magic.number
     "The TCP Interface and port for the http server {[<hostname/ip>]:port}. (Set to " +
     "empty value to disable)"
   )
