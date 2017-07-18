@@ -13,22 +13,6 @@ import java.nio.file.Path
 
 package object cosmos {
   implicit val globalTimer: Timer = new ScheduledThreadPoolTimer()
-
-  def getHttpInterface: Option[InetSocketAddress] = {
-    httpInterface()
-  }
-
-  def getHttpsInterface: Option[InetSocketAddress] = {
-    httpsInterface.getWithDefault
-  }
-
-  def getCertificatePath: Option[Path] = {
-    certificatePath.getWithDefault
-  }
-
-  def getKeyPath: Option[Path] = {
-    keyPath.getWithDefault
-  }
 }
 
 /* A flag's name is the fully-qualified classname. GlobalFlag doesn't support package object. We
