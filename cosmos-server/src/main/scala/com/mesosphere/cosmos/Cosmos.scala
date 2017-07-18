@@ -358,8 +358,8 @@ object CosmosApp {
         .server
         .configured(Label("https"))
         .withTransport.tls(
-          certificatePath.getWithDefault.get.toString,
-          keyPath.getWithDefault.get.toString,
+          certificatePath().toString,
+          keyPath().toString,
           None,
           None,
           None
