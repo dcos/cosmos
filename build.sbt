@@ -3,6 +3,7 @@ import com.mesosphere.cosmos.Deps
 
 lazy val cosmos = project.in(file("."))
   .settings(sharedSettings)
+  .settings(testResultLogger in (Test, test) := TestResultLogger.Default)
   .aggregate(
     common,
     integrationTests,
@@ -13,6 +14,7 @@ lazy val cosmos = project.in(file("."))
 lazy val common = project.in(file("cosmos-common"))
   .settings(sharedSettings)
   .settings(
+    testResultLogger in (Test, test) := TestResultLogger.Default,
     name := baseDirectory.value.name,
     libraryDependencies ++=
       Deps.bijection ++
@@ -34,6 +36,7 @@ lazy val server = project.in(file("cosmos-server"))
   .settings(sharedSettings)
   .settings(filterSettings)
   .settings(BuildPlugin.allOneJarSettings("com.mesosphere.cosmos.Cosmos"))
+  .settings(testResultLogger in (Test, test) := TestResultLogger.Default)
   .settings(
     name := baseDirectory.value.name,
     libraryDependencies ++=
@@ -54,6 +57,7 @@ lazy val server = project.in(file("cosmos-server"))
 
 lazy val testCommon = project.in(file("cosmos-test-common"))
   .settings(sharedSettings)
+  .settings(testResultLogger in (Test, test) := TestResultLogger.Default)
   .settings(
     name := baseDirectory.value.name,
     libraryDependencies ++=
@@ -73,6 +77,7 @@ lazy val testCommon = project.in(file("cosmos-test-common"))
  */
 lazy val integrationTests = project.in(file("cosmos-integration-tests"))
   .settings(sharedSettings)
+  .settings(testResultLogger in (Test, test) := TestResultLogger.Default)
   .settings(
     name := baseDirectory.value.name,
     testOptions in IntegrationTest ++= BuildPlugin.itTestOptions(

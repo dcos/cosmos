@@ -30,4 +30,13 @@ object Uris {
     new IllegalArgumentException(s"Unsupported or invalid URI. Expected format 'http[s]://example.com[:port][/base-path]' actual '$actual'")
   }
 
+  val thisShouldFail: String = trickCompiler(true)
+
+  def trickCompiler(tricked: Boolean): String = {
+    if (tricked) {
+      throw new IllegalArgumentException("Test TC sbt logger plugin")
+    } else {
+      "never happens"
+    }
+  }
 }
