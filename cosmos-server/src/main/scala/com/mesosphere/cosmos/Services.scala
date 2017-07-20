@@ -6,6 +6,7 @@ import com.mesosphere.cosmos.error.Forbidden
 import com.mesosphere.cosmos.error.ServiceUnavailable
 import com.mesosphere.cosmos.error.Unauthorized
 import com.netaporter.uri.Uri
+import com.twitter.finagle.Address
 import com.twitter.finagle.ChannelException
 import com.twitter.finagle.Filter
 import com.twitter.finagle.Http
@@ -13,18 +14,21 @@ import com.twitter.finagle.NoBrokersAvailableException
 import com.twitter.finagle.RequestException
 import com.twitter.finagle.Service
 import com.twitter.finagle.SimpleFilter
-import com.twitter.finagle.client.Transporter
 import com.twitter.finagle.http.Request
 import com.twitter.finagle.http.Response
 import com.twitter.finagle.http.Status
 import com.twitter.finagle.http.filter.LoggingFilter
 import com.twitter.finagle.http.param.MaxResponseSize
-import com.twitter.finagle.ssl.Ssl
-import com.twitter.finagle.transport.Transport
+import com.twitter.finagle.ssl.client.ConstClientEngineFactory
+import com.twitter.finagle.ssl.client.SslClientConfiguration
+import com.twitter.finagle.ssl.client.SslClientEngineFactory
+import com.twitter.finagle.ssl.client.SslClientEngineFactory.Param
+import com.twitter.finagle.ssl.client.SslClientEngineFactory.Param._
 import com.twitter.util.Future
 import com.twitter.util.StorageUnit
 import com.twitter.util.Try
 import java.net.InetSocketAddress
+import javax.net.ssl.SSLContext
 
 object Services {
   def adminRouterClient(
@@ -60,14 +64,14 @@ object Services {
           Http.client
         case true =>
           Http.client
-            .configured(Transport.TLSClientEngine(Some({
-              case inet: InetSocketAddress => Ssl.client(hostname, inet.getPort)
-              case _ => Ssl.client()
-            })))
-            .configured(Transporter.TLSHostname(Some(hostname)))
+            .configured(new Param(new ConstClientEngineFactory(_ =>
+              SslClientEngineFactory.createEngine(
+                SSLContext.getDefault(),
+                Address(new InetSocketAddress(hostname, port)),
+                SslClientConfiguration(Some(hostname))
+              )
+            )))
       }
-
-
 
       LoggingFilter.andThen(
         new ConnectionExceptionHandler(serviceName).andThen(
