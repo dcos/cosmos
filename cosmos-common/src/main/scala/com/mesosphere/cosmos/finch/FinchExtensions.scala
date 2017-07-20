@@ -31,7 +31,7 @@ object FinchExtensions {
   )(
     requestValidator: Endpoint[EndpointContext[Req, Res]]
   ): Endpoint[Json] = {
-    (base :: requestValidator).apply((context: EndpointContext[Req, Res]) => handler(context))
+    (base :: requestValidator).mapOutputAsync[Json] { case context => handler(context) }
   }
 
 }
