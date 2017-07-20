@@ -6,7 +6,6 @@ import com.mesosphere.cosmos.error.Forbidden
 import com.mesosphere.cosmos.error.ServiceUnavailable
 import com.mesosphere.cosmos.error.Unauthorized
 import com.netaporter.uri.Uri
-import com.twitter.finagle.Address
 import com.twitter.finagle.ChannelException
 import com.twitter.finagle.Filter
 import com.twitter.finagle.Http
@@ -19,16 +18,9 @@ import com.twitter.finagle.http.Response
 import com.twitter.finagle.http.Status
 import com.twitter.finagle.http.filter.LoggingFilter
 import com.twitter.finagle.http.param.MaxResponseSize
-import com.twitter.finagle.ssl.client.ConstClientEngineFactory
-import com.twitter.finagle.ssl.client.SslClientConfiguration
-import com.twitter.finagle.ssl.client.SslClientEngineFactory
-import com.twitter.finagle.ssl.client.SslClientEngineFactory.Param
-import com.twitter.finagle.ssl.client.SslClientEngineFactory.Param._
 import com.twitter.util.Future
 import com.twitter.util.StorageUnit
 import com.twitter.util.Try
-import java.net.InetSocketAddress
-import javax.net.ssl.SSLContext
 
 object Services {
   def adminRouterClient(
@@ -63,14 +55,7 @@ object Services {
         case false =>
           Http.client
         case true =>
-          Http.client
-            .configured(new Param(new ConstClientEngineFactory(_ =>
-              SslClientEngineFactory.createEngine(
-                SSLContext.getDefault(),
-                Address(new InetSocketAddress(hostname, port)),
-                SslClientConfiguration(Some(hostname))
-              )
-            )))
+          Http.client.withTls(hostname)
       }
 
       LoggingFilter.andThen(
