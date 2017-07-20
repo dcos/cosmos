@@ -46,7 +46,8 @@ lazy val server = project.in(file("cosmos-server"))
       Deps.scalaUri ++
       Deps.slf4j ++
       Deps.twitterCommons ++
-      Deps.twitterServer
+      Deps.twitterServer ++
+      Deps.netty
   )
   .dependsOn(
     common

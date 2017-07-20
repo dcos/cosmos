@@ -84,6 +84,11 @@ object Deps {
     "com.github.spullara.mustache.java" % "compiler" % V.mustache
   )
 
+  // APLv2.0
+  val netty = Seq(
+    "io.netty" % "netty-common" % V.netty
+  )
+
   // BSD 3-clause
   val scalaCheck = Seq(
     "org.scalacheck" %% "scalacheck" % V.scalaCheck % "test"
@@ -119,9 +124,7 @@ object Deps {
     "com.amazonaws" % "aws-java-sdk-s3" % V.aws
   ).map(_.excludeAll(
     // Exclude commons-logging; we are using logback
-    ExclusionRule("commons-logging", "commons-logging"),
-    // Temporary solution for now; the long term solution is to upgrade twitter-server
-    ExclusionRule("com.fasterxml.jackson.core")
+    ExclusionRule("commons-logging", "commons-logging")
   ))
 
   // MIT
@@ -155,6 +158,7 @@ object V {
   val logback = "1.1.3"
   val mockito = "1.10.19"
   val mustache = "0.9.1"
+  val netty = "4.1.13.Final"
   val scalaCheck = "1.13.4"
   val scalaCheckShapeless = "1.1.3"
   val scalaTest = "3.0.1"
