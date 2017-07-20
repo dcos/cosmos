@@ -109,7 +109,7 @@ class RequestErrorsSpec extends FreeSpec {
         val expectedContentTypeErrorMessage = "Item header 'Content-Type' not present but required"
         assertResult(expectedContentTypeErrorMessage)(contentTypeError.str("message"))
         assertResult("not_present")(bodyError.str("type"))
-        val expectedBodyErrorMessage = "Item 'body' unable to be parsed: exhausted input"
+        val expectedBodyErrorMessage = "Item body not present but required"
         assertResult(expectedBodyErrorMessage)(bodyError.str("message"))
       }
     }
