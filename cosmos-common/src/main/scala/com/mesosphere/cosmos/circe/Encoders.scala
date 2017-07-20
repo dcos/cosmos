@@ -7,7 +7,7 @@ import com.mesosphere.cosmos.rpc.v1.model.ErrorResponse
 import com.twitter.finagle.http.Status
 import io.circe.DecodingFailure
 import io.circe.Encoder
-import io.circe.HistoryOp.opsToPath
+import io.circe.CursorOp.opsToPath
 import io.circe.JsonObject
 import io.circe.ParsingFailure
 import io.circe.generic.semiauto._

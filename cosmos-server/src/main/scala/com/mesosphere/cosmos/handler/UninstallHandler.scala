@@ -147,7 +147,7 @@ private[cosmos] final class UninstallHandler(
 
   private[this] def parseDeploymentId(content: String, op: UninstallOperation): String = {
     try {
-      Decoders.parse(content).cursor.get[String]("deploymentId") match {
+      Decoders.parse(content).hcursor.get[String]("deploymentId") match {
         case Right(deploymentId) => deploymentId
         case Left(_) =>
           throw FailedToStartUninstall(

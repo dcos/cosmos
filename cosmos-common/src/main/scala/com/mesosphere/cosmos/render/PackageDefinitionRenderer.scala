@@ -201,7 +201,7 @@ object PackageDefinitionRenderer {
     // If marathon ever changes its schema for labels then this code will most likely need a
     // new version with this version left intact for backward compatibility reasons.
     val labels = convertToCosmosException(
-      obj.cursor.getOrElse[Map[String, String]]("labels")(Map.empty),
+      obj.hcursor.getOrElse[Map[String, String]]("labels")(Map.empty),
       obj.noSpaces
     )
     Json.fromFields(labels.mapValues(_.asJson))

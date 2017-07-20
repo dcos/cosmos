@@ -120,8 +120,8 @@ final class PackageDescribeSpec
   private def testV3PackageDescribe(
     packageDefinition: Json
   ): Assertion = {
-    val Right(name) = packageDefinition.cursor.get[String]("name")
-    val Right(version) = packageDefinition.cursor.get[String]("version").map(
+    val Right(name) = packageDefinition.hcursor.get[String]("name")
+    val Right(version) = packageDefinition.hcursor.get[String]("version").map(
       universe.v2.model.PackageDetailsVersion
     )
 
