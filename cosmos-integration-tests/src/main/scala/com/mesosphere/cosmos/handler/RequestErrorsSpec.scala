@@ -76,7 +76,7 @@ class RequestErrorsSpec extends FreeSpec {
         assertResult("not_parsed")(bodyError.str("type"))
         val expectedBodyErrorMessage =
           "Item 'body' unable to be parsed: Attempt to decode value on failed cursor: " +
-        "El(DownField(packageName),false,false)"
+        "DownField(packageName)"
         assertResult(expectedBodyErrorMessage)(bodyError.str("message"))
       }
 
@@ -108,7 +108,7 @@ class RequestErrorsSpec extends FreeSpec {
         assertResult("not_present")(contentTypeError.str("type"))
         val expectedContentTypeErrorMessage = "Item header 'Content-Type' not present but required"
         assertResult(expectedContentTypeErrorMessage)(contentTypeError.str("message"))
-        assertResult("not_parsed")(bodyError.str("type"))
+        assertResult("not_present")(bodyError.str("type"))
         val expectedBodyErrorMessage = "Item 'body' unable to be parsed: exhausted input"
         assertResult(expectedBodyErrorMessage)(bodyError.str("message"))
       }
