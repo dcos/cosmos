@@ -342,7 +342,7 @@ object CosmosApp {
   }
 
   private def startServer(service: Service[Request, Response]): Option[ListeningServer] = {
-    getHttpInterface.map { interface =>
+    httpInterface().map { interface =>
       Http
         .server
         .configured(Label("http"))
@@ -353,13 +353,13 @@ object CosmosApp {
   private def startTlsServer(
     service: Service[Request, Response]
   ): Option[ListeningServer] = {
-    getHttpsInterface.map { interface =>
+    httpsInterface.getWithDefault.map { interface =>
       Http
         .server
         .configured(Label("https"))
         .withTransport.tls(
-          getCertificatePath.get.toString,
-          getKeyPath.get.toString,
+          certificatePath().toString,
+          keyPath().toString,
           None,
           None,
           None
