@@ -3,7 +3,6 @@ package com.mesosphere.cosmos.jsonschema
 import com.fasterxml.jackson.databind.JsonNode
 import com.fasterxml.jackson.databind.node.JsonNodeFactory
 import com.github.fge.jsonschema.main.JsonSchemaFactory
-import com.github.fge.jsonschema.main.JsonValidator
 import io.circe.Decoder
 import io.circe.Encoder
 import io.circe.Json
@@ -119,7 +118,7 @@ object JsonSchema {
     implicit val JsonNodeEncoder: Encoder[JsonNode] = Encoder.instance(jsonNodeToCirceJson)
 
     implicit val JsonNodeDecoder: Decoder[JsonNode] = Decoder.instance { hcursor =>
-      Right(circeJsonToJsonNode(hcursor.top))
+      Right(circeJsonToJsonNode(hcursor.top.get))
     }
 
     private[this] def jsonNodeToCirceJson(node: JsonNode): Json = {
