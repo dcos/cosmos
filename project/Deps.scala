@@ -134,8 +134,8 @@ object Deps {
 
   // APLv2.0
   val twitterCommons = Seq(
-    "com.twitter.common" % "util-system-mocks" % "0.0.27",
-    "com.twitter.common" % "quantity" % "0.0.31"
+    "com.twitter.common" % "util-system-mocks" % "0.0.105",
+    "com.twitter.common" % "quantity" % "0.0.100"
   )
 
 }
@@ -145,11 +145,11 @@ object V {
   val projectVersion = "0.5.0-SNAPSHOT"
 
   val aws = "1.11.63"
-  val bijection = "0.9.4"
-  val circe = "0.6.1"
+  val bijection = "0.9.5"
+  val circe = "0.8.0"
   val curator = "2.11.1"
   val fastparse = "0.4.1"
-  val finch = "0.11.1"
+  val finch = "0.15.1"
   val guava = "16.0.1"
   val jsonSchema = "2.2.6"
   val logback = "1.1.3"
@@ -160,7 +160,7 @@ object V {
   val scalaTest = "3.0.1"
   val scalaUri = "0.4.11"
   val slf4j = "1.7.10"
-  val twitterServer = "1.25.0"
-  val twitterUtilCore = "6.39.0"
+  val twitterServer = "1.30.0"
+  val twitterUtilCore = "6.45.0"
   val zookeeper = "3.4.6"
 }
