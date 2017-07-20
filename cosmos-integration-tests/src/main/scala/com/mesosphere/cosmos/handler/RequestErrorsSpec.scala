@@ -122,7 +122,7 @@ class RequestErrorsSpec extends FreeSpec {
   private[this] implicit class Ops(jsonObject: JsonObject) {
     def str(s: String): String      = getOpt(s, { _.asString })
     def obj(s: String): JsonObject  = getOpt(s, { _.asObject })
-    def arr(s: String): List[Json]  = getOpt(s, { _.asArray })
+    def arr(s: String): List[Json]  = getOpt(s, { _.asArray.map(vector => vector.toList) })
     private[this] def getOpt[A](prop: String, f: Json => Option[A]): A = {
       jsonObject(prop).flatMap(f) match {
         case Some(v) => v
