@@ -147,12 +147,12 @@ object V {
   val projectScalaVersion = "2.11.7"
   val projectVersion = "0.5.0-SNAPSHOT"
 
-  val aws = "1.11.163" //164 released in july and there were 0 usages in maven central
+  val aws = "1.11.163"
   val bijection = "0.9.5"
   val circe = "0.8.0"
   val curator = "3.3.0"
   val fastparse = "0.4.3"
-  val finch = "0.15.1" //0.16-M1 is released on June 15 but is not stable yet
+  val finch = "0.15.1"
   val guava = "22.0"
   val jsonSchema = "2.2.6"
   val logback = "1.2.3"
@@ -163,7 +163,7 @@ object V {
   val scalaCheckShapeless = "1.1.3"
   val scalaTest = "3.0.1"
   val scalaUri = "0.4.16"
-  val slf4j = "1.7.25" //Ignored the alpha versions
+  val slf4j = "1.7.25"
   val twitterServer = "1.30.0"
   val twitterUtilCore = "6.45.0"
 }
