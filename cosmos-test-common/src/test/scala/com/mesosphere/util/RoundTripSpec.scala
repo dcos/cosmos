@@ -3,6 +3,7 @@ package com.mesosphere.util
 import com.mesosphere.cosmos.util.RoundTrip
 import org.scalatest.FreeSpec
 import org.scalatest.Matchers
+import shapeless._
 
 class RoundTripSpec extends FreeSpec with Matchers {
 
@@ -53,6 +54,9 @@ class RoundTripSpec extends FreeSpec with Matchers {
     RoundTrip(forward(newValue), backwards).map(_ => newValue)
   }
   def withIncrement(): RoundTrip[Int] = {
+    //RoundTrip(state).flatMap { s =>
+    //  withChangedState(s + 1)
+    //}
     val newValue = state + 1
     withChangedState(newValue)
   }
@@ -116,6 +120,7 @@ class RoundTripSpec extends FreeSpec with Matchers {
       _ <- withIncrement()
       i <- withIncrement()
       r <- withChangedState(i / 0)
+      _ <- withIncrement()
     } yield r
     intercept[ArithmeticException] {
       result.run()
@@ -144,6 +149,11 @@ class RoundTripSpec extends FreeSpec with Matchers {
     withChangedState(i) { j =>
       j shouldBe i
     }
+  }
+
+  "RoundTrip should be somewhat flat" in {
+    val rt = withIncrement().map(_.toString) &: withIncrement().map(_.toFloat) &: withIncrement()
+    rt.run() shouldBe ("1" :: 2.0 :: 3 :: HNil)
   }
 
 }
