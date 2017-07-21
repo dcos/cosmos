@@ -56,7 +56,7 @@ object Deps {
 
   // LGPLv3.0
   val findbugs = Seq(
-    "com.google.code.findbugs" % "jsr305" % "3.0.1"
+    "com.google.code.findbugs" % "jsr305" % "3.0.2"
   )
 
   // APLv2.0
@@ -150,10 +150,10 @@ object V {
   val aws = "1.11.163"
   val bijection = "0.9.5"
   val circe = "0.8.0"
-  val curator = "3.3.0"
+  val curator = "2.11.1"
   val fastparse = "0.4.3"
   val finch = "0.15.1"
-  val guava = "22.0"
+  val guava = "19.0"
   val jsonSchema = "2.2.6"
   val logback = "1.2.3"
   val mockito = "2.8.47"
