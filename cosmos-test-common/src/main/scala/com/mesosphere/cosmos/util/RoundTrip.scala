@@ -1,4 +1,4 @@
-package com.mesosphere.util
+package com.mesosphere.cosmos.util
 
 class RoundTrip[A](
   private val withResource: (A => Unit) => Unit
@@ -24,7 +24,7 @@ class RoundTrip[A](
     new RoundTrip[B](withResourceB)
   }
 
-  def get(): A = {
+  def run(): A = {
     var innerA: Option[A] = None
     withResource { a: A =>
       innerA = Some(a)
@@ -33,7 +33,7 @@ class RoundTrip[A](
   }
 
   def apply[B](transform: A => B): B = {
-    map(transform).get()
+    map(transform).run()
   }
 
 }
@@ -41,7 +41,7 @@ class RoundTrip[A](
 object RoundTrip {
 
   def apply[A](
-    forward: => A)(
+    forward: => A,
     backwards: A => Unit
   ): RoundTrip[A] = {
     def withResource(aInner: A => Unit): Unit = {
@@ -55,8 +55,8 @@ object RoundTrip {
     new RoundTrip[A](withResource)
   }
 
-  def value[A](a: A): RoundTrip[A] = {
-    RoundTrip(a)((_: A) => ())
+  def apply[A](a: A): RoundTrip[A] = {
+    RoundTrip(a, (_: A) => ())
   }
 
 }
