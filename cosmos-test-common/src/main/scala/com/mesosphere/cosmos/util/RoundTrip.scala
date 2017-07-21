@@ -69,6 +69,7 @@ object RoundTrip {
     new RoundTrip[A](withResource)
   }
 
+  // scalastyle:off method.name
   implicit class RoundTripHListOps[B <: HList](self: => RoundTrip[B]) {
     def &:[A](other: RoundTrip[A]): RoundTrip[A :: B] = {
       other.flatMap { a =>
@@ -84,5 +85,6 @@ object RoundTrip {
       }
     }
   }
+  // scalastyle:on method.name
 
 }

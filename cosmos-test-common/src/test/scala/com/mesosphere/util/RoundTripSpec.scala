@@ -152,8 +152,14 @@ class RoundTripSpec extends FreeSpec with Matchers {
   }
 
   "RoundTrip should be somewhat flat" in {
-    val rt = withIncrement().map(_.toString) &: withIncrement().map(_.toFloat) &: withIncrement()
-    rt.run() shouldBe ("1" :: 2.0 :: 3 :: HNil)
+    val withRt = withIncrement().map(_.toString) &: withIncrement().map(_.toFloat) &: withIncrement()
+    withRt.run() shouldBe ("1" :: 2.0 :: 3 :: HNil)
+
+    assertThrows[Error] {
+      withRt { case (_: String) :: (_: Float) :: (_: Int) :: HNil =>
+        throw new Error("This should throw")
+      }
+    }
   }
 
 }
