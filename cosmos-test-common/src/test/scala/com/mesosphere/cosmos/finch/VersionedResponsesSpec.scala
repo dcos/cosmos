@@ -79,7 +79,7 @@ object VersionedResponsesSpec {
   }
 
   def extractBody[A](result: Endpoint.Result[A]): A = {
-    result.awaitValue().get.get()
+    result.awaitValueUnsafe().get
   }
 
   implicit val stringRichDecoder: MediaTypedRequestDecoder[String] =

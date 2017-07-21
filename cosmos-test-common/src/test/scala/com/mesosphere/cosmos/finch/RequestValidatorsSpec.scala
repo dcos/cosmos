@@ -70,7 +70,7 @@ final class RequestValidatorsSpec extends FreeSpec with Matchers with PropertyCh
       request: HttpRequest,
       validator: Endpoint[EndpointContext[Req, Res]]
     ): EndpointContext[Req, Res] = {
-      validator(HttpRequest.toFinchInput(request)).awaitValue().get.get()
+      validator(HttpRequest.toFinchInput(request)).awaitValueUnsafe().get
     }
 
   }
