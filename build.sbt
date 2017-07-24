@@ -37,7 +37,6 @@ lazy val server = project.in(file("cosmos-server"))
   .settings(
     name := baseDirectory.value.name,
     libraryDependencies ++=
-      Deps.aws ++
       Deps.bijectionUtil ++
       Deps.circe ++
       Deps.curator ++

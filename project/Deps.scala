@@ -119,14 +119,6 @@ object Deps {
     "com.twitter" %% "util-core" % V.twitterUtilCore
   )
 
-  // APLv2.0
-  val aws = Seq(
-    "com.amazonaws" % "aws-java-sdk-s3" % V.aws
-  ).map(_.excludeAll(
-    // Exclude commons-logging; we are using logback
-    ExclusionRule("commons-logging", "commons-logging")
-  ))
-
   // MIT
   val slf4j = Seq(
     "org.slf4j" % "slf4j-api" % V.slf4j,
@@ -147,7 +139,6 @@ object V {
   val projectScalaVersion = "2.11.7"
   val projectVersion = "0.5.0-SNAPSHOT"
 
-  val aws = "1.11.163"
   val bijection = "0.9.5"
   val circe = "0.8.0"
   val curator = "2.12.0"
