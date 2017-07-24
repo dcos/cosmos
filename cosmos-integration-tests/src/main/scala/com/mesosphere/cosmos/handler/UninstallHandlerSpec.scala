@@ -95,7 +95,7 @@ final class UninstallHandlerSpec extends FreeSpec with Eventually with SpanSugar
       assertResult(MediaTypes.ErrorResponse.show)(uninstallResponse.headerMap(Fields.ContentType))
       val Right(err) = decode[ErrorResponse](uninstallResponseBody)
       val Some(data) = err.data
-      val Right(appIds) = Json.fromJsonObject(data).cursor.get[Set[AppId]]("appIds")
+      val Right(appIds) = Json.fromJsonObject(data).hcursor.get[Set[AppId]]("appIds")
       assertResult(Set(appId1, appId2))(appIds)
       val cleanupRequest = UninstallRequest("helloworld", appId = None, all = Some(true))
       val cleanupResponse = submitUninstallRequest(cleanupRequest)

@@ -373,7 +373,7 @@ final class DefaultUniverseClient(
     buffer: Array[Byte]
   ): universe.v2.model.UniverseVersion = {
     val decodedVersion = parseJson(entryPath, new String(buffer))
-      .cursor
+      .hcursor
       .get[universe.v2.model.UniverseVersion]("version")
 
     decodedVersion match {

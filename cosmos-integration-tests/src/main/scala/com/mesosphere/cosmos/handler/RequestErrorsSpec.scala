@@ -76,7 +76,7 @@ class RequestErrorsSpec extends FreeSpec {
         assertResult("not_parsed")(bodyError.str("type"))
         val expectedBodyErrorMessage =
           "Item 'body' unable to be parsed: Attempt to decode value on failed cursor: " +
-        "El(DownField(packageName),false,false)"
+        "DownField(packageName)"
         assertResult(expectedBodyErrorMessage)(bodyError.str("message"))
       }
 
@@ -108,8 +108,8 @@ class RequestErrorsSpec extends FreeSpec {
         assertResult("not_present")(contentTypeError.str("type"))
         val expectedContentTypeErrorMessage = "Item header 'Content-Type' not present but required"
         assertResult(expectedContentTypeErrorMessage)(contentTypeError.str("message"))
-        assertResult("not_parsed")(bodyError.str("type"))
-        val expectedBodyErrorMessage = "Item 'body' unable to be parsed: exhausted input"
+        assertResult("not_present")(bodyError.str("type"))
+        val expectedBodyErrorMessage = "Item body not present but required"
         assertResult(expectedBodyErrorMessage)(bodyError.str("message"))
       }
     }
@@ -122,7 +122,7 @@ class RequestErrorsSpec extends FreeSpec {
   private[this] implicit class Ops(jsonObject: JsonObject) {
     def str(s: String): String      = getOpt(s, { _.asString })
     def obj(s: String): JsonObject  = getOpt(s, { _.asObject })
-    def arr(s: String): List[Json]  = getOpt(s, { _.asArray })
+    def arr(s: String): List[Json]  = getOpt(s, { _.asArray.map(vector => vector.toList) })
     private[this] def getOpt[A](prop: String, f: Json => Option[A]): A = {
       jsonObject(prop).flatMap(f) match {
         case Some(v) => v

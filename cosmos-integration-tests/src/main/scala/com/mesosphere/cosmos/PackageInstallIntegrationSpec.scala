@@ -219,9 +219,9 @@ final class PackageInstallIntegrationSpec extends FreeSpec with BeforeAndAfterAl
   override protected def afterAll(): Unit = {
     // TODO: This should actually happen between each test, but for now tests depend on eachother :(
     val deletes: Future[Seq[Assertion]] = Future.collect(Seq(
-      adminRouter.deleteApp(AppId("/helloworld"), force = true) map { resp => assert(resp.getStatusCode() === 200) },
-      adminRouter.deleteApp(AppId("/cassandra/dcos"), force = true) map { resp => assert(resp.getStatusCode() === 200) },
-      adminRouter.deleteApp(AppId("/custom-app-id"), force = true) map { resp => assert(resp.getStatusCode() === 200) },
+      adminRouter.deleteApp(AppId("/helloworld"), force = true) map { resp => assert(resp.statusCode === 200) },
+      adminRouter.deleteApp(AppId("/cassandra/dcos"), force = true) map { resp => assert(resp.statusCode === 200) },
+      adminRouter.deleteApp(AppId("/custom-app-id"), force = true) map { resp => assert(resp.statusCode === 200) },
 
       // Make sure this is cleaned up if its test failed
       adminRouter.deleteApp(AppId("/chronos-bad-json"), force = true) map { _ => Succeeded }

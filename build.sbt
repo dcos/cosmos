@@ -37,7 +37,6 @@ lazy val server = project.in(file("cosmos-server"))
   .settings(
     name := baseDirectory.value.name,
     libraryDependencies ++=
-      Deps.aws ++
       Deps.bijectionUtil ++
       Deps.circe ++
       Deps.curator ++
@@ -46,7 +45,8 @@ lazy val server = project.in(file("cosmos-server"))
       Deps.scalaUri ++
       Deps.slf4j ++
       Deps.twitterCommons ++
-      Deps.twitterServer
+      Deps.twitterServer ++
+      Deps.netty
   )
   .dependsOn(
     common

@@ -14,7 +14,6 @@ import com.mesosphere.cosmos.rpc.MediaTypes._
 import com.twitter.finagle.http.Fields
 import com.twitter.finagle.http.Method
 import com.twitter.io.Buf
-import com.twitter.util.Await
 import com.twitter.util.Return
 import com.twitter.util.Throw
 import com.twitter.util.Try
@@ -71,8 +70,7 @@ final class RequestValidatorsSpec extends FreeSpec with Matchers with PropertyCh
       request: HttpRequest,
       validator: Endpoint[EndpointContext[Req, Res]]
     ): EndpointContext[Req, Res] = {
-      val Some((_, eval)) = validator(HttpRequest.toFinchInput(request))
-      Await.result(eval.run).value
+      validator(HttpRequest.toFinchInput(request)).awaitValueUnsafe().get
     }
 
   }
@@ -335,8 +333,7 @@ object RequestValidatorsSpec {
     validator: Endpoint[EndpointContext[Req, Res]],
     request: HttpRequest
   ): Try[Output[EndpointContext[Req, Res]]] = {
-    val Some((_, eval)) = validator(HttpRequest.toFinchInput(request))
-    Await.result(eval.run.liftToTry)
+    validator(HttpRequest.toFinchInput(request)).awaitOutput().get
   }
 
   case class TestData[Req, Res](
@@ -369,8 +366,7 @@ object RequestValidatorsSpec {
       ))
     ): Try[EndpointContext[Req, Res]] = {
       val reader = this(produces)
-      val Some((_, eval)) = reader(HttpRequest.toFinchInput(buildRequest(accept, authorization)))
-      Await.result(eval.run.liftToTry).map(_.value)
+      reader(HttpRequest.toFinchInput(buildRequest(accept, authorization))).awaitValue().get
     }
 
   }

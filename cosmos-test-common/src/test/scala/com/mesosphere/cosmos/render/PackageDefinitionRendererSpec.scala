@@ -96,7 +96,7 @@ class PackageDefinitionRendererSpec extends FreeSpec with Matchers with TableDri
 
         val Some(rendered) = PackageDefinitionRenderer.renderMarathonV2App("http://someplace", pkg, None, None)
 
-        val Right(labels) = rendered.asJson.cursor.get[Map[String, String]]("labels")
+        val Right(labels) = rendered.asJson.hcursor.get[Map[String, String]]("labels")
         assertResult("A")(labels("a"))
         assertResult("B")(labels("b"))
       }
@@ -325,7 +325,7 @@ class PackageDefinitionRendererSpec extends FreeSpec with Matchers with TableDri
         Some(appId)
       ).get.asJson
 
-      val Right(actualAppId) = rendered.cursor.get[AppId]("id")
+      val Right(actualAppId) = rendered.hcursor.get[AppId]("id")
       assertResult(appId)(actualAppId)
     }
 
@@ -359,7 +359,7 @@ class PackageDefinitionRendererSpec extends FreeSpec with Matchers with TableDri
           None
         ).get.asJson
 
-        val Right(renderedValue) = rendered.cursor.get[String]("some")
+        val Right(renderedValue) = rendered.hcursor.get[String]("some")
         assertResult("http://someplace/blob")(renderedValue)
       }
 
@@ -392,7 +392,7 @@ class PackageDefinitionRendererSpec extends FreeSpec with Matchers with TableDri
           None
         ).get.asJson
 
-        val Right(renderedValue) = rendered.cursor.get[String]("some")
+        val Right(renderedValue) = rendered.hcursor.get[String]("some")
         assertResult("http://someplace/blob")(renderedValue)
       }
 
@@ -427,7 +427,7 @@ class PackageDefinitionRendererSpec extends FreeSpec with Matchers with TableDri
           None
         ).get.asJson
 
-        val Right(renderedValue) = rendered.cursor.get[String]("some")
+        val Right(renderedValue) = rendered.hcursor.get[String]("some")
         assertResult("http://someplace/blob")(renderedValue)
       }
     }

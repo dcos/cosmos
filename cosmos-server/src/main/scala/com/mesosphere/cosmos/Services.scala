@@ -13,18 +13,14 @@ import com.twitter.finagle.NoBrokersAvailableException
 import com.twitter.finagle.RequestException
 import com.twitter.finagle.Service
 import com.twitter.finagle.SimpleFilter
-import com.twitter.finagle.client.Transporter
 import com.twitter.finagle.http.Request
 import com.twitter.finagle.http.Response
 import com.twitter.finagle.http.Status
 import com.twitter.finagle.http.filter.LoggingFilter
 import com.twitter.finagle.http.param.MaxResponseSize
-import com.twitter.finagle.ssl.Ssl
-import com.twitter.finagle.transport.Transport
 import com.twitter.util.Future
 import com.twitter.util.StorageUnit
 import com.twitter.util.Try
-import java.net.InetSocketAddress
 
 object Services {
   def adminRouterClient(
@@ -59,15 +55,8 @@ object Services {
         case false =>
           Http.client
         case true =>
-          Http.client
-            .configured(Transport.TLSClientEngine(Some({
-              case inet: InetSocketAddress => Ssl.client(hostname, inet.getPort)
-              case _ => Ssl.client()
-            })))
-            .configured(Transporter.TLSHostname(Some(hostname)))
+          Http.client.withTls(hostname)
       }
-
-
 
       LoggingFilter.andThen(
         new ConnectionExceptionHandler(serviceName).andThen(

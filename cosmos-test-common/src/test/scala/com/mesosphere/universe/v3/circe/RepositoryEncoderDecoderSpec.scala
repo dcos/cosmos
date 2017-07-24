@@ -106,8 +106,7 @@ class RepositoryEncoderDecoderSpec extends FreeSpec {
 
       val expectedErrorMessage = s"Expected one of ${TestingPackages.versionStringList}" +
         " for packaging version, but found " +
-        "[3.1]: El(DownField(packagingVersion),true,false),El(DownArray,true,false)," +
-        "El(DownField(packages),true,false)"
+        "[3.1]: DownField(packagingVersion),DownArray,DownField(packages)"
 
       val Left(decodingFailure) = universe.v4.model.Repository.decodeRepository.decodeJson(json)
 
@@ -130,8 +129,7 @@ class RepositoryEncoderDecoderSpec extends FreeSpec {
       )
 
       val expectedErrorMessage = "Value 'bad tag' does not conform to expected format ^[^\\s]+$: " +
-        "El(DownArray,true,false),El(DownField(tags),true,false),El(DownArray,true,false)," +
-        "El(DownField(packages),true,false)"
+        "DownArray,DownField(tags),DownArray,DownField(packages)"
 
       val Left(decodingFailure) = universe.v4.model.Repository.decodeRepository.decodeJson(json)
 
@@ -155,8 +153,7 @@ class RepositoryEncoderDecoderSpec extends FreeSpec {
       )
 
       val expectedErrorMessage = "Expected integer value >= 0 for release version, but found " +
-        "[-1]: El(DownField(releaseVersion),true,false),El(DownArray,true,false)," +
-        "El(DownField(packages),true,false)"
+        "[-1]: DownField(releaseVersion),DownArray,DownField(packages)"
 
       val Left(decodingFailure) = universe.v4.model.Repository.decodeRepository.decodeJson(json)
 
