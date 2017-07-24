@@ -10,7 +10,6 @@ import com.mesosphere.universe
 import com.mesosphere.universe.v3.syntax.PackageDefinitionOps._
 import com.twitter.finagle.http.Response
 import com.twitter.finagle.http.Status
-import java.util.Base64
 import org.scalatest.AppendedClues._
 import org.scalatest.Assertion
 import org.scalatest.FreeSpec

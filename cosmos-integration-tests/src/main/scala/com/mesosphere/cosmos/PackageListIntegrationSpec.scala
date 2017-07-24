@@ -1,191 +1,51 @@
 package com.mesosphere.cosmos
 
-import com.mesosphere.cosmos.http.CosmosRequests
-import com.mesosphere.cosmos.repository.DefaultRepositories
-import com.mesosphere.cosmos.rpc.v1.circe.Decoders._
-import com.mesosphere.cosmos.rpc.v1.model._
-import com.mesosphere.cosmos.test.CosmosIntegrationTestClient.CosmosClient
-import com.mesosphere.cosmos.thirdparty.marathon.model.AppId
-import com.mesosphere.universe.v2.model.PackageDetailsVersion
-import com.mesosphere.universe.v2.model.PackagingVersion
+import com.mesosphere.cosmos.ItOps._
+import com.mesosphere.cosmos.converter.Response._
+import com.mesosphere.cosmos.util.RoundTrip
+import com.twitter.bijection.Conversion.asMethod
 import java.util.UUID
-import org.scalatest.AppendedClues
-import org.scalatest.Assertion
-import org.scalatest.FreeSpec
-import org.scalatest.Inside
-import org.scalatest.Succeeded
-import org.scalatest.concurrent.Eventually
-import scala.util.Right
+import org.scalatest.FeatureSpec
+import org.scalatest.Matchers
 
-final class PackageListIntegrationSpec
-  extends FreeSpec with Inside with AppendedClues with Eventually {
-
-  import PackageListIntegrationSpec._
-
-  // These tests may be better implemented as focused unit tests
-  // There's a bunch of setup and teardown infrastructure here which complicates the control flow
-  // Until then, if you need to understand the code, ask @cruhland (says @BenWhitehead)
-
-  "The package list endpoint" - {
-    "responds with repo and package data for packages whose repositories are in the repo list" in {
-      withInstalledPackage("helloworld") { installResponse =>
-        withInstalledPackageInListResponse(installResponse) { case Some(Installation(_, _)) =>
-          Succeeded
-        }
-      }
-    }
-  }
-
-  "Issue #251: Package list should include packages whose repositories have been removed" in {
-    val expectedPackageInformation = InstalledPackageInformation(
-      InstalledPackageInformationPackageDetails(
-        packagingVersion = PackagingVersion("4.0"),
-        name = "helloworld",
-        version = PackageDetailsVersion("0.4.2"),
-        website = Some("https://github.com/mesosphere/dcos-helloworld"),
-        maintainer = "support@mesosphere.io",
-        description = "Example DCOS application package",
-        preInstallNotes = Some("A sample pre-installation message"),
-        postInstallNotes = Some("A sample post-installation message"),
-        tags = List("mesosphere", "example", "subcommand"),
-        selected = Some(false),
-        framework = Some(false)
-      )
-    )
-    withInstalledPackage("helloworld") { installResponse =>
-      withDeletedRepository(testRepository) {
-        withInstalledPackageInListResponse(installResponse) { case Some(Installation(_, pkg)) =>
-          assertResult(expectedPackageInformation)(pkg)
-        }
-      }
-    }
-  }
-
-  "Package list endpoint responds with" - {
-    "(issue #124) packages sorted by name and app id" in {
-      val names = List(
-        "linkerd",
-        "linkerd",
-        "zeppelin",
-        "jenkins",
-        "cassandra")
-      val installResponses = names map packageInstall
-      try {
-        val packages = packageList().packages.map(
-          app => (app.packageInformation.packageDefinition.name, app.appId)
+final class PackageListIntegrationSpec extends FeatureSpec with Matchers {
+  feature("The package/list endpoint") {
+    scenario("should list installed packages") {
+      RoundTrips.withInstall("helloworld", appId = Some(UUID.randomUUID())) { ir =>
+        val pkg = Requests.describePackage(ir.packageName, ir.packageVersion).`package`
+        val pkgs = Requests.listPackages()
+        pkgs.map(_.appId) should contain(ir.appId)
+        pkgs.find(_.appId == ir.appId).get.packageInformation.shouldBe(
+          pkg.as[rpc.v1.model.InstalledPackageInformation]
         )
-        val resultNames = packages.map(_._1)
-        assert(packages == packages.sorted)
-        assert(names.sorted == resultNames.sorted)
-      } finally {
-        installResponses.foreach(ir => packageUninstall(ir))
+      }
+    }
+    scenario("Issue #251: should include packages whose repositories have been removed") {
+      // TODO: Change this to remove helloworld's repo when describe returns repo information
+      RoundTrips.withInstall("helloworld", appId = Some(UUID.randomUUID())) { ir =>
+        val pkg = Requests.describePackage(ir.packageName, ir.packageVersion).`package`
+        RoundTrips.withDeletedRepository(Some("V4TestUniverse")) { _ =>
+          val pkgs = Requests.listPackages()
+          pkgs.map(_.appId) should contain(ir.appId)
+          pkgs.find(_.appId == ir.appId).get.packageInformation.shouldBe(
+            pkg.as[rpc.v1.model.InstalledPackageInformation]
+          )
+        }
+      }
+    }
+    scenario("Issue #124: should respond with packages sorted by name and app id") {
+      val names = List("linkerd", "linkerd", "zeppelin", "jenkins", "cassandra")
+      val withInstalls = RoundTrip.sequence(names.map { name =>
+        RoundTrips.withInstall(name, appId = Some(UUID.randomUUID()))
+      })
+      withInstalls { installs =>
+        val expectedPkgs = installs.map(i => (i.packageName, i.appId))
+        val pkgs = Requests.listPackages().map { i =>
+          (i.packageInformation.packageDefinition.name, i.appId)
+        }
+        pkgs shouldBe expectedPkgs.sorted
       }
     }
   }
-
-  private[this] def withInstalledPackage(packageName: String)(f: InstallResponse => Any): Any = {
-    val installRequest =
-      InstallRequest(packageName, appId = Some(AppId(UUID.randomUUID().toString)))
-    val request = CosmosRequests.packageInstallV1(installRequest)
-    val Right(installResponse) =
-      CosmosClient.callEndpoint[InstallResponse](request) withClue "when installing package"
-
-    try {
-      assertResult(packageName)(installResponse.packageName)
-      f(installResponse)
-    } finally {
-      val uninstallRequest = UninstallRequest(
-        installResponse.packageName,
-        appId = Some(installResponse.appId),
-        all = None
-      )
-
-      val request = CosmosRequests.packageUninstall(uninstallRequest)
-      val actualUninstall =
-        CosmosClient.callEndpoint[UninstallResponse](request) withClue "when uninstalling package"
-
-      val _ = inside (actualUninstall) {
-        case Right(UninstallResponse(List(UninstallResult(uninstalledPackageName, appId, Some(packageVersion), _)))) =>
-          assertResult(installResponse.appId)(appId)
-          assertResult(installResponse.packageName)(uninstalledPackageName)
-          assertResult(installResponse.packageVersion)(packageVersion)
-      }
-    }
-  }
-
-  private[this] def withDeletedRepository(repository: PackageRepository)(action: => Any): Any = {
-
-    val originalRepositories = ItUtil.listRepositories()
-      .withClue("when getting original repositories")
-
-    val actualDelete = ItUtil.deleteRepository(Some(repository.name))
-      .withClue("when deleting repo")
-
-    try {
-      assertResult(None) {
-        actualDelete.repositories.find(_.name == repository.name)
-      }
-
-      action
-    } finally {
-      ItUtil.replaceRepositoriesWith(originalRepositories)
-        .withClue("when restoring deleted repo")
-    }
-  }
-
-  private[this] def withInstalledPackageInListResponse(installResponse: InstallResponse)(
-    pf: PartialFunction[Option[Installation], Assertion]
-  ): Assertion = {
-    val request = CosmosRequests.packageList(ListRequest())
-    val actualList =
-      CosmosClient.callEndpoint[ListResponse](request) withClue "when listing installed packages"
-
-    inside (actualList) { case Right(ListResponse(packages)) =>
-      inside (packages.find(_.appId == installResponse.appId)) { pf }
-    }
-  }
-
-  private[this] def packageList(): ListResponse = {
-    val request = CosmosRequests.packageList(ListRequest())
-    val Right(listResponse) =
-      CosmosClient.callEndpoint[ListResponse](request) withClue "when listing installed packages"
-
-    listResponse
-  }
-
-  private[this] def packageInstall(packageName: String): InstallResponse = {
-    val installRequest =
-      InstallRequest(packageName, appId = Some(AppId(UUID.randomUUID().toString)))
-    val request = CosmosRequests.packageInstallV1(installRequest)
-    val Right(installResponse) =
-      CosmosClient.callEndpoint[InstallResponse](request) withClue "when installing package"
-
-    assertResult(packageName)(installResponse.packageName)
-
-    installResponse
-  }
-
-  private[this] def packageUninstall(installResponse: InstallResponse): Assertion = {
-    val uninstallRequest: UninstallRequest =
-      UninstallRequest(installResponse.packageName, appId = Some(installResponse.appId), all = None)
-    val request = CosmosRequests.packageUninstall(uninstallRequest)
-    val Right(uninstallResponse) =
-      CosmosClient.callEndpoint[UninstallResponse](request) withClue "when uninstalling package"
-
-    val UninstallResponse(List(UninstallResult(uninstalledPackageName, appId, Some(packageVersion), _))) =
-      uninstallResponse
-
-    assertResult(installResponse.appId)(appId)
-    assertResult(installResponse.packageName)(uninstalledPackageName)
-    assertResult(installResponse.packageVersion)(packageVersion)
-  }
-
-}
-
-object PackageListIntegrationSpec {
-
-  private val Some(testRepository) = DefaultRepositories().getOrThrow.find(
-    _.name == "V4TestUniverse"
-  )
 
 }

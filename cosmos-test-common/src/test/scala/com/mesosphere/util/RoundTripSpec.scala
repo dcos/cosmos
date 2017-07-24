@@ -10,32 +10,32 @@ class RoundTripSpec extends FreeSpec with Matchers {
   "RoundTrip.apply(value)" - {
     val i: Int = 3
     "should be map able" in {
-      RoundTrip(i).map(_ * i).run().
+      RoundTrip.value(i).map(_ * i).run().
         shouldBe(i * i)
     }
 
     "should be flatMap able" in {
-      RoundTrip(i).flatMap(i => RoundTrip(i * i)).run().
+      RoundTrip.value(i).flatMap(i => RoundTrip.value(i * i)).run().
         shouldBe(i * i)
     }
 
     "should not throw error if map fails but is not evaluated" in {
-      RoundTrip(i).map(_ => throw new Error("this should not happen"))
+      RoundTrip.value(i).map(_ => throw new Error("this should not happen"))
     }
 
     "throw error if map fails" in {
       assertThrows[Error] {
-        RoundTrip(i).map(_ => throw new Error("this should happen")).run()
+        RoundTrip.value(i).map(_ => throw new Error("this should happen")).run()
       }
     }
 
     "should not throw error if flatMap fails but is not evaluated" in {
-      RoundTrip(i).flatMap(i => RoundTrip(i / 0))
+      RoundTrip.value(i).flatMap(i => RoundTrip.value(i / 0))
     }
 
     "should throw error if flatMap fails when evaluated" in {
       assertThrows[ArithmeticException] {
-        RoundTrip(i).flatMap(i => RoundTrip(i / 0)).run()
+        RoundTrip.value(i).flatMap(i => RoundTrip.value(i / 0)).run()
       }
     }
   }
@@ -51,7 +51,7 @@ class RoundTripSpec extends FreeSpec with Matchers {
     state = previous
   }
   def withChangedState(newValue: Int): RoundTrip[Int] = {
-    RoundTrip(forward(newValue), backwards).map(_ => newValue)
+    RoundTrip(forward(newValue))(backwards).map(_ => newValue)
   }
   def withIncrement(): RoundTrip[Int] = {
     //RoundTrip(state).flatMap { s =>

@@ -15,7 +15,6 @@ class RoundTrip[A] private(
         }
       }
     }
-
     new RoundTrip[B](withResourceB)
   }
 
@@ -41,7 +40,6 @@ class RoundTrip[A] private(
         bInner(transform(a))
       }
     }
-
     new RoundTrip[B](withResourceB)
   }
 
@@ -49,12 +47,22 @@ class RoundTrip[A] private(
 
 object RoundTrip {
 
-  def apply[A](a: => A): RoundTrip[A] = {
-    RoundTrip(a, (_: A) => ())
+  def sequence[A](roundTrips: List[RoundTrip[A]]): RoundTrip[List[A]] = {
+    roundTrips.foldRight(RoundTrip.value(List(): List[A])) { (aRt, listRt) =>
+      aRt.flatMap { a =>
+        listRt.map { list =>
+          a :: list
+        }
+      }
+    }
+  }
+
+  def value[A](a: => A): RoundTrip[A] = {
+    RoundTrip(a)((_: A) => ())
   }
 
   def apply[A](
-    forward: => A,
+    forward: => A)(
     backwards: A => Unit
   ): RoundTrip[A] = {
     def withResource(aInner: A => Unit): Unit = {
@@ -65,7 +73,6 @@ object RoundTrip {
         backwards(a)
       }
     }
-
     new RoundTrip[A](withResource)
   }
 

@@ -12,20 +12,25 @@ import com.mesosphere.cosmos.error.UnsupportedContentType
 import com.mesosphere.cosmos.error.UnsupportedRepositoryUri
 import com.mesosphere.cosmos.error.UnsupportedRepositoryVersion
 import com.mesosphere.cosmos.repository.DefaultRepositories
+import com.mesosphere.cosmos.rpc.v1.model.ErrorResponse
 import com.mesosphere.cosmos.rpc.v1.model.PackageRepository
 import com.mesosphere.universe.MediaTypes
 import com.mesosphere.universe.v2.model.UniverseVersion
+import com.netaporter.uri.Uri
 import com.netaporter.uri.dsl._
 import com.twitter.finagle.http.Status
 import org.jboss.netty.handler.codec.http.HttpMethod
 import org.scalatest.BeforeAndAfter
 import org.scalatest.BeforeAndAfterAll
 import org.scalatest.FeatureSpec
+import org.scalatest.Matchers
+import com.mesosphere.cosmos.ItOps._
 
 class PackageRepositorySpec
   extends FeatureSpec
     with BeforeAndAfter
-    with BeforeAndAfterAll {
+    with BeforeAndAfterAll
+    with Matchers {
 
   private[this] val defaultRepositories = DefaultRepositories().getOrThrow
   private[this] var originalRepositories = Seq.empty[PackageRepository]
@@ -49,9 +54,79 @@ class PackageRepositorySpec
   }
 
   feature("The package/repository/list endpoint") {
-    scenario("The user should be able to see the currently installed repositories") {
-      val currentRepositories = ItUtil.listRepositories()
-      assertResult(defaultRepositories)(currentRepositories)
+    scenario("list added repositories") {
+      val name = "cli-test-4"
+      val uri: Uri = "https://github.com/mesosphere/universe/archive/cli-test-4.zip"
+      RoundTrips.withRepository(name, uri) { _ =>
+        Requests.listRepositories() should contain (
+          rpc.v1.model.PackageRepository(name, uri)
+        )
+      }
+    }
+    scenario("not list removed repositories") {
+      val name = "cli-test-4"
+      val uri: Uri = "https://github.com/mesosphere/universe/archive/cli-test-4.zip"
+      (RoundTrips.withRepository(name, uri) &:
+        RoundTrips.withDeletedRepository(Some(name), Some(uri))) { _ =>
+        Requests.listRepositories() should not contain
+          rpc.v1.model.PackageRepository(name, uri)
+      }
+    }
+  }
+
+  feature("The package/repository endpoints using RoundTrip and intercept") {
+    scenario("add") {
+      val name = "cli-test-4"
+      val uri: Uri = "https://github.com/mesosphere/universe/archive/cli-test-4.zip"
+      RoundTrips.withRepository(name, uri) { response =>
+        val last = response.repositories.last
+        last.name shouldBe name
+        last.uri shouldBe uri
+      }
+    }
+    scenario("add with index") {
+      val name = "cli-test-4"
+      val uri: Uri = "https://github.com/mesosphere/universe/archive/cli-test-4.zip"
+      val index = 0
+      RoundTrips.withRepository(name, uri, Some(index)) { response =>
+        val actual = response.repositories(index)
+        actual.name shouldBe name
+        actual.uri shouldBe uri
+      }
+    }
+    scenario("add at end with index") {
+      val name = "bounds"
+      val uri: Uri = "https://github.com/mesosphere/universe/archive/cli-test-4.zip"
+      val index = Requests.listRepositories().size
+      RoundTrips.withRepository(name, uri, Some(index)) { response =>
+        val last = response.repositories.last
+        last.name shouldBe name
+        last.uri shouldBe uri
+      }
+    }
+    scenario("Error: duplicated add") {
+      val name = "cli-test-4"
+      val uri: Uri = "https://github.com/mesosphere/universe/archive/cli-test-4.zip"
+      val expectedError: ErrorResponse = RepositoryAlreadyPresent(Ior.Both(name, uri))
+      RoundTrips.withRepository(name, uri) { _ =>
+        val error = intercept[HttpErrorResponse] {
+          RoundTrips.withRepository(name, uri).run()
+        }
+        error.status shouldBe Status.BadRequest
+        error.errorResponse shouldBe expectedError
+      }
+    }
+    scenario("Error: repository out of bounds") {
+      val name = "bounds"
+      val uri: Uri = "https://github.com/mesosphere/universe/archive/cli-test-4.zip"
+      val index = Int.MaxValue
+      val max = Requests.listRepositories().size
+      val expectedError: ErrorResponse = RepositoryAddIndexOutOfBounds(index, max)
+      val error = intercept[HttpErrorResponse] {
+        RoundTrips.withRepository(name, uri, Some(index)).run()
+      }
+      error.status shouldBe Status.BadRequest
+      error.errorResponse shouldBe expectedError
     }
   }
 
