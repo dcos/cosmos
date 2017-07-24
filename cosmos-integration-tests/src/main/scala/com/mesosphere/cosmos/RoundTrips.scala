@@ -15,10 +15,9 @@ object RoundTrips {
     appId: Option[AppId] = None
   ): RoundTrip[rpc.v1.model.InstallResponse] = {
     RoundTrip(
-      Requests.install(name, version, options, appId)) { ir =>
+      Requests.install(name, version, options, appId))(ir =>
       Requests.uninstall(ir.packageName, Some(ir.appId))
-      ()
-    }
+    )
   }
 
   def withDeletedRepository(
@@ -66,10 +65,9 @@ object RoundTrips {
     index: Option[Int] = None
   ): RoundTrip[rpc.v1.model.PackageRepositoryAddResponse] = {
     RoundTrip(
-      Requests.addRepository(name, uri, index)) { _ =>
+      Requests.addRepository(name, uri, index))(_ =>
       Requests.deleteRepository(Some(name))
-      ()
-    }
+    )
   }
 
   def withDeletedRepository(
@@ -78,10 +76,9 @@ object RoundTrips {
     oldIndex: Int
   ): RoundTrip[rpc.v1.model.PackageRepositoryDeleteResponse] = {
     RoundTrip(
-      Requests.deleteRepository(Some(name), Some(uri))) { _ =>
+      Requests.deleteRepository(Some(name), Some(uri)))(_ =>
       Requests.addRepository(name, uri, Some(oldIndex))
-      ()
-    }
+    )
   }
 
 }

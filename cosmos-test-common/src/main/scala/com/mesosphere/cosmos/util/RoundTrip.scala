@@ -63,7 +63,7 @@ object RoundTrip {
 
   def apply[A](
     forward: => A)(
-    backwards: A => Unit
+    backwards: A => Any
   ): RoundTrip[A] = {
     def withResource(aInner: A => Unit): Unit = {
       val a = forward
@@ -71,6 +71,7 @@ object RoundTrip {
         aInner(a)
       } finally {
         backwards(a)
+        ()
       }
     }
     new RoundTrip[A](withResource)
