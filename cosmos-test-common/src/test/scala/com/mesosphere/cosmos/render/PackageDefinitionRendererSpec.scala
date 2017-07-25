@@ -5,7 +5,8 @@ import com.mesosphere.cosmos.bijection.CosmosConversions._
 import com.mesosphere.cosmos.circe.Decoders.decode64
 import com.mesosphere.cosmos.circe.Decoders.parse
 import com.mesosphere.cosmos.circe.Decoders.parse64
-import com.mesosphere.cosmos.error.CirceError
+import com.mesosphere.cosmos.error.JsonDecodingError
+import com.mesosphere.cosmos.error.JsonParsingError
 import com.mesosphere.cosmos.error.CosmosException
 import com.mesosphere.cosmos.error.MarathonTemplateMustBeJsonObject
 import com.mesosphere.cosmos.error.OptionsNotAllowed
@@ -21,7 +22,6 @@ import com.netaporter.uri.dsl._
 import com.twitter.bijection.Conversion.asMethod
 import io.circe.Json
 import io.circe.JsonObject
-import io.circe.ParsingFailure
 import io.circe.syntax._
 import java.nio.ByteBuffer
 import java.nio.charset.StandardCharsets
@@ -51,10 +51,10 @@ class PackageDefinitionRendererSpec extends FreeSpec with Matchers with TableDri
         val exception = intercept[CosmosException](PackageDefinitionRenderer.renderMarathonV2App("http://someplace", pd, None, None))
 
         exception.error match {
-          case CirceError(err) =>
-            assertResult("String: El(DownField(idx),true,false),El(DownField(labels),true,false)")(err.getMessage)
+          case js : JsonDecodingError =>
+            assertResult("Unable to decode the JSON value as a scala.collection.immutable.Map")(js.message)
           case _ =>
-            fail("expected Circe Error")
+            fail("expected JsonDecodingError")
         }
       }
     }
@@ -96,7 +96,7 @@ class PackageDefinitionRendererSpec extends FreeSpec with Matchers with TableDri
 
         val Some(rendered) = PackageDefinitionRenderer.renderMarathonV2App("http://someplace", pkg, None, None)
 
-        val Right(labels) = rendered.asJson.cursor.get[Map[String, String]]("labels")
+        val Right(labels) = rendered.asJson.hcursor.get[Map[String, String]]("labels")
         assertResult("A")(labels("a"))
         assertResult("B")(labels("b"))
       }
@@ -274,8 +274,8 @@ class PackageDefinitionRendererSpec extends FreeSpec with Matchers with TableDri
       )
 
       val exception = intercept[CosmosException](PackageDefinitionRenderer.renderMarathonV2App("http://someplace", pkg, None, None))
-      exception.error shouldBe a[CirceError]
-      assertResult(exception.error.message)("exhausted input")
+      exception.error shouldBe a[JsonParsingError]
+      assertResult(exception.error.message)("Unable to parse the string as a JSON value")
     }
 
     "result in error if rendered template is valid json but is not valid json object" in {
@@ -325,7 +325,7 @@ class PackageDefinitionRendererSpec extends FreeSpec with Matchers with TableDri
         Some(appId)
       ).get.asJson
 
-      val Right(actualAppId) = rendered.cursor.get[AppId]("id")
+      val Right(actualAppId) = rendered.hcursor.get[AppId]("id")
       assertResult(appId)(actualAppId)
     }
 
@@ -359,7 +359,7 @@ class PackageDefinitionRendererSpec extends FreeSpec with Matchers with TableDri
           None
         ).get.asJson
 
-        val Right(renderedValue) = rendered.cursor.get[String]("some")
+        val Right(renderedValue) = rendered.hcursor.get[String]("some")
         assertResult("http://someplace/blob")(renderedValue)
       }
 
@@ -392,7 +392,7 @@ class PackageDefinitionRendererSpec extends FreeSpec with Matchers with TableDri
           None
         ).get.asJson
 
-        val Right(renderedValue) = rendered.cursor.get[String]("some")
+        val Right(renderedValue) = rendered.hcursor.get[String]("some")
         assertResult("http://someplace/blob")(renderedValue)
       }
 
@@ -427,7 +427,7 @@ class PackageDefinitionRendererSpec extends FreeSpec with Matchers with TableDri
           None
         ).get.asJson
 
-        val Right(renderedValue) = rendered.cursor.get[String]("some")
+        val Right(renderedValue) = rendered.hcursor.get[String]("some")
         assertResult("http://someplace/blob")(renderedValue)
       }
     }

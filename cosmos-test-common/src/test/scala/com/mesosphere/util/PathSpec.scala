@@ -236,7 +236,7 @@ final class PathSpec extends FreeSpec with PropertyChecks {
 
     behave like elementsTestCases(buildAbsolutePath, genAbsolutePath)
 
-    def elementsTestCases[P <: Path : ClassTag](
+    def elementsTestCases[P <: Path: ClassTag](
       buildPath: Vector[String] => P,
       genPath: Gen[P]
     ): Unit = {

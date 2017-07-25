@@ -1,11 +1,10 @@
 package com.mesosphere.cosmos.render
 
-import cats.syntax.either._
 import com.github.fge.jsonschema.main.JsonSchemaFactory
 import com.github.mustachejava.DefaultMustacheFactory
 import com.mesosphere.cosmos.bijection.CosmosConversions._
-import com.mesosphere.cosmos.circe.Decoders.convertToExceptionOfCirceError
-import com.mesosphere.cosmos.error.CirceError
+import com.mesosphere.cosmos.circe.Decoders.convertToCosmosException
+import com.mesosphere.cosmos.circe.Decoders.parse
 import com.mesosphere.cosmos.error.JsonSchemaMismatch
 import com.mesosphere.cosmos.error.MarathonTemplateMustBeJsonObject
 import com.mesosphere.cosmos.error.OptionsNotAllowed
@@ -24,7 +23,6 @@ import com.netaporter.uri.Uri
 import com.twitter.bijection.Conversion.asMethod
 import io.circe.Json
 import io.circe.JsonObject
-import io.circe.jawn.parse
 import io.circe.syntax._
 import java.io.StringReader
 import java.io.StringWriter
@@ -32,11 +30,10 @@ import java.io.Writer
 import java.nio.charset.StandardCharsets
 import java.util.Base64
 
-
 object PackageDefinitionRenderer {
   private[this] final val MustacheFactory = new DefaultMustacheFactory {
-    /* The encode method for DefaultMustacheFactory does HTML based encoding. We are not generating HTML.
-     * This disables it and just passes the raw value along.
+    /* The encode method for DefaultMustacheFactory does HTML based encoding.
+     * We are not generating HTML. This disables it and just passes the raw value along.
      */
     override def encode(value: String, writer: Writer): Unit = {
       writer.write(value)
@@ -102,10 +99,9 @@ object PackageDefinitionRenderer {
       output.toString
     }
 
-    parse(renderedJsonString).map(_.asObject) match {
-      case Left(pe)           => throw CirceError(pe).exception
-      case Right(None)        => throw MarathonTemplateMustBeJsonObject.exception
-      case Right(Some(obj))   => obj
+    parse(renderedJsonString).asObject match {
+      case None => throw MarathonTemplateMustBeJsonObject.exception
+      case Some(json) => json
     }
   }
 
@@ -113,6 +109,7 @@ object PackageDefinitionRenderer {
     val bytes = JsonUtil.dropNullKeysPrinter.pretty(json).getBytes(StandardCharsets.UTF_8)
     Base64.getEncoder.encodeToString(bytes)
   }
+
 
   private[this] def nonOverridableLabels(
     pkg: universe.v4.model.PackageDefinition,
@@ -203,7 +200,10 @@ object PackageDefinitionRenderer {
     // the user know here where we can craft a more informational error message.
     // If marathon ever changes its schema for labels then this code will most likely need a
     // new version with this version left intact for backward compatibility reasons.
-    val labels = convertToExceptionOfCirceError(obj.cursor.getOrElse[Map[String, String]]("labels")(Map.empty))
+    val labels = convertToCosmosException(
+      obj.hcursor.getOrElse[Map[String, String]]("labels")(Map.empty),
+      obj.noSpaces
+    )
     Json.fromFields(labels.mapValues(_.asJson))
   }
 }

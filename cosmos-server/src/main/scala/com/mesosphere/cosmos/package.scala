@@ -13,30 +13,6 @@ import java.nio.file.Path
 
 package object cosmos {
   implicit val globalTimer: Timer = new ScheduledThreadPoolTimer()
-
-  def getHttpInterface: Option[InetSocketAddress] = {
-    httpInterface().orElse(
-      _root_.io.github.benwhitehead.finch.httpInterface()
-    )
-  }
-
-  def getHttpsInterface: Option[InetSocketAddress] = {
-    httpsInterface.getWithDefault.orElse(
-      _root_.io.github.benwhitehead.finch.httpsInterface.getWithDefault
-    )
-  }
-
-  def getCertificatePath: Option[Path] = {
-    certificatePath.getWithDefault.orElse(
-      _root_.io.github.benwhitehead.finch.certificatePath.getWithDefault
-    )
-  }
-
-  def getKeyPath: Option[Path] = {
-    keyPath.getWithDefault.orElse(
-      _root_.io.github.benwhitehead.finch.keyPath.getWithDefault
-    )
-  }
 }
 
 /* A flag's name is the fully-qualified classname. GlobalFlag doesn't support package object. We
@@ -70,7 +46,7 @@ package cosmos {
   )
 
   object httpInterface extends GlobalFlag[Option[InetSocketAddress]](
-    None,
+    Some(new InetSocketAddress("127.0.0.1", 7070)), //scalastyle:ignore magic.number
     "The TCP Interface and port for the http server {[<hostname/ip>]:port}. (Set to " +
     "empty value to disable)"
   )

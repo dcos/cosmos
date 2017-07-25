@@ -31,11 +31,11 @@ final class SimpleMediaTypedDecoder[A](
 ) extends MediaTypedDecoder[A]
 
 object MediaTypedDecoder {
-  def apply[A : Decoder](mediaTypes: NonEmptyList[MediaType]): MediaTypedDecoder[A] = {
+  def apply[A: Decoder](mediaTypes: NonEmptyList[MediaType]): MediaTypedDecoder[A] = {
     new SimpleMediaTypedDecoder(implicitly[Decoder[A]], mediaTypes)
   }
 
-  def apply[A : Decoder](mediaType: MediaType): MediaTypedDecoder[A] = {
+  def apply[A: Decoder](mediaType: MediaType): MediaTypedDecoder[A] = {
     MediaTypedDecoder(NonEmptyList.of(mediaType))
   }
 

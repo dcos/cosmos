@@ -4,19 +4,15 @@ import com.mesosphere.cosmos.finch.TestingMediaTypes._
 import com.mesosphere.cosmos.http.HttpRequest
 import com.mesosphere.cosmos.http.MediaType
 import com.mesosphere.cosmos.http.RequestSession
-import com.twitter.finagle.http.RequestBuilder
 import com.twitter.io.Buf
-import com.twitter.util.Await
 import com.twitter.util.Future
 import com.twitter.util.Try
-import io.catbird.util.Rerunnable
 import io.circe.Json
 import io.circe.generic.semiauto
 import io.circe.syntax._
 import io.finch./
 import io.finch.Endpoint
 import io.finch.Input
-import io.finch.Output
 import io.finch.post
 import org.scalatest.FreeSpec
 
@@ -82,9 +78,8 @@ object VersionedResponsesSpec {
     )
   }
 
-  def extractBody[A](result: Option[(Input, Rerunnable[Output[A]])]): A = {
-    val Some((_, eval)) = result
-    Await.result(eval.run).value
+  def extractBody[A](result: Endpoint.Result[A]): A = {
+    result.awaitValueUnsafe().get
   }
 
   implicit val stringRichDecoder: MediaTypedRequestDecoder[String] =

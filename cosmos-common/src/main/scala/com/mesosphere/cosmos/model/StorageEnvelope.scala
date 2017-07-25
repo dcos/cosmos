@@ -5,7 +5,6 @@ import com.mesosphere.cosmos.circe.Decoders.mediaTypedDecode
 import com.mesosphere.cosmos.finch.MediaTypedDecoder
 import com.mesosphere.cosmos.finch.MediaTypedEncoder
 import com.mesosphere.cosmos.http.MediaType
-import com.mesosphere.cosmos.http.MediaTypeOps
 import com.mesosphere.universe.common.ByteBuffers
 import com.mesosphere.universe.common.circe.Decoders.decodeByteBuffer
 import com.mesosphere.universe.common.circe.Encoders.encodeByteBuffer
@@ -21,9 +20,11 @@ import java.nio.ByteBuffer
 import java.nio.charset.StandardCharsets
 import java.util.zip.GZIPInputStream
 import java.util.zip.GZIPOutputStream
+import scala.reflect.ClassTag
+
 
 final case class StorageEnvelope private (metadata: Map[String, String], data: ByteBuffer) {
-  def decodeData[T](implicit mediaTypedDecoder: MediaTypedDecoder[T]): T = {
+  def decodeData[T: MediaTypedDecoder: ClassTag]: T = {
     val contentType = metadata.get(Fields.ContentType).flatMap { contentTypeValue =>
       MediaType.parse(contentTypeValue).toOption
     } getOrElse {
@@ -84,11 +85,11 @@ object StorageEnvelope {
     )
   }
 
-  def encodeData[T : MediaTypedEncoder](data: T): Array[Byte] = {
+  def encodeData[T: MediaTypedEncoder](data: T): Array[Byte] = {
     StorageEnvelope(data).asJson.noSpaces.getBytes(StandardCharsets.UTF_8)
   }
 
-  def decodeData[T : MediaTypedDecoder](data: Array[Byte]): T = {
+  def decodeData[T: MediaTypedDecoder: ClassTag](data: Array[Byte]): T = {
     decode[StorageEnvelope](new String(data, StandardCharsets.UTF_8)).decodeData
   }
 

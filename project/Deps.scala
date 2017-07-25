@@ -56,7 +56,7 @@ object Deps {
 
   // LGPLv3.0
   val findbugs = Seq(
-    "com.google.code.findbugs" % "jsr305" % "3.0.1"
+    "com.google.code.findbugs" % "jsr305" % "3.0.2"
   )
 
   // APLv2.0
@@ -82,6 +82,11 @@ object Deps {
   // APLv2.0
   val mustache = Seq(
     "com.github.spullara.mustache.java" % "compiler" % V.mustache
+  )
+
+  // APLv2.0
+  val netty = Seq(
+    "io.netty" % "netty-common" % V.netty
   )
 
   // BSD 3-clause
@@ -112,18 +117,8 @@ object Deps {
   // APLv2.0
   val twitterUtil = Seq(
     "com.twitter" %% "util-core" % V.twitterUtil,
-    "com.twitter" %% "finagle-stats" % "6.40.0"
+    "com.twitter" %% "finagle-stats" % V.twitterUtil
   )
-
-  // APLv2.0
-  val aws = Seq(
-    "com.amazonaws" % "aws-java-sdk-s3" % V.aws
-  ).map(_.excludeAll(
-    // Exclude commons-logging; we are using logback
-    ExclusionRule("commons-logging", "commons-logging"),
-    // Temporary solution for now; the long term solution is to upgrade twitter-server
-    ExclusionRule("com.fasterxml.jackson.core")
-  ))
 
   // MIT
   val slf4j = Seq(
@@ -135,8 +130,8 @@ object Deps {
 
   // APLv2.0
   val twitterCommons = Seq(
-    "com.twitter.common" % "util-system-mocks" % "0.0.27",
-    "com.twitter.common" % "quantity" % "0.0.31"
+    "com.twitter.common" % "util-system-mocks" % "0.0.105",
+    "com.twitter.common" % "quantity" % "0.0.100"
   )
 
 }
@@ -145,23 +140,22 @@ object V {
   val projectScalaVersion = "2.11.7"
   val projectVersion = "0.5.0-SNAPSHOT"
 
-  val aws = "1.11.63"
-  val bijection = "0.9.4"
-  val circe = "0.6.1"
-  val curator = "2.11.1"
-  val fastparse = "0.4.1"
-  val finch = "0.11.1"
-  val guava = "16.0.1"
+  val bijection = "0.9.5"
+  val circe = "0.8.0"
+  val curator = "2.12.0"
+  val fastparse = "0.4.3"
+  val finch = "0.15.1"
+  val guava = "22.0"
   val jsonSchema = "2.2.6"
-  val logback = "1.1.3"
-  val mockito = "1.10.19"
-  val mustache = "0.9.1"
+  val logback = "1.2.3"
+  val mockito = "2.8.47"
+  val mustache = "0.9.5"
+  val netty = "4.1.13.Final"
   val scalaCheck = "1.13.4"
   val scalaCheckShapeless = "1.1.3"
   val scalaTest = "3.0.1"
-  val scalaUri = "0.4.11"
-  val slf4j = "1.7.10"
-  val twitterServer = "1.25.0"
-  val twitterUtil = "6.39.0"
-  val zookeeper = "3.4.6"
+  val scalaUri = "0.4.16"
+  val slf4j = "1.7.25"
+  val twitterServer = "1.30.0"
+  val twitterUtil = "6.45.0"
 }
