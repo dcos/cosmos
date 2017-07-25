@@ -115,8 +115,9 @@ object Deps {
   )
 
   // APLv2.0
-  val twitterUtilCore = Seq(
-    "com.twitter" %% "util-core" % V.twitterUtilCore
+  val twitterUtil = Seq(
+    "com.twitter" %% "util-core" % V.twitterUtil,
+    "com.twitter" %% "finagle-stats" % V.twitterUtil
   )
 
   // MIT
@@ -156,5 +157,5 @@ object V {
   val scalaUri = "0.4.16"
   val slf4j = "1.7.25"
   val twitterServer = "1.30.0"
-  val twitterUtilCore = "6.45.0"
+  val twitterUtil = "6.45.0"
 }
