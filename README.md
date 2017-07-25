@@ -91,7 +91,7 @@ java -jar cosmos-server/target/scala-2.11/cosmos-server_2.11-<version>-SNAPSHOT-
      -com.mesosphere.cosmos.dcosUri <dcos-host-url>
 ```
 
-### Debug a running Cosmos
+### Cosmos Admin Portal
 
 Cosmos exposes an admin portal at `http://<cosmos-host>:9990/admin`. If Cosmos is running locally
 and you are just interested in the metrics run the following command.
