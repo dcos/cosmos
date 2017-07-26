@@ -1,42 +1,60 @@
 package com.mesosphere.cosmos.repository
 
+import com.mesosphere.cosmos.error.PackageNotFound
+import com.mesosphere.cosmos.error.VersionNotFound
 import com.mesosphere.cosmos.http.RequestSession
 import com.mesosphere.cosmos.rpc
 import com.mesosphere.universe
 import com.mesosphere.universe.v3.syntax.PackageDefinitionOps._
 import com.netaporter.uri.Uri
 import com.twitter.util.Future
+import java.util.regex.Pattern
+import scala.util.matching.Regex
 
-/** An aggregation of packages, possibly from multiple repositories.
-  *
-  * Methods in this trait should be defined to work well even if they must interact with remote
-  * services. For example, they should perform filtering on their data before returning it. That
-  * way, a hierarchy of [[PackageCollection]]s can work together without generating unwieldy amounts
-  * of data.
-  */
-trait PackageCollection {
+
+final class PackageCollection(repositoryCache: RepositoryCache) {
 
   def getPackagesByPackageName(
     packageName: String
-  )(implicit session: RequestSession): Future[List[universe.v4.model.PackageDefinition]]
+  )(implicit session: RequestSession): Future[List[universe.v4.model.PackageDefinition]] = {
+    repositoryCache.all().map { repositories =>
+      PackageCollection.getPackagesByPackageName(
+        packageName, PackageCollection.merge(repositories))
+    }
+  }
 
   def getPackageByPackageVersion(
     packageName: String,
     packageVersion: Option[universe.v3.model.Version]
-  )(implicit session: RequestSession): Future[(universe.v4.model.PackageDefinition, Uri)]
+  )(implicit session: RequestSession): Future[(universe.v4.model.PackageDefinition, Uri)] = {
+    repositoryCache.all().map { repositories =>
+      PackageCollection.getPackagesByPackageVersion(
+        packageName, packageVersion, PackageCollection.mergeWithURI(repositories))
+    }
+  }
 
   def search(
     query: Option[String]
-  )(implicit session: RequestSession): Future[List[rpc.v1.model.SearchResult]]
+  )(implicit session: RequestSession): Future[List[rpc.v1.model.SearchResult]] = {
+    repositoryCache.all().map { repositories =>
+      PackageCollection.search(
+        query, PackageCollection.merge(repositories)
+      )
+    }
+  }
 
   /**
-   * Return the versions of packages in this collection that the package with the given `name` and
-   * `version` can be upgraded to.
-   */
+    * Return the versions of packages in this collection that the package with the given `name` and
+    * `version` can be upgraded to.
+    */
   def upgradesTo(
     name: String,
     version: universe.v3.model.Version
-  )(implicit session: RequestSession): Future[List[universe.v3.model.Version]]
+  )(implicit session: RequestSession): Future[List[universe.v3.model.Version]] = {
+    repositoryCache.all().map { repositories =>
+      PackageCollection.upgradesTo(name, version, PackageCollection.merge(repositories))
+    }
+  }
 
   /**
     * Return the versions of packages in this collection that the package
@@ -44,34 +62,159 @@ trait PackageCollection {
     */
   def downgradesTo(
     packageDefinition: universe.v4.model.PackageDefinition
-  )(implicit session: RequestSession): Future[List[universe.v3.model.Version]]
-
+  )(implicit session: RequestSession): Future[List[universe.v3.model.Version]] = {
+    repositoryCache.all().map { repositories =>
+      PackageCollection.downgradesTo(packageDefinition, PackageCollection.merge(repositories))
+    }
+  }
 }
 
 object PackageCollection {
 
-  /** Helper for the corresponding instance method */
+
+  def mergeWithURI(repositories: List[(Uri, universe.v4.model.Repository)]): List[(universe.v4.model.PackageDefinition, Uri)] = {
+    repositories.map { case (uri, repository) =>
+      repository.packages map ((_, uri))
+    }.flatten
+  }
+
+  def merge(repositories: List[(Uri, universe.v4.model.Repository)]): List[universe.v4.model.PackageDefinition] = {
+    repositories.flatMap{ case (_, repository) =>
+      repository.packages
+    }
+  }
+
+  def getPackagesByPackageName(
+    packageName: String,
+    packageDefinitions: List[universe.v4.model.PackageDefinition]
+  ): List[universe.v4.model.PackageDefinition] = {
+    val result = packageDefinitions.filter(_.name == packageName)
+    if (result.isEmpty) {
+      throw PackageNotFound(packageName).exception
+    }
+    result
+  }
+
+  def getPackagesByPackageVersion(
+    packageName: String,
+    packageVersion: Option[universe.v3.model.Version],
+    packageDefinitions: List[(universe.v4.model.PackageDefinition, Uri)]
+  ): (universe.v4.model.PackageDefinition, Uri) = {
+
+    val ns = packageDefinitions.filter { case (packageDefinition, _) =>
+      packageDefinition.name == packageName
+    }
+
+    val vs = packageVersion match {
+      case Some(ver) => ns.find { case (packageDefinition, _) =>
+        packageDefinition.version == ver
+      }
+      case _ => ns.headOption
+    }
+
+    (packageVersion, ns, vs) match {
+      case (Some(ver), _ :: _ , None) => throw VersionNotFound(packageName, ver).exception
+      case (_, _, None) => throw PackageNotFound(packageName).exception
+      case (_, _, Some(pkg)) => pkg
+    }
+  }
+
+  def search(query: Option[String], packageDefinitions: List[universe.v4.model.PackageDefinition]): List[rpc.v1.model.SearchResult] = {
+    val predicate =
+      query.map { value =>
+        if (value.contains("*")) {
+          searchRegex(createRegex(value))
+        } else {
+          searchString(value.toLowerCase())
+        }
+      } getOrElse { (_: rpc.v1.model.SearchResult) =>
+        true
+      }
+
+      val searchResults = packageDefinitions.foldLeft(Map.empty[String, rpc.v1.model.SearchResult]) { (state, pkg) =>
+
+        val searchResult = state
+          .getOrElse(pkg.name, rpc.v1.model.SearchResult(
+            pkg.name,
+            pkg.version,
+            Map((pkg.version, pkg.releaseVersion)),
+            pkg.description,
+            pkg.framework.getOrElse(false),
+            pkg.tags,
+            pkg.selected,
+            pkg.images
+          ))
+
+        val releaseVersion = searchResult.versions.get(pkg.version).map { releaseVersion =>
+          import universe.v3.model.ReleaseVersion
+          implicitly[Ordering[ReleaseVersion]].max(releaseVersion, pkg.releaseVersion)
+        } getOrElse {
+          pkg.releaseVersion
+        }
+
+        val newSearchResult = searchResult.copy(
+          versions=searchResult.versions + ((pkg.version, releaseVersion))
+        )
+        state + ((pkg.name, newSearchResult))
+      }.toList
+        .map { case (_, searchResult) => searchResult }
+        .filter(predicate)
+
+    searchResults.groupBy {
+        case searchResult => searchResult.name
+      }.map {
+        case (name, list) => list.head
+      }.toList
+  }
+
   def upgradesTo(
     name: String,
     version: universe.v3.model.Version,
-    possibleUpgrades: List[universe.v4.model.PackageDefinition]
+    packageDefinitions: List[universe.v4.model.PackageDefinition]
   ): List[universe.v3.model.Version] = {
-    possibleUpgrades.collect {
-      case possibleUpgrade
-        if possibleUpgrade.name == name &&
-          possibleUpgrade.canUpgradeFrom(version) => possibleUpgrade.version
+    packageDefinitions.collect {
+      case packageDefinition
+        if name == packageDefinition.name && packageDefinition.canUpgradeFrom(version) =>
+        packageDefinition.version
     }
   }
 
   def downgradesTo(
-    packageDefinition: universe.v4.model.PackageDefinition,
-    possibleDowngrades: List[universe.v4.model.PackageDefinition]
+    pkgDefinition: universe.v4.model.PackageDefinition,
+    packageDefinitions: List[universe.v4.model.PackageDefinition]
   ): List[universe.v3.model.Version] = {
-    possibleDowngrades.collect {
-      case possibleDowngrade
-        if packageDefinition.name == possibleDowngrade.name &&
-          packageDefinition.canDowngradeTo(possibleDowngrade.version) => possibleDowngrade.version
+    packageDefinitions.collect {
+      case packageDefinition
+        if pkgDefinition.name == packageDefinition.name &&
+        pkgDefinition.canDowngradeTo(packageDefinition.version) =>
+        packageDefinition.version
     }
   }
 
+  def createRegex(query: String): Regex = {
+    s"""^${safePattern(query)}$$""".r
+  }
+
+  private[this] def searchRegex(
+    regex: Regex
+  ): rpc.v1.model.SearchResult => Boolean = { pkg =>
+    regex.findFirstIn(pkg.name).isDefined ||
+      regex.findFirstIn(pkg.description).isDefined ||
+      pkg.tags.exists(tag => regex.findFirstIn(tag.value).isDefined)
+  }
+
+  private[this] def searchString(
+    query: String
+  ): rpc.v1.model.SearchResult => Boolean = { pkg =>
+    pkg.name.toLowerCase().contains(query) ||
+      pkg.description.toLowerCase().contains(query) ||
+      pkg.tags.exists(tag => tag.value.toLowerCase().contains(query))
+  }
+
+  private[this] def safePattern(query: String): String = {
+    query.split("\\*", -1).map{
+      case "" => ""
+      case v => Pattern.quote(v)
+    }.mkString(".*")
+  }
 }
