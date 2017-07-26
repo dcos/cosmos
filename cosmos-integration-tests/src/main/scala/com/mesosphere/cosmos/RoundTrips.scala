@@ -5,7 +5,6 @@ import com.mesosphere.cosmos.util.RoundTrip
 import com.mesosphere.universe
 import com.netaporter.uri.Uri
 import io.circe.JsonObject
-import org.scalatest.Matchers._
 import org.scalatest.concurrent.Eventually._
 import org.scalatest.time.SpanSugar._
 
@@ -18,14 +17,11 @@ object RoundTrips {
     appId: Option[AppId] = None
   ): RoundTrip[rpc.v1.model.InstallResponse] = {
     RoundTrip(
-      Requests.install(name, version, options, appId)
+      eventually(timeout(2.minutes), interval(5.seconds)) {
+        Requests.install(name, version, options, appId)
+      }
     ) { ir =>
       Requests.uninstall(ir.packageName, Some(ir.appId))
-      eventually(timeout(5.minutes), interval(5.seconds)) {
-        Requests.listPackages(Some(ir.packageName), Some(ir.appId)).map(_.appId).should(
-          not contain ir.appId
-        )
-      }
     }
   }
 

@@ -11,7 +11,7 @@ import org.scalatest.Matchers
 final class PackageListIntegrationSpec extends FeatureSpec with Matchers {
   feature("The package/list endpoint") {
     scenario("should list installed packages") {
-      RoundTrips.withInstall("helloworld", appId = Some(UUID.randomUUID())) { ir =>
+      RoundTrips.withInstall("helloworld") { ir =>
         val pkg = Requests.describePackage(ir.packageName, ir.packageVersion).`package`
         val pkgs = Requests.listPackages()
         pkgs.map(_.appId) should contain(ir.appId)
@@ -22,7 +22,7 @@ final class PackageListIntegrationSpec extends FeatureSpec with Matchers {
     }
     scenario("Issue #251: should include packages whose repositories have been removed") {
       // TODO: Change this to remove helloworld's repo when describe returns repo information
-      RoundTrips.withInstall("helloworld", appId = Some(UUID.randomUUID())) { ir =>
+      RoundTrips.withInstall("helloworld") { ir =>
         val pkg = Requests.describePackage(ir.packageName, ir.packageVersion).`package`
         RoundTrips.withDeletedRepository(Some("V4TestUniverse")) { _ =>
           val pkgs = Requests.listPackages()
