@@ -3,23 +3,14 @@ package com.mesosphere.cosmos.handler
 import com.mesosphere.cosmos.AdminRouter
 import com.mesosphere.cosmos.converter.Label._
 import com.mesosphere.cosmos.converter.Response._
-import com.mesosphere.cosmos.error.PackageNotFound
 import com.mesosphere.cosmos.finch.EndpointHandler
 import com.mesosphere.cosmos.http.RequestSession
-import com.mesosphere.cosmos.label
-import com.mesosphere.cosmos.model.PackageOrigin
 import com.mesosphere.cosmos.repository.CosmosRepository
 import com.mesosphere.cosmos.rpc
 import com.mesosphere.cosmos.thirdparty
-import com.mesosphere.universe
-import com.mesosphere.universe.v3.model.V2Package
-import com.mesosphere.universe.v3.model.V3Package
-import com.mesosphere.universe.v4.model.PackageDefinition
-import com.mesosphere.universe.v4.model.V4Package
 import com.netaporter.uri.Uri
 import com.twitter.bijection.Conversion.asMethod
 import com.twitter.util.Future
-import com.twitter.util.Try
 
 private[cosmos] final class ListHandler(
   adminRouter: AdminRouter,
