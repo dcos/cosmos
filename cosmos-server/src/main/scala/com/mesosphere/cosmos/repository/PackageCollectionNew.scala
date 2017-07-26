@@ -15,19 +15,7 @@ import com.twitter.util.Future
 final class PackageCollectionNew(
   repositoryCache: RepositoryCache
 ) extends PackageCollection {
-
-  /*
-  getbyname
-  getbyrelease
-  getbyversion
-
-
-  def getByName(name: String): Future[List[PackageDefinition]] = {
-    inst.all().map { x =>
-      PackageCollectionNew.getByName(name, PackageCollectionNew.merge(x))
-    }
-  }
-   */
+  
   override def getPackagesByPackageName(
     packageName: String
   )(implicit session: RequestSession): Future[List[PackageDefinition]] = {
@@ -49,7 +37,9 @@ final class PackageCollectionNew(
 
   override def search(
     query: Option[String]
-  )(implicit session: RequestSession): Future[List[SearchResult]] = ???
+  )(implicit session: RequestSession): Future[List[SearchResult]] = {
+    ???
+  }
 
   /**
     * Return the versions of packages in this collection that the package with the given `name` and
@@ -58,7 +48,11 @@ final class PackageCollectionNew(
   override def upgradesTo(
     name: String,
     version: Version
-  )(implicit session: RequestSession): Future[List[Version]] = ???
+  )(implicit session: RequestSession): Future[List[Version]] = {
+    repositoryCache.all().map { repositories =>
+      PackageCollectionNew.upgradesTo(name, version, PackageCollectionNew.merge(repositories))
+    }
+  }
 
   /**
     * Return the versions of packages in this collection that the package
@@ -66,10 +60,15 @@ final class PackageCollectionNew(
     */
   override def downgradesTo(
     packageDefinition: PackageDefinition
-  )(implicit session: RequestSession): Future[List[Version]] = ???
+  )(implicit session: RequestSession): Future[List[Version]] = {
+    repositoryCache.all().map { repositories =>
+      PackageCollectionNew.downgradesTo(packageDefinition, PackageCollectionNew.merge(repositories))
+    }
+  }
 }
 
 object PackageCollectionNew {
+
 
   def mergeWithURI(repositories: List[(Uri, Repository)]): List[(PackageDefinition, Uri)] = {
     repositories.map { case (uri, repository) =>
@@ -82,12 +81,6 @@ object PackageCollectionNew {
       repository.packages
     }
   }
-
-  /*
-  getbyname
-  getbyrelease
-  getbyversion
-   */
 
   def getPackagesByPackageName(
     packageName: String,
@@ -124,4 +117,27 @@ object PackageCollectionNew {
     }
   }
 
+  def upgradesTo(
+    name: String,
+    version: Version,
+    packageDefinitions: List[PackageDefinition]
+  ): List[Version] = {
+    packageDefinitions.collect {
+      case packageDefinition
+        if name == packageDefinition.name && packageDefinition.canUpgradeFrom(version) =>
+        packageDefinition.version
+    }
+  }
+
+  def downgradesTo(
+    pkgDefinition: PackageDefinition,
+    packageDefinitions: List[PackageDefinition]
+  ): List[Version] = {
+    packageDefinitions.collect {
+      case packageDefinition
+        if pkgDefinition.name == packageDefinition.name &&
+        pkgDefinition.canDowngradeTo(packageDefinition.version) =>
+        packageDefinition.version
+    }
+  }
 }
