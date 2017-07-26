@@ -20,26 +20,26 @@ class RepositoryCache(
 
   def all()(
     implicit session: RequestSession
-  ): Future[List[Repository]] = {
-    packageRepositoryStorage.readCache().map { packageRepositories =>
+  ): Future[List[(Uri, Repository)]] = {
+    packageRepositoryStorage.readCache().flatMap { packageRepositories =>
       val oldCachedRepos = cachedRepos
-      update(oldCachedRepos, packageRepositories).map { newRepository =>
-        cachedRepos = newRepository
+      update(oldCachedRepos, packageRepositories).onSuccess { newRepositories =>
+        cachedRepos = newRepositories
+      } map { newRepositories =>
+        newRepositories.map { case (uri, (repo, _)) =>
+          (uri, repo)
+        }.toList
       }
-
-      cachedRepos.map { case (_, (repo, _)) =>
-        repo
-      }.toList
     }
   }
 
-  def update(
+  private[this] def update(
     oldMap: Map[Uri, (universe.v4.model.Repository, Long)],
-    newUri: List[PackageRepository]
+    packageRepositories: List[PackageRepository]
   )(
     implicit session: RequestSession
   ): Future[Map[Uri, (universe.v4.model.Repository, Long)]] = {
-    Future.traverseSequentially(newUri) { packageRepository =>
+    Future.traverseSequentially(packageRepositories) { packageRepository =>
       oldMap.get(packageRepository.uri) match {
         case Some((repo, timeStamp)) =>
           fetch(packageRepository, timeStamp, repo).map(value => (packageRepository.uri, value))
@@ -49,7 +49,7 @@ class RepositoryCache(
     } map(_.toMap)
   }
 
-  def fetch(
+  private[this] def fetch(
     packageRepository: PackageRepository,
     lastTimeStamp: Long,
     oldRepository: universe.v4.model.Repository
@@ -68,7 +68,7 @@ class RepositoryCache(
     }
   }
 
-  def fetch(packageRepository: PackageRepository)(
+  private[this] def fetch(packageRepository: PackageRepository)(
     implicit session: RequestSession
   ): Future[(Repository, Long)] = {
     universeClient(packageRepository).map { newRepository =>
