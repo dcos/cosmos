@@ -9,7 +9,7 @@ import com.twitter.common.util.Clock
 import com.twitter.util.Future
 import java.util.concurrent.TimeUnit
 
-class RepositoryCache(
+final class RepositoryCache(
   packageRepositoryStorage: PackageSourcesStorage,
   universeClient: UniverseClient,
   clock: Clock = Clock.SYSTEM_CLOCK
@@ -20,14 +20,14 @@ class RepositoryCache(
 
   def all()(
     implicit session: RequestSession
-  ): Future[List[(Uri, Repository)]] = {
+  ): Future[List[(Repository, Uri)]] = {
     packageRepositoryStorage.readCache().flatMap { packageRepositories =>
       val oldCachedRepos = cachedRepos
       update(oldCachedRepos, packageRepositories).onSuccess { newRepositories =>
         cachedRepos = newRepositories
       } map { newRepositories =>
         newRepositories.map { case (uri, (repo, _)) =>
-          (uri, repo)
+          (repo, uri)
         }.toList
       }
     }

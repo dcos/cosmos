@@ -11,7 +11,6 @@ import com.twitter.util.Future
 import java.util.regex.Pattern
 import scala.util.matching.Regex
 
-
 final class PackageCollection(repositoryCache: RepositoryCache) {
 
   def getPackagesByPackageName(
@@ -19,7 +18,9 @@ final class PackageCollection(repositoryCache: RepositoryCache) {
   )(implicit session: RequestSession): Future[List[universe.v4.model.PackageDefinition]] = {
     repositoryCache.all().map { repositories =>
       PackageCollection.getPackagesByPackageName(
-        packageName, PackageCollection.merge(repositories))
+        packageName,
+        PackageCollection.merge(repositories)
+      )
     }
   }
 
@@ -29,7 +30,10 @@ final class PackageCollection(repositoryCache: RepositoryCache) {
   )(implicit session: RequestSession): Future[(universe.v4.model.PackageDefinition, Uri)] = {
     repositoryCache.all().map { repositories =>
       PackageCollection.getPackagesByPackageVersion(
-        packageName, packageVersion, PackageCollection.mergeWithURI(repositories))
+        packageName,
+        packageVersion,
+        PackageCollection.mergeWithURI(repositories)
+      )
     }
   }
 
@@ -38,7 +42,8 @@ final class PackageCollection(repositoryCache: RepositoryCache) {
   )(implicit session: RequestSession): Future[List[rpc.v1.model.SearchResult]] = {
     repositoryCache.all().map { repositories =>
       PackageCollection.search(
-        query, PackageCollection.merge(repositories)
+        query,
+        PackageCollection.merge(repositories)
       )
     }
   }
@@ -52,7 +57,11 @@ final class PackageCollection(repositoryCache: RepositoryCache) {
     version: universe.v3.model.Version
   )(implicit session: RequestSession): Future[List[universe.v3.model.Version]] = {
     repositoryCache.all().map { repositories =>
-      PackageCollection.upgradesTo(name, version, PackageCollection.merge(repositories))
+      PackageCollection.upgradesTo(
+        name,
+        version,
+        PackageCollection.merge(repositories)
+      )
     }
   }
 
@@ -64,27 +73,70 @@ final class PackageCollection(repositoryCache: RepositoryCache) {
     packageDefinition: universe.v4.model.PackageDefinition
   )(implicit session: RequestSession): Future[List[universe.v3.model.Version]] = {
     repositoryCache.all().map { repositories =>
-      PackageCollection.downgradesTo(packageDefinition, PackageCollection.merge(repositories))
+      PackageCollection.downgradesTo(
+        packageDefinition,
+        PackageCollection.merge(repositories)
+      )
     }
   }
 }
 
 object PackageCollection {
 
+  /**
+    * @param repositories
+    * @return
+    *         This method takes in a List made up of tuples of type (Uri, Repository). The method
+    *         then sorts the tuples by expanding the Repository in to List[PackageDefintion] and
+    *         then sorting it using the following criteria:
+    *         - Remove all the tuples that are non unique on their name + version combination with
+    *           lowest index remaining part of the list and highest index being removed
+    *         - Sort based on their name (a to z)
+    *           - Then sort based on their index (low to high)
+    *           - Then sort based on their releaseVersion (high to low)
+    */
+  private def mergeWithURI(
+    repositories: List[(universe.v4.model.Repository, Uri)]
+  ) : List[(universe.v4.model.PackageDefinition, Uri)] = {
 
-  def mergeWithURI(repositories: List[(Uri, universe.v4.model.Repository)]): List[(universe.v4.model.PackageDefinition, Uri)] = {
-    repositories.map { case (uri, repository) =>
-      repository.packages map ((_, uri))
-    }.flatten
+    repositories.zipWithIndex.flatMap { case ((repository, uri), index) =>
+      repository.packages.map { packageDefinition =>
+        ((packageDefinition, uri), index)
+      }
+    }
+      .groupBy { case (((packageDefinition, _), _)) =>
+        packageDefinition.name + packageDefinition.version
+      }
+      .map(_._2.head)
+      .toList
+      .sortWith { case (((pkgDef1, _), index1), ((pkgDef2, _), index2)) =>
+        if (pkgDef1.name == pkgDef2.name) {
+          if (index1 == index2) {
+            pkgDef1.releaseVersion.value > pkgDef2.releaseVersion.value
+          }
+          else {
+            index1 < index2
+          }
+        }
+        else {
+          pkgDef1.name < pkgDef2.name
+        }
+      }
+      .map { case (packageDefinition, _) =>
+        packageDefinition
+      }
   }
 
-  def merge(repositories: List[(Uri, universe.v4.model.Repository)]): List[universe.v4.model.PackageDefinition] = {
-    repositories.flatMap{ case (_, repository) =>
-      repository.packages
+  private def merge(
+    repositories: List[(universe.v4.model.Repository, Uri)]
+  ) : List[universe.v4.model.PackageDefinition] = {
+    mergeWithURI(repositories).map { case (packageDefinition, _) =>
+      packageDefinition
     }
   }
 
-  def getPackagesByPackageName(
+
+  private def getPackagesByPackageName(
     packageName: String,
     packageDefinitions: List[universe.v4.model.PackageDefinition]
   ): List[universe.v4.model.PackageDefinition] = {
@@ -95,7 +147,7 @@ object PackageCollection {
     result
   }
 
-  def getPackagesByPackageVersion(
+  private def getPackagesByPackageVersion(
     packageName: String,
     packageVersion: Option[universe.v3.model.Version],
     packageDefinitions: List[(universe.v4.model.PackageDefinition, Uri)]
@@ -119,7 +171,10 @@ object PackageCollection {
     }
   }
 
-  def search(query: Option[String], packageDefinitions: List[universe.v4.model.PackageDefinition]): List[rpc.v1.model.SearchResult] = {
+  private def search(
+    query: Option[String],
+    packageDefinitions: List[universe.v4.model.PackageDefinition]
+  ): List[rpc.v1.model.SearchResult] = {
     val predicate =
       query.map { value =>
         if (value.contains("*")) {
@@ -131,31 +186,31 @@ object PackageCollection {
         true
       }
 
-      val searchResults = packageDefinitions.foldLeft(Map.empty[String, rpc.v1.model.SearchResult]) { (state, pkg) =>
+      val searchResults = packageDefinitions.foldLeft(Map.empty[String, rpc.v1.model.SearchResult]) {
+        (state, pkg) =>
+          val searchResult = state
+            .getOrElse(pkg.name, rpc.v1.model.SearchResult(
+              pkg.name,
+              pkg.version,
+              Map((pkg.version, pkg.releaseVersion)),
+              pkg.description,
+              pkg.framework.getOrElse(false),
+              pkg.tags,
+              pkg.selected,
+              pkg.images
+            ))
 
-        val searchResult = state
-          .getOrElse(pkg.name, rpc.v1.model.SearchResult(
-            pkg.name,
-            pkg.version,
-            Map((pkg.version, pkg.releaseVersion)),
-            pkg.description,
-            pkg.framework.getOrElse(false),
-            pkg.tags,
-            pkg.selected,
-            pkg.images
-          ))
+          val releaseVersion = searchResult.versions.get(pkg.version).map { releaseVersion =>
+            import universe.v3.model.ReleaseVersion
+            implicitly[Ordering[ReleaseVersion]].max(releaseVersion, pkg.releaseVersion)
+          } getOrElse {
+            pkg.releaseVersion
+          }
 
-        val releaseVersion = searchResult.versions.get(pkg.version).map { releaseVersion =>
-          import universe.v3.model.ReleaseVersion
-          implicitly[Ordering[ReleaseVersion]].max(releaseVersion, pkg.releaseVersion)
-        } getOrElse {
-          pkg.releaseVersion
-        }
-
-        val newSearchResult = searchResult.copy(
-          versions=searchResult.versions + ((pkg.version, releaseVersion))
-        )
-        state + ((pkg.name, newSearchResult))
+          val newSearchResult = searchResult.copy(
+            versions=searchResult.versions + ((pkg.version, releaseVersion))
+          )
+          state + ((pkg.name, newSearchResult))
       }.toList
         .map { case (_, searchResult) => searchResult }
         .filter(predicate)
