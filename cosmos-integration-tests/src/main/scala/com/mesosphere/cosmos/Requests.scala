@@ -36,8 +36,6 @@ object Requests {
   ): Res = {
     val (status, response) = CosmosClient.call[Res](request)
     response match {
-      case Left(errorResponse) if errorResponse.`type` == "ServiceUnavailable" =>
-        throw ServiceUnavailable(errorResponse.data.toString).exception
       case Left(errorResponse) =>
         throw HttpErrorResponse(status, errorResponse)
       case Right(res) =>

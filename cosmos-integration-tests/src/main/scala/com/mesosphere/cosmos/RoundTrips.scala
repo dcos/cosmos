@@ -33,12 +33,10 @@ object RoundTrips {
       val repos = Requests.listRepositories()
       val repo = repos.find { repo =>
         name.contains(repo.name) || uri.contains(repo.uri)
-      }.getOrElse(
-        throw new RuntimeException("Attempting to delete a non existent repository")
-      )
-      (repo, repos.indexOf(repo))
+      }
+      (repo, repo.map(repos.indexOf(_)))
     }.flatMap { case (repo, index) =>
-      withDeletedRepository(repo.name, repo.uri, index)
+      withDeletedRepository(name, uri, repo, index)
     }
   }
 
@@ -54,7 +52,7 @@ object RoundTrips {
            * which is N requests to the server,
            * which is N log lines.
            */
-          withDeletedRepository(repo.name, repo.uri, 0)
+          withDeletedRepository(Some(repo.name), Some(repo.uri), Some(repo), Some(0))
         }
       )
       val withAdds = RoundTrip.sequence(
@@ -75,15 +73,23 @@ object RoundTrips {
     )
   }
 
-  def withDeletedRepository(
-    name: String,
-    uri: Uri,
-    oldIndex: Int
+  private[this] def withDeletedRepository(
+    name: Option[String],
+    uri: Option[Uri],
+    oldRepo: Option[rpc.v1.model.PackageRepository],
+    oldIndex: Option[Int]
   ): RoundTrip[rpc.v1.model.PackageRepositoryDeleteResponse] = {
     RoundTrip(
-      Requests.deleteRepository(Some(name), Some(uri)))(_ =>
-      Requests.addRepository(name, uri, Some(oldIndex))
-    )
+      Requests.deleteRepository(name, uri)
+    ) { _ =>
+      val repo = oldRepo.getOrElse {
+        throw new RuntimeException("Unable to restore repository")
+      }
+      val index = oldIndex.getOrElse(
+        throw new RuntimeException("Unable to restore repository index")
+      )
+      Requests.addRepository(repo.name, repo.uri, Some(index))
+    }
   }
 
 }
