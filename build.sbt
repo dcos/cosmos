@@ -27,7 +27,7 @@ lazy val common = project.in(file("cosmos-common"))
       Deps.scalaReflect ++
       Deps.scalaTest ++
       Deps.scalaUri ++
-      Deps.twitterUtilCore
+      Deps.twitterUtil
   )
 
 lazy val server = project.in(file("cosmos-server"))
