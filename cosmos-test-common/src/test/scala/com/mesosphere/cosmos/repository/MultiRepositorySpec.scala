@@ -80,7 +80,6 @@ final class MultiRepositorySpec extends FreeSpec with Matchers with TableDrivenP
 
       Try(Await.result(c.search(None)).map(_.name)) shouldBe Return(List("minimal"))
       Try(Await.result(c.search(Some("minimal"))).map(_.name)) shouldBe Return(List("minimal"))
-      println("#######################################")
     }
   }
   // scalastyle:on

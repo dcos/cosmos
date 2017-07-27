@@ -83,27 +83,27 @@ final class PackageCollection(repositoryCache: RepositoryCache) {
 
 object PackageCollection {
 
-  /**
-    * @param repositories
-    * @return
-    *         This method takes in a List made up of tuples of type (Uri, Repository). The method
-    *         then sorts the tuples by expanding the Repository in to List[PackageDefintion] and
-    *         then sorting it using the following criteria:
+  /**(
+    * @param repositories Takes in a List of tuples of type (Repository, Uri).
+    * @return A List[(PackageDefinition, Uri)] sorted with below criteria:
+    *         The method sorts the tuples by expanding the Repository in to List[PackageDefinition]
+    *         and then sorting it using the following criteria (in this exact order):
     *         - Remove all the tuples that are non unique on their name + version combination with
-    *           lowest index remaining part of the list and highest index being removed
+    *           the criteria that entry with the lowest index value stays
     *         - Sort based on their name (a to z)
-    *           - Then sort based on their index (low to high)
-    *           - Then sort based on their releaseVersion (high to low)
+    *         - Sort based on their index (low to high)
+    *         - Sort based on their releaseVersion (high to low)
     */
   private def mergeWithURI(
     repositories: List[(universe.v4.model.Repository, Uri)]
   ) : List[(universe.v4.model.PackageDefinition, Uri)] = {
-
-    repositories.zipWithIndex.flatMap { case ((repository, uri), index) =>
-      repository.packages.map { packageDefinition =>
-        ((packageDefinition, uri), index)
+    repositories
+      .zipWithIndex
+      .flatMap { case ((repository, uri), index) =>
+        repository.packages.map { packageDefinition =>
+          ((packageDefinition, uri), index)
+        }
       }
-    }
       .groupBy { case (((packageDefinition, _), _)) =>
         packageDefinition.name + packageDefinition.version
       }
