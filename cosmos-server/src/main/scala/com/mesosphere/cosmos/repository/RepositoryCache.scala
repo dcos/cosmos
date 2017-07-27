@@ -1,9 +1,8 @@
 package com.mesosphere.cosmos.repository
 
 import com.mesosphere.cosmos.http.RequestSession
-import com.mesosphere.cosmos.rpc.v1.model.PackageRepository
+import com.mesosphere.cosmos.rpc
 import com.mesosphere.universe
-import com.mesosphere.universe.v4.model.Repository
 import com.netaporter.uri.Uri
 import com.twitter.common.util.Clock
 import com.twitter.util.Future
@@ -20,7 +19,7 @@ final class RepositoryCache(
 
   def all()(
     implicit session: RequestSession
-  ): Future[List[(Repository, Uri)]] = {
+  ): Future[List[(universe.v4.model.Repository, Uri)]] = {
     packageRepositoryStorage.readCache().flatMap { packageRepositories =>
       val oldCachedRepos = cachedRepos
       update(oldCachedRepos, packageRepositories).onSuccess { newRepositories =>
@@ -35,7 +34,7 @@ final class RepositoryCache(
 
   private[this] def update(
     oldMap: Map[Uri, (universe.v4.model.Repository, Long)],
-    packageRepositories: List[PackageRepository]
+    packageRepositories: List[rpc.v1.model.PackageRepository]
   )(
     implicit session: RequestSession
   ): Future[Map[Uri, (universe.v4.model.Repository, Long)]] = {
@@ -50,12 +49,12 @@ final class RepositoryCache(
   }
 
   private[this] def fetch(
-    packageRepository: PackageRepository,
+    packageRepository: rpc.v1.model.PackageRepository,
     lastTimeStamp: Long,
     oldRepository: universe.v4.model.Repository
   )(
     implicit session: RequestSession
-  ): Future[(Repository, Long)] = {
+  ): Future[(universe.v4.model.Repository, Long)] = {
     val now = TimeUnit.MILLISECONDS.toSeconds(clock.nowMillis())
     val lastSec = TimeUnit.MILLISECONDS.toSeconds(lastTimeStamp)
     val refetchAt = lastSec + TimeUnit.MINUTES.toSeconds(1)
@@ -68,9 +67,11 @@ final class RepositoryCache(
     }
   }
 
-  private[this] def fetch(packageRepository: PackageRepository)(
+  private[this] def fetch(
+    packageRepository: rpc.v1.model.PackageRepository
+  )(
     implicit session: RequestSession
-  ): Future[(Repository, Long)] = {
+  ): Future[(universe.v4.model.Repository, Long)] = {
     universeClient(packageRepository).map { newRepository =>
       (newRepository, clock.nowMillis())
     }

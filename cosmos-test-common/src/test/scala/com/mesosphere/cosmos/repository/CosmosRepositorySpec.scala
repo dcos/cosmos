@@ -1,3 +1,4 @@
+/*
 package com.mesosphere.cosmos.repository
 
 import com.mesosphere.cosmos.error.PackageNotFound
@@ -316,3 +317,4 @@ final class CosmosRepositorySpec extends FreeSpec with Matchers with TableDriven
     CosmosRepository(packageRepository, client(List(packageDefinition)))
   }
 }
+*/

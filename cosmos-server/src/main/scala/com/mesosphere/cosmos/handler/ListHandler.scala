@@ -5,16 +5,13 @@ import com.mesosphere.cosmos.converter.Label._
 import com.mesosphere.cosmos.converter.Response._
 import com.mesosphere.cosmos.finch.EndpointHandler
 import com.mesosphere.cosmos.http.RequestSession
-import com.mesosphere.cosmos.repository.CosmosRepository
 import com.mesosphere.cosmos.rpc
 import com.mesosphere.cosmos.thirdparty
-import com.netaporter.uri.Uri
 import com.twitter.bijection.Conversion.asMethod
 import com.twitter.util.Future
 
 private[cosmos] final class ListHandler(
-  adminRouter: AdminRouter,
-  repositories: (Uri) => Future[Option[CosmosRepository]]
+  adminRouter: AdminRouter
 ) extends EndpointHandler[rpc.v1.model.ListRequest, rpc.v1.model.ListResponse] {
 
   override def apply(

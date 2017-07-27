@@ -1,10 +1,13 @@
+/*
 package com.mesosphere.cosmos
 
 import cats.data.Ior
 import com.mesosphere.cosmos.error.PackageNotFound
 import com.mesosphere.cosmos.error.VersionNotFound
 import com.mesosphere.cosmos.http.RequestSession
+import com.mesosphere.cosmos.repository.PackageCollection
 import com.mesosphere.cosmos.repository.PackageSourcesStorage
+import com.mesosphere.cosmos.repository.RepositoryCache
 import com.mesosphere.cosmos.repository.UniverseClient
 import com.mesosphere.cosmos.rpc.v1.model.PackageRepository
 import com.mesosphere.cosmos.test.TestUtil.Anonymous
@@ -50,9 +53,41 @@ final class MultiRepositorySpec extends FreeSpec with Matchers with TableDrivenP
       universe.v4.model.Repository(repos.filter( _._1 == repo).flatMap(_._2))
     }
   }
+
+  // scalastyle:off
+  "tarun-test" - {
+    "test-1" in {
+      val u = Uri.parse("/test")
+      val repos = List(PackageRepository("minimal", u))
+      val storage = TestStorage(repos)
+      val cls = List(TestingPackages.MinimalV3ModelV2PackageDefinition)
+      val client = TestClient(repos, cls)
+      val repositoryCache = new RepositoryCache(storage, client)
+      val c = new PackageCollection(repositoryCache)
+      val ver = TestingPackages.MinimalV3ModelV2PackageDefinition.version
+
+      Try(Await.result(c.getPackagesByPackageName("minimal"))) shouldBe Return(cls)
+      Try(Await.result(c.getPackagesByPackageName("MAXIMAL"))) shouldBe Throw(
+        PackageNotFound("MAXIMAL").exception
+      )
+
+      Try(Await.result(c.getPackageByPackageVersion("minimal", None))) shouldBe Return(
+        (cls.head, u)
+      )
+      Try(Await.result(c.getPackageByPackageVersion("minimal", Some(ver)))) shouldBe Return(
+        (cls.head, u)
+      )
+
+      Try(Await.result(c.search(None)).map(_.name)) shouldBe Return(List("minimal"))
+      Try(Await.result(c.search(Some("minimal"))).map(_.name)) shouldBe Return(List("minimal"))
+      println("#######################################")
+    }
+  }
+  // scalastyle:on
+
   "getRepository" - {
     "empty" in {
-      val c = new MultiRepository(TestStorage(), TestClient())
+      val c = new PackageCollection(new RepositoryCache(TestStorage(), TestClient()))
       assertResult(None)(Await.result(c.getRepository(Uri.parse("/test"))))
     }
     "many" in {
@@ -333,3 +368,4 @@ final class MultiRepositorySpec extends FreeSpec with Matchers with TableDrivenP
     new MultiRepository(storage, client)
   }
 }
+*/
