@@ -162,14 +162,6 @@ object CosmosIntegrationTestClient extends Matchers {
     }
   }
 
-  object ZooKeeperClient {
-    val uri: ZooKeeperUri = {
-      ZooKeeperUri.parse(
-        getClientProperty("ZooKeeperClient", "uri")
-      ).get()
-    }
-  }
-
   def getClientProperty(clientName: String, key: String): String = {
     val property = s"com.mesosphere.cosmos.test.CosmosIntegrationTestClient.$clientName.$key"
       Option(System.getProperty(property))
