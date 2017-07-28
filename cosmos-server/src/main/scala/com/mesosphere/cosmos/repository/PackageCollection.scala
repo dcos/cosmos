@@ -16,10 +16,12 @@ final class PackageCollection(repositoryCache: RepositoryCache) {
   def getPackagesByPackageName(
     packageName: String
   )(implicit session: RequestSession): Future[List[universe.v4.model.PackageDefinition]] = {
-    repositoryCache.all().map { repositories =>
+    val t = repositoryCache.all()
+    t.map { repositories =>
+      val p = PackageCollection.merge(repositories)
       PackageCollection.getPackagesByPackageName(
         packageName,
-        PackageCollection.merge(repositories)
+        p
       )
     }
   }
@@ -83,51 +85,7 @@ final class PackageCollection(repositoryCache: RepositoryCache) {
 
 object PackageCollection {
 
-  /**(
-    * @param repositories Takes in a List of tuples of type (Repository, Uri).
-    * @return A List[(PackageDefinition, Uri)] sorted with below criteria:
-    *         The method sorts the tuples by expanding the Repository in to List[PackageDefinition]
-    *         and then sorting it using the following criteria (in this exact order):
-    *         - Remove all the tuples that are non unique on their name + version combination with
-    *           the criteria that entry with the lowest index value stays
-    *         - Sort based on their name (a to z)
-    *         - Sort based on their index (low to high)
-    *         - Sort based on their releaseVersion (high to low)
-    */
-  private def mergeWithURI(
-    repositories: List[(universe.v4.model.Repository, Uri)]
-  ) : List[(universe.v4.model.PackageDefinition, Uri)] = {
-    repositories
-      .zipWithIndex
-      .flatMap { case ((repository, uri), index) =>
-        repository.packages.map { packageDefinition =>
-          ((packageDefinition, uri), index)
-        }
-      }
-      .groupBy { case (((packageDefinition, _), _)) =>
-        packageDefinition.name + packageDefinition.version
-      }
-      .map(_._2.head)
-      .toList
-      .sortWith { case (((pkgDef1, _), index1), ((pkgDef2, _), index2)) =>
-        if (pkgDef1.name == pkgDef2.name) {
-          if (index1 == index2) {
-            pkgDef1.releaseVersion.value > pkgDef2.releaseVersion.value
-          }
-          else {
-            index1 < index2
-          }
-        }
-        else {
-          pkgDef1.name < pkgDef2.name
-        }
-      }
-      .map { case (packageDefinition, _) =>
-        packageDefinition
-      }
-  }
-
-  private def merge(
+  def merge(
     repositories: List[(universe.v4.model.Repository, Uri)]
   ) : List[universe.v4.model.PackageDefinition] = {
     mergeWithURI(repositories).map { case (packageDefinition, _) =>
@@ -136,7 +94,7 @@ object PackageCollection {
   }
 
 
-  private def getPackagesByPackageName(
+  def getPackagesByPackageName(
     packageName: String,
     packageDefinitions: List[universe.v4.model.PackageDefinition]
   ): List[universe.v4.model.PackageDefinition] = {
@@ -147,7 +105,7 @@ object PackageCollection {
     result
   }
 
-  private def getPackagesByPackageVersion(
+  def getPackagesByPackageVersion(
     packageName: String,
     packageVersion: Option[universe.v3.model.Version],
     packageDefinitions: List[(universe.v4.model.PackageDefinition, Uri)]
@@ -171,7 +129,7 @@ object PackageCollection {
     }
   }
 
-  private def search(
+  def search(
     query: Option[String],
     packageDefinitions: List[universe.v4.model.PackageDefinition]
   ): List[rpc.v1.model.SearchResult] = {
@@ -248,6 +206,77 @@ object PackageCollection {
 
   def createRegex(query: String): Regex = {
     s"""^${safePattern(query)}$$""".r
+  }
+
+
+  /**(
+    *
+    * @param repositories Takes in a List of tuples of type (Repository, Uri).
+    * @return A List[(PackageDefinition, Uri)] sorted with below criteria:
+    *         The method sorts the tuples by expanding the Repository in to List[PackageDefinition]
+    *         and then sorting it using the following criteria (in this exact order):
+    *         - Remove all the tuples that are non unique on their name + version combination with
+    *           the criteria that entry with the lowest index value stays
+    *         - Sort based on their name (a to z)
+    *         - Sort based on their index (low to high)
+    *         - Sort based on their releaseVersion (high to low)
+    *
+    * The sorting has to be a foldLeft as we need to iterate from left to right to preserve the order.
+    * Elements are appended at the end of Sequence and thus Vector is a better choice than List.
+    */
+  private def mergeWithURI(
+    repositories: List[(universe.v4.model.Repository, Uri)]
+  ) : List[(universe.v4.model.PackageDefinition, Uri)] = {
+    val (_, uniquePackageDefinitions) = repositories
+      .zipWithIndex
+      .flatMap { case ((repository, uri), index) =>
+        repository.packages.map { packageDefinition =>
+          ((packageDefinition, uri), index)
+        }
+      }
+      .foldLeft((Set.empty[rpc.v1.model.PackageCoordinate],
+        Vector.empty[((universe.v4.model.PackageDefinition, Uri), Int)])) { (state, current) =>
+        val (uniquePackageCoordinate, uniquePackages) = state
+        val ((packageDefinition, _), _) = current
+        val packageCoordinate = rpc.v1.model.PackageCoordinate(
+          packageDefinition.name,
+          packageDefinition.version
+        )
+        if (uniquePackageCoordinate.contains(packageCoordinate)) {
+          state
+        } else {
+          (
+            uniquePackageCoordinate + packageCoordinate,
+            uniquePackages :+ current
+          )
+        }
+      }
+    val result = uniquePackageDefinitions.sorted(pkgDefTupleOrdering)
+    result.map { case (pkgDefTuple, _) =>
+      pkgDefTuple
+    }.toList
+  }
+
+  val pkgDefTupleOrdering = new Ordering[((universe.v4.model.PackageDefinition, Uri), Int)] {
+    override def compare(
+      a: ((universe.v4.model.PackageDefinition, Uri), Int),
+      b: ((universe.v4.model.PackageDefinition, Uri), Int)
+    ): Int = {
+      val ((pkgDef1, _), index1) = a
+      val ((pkgDef2, _), index2) = b
+
+      val orderName = pkgDef1.name.compare(pkgDef2.name)
+      if(orderName != 0) {
+        orderName
+      }
+
+      val orderIndex = index1.compare(index2)
+      if(orderIndex != 0) {
+        orderIndex
+      }
+
+      pkgDef1.releaseVersion.value.compare(pkgDef2.releaseVersion.value)
+    }
   }
 
   private[this] def searchRegex(
