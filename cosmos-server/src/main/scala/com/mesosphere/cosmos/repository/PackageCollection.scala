@@ -85,15 +85,6 @@ final class PackageCollection(repositoryCache: RepositoryCache) {
 
 object PackageCollection {
 
-  def merge(
-    repositories: List[(universe.v4.model.Repository, Uri)]
-  ) : List[universe.v4.model.PackageDefinition] = {
-    mergeWithURI(repositories).map { case (packageDefinition, _) =>
-      packageDefinition
-    }
-  }
-
-
   def getPackagesByPackageName(
     packageName: String,
     packageDefinitions: List[universe.v4.model.PackageDefinition]
@@ -204,6 +195,14 @@ object PackageCollection {
     }
   }
 
+  def merge(
+    repositories: List[(universe.v4.model.Repository, Uri)]
+  ) : List[universe.v4.model.PackageDefinition] = {
+    mergeWithURI(repositories).map { case (packageDefinition, _) =>
+      packageDefinition
+    }
+  }
+
   def createRegex(query: String): Regex = {
     s"""^${safePattern(query)}$$""".r
   }
@@ -273,7 +272,7 @@ object PackageCollection {
       } else if (orderIndex != 0) {
         orderIndex
       } else {
-        pkgDef1.releaseVersion.value.compare(pkgDef2.releaseVersion.value)
+        pkgDef2.releaseVersion.value.compare(pkgDef1.releaseVersion.value)
       }
     }
   }
