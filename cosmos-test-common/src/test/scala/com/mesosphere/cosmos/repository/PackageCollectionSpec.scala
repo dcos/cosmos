@@ -1,341 +1,449 @@
 
 package com.mesosphere.cosmos
 
-import cats.data.Ior
 import com.mesosphere.Generators
 import com.mesosphere.cosmos.error.PackageNotFound
 import com.mesosphere.cosmos.error.VersionNotFound
-import com.mesosphere.cosmos.http.RequestSession
 import com.mesosphere.cosmos.repository.PackageCollection
-import com.mesosphere.cosmos.repository.PackageSourcesStorage
-import com.mesosphere.cosmos.repository.RepositoryCache
-import com.mesosphere.cosmos.repository.UniverseClient
-import com.mesosphere.cosmos.rpc.v1.model.PackageRepository
-import com.mesosphere.cosmos.test.TestUtil.Anonymous
 import com.mesosphere.universe
 import com.mesosphere.universe.test.TestingPackages
-import com.mesosphere.universe.v3.model.Version
 import com.mesosphere.universe.v3.syntax.PackageDefinitionOps._
 import com.netaporter.uri.Uri
-import com.twitter.util.Await
-import com.twitter.util.Future
 import com.twitter.util.Return
 import com.twitter.util.Throw
 import com.twitter.util.Try
 import org.scalacheck.Gen
 import org.scalatest.FreeSpec
 import org.scalatest.Matchers
+import org.scalatest.prop.PropertyChecks
 import org.scalatest.prop.TableDrivenPropertyChecks
 
-final class MultiRepositorySpec extends FreeSpec with Matchers with TableDrivenPropertyChecks {
+final class PackageCollectionSpec extends FreeSpec
+  with Matchers
+  with PropertyChecks
+  with TableDrivenPropertyChecks {
 
-  case class TestClient(repos: List[PackageRepository] = Nil, ls: List[universe.v4.model.PackageDefinition] = Nil)
-    extends UniverseClient {
-    def apply(repo: PackageRepository)(implicit session: RequestSession): Future[universe.v4.model.Repository] = {
-      Future(universe.v4.model.Repository(repos.filter( _ == repo).flatMap(_ => ls)))
-    }
+  def getRepository(
+    packageDefinitions : List[universe.v4.model.PackageDefinition] = List.empty[universe.v4.model.PackageDefinition],
+    uri: Uri = Uri.empty
+  ): (universe.v4.model.Repository, Uri) = {
+    (universe.v4.model.Repository(packageDefinitions), uri)
   }
 
-  case class TestStorage(initial:List[PackageRepository] = Nil) extends PackageSourcesStorage {
-    var cache: List[PackageRepository] = initial
-    def read(): Future[List[PackageRepository]] =  Future { cache }
-    def readCache(): Future[List[PackageRepository]] =  Future { cache }
-    def add(index: Option[Int], packageRepository: PackageRepository): Future[List[PackageRepository]] = ???
-    def delete(nameOrUri: Ior[String, Uri]): Future[List[PackageRepository]] =  ???
+  def genIncompatibleUpgradesFrom(
+    versionToAvoid: universe.v3.model.Version
+  ): Gen[Option[List[universe.v3.model.VersionSpecification]]] = {
+    val genVersionSpecification = Generators.genVersion
+      .suchThat(_ != versionToAvoid)
+      .map(universe.v3.model.ExactVersion)
+
+    Gen.option(Gen.listOf(genVersionSpecification))
   }
 
-  case class TestMultiClient(
-    repos: List[(PackageRepository,List[universe.v4.model.PackageDefinition])] = Nil
-  ) extends UniverseClient {
-    def apply(
-      repo: PackageRepository
-    )(implicit
-      session: RequestSession
-    ): Future[universe.v4.model.Repository] = Future {
-      universe.v4.model.Repository(repos.filter( _._1 == repo).flatMap(_._2))
-    }
-  }
+  "Queries on PackageCollection" - {
 
-  // scalastyle:off
-  "tarun-test" - {
-    "test-1" in {
-      val u = Uri.parse("/test")
-      val repos = List(PackageRepository("minimal", u))
-      val storage = TestStorage(repos)
-      val cls = List(TestingPackages.MinimalV3ModelV2PackageDefinition)
-      val client = TestClient(repos, cls)
-      val repositoryCache = new RepositoryCache(storage, client)
-      val c = new PackageCollection(repositoryCache)
-      val ver = TestingPackages.MinimalV3ModelV2PackageDefinition.version
+    "merge" - {
 
-      Try(Await.result(c.getPackagesByPackageName("minimal"))) shouldBe Return(cls)
-      Try(Await.result(c.getPackagesByPackageName("MAXIMAL"))) shouldBe Throw(
-        PackageNotFound("MAXIMAL").exception
-      )
-
-      Try(Await.result(c.getPackageByPackageVersion("minimal", None))) shouldBe Return(
-        (cls.head, u)
-      )
-      Try(Await.result(c.getPackageByPackageVersion("minimal", Some(ver)))) shouldBe Return(
-        (cls.head, u)
-      )
-
-      Try(Await.result(c.search(None)).map(_.name)) shouldBe Return(List("minimal"))
-      Try(Await.result(c.search(Some("minimal"))).map(_.name)) shouldBe Return(List("minimal"))
-    }
-  }
-  // scalastyle:on
-  "queries" - {
-    "not found" in {
-      val c = new PackageCollection(new RepositoryCache(TestStorage(), TestClient()))
-      val ver = TestingPackages.MinimalV3ModelV2PackageDefinition.version
-
-      Try(Await.result(c.getPackagesByPackageName("test"))) shouldBe Throw(
-        new PackageNotFound("test").exception
-      )
-
-      Try(Await.result(c.getPackageByPackageVersion("test", Some(ver)))) shouldBe Throw(
-        new VersionNotFound("test", ver).exception
-      )
-
-      Try(Await.result(c.getPackageByPackageVersion("test", None))) shouldBe Throw(
-        new PackageNotFound("test").exception
-      )
-
-      Try(Await.result(c.search(Some("test")))) shouldBe Return(Nil)
-
-      Try(Await.result(c.search(None))) shouldBe Return(Nil)
-    }
-
-    "found minimal" in {
-      val u = Uri.parse("/test")
-      val repos = List(PackageRepository("minimal", u))
-      val storage = TestStorage(repos)
-      val cls = List(TestingPackages.MinimalV3ModelV2PackageDefinition)
-      val client = TestClient(repos, cls)
-      val c = new PackageCollection(new RepositoryCache(storage, client))
-      val ver = TestingPackages.MinimalV3ModelV2PackageDefinition.version
-
-      Try(Await.result(c.getPackagesByPackageName("minimal"))) shouldBe Return(cls)
-      Try(Await.result(c.getPackagesByPackageName("MAXIMAL"))) shouldBe Throw(
-        PackageNotFound("MAXIMAL").exception
-      )
-
-      Try(Await.result(c.getPackageByPackageVersion("minimal", None))) shouldBe Return(
-        (cls.head, u)
-      )
-      Try(Await.result(c.getPackageByPackageVersion("minimal", Some(ver)))) shouldBe Return(
-        (cls.head, u)
-      )
-
-      Try(Await.result(c.search(None)).map(_.name)) shouldBe Return(List("minimal"))
-      Try(Await.result(c.search(Some("minimal"))).map(_.name)) shouldBe Return(List("minimal"))
-    }
-
-    "invalid repo" in {
-      val invalid = List(PackageRepository("invalid", Uri.parse("/invalid")))
-      val repos = List(PackageRepository("minimal", Uri.parse("/test")))
-      val storage = TestStorage(repos)
-      val cls = List(TestingPackages.MinimalV3ModelV2PackageDefinition)
-      val client = TestClient(invalid, cls)
-      val c = new PackageCollection(new RepositoryCache(storage, client))
-      val ver = TestingPackages.MinimalV3ModelV2PackageDefinition.version
-
-      Try(Await.result(c.getPackagesByPackageName("minimal"))) shouldBe Throw(
-        PackageNotFound("minimal").exception
-      )
-
-      Try(Await.result(c.getPackageByPackageVersion("minimal", None))) shouldBe Throw(
-        PackageNotFound("minimal").exception
-      )
-
-      Try(Await.result(c.getPackageByPackageVersion("minimal", Some(ver)))) shouldBe Throw(
-        VersionNotFound("minimal",ver).exception
-      )
-    }
-
-    "wrong query" in {
-      val repos = List(PackageRepository("valid", Uri.parse("/valid")))
-      val storage = TestStorage(repos)
-      val cls = List(TestingPackages.MinimalV3ModelV2PackageDefinition)
-      val client = TestClient(repos, cls)
-      val c = new PackageCollection(new RepositoryCache(storage, client))
-      val ver = TestingPackages.MinimalV3ModelV2PackageDefinition.version
-      val badver = TestingPackages.MaximalV3ModelV3PackageDefinition.version
-
-      Try(Await.result(c.getPackagesByPackageName("MAXIMAL"))) shouldBe Throw(
-        PackageNotFound("MAXIMAL").exception
-      )
-
-      Try(Await.result(c.getPackageByPackageVersion("MAXIMAL", None))) shouldBe Throw(
-        PackageNotFound("MAXIMAL").exception
-      )
-
-      Try(Await.result(c.getPackageByPackageVersion("MAXIMAL", Some(ver)))) shouldBe Throw(
-        VersionNotFound("MAXIMAL", ver).exception
-      )
-
-      Try(Await.result(c.getPackageByPackageVersion("minimal", Some(badver)))) shouldBe Throw(
-        VersionNotFound("minimal", badver).exception
-      )
-    }
-
-    "from many" in {
-      val u = Uri.parse("/valid")
-      val repos = List(PackageRepository("valid", u))
-      val storage = TestStorage(repos)
-      val cls = List(TestingPackages.MaximalV3ModelV3PackageDefinition, TestingPackages.MinimalV3ModelV2PackageDefinition)
-      val client = TestClient(repos, cls)
-      val c = new PackageCollection(new RepositoryCache(storage, client))
-      val minver = TestingPackages.MinimalV3ModelV2PackageDefinition.version
-      val minexp = (TestingPackages.MinimalV3ModelV2PackageDefinition, u)
-      val maxver = TestingPackages.MaximalV3ModelV3PackageDefinition.version
-
-      val expect = List(TestingPackages.MinimalV3ModelV2PackageDefinition)
-
-      Try(Await.result(c.getPackagesByPackageName("minimal"))) shouldBe Return(expect)
-      Try(Await.result(c.getPackageByPackageVersion("minimal", None))) shouldBe Return(minexp)
-      Try(Await.result(c.getPackageByPackageVersion("minimal", Some(minver)))) shouldBe Return(
-        minexp
-      )
-      Try(Await.result(c.getPackageByPackageVersion("minimal", Some(maxver)))) shouldBe Throw(
-        VersionNotFound("minimal", maxver).exception
-      )
-
-      val maxexp = (TestingPackages.MaximalV3ModelV3PackageDefinition, u)
-
-      Try(Await.result(c.getPackageByPackageVersion("MAXIMAL", None))) shouldBe Return(maxexp)
-      Try(Await.result(c.getPackageByPackageVersion("MAXIMAL", Some(maxver)))) shouldBe Return(
-        maxexp
-      )
-      Try(Await.result(c.getPackageByPackageVersion("MAXIMAL", Some(minver)))) shouldBe Throw(
-        VersionNotFound("MAXIMAL", minver).exception
-      )
-
-      Try(Await.result(c.search(None)).map(_.name).sorted) shouldBe Return(
-        List("MAXIMAL", "minimal")
-      )
-      Try(Await.result(c.search(Some("minimal"))).map(_.name)) shouldBe Return(List("minimal"))
-      Try(Await.result(c.search(Some("MAXIMAL"))).map(_.name)) shouldBe Return(List("MAXIMAL"))
-    }
-
-    "multi repo multi same packages" in {
-      val rmax = PackageRepository("max", Uri.parse("/MAXIMAL"))
-      val rmin = PackageRepository("min", Uri.parse("/minimal"))
-      val min2 = TestingPackages.MinimalV3ModelV2PackageDefinition.copy(version = Version("1.2.4"))
-      val max2 = TestingPackages.MaximalV3ModelV3PackageDefinition.copy(version = Version("9.9.9"))
-      val clientdata = List((rmax, List(TestingPackages.MaximalV3ModelV3PackageDefinition,max2)),
-                            (rmin, List(TestingPackages.MinimalV3ModelV2PackageDefinition,min2)))
-      val storage = TestStorage(List(rmax,rmin))
-      val client = TestMultiClient(clientdata)
-      val c = new PackageCollection(new RepositoryCache(storage, client))
-
-      Try(Await.result(c.getPackagesByPackageName("minimal")).length) shouldBe Return(2)
-      Try(Await.result(c.getPackagesByPackageName("minimal"))) shouldBe Return(
-        List(TestingPackages.MinimalV3ModelV2PackageDefinition,min2)
-      )
-      Try(Await.result(c.getPackagesByPackageName("MAXIMAL"))) shouldBe Return(
-        List(TestingPackages.MaximalV3ModelV3PackageDefinition,max2)
-      )
-      Try(Await.result(c.getPackagesByPackageName("foobar"))) shouldBe Throw(
-        PackageNotFound("foobar").exception
-      )
-
-      val minver = TestingPackages.MinimalV3ModelV2PackageDefinition.version
-      val minexp = (TestingPackages.MinimalV3ModelV2PackageDefinition, Uri.parse("/minimal"))
-
-      assertResult(Return(minexp))(Try(Await.result(c.getPackageByPackageVersion("minimal", None))))
-      assertResult(Return(minexp))(Try(Await.result(c.getPackageByPackageVersion("minimal", Some(minver)))))
-
-      val maxver = TestingPackages.MaximalV3ModelV3PackageDefinition.version
-      val maxexp = (TestingPackages.MaximalV3ModelV3PackageDefinition, Uri.parse("/MAXIMAL"))
-
-      assertResult(Return(maxexp))(Try(Await.result(c.getPackageByPackageVersion("MAXIMAL", None))))
-      assertResult(Return(maxexp))(Try(Await.result(c.getPackageByPackageVersion("MAXIMAL", Some(maxver)))))
-
-      assertResult(Return(List("MAXIMAL", "minimal")))(Try(Await.result(c.search(None)).map(_.name).sorted))
-      assertResult(Return(List("minimal")))(Try(Await.result(c.search(Some("minimal"))).map(_.name)))
-      val min2ver = min2.version
-      assertResult(Return(List(Set(minver, min2ver))))(Try(Await.result(c.search(Some("minimal"))).map(_.versions.keys)))
-
-      val max2ver = max2.version
-      assertResult(Return(List(Set(maxver, max2ver))))(Try(Await.result(c.search(Some("MAXIMAL"))).map(_.versions.keys)))
-    }
-    "multi repo multi different packages" in {
-      val rmax = PackageRepository("max", Uri.parse("/MAXIMAL"))
-      val rmin = PackageRepository("min", Uri.parse("/minimal"))
-      val min2 = TestingPackages.MinimalV3ModelV2PackageDefinition.copy(version = Version("1.2.4"))
-      val max2 = TestingPackages.MaximalV3ModelV3PackageDefinition.copy(version = Version("9.9.9"))
-      val clientdata = List((rmax, List(TestingPackages.MaximalV3ModelV3PackageDefinition,min2)),
-                            (rmin, List(TestingPackages.MinimalV3ModelV2PackageDefinition,max2)))
-      val storage = TestStorage(List(rmax,rmin))
-      val client = TestMultiClient(clientdata)
-      val c = new PackageCollection(new RepositoryCache(storage, client))
-
-      Try(Await.result(c.getPackagesByPackageName("minimal")).length) shouldBe Return(1)
-      //will return the first repo
-      Try(Await.result(c.getPackagesByPackageName("minimal"))) shouldBe Return(List(min2))
-      Try(Await.result(c.getPackagesByPackageName("MAXIMAL"))) shouldBe Return(
-        List(TestingPackages.MaximalV3ModelV3PackageDefinition)
-      )
-      Try(Await.result(c.getPackagesByPackageName("foobar"))) shouldBe Throw(
-        PackageNotFound("foobar").exception
-      )
-
-      val minexp1 = (min2, Uri.parse("/MAXIMAL"))
-      Try(Await.result(c.getPackageByPackageVersion("minimal", None))) shouldBe Return(minexp1)
-
-      val minver = TestingPackages.MinimalV3ModelV2PackageDefinition.version
-      val minexp2 = (TestingPackages.MinimalV3ModelV2PackageDefinition, Uri.parse("/minimal"))
-      Try(Await.result(c.getPackageByPackageVersion("minimal", Some(minver)))) shouldBe Return(
-        minexp2
-      )
-
-      val maxver = TestingPackages.MaximalV3ModelV3PackageDefinition.version
-      val maxexp = (TestingPackages.MaximalV3ModelV3PackageDefinition, Uri.parse("/MAXIMAL"))
-
-      Try(Await.result(c.getPackageByPackageVersion("MAXIMAL", None))) shouldBe Return(maxexp)
-      Try(Await.result(c.getPackageByPackageVersion("MAXIMAL", Some(maxver)))) shouldBe Return(
-        maxexp
-      )
-
-      Try(Await.result(c.search(None)).map(_.name).sorted) shouldBe Return(List("MAXIMAL", "minimal"))
-      Try(Await.result(c.search(Some("minimal"))).map(_.name)) shouldBe Return(List("minimal"))
-
-      val min2ver = min2.version
-      Try(Await.result(c.search(Some("minimal"))).map(_.versions.keys)) shouldBe Return(
-        List(Set(min2ver))
-      )
-      Try(Await.result(c.search(Some("MAXIMAL"))).map(_.versions.keys)) shouldBe Return(
-        List(Set(maxver))
-      )
-    }
-
-    "getPackageByPackageVersion works for all packaging versions" in {
-      forAll(TestingPackages.packageDefinitions) { packageDefinition =>
-        val uri = Uri.parse("/test")
-        val multiRepository: PackageCollection = singletonMultiRepository(packageDefinition, uri)
-        val name = packageDefinition.name
-        val version = packageDefinition.version
-        val actual = Await.result(
-          multiRepository.getPackageByPackageVersion(name, Some(version))
+      "merge should success on empty repositories" in {
+        assertResult(
+          List.empty[universe.v4.model.PackageDefinition]
+        )(
+          PackageCollection.merge(List(getRepository()))
         )
-        actual shouldBe ((packageDefinition, uri))
+      }
+
+      "merge should remove duplicate definitions" in {
+        val u = Uri.parse("/uri")
+        val packages = List(
+          TestingPackages.MinimalV3ModelV2PackageDefinition,
+          TestingPackages.MinimalV3ModelV2PackageDefinition
+        )
+        assertResult(List(TestingPackages.MinimalV3ModelV2PackageDefinition))(
+          PackageCollection.merge(List(getRepository(packages, u)))
+        )
+      }
+
+      "merge should sort packages by name" in {
+        assertResult(List(
+          TestingPackages.HelloWorldV3Package,
+          TestingPackages.MinimalV3ModelV2PackageDefinition
+        ))(PackageCollection.merge(List(getRepository(
+          List(
+            TestingPackages.MinimalV3ModelV2PackageDefinition,
+            TestingPackages.HelloWorldV3Package
+          ), Uri.parse("/uri")
+        ))))
+      }
+
+      "merge should remove duplicates and retain the package definition according to spec" in {
+        val repositories = List(
+          getRepository(List(
+            TestingPackages.MinimalV3ModelV2PackageDefinition,
+            TestingPackages.MaximalV3ModelV2PackageDefinition
+          ), Uri.parse("/uri")),
+          getRepository(List(
+            TestingPackages.MaximalV3ModelV2PackageDefinition,
+            TestingPackages.HelloWorldV3Package
+          ), Uri.parse("/test")),
+          getRepository(List(
+            TestingPackages.MaximalV4ModelPackageDefinitionV4,
+            TestingPackages.MinimalV4ModelPackageDefinitionV4
+          ), Uri.parse("/minimal"))
+        )
+        assertResult(List(
+          TestingPackages.MaximalV3ModelV2PackageDefinition,
+          TestingPackages.MaximalV4ModelPackageDefinitionV4,
+          TestingPackages.HelloWorldV3Package,
+          TestingPackages.MinimalV3ModelV2PackageDefinition,
+          TestingPackages.MinimalV4ModelPackageDefinitionV4
+        ))(PackageCollection.merge(repositories))
       }
     }
 
-    "getPackagesByPackageName works for all packaging versions" in {
-      forAll(TestingPackages.packageDefinitions) { packageDefinition =>
-        val uri = Uri.parse("/test")
-        val multiRepository: PackageCollection = singletonMultiRepository(packageDefinition, uri)
-        val name = packageDefinition.name
-        val actual = Await.result(
-          multiRepository.getPackagesByPackageName(name)
+    "getPackageByPackageName" - {
+
+      "package not found as repo is empty" in {
+        Try(PackageCollection.getPackagesByPackageName(
+          "test",
+          List.empty[universe.v4.model.PackageDefinition])
+        ) shouldBe Throw(
+          PackageNotFound("test").exception
         )
-        actual shouldBe List(packageDefinition)
+      }
+
+      "invalid package name should throw" in {
+        Try(PackageCollection.getPackagesByPackageName("test",
+          List(TestingPackages.HelloWorldV3Package,
+            TestingPackages.MinimalV3ModelV2PackageDefinition
+          )
+        )) shouldBe Throw(
+          PackageNotFound("test").exception
+        )
+      }
+
+      "found minimal" in {
+        val cls = List(TestingPackages.MinimalV3ModelV2PackageDefinition)
+        //val ver = TestingPackages.MinimalV3ModelV2PackageDefinition.version
+
+        Try(PackageCollection.getPackagesByPackageName("minimal", cls)) shouldBe Return(cls)
+        Try(PackageCollection.getPackagesByPackageName("MAXIMAL", cls)) shouldBe Throw(
+          PackageNotFound("MAXIMAL").exception
+        )
+      }
+
+      "found MAXIMAL" in {
+        val minimal = List(
+          TestingPackages.MinimalV3ModelV2PackageDefinition,
+          TestingPackages.MinimalV3ModelV2PackageDefinition
+        )
+        val packages = TestingPackages.MaximalV3ModelV3PackageDefinition :: minimal
+
+        assertResult(Return(minimal))(
+          Try(PackageCollection.getPackagesByPackageName("minimal", packages))
+        )
+        assertResult(
+          Return(List(TestingPackages.MaximalV3ModelV3PackageDefinition))
+        )(
+          Try(PackageCollection.getPackagesByPackageName("MAXIMAL", packages))
+        )
+
+        Try(PackageCollection.getPackagesByPackageName("test", packages)) shouldBe(
+          Throw(PackageNotFound("test").exception)
+        )
+      }
+
+      "multi repo multi packages" in {
+
+        val min2 = TestingPackages.MinimalV3ModelV2PackageDefinition.copy(
+          version = universe.v3.model.Version("1.2.4"))
+        val max2 = TestingPackages.MaximalV3ModelV3PackageDefinition.copy(
+          version = universe.v3.model.Version("9.9.9"))
+        val packageDefinitions = List(
+          TestingPackages.MaximalV3ModelV3PackageDefinition,
+          max2,
+          TestingPackages.MinimalV3ModelV2PackageDefinition,
+          min2
+        )
+
+        Try(
+          PackageCollection.getPackagesByPackageName("minimal", packageDefinitions).length
+        ) shouldBe Return(2)
+
+        Try(
+          PackageCollection.getPackagesByPackageName("minimal", packageDefinitions)
+        ) shouldBe Return(
+          List(TestingPackages.MinimalV3ModelV2PackageDefinition, min2)
+        )
+
+        Try(
+          PackageCollection.getPackagesByPackageName("MAXIMAL", packageDefinitions)
+        ) shouldBe Return(
+          List(TestingPackages.MaximalV3ModelV3PackageDefinition, max2)
+        )
+
+        Try(
+          PackageCollection.getPackagesByPackageName("foobar", packageDefinitions)
+        ) shouldBe Throw(
+          PackageNotFound("foobar").exception
+        )
+      }
+
+      "works for all packaging versions" in {
+        forAll(TestingPackages.packageDefinitions) { packageDefinition =>
+          PackageCollection.getPackagesByPackageName(
+            packageDefinition.name,
+            List(packageDefinition)
+          ) shouldBe List(packageDefinition)
+        }
       }
     }
 
+    "getPackagesByPackageVersion" - {
+
+      "not found" in {
+        Try(PackageCollection.getPackagesByPackageVersion(
+          "test",
+          Some(TestingPackages.HelloWorldV3Package.version),
+          List.empty[(universe.v4.model.PackageDefinition, Uri)])
+        ) shouldBe Throw(
+          PackageNotFound("test").exception
+        )
+
+        Try(PackageCollection.getPackagesByPackageVersion(
+          "test",
+          None,
+          List.empty[(universe.v4.model.PackageDefinition, Uri)])
+          ) shouldBe Throw(
+          PackageNotFound("test").exception
+        )
+
+        Try(PackageCollection.getPackagesByPackageVersion(
+          "test",
+          Some(TestingPackages.HelloWorldV3Package.version),
+          List((TestingPackages.HelloWorldV3Package, Uri.parse("/test")))
+        )) shouldBe Throw(
+          PackageNotFound("test").exception
+        )
+
+        Try(PackageCollection.getPackagesByPackageVersion(
+          "test",
+          None,
+          List((TestingPackages.HelloWorldV3Package, Uri.parse("/test")))
+        )) shouldBe Throw(
+          PackageNotFound("test").exception
+        )
+      }
+
+      "invalid package should throw" in {
+        val packages = List((TestingPackages.HelloWorldV3Package, Uri.parse("/test")))
+
+        Try(PackageCollection.getPackagesByPackageVersion(
+          "test",
+          Some(TestingPackages.HelloWorldV3Package.version),
+          packages)
+        ) shouldBe Throw(
+          PackageNotFound("test").exception
+        )
+
+        Try(PackageCollection.getPackagesByPackageVersion(
+          "test",
+          None,
+          packages)
+        ) shouldBe Throw(
+          PackageNotFound("test").exception
+        )
+
+        Try(PackageCollection.getPackagesByPackageVersion(
+          "",
+          Some(TestingPackages.HelloWorldV3Package.version),
+          packages)
+        ) shouldBe Throw(
+          PackageNotFound("").exception
+        )
+
+        Try(PackageCollection.getPackagesByPackageVersion(
+          TestingPackages.HelloWorldV3Package.name,
+          Some(universe.v3.model.Version("6.7.8")),
+          packages)
+        ) shouldBe Throw(
+          VersionNotFound(
+            TestingPackages.HelloWorldV3Package.name,
+            universe.v3.model.Version("6.7.8")
+          ).exception
+        )
+      }
+
+      "found minimal" in {
+
+        val u = Uri.parse("/uri")
+        val cls = List((TestingPackages.MinimalV3ModelV2PackageDefinition, u))
+        val ver = TestingPackages.MinimalV3ModelV2PackageDefinition.version
+
+        Try(PackageCollection.getPackagesByPackageVersion(
+          "minimal",
+          Some(ver),cls
+        )) shouldBe Return((TestingPackages.MinimalV3ModelV2PackageDefinition, u))
+
+        Try(PackageCollection.getPackagesByPackageVersion("minimal", None, cls)) shouldBe Return(
+          (TestingPackages.MinimalV3ModelV2PackageDefinition, u)
+        )
+
+        val bad = TestingPackages.MaximalV3ModelV3PackageDefinition.version
+        Try(
+          PackageCollection.getPackagesByPackageVersion("minimal", Some(bad), cls)
+        ) shouldBe Throw(
+          VersionNotFound("minimal", bad).exception
+        )
+        Try(PackageCollection.getPackagesByPackageVersion("test", Some(ver), cls)) shouldBe Throw(
+          PackageNotFound("test").exception
+        )
+      }
+
+      "found MAXIMAL" in {
+        val u = Uri.parse("/uri")
+        val cls = List(
+          (TestingPackages.MinimalV3ModelV2PackageDefinition, u),
+          (TestingPackages.MaximalV3ModelV3PackageDefinition, u)
+        )
+        val ver = TestingPackages.MaximalV3ModelV3PackageDefinition.version
+        Try(
+          PackageCollection.getPackagesByPackageVersion("MAXIMAL", Some(ver), cls)
+        ) shouldBe Return(
+          (TestingPackages.MaximalV3ModelV3PackageDefinition, u)
+        )
+        val bad = TestingPackages.MinimalV3ModelV2PackageDefinition.version
+        Try(
+          PackageCollection.getPackagesByPackageVersion("MAXIMAL", Some(bad), cls)
+        ) shouldBe Throw(
+          VersionNotFound("MAXIMAL", bad).exception
+        )
+      }
+
+      "works for a single version with single package" in {
+        val u = Uri.parse("/test")
+        val packages = List((TestingPackages.MinimalV3ModelV2PackageDefinition, u))
+
+        assertResult(
+          Return((TestingPackages.MinimalV3ModelV2PackageDefinition, u))
+        )(Try(PackageCollection.getPackagesByPackageVersion(
+          TestingPackages.MinimalV3ModelV2PackageDefinition.name,
+          Some(TestingPackages.MinimalV3ModelV2PackageDefinition.version),
+          packages)
+        ))
+      }
+
+      "works for a single version with multiple versions of multiple packages" in {
+        val u = Uri.parse("/test")
+        val packages = List((TestingPackages.MinimalV3ModelV2PackageDefinition, u))
+        packages :+ TestingPackages.MinimalV4ModelV4PackageDefinition
+        packages :+ TestingPackages.MinimalV4ModelV4PackageDefinition.copy(
+          version = universe.v3.model.Version("7.7.7")
+        )
+
+        assertResult(
+          Return((TestingPackages.MinimalV3ModelV2PackageDefinition, u))
+        )(Try(PackageCollection.getPackagesByPackageVersion(
+          TestingPackages.MinimalV3ModelV2PackageDefinition.name,
+          Some(TestingPackages.MinimalV3ModelV2PackageDefinition.version),
+          packages)
+        ))
+      }
+
+      "works for all packaging versions" in {
+        val u = Uri.parse("/test")
+        forAll(TestingPackages.packageDefinitions) { packageDefinition =>
+          PackageCollection.getPackagesByPackageVersion(
+            packageDefinition.name,
+            Some(packageDefinition.version),
+            List((packageDefinition, u))
+          ) shouldBe ((packageDefinition, u))
+        }
+      }
+    }
+
+    "search" - {
+
+      "not found" in {
+        assertResult(Return(Nil))(Try(PackageCollection.search(
+            Some("test"),
+            List.empty[universe.v4.model.PackageDefinition])
+        ))
+        assertResult(Return(Nil))(Try(PackageCollection.search(
+          Some("mini*.+"),
+          List.empty[universe.v4.model.PackageDefinition])
+        ))
+      }
+
+      "all" in {
+
+        val all = List(TestingPackages.MaximalV3ModelV3PackageDefinition,
+          TestingPackages.MinimalV3ModelV2PackageDefinition)
+
+        Try(PackageCollection.search(None, all).map(_.name)) shouldBe
+          Return(List("MAXIMAL","minimal"))
+
+        Try(PackageCollection.search(Some("minimal"), all).map(_.name)) shouldBe
+          Return(List("minimal"))
+
+        assertResult(Return(2))(Try(PackageCollection.search(None, all).length))
+
+        val min2 = TestingPackages.MinimalV3ModelV2PackageDefinition.copy(
+          version = universe.v3.model.Version("1.2.4")
+        )
+        val max2 = TestingPackages.MaximalV3ModelV3PackageDefinition.copy(
+          version = universe.v3.model.Version("9.9.9")
+        )
+        val minver = TestingPackages.MinimalV3ModelV2PackageDefinition.version
+        val maxver = TestingPackages.MaximalV3ModelV3PackageDefinition.version
+        val min2ver = min2.version
+        val max2ver = max2.version
+        val clientdata = List(
+          TestingPackages.MaximalV3ModelV3PackageDefinition,
+          max2,
+          TestingPackages.MinimalV3ModelV2PackageDefinition,
+          min2
+        )
+
+        assertResult(
+          Return(List("MAXIMAL", "minimal"))
+        )(Try(PackageCollection.search(None, clientdata).map(_.name).sorted))
+
+        assertResult(
+          Return(List("minimal"))
+        )(Try(PackageCollection.search(Some("minimal"), clientdata).map(_.name)))
+
+        assertResult(
+          Return(List(Set(minver, min2ver)))
+        )(Try(PackageCollection.search(Some("minimal"), clientdata).map(_.versions.keys)))
+
+        assertResult(
+          Return(List(Set(maxver, max2ver)))
+        )(Try(PackageCollection.search(Some("MAXIMAL"), clientdata).map(_.versions.keys)))
+      }
+
+      "found" in {
+        val l = List(TestingPackages.MinimalV3ModelV2PackageDefinition)
+        assertResult("minimal")(PackageCollection.search(Some("minimal"), l).head.name)
+        assertResult("minimal")(PackageCollection.search(Some("mini*mal"), l).head.name)
+        assertResult("minimal")(PackageCollection.search(Some("min*mal"), l).head.name)
+        assertResult("minimal")(PackageCollection.search(Some("minimal*"), l).head.name)
+        assertResult("minimal")(PackageCollection.search(Some("*minimal"), l).head.name)
+        assertResult("minimal")(PackageCollection.search(Some("*minimal*"), l).head.name)
+        assertResult("minimal")(PackageCollection.search(Some("*inimal"), l).head.name)
+        assertResult("minimal")(PackageCollection.search(Some("minima*"), l).head.name)
+        assertResult("minimal")(PackageCollection.search(Some("minima**"), l).head.name)
+        assertResult("minimal")(PackageCollection.search(Some("**minimal"), l).head.name)
+        assertResult("minimal")(PackageCollection.search(Some("**minimal**"), l).head.name)
+        assertResult("minimal")(PackageCollection.search(Some("**mi**mal**"), l).head.name)
+      }
+
+      "by tag" in {
+        val l = List(TestingPackages.MaximalV3ModelV3PackageDefinition)
+        assertResult("MAXIMAL")(PackageCollection.search(Some("all"), l).head.name)
+        assertResult("MAXIMAL")(PackageCollection.search(Some("thing*"), l).head.name)
+      }
+
+    }
 
     "upgradesTo()" - {
 
@@ -389,32 +497,16 @@ final class MultiRepositorySpec extends FreeSpec with Matchers with TableDrivenP
             assert(PackageCollection.upgradesTo(name, version, packages).isEmpty)
           }
         }
-
       }
-
     }
+
   }
 
-  private[this] def singletonMultiRepository(
-    packageDefinition: universe.v4.model.PackageDefinition, uri: Uri
-  ): PackageCollection = {
-    val repos = List(PackageRepository("singleton", uri))
-    val storage = TestStorage(repos)
-    val client = TestClient(repos, List(packageDefinition))
-    new PackageCollection(new RepositoryCache(storage, client))
-  }
-
-
-}
-
-object MultiRepositorySpec {
-  def genIncompatibleUpgradesFrom(
-    versionToAvoid: universe.v3.model.Version
-  ): Gen[Option[List[universe.v3.model.VersionSpecification]]] = {
-    val genVersionSpecification = Generators.genVersion
-      .suchThat(_ != versionToAvoid)
-      .map(universe.v3.model.ExactVersion)
-
-    Gen.option(Gen.listOf(genVersionSpecification))
+  "createRegex" in {
+    assertResult("^\\Qminimal\\E$")(PackageCollection.createRegex("minimal").toString)
+    assertResult("^\\Qmin\\E.*\\Qmal\\E$")(PackageCollection.createRegex("min*mal").toString)
+    assertResult("^\\Qmini\\E.*\\Q.+\\E$")(PackageCollection.createRegex("mini*.+").toString)
+    assertResult("^\\Qminimal\\E.*$")(PackageCollection.createRegex("minimal*").toString)
+    assertResult("^\\Qminimal\\E.*.*$")(PackageCollection.createRegex("minimal**").toString)
   }
 }

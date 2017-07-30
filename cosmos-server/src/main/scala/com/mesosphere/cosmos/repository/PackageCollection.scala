@@ -266,16 +266,15 @@ object PackageCollection {
       val ((pkgDef2, _), index2) = b
 
       val orderName = pkgDef1.name.compare(pkgDef2.name)
-      if(orderName != 0) {
-        orderName
-      }
-
       val orderIndex = index1.compare(index2)
-      if(orderIndex != 0) {
-        orderIndex
-      }
 
-      pkgDef1.releaseVersion.value.compare(pkgDef2.releaseVersion.value)
+      if (orderName != 0) {
+        orderName
+      } else if (orderIndex != 0) {
+        orderIndex
+      } else {
+        pkgDef1.releaseVersion.value.compare(pkgDef2.releaseVersion.value)
+      }
     }
   }
 
