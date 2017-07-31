@@ -3,7 +3,6 @@ package com.mesosphere.cosmos.rpc.v1.circe
 import com.mesosphere.cosmos.rpc.v1.model._
 import com.mesosphere.cosmos.thirdparty.marathon.circe.Encoders._
 import com.mesosphere.universe
-import com.mesosphere.universe.common.circe.Encoders._
 import com.mesosphere.universe.v2.circe.Encoders._
 import io.circe._
 import io.circe.generic.semiauto._
@@ -45,20 +44,11 @@ object Encoders {
   implicit val encodeCapabilitiesResponse: Encoder[CapabilitiesResponse] = deriveEncoder[CapabilitiesResponse]
   implicit val encodeCapability: Encoder[Capability] = deriveEncoder[Capability]
 
-  implicit val encodePackageRepositoryListRequest: Encoder[PackageRepositoryListRequest] = {
-    deriveEncoder[PackageRepositoryListRequest]
-  }
   implicit val encodePackageRepositoryListResponse: Encoder[PackageRepositoryListResponse] = {
     deriveEncoder[PackageRepositoryListResponse]
   }
-  implicit val encodePackageRepositoryAddRequest: Encoder[PackageRepositoryAddRequest] = {
-    deriveEncoder[PackageRepositoryAddRequest]
-  }
   implicit val encodePackageRepositoryAddResponse: Encoder[PackageRepositoryAddResponse] = {
     deriveEncoder[PackageRepositoryAddResponse]
-  }
-  implicit val encodePackageRepositoryDeleteRequest: Encoder[PackageRepositoryDeleteRequest] = {
-    deriveEncoder[PackageRepositoryDeleteRequest]
   }
   implicit val encodePackageRepositoryDeleteResponse: Encoder[PackageRepositoryDeleteResponse] = {
     deriveEncoder[PackageRepositoryDeleteResponse]

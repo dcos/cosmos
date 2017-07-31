@@ -4,7 +4,6 @@ import cats.syntax.either._
 import com.mesosphere.cosmos.http.CompoundMediaTypeParser
 import com.mesosphere.cosmos.http.HttpRequest
 import com.mesosphere.cosmos.rpc.MediaTypes
-import com.mesosphere.cosmos.rpc.v1.circe.Encoders._
 import com.mesosphere.cosmos.rpc.v1.model.PackageRepositoryAddRequest
 import com.mesosphere.cosmos.test.CosmosIntegrationTestClient._
 import com.netaporter.uri.dsl._

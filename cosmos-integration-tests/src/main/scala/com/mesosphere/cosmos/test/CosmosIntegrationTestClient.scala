@@ -153,7 +153,7 @@ object CosmosIntegrationTestClient extends Matchers {
         }
       }
 
-      private[this] def fmtHeaders(h: HeaderMap): String = {
+      private def fmtHeaders(h: HeaderMap): String = {
         h.map {
           case ("Authorization", _) => s"Authorization: ****"
           case (k, v) => s"$k: $v"
@@ -162,7 +162,7 @@ object CosmosIntegrationTestClient extends Matchers {
     }
   }
 
-  def getClientProperty(clientName: String, key: String): String = {
+  private def getClientProperty(clientName: String, key: String): String = {
     val property = s"com.mesosphere.cosmos.test.CosmosIntegrationTestClient.$clientName.$key"
       Option(System.getProperty(property))
         .getOrElse(throw new AssertionError(s"Missing system property '$property' "))
