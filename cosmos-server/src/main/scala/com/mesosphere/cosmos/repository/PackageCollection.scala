@@ -18,12 +18,10 @@ final class PackageCollection(repositoryCache: RepositoryCache) {
   def getPackagesByPackageName(
     packageName: String
   )(implicit session: RequestSession): Future[List[universe.v4.model.PackageDefinition]] = {
-    val t = repositoryCache.all()
-    t.map { repositories =>
-      val p = PackageCollection.merge(repositories)
+    repositoryCache.all().map { repositories =>
       PackageCollection.getPackagesByPackageName(
         packageName,
-        p
+        PackageCollection.merge(repositories)
       )
     }
   }
