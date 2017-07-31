@@ -364,15 +364,9 @@ final class PackageCollectionSpec extends FreeSpec
     "search" - {
 
       "not found" in {
-        assertResult(Return(Nil))(Try(PackageCollection.search(
-            Some("test"),
-            false,
-            List.empty[universe.v4.model.PackageDefinition])
+        assertResult(Return(Nil))(Try(PackageCollection.search(Some("test"), List.empty[universe.v4.model.PackageDefinition])
         ))
-        assertResult(Return(Nil))(Try(PackageCollection.search(
-          Some("mini*.+"),
-          false,
-          List.empty[universe.v4.model.PackageDefinition])
+        assertResult(Return(Nil))(Try(PackageCollection.search(Some("mini*.+"), List.empty[universe.v4.model.PackageDefinition])
         ))
       }
 
@@ -381,13 +375,13 @@ final class PackageCollectionSpec extends FreeSpec
         val all = List(TestingPackages.MaximalV3ModelV3PackageDefinition,
           TestingPackages.MinimalV3ModelV2PackageDefinition)
 
-        Try(PackageCollection.search(None, false, all).map(_.name)) shouldBe
+        Try(PackageCollection.search(None, all).map(_.name)) shouldBe
           Return(List("MAXIMAL","minimal"))
 
-        Try(PackageCollection.search(Some("minimal"), false, all).map(_.name)) shouldBe
+        Try(PackageCollection.search(Some("minimal"), all).map(_.name)) shouldBe
           Return(List("minimal"))
 
-        assertResult(Return(2))(Try(PackageCollection.search(None, false, all).length))
+        assertResult(Return(2))(Try(PackageCollection.search(None, all).length))
 
         val min2 = TestingPackages.MinimalV3ModelV2PackageDefinition.copy(
           version = universe.v3.model.Version("1.2.4")
@@ -408,41 +402,41 @@ final class PackageCollectionSpec extends FreeSpec
 
         assertResult(
           Return(List("MAXIMAL", "minimal"))
-        )(Try(PackageCollection.search(None, false, clientdata).map(_.name).sorted))
+        )(Try(PackageCollection.search(None, clientdata).map(_.name).sorted))
 
         assertResult(
           Return(List("minimal"))
-        )(Try(PackageCollection.search(Some("minimal"), false, clientdata).map(_.name)))
+        )(Try(PackageCollection.search(Some("minimal"), clientdata).map(_.name)))
 
         assertResult(
           Return(List(Set(minver, min2ver)))
-        )(Try(PackageCollection.search(Some("minimal"), false, clientdata).map(_.versions.keys)))
+        )(Try(PackageCollection.search(Some("minimal"), clientdata).map(_.versions.keys)))
 
         assertResult(
           Return(List(Set(maxver, max2ver)))
-        )(Try(PackageCollection.search(Some("MAXIMAL"), false, clientdata).map(_.versions.keys)))
+        )(Try(PackageCollection.search(Some("MAXIMAL"), clientdata).map(_.versions.keys)))
       }
 
       "found" in {
         val l = List(TestingPackages.MinimalV3ModelV2PackageDefinition)
-        assertResult("minimal")(PackageCollection.search(Some("minimal"), false, l).head.name)
-        assertResult("minimal")(PackageCollection.search(Some("mini*mal"), false, l).head.name)
-        assertResult("minimal")(PackageCollection.search(Some("min*mal"), false, l).head.name)
-        assertResult("minimal")(PackageCollection.search(Some("minimal*"), false, l).head.name)
-        assertResult("minimal")(PackageCollection.search(Some("*minimal"), false, l).head.name)
-        assertResult("minimal")(PackageCollection.search(Some("*minimal*"), false, l).head.name)
-        assertResult("minimal")(PackageCollection.search(Some("*inimal"), false, l).head.name)
-        assertResult("minimal")(PackageCollection.search(Some("minima*"), false, l).head.name)
-        assertResult("minimal")(PackageCollection.search(Some("minima**"), false, l).head.name)
-        assertResult("minimal")(PackageCollection.search(Some("**minimal"), false, l).head.name)
-        assertResult("minimal")(PackageCollection.search(Some("**minimal**"), false, l).head.name)
-        assertResult("minimal")(PackageCollection.search(Some("**mi**mal**"), false, l).head.name)
+        assertResult("minimal")(PackageCollection.search(Some("minimal"), l).head.name)
+        assertResult("minimal")(PackageCollection.search(Some("mini*mal"), l).head.name)
+        assertResult("minimal")(PackageCollection.search(Some("min*mal"), l).head.name)
+        assertResult("minimal")(PackageCollection.search(Some("minimal*"), l).head.name)
+        assertResult("minimal")(PackageCollection.search(Some("*minimal"), l).head.name)
+        assertResult("minimal")(PackageCollection.search(Some("*minimal*"), l).head.name)
+        assertResult("minimal")(PackageCollection.search(Some("*inimal"), l).head.name)
+        assertResult("minimal")(PackageCollection.search(Some("minima*"), l).head.name)
+        assertResult("minimal")(PackageCollection.search(Some("minima**"), l).head.name)
+        assertResult("minimal")(PackageCollection.search(Some("**minimal"), l).head.name)
+        assertResult("minimal")(PackageCollection.search(Some("**minimal**"), l).head.name)
+        assertResult("minimal")(PackageCollection.search(Some("**mi**mal**"), l).head.name)
       }
 
       "by tag" in {
         val l = List(TestingPackages.MaximalV3ModelV3PackageDefinition)
-        assertResult("MAXIMAL")(PackageCollection.search(Some("all"), false, l).head.name)
-        assertResult("MAXIMAL")(PackageCollection.search(Some("thing*"), false, l).head.name)
+        assertResult("MAXIMAL")(PackageCollection.search(Some("all"), l).head.name)
+        assertResult("MAXIMAL")(PackageCollection.search(Some("thing*"), l).head.name)
       }
 
       "Search results are sorted by selected field and then package name" in {
@@ -454,17 +448,9 @@ final class PackageCollectionSpec extends FreeSpec
 
         val expectedNameList = List(s.name, r.name, p.name, q.name)
 
-        assertResult(expectedNameList)(PackageCollection.search(
-          Some("*"),
-          true,
-          List(q, p, r, s)
-        ).map(_.name))
+        assertResult(expectedNameList)(PackageCollection.search(Some("*"), List(q, p, r, s)).map(_.name))
 
-        assertResult(expectedNameList)(PackageCollection.search(
-          Some("*"),
-          true,
-          List(s, r, q, p)
-        ).map(_.name))
+        assertResult(expectedNameList)(PackageCollection.search(Some("*"), List(s, r, q, p)).map(_.name))
       }
 
     }

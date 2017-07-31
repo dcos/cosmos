@@ -14,7 +14,7 @@ private[cosmos] final class PackageSearchHandler(
     request: rpc.v1.model.SearchRequest
   )(implicit session: RequestSession): Future[rpc.v1.model.SearchResponse] = {
     packageCache
-      .search(request.query, sortSelected = true)
+      .search(request.query)
       .map(rpc.v1.model.SearchResponse(_))
   }
 }

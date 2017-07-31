@@ -7,6 +7,7 @@ import com.mesosphere.cosmos.rpc
 import com.mesosphere.cosmos.rpc.v1.model.SearchResult
 import com.mesosphere.universe
 import com.mesosphere.universe.v3.syntax.PackageDefinitionOps._
+import com.mesosphere.universe.v4.model.PackageDefinition
 import com.netaporter.uri.Uri
 import com.twitter.util.Future
 import java.util.regex.Pattern
@@ -41,13 +42,11 @@ final class PackageCollection(repositoryCache: RepositoryCache) {
   }
 
   def search(
-    query: Option[String],
-    sortSelected: Boolean = false
+    query: Option[String]
   )(implicit session: RequestSession): Future[List[rpc.v1.model.SearchResult]] = {
     repositoryCache.all().map { repositories =>
       PackageCollection.search(
         query,
-        sortSelected,
         PackageCollection.merge(repositories)
       )
     }
@@ -125,8 +124,7 @@ object PackageCollection {
 
   def search(
     query: Option[String],
-    sortSelected: Boolean,
-    packageDefinitions: List[universe.v4.model.PackageDefinition]
+    packageDefinitions: List[PackageDefinition]
   ): List[rpc.v1.model.SearchResult] = {
     val predicate = getPredicate(query)
 
@@ -153,21 +151,20 @@ object PackageCollection {
           versions=searchResult.versions + ((pkg.version, releaseVersion))
         )
         state + ((pkg.name, newSearchResult))
-    }.toList
+    }
+      .toList
       .map { case (_, searchResult) => searchResult }
       .filter(predicate)
 
-    val result = searchResults.groupBy {
+    searchResults
+      .groupBy {
         case searchResult => searchResult.name
-      }.map {
+      }
+      .map {
         case (_, list) => list.head
-      }.toList
-
-    if(sortSelected) {
-      result.sortBy(p => (!p.selected.getOrElse(false), p.name))
-    } else {
-      result
-    }
+      }
+      .toList
+      .sortBy(p => (!p.selected.getOrElse(false), p.name))
   }
 
   def upgradesTo(

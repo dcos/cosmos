@@ -98,7 +98,12 @@ with Logging {
       zkClient,
       sourcesStorage,
       universeClient,
-      new PackageCollection(new RepositoryCache(sourcesStorage, universeClient)),
+      new PackageCollection(
+        new RepositoryCache(
+          sourcesStorage,
+          universeClient
+        )
+      ),
       new MarathonPackageRunner(adminRouter),
       ServiceUninstaller(adminRouter)
     )
