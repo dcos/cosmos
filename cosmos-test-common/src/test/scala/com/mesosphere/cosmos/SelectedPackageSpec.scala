@@ -29,48 +29,6 @@ import scala.util.Right
 final class SelectedPackageSpec extends FreeSpec with MockitoSugar {
 
   import SelectedPackageSpec._
-  import com.mesosphere.cosmos.test.TestUtil.Anonymous
-
-  "selected packages appear first in search results" - {
-    "with same package name" in {
-      val selectedResult = makeSearchResult(selected = Some(true))
-      val ordinaryResult = makeSearchResult(selected = Some(false))
-      val anotherOrdinaryResult = makeSearchResult(selected = None)
-
-      val beforeSorting = List(ordinaryResult, selectedResult, anotherOrdinaryResult)
-      val afterSorting = List(selectedResult, ordinaryResult, anotherOrdinaryResult)
-      assertSearchResults(beforeSorting, afterSorting)
-    }
-
-    "with sorted package names" in {
-      val first = makeSearchResult(selected = Some(true), name = "antelope")
-      val second = makeSearchResult(selected = Some(true), name = "xylocarp")
-      val third = makeSearchResult(selected = Some(false), name = "aardvark")
-      val fourth = makeSearchResult(selected = Some(false), name = "zebra")
-
-      val beforeSorting = List(fourth, second, first, third)
-      val afterSorting = List(first, second, third, fourth)
-      assertSearchResults(beforeSorting, afterSorting)
-    }
-
-
-    def assertSearchResults(
-      resultsBeforeSorting: List[SearchResult],
-      resultsAfterSorting: List[SearchResult]
-    ): Assertion = {
-      assertResult(1)(5/5)
-      /*
-      val packageCollection = mock[PackageCollection]
-      when(packageCollection.search(None)).thenReturn {
-        Future.value(resultsBeforeSorting)
-      }
-      val handler = new PackageSearchHandler(packageCollection)
-
-      assertResult(SearchResponse(resultsAfterSorting)) {
-        Await.result(handler(SearchRequest(None)))
-      }*/
-    }
-  }
 
   "selected field is preserved by encoders/decoders" - {
     "SearchResult" - {

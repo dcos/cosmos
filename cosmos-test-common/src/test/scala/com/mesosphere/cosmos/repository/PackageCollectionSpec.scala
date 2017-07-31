@@ -7,6 +7,7 @@ import com.mesosphere.cosmos.error.VersionNotFound
 import com.mesosphere.cosmos.repository.PackageCollection
 import com.mesosphere.universe
 import com.mesosphere.universe.test.TestingPackages
+import com.mesosphere.universe.v2.model.ReleaseVersion
 import com.mesosphere.universe.v3.syntax.PackageDefinitionOps._
 import com.netaporter.uri.Uri
 import com.twitter.util.Return
@@ -448,11 +449,14 @@ final class PackageCollectionSpec extends FreeSpec
 
         val expectedNameList = List(s.name, r.name, p.name, q.name)
 
-        assertResult(expectedNameList)(PackageCollection.search(Some("*"), List(q, p, r, s)).map(_.name))
+        assertResult(expectedNameList)(
+          PackageCollection.search(Some("*"), List(q, p, r, s)).map(_.name)
+        )
 
-        assertResult(expectedNameList)(PackageCollection.search(Some("*"), List(s, r, q, p)).map(_.name))
+        assertResult(expectedNameList)(
+          PackageCollection.search(Some("*"), List(s, r, q, p)).map(_.name)
+        )
       }
-
     }
 
     "upgradesTo()" - {

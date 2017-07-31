@@ -51,9 +51,10 @@ final class PackageCollection(repositoryCache: RepositoryCache) {
   }
 
   /**
-    * Return the versions of packages in this collection that the package with the given `name` and
-    * `version` can be upgraded to.
-    */
+  * Return the versions of packages in this collection that the package with the given `name` and
+  * `version` can be upgraded to.
+  */
+
   def upgradesTo(
     name: String,
     version: universe.v3.model.Version
@@ -68,9 +69,9 @@ final class PackageCollection(repositoryCache: RepositoryCache) {
   }
 
   /**
-    * Return the versions of packages in this collection that the package
-    * `packageDefinition` can be downgrade to.
-    */
+  * Return the versions of packages in this collection that the package
+  * `packageDefinition` can be downgrade to.
+  */
   def downgradesTo(
     packageDefinition: universe.v4.model.PackageDefinition
   )(implicit session: RequestSession): Future[List[universe.v3.model.Version]] = {
@@ -102,18 +103,18 @@ object PackageCollection {
     packageDefinitions: List[(universe.v4.model.PackageDefinition, Uri)]
   ): (universe.v4.model.PackageDefinition, Uri) = {
 
-    val ns = packageDefinitions.filter { case (packageDefinition, _) =>
+    val packagesMatchingName = packageDefinitions.filter { case (packageDefinition, _) =>
       packageDefinition.name == packageName
     }
 
-    val vs = packageVersion match {
-      case Some(ver) => ns.find { case (packageDefinition, _) =>
+    val packagesMatchingVersion = packageVersion match {
+      case Some(ver) => packagesMatchingName.find { case (packageDefinition, _) =>
         packageDefinition.version == ver
       }
-      case _ => ns.headOption
+      case _ => packagesMatchingName.headOption
     }
 
-    (packageVersion, ns, vs) match {
+    (packageVersion, packagesMatchingName, packagesMatchingVersion) match {
       case (Some(ver), _ :: _ , None) => throw VersionNotFound(packageName, ver).exception
       case (_, _, None) => throw PackageNotFound(packageName).exception
       case (_, _, Some(pkg)) => pkg
@@ -222,21 +223,21 @@ object PackageCollection {
     }
   }
 
-  /**(
-    *
-    * @param repositories Takes in a List of tuples of type (Repository, Uri).
-    * @return A List[(PackageDefinition, Uri)] sorted with below criteria:
-    *         The method sorts the tuples by expanding the Repository in to List[PackageDefinition]
-    *         and then sorting it using the following criteria (in this exact order):
-    *         - Remove all the tuples that are non unique on their name + version combination with
-    *           the criteria that entry with the lowest index value stays
-    *         - Sort based on their name (a to z)
-    *         - Sort based on their index (low to high)
-    *         - Sort based on their releaseVersion (high to low)
-    *
-    * The sorting has to be a foldLeft as we need to iterate from left to right to preserve the order.
-    * Elements are appended at the end of Sequence and thus Vector is a better choice than List.
-    */
+  /**
+  *
+  * @param repositories Takes in a List of tuples of type (Repository, Uri).
+  * @return A List[(PackageDefinition, Uri)] sorted with below criteria:
+  *         The method sorts the tuples by expanding the Repository in to List[PackageDefinition]
+  *         and then sorting it using the following criteria (in this exact order):
+  *         - Remove all the tuples that are non unique on their name + version combination with
+  *           the criteria that entry with the lowest index value stays
+  *         - Sort based on their name (a to z)
+  *         - Sort based on their index (low to high)
+  *         - Sort based on their releaseVersion (high to low)
+  *
+  * The sorting has to be a foldLeft as we need to iterate from left to right to preserve the order.
+  * Elements are appended at the end of Sequence and thus Vector is a better choice than List.
+  */
   private def mergeWithURI(
     repositories: List[(universe.v4.model.Repository, Uri)]
   ) : List[(universe.v4.model.PackageDefinition, Uri)] = {
