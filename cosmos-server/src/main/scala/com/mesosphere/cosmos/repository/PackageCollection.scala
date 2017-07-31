@@ -4,6 +4,7 @@ import com.mesosphere.cosmos.error.PackageNotFound
 import com.mesosphere.cosmos.error.VersionNotFound
 import com.mesosphere.cosmos.http.RequestSession
 import com.mesosphere.cosmos.rpc
+import com.mesosphere.cosmos.rpc.v1.model.SearchResult
 import com.mesosphere.universe
 import com.mesosphere.universe.v3.syntax.PackageDefinitionOps._
 import com.netaporter.uri.Uri
@@ -40,11 +41,13 @@ final class PackageCollection(repositoryCache: RepositoryCache) {
   }
 
   def search(
-    query: Option[String]
+    query: Option[String],
+    sortSelected: Boolean = false
   )(implicit session: RequestSession): Future[List[rpc.v1.model.SearchResult]] = {
     repositoryCache.all().map { repositories =>
       PackageCollection.search(
         query,
+        sortSelected,
         PackageCollection.merge(repositories)
       )
     }
@@ -122,53 +125,49 @@ object PackageCollection {
 
   def search(
     query: Option[String],
+    sortSelected: Boolean,
     packageDefinitions: List[universe.v4.model.PackageDefinition]
   ): List[rpc.v1.model.SearchResult] = {
-    val predicate =
-      query.map { value =>
-        if (value.contains("*")) {
-          searchRegex(createRegex(value))
-        } else {
-          searchString(value.toLowerCase())
+    val predicate = getPredicate(query)
+
+    val searchResults = packageDefinitions.foldLeft(Map.empty[String, rpc.v1.model.SearchResult]) {
+      (state, pkg) =>
+        val searchResult = state
+          .getOrElse(pkg.name, rpc.v1.model.SearchResult(
+            pkg.name,
+            pkg.version,
+            Map((pkg.version, pkg.releaseVersion)),
+            pkg.description,
+            pkg.framework.getOrElse(false),
+            pkg.tags,
+            pkg.selected,
+            pkg.images
+          ))
+        val releaseVersion = searchResult.versions.get(pkg.version).map { releaseVersion =>
+          import universe.v3.model.ReleaseVersion
+          implicitly[Ordering[ReleaseVersion]].max(releaseVersion, pkg.releaseVersion)
+        } getOrElse {
+          pkg.releaseVersion
         }
-      } getOrElse { (_: rpc.v1.model.SearchResult) =>
-        true
-      }
+        val newSearchResult = searchResult.copy(
+          versions=searchResult.versions + ((pkg.version, releaseVersion))
+        )
+        state + ((pkg.name, newSearchResult))
+    }.toList
+      .map { case (_, searchResult) => searchResult }
+      .filter(predicate)
 
-      val searchResults = packageDefinitions.foldLeft(Map.empty[String, rpc.v1.model.SearchResult]) {
-        (state, pkg) =>
-          val searchResult = state
-            .getOrElse(pkg.name, rpc.v1.model.SearchResult(
-              pkg.name,
-              pkg.version,
-              Map((pkg.version, pkg.releaseVersion)),
-              pkg.description,
-              pkg.framework.getOrElse(false),
-              pkg.tags,
-              pkg.selected,
-              pkg.images
-            ))
-
-          val releaseVersion = searchResult.versions.get(pkg.version).map { releaseVersion =>
-            import universe.v3.model.ReleaseVersion
-            implicitly[Ordering[ReleaseVersion]].max(releaseVersion, pkg.releaseVersion)
-          } getOrElse {
-            pkg.releaseVersion
-          }
-
-          val newSearchResult = searchResult.copy(
-            versions=searchResult.versions + ((pkg.version, releaseVersion))
-          )
-          state + ((pkg.name, newSearchResult))
-      }.toList
-        .map { case (_, searchResult) => searchResult }
-        .filter(predicate)
-
-    searchResults.groupBy {
+    val result = searchResults.groupBy {
         case searchResult => searchResult.name
       }.map {
-        case (name, list) => list.head
+        case (_, list) => list.head
       }.toList
+
+    if(sortSelected) {
+      result.sortBy(p => (!p.selected.getOrElse(false), p.name))
+    } else {
+      result
+    }
   }
 
   def upgradesTo(
@@ -207,6 +206,26 @@ object PackageCollection {
     s"""^${safePattern(query)}$$""".r
   }
 
+  val pkgDefTupleOrdering = new Ordering[((universe.v4.model.PackageDefinition, Uri), Int)] {
+    override def compare(
+      a: ((universe.v4.model.PackageDefinition, Uri), Int),
+      b: ((universe.v4.model.PackageDefinition, Uri), Int)
+    ): Int = {
+      val ((pkgDef1, _), index1) = a
+      val ((pkgDef2, _), index2) = b
+
+      val orderName = pkgDef1.name.compare(pkgDef2.name)
+      val orderIndex = index1.compare(index2)
+
+      if (orderName != 0) {
+        orderName
+      } else if (orderIndex != 0) {
+        orderIndex
+      } else {
+        pkgDef2.releaseVersion.value.compare(pkgDef1.releaseVersion.value)
+      }
+    }
+  }
 
   /**(
     *
@@ -254,24 +273,15 @@ object PackageCollection {
     result.toList
   }
 
-  val pkgDefTupleOrdering = new Ordering[((universe.v4.model.PackageDefinition, Uri), Int)] {
-    override def compare(
-      a: ((universe.v4.model.PackageDefinition, Uri), Int),
-      b: ((universe.v4.model.PackageDefinition, Uri), Int)
-    ): Int = {
-      val ((pkgDef1, _), index1) = a
-      val ((pkgDef2, _), index2) = b
-
-      val orderName = pkgDef1.name.compare(pkgDef2.name)
-      val orderIndex = index1.compare(index2)
-
-      if (orderName != 0) {
-        orderName
-      } else if (orderIndex != 0) {
-        orderIndex
+  private def getPredicate(query: Option[String]) : SearchResult => Boolean = {
+    query.map { value =>
+      if (value.contains("*")) {
+        searchRegex(createRegex(value))
       } else {
-        pkgDef2.releaseVersion.value.compare(pkgDef1.releaseVersion.value)
+        searchString(value.toLowerCase())
       }
+    } getOrElse { (_: rpc.v1.model.SearchResult) =>
+      true
     }
   }
 
