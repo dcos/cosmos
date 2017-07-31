@@ -10,13 +10,11 @@ private[cosmos] final class PackageSearchHandler(
   packageCache: PackageCollection
 ) extends EndpointHandler[rpc.v1.model.SearchRequest, rpc.v1.model.SearchResponse] {
 
-  override def apply(request: rpc.v1.model.SearchRequest)(implicit
-    session: RequestSession
-  ): Future[rpc.v1.model.SearchResponse] = {
-    packageCache.search(request.query) map { packages =>
-      val sortedPackages = packages.sortBy(p => (!p.selected.getOrElse(false), p.name.toLowerCase))
-      rpc.v1.model.SearchResponse(sortedPackages)
-    }
-
+  override def apply(
+    request: rpc.v1.model.SearchRequest
+  )(implicit session: RequestSession): Future[rpc.v1.model.SearchResponse] = {
+    packageCache
+      .search(request.query, sortSelected = true)
+      .map(rpc.v1.model.SearchResponse(_))
   }
 }
