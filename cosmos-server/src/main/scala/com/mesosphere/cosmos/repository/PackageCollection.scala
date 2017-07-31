@@ -250,10 +250,8 @@ object PackageCollection {
           )
         }
       }
-    val result = uniquePackageDefinitions.sorted(pkgDefTupleOrdering)
-    result.map { case (pkgDefTuple, _) =>
-      pkgDefTuple
-    }.toList
+    val (result, _) = uniquePackageDefinitions.sorted(pkgDefTupleOrdering).unzip
+    result.toList
   }
 
   val pkgDefTupleOrdering = new Ordering[((universe.v4.model.PackageDefinition, Uri), Int)] {
