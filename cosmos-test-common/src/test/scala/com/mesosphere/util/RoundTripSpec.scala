@@ -10,32 +10,32 @@ class RoundTripSpec extends FreeSpec with Matchers {
   "RoundTrip.apply(value)" - {
     val i: Int = 3
     "should be map able" in {
-      RoundTrip.value(i).map(_ * i).run().
+      RoundTrip.lift(i).map(_ * i).run().
         shouldBe(i * i)
     }
 
     "should be flatMap able" in {
-      RoundTrip.value(i).flatMap(i => RoundTrip.value(i * i)).run().
+      RoundTrip.lift(i).flatMap(i => RoundTrip.lift(i * i)).run().
         shouldBe(i * i)
     }
 
     "should not throw error if map fails but is not evaluated" in {
-      RoundTrip.value(i).map(_ => throw new Error("this should not happen"))
+      RoundTrip.lift(i).map(_ => throw new Error("this should not happen"))
     }
 
     "throw error if map fails" in {
       assertThrows[Error] {
-        RoundTrip.value(i).map(_ => throw new Error("this should happen")).run()
+        RoundTrip.lift(i).map(_ => throw new Error("this should happen")).run()
       }
     }
 
     "should not throw error if flatMap fails but is not evaluated" in {
-      RoundTrip.value(i).flatMap(i => RoundTrip.value(i / 0))
+      RoundTrip.lift(i).flatMap(i => RoundTrip.lift(i / 0))
     }
 
     "should throw error if flatMap fails when evaluated" in {
       assertThrows[ArithmeticException] {
-        RoundTrip.value(i).flatMap(i => RoundTrip.value(i / 0)).run()
+        RoundTrip.lift(i).flatMap(i => RoundTrip.lift(i / 0)).run()
       }
     }
   }
@@ -145,17 +145,17 @@ class RoundTripSpec extends FreeSpec with Matchers {
 
   "RoundTrip should be able to be used like a IOC function" in {
     val i = 3
-    withChangedState(i) { j =>
-      j shouldBe i
+      withChangedState(i).runWith { j =>
+        j shouldBe i
+      }
     }
-  }
 
-  "RoundTrip should be somewhat flat" in {
-    val withRt = withIncrement().map(_.toString) &: withIncrement().map(_.toFloat) &: withIncrement()
-    withRt.run() shouldBe ("1" :: 2.0 :: 3 :: HNil)
+    "RoundTrip should be somewhat flat" in {
+      val withRt = withIncrement().map(_.toString) &: withIncrement().map(_.toFloat) &: withIncrement()
+      withRt.run() shouldBe ("1" :: 2.0 :: 3 :: HNil)
 
-    assertThrows[Error] {
-      withRt { case (_: String) :: (_: Float) :: (_: Int) :: HNil =>
+      assertThrows[Error] {
+        withRt.runWith { case (_: String) :: (_: Float) :: (_: Int) :: HNil =>
         throw new Error("This should throw")
       }
     }

@@ -26,7 +26,7 @@ object RoundTrips {
     name: Option[String] = None,
     uri: Option[Uri] = None
   ): RoundTrip[rpc.v1.model.PackageRepositoryDeleteResponse] = {
-    RoundTrip.value {
+    RoundTrip.lift {
       val repos = Requests.listRepositories()
       val repo = repos.find { repo =>
         name.contains(repo.name) || uri.contains(repo.uri)

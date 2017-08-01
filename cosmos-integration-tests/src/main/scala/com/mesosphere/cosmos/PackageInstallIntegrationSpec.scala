@@ -56,7 +56,7 @@ final class PackageInstallIntegrationSpec
       val version = "0.1.0"
       val options: Json = """{ "port": 9999 } """
       val repoName = "V4TestUniverse"
-      RoundTrips.withInstallV1(name, Some(version), options.asObject) { ir =>
+      RoundTrips.withInstallV1(name, Some(version), options.asObject).runWith { ir =>
         val repo = Requests.getRepository(repoName)
         val pkg = Requests.describePackage(name, ir.packageVersion).`package`
         val app = Requests.getMarathonApp(ir.appId)
@@ -71,7 +71,7 @@ final class PackageInstallIntegrationSpec
     }
     "The user should be able to install a package by specifying only the name" in {
       val name = "helloworld"
-      RoundTrips.withInstallV1(name) { ir =>
+      RoundTrips.withInstallV1(name).runWith { ir =>
         val Some((expectedVersion, _)) = Requests.getHighestReleaseVersion(
           ir.packageName,
           includePackageVersions = true
@@ -84,7 +84,7 @@ final class PackageInstallIntegrationSpec
     "The user should be able to install a package with a specific version" in {
       val name = "helloworld"
       val version = universe.v2.model.PackageDetailsVersion("0.1.0")
-      RoundTrips.withInstallV1(name, Some(version)) { ir =>
+      RoundTrips.withInstallV1(name, Some(version)).runWith { ir =>
         ir.packageName shouldBe name
         ir.packageVersion shouldBe version
         assert(Requests.isMarathonAppInstalled(ir.appId))
@@ -94,7 +94,7 @@ final class PackageInstallIntegrationSpec
       val name = "helloworld"
       val version = "0.1.0"
       val options: Json = """{ "port": 9999 }"""
-      RoundTrips.withInstallV1(name, Some(version), options = options.asObject) { ir =>
+      RoundTrips.withInstallV1(name, Some(version), options = options.asObject).runWith { ir =>
         val marathonApp = Requests.getMarathonApp(ir.appId)
         marathonApp.serviceOptions shouldBe options.asObject
       }
@@ -103,7 +103,7 @@ final class PackageInstallIntegrationSpec
       val name = "helloworld"
       val version = "0.1.0"
       val appId = AppId("utnhaoesntuahs")
-      RoundTrips.withInstallV1(name, Some(version), appId = Some(appId)) { ir =>
+      RoundTrips.withInstallV1(name, Some(version), appId = Some(appId)).runWith { ir =>
         ir.appId shouldBe appId
         assert(Requests.isMarathonAppInstalled(appId))
       }
@@ -111,7 +111,7 @@ final class PackageInstallIntegrationSpec
     "The user should receive an error if trying to install an already installed package" in {
       val name = "helloworld"
       val version = "0.1.0"
-      RoundTrips.withInstallV1(name, Some(version)) { _ =>
+      RoundTrips.withInstallV1(name, Some(version)).runWith { _ =>
         val expectedError: ErrorResponse = PackageAlreadyInstalled()
         val error = intercept[HttpErrorResponse] {
           RoundTrips.withInstallV1(name, Some(version)).run()

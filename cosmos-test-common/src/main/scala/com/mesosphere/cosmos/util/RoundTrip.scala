@@ -6,7 +6,6 @@ import shapeless._
 class RoundTrip[A] private(
   private val withResource: (A => Unit) => Unit
 ) {
-
   def flatMap[B](transform: A => RoundTrip[B]): RoundTrip[B] = {
     def withResourceB(bInner: B => Unit): Unit = {
       withResource { a: A =>
@@ -15,11 +14,11 @@ class RoundTrip[A] private(
         }
       }
     }
+
     new RoundTrip[B](withResourceB)
   }
 
-  // TODO: runWith
-  def apply[B](transform: A => B): B = {
+  def runWith[B](transform: A => B): B = {
     map(transform).run()
   }
 
@@ -31,25 +30,24 @@ class RoundTrip[A] private(
     innerA.get
   }
 
-  def hList(): RoundTrip[A :: HNil] = {
-    map(_ :: HNil)
-  }
-
   def map[B](transform: A => B): RoundTrip[B] = {
     def withResourceB(bInner: B => Unit): Unit = {
       withResource { a: A =>
         bInner(transform(a))
       }
     }
+
     new RoundTrip[B](withResourceB)
   }
 
+  def hList(): RoundTrip[A :: HNil] = {
+    map(_ :: HNil)
+  }
 }
 
 object RoundTrip {
-
   def sequence[A](roundTrips: List[RoundTrip[A]]): RoundTrip[List[A]] = {
-    roundTrips.foldRight(RoundTrip.value(List(): List[A])) { (aRt, listRt) =>
+    roundTrips.foldRight(RoundTrip.lift(List(): List[A])) { (aRt, listRt) =>
       aRt.flatMap { a =>
         listRt.map { list =>
           a :: list
@@ -58,8 +56,7 @@ object RoundTrip {
     }
   }
 
-  // TODO: pure
-  def value[A](a: => A): RoundTrip[A] = {
+  def lift[A](a: => A): RoundTrip[A] = {
     RoundTrip(a)((_: A) => ())
   }
 
@@ -76,6 +73,7 @@ object RoundTrip {
         ()
       }
     }
+
     new RoundTrip[A](withResource)
   }
 
@@ -95,6 +93,6 @@ object RoundTrip {
       }
     }
   }
-  // scalastyle:on method.name
 
+  // scalastyle:on method.name
 }

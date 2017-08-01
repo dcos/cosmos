@@ -29,7 +29,7 @@ class PackageRepositorySpec extends FeatureSpec with Matchers {
     scenario("The user should be able to list added repositories") {
       val name = "cli-test-4"
       val uri: Uri = "https://github.com/mesosphere/universe/archive/cli-test-4.zip"
-      RoundTrips.withRepository(name, uri) { _ =>
+      RoundTrips.withRepository(name, uri).runWith { _ =>
         Requests.listRepositories() should contain(
           rpc.v1.model.PackageRepository(name, uri)
         )
@@ -39,7 +39,7 @@ class PackageRepositorySpec extends FeatureSpec with Matchers {
       val name = "cli-test-4"
       val uri: Uri = "https://github.com/mesosphere/universe/archive/cli-test-4.zip"
       (RoundTrips.withRepository(name, uri) &:
-        RoundTrips.withDeletedRepository(Some(name), Some(uri))) { _ =>
+        RoundTrips.withDeletedRepository(Some(name), Some(uri))).runWith { _ =>
         Requests.listRepositories() should not contain
           rpc.v1.model.PackageRepository(name, uri)
       }
@@ -50,7 +50,7 @@ class PackageRepositorySpec extends FeatureSpec with Matchers {
     scenario("the user would like to add a repository at the default priority (lowest priority)") {
       val name = "cli-test-4"
       val uri: Uri = "https://github.com/mesosphere/universe/archive/cli-test-4.zip"
-      RoundTrips.withRepository(name, uri) { response =>
+      RoundTrips.withRepository(name, uri).runWith { response =>
         val last = response.repositories.last
         last.name shouldBe name
         last.uri shouldBe uri
@@ -60,7 +60,7 @@ class PackageRepositorySpec extends FeatureSpec with Matchers {
       val name = "cli-test-4"
       val uri: Uri = "https://github.com/mesosphere/universe/archive/cli-test-4.zip"
       val index = 0
-      RoundTrips.withRepository(name, uri, Some(index)) { response =>
+      RoundTrips.withRepository(name, uri, Some(index)).runWith { response =>
         val actual = response.repositories(index)
         actual.name shouldBe name
         actual.uri shouldBe uri
@@ -70,7 +70,7 @@ class PackageRepositorySpec extends FeatureSpec with Matchers {
       val name = "bounds"
       val uri: Uri = "https://github.com/mesosphere/universe/archive/cli-test-4.zip"
       val index = Requests.listRepositories().size
-      RoundTrips.withRepository(name, uri, Some(index)) { response =>
+      RoundTrips.withRepository(name, uri, Some(index)).runWith { response =>
         val last = response.repositories.last
         last.name shouldBe name
         last.uri shouldBe uri
@@ -80,7 +80,7 @@ class PackageRepositorySpec extends FeatureSpec with Matchers {
       val name = "cli-test-4"
       val uri: Uri = "https://github.com/mesosphere/universe/archive/cli-test-4.zip"
       val expectedError: ErrorResponse = RepositoryAlreadyPresent(Ior.Both(name, uri))
-      RoundTrips.withRepository(name, uri) { _ =>
+      RoundTrips.withRepository(name, uri).runWith { _ =>
         val error = intercept[HttpErrorResponse] {
           RoundTrips.withRepository(name, uri).run()
         }
@@ -183,14 +183,14 @@ class PackageRepositorySpec extends FeatureSpec with Matchers {
   feature("The package/repository/delete endpoint") {
     scenario("the user would like to delete a repository by name") {
       val deleted = Requests.listRepositories().head
-      RoundTrips.withDeletedRepository(deleted.name) { dr =>
+      RoundTrips.withDeletedRepository(deleted.name).runWith { dr =>
         dr.repositories should not contain deleted
         Requests.listRepositories() should not contain deleted
       }
     }
     scenario("the user would like to delete a repository by uri") {
       val deleted = Requests.listRepositories().head
-      RoundTrips.withDeletedRepository(uri = deleted.uri) { dr =>
+      RoundTrips.withDeletedRepository(uri = deleted.uri).runWith { dr =>
         dr.repositories should not contain deleted
         Requests.listRepositories() should not contain deleted
       }
