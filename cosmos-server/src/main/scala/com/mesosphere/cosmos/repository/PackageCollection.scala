@@ -4,10 +4,8 @@ import com.mesosphere.cosmos.error.PackageNotFound
 import com.mesosphere.cosmos.error.VersionNotFound
 import com.mesosphere.cosmos.http.RequestSession
 import com.mesosphere.cosmos.rpc
-import com.mesosphere.cosmos.rpc.v1.model.SearchResult
 import com.mesosphere.universe
 import com.mesosphere.universe.v3.syntax.PackageDefinitionOps._
-import com.mesosphere.universe.v4.model.PackageDefinition
 import com.netaporter.uri.Uri
 import com.twitter.util.Future
 import java.util.regex.Pattern
@@ -206,8 +204,8 @@ object PackageCollection {
       }
 
     val packageOrdering = Ordering.Tuple2(
-      implicitly(Ordering[(String, Int)]),
-      implicitly(Ordering[universe.v3.model.ReleaseVersion].reverse)
+      Ordering[(String, Int)],
+      Ordering[universe.v3.model.ReleaseVersion].reverse
     ).on { tuple : ((universe.v4.model.PackageDefinition, Uri), Int) =>
       val ((pkgDef, _), index) = tuple
       ((pkgDef.name, index), pkgDef.releaseVersion)
@@ -220,7 +218,7 @@ object PackageCollection {
     s"""^${safePattern(query)}$$""".r
   }
 
-  private def getPredicate(query: Option[String]) : SearchResult => Boolean = {
+  private def getPredicate(query: Option[String]) : rpc.v1.model.SearchResult => Boolean = {
     query.map { value =>
       if (value.contains("*")) {
         searchRegex(createRegex(value))
@@ -255,7 +253,7 @@ object PackageCollection {
     }.mkString(".*")
   }
 
-  private def singleResult(pkg: PackageDefinition): rpc.v1.model.SearchResult = {
+  private def singleResult(pkg: universe.v4.model.PackageDefinition): rpc.v1.model.SearchResult = {
     rpc.v1.model.SearchResult(
       pkg.name,
       pkg.version,
