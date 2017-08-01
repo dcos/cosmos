@@ -212,5 +212,5 @@ Cosmos implements three different services. The documentation for each service i
 ## Reporting Problems
 
 If you encounter a problem that seems to be related to a Cosmos bug, please create an issue at
-[DC/OS Jira](https://dcosjira.atlassian.net/secure/Dashboard.jspa). To create an issue click on the
+[DC/OS Jira](https://jira.mesosphere.com/). To create an issue click on the
 `Create` button at the top and add `cosmos` to the component field.
