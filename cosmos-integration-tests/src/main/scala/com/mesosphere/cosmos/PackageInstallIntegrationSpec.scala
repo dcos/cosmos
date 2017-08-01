@@ -64,7 +64,7 @@ final class PackageInstallIntegrationSpec
         app.packageDefinition shouldBe Some(pkg)
         app.packageMetadata shouldBe Some(pkg.as[label.v1.model.PackageMetadata])
         app.packageName shouldBe Some(name)
-        app.packageVersion.toString shouldBe version
+        app.packageVersion.get.toString shouldBe version
         app.packageRepository.map(_.uri) shouldBe repo.map(_.uri)
         app.serviceOptions shouldBe options.asObject
       }
