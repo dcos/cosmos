@@ -1,4 +1,3 @@
-
 package com.mesosphere.cosmos
 
 import com.mesosphere.Generators
@@ -7,7 +6,6 @@ import com.mesosphere.cosmos.error.VersionNotFound
 import com.mesosphere.cosmos.repository.PackageCollection
 import com.mesosphere.universe
 import com.mesosphere.universe.test.TestingPackages
-import com.mesosphere.universe.v2.model.ReleaseVersion
 import com.mesosphere.universe.v3.syntax.PackageDefinitionOps._
 import com.netaporter.uri.Uri
 import com.twitter.util.Return
@@ -104,20 +102,26 @@ final class PackageCollectionSpec extends FreeSpec
     "getPackageByPackageName" - {
 
       "package not found as repo is empty" in {
-        Try(PackageCollection.getPackagesByPackageName(
-          "test",
-          List.empty[universe.v4.model.PackageDefinition])
+        Try(
+          PackageCollection.getPackagesByPackageName(
+            List.empty[universe.v4.model.PackageDefinition],
+            "test"
+          )
         ) shouldBe Throw(
           PackageNotFound("test").exception
         )
       }
 
       "invalid package name should throw" in {
-        Try(PackageCollection.getPackagesByPackageName("test",
-          List(TestingPackages.HelloWorldV3Package,
-            TestingPackages.MinimalV3ModelV2PackageDefinition
+        Try(
+          PackageCollection.getPackagesByPackageName(
+            List(
+              TestingPackages.HelloWorldV3Package,
+              TestingPackages.MinimalV3ModelV2PackageDefinition
+            ),
+            "test"
           )
-        )) shouldBe Throw(
+        ) shouldBe Throw(
           PackageNotFound("test").exception
         )
       }
@@ -126,8 +130,8 @@ final class PackageCollectionSpec extends FreeSpec
         val cls = List(TestingPackages.MinimalV3ModelV2PackageDefinition)
         //val ver = TestingPackages.MinimalV3ModelV2PackageDefinition.version
 
-        Try(PackageCollection.getPackagesByPackageName("minimal", cls)) shouldBe Return(cls)
-        Try(PackageCollection.getPackagesByPackageName("MAXIMAL", cls)) shouldBe Throw(
+        Try(PackageCollection.getPackagesByPackageName(cls, "minimal")) shouldBe Return(cls)
+        Try(PackageCollection.getPackagesByPackageName(cls, "MAXIMAL")) shouldBe Throw(
           PackageNotFound("MAXIMAL").exception
         )
       }
@@ -140,15 +144,15 @@ final class PackageCollectionSpec extends FreeSpec
         val packages = TestingPackages.MaximalV3ModelV3PackageDefinition :: minimal
 
         assertResult(Return(minimal))(
-          Try(PackageCollection.getPackagesByPackageName("minimal", packages))
+          Try(PackageCollection.getPackagesByPackageName(packages, "minimal"))
         )
         assertResult(
           Return(List(TestingPackages.MaximalV3ModelV3PackageDefinition))
         )(
-          Try(PackageCollection.getPackagesByPackageName("MAXIMAL", packages))
+          Try(PackageCollection.getPackagesByPackageName(packages, "MAXIMAL"))
         )
 
-        Try(PackageCollection.getPackagesByPackageName("test", packages)) shouldBe(
+        Try(PackageCollection.getPackagesByPackageName(packages, "test")) shouldBe(
           Throw(PackageNotFound("test").exception)
         )
       }
@@ -167,23 +171,23 @@ final class PackageCollectionSpec extends FreeSpec
         )
 
         Try(
-          PackageCollection.getPackagesByPackageName("minimal", packageDefinitions).length
+          PackageCollection.getPackagesByPackageName(packageDefinitions, "minimal").length
         ) shouldBe Return(2)
 
         Try(
-          PackageCollection.getPackagesByPackageName("minimal", packageDefinitions)
+          PackageCollection.getPackagesByPackageName(packageDefinitions, "minimal")
         ) shouldBe Return(
           List(TestingPackages.MinimalV3ModelV2PackageDefinition, min2)
         )
 
         Try(
-          PackageCollection.getPackagesByPackageName("MAXIMAL", packageDefinitions)
+          PackageCollection.getPackagesByPackageName(packageDefinitions, "MAXIMAL")
         ) shouldBe Return(
           List(TestingPackages.MaximalV3ModelV3PackageDefinition, max2)
         )
 
         Try(
-          PackageCollection.getPackagesByPackageName("foobar", packageDefinitions)
+          PackageCollection.getPackagesByPackageName(packageDefinitions, "foobar")
         ) shouldBe Throw(
           PackageNotFound("foobar").exception
         )
@@ -192,8 +196,8 @@ final class PackageCollectionSpec extends FreeSpec
       "works for all packaging versions" in {
         forAll(TestingPackages.packageDefinitions) { packageDefinition =>
           PackageCollection.getPackagesByPackageName(
-            packageDefinition.name,
-            List(packageDefinition)
+            List(packageDefinition),
+            packageDefinition.name
           ) shouldBe List(packageDefinition)
         }
       }
@@ -202,35 +206,43 @@ final class PackageCollectionSpec extends FreeSpec
     "getPackagesByPackageVersion" - {
 
       "not found" in {
-        Try(PackageCollection.getPackagesByPackageVersion(
-          "test",
-          Some(TestingPackages.HelloWorldV3Package.version),
-          List.empty[(universe.v4.model.PackageDefinition, Uri)])
+        Try(
+          PackageCollection.getPackagesByPackageVersion(
+            List.empty[(universe.v4.model.PackageDefinition, Uri)],
+            "test",
+            Some(TestingPackages.HelloWorldV3Package.version)
+          )
         ) shouldBe Throw(
           PackageNotFound("test").exception
         )
 
-        Try(PackageCollection.getPackagesByPackageVersion(
-          "test",
-          None,
-          List.empty[(universe.v4.model.PackageDefinition, Uri)])
-          ) shouldBe Throw(
+        Try(
+          PackageCollection.getPackagesByPackageVersion(
+            List.empty[(universe.v4.model.PackageDefinition, Uri)],
+            "test",
+            None
+          )
+        ) shouldBe Throw(
           PackageNotFound("test").exception
         )
 
-        Try(PackageCollection.getPackagesByPackageVersion(
-          "test",
-          Some(TestingPackages.HelloWorldV3Package.version),
-          List((TestingPackages.HelloWorldV3Package, Uri.parse("/test")))
-        )) shouldBe Throw(
+        Try(
+          PackageCollection.getPackagesByPackageVersion(
+            List((TestingPackages.HelloWorldV3Package, Uri.parse("/test"))),
+            "test",
+            Some(TestingPackages.HelloWorldV3Package.version)
+          )
+        ) shouldBe Throw(
           PackageNotFound("test").exception
         )
 
-        Try(PackageCollection.getPackagesByPackageVersion(
-          "test",
-          None,
-          List((TestingPackages.HelloWorldV3Package, Uri.parse("/test")))
-        )) shouldBe Throw(
+        Try(
+          PackageCollection.getPackagesByPackageVersion(
+            List((TestingPackages.HelloWorldV3Package, Uri.parse("/test"))),
+            "test",
+            None
+          )
+        ) shouldBe Throw(
           PackageNotFound("test").exception
         )
       }
@@ -238,34 +250,37 @@ final class PackageCollectionSpec extends FreeSpec
       "invalid package should throw" in {
         val packages = List((TestingPackages.HelloWorldV3Package, Uri.parse("/test")))
 
-        Try(PackageCollection.getPackagesByPackageVersion(
-          "test",
-          Some(TestingPackages.HelloWorldV3Package.version),
-          packages)
+        Try(
+          PackageCollection.getPackagesByPackageVersion(
+            packages,
+            "test",
+            Some(TestingPackages.HelloWorldV3Package.version)
+          )
         ) shouldBe Throw(
           PackageNotFound("test").exception
         )
 
-        Try(PackageCollection.getPackagesByPackageVersion(
-          "test",
-          None,
-          packages)
+        Try(PackageCollection.getPackagesByPackageVersion(packages, "test", None)
         ) shouldBe Throw(
           PackageNotFound("test").exception
         )
 
-        Try(PackageCollection.getPackagesByPackageVersion(
-          "",
-          Some(TestingPackages.HelloWorldV3Package.version),
-          packages)
+        Try(
+          PackageCollection.getPackagesByPackageVersion(
+            packages,
+            "",
+            Some(TestingPackages.HelloWorldV3Package.version)
+          )
         ) shouldBe Throw(
           PackageNotFound("").exception
         )
 
-        Try(PackageCollection.getPackagesByPackageVersion(
-          TestingPackages.HelloWorldV3Package.name,
-          Some(universe.v3.model.Version("6.7.8")),
-          packages)
+        Try(
+          PackageCollection.getPackagesByPackageVersion(
+            packages,
+            TestingPackages.HelloWorldV3Package.name,
+            Some(universe.v3.model.Version("6.7.8"))
+          )
         ) shouldBe Throw(
           VersionNotFound(
             TestingPackages.HelloWorldV3Package.name,
@@ -280,22 +295,25 @@ final class PackageCollectionSpec extends FreeSpec
         val cls = List((TestingPackages.MinimalV3ModelV2PackageDefinition, u))
         val ver = TestingPackages.MinimalV3ModelV2PackageDefinition.version
 
-        Try(PackageCollection.getPackagesByPackageVersion(
-          "minimal",
-          Some(ver),cls
-        )) shouldBe Return((TestingPackages.MinimalV3ModelV2PackageDefinition, u))
+        Try(
+          PackageCollection.getPackagesByPackageVersion(
+            cls,
+            "minimal",
+            Some(ver)
+          )
+        ) shouldBe Return((TestingPackages.MinimalV3ModelV2PackageDefinition, u))
 
-        Try(PackageCollection.getPackagesByPackageVersion("minimal", None, cls)) shouldBe Return(
+        Try(PackageCollection.getPackagesByPackageVersion(cls, "minimal", None)) shouldBe Return(
           (TestingPackages.MinimalV3ModelV2PackageDefinition, u)
         )
 
         val bad = TestingPackages.MaximalV3ModelV3PackageDefinition.version
         Try(
-          PackageCollection.getPackagesByPackageVersion("minimal", Some(bad), cls)
+          PackageCollection.getPackagesByPackageVersion(cls, "minimal", Some(bad))
         ) shouldBe Throw(
           VersionNotFound("minimal", bad).exception
         )
-        Try(PackageCollection.getPackagesByPackageVersion("test", Some(ver), cls)) shouldBe Throw(
+        Try(PackageCollection.getPackagesByPackageVersion(cls, "test", Some(ver))) shouldBe Throw(
           PackageNotFound("test").exception
         )
       }
@@ -308,13 +326,13 @@ final class PackageCollectionSpec extends FreeSpec
         )
         val ver = TestingPackages.MaximalV3ModelV3PackageDefinition.version
         Try(
-          PackageCollection.getPackagesByPackageVersion("MAXIMAL", Some(ver), cls)
+          PackageCollection.getPackagesByPackageVersion(cls, "MAXIMAL", Some(ver))
         ) shouldBe Return(
           (TestingPackages.MaximalV3ModelV3PackageDefinition, u)
         )
         val bad = TestingPackages.MinimalV3ModelV2PackageDefinition.version
         Try(
-          PackageCollection.getPackagesByPackageVersion("MAXIMAL", Some(bad), cls)
+          PackageCollection.getPackagesByPackageVersion(cls, "MAXIMAL", Some(bad))
         ) shouldBe Throw(
           VersionNotFound("MAXIMAL", bad).exception
         )
@@ -326,11 +344,15 @@ final class PackageCollectionSpec extends FreeSpec
 
         assertResult(
           Return((TestingPackages.MinimalV3ModelV2PackageDefinition, u))
-        )(Try(PackageCollection.getPackagesByPackageVersion(
-          TestingPackages.MinimalV3ModelV2PackageDefinition.name,
-          Some(TestingPackages.MinimalV3ModelV2PackageDefinition.version),
-          packages)
-        ))
+        )(
+          Try(
+            PackageCollection.getPackagesByPackageVersion(
+              packages,
+              TestingPackages.MinimalV3ModelV2PackageDefinition.name,
+              Some(TestingPackages.MinimalV3ModelV2PackageDefinition.version)
+            )
+          )
+        )
       }
 
       "works for a single version with multiple versions of multiple packages" in {
@@ -343,20 +365,24 @@ final class PackageCollectionSpec extends FreeSpec
 
         assertResult(
           Return((TestingPackages.MinimalV3ModelV2PackageDefinition, u))
-        )(Try(PackageCollection.getPackagesByPackageVersion(
-          TestingPackages.MinimalV3ModelV2PackageDefinition.name,
-          Some(TestingPackages.MinimalV3ModelV2PackageDefinition.version),
-          packages)
-        ))
+        )(
+          Try(
+            PackageCollection.getPackagesByPackageVersion(
+              packages,
+              TestingPackages.MinimalV3ModelV2PackageDefinition.name,
+              Some(TestingPackages.MinimalV3ModelV2PackageDefinition.version)
+            )
+          )
+        )
       }
 
       "works for all packaging versions" in {
         val u = Uri.parse("/test")
         forAll(TestingPackages.packageDefinitions) { packageDefinition =>
           PackageCollection.getPackagesByPackageVersion(
+            List((packageDefinition, u)),
             packageDefinition.name,
-            Some(packageDefinition.version),
-            List((packageDefinition, u))
+            Some(packageDefinition.version)
           ) shouldBe ((packageDefinition, u))
         }
       }
@@ -365,10 +391,21 @@ final class PackageCollectionSpec extends FreeSpec
     "search" - {
 
       "not found" in {
-        assertResult(Return(Nil))(Try(PackageCollection.search(Some("test"), List.empty[universe.v4.model.PackageDefinition])
-        ))
-        assertResult(Return(Nil))(Try(PackageCollection.search(Some("mini*.+"), List.empty[universe.v4.model.PackageDefinition])
-        ))
+        assertResult(
+          Return(Nil)
+        )(
+          Try(
+            PackageCollection.search(List.empty[universe.v4.model.PackageDefinition], Some("test"))
+          )
+        )
+
+        assertResult(
+          Return(Nil)
+        )(
+          Try(
+            PackageCollection.search(List.empty[universe.v4.model.PackageDefinition], Some("mini*.+"))
+          )
+        )
       }
 
       "all" in {
@@ -376,13 +413,13 @@ final class PackageCollectionSpec extends FreeSpec
         val all = List(TestingPackages.MaximalV3ModelV3PackageDefinition,
           TestingPackages.MinimalV3ModelV2PackageDefinition)
 
-        Try(PackageCollection.search(None, all).map(_.name)) shouldBe
+        Try(PackageCollection.search(all, None).map(_.name)) shouldBe
           Return(List("MAXIMAL","minimal"))
 
-        Try(PackageCollection.search(Some("minimal"), all).map(_.name)) shouldBe
+        Try(PackageCollection.search(all, Some("minimal")).map(_.name)) shouldBe
           Return(List("minimal"))
 
-        assertResult(Return(2))(Try(PackageCollection.search(None, all).length))
+        assertResult(Return(2))(Try(PackageCollection.search(all, None).length))
 
         val min2 = TestingPackages.MinimalV3ModelV2PackageDefinition.copy(
           version = universe.v3.model.Version("1.2.4")
@@ -403,41 +440,41 @@ final class PackageCollectionSpec extends FreeSpec
 
         assertResult(
           Return(List("MAXIMAL", "minimal"))
-        )(Try(PackageCollection.search(None, clientdata).map(_.name).sorted))
+        )(Try(PackageCollection.search(clientdata, None).map(_.name).sorted))
 
         assertResult(
           Return(List("minimal"))
-        )(Try(PackageCollection.search(Some("minimal"), clientdata).map(_.name)))
+        )(Try(PackageCollection.search(clientdata, Some("minimal")).map(_.name)))
 
         assertResult(
           Return(List(Set(minver, min2ver)))
-        )(Try(PackageCollection.search(Some("minimal"), clientdata).map(_.versions.keys)))
+        )(Try(PackageCollection.search(clientdata, Some("minimal")).map(_.versions.keys)))
 
         assertResult(
           Return(List(Set(maxver, max2ver)))
-        )(Try(PackageCollection.search(Some("MAXIMAL"), clientdata).map(_.versions.keys)))
+        )(Try(PackageCollection.search(clientdata, Some("MAXIMAL")).map(_.versions.keys)))
       }
 
       "found" in {
         val l = List(TestingPackages.MinimalV3ModelV2PackageDefinition)
-        assertResult("minimal")(PackageCollection.search(Some("minimal"), l).head.name)
-        assertResult("minimal")(PackageCollection.search(Some("mini*mal"), l).head.name)
-        assertResult("minimal")(PackageCollection.search(Some("min*mal"), l).head.name)
-        assertResult("minimal")(PackageCollection.search(Some("minimal*"), l).head.name)
-        assertResult("minimal")(PackageCollection.search(Some("*minimal"), l).head.name)
-        assertResult("minimal")(PackageCollection.search(Some("*minimal*"), l).head.name)
-        assertResult("minimal")(PackageCollection.search(Some("*inimal"), l).head.name)
-        assertResult("minimal")(PackageCollection.search(Some("minima*"), l).head.name)
-        assertResult("minimal")(PackageCollection.search(Some("minima**"), l).head.name)
-        assertResult("minimal")(PackageCollection.search(Some("**minimal"), l).head.name)
-        assertResult("minimal")(PackageCollection.search(Some("**minimal**"), l).head.name)
-        assertResult("minimal")(PackageCollection.search(Some("**mi**mal**"), l).head.name)
+        assertResult("minimal")(PackageCollection.search(l, Some("minimal")).head.name)
+        assertResult("minimal")(PackageCollection.search(l, Some("mini*mal")).head.name)
+        assertResult("minimal")(PackageCollection.search(l, Some("min*mal")).head.name)
+        assertResult("minimal")(PackageCollection.search(l, Some("minimal*")).head.name)
+        assertResult("minimal")(PackageCollection.search(l, Some("*minimal")).head.name)
+        assertResult("minimal")(PackageCollection.search(l, Some("*minimal*")).head.name)
+        assertResult("minimal")(PackageCollection.search(l, Some("*inimal")).head.name)
+        assertResult("minimal")(PackageCollection.search(l, Some("minima*")).head.name)
+        assertResult("minimal")(PackageCollection.search(l, Some("minima**")).head.name)
+        assertResult("minimal")(PackageCollection.search(l, Some("**minimal")).head.name)
+        assertResult("minimal")(PackageCollection.search(l, Some("**minimal**")).head.name)
+        assertResult("minimal")(PackageCollection.search(l, Some("**mi**mal**")).head.name)
       }
 
       "by tag" in {
         val l = List(TestingPackages.MaximalV3ModelV3PackageDefinition)
-        assertResult("MAXIMAL")(PackageCollection.search(Some("all"), l).head.name)
-        assertResult("MAXIMAL")(PackageCollection.search(Some("thing*"), l).head.name)
+        assertResult("MAXIMAL")(PackageCollection.search(l, Some("all")).head.name)
+        assertResult("MAXIMAL")(PackageCollection.search(l, Some("thing*")).head.name)
       }
 
       "Search results are sorted by selected field and then package name" in {
@@ -450,11 +487,11 @@ final class PackageCollectionSpec extends FreeSpec
         val expectedNameList = List(s.name, r.name, p.name, q.name)
 
         assertResult(expectedNameList)(
-          PackageCollection.search(Some("*"), List(q, p, r, s)).map(_.name)
+          PackageCollection.search(List(q, p, r, s), Some("*")).map(_.name)
         )
 
         assertResult(expectedNameList)(
-          PackageCollection.search(Some("*"), List(s, r, q, p)).map(_.name)
+          PackageCollection.search(List(s, r, q, p), Some("*")).map(_.name)
         )
       }
     }
@@ -473,7 +510,7 @@ final class PackageCollectionSpec extends FreeSpec
         } yield (name, version, upgrades)
 
         forAll (genParameters) { case (name, version, upgrades) =>
-          val upgradeVersions = PackageCollection.upgradesTo(name, version, upgrades)
+          val upgradeVersions = PackageCollection.upgradesTo(upgrades, name, version)
           assert(upgradeVersions.forall(v => upgrades.exists(_.version == v)))
           assert(upgrades.forall(p => upgradeVersions.contains(p.version)))
         }
@@ -492,7 +529,7 @@ final class PackageCollectionSpec extends FreeSpec
           } yield (name, version, packages)
 
           forAll (genParameters) { case (name, version, packages) =>
-            assert(PackageCollection.upgradesTo(name, version, packages).isEmpty)
+            assert(PackageCollection.upgradesTo(packages, name, version).isEmpty)
           }
         }
 
@@ -508,7 +545,7 @@ final class PackageCollectionSpec extends FreeSpec
           } yield (name, version, packages)
 
           forAll (genParameters) { case (name, version, packages) =>
-            assert(PackageCollection.upgradesTo(name, version, packages).isEmpty)
+            assert(PackageCollection.upgradesTo(packages, name, version).isEmpty)
           }
         }
       }

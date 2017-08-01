@@ -7,7 +7,6 @@ import com.mesosphere.cosmos.rpc
 import com.mesosphere.cosmos.rpc.v1.model.SearchResult
 import com.mesosphere.universe
 import com.mesosphere.universe.v3.syntax.PackageDefinitionOps._
-import com.mesosphere.universe.v4.model.PackageDefinition
 import com.netaporter.uri.Uri
 import com.twitter.util.Future
 import java.util.regex.Pattern
@@ -20,8 +19,8 @@ final class PackageCollection(repositoryCache: RepositoryCache) {
   )(implicit session: RequestSession): Future[List[universe.v4.model.PackageDefinition]] = {
     repositoryCache.all().map { repositories =>
       PackageCollection.getPackagesByPackageName(
-        packageName,
-        PackageCollection.merge(repositories)
+        PackageCollection.merge(repositories),
+        packageName
       )
     }
   }
@@ -32,9 +31,9 @@ final class PackageCollection(repositoryCache: RepositoryCache) {
   )(implicit session: RequestSession): Future[(universe.v4.model.PackageDefinition, Uri)] = {
     repositoryCache.all().map { repositories =>
       PackageCollection.getPackagesByPackageVersion(
+        PackageCollection.mergeWithURI(repositories),
         packageName,
-        packageVersion,
-        PackageCollection.mergeWithURI(repositories)
+        packageVersion
       )
     }
   }
@@ -43,10 +42,7 @@ final class PackageCollection(repositoryCache: RepositoryCache) {
     query: Option[String]
   )(implicit session: RequestSession): Future[List[rpc.v1.model.SearchResult]] = {
     repositoryCache.all().map { repositories =>
-      PackageCollection.search(
-        query,
-        PackageCollection.merge(repositories)
-      )
+      PackageCollection.search(PackageCollection.merge(repositories), query)
     }
   }
 
@@ -60,11 +56,7 @@ final class PackageCollection(repositoryCache: RepositoryCache) {
     version: universe.v3.model.Version
   )(implicit session: RequestSession): Future[List[universe.v3.model.Version]] = {
     repositoryCache.all().map { repositories =>
-      PackageCollection.upgradesTo(
-        name,
-        version,
-        PackageCollection.merge(repositories)
-      )
+      PackageCollection.upgradesTo(PackageCollection.merge(repositories), name, version)
     }
   }
 
@@ -76,10 +68,7 @@ final class PackageCollection(repositoryCache: RepositoryCache) {
     packageDefinition: universe.v4.model.PackageDefinition
   )(implicit session: RequestSession): Future[List[universe.v3.model.Version]] = {
     repositoryCache.all().map { repositories =>
-      PackageCollection.downgradesTo(
-        packageDefinition,
-        PackageCollection.merge(repositories)
-      )
+      PackageCollection.downgradesTo(PackageCollection.merge(repositories), packageDefinition)
     }
   }
 }
@@ -87,8 +76,8 @@ final class PackageCollection(repositoryCache: RepositoryCache) {
 object PackageCollection {
 
   def getPackagesByPackageName(
-    packageName: String,
-    packageDefinitions: List[universe.v4.model.PackageDefinition]
+    packageDefinitions: List[universe.v4.model.PackageDefinition],
+    packageName: String
   ): List[universe.v4.model.PackageDefinition] = {
     val result = packageDefinitions.filter(_.name == packageName)
     if (result.isEmpty) {
@@ -98,11 +87,10 @@ object PackageCollection {
   }
 
   def getPackagesByPackageVersion(
+    packageDefinitions: List[(universe.v4.model.PackageDefinition, Uri)],
     packageName: String,
-    packageVersion: Option[universe.v3.model.Version],
-    packageDefinitions: List[(universe.v4.model.PackageDefinition, Uri)]
+    packageVersion: Option[universe.v3.model.Version]
   ): (universe.v4.model.PackageDefinition, Uri) = {
-
     val packagesMatchingName = packageDefinitions.filter { case (packageDefinition, _) =>
       packageDefinition.name == packageName
     }
@@ -122,8 +110,8 @@ object PackageCollection {
   }
 
   def search(
-    query: Option[String],
-    packageDefinitions: List[PackageDefinition]
+    packageDefinitions: List[universe.v4.model.PackageDefinition],
+    query: Option[String]
   ): List[rpc.v1.model.SearchResult] = {
     val predicate = getPredicate(query)
 
@@ -167,9 +155,9 @@ object PackageCollection {
   }
 
   def upgradesTo(
+    packageDefinitions: List[universe.v4.model.PackageDefinition],
     name: String,
-    version: universe.v3.model.Version,
-    packageDefinitions: List[universe.v4.model.PackageDefinition]
+    version: universe.v3.model.Version
   ): List[universe.v3.model.Version] = {
     packageDefinitions.collect {
       case packageDefinition
@@ -179,8 +167,8 @@ object PackageCollection {
   }
 
   def downgradesTo(
-    pkgDefinition: universe.v4.model.PackageDefinition,
-    packageDefinitions: List[universe.v4.model.PackageDefinition]
+    packageDefinitions: List[universe.v4.model.PackageDefinition],
+    pkgDefinition: universe.v4.model.PackageDefinition
   ): List[universe.v3.model.Version] = {
     packageDefinitions.collect {
       case packageDefinition
@@ -225,17 +213,10 @@ object PackageCollection {
 
   /**
   *
-  * @param repositories Takes in a List of tuples of type (Repository, Uri).
-  * @return A List[(PackageDefinition, Uri)] sorted with below criteria:
-  *         The method sorts the tuples by expanding the Repository in to List[PackageDefinition]
-  *         and then sorting it using the following criteria (in this exact order):
-  *         - Remove all the tuples that are non unique on their name + version combination with
-  *           the criteria that entry with the lowest index value stays
-  *         - Sort based on their name (a to z)
-  *         - Sort based on their index (low to high)
-  *         - Sort based on their releaseVersion (high to low)
+  * The merge should remove all the packages that has same name+version value (with lowest index
+  * value staying) and then should sort the rest initially by name and then index and then releaseVersion
   *
-  * The sorting has to be a foldLeft as we need to iterate from left to right to preserve the order.
+  * The sorting should use foldLeft as we need to iterate from left to right to preserve the order.
   * Elements are appended at the end of Sequence and thus Vector is a better choice than List.
   */
   private def mergeWithURI(
