@@ -12,19 +12,19 @@ import org.scalatest.Matchers
 class ServiceDescribeSpec extends FeatureSpec with Matchers {
   feature("The service/describe endpoint") {
     scenario("The user would like to know the upgrades available to a service") {
-      RoundTrips.withInstall("helloworld", Some("0.1.0")) { ir =>
+      RoundTrips.withInstallV1("helloworld", Some("0.1.0")) { ir =>
         Requests.describeService(ir.appId).upgradesTo.shouldBe(
           List("0.4.2"): List[universe.v3.model.Version])
       }
     }
     scenario("The user would like to know the downgrades available to a service") {
-      RoundTrips.withInstall("helloworld", Some("0.4.2")) { ir =>
+      RoundTrips.withInstallV1("helloworld", Some("0.4.2")) { ir =>
         Requests.describeService(ir.appId).downgradesTo.shouldBe(
           List("0.4.2", "0.4.1", "0.4.0", "0.1.0"): List[universe.v3.model.Version])
       }
     }
     scenario("The user would like to know the package definition used to run a service") {
-      RoundTrips.withInstall("helloworld", Some("0.1.0")) { ir =>
+      RoundTrips.withInstallV1("helloworld", Some("0.1.0")) { ir =>
         Requests.describeService(ir.appId).`package`.shouldBe(
           Requests.describePackage(ir.packageName, Some(ir.packageVersion)).`package`)
       }

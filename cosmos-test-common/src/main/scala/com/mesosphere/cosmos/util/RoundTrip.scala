@@ -18,6 +18,7 @@ class RoundTrip[A] private(
     new RoundTrip[B](withResourceB)
   }
 
+  // TODO: runWith
   def apply[B](transform: A => B): B = {
     map(transform).run()
   }
@@ -57,6 +58,7 @@ object RoundTrip {
     }
   }
 
+  // TODO: pure
   def value[A](a: => A): RoundTrip[A] = {
     RoundTrip(a)((_: A) => ())
   }

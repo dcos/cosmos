@@ -40,7 +40,7 @@ class RoundTripSpec extends FreeSpec with Matchers {
     }
   }
 
-
+  // TODO: make this independent
   var state: Int = 0
   def forward(newState : Int): Int = {
     val oldState = state
@@ -54,11 +54,10 @@ class RoundTripSpec extends FreeSpec with Matchers {
     RoundTrip(forward(newValue))(backwards).map(_ => newValue)
   }
   def withIncrement(): RoundTrip[Int] = {
-    //RoundTrip(state).flatMap { s =>
+    //RoundTrip.value(state).flatMap { s =>
     //  withChangedState(s + 1)
     //}
-    val newValue = state + 1
-    withChangedState(newValue)
+    withChangedState(state + 1)
   }
 
   "RoundTrip run() should return inner value" in {

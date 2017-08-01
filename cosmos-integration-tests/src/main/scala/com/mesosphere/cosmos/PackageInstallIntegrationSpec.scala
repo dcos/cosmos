@@ -5,6 +5,8 @@ import _root_.io.circe.JsonObject
 import _root_.io.circe.jawn._
 import _root_.io.circe.syntax._
 import com.mesosphere.cosmos.circe.Decoders.parse64
+import com.mesosphere.cosmos.error.PackageAlreadyInstalled
+import com.mesosphere.cosmos.error.PackageNotFound
 import com.mesosphere.cosmos.http.CosmosRequests
 import com.mesosphere.cosmos.http.RequestSession
 import com.mesosphere.cosmos.repository.DefaultRepositories
@@ -25,8 +27,6 @@ import com.netaporter.uri.Uri
 import com.twitter.finagle.http._
 import com.twitter.util.Await
 import com.twitter.util.Future
-import java.nio.charset.StandardCharsets
-import java.util.Base64
 import java.util.UUID
 import org.scalatest.AppendedClues._
 import org.scalatest.Assertion
@@ -35,11 +35,140 @@ import org.scalatest.FreeSpec
 import org.scalatest.Matchers
 import org.scalatest.Succeeded
 import org.scalatest.prop.TableDrivenPropertyChecks
+import com.mesosphere.cosmos.ItOps._
+import com.mesosphere.cosmos.error.ServiceMarathonTemplateNotFound
+import com.mesosphere.cosmos.error.VersionNotFound
+import com.twitter.bijection.Conversion.asMethod
+import com.mesosphere.cosmos.bijection.CosmosConversions._
 
-final class PackageInstallIntegrationSpec extends FreeSpec with BeforeAndAfterAll {
+final class PackageInstallIntegrationSpec
+  extends FreeSpec
+    with BeforeAndAfterAll
+    with Matchers {
 
   import CosmosIntegrationTestClient._
   import PackageInstallIntegrationSpec._
+
+
+  "The package/install endpoint" - {
+    "should store the correct labels" in {
+      val name = "helloworld"
+      val version = "0.1.0"
+      val options: Json = """{ "port": 9999 } """
+      val repoName = "V4TestUniverse"
+      RoundTrips.withInstallV1(name, Some(version), options.asObject) { ir =>
+        val repo = Requests.getRepository(repoName)
+        val pkg = Requests.describePackage(name, ir.packageVersion).`package`
+        val app = Requests.getMarathonApp(ir.appId)
+        app.id shouldBe ir.appId
+        app.packageDefinition shouldBe Some(pkg)
+        app.packageMetadata shouldBe Some(pkg.as[label.v1.model.PackageMetadata])
+        app.packageName shouldBe Some(name)
+        app.packageVersion.toString shouldBe version
+        app.packageRepository.map(_.uri) shouldBe repo.map(_.uri)
+        app.serviceOptions shouldBe options.asObject
+      }
+    }
+    "The user should be able to install a package by specifying only the name" in {
+      val name = "helloworld"
+      RoundTrips.withInstallV1(name) { ir =>
+        val Some((expectedVersion, _)) = Requests.getHighestReleaseVersion(
+          ir.packageName,
+          includePackageVersions = true
+        )
+        ir.packageName shouldBe name
+        ir.packageVersion shouldBe expectedVersion
+        assert(Requests.isMarathonAppInstalled(ir.appId))
+      }
+    }
+    "The user should be able to install a package with a specific version" in {
+      val name = "helloworld"
+      val version = universe.v2.model.PackageDetailsVersion("0.1.0")
+      RoundTrips.withInstallV1(name, Some(version)) { ir =>
+        ir.packageName shouldBe name
+        ir.packageVersion shouldBe version
+        assert(Requests.isMarathonAppInstalled(ir.appId))
+      }
+    }
+    "The user should be able to specify the configuration during install" in {
+      val name = "helloworld"
+      val version = "0.1.0"
+      val options: Json = """{ "port": 9999 }"""
+      RoundTrips.withInstallV1(name, Some(version), options = options.asObject) { ir =>
+        val marathonApp = Requests.getMarathonApp(ir.appId)
+        marathonApp.serviceOptions shouldBe options.asObject
+      }
+    }
+    "The user should be able to specify the app ID during an install" in {
+      val name = "helloworld"
+      val version = "0.1.0"
+      val appId = AppId("utnhaoesntuahs")
+      RoundTrips.withInstallV1(name, Some(version), appId = Some(appId)) { ir =>
+        ir.appId shouldBe appId
+        assert(Requests.isMarathonAppInstalled(appId))
+      }
+    }
+    "The user should receive an error if trying to install an already installed package" in {
+      val name = "helloworld"
+      val version = "0.1.0"
+      RoundTrips.withInstallV1(name, Some(version)) { _ =>
+        val expectedError: ErrorResponse = PackageAlreadyInstalled()
+        val error = intercept[HttpErrorResponse] {
+          RoundTrips.withInstallV1(name, Some(version)).run()
+        }
+        error.status shouldBe Status.Conflict
+        error.errorResponse shouldBe expectedError
+      }
+    }
+    "The user should recieve an error if trying to install a version that does not exist" in {
+      val name = "helloworld"
+      val version = "0.1.0-does-not-exist"
+      val expectedError = VersionNotFound(name, version).exception.errorResponse
+      val error = intercept[HttpErrorResponse] {
+        RoundTrips.withInstallV1(name, Some(version)).run()
+      }
+      error.status shouldBe Status.BadRequest
+      error.errorResponse shouldBe expectedError
+    }
+    "The user should receive an error when trying to install a package that does not exist" in {
+      val name = "does-not-exist"
+      val expectedError = PackageNotFound(name).exception.errorResponse
+      val error = intercept[HttpErrorResponse] {
+        RoundTrips.withInstallV1(name).run()
+      }
+      error.status shouldBe Status.BadRequest
+      error.errorResponse shouldBe expectedError
+    }
+    "The user should receive an error when trying to install a package with incorrect options" in {
+      val name = "helloworld"
+      val options: Json = """{ "port": "9999" }""" // port must be int
+      val error = intercept[HttpErrorResponse] {
+        RoundTrips.withInstallV1(name, options = options.asObject).run()
+      }
+      error.status shouldBe Status.BadRequest
+      error.errorResponse.`type` shouldBe "JsonSchemaMismatch"
+    }
+    "The user should receive an error when attempting to install" +
+      " a service with no marathon template and requesting a v1 response" in {
+      val name = "enterprise-security-cli"
+      val version = "0.8.0"
+      val expectedError = ServiceMarathonTemplateNotFound(name, version).exception.errorResponse
+      val error = intercept[HttpErrorResponse] {
+        RoundTrips.withInstallV1(name).run()
+      }
+      error.status shouldBe Status.BadRequest
+      error.errorResponse shouldBe expectedError
+    }
+    "The user should be able to install a package with no marathon" +
+      " template when requesting a v2 response" in {
+      val name = "enterprise-security-cli"
+      val version = "0.8.0"
+      val response = Requests.installV2(name, Some(version))
+      response.packageName shouldBe name
+      response.packageVersion.toString shouldBe version
+      response.appId shouldBe None
+    }
+  }
 
   "The package install endpoint" - {
 

@@ -11,7 +11,7 @@ import org.scalatest.Matchers
 final class PackageListIntegrationSpec extends FeatureSpec with Matchers {
   feature("The package/list endpoint") {
     scenario("should list installed packages") {
-      RoundTrips.withInstall("helloworld") { ir =>
+      RoundTrips.withInstallV1("helloworld") { ir =>
         val pkg = Requests.describePackage(ir.packageName, ir.packageVersion).`package`
         val pkgs = Requests.listPackages()
         pkgs.map(_.appId) should contain(ir.appId)
@@ -22,7 +22,7 @@ final class PackageListIntegrationSpec extends FeatureSpec with Matchers {
     }
     scenario("Issue #251: should include packages whose repositories have been removed") {
       // TODO: Change this to remove helloworld's repo when describe returns repo information
-      RoundTrips.withInstall("helloworld") { ir =>
+      RoundTrips.withInstallV1("helloworld") { ir =>
         val pkg = Requests.describePackage(ir.packageName, ir.packageVersion).`package`
         RoundTrips.withDeletedRepository(Some("V4TestUniverse")) { _ =>
           val pkgs = Requests.listPackages()
@@ -36,7 +36,7 @@ final class PackageListIntegrationSpec extends FeatureSpec with Matchers {
     scenario("Issue #124: should respond with packages sorted by name and app id") {
       val names = List("linkerd", "linkerd", "zeppelin", "jenkins", "cassandra")
       val withInstalls = RoundTrip.sequence(names.map { name =>
-        RoundTrips.withInstall(name, appId = Some(UUID.randomUUID()))
+        RoundTrips.withInstallV1(name, appId = Some(UUID.randomUUID()))
       })
       withInstalls { installs =>
         val expectedPkgs = installs.map(i => (i.packageName, i.appId))

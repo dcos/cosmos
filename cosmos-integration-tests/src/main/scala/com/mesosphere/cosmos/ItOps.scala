@@ -4,6 +4,8 @@ import com.mesosphere.cosmos.error.CosmosError
 import com.mesosphere.cosmos.rpc.v1.model.ErrorResponse
 import com.mesosphere.cosmos.thirdparty.marathon.model.AppId
 import com.mesosphere.universe
+import io.circe.Json
+import io.circe.jawn.parse
 import java.util.UUID
 import scala.language.implicitConversions
 
@@ -29,6 +31,11 @@ object ItOps {
     uuid: UUID
   ): AppId = {
     AppId(uuid.toString)
+  }
+
+  implicit def stringToJson(s: String): Json = {
+    val Right(res) = parse(s)
+    res
   }
 
 }

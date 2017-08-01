@@ -4,12 +4,12 @@ import com.mesosphere.cosmos.rpc.v1.model.ErrorResponse
 import com.twitter.finagle.http.Status
 import org.scalatest.exceptions.TestFailedException
 
-case class HttpErrorResponse(
+final case class HttpErrorResponse(
   status: Status,
   errorResponse: ErrorResponse
 ) extends TestFailedException(
   _ => Some(
-    s"${errorResponse.`type`} $status: ${errorResponse.message}"
+    s"Status: $status, ErrorResponse: $errorResponse"
   ),
   None,
   _ => 0,
