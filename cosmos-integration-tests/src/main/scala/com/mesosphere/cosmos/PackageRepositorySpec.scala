@@ -18,6 +18,7 @@ import com.mesosphere.universe.MediaTypes
 import com.mesosphere.universe.v2.model.UniverseVersion
 import com.netaporter.uri.Uri
 import com.netaporter.uri.dsl._
+import com.twitter.bijection.Conversion.asMethod
 import com.twitter.finagle.http.Status
 import org.jboss.netty.handler.codec.http.HttpMethod
 import org.scalatest.FeatureSpec
@@ -79,7 +80,7 @@ class PackageRepositorySpec extends FeatureSpec with Matchers {
     scenario("the user should receive an error when trying to add a duplicated repository") {
       val name = "cli-test-4"
       val uri: Uri = "https://github.com/mesosphere/universe/archive/cli-test-4.zip"
-      val expectedError: ErrorResponse = RepositoryAlreadyPresent(Ior.Both(name, uri))
+      val expectedError = RepositoryAlreadyPresent(Ior.Both(name, uri)).as[ErrorResponse]
       RoundTrips.withRepository(name, uri).runWith { _ =>
         val error = intercept[HttpErrorResponse] {
           RoundTrips.withRepository(name, uri).run()
@@ -93,7 +94,7 @@ class PackageRepositorySpec extends FeatureSpec with Matchers {
       val uri: Uri = "https://github.com/mesosphere/universe/archive/cli-test-4.zip"
       val index = Int.MaxValue
       val max = Requests.listRepositories().size
-      val expectedError: ErrorResponse = RepositoryAddIndexOutOfBounds(index, max)
+      val expectedError = RepositoryAddIndexOutOfBounds(index, max).as[ErrorResponse]
       val error = intercept[HttpErrorResponse] {
         RoundTrips.withRepository(name, uri, Some(index)).run()
       }
@@ -103,10 +104,10 @@ class PackageRepositorySpec extends FeatureSpec with Matchers {
     scenario("Issue #204: the user should receive an error " +
       "when trying to add a repository with a broken uri") {
       val repo = rpc.v1.model.PackageRepository("unreachable", "http://fake.fake")
-      val expectedError: ErrorResponse = RepositoryUriConnection(
+      val expectedError = RepositoryUriConnection(
         repo,
         repo.uri.toString.stripPrefix("http://")
-      )
+      ).as[ErrorResponse]
       val error = intercept[HttpErrorResponse] {
         RoundTrips.withRepository(repo.name, repo.uri).run()
       }
@@ -118,7 +119,7 @@ class PackageRepositorySpec extends FeatureSpec with Matchers {
       // TODO: Use a more reliable URI
       val name = "invalid"
       val uri: Uri = "https://github.com/mesosphere/dcos-cli/archive/master.zip"
-      val expectedError: ErrorResponse = IndexNotFound(uri)
+      val expectedError = IndexNotFound(uri).as[ErrorResponse]
       val error = intercept[HttpErrorResponse] {
         RoundTrips.withRepository(name, uri).run()
       }
@@ -130,12 +131,12 @@ class PackageRepositorySpec extends FeatureSpec with Matchers {
       // TODO: Use a more reliable URI
       val name = "invalid"
       val uri: Uri = "https://mesosphere.com/"
-      val expectedError: ErrorResponse = UnsupportedContentType(
+      val expectedError = UnsupportedContentType(
         List(MediaTypes.UniverseV4Repository,
           MediaTypes.UniverseV3Repository,
           MediaTypes.UniverseV2Repository),
         Some("text/html;charset=utf-8")
-      )
+      ).as[ErrorResponse]
       val error = intercept[HttpErrorResponse] {
         RoundTrips.withRepository(name, uri).run()
       }
@@ -156,11 +157,12 @@ class PackageRepositorySpec extends FeatureSpec with Matchers {
       error.status shouldBe Status.BadRequest
       error.errorResponse shouldBe expectedError
     }
-    scenario("Issue #209: the user must receive an error when adding an unsupported repository version") {
+    scenario("Issue #209: the user must receive an error " +
+      "when adding an unsupported repository version") {
       val name = "old-versioned-repository"
       val uri: Uri = "https://github.com/mesosphere/universe/archive/version-1.x.zip"
       val version = UniverseVersion("1.0.0-rc1")
-      val expectedError: ErrorResponse = UnsupportedRepositoryVersion(version)
+      val expectedError = UnsupportedRepositoryVersion(version).as[ErrorResponse]
       val error = intercept[HttpErrorResponse] {
         RoundTrips.withRepository(name, uri).run()
       }
@@ -171,7 +173,7 @@ class PackageRepositorySpec extends FeatureSpec with Matchers {
       "a repository with an unsupported protocol") {
       val name = "unsupported"
       val uri: Uri = "file://foo/bar"
-      val expectedError: ErrorResponse = UnsupportedRepositoryUri(uri)
+      val expectedError = UnsupportedRepositoryUri(uri).as[ErrorResponse]
       val error = intercept[HttpErrorResponse] {
         RoundTrips.withRepository(name, uri).run()
       }
@@ -183,29 +185,30 @@ class PackageRepositorySpec extends FeatureSpec with Matchers {
   feature("The package/repository/delete endpoint") {
     scenario("the user would like to delete a repository by name") {
       val deleted = Requests.listRepositories().head
-      RoundTrips.withDeletedRepository(deleted.name).runWith { dr =>
+      RoundTrips.withDeletedRepository(Some(deleted.name)).runWith { dr =>
         dr.repositories should not contain deleted
         Requests.listRepositories() should not contain deleted
       }
     }
     scenario("the user would like to delete a repository by uri") {
       val deleted = Requests.listRepositories().head
-      RoundTrips.withDeletedRepository(uri = deleted.uri).runWith { dr =>
+      RoundTrips.withDeletedRepository(uri = Some(deleted.uri)).runWith { dr =>
         dr.repositories should not contain deleted
         Requests.listRepositories() should not contain deleted
       }
     }
-    scenario("Issue #200: the user should receive an error when trying to delete a non-existent repository") {
+    scenario("Issue #200: the user should receive an" +
+      " error when trying to delete a non-existent repository") {
       val name = "does-not-exist"
-      val expectedError: ErrorResponse = RepositoryNotPresent(Ior.Left(name))
+      val expectedError = RepositoryNotPresent(Ior.Left(name)).as[ErrorResponse]
       val error = intercept[HttpErrorResponse] {
-        RoundTrips.withDeletedRepository(name).run()
+        RoundTrips.withDeletedRepository(Some(name)).run()
       }
       error.status shouldBe Status.BadRequest
       error.errorResponse shouldBe expectedError
     }
     scenario("the user should receive an error when nether name nor uri are specified") {
-      val expectedError: ErrorResponse = RepoNameOrUriMissing()
+      val expectedError = RepoNameOrUriMissing().as[ErrorResponse]
       val error = intercept[HttpErrorResponse] {
         RoundTrips.withDeletedRepository().run()
       }
@@ -216,11 +219,11 @@ class PackageRepositorySpec extends FeatureSpec with Matchers {
       "a repository whose name exists but uri does not match") {
       val repo = Requests.listRepositories().head
       val badUri: Uri = "http://www.mesosphere.com/auntoheust"
-      val expectedError: ErrorResponse = RepositoryNotPresent(
+      val expectedError = RepositoryNotPresent(
         Ior.Both(repo.name, badUri)
-      )
+      ).as[ErrorResponse]
       val error = intercept[HttpErrorResponse] {
-        RoundTrips.withDeletedRepository(repo.name, badUri).run()
+        RoundTrips.withDeletedRepository(Some(repo.name), Some(badUri)).run()
       }
       error.status shouldBe Status.BadRequest
       error.errorResponse shouldBe expectedError

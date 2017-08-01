@@ -4,6 +4,7 @@ import com.mesosphere.cosmos.error.CosmosError
 import com.mesosphere.cosmos.rpc.v1.model.ErrorResponse
 import com.mesosphere.cosmos.thirdparty.marathon.model.AppId
 import com.mesosphere.universe
+import com.twitter.bijection.Conversion
 import io.circe.Json
 import io.circe.jawn.parse
 import java.util.UUID
@@ -11,12 +12,8 @@ import scala.language.implicitConversions
 
 object ItOps {
 
-  implicit def cosmosErrorToErrorResponse[E <: CosmosError](cosmosError: E): ErrorResponse = {
-    cosmosError.exception.errorResponse
-  }
-
-  implicit def toOption[A](a: A): Option[A] = {
-    Option(a)
+  implicit def cosmosErrorToErrorResponse[E <: CosmosError]: Conversion[E, ErrorResponse] = {
+    Conversion.fromFunction(_.exception.errorResponse)
   }
 
   implicit def stringToVersion(s: String): universe.v3.model.Version = {
@@ -27,10 +24,10 @@ object ItOps {
     universe.v2.model.PackageDetailsVersion(s)
   }
 
-  implicit def uuidToAppId(
-    uuid: UUID
-  ): AppId = {
-    AppId(uuid.toString)
+  implicit val uuidToAppId: Conversion[UUID, AppId] = {
+    Conversion.fromFunction { id =>
+      AppId(id.toString)
+    }
   }
 
   implicit def stringToJson(s: String): Json = {

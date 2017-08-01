@@ -58,7 +58,7 @@ final class PackageInstallIntegrationSpec
       val repoName = "V4TestUniverse"
       RoundTrips.withInstallV1(name, Some(version), options.asObject).runWith { ir =>
         val repo = Requests.getRepository(repoName)
-        val pkg = Requests.describePackage(name, ir.packageVersion).`package`
+        val pkg = Requests.describePackage(name, Some(ir.packageVersion)).`package`
         val app = Requests.getMarathonApp(ir.appId)
         app.id shouldBe ir.appId
         app.packageDefinition shouldBe Some(pkg)
@@ -112,7 +112,7 @@ final class PackageInstallIntegrationSpec
       val name = "helloworld"
       val version = "0.1.0"
       RoundTrips.withInstallV1(name, Some(version)).runWith { _ =>
-        val expectedError: ErrorResponse = PackageAlreadyInstalled()
+        val expectedError = PackageAlreadyInstalled().as[ErrorResponse]
         val error = intercept[HttpErrorResponse] {
           RoundTrips.withInstallV1(name, Some(version)).run()
         }
@@ -123,7 +123,7 @@ final class PackageInstallIntegrationSpec
     "The user should recieve an error if trying to install a version that does not exist" in {
       val name = "helloworld"
       val version = "0.1.0-does-not-exist"
-      val expectedError = VersionNotFound(name, version).exception.errorResponse
+      val expectedError = VersionNotFound(name, version).as[ErrorResponse]
       val error = intercept[HttpErrorResponse] {
         RoundTrips.withInstallV1(name, Some(version)).run()
       }
@@ -132,7 +132,7 @@ final class PackageInstallIntegrationSpec
     }
     "The user should receive an error when trying to install a package that does not exist" in {
       val name = "does-not-exist"
-      val expectedError = PackageNotFound(name).exception.errorResponse
+      val expectedError = PackageNotFound(name).as[ErrorResponse]
       val error = intercept[HttpErrorResponse] {
         RoundTrips.withInstallV1(name).run()
       }
@@ -152,7 +152,7 @@ final class PackageInstallIntegrationSpec
       " a service with no marathon template and requesting a v1 response" in {
       val name = "enterprise-security-cli"
       val version = "0.8.0"
-      val expectedError = ServiceMarathonTemplateNotFound(name, version).exception.errorResponse
+      val expectedError = ServiceMarathonTemplateNotFound(name, version).as[ErrorResponse]
       val error = intercept[HttpErrorResponse] {
         RoundTrips.withInstallV1(name).run()
       }
@@ -358,6 +358,7 @@ final class PackageInstallIntegrationSpec
     Await.result(deletes.flatMap { x => Future.Unit })
     val attempts: Int = 60
     ItUtil.waitForDeployment(CosmosIntegrationTestClient.adminRouter)(attempts)
+    ()
   }
 
   private[cosmos] def installPackageAndAssert(

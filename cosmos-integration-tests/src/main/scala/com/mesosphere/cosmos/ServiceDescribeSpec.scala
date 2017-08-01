@@ -5,6 +5,7 @@ import com.mesosphere.cosmos.error.MarathonAppNotFound
 import com.mesosphere.cosmos.rpc.v1.model.ErrorResponse
 import com.mesosphere.cosmos.thirdparty.marathon.model.AppId
 import com.mesosphere.universe
+import com.twitter.bijection.Conversion.asMethod
 import com.twitter.finagle.http.Status
 import org.scalatest.FeatureSpec
 import org.scalatest.Matchers
@@ -33,7 +34,7 @@ class ServiceDescribeSpec extends FeatureSpec with Matchers {
       val appId = AppId("/does-not-exist-4204242")
       val error = intercept[HttpErrorResponse](Requests.describeService(appId))
       error.status shouldBe Status.BadRequest
-      error.errorResponse.shouldBe(MarathonAppNotFound(appId): ErrorResponse)
+      error.errorResponse.shouldBe(MarathonAppNotFound(appId).as[ErrorResponse])
     }
   }
 }
