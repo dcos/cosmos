@@ -7,9 +7,11 @@ import com.mesosphere.cosmos.rpc
 import com.mesosphere.cosmos.rpc.v1.model.SearchResult
 import com.mesosphere.universe
 import com.mesosphere.universe.v3.syntax.PackageDefinitionOps._
+import com.mesosphere.universe.v4.model.PackageDefinition
 import com.netaporter.uri.Uri
 import com.twitter.util.Future
 import java.util.regex.Pattern
+import scala.math.Ordering.Implicits.infixOrderingOps
 import scala.util.matching.Regex
 
 final class PackageCollection(repositoryCache: RepositoryCache) {
@@ -47,10 +49,9 @@ final class PackageCollection(repositoryCache: RepositoryCache) {
   }
 
   /**
-  * Return the versions of packages in this collection that the package with the given `name` and
-  * `version` can be upgraded to.
-  */
-
+   * Return the versions of packages in this collection that the package with the given `name` and
+   * `version` can be upgraded to.
+   */
   def upgradesTo(
     name: String,
     version: universe.v3.model.Version
@@ -61,9 +62,9 @@ final class PackageCollection(repositoryCache: RepositoryCache) {
   }
 
   /**
-  * Return the versions of packages in this collection that the package
-  * `packageDefinition` can be downgrade to.
-  */
+   * Return the versions of packages in this collection that the package
+   * `packageDefinition` can be downgrade to.
+   */
   def downgradesTo(
     packageDefinition: universe.v4.model.PackageDefinition
   )(implicit session: RequestSession): Future[List[universe.v3.model.Version]] = {
@@ -115,41 +116,22 @@ object PackageCollection {
   ): List[rpc.v1.model.SearchResult] = {
     val predicate = getPredicate(query)
 
-    val searchResults = packageDefinitions.foldLeft(Map.empty[String, rpc.v1.model.SearchResult]) {
+    packageDefinitions.foldLeft(Map.empty[String, rpc.v1.model.SearchResult]) {
       (state, pkg) =>
-        val searchResult = state
-          .getOrElse(pkg.name, rpc.v1.model.SearchResult(
-            pkg.name,
-            pkg.version,
-            Map((pkg.version, pkg.releaseVersion)),
-            pkg.description,
-            pkg.framework.getOrElse(false),
-            pkg.tags,
-            pkg.selected,
-            pkg.images
-          ))
-        val releaseVersion = searchResult.versions.get(pkg.version).map { releaseVersion =>
-          import universe.v3.model.ReleaseVersion
-          implicitly[Ordering[ReleaseVersion]].max(releaseVersion, pkg.releaseVersion)
-        } getOrElse {
-          pkg.releaseVersion
-        }
+        val searchResult = state.getOrElse(pkg.name, singleResult(pkg))
+
+        val releaseVersion = searchResult.versions
+          .getOrElse(pkg.version, pkg.releaseVersion)
+          .max(pkg.releaseVersion)
+
         val newSearchResult = searchResult.copy(
-          versions=searchResult.versions + ((pkg.version, releaseVersion))
+          versions = searchResult.versions + ((pkg.version, releaseVersion))
         )
+
         state + ((pkg.name, newSearchResult))
     }
-      .toList
-      .map { case (_, searchResult) => searchResult }
+      .map(_._2)
       .filter(predicate)
-
-    searchResults
-      .groupBy {
-        case searchResult => searchResult.name
-      }
-      .map {
-        case (_, list) => list.head
-      }
       .toList
       .sortBy(p => (!p.selected.getOrElse(false), p.name))
   }
@@ -160,21 +142,21 @@ object PackageCollection {
     version: universe.v3.model.Version
   ): List[universe.v3.model.Version] = {
     packageDefinitions.collect {
-      case packageDefinition
-        if name == packageDefinition.name && packageDefinition.canUpgradeFrom(version) =>
-        packageDefinition.version
+      case current
+        if name == current.name && current.canUpgradeFrom(version) =>
+        current.version
     }
   }
 
   def downgradesTo(
     packageDefinitions: List[universe.v4.model.PackageDefinition],
-    pkgDefinition: universe.v4.model.PackageDefinition
+    packageDefinition: universe.v4.model.PackageDefinition
   ): List[universe.v3.model.Version] = {
     packageDefinitions.collect {
-      case packageDefinition
-        if pkgDefinition.name == packageDefinition.name &&
-        pkgDefinition.canDowngradeTo(packageDefinition.version) =>
-        packageDefinition.version
+      case current
+        if packageDefinition.name == current.name &&
+          packageDefinition.canDowngradeTo(current.version) =>
+        current.version
     }
   }
 
@@ -184,10 +166,6 @@ object PackageCollection {
     mergeWithURI(repositories).map { case (packageDefinition, _) =>
       packageDefinition
     }
-  }
-
-  def createRegex(query: String): Regex = {
-    s"""^${safePattern(query)}$$""".r
   }
 
   val pkgDefTupleOrdering = new Ordering[((universe.v4.model.PackageDefinition, Uri), Int)] {
@@ -206,19 +184,20 @@ object PackageCollection {
       } else if (orderIndex != 0) {
         orderIndex
       } else {
+        // ReleaseVersion should be sorted from high to low
         pkgDef2.releaseVersion.value.compare(pkgDef1.releaseVersion.value)
       }
     }
   }
 
   /**
-  *
-  * The merge should remove all the packages that has same name+version value (with lowest index
-  * value staying) and then should sort the rest initially by name and then index and then releaseVersion
-  *
-  * The sorting should use foldLeft as we need to iterate from left to right to preserve the order.
-  * Elements are appended at the end of Sequence and thus Vector is a better choice than List.
-  */
+   *
+   * The merge should remove all the packages that has same name+version value (with lowest index
+   * value staying) and then should sort the rest initially by name and then index and then releaseVersion
+   *
+   * The sorting should use foldLeft as we need to iterate from left to right to preserve the order.
+   * Elements are appended at the end of Sequence and thus Vector is a better choice than List.
+   */
   private def mergeWithURI(
     repositories: List[(universe.v4.model.Repository, Uri)]
   ) : List[(universe.v4.model.PackageDefinition, Uri)] = {
@@ -229,14 +208,15 @@ object PackageCollection {
           ((packageDefinition, uri), index)
         }
       }
-      .foldLeft((Set.empty[rpc.v1.model.PackageCoordinate],
-        Vector.empty[((universe.v4.model.PackageDefinition, Uri), Int)])) { (state, current) =>
+      .foldLeft(
+        (
+          Set.empty[rpc.v1.model.PackageCoordinate],
+          Vector.empty[((universe.v4.model.PackageDefinition, Uri), Int)]
+        )
+      ) { (state, current) =>
         val (uniquePackageCoordinate, uniquePackages) = state
         val ((packageDefinition, _), _) = current
-        val packageCoordinate = rpc.v1.model.PackageCoordinate(
-          packageDefinition.name,
-          packageDefinition.version
-        )
+        val packageCoordinate = packageDefinition.packageCoordinate
         if (uniquePackageCoordinate.contains(packageCoordinate)) {
           state
         } else {
@@ -248,6 +228,10 @@ object PackageCollection {
       }
     val (result, _) = uniquePackageDefinitions.sorted(pkgDefTupleOrdering).unzip
     result.toList
+  }
+
+  def createRegex(query: String): Regex = {
+    s"""^${safePattern(query)}$$""".r
   }
 
   private def getPredicate(query: Option[String]) : SearchResult => Boolean = {
@@ -283,5 +267,18 @@ object PackageCollection {
       case "" => ""
       case v => Pattern.quote(v)
     }.mkString(".*")
+  }
+
+  private def singleResult(pkg: PackageDefinition): rpc.v1.model.SearchResult = {
+    rpc.v1.model.SearchResult(
+      pkg.name,
+      pkg.version,
+      Map((pkg.version, pkg.releaseVersion)),
+      pkg.description,
+      pkg.framework.getOrElse(false),
+      pkg.tags,
+      pkg.selected,
+      pkg.images
+    )
   }
 }

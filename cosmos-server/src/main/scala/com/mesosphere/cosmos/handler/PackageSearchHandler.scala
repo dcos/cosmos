@@ -7,13 +7,13 @@ import com.mesosphere.cosmos.rpc
 import com.twitter.util.Future
 
 private[cosmos] final class PackageSearchHandler(
-  packageCache: PackageCollection
+  packageCollection: PackageCollection
 ) extends EndpointHandler[rpc.v1.model.SearchRequest, rpc.v1.model.SearchResponse] {
 
   override def apply(
     request: rpc.v1.model.SearchRequest
   )(implicit session: RequestSession): Future[rpc.v1.model.SearchResponse] = {
-    packageCache
+    packageCollection
       .search(request.query)
       .map(rpc.v1.model.SearchResponse(_))
   }

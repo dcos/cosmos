@@ -7,6 +7,7 @@ import com.netaporter.uri.Uri
 import com.twitter.common.util.Clock
 import com.twitter.util.Future
 import java.util.concurrent.TimeUnit
+import scala.collection.breakOut
 
 final class RepositoryCache(
   packageRepositoryStorage: PackageSourcesStorage,
@@ -23,11 +24,12 @@ final class RepositoryCache(
     packageRepositoryStorage.readCache().flatMap { packageRepositories =>
       val oldCachedRepos = cachedRepos
       update(oldCachedRepos, packageRepositories).onSuccess { newRepositories =>
-        cachedRepos = newRepositories
+        cachedRepos = newRepositories.toMap
       } map { newRepositories =>
-        newRepositories.map { case (uri, (repo, _)) =>
-          (repo, uri)
-        }.toList
+        val result: List[(universe.v4.model.Repository, Uri)] = newRepositories.map {
+          case (uri, (repo, _)) => (repo, uri)
+        }(breakOut)
+        result
       }
     }
   }
@@ -37,7 +39,7 @@ final class RepositoryCache(
     packageRepositories: List[rpc.v1.model.PackageRepository]
   )(
     implicit session: RequestSession
-  ): Future[Map[Uri, (universe.v4.model.Repository, Long)]] = {
+  ): Future[Seq[(Uri, (universe.v4.model.Repository, Long))]] = {
     Future.traverseSequentially(packageRepositories) { packageRepository =>
       oldMap.get(packageRepository.uri) match {
         case Some((repo, timeStamp)) =>
@@ -45,7 +47,7 @@ final class RepositoryCache(
         case None =>
           fetch(packageRepository).map(value => (packageRepository.uri, value))
       }
-    } map(_.toMap)
+    }
   }
 
   private[this] def fetch(
@@ -59,9 +61,7 @@ final class RepositoryCache(
     val lastSec = TimeUnit.MILLISECONDS.toSeconds(lastTimeStamp)
     val refetchAt = lastSec + TimeUnit.MINUTES.toSeconds(1)
     if(refetchAt < now || lastSec > now) {
-      universeClient(packageRepository).map { newRepository =>
-        (newRepository, clock.nowMillis())
-      }
+      fetch(packageRepository)
     } else {
       Future((oldRepository, lastTimeStamp))
     }
