@@ -3,6 +3,7 @@
 Provides an API for the [orderly, harmonious, and complete](http://www.thefreedictionary.com/cosmos)
 management of DC/OS service packages.
 
+#### Table of Contents
 - [Running tests](#running-tests)
 	- [Scala style checks](#scala-style-checks)
 	- [Unit Tests](#unit-tests)
@@ -15,7 +16,7 @@ management of DC/OS service packages.
 	- [Cosmos Admin Portal](#cosmos-admin-portal)
 - [Project structure](#project-structure)
 	- [RPC Conventions](#rpc-conventions)
-- [Versions & Compatibility](#versions-compatibility)
+- [Versions & Compatibility](#versions--compatibility)
 	- [DC/OS](#dcos)
 	- [Universe](#universe)
 		- [Repository Format](#repository-format)
