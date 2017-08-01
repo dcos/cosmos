@@ -3,6 +3,28 @@
 Provides an API for the [orderly, harmonious, and complete](http://www.thefreedictionary.com/cosmos)
 management of DC/OS service packages.
 
+#### Table of Contents
+- [Running tests](#running-tests)
+	- [Scala style checks](#scala-style-checks)
+	- [Unit Tests](#unit-tests)
+		- [Scoverage](#scoverage)
+	- [Integration Tests](#integration-tests)
+		- [Scoverage](#scoverage)
+		- [Requirements](#requirements)
+		- [Running the tests](#running-the-tests)
+- [Running Cosmos](#running-cosmos)
+	- [Cosmos Admin Portal](#cosmos-admin-portal)
+- [Project structure](#project-structure)
+	- [RPC Conventions](#rpc-conventions)
+- [Versions & Compatibility](#versions--compatibility)
+	- [DC/OS](#dcos)
+	- [Universe](#universe)
+		- [Repository Format](#repository-format)
+		- [Packaging Version](#packaging-version)
+- [API Documentation](#api-documentation)
+	- [Cosmos Version 0.3.x](#cosmos-version-03x)
+- [Reporting Problems](#reporting-problems)
+
 ## Running tests
 
 ### Scala style checks
@@ -114,6 +136,14 @@ Sonatype OSS repository. Here's an overview:
 * The remaining subprojects define the main code for Cosmos, always within their `src/main`
 directories.
 
+### RPC Conventions
+
+All the list of RPC's that cosmos supports are located in `com/mesosphere/cosmos/rpc` package in the
+`cosmos-common` module. The RPC's are structured according to their version like `v1`, `v2` and so on.
+As `cosmos` grows, only the two most recent versions of rpc will be supported. Every time a new rpc is
+added, the oldest rpc will be removed if there are more than two versions. In essence, this means
+that the tail version should always be considered as deprecated.
+
 ## Versions & Compatibility
 
 ### DC/OS
@@ -182,5 +212,5 @@ Cosmos implements three different services. The documentation for each service i
 ## Reporting Problems
 
 If you encounter a problem that seems to be related to a Cosmos bug, please create an issue at
-[DC/OS Jira](https://dcosjira.atlassian.net/secure/Dashboard.jspa). To create an issue click on the
+[DC/OS Jira](https://jira.mesosphere.com/). To create an issue click on the
 `Create` button at the top and add `cosmos` to the component field.
