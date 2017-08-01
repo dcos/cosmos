@@ -130,7 +130,7 @@ object PackageCollection {
 
         state + ((pkg.name, newSearchResult))
     }
-      .map(_._2)
+      .values
       .filter(predicate)
       .toList
       .sortBy(p => (!p.selected.getOrElse(false), p.name))
@@ -165,28 +165,6 @@ object PackageCollection {
   ) : List[universe.v4.model.PackageDefinition] = {
     mergeWithURI(repositories).map { case (packageDefinition, _) =>
       packageDefinition
-    }
-  }
-
-  val pkgDefTupleOrdering = new Ordering[((universe.v4.model.PackageDefinition, Uri), Int)] {
-    override def compare(
-      a: ((universe.v4.model.PackageDefinition, Uri), Int),
-      b: ((universe.v4.model.PackageDefinition, Uri), Int)
-    ): Int = {
-      val ((pkgDef1, _), index1) = a
-      val ((pkgDef2, _), index2) = b
-
-      val orderName = pkgDef1.name.compare(pkgDef2.name)
-      val orderIndex = index1.compare(index2)
-
-      if (orderName != 0) {
-        orderName
-      } else if (orderIndex != 0) {
-        orderIndex
-      } else {
-        // ReleaseVersion should be sorted from high to low
-        pkgDef2.releaseVersion.value.compare(pkgDef1.releaseVersion.value)
-      }
     }
   }
 
@@ -226,7 +204,15 @@ object PackageCollection {
           )
         }
       }
-    val (result, _) = uniquePackageDefinitions.sorted(pkgDefTupleOrdering).unzip
+
+    val packageOrdering = Ordering.Tuple2(
+      implicitly(Ordering[(String, Int)]),
+      implicitly(Ordering[universe.v3.model.ReleaseVersion].reverse)
+    ).on { tuple : ((universe.v4.model.PackageDefinition, Uri), Int) =>
+      val ((pkgDef, _), index) = tuple
+      ((pkgDef.name, index), pkgDef.releaseVersion)
+    }
+    val (result, _) = uniquePackageDefinitions.sorted(packageOrdering).unzip
     result.toList
   }
 

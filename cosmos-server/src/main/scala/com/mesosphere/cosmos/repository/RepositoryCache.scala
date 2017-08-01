@@ -40,14 +40,16 @@ final class RepositoryCache(
   )(
     implicit session: RequestSession
   ): Future[Seq[(Uri, (universe.v4.model.Repository, Long))]] = {
-    Future.traverseSequentially(packageRepositories) { packageRepository =>
-      oldMap.get(packageRepository.uri) match {
-        case Some((repo, timeStamp)) =>
-          fetch(packageRepository, timeStamp, repo).map(value => (packageRepository.uri, value))
-        case None =>
-          fetch(packageRepository).map(value => (packageRepository.uri, value))
+    Future.collect(
+      packageRepositories.map { packageRepository =>
+        oldMap.get(packageRepository.uri) match {
+          case Some((repo, timeStamp)) =>
+            fetch(packageRepository, timeStamp, repo).map(value => (packageRepository.uri, value))
+          case None =>
+            fetch(packageRepository).map(value => (packageRepository.uri, value))
+        }
       }
-    }
+    )
   }
 
   private[this] def fetch(
@@ -60,7 +62,7 @@ final class RepositoryCache(
     val now = TimeUnit.MILLISECONDS.toSeconds(clock.nowMillis())
     val lastSec = TimeUnit.MILLISECONDS.toSeconds(lastTimeStamp)
     val refetchAt = lastSec + TimeUnit.MINUTES.toSeconds(1)
-    if(refetchAt < now || lastSec > now) {
+    if(refetchAt < now) {
       fetch(packageRepository)
     } else {
       Future((oldRepository, lastTimeStamp))
