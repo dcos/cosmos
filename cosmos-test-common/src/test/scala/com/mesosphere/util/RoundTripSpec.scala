@@ -1,13 +1,18 @@
 package com.mesosphere.util
 
 import com.mesosphere.cosmos.util.RoundTrip
+import org.mockito.InOrder
+import org.mockito.Mockito._
+import org.mockito._
 import org.scalatest.FreeSpec
 import org.scalatest.Matchers
-import shapeless._
+import org.scalatest.mockito.MockitoSugar
 
-class RoundTripSpec extends FreeSpec with Matchers {
+class RoundTripSpec extends FreeSpec with Matchers with MockitoSugar {
 
-  "RoundTrip.apply(value)" - {
+  import RoundTripSpec._
+
+  "RoundTrip.lift(exp)" - {
     val i: Int = 3
     "should be map able" in {
       RoundTrip.lift(i).map(_ * i).run().
@@ -40,125 +45,153 @@ class RoundTripSpec extends FreeSpec with Matchers {
     }
   }
 
-  // TODO: make this independent
-  var state: Int = 0
-  def forward(newState : Int): Int = {
-    val oldState = state
-    state = newState
-    oldState
-  }
-  def backwards(previous: Int): Unit = {
-    state = previous
-  }
-  def withChangedState(newValue: Int): RoundTrip[Int] = {
-    RoundTrip(forward(newValue))(backwards).map(_ => newValue)
-  }
-  def withIncrement(): RoundTrip[Int] = {
-    //RoundTrip.value(state).flatMap { s =>
-    //  withChangedState(s + 1)
-    //}
-    withChangedState(state + 1)
-  }
-
   "RoundTrip run() should return inner value" in {
-    val i = 3
-    withChangedState(i).run()
-      .shouldBe(i)
-    state shouldBe 0
+    val aVal = 22
+    val doer = mock[Doer]
+    when(doer.doA()).thenReturn(aVal)
+    val order: InOrder = Mockito.inOrder(doer)
+    doA(doer).run() shouldBe aVal
+    order.verify(doer, times(1)).doA()
+    order.verify(doer, times(1)).undoA(aVal)
   }
 
   "RoundTrip should map" in {
-    val i = 3
-    withChangedState(i).map(_ * i).run()
-      .shouldBe(i * i)
-    state shouldBe 0
+    val aVal = 22
+    val doer = mock[Doer]
+    when(doer.doA()).thenReturn(aVal)
+    val order: InOrder = Mockito.inOrder(doer)
+    doA(doer).map(_ ^ 2).run() shouldBe aVal ^ 2
+    order.verify(doer, times(1)).doA()
+    order.verify(doer, times(1)).undoA(aVal)
   }
 
   "RoundTrip should flatMap" in {
-    val i = 3
-    withChangedState(i).flatMap(i => withChangedState(i * i)).run()
-      .shouldBe(i * i)
-    state shouldBe 0
+    val aVal = 22
+    val bVal = "hello"
+    val doer = mock[Doer]
+    when(doer.doA()).thenReturn(aVal)
+    when(doer.doB()).thenReturn(bVal)
+    val order: InOrder = Mockito.inOrder(doer)
+    doA(doer).flatMap(_ => doB(doer)).run() shouldBe bVal
+    order.verify(doer, times(1)).doA()
+    order.verify(doer, times(1)).doB()
+    order.verify(doer, times(1)).undoB(bVal)
+    order.verify(doer, times(1)).undoA(aVal)
   }
 
   "RoundTrip should revert state even if map throws error" in {
-    val i = 3
-    intercept[Error] {
-      withChangedState(i).map { i =>
-        state shouldBe i
-        throw new Error("This should go back to original state")
+    val aVal = 22
+    val doer = mock[Doer]
+    when(doer.doA()).thenReturn(aVal)
+    val order: InOrder = Mockito.inOrder(doer)
+    assertThrows[Error] {
+      doA(doer).map { _ =>
+        throw new Error("this should throw")
       }.run()
     }
-    state shouldBe 0
+    order.verify(doer, times(1)).doA()
+    order.verify(doer, times(1)).undoA(aVal)
   }
 
   "RoundTrip should revert state even if flatMap fails" in {
-    val i = 3
-    intercept[Error] {
-      withChangedState(i).flatMap { i =>
-        state shouldBe i
-        throw new Error("This should go back to original state")
+    val aVal = 22
+    val doer = mock[Doer]
+    when(doer.doA()).thenReturn(aVal)
+    val order: InOrder = Mockito.inOrder(doer)
+    assertThrows[Error] {
+      doA(doer).flatMap { _ =>
+        throw new Error("this should throw")
       }.run()
     }
-    state shouldBe 0
+    order.verify(doer, times(1)).doA()
+    order.verify(doer, times(1)).undoA(aVal)
   }
 
-  "RoundTrip should be able to use for comprehensions" in {
-    val with3 = for {
-      _ <- withIncrement()
-      _ <- withIncrement()
-      i <- withIncrement()
-    } yield i
-    with3.run() shouldBe 3
-  }
-
-  "RoundTrip.apply should clean up even if flatMap fails" +
-    " after more maps have been added. Other maps should not be executed" in {
-    val result = for {
-      _ <- withIncrement()
-      _ <- withIncrement()
-      i <- withIncrement()
-      r <- withChangedState(i / 0)
-      _ <- withIncrement()
-    } yield r
-    intercept[ArithmeticException] {
-      result.run()
+  "RoundTrip should clean up partially executed maps and flatMaps" in {
+    val aVal = 22
+    val bVal = "hello"
+    val cVal = '0'
+    val doer = mock[Doer]
+    when(doer.doA()).thenReturn(aVal)
+    when(doer.doB()).thenReturn(bVal)
+    when(doer.doC()).thenReturn(cVal)
+    val order: InOrder = Mockito.inOrder(doer)
+    assertThrows[ArithmeticException] {
+      doA(doer)
+        .flatMap(_ => doB(doer))
+        .map(_ => 42 / 0)
+        .flatMap(_ => doC(doer))
+        .run()
     }
-    state shouldBe 0
+    order.verify(doer, times(1)).doA()
+    order.verify(doer, times(1)).doB()
+    order.verify(doer, never()).doC()
+    order.verify(doer, never()).undoC(cVal)
+    order.verify(doer, times(1)).undoB(bVal)
+    order.verify(doer, times(1)).undoA(aVal)
   }
 
-  "RoundTrip should observe the forward context inside map and flatMap" in {
-    val a = 1
-    val b = -2
-    val c = 8
-    withIncrement().flatMap { _ =>
-      state shouldBe a
-      withChangedState(b).flatMap { _ =>
-        state shouldBe b
-        withChangedState(c).map { _ =>
-          state shouldBe c
-        }
-      }
-    }.run()
-    state shouldBe 0
+  "RoundTrip should observe the forward context inside runWith" in {
+    val innerFoo = 3
+    val outerFoo = 0
+    var foo = outerFoo
+    val changeA: RoundTrip[Int] = RoundTrip {
+      val oldFoo = foo
+      foo = innerFoo
+      oldFoo
+    } { old =>
+      foo = old
+    }
+    changeA.runWith { _ =>
+      assert(foo == innerFoo)
+    }
+    assert(foo == outerFoo)
   }
 
-  "RoundTrip should be able to be used like a IOC function" in {
-    val i = 3
-      withChangedState(i).runWith { j =>
-        j shouldBe i
-      }
+  "RoundTrip should be somewhat flat" in {
+    val aVal = 22
+    val bVal = "hello"
+    val cVal = '0'
+    val doer = mock[Doer]
+    when(doer.doA()).thenReturn(aVal)
+    when(doer.doB()).thenReturn(bVal)
+    when(doer.doC()).thenReturn(cVal)
+    val order: InOrder = Mockito.inOrder(doer)
+    assertThrows[ArithmeticException] {
+      (doA(doer) &:
+        doB(doer).map(_ => 42 / 0) &:
+        doC(doer)).run()
     }
+    order.verify(doer, times(1)).doA()
+    order.verify(doer, times(1)).doB()
+    order.verify(doer, never()).doC()
+    order.verify(doer, never()).undoC(cVal)
+    order.verify(doer, times(1)).undoB(bVal)
+    order.verify(doer, times(1)).undoA(aVal)
+  }
 
-    "RoundTrip should be somewhat flat" in {
-      val withRt = withIncrement().map(_.toString) &: withIncrement().map(_.toFloat) &: withIncrement()
-      withRt.run() shouldBe ("1" :: 2.0 :: 3 :: HNil)
+}
 
-      assertThrows[Error] {
-        withRt.runWith { case (_: String) :: (_: Float) :: (_: Int) :: HNil =>
-        throw new Error("This should throw")
-      }
-    }
+object RoundTripSpec {
+
+  def doA(doer: Doer): RoundTrip[Int] = RoundTrip(doer.doA())(doer.undoA)
+
+  def doB(doer: Doer): RoundTrip[String] = RoundTrip(doer.doB())(doer.undoB)
+
+  def doC(doer: Doer): RoundTrip[Char] = RoundTrip(doer.doC())(doer.undoC)
+
+  class Doer {
+    def doA(): Int = 0
+
+    def undoA(i: Int): Unit = ()
+
+    def doB(): String = "0"
+
+    def undoB(s: String): Unit = ()
+
+    def doC(): Char = '0'
+
+    def undoC(c: Char): Unit = ()
   }
 
 }
