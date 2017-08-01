@@ -356,6 +356,8 @@ final class PackageInstallIntegrationSpec
       adminRouter.deleteApp(AppId("/chronos-bad-json"), force = true) map { _ => Succeeded }
     ))
     Await.result(deletes.flatMap { x => Future.Unit })
+    val attempts: Int = 60
+    ItUtil.waitForDeployment(CosmosIntegrationTestClient.adminRouter)(attempts)
   }
 
   private[cosmos] def installPackageAndAssert(
