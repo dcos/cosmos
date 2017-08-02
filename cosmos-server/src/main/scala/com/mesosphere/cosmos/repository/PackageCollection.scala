@@ -177,31 +177,17 @@ object PackageCollection {
   private def mergeWithURI(
     repositories: List[(universe.v4.model.Repository, Uri)]
   ) : List[(universe.v4.model.PackageDefinition, Uri)] = {
-    val (_, uniquePackageDefinitions) = repositories
+    val uniquePackageDefinitions = repositories
       .zipWithIndex
       .flatMap { case ((repository, uri), index) =>
         repository.packages.map { packageDefinition =>
           ((packageDefinition, uri), index)
         }
       }
-      .foldLeft(
-        (
-          Set.empty[rpc.v1.model.PackageCoordinate],
-          Vector.empty[((universe.v4.model.PackageDefinition, Uri), Int)]
-        )
-      ) { (state, current) =>
-        val (uniquePackageCoordinate, uniquePackages) = state
-        val ((packageDefinition, _), _) = current
-        val packageCoordinate = packageDefinition.packageCoordinate
-        if (uniquePackageCoordinate.contains(packageCoordinate)) {
-          state
-        } else {
-          (
-            uniquePackageCoordinate + packageCoordinate,
-            uniquePackages :+ current
-          )
-        }
-      }
+      .groupBy { case ((packageDefinition, _), _) => packageDefinition.packageCoordinate }
+      .values
+      .map { similarPackages => similarPackages.minBy { case (_, index) => index } }
+      .toList
 
     val packageOrdering = Ordering.Tuple2(
       Ordering[(String, Int)],
@@ -211,7 +197,7 @@ object PackageCollection {
       ((pkgDef.name, index), pkgDef.releaseVersion)
     }
     val (result, _) = uniquePackageDefinitions.sorted(packageOrdering).unzip
-    result.toList
+    result
   }
 
   def createRegex(query: String): Regex = {
