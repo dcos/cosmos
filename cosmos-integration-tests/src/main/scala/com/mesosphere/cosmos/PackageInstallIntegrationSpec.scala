@@ -1,6 +1,5 @@
 package com.mesosphere.cosmos
 
-import _root_.io.circe.Json
 import com.mesosphere.cosmos.ItOps._
 import com.mesosphere.cosmos.bijection.CosmosConversions._
 import com.mesosphere.cosmos.error.PackageAlreadyInstalled
@@ -21,9 +20,9 @@ final class PackageInstallIntegrationSpec extends FeatureSpec with Matchers {
     scenario("should store the correct labels") {
       val name = "helloworld"
       val version = "0.1.0"
-      val options: Json = """{ "port": 9999 } """
+      val options = """{ "port": 9999 } """.json
       val repoName = "V4TestUniverse"
-      RoundTrips.withInstallV1(name, Some(version), options.asObject).runWith { ir =>
+      RoundTrips.withInstallV1(name, Some(version.detailsVersion), options.asObject).runWith { ir =>
         val repo = Requests.getRepository(repoName)
         val pkg = Requests.describePackage(name, Some(ir.packageVersion)).`package`
         val app = Requests.getMarathonApp(ir.appId)
@@ -60,8 +59,8 @@ final class PackageInstallIntegrationSpec extends FeatureSpec with Matchers {
     scenario("The user should be able to specify the configuration during install") {
       val name = "helloworld"
       val version = "0.1.0"
-      val options: Json = """{ "port": 9999 }"""
-      RoundTrips.withInstallV1(name, Some(version), options = options.asObject).runWith { ir =>
+      val options = """{ "port": 9999 }""".json
+      RoundTrips.withInstallV1(name, Some(version.detailsVersion), options = options.asObject).runWith { ir =>
         val marathonApp = Requests.getMarathonApp(ir.appId)
         marathonApp.serviceOptions shouldBe options.asObject
       }
@@ -70,7 +69,7 @@ final class PackageInstallIntegrationSpec extends FeatureSpec with Matchers {
       val name = "helloworld"
       val version = "0.1.0"
       val appId = AppId("utnhaoesntuahs")
-      RoundTrips.withInstallV1(name, Some(version), appId = Some(appId)).runWith { ir =>
+      RoundTrips.withInstallV1(name, Some(version.detailsVersion), appId = Some(appId)).runWith { ir =>
         ir.appId shouldBe appId
         assert(Requests.isMarathonAppInstalled(appId))
       }
@@ -78,10 +77,10 @@ final class PackageInstallIntegrationSpec extends FeatureSpec with Matchers {
     scenario("The user should receive an error if trying to install an already installed package") {
       val name = "helloworld"
       val version = "0.1.0"
-      RoundTrips.withInstallV1(name, Some(version)).runWith { _ =>
+      RoundTrips.withInstallV1(name, Some(version.detailsVersion)).runWith { _ =>
         val expectedError = PackageAlreadyInstalled().as[ErrorResponse]
         val error = intercept[HttpErrorResponse] {
-          RoundTrips.withInstallV1(name, Some(version)).run()
+          RoundTrips.withInstallV1(name, Some(version.detailsVersion)).run()
         }
         error.status shouldBe Status.Conflict
         error.errorResponse shouldBe expectedError
@@ -90,9 +89,9 @@ final class PackageInstallIntegrationSpec extends FeatureSpec with Matchers {
     scenario("The user should recieve an error if trying to install a version that does not exist") {
       val name = "helloworld"
       val version = "0.1.0-does-not-exist"
-      val expectedError = VersionNotFound(name, version).as[ErrorResponse]
+      val expectedError = VersionNotFound(name, version.version).as[ErrorResponse]
       val error = intercept[HttpErrorResponse] {
-        RoundTrips.withInstallV1(name, Some(version)).run()
+        RoundTrips.withInstallV1(name, Some(version.detailsVersion)).run()
       }
       error.status shouldBe Status.BadRequest
       error.errorResponse shouldBe expectedError
@@ -109,8 +108,8 @@ final class PackageInstallIntegrationSpec extends FeatureSpec with Matchers {
     scenario("The user should receive an error when trying to install a package with incorrect options") {
       val name = "helloworld"
       // port must be int
-      val options: Json =
-        """{ "port": "9999" }"""
+      val options =
+        """{ "port": "9999" }""".json
       val error = intercept[HttpErrorResponse] {
         RoundTrips.withInstallV1(name, options = options.asObject).run()
       }
@@ -121,7 +120,7 @@ final class PackageInstallIntegrationSpec extends FeatureSpec with Matchers {
       " a service with no marathon template and requesting a v1 response") {
       val name = "enterprise-security-cli"
       val version = "0.8.0"
-      val expectedError = ServiceMarathonTemplateNotFound(name, version).as[ErrorResponse]
+      val expectedError = ServiceMarathonTemplateNotFound(name, version.version).as[ErrorResponse]
       val error = intercept[HttpErrorResponse] {
         RoundTrips.withInstallV1(name).run()
       }
@@ -133,10 +132,10 @@ final class PackageInstallIntegrationSpec extends FeatureSpec with Matchers {
       val name = "enterprise-security-cli"
       val version = "0.8.0"
       // No state change
-      val response = Requests.installV2(name, Some(version))
-      val pkg = Requests.describePackage(name, Some(version))
+      val response = Requests.installV2(name, Some(version.detailsVersion))
+      val pkg = Requests.describePackage(name, Some(version.detailsVersion))
       response.packageName shouldBe name
-      response.packageVersion.toString shouldBe version
+      response.packageVersion shouldBe version.version
       response.appId shouldBe None
       response.cli shouldBe pkg.`package`.cli
     }

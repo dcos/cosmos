@@ -8,20 +8,11 @@ import com.twitter.bijection.Conversion
 import io.circe.Json
 import io.circe.jawn.parse
 import java.util.UUID
-import scala.language.implicitConversions
 
 object ItOps {
 
   implicit def cosmosErrorToErrorResponse[E <: CosmosError]: Conversion[E, ErrorResponse] = {
     Conversion.fromFunction(_.exception.errorResponse)
-  }
-
-  implicit def stringToVersion(s: String): universe.v3.model.Version = {
-    universe.v3.model.Version(s)
-  }
-
-  implicit def stringToDetailsVersion(s: String): universe.v2.model.PackageDetailsVersion = {
-    universe.v2.model.PackageDetailsVersion(s)
   }
 
   implicit val uuidToAppId: Conversion[UUID, AppId] = {
@@ -30,9 +21,15 @@ object ItOps {
     }
   }
 
-  implicit def stringToJson(s: String): Json = {
-    val Right(res) = parse(s)
-    res
+  implicit final class ItStringOps(val string: String) extends AnyVal {
+    def version: universe.v3.model.Version =
+      universe.v3.model.Version(string)
+    def detailsVersion: universe.v2.model.PackageDetailsVersion =
+      universe.v2.model.PackageDetailsVersion(string)
+    def json: Json = {
+      val Right(res) = parse(string)
+      res
+    }
   }
 
 }
