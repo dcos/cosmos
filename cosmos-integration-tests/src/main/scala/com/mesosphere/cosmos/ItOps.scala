@@ -5,8 +5,6 @@ import com.mesosphere.cosmos.rpc.v1.model.ErrorResponse
 import com.mesosphere.cosmos.thirdparty.marathon.model.AppId
 import com.mesosphere.universe
 import com.twitter.bijection.Conversion
-import io.circe.Json
-import io.circe.jawn.parse
 import java.util.UUID
 
 object ItOps {
@@ -26,10 +24,6 @@ object ItOps {
       universe.v3.model.Version(string)
     def detailsVersion: universe.v2.model.PackageDetailsVersion =
       universe.v2.model.PackageDetailsVersion(string)
-    def json: Json = {
-      val Right(res) = parse(string)
-      res
-    }
   }
 
 }
