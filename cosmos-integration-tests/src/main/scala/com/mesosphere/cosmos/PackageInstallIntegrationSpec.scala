@@ -25,8 +25,6 @@ import com.netaporter.uri.Uri
 import com.twitter.finagle.http._
 import com.twitter.util.Await
 import com.twitter.util.Future
-import java.nio.charset.StandardCharsets
-import java.util.Base64
 import java.util.UUID
 import org.scalatest.AppendedClues._
 import org.scalatest.Assertion

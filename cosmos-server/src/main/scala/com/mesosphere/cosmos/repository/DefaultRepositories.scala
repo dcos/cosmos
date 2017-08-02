@@ -1,6 +1,5 @@
 package com.mesosphere.cosmos.repository
 
-import cats.syntax.either._
 import com.google.common.io.CharStreams
 import com.mesosphere.cosmos.rpc
 import com.twitter.util.Try

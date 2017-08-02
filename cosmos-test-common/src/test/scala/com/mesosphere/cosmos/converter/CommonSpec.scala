@@ -5,7 +5,6 @@ import com.mesosphere.cosmos.converter.Common._
 import com.mesosphere.cosmos.rpc
 import com.mesosphere.universe
 import com.twitter.bijection.Conversion.asMethod
-import org.scalacheck.Gen
 import org.scalatest.FreeSpec
 import org.scalatest.prop.PropertyChecks
 import scala.util.Success

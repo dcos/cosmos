@@ -86,7 +86,7 @@ final class MultiRepository(
             case (searchResult, _) => searchResult.name
           }
           .map {
-            case (name, list) =>
+            case (_, list) =>
               val (searchResult, _) = list.sortBy { case (_, index) => index
               }.head
               searchResult

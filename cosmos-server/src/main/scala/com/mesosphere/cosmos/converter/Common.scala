@@ -5,8 +5,6 @@ import com.mesosphere.cosmos.rpc.v1.circe.Decoders._
 import com.mesosphere.cosmos.rpc.v1.circe.Encoders._
 import com.mesosphere.cosmos.rpc.v1.model.PackageCoordinate
 import com.mesosphere.universe
-import com.twitter.bijection.Bijection
-import com.twitter.bijection.Conversion.asMethod
 import com.twitter.bijection.Injection
 import io.circe.syntax._
 import java.nio.charset.StandardCharsets

@@ -110,7 +110,7 @@ with Logging {
       capabilities = new CapabilitiesHandler,
       packageDescribe = new PackageDescribeHandler(repositories),
       packageInstall = new PackageInstallHandler(repositories, packageRunner),
-      packageList = new ListHandler(adminRouter, uri => repositories.getRepository(uri)),
+      packageList = new ListHandler(adminRouter),
       packageListVersions = new ListVersionsHandler(repositories),
       packageRender = new PackageRenderHandler(repositories),
       packageRepositoryAdd = new PackageRepositoryAddHandler(sourcesStorage, universeClient),

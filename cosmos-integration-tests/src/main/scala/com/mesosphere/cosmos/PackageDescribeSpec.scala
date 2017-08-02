@@ -1,7 +1,6 @@
 package com.mesosphere.cosmos
 
 import _root_.io.circe.Json
-import cats.syntax.either._
 import com.mesosphere.cosmos.circe.Decoders.decode
 import com.mesosphere.cosmos.circe.Decoders.parse
 import com.mesosphere.cosmos.http.CosmosRequests
@@ -10,7 +9,6 @@ import com.mesosphere.universe
 import com.mesosphere.universe.v3.syntax.PackageDefinitionOps._
 import com.twitter.finagle.http.Response
 import com.twitter.finagle.http.Status
-import java.util.Base64
 import org.scalatest.AppendedClues._
 import org.scalatest.Assertion
 import org.scalatest.FreeSpec

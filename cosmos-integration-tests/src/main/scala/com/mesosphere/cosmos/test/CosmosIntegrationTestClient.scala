@@ -11,7 +11,6 @@ import com.mesosphere.cosmos.dcosUri
 import com.mesosphere.cosmos.http.Authorization
 import com.mesosphere.cosmos.http.HttpRequest
 import com.mesosphere.cosmos.http.RequestSession
-import com.mesosphere.cosmos.model.ZooKeeperUri
 import com.mesosphere.cosmos.rpc.v1.model._
 import com.netaporter.uri.Uri
 import com.netaporter.uri.dsl._

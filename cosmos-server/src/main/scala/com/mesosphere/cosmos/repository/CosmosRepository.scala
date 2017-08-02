@@ -5,7 +5,6 @@ import com.mesosphere.cosmos.error.VersionNotFound
 import com.mesosphere.cosmos.http.RequestSession
 import com.mesosphere.cosmos.rpc
 import com.mesosphere.universe
-import com.mesosphere.universe.v3.model.Version
 import com.mesosphere.universe.v3.syntax.PackageDefinitionOps._
 import com.netaporter.uri.Uri
 import com.twitter.common.util.Clock

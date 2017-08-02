@@ -1,6 +1,5 @@
 package com.mesosphere.cosmos.http
 
-import com.mesosphere.cosmos.http.MediaTypeOps.mediaTypeToMediaTypeOps
 import org.scalatest.Assertion
 import org.scalatest.FreeSpec
 import scala.language.implicitConversions
@@ -9,31 +8,31 @@ class MediaTypeOpsSpec extends FreeSpec {
 
   "MediaTypeOps.compatibleIgnoringParameters(MediaType, MediaType) should" - {
     "pass for" - {
-      behave like compatibleIgnoringParametersSuccessSpec(MediaTypeOps.compatibleIgnoringParameters)
+      behave like compatibleIgnoringParametersSuccessSpec()
     }
 
     "fail for" - {
-      behave like compatibleIgnoringParametersFailureSpec(MediaTypeOps.compatibleIgnoringParameters)
+      behave like compatibleIgnoringParametersFailureSpec()
     }
   }
 
   "MediaTypeOps.compatible(MediaType, MediaType) should" - {
     "pass for" - {
-      behave like compatibleSuccessSpec(MediaTypeOps.compatible)
+      behave like compatibleSuccessSpec()
     }
 
     "fail for" - {
-      behave like compatibleFailureSpec(MediaTypeOps.compatible)
+      behave like compatibleFailureSpec()
     }
   }
 
   "MediaTypeOps.isCompatibleWith(MediaType) should" - {
     "pass for" - {
-      behave like compatibleSuccessSpec((m1, m2) => m1.isCompatibleWith(m2))
+      behave like compatibleSuccessSpec()
     }
 
     "fail for" - {
-      behave like compatibleFailureSpec((m1, m2) => m1.isCompatibleWith(m2))
+      behave like compatibleFailureSpec()
     }
   }
 
@@ -182,9 +181,7 @@ class MediaTypeOpsSpec extends FreeSpec {
     assertResult(QualityValue(1.0))(MediaTypeOps.qValue("*/*"))
   }
 
-  private[this] def compatibleIgnoringParametersSuccessSpec(
-    testedFn: (MediaType, MediaType) => Boolean
-  ): Unit = {
+  private[this] def compatibleIgnoringParametersSuccessSpec(): Unit = {
 
     "type/subtype & type/subtype" in {
       shouldSucceed("type/subtype", "type/subtype")
@@ -196,9 +193,7 @@ class MediaTypeOpsSpec extends FreeSpec {
 
   }
 
-  private[this] def compatibleIgnoringParametersFailureSpec(
-    testedFn: (MediaType, MediaType) => Boolean
-  ): Unit = {
+  private[this] def compatibleIgnoringParametersFailureSpec(): Unit = {
 
     "type/subtype & otherType/subtype" in {
       shouldFail("type/subtype", "otherType/subtype")
@@ -218,9 +213,9 @@ class MediaTypeOpsSpec extends FreeSpec {
 
   }
 
-  private[this] def compatibleSuccessSpec(testedFn: (MediaType, MediaType) => Boolean): Unit = {
+  private[this] def compatibleSuccessSpec(): Unit = {
 
-    behave like compatibleIgnoringParametersSuccessSpec(testedFn)
+    behave like compatibleIgnoringParametersSuccessSpec()
 
     "type/subtype;k=v & type/subtype;k=v" in  {
       shouldSucceed("type/subtype;k=v", "type/subtype;k=v")
@@ -240,9 +235,9 @@ class MediaTypeOpsSpec extends FreeSpec {
 
   }
 
-  private[this] def compatibleFailureSpec(testedFn: (MediaType, MediaType) => Boolean): Unit = {
+  private[this] def compatibleFailureSpec(): Unit = {
 
-    behave like compatibleIgnoringParametersFailureSpec(testedFn)
+    behave like compatibleIgnoringParametersFailureSpec()
 
     "type/subtype;charset=utf-8 & type/subtype" in {
       shouldFail("type/subtype;charset=utf-8", "type/subtype")
