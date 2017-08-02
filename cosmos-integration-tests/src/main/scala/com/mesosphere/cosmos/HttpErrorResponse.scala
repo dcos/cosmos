@@ -8,10 +8,8 @@ final case class HttpErrorResponse(
   status: Status,
   errorResponse: ErrorResponse
 ) extends TestFailedException(
-  _ => Some(
-    s"Status: $status, ErrorResponse: $errorResponse"
-  ),
-  None,
-  _ => 0,
-  None
+  messageFun = _ => Some(s"Status: $status, ErrorResponse: $errorResponse"),
+  cause = None,
+  failedCodeStackDepthFun = _ => 0,
+  payload = None
 )
