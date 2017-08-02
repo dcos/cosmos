@@ -1,7 +1,8 @@
 package com.mesosphere.cosmos
 
 import org.scalatest.FreeSpec
-import com.twitter.util.{Return,Throw}
+import com.twitter.util.Return
+import com.twitter.util.Throw
 
 final class TrysSpec extends FreeSpec {
 
