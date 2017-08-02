@@ -14,15 +14,13 @@ import com.twitter.bijection.Conversion.asMethod
 import com.twitter.finagle.http._
 import org.scalatest.FeatureSpec
 import org.scalatest.Matchers
-import io.circe.syntax.EncoderOps
-
 
 final class PackageInstallIntegrationSpec extends FeatureSpec with Matchers {
   feature("The package/install endpoint") {
     scenario("should store the correct labels") {
       val name = "helloworld"
       val version = "0.1.0"
-      val options = """{ "port": 9999 } """.asJson
+      val options = """{ "port": 9999 } """.json
       val repoName = "V4TestUniverse"
       RoundTrips.withInstallV1(name, Some(version.detailsVersion), options.asObject).runWith { ir =>
         val repo = Requests.getRepository(repoName)
@@ -61,7 +59,7 @@ final class PackageInstallIntegrationSpec extends FeatureSpec with Matchers {
     scenario("The user should be able to specify the configuration during install") {
       val name = "helloworld"
       val version = "0.1.0"
-      val options = """{ "port": 9999 }""".asJson
+      val options = """{ "port": 9999 }""".json
       RoundTrips.withInstallV1(name, Some(version.detailsVersion), options = options.asObject).runWith { ir =>
         val marathonApp = Requests.getMarathonApp(ir.appId)
         marathonApp.serviceOptions shouldBe options.asObject
@@ -111,7 +109,7 @@ final class PackageInstallIntegrationSpec extends FeatureSpec with Matchers {
       val name = "helloworld"
       // port must be int
       val options =
-        """{ "port": "9999" }""".asJson
+        """{ "port": "9999" }""".json
       val error = intercept[HttpErrorResponse] {
         RoundTrips.withInstallV1(name, options = options.asObject).run()
       }
