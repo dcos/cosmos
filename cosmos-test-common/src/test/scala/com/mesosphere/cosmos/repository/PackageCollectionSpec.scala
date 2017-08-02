@@ -43,7 +43,7 @@ final class PackageCollectionSpec extends FreeSpec
 
     "merge" - {
 
-      "merge should success on empty repositories" in {
+      "should success on empty repositories" in {
         assertResult(
           List.empty[universe.v4.model.PackageDefinition]
         )(
@@ -51,7 +51,7 @@ final class PackageCollectionSpec extends FreeSpec
         )
       }
 
-      "merge should remove duplicate definitions" in {
+      "should remove duplicate definitions" in {
         val u = Uri.parse("/uri")
         val packages = List(
           TestingPackages.MinimalV3ModelV2PackageDefinition,
@@ -62,7 +62,7 @@ final class PackageCollectionSpec extends FreeSpec
         )
       }
 
-      "merge should sort packages by name" in {
+      "should sort packages by name" in {
         assertResult(List(
           TestingPackages.HelloWorldV3Package,
           TestingPackages.MinimalV3ModelV2PackageDefinition
@@ -74,7 +74,7 @@ final class PackageCollectionSpec extends FreeSpec
         ))))
       }
 
-      "merge should remove duplicates and retain the package definition according to spec" in {
+      "should remove duplicates and retain the package definition according to spec" in {
         val repositories = List(
           getRepository(List(
             TestingPackages.MinimalV3ModelV2PackageDefinition,
@@ -95,6 +95,30 @@ final class PackageCollectionSpec extends FreeSpec
           TestingPackages.HelloWorldV3Package,
           TestingPackages.MinimalV3ModelV2PackageDefinition,
           TestingPackages.MinimalV4ModelPackageDefinitionV4
+        ))(PackageCollection.merge(repositories))
+      }
+
+      "should work when packages have same name, version and index but different releaseVersion " in {
+
+        val minimalLargerReleaseVersion = TestingPackages.MinimalV3ModelV2PackageDefinition.copy(
+          releaseVersion = universe.v3.model.ReleaseVersion(1)
+        )
+        val helloLargerReleaseVersion = TestingPackages.HelloWorldV3Package.copy(
+          releaseVersion = universe.v3.model.ReleaseVersion(1)
+        )
+
+        val repositories = List(
+          getRepository(List(
+            TestingPackages.MinimalV3ModelV2PackageDefinition,
+            minimalLargerReleaseVersion,
+            TestingPackages.HelloWorldV3Package,
+            helloLargerReleaseVersion
+          ), Uri.parse("/uri"))
+        )
+
+        assertResult(List(
+          helloLargerReleaseVersion,
+          minimalLargerReleaseVersion
         ))(PackageCollection.merge(repositories))
       }
     }
