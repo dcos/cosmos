@@ -175,7 +175,7 @@ class MediaTypeOpsSpec extends FreeSpec {
   }
 
   "Compatibility should ignore any present qValue" in {
-    shouldSucceed("type/subtype;something=awesome;q=0.9", "type/subtype;something=awesome")(_)
+    shouldSucceed("type/subtype;something=awesome;q=0.9", "type/subtype;something=awesome")(MediaTypeOps.compatible)
   }
 
   "MediaTypeOps.qValue should return 1.0 if not specified" in {
@@ -237,7 +237,6 @@ class MediaTypeOpsSpec extends FreeSpec {
     "type/subtype;charset=utf-8 & type/subtype;charset=utf-8;foo=bar" in {
       shouldSucceed("type/subtype;charset=utf-8", "type/subtype;charset=utf-8;foo=bar")(testedFn)
     }
-
   }
 
   private[this] def compatibleFailureSpec(testedFn: (MediaType, MediaType) => Boolean): Unit = {
