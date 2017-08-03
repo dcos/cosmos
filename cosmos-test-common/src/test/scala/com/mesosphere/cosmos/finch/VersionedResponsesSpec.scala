@@ -70,7 +70,7 @@ object VersionedResponsesSpec {
   def buildInput(acceptHeader: MediaType, body: String): Input = {
     HttpRequest.toFinchInput(
       HttpRequest.post(
-        s"http://some.host/${endpointPath.mkString("/")}",
+        RawRpcPath(s"/${endpointPath.mkString("/")}"),
         Buf.Utf8(body),
         applicationJson,
         acceptHeader

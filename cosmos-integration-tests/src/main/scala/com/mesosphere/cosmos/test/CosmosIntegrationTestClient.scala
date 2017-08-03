@@ -81,15 +81,22 @@ object CosmosIntegrationTestClient extends Matchers {
 
     val uri: String = getClientProperty("CosmosClient", "uri")
 
-    def call[Res](request: HttpRequest)(implicit
-      decoder: Decoder[Res]
+    def call[Res](
+      request: HttpRequest
+    )(
+      implicit decoder: Decoder[Res],
+      testContext: TestContext
     ): (Status, Either[ErrorResponse, Res]) = {
       val response = submit(request)
       (response.status, toEither(response))
     }
 
-    def callEndpoint[Res](request: HttpRequest, expectedStatus: Status = Status.Ok)(implicit
-      decoder: Decoder[Res]
+    def callEndpoint[Res](
+      request: HttpRequest,
+      expectedStatus: Status = Status.Ok
+    )(
+      implicit decoder: Decoder[Res],
+      testContext: TestContext
     ): Either[ErrorResponse, Res] = {
       val response = submit(request)
       assertResult(expectedStatus)(response.status)
@@ -104,7 +111,11 @@ object CosmosIntegrationTestClient extends Matchers {
       *
       * It also includes the Authorization header if provided by configuration.
       */
-    def submit(req: HttpRequest): Response = {
+    def submit(
+      req: HttpRequest
+    )(
+      implicit testContext: TestContext
+    ): Response = {
       val reqWithAuth = Session.authorization match {
         case Some(auth) =>
           req.copy(headers = req.headers + (Fields.Authorization -> auth.headerValue))
