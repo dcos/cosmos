@@ -9,6 +9,7 @@ import com.mesosphere.cosmos.http.MediaType
 import com.mesosphere.cosmos.http.MediaTypeSpec
 import com.mesosphere.cosmos.http.Monolithic
 import com.mesosphere.cosmos.http.NoBody
+import com.mesosphere.cosmos.http.RawRpcPath
 import com.mesosphere.cosmos.http.RequestSession
 import com.mesosphere.cosmos.rpc.MediaTypes._
 import com.twitter.finagle.http.Fields
@@ -320,7 +321,7 @@ object RequestValidatorsSpec {
       path <- genPath
       headers <- genHeaders
       body <- genBody
-    } yield HttpRequest(method, path, headers, body)
+    } yield HttpRequest(method, RawRpcPath(path), headers, body)
   }
 
   val genMethod: Gen[Method] = Gen.alphaStr.map(Method(_))
@@ -385,7 +386,7 @@ object RequestValidatorsSpec {
     ): HttpRequest = {
       val headers =
         HttpRequest.collectHeaders(Fields.Accept -> accept, Fields.Authorization -> authorization)
-      HttpRequest(Method.Get, "what/ever", headers, NoBody)
+      HttpRequest(Method.Get, RawRpcPath("/what/ever"), headers, NoBody)
     }
 
   }
@@ -410,7 +411,12 @@ object RequestValidatorsSpec {
         Fields.Authorization -> authorization,
         Fields.ContentType -> HttpRequest.toHeader(TestingMediaTypes.applicationJson)
       )
-      HttpRequest(Method.Post, "what/ever", headers, Monolithic(Buf.Utf8(Json.Null.noSpaces)))
+      HttpRequest(
+        Method.Post,
+        RawRpcPath("/what/ever"),
+        headers,
+        Monolithic(Buf.Utf8(Json.Null.noSpaces))
+      )
     }
 
   }

@@ -3,6 +3,8 @@ package com.mesosphere.cosmos.handler
 import cats.syntax.either._
 import com.mesosphere.cosmos.http.CompoundMediaTypeParser
 import com.mesosphere.cosmos.http.HttpRequest
+import com.mesosphere.cosmos.http.PackageRpcPath
+import com.mesosphere.cosmos.http.TestContext
 import com.mesosphere.cosmos.rpc.MediaTypes
 import com.mesosphere.cosmos.rpc.v1.model.PackageRepositoryAddRequest
 import com.mesosphere.cosmos.test.CosmosIntegrationTestClient._
@@ -18,6 +20,7 @@ import scala.language.implicitConversions
 import scala.util.Right
 
 class RequestErrorsSpec extends FreeSpec {
+  private[this] implicit val testContext = TestContext.fromSystemProperties()
 
   "Cosmos Error Handling" - {
     "Applicative handling" - {
@@ -34,7 +37,7 @@ class RequestErrorsSpec extends FreeSpec {
         ).asJson
 
         val request = HttpRequest.post(
-          "package/install",
+          PackageRpcPath("install"),
           body.noSpaces,
           Some(MediaTypes.DescribeRequest.show),
           Some(accept.show)
@@ -81,7 +84,7 @@ class RequestErrorsSpec extends FreeSpec {
 
       "Missing Accept, Missing Content-Type, Missing body" in {
         val request = HttpRequest.post(
-          path = "package/install",
+          path = PackageRpcPath("install"),
           body = "",
           contentType = None,
           accept = None

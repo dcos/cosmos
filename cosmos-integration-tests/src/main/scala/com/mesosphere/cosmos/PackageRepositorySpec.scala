@@ -12,6 +12,7 @@ import com.mesosphere.cosmos.error.UniverseClientHttpError
 import com.mesosphere.cosmos.error.UnsupportedContentType
 import com.mesosphere.cosmos.error.UnsupportedRepositoryUri
 import com.mesosphere.cosmos.error.UnsupportedRepositoryVersion
+import com.mesosphere.cosmos.http.TestContext
 import com.mesosphere.cosmos.rpc.v1.model.ErrorResponse
 import com.mesosphere.cosmos.rpc.v1.model.PackageRepository
 import com.mesosphere.universe.MediaTypes
@@ -25,6 +26,7 @@ import org.scalatest.FeatureSpec
 import org.scalatest.Matchers
 
 class PackageRepositorySpec extends FeatureSpec with Matchers {
+  private[this] implicit val testContext = TestContext.fromSystemProperties()
 
   feature("The package/repository/list endpoint") {
     scenario("The user should be able to list added repositories") {

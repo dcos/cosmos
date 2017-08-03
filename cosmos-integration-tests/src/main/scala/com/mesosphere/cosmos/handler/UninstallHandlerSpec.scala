@@ -3,6 +3,7 @@ package com.mesosphere.cosmos.handler
 import com.mesosphere.cosmos.error.CosmosException
 import com.mesosphere.cosmos.error.MarathonAppNotFound
 import com.mesosphere.cosmos.http.CosmosRequests
+import com.mesosphere.cosmos.http.TestContext
 import com.mesosphere.cosmos.rpc.MediaTypes
 import com.mesosphere.cosmos.rpc.v1.circe.Decoders._
 import com.mesosphere.cosmos.rpc.v1.model.ErrorResponse
@@ -32,6 +33,8 @@ final class UninstallHandlerSpec extends FreeSpec with Eventually with SpanSugar
 
   import CosmosIntegrationTestClient._
   import UninstallHandlerSpec._
+
+  private[this] implicit val testContext = TestContext.fromSystemProperties()
 
   "The uninstall handler should" - {
     "be able to uninstall a service" in {
@@ -172,11 +175,19 @@ final class UninstallHandlerSpec extends FreeSpec with Eventually with SpanSugar
 
 object UninstallHandlerSpec {
 
-  def submitInstallRequest(installRequest: InstallRequest): Response = {
+  def submitInstallRequest(
+    installRequest: InstallRequest
+  )(
+    implicit testContext: TestContext
+  ): Response = {
     CosmosClient.submit(CosmosRequests.packageInstallV1(installRequest))
   }
 
-  def submitUninstallRequest(uninstallRequest: UninstallRequest): Response = {
+  def submitUninstallRequest(
+    uninstallRequest: UninstallRequest
+  )(
+    implicit testContext: TestContext
+  ): Response = {
     CosmosClient.submit(CosmosRequests.packageUninstall(uninstallRequest))
   }
 

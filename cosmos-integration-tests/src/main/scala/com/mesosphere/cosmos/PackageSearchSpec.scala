@@ -2,21 +2,23 @@ package com.mesosphere.cosmos
 
 import _root_.io.circe.jawn._
 import com.mesosphere.cosmos.http.CosmosRequests
+import com.mesosphere.cosmos.http.TestContext
 import com.mesosphere.cosmos.rpc.v1.circe.Decoders._
 import com.mesosphere.cosmos.rpc.v1.model.SearchRequest
 import com.mesosphere.cosmos.rpc.v1.model.SearchResponse
 import com.mesosphere.cosmos.rpc.v1.model.SearchResult
 import com.mesosphere.cosmos.test.CosmosIntegrationTestClient.CosmosClient
 import com.mesosphere.universe
-import com.twitter.finagle.http._
+import com.twitter.finagle.http.Status
 import org.scalatest.Assertion
 import org.scalatest.FreeSpec
 import org.scalatest.prop.TableDrivenPropertyChecks
-import scala.util.Right
 
 final class PackageSearchSpec extends FreeSpec {
 
   import PackageSearchSpec._
+
+  private[this] implicit val testContext = TestContext.fromSystemProperties()
 
   "The package search endpoint can successfully find packages" - {
     "by term" in {
@@ -40,7 +42,7 @@ final class PackageSearchSpec extends FreeSpec {
     }
   }
 
-  private[cosmos] def searchAndAssert(
+  private def searchAndAssert(
     query: String,
     status: Status,
     expectedResponse: SearchResponse

@@ -6,6 +6,7 @@ import _root_.io.circe.jawn._
 import _root_.io.circe.syntax._
 import com.mesosphere.cosmos.ItObjects
 import com.mesosphere.cosmos.http.CosmosRequests
+import com.mesosphere.cosmos.http.TestContext
 import com.mesosphere.cosmos.rpc.MediaTypes
 import com.mesosphere.cosmos.rpc.v1.model.ErrorResponse
 import com.mesosphere.cosmos.rpc.v1.model.RenderRequest
@@ -22,6 +23,8 @@ import scala.util.Right
 class PackageRenderHandlerSpec extends FreeSpec with Matchers with TableDrivenPropertyChecks {
 
   import PackageRenderHandlerSpec._
+
+  private[this] implicit val testContext = TestContext.fromSystemProperties()
 
   "PackageRenderHandler should" - {
 
@@ -103,7 +106,11 @@ class PackageRenderHandlerSpec extends FreeSpec with Matchers with TableDrivenPr
 
 object PackageRenderHandlerSpec {
 
-  def packageRender(renderRequest: RenderRequest): Response = {
+  def packageRender(
+    renderRequest: RenderRequest
+  )(
+    implicit testContext: TestContext
+  ): Response = {
     val request = CosmosRequests.packageRender(renderRequest)
     CosmosClient.submit(request)
   }

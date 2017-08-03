@@ -19,11 +19,16 @@ final case class TestContext(direct: Boolean)
 
 object TestContext {
   def fromSystemProperties(): TestContext = {
+    // TODO: re-enable this!!!
+    /*
     val property = "com.mesosphere.cosmos.test.CosmosIntegrationTestClient.CosmosClient.direct"
 
     TestContext(
       Option(System.getProperty(property)).map(_.toBoolean).get
     )
+    */
+    // Hardcode for now. Remove this when we merge the sbt-dcos plugin
+    TestContext(true)
   }
 }
 

@@ -2,6 +2,7 @@ package com.mesosphere.cosmos.finch
 
 import com.mesosphere.cosmos.finch.TestingMediaTypes._
 import com.mesosphere.cosmos.http.HttpRequest
+import com.mesosphere.cosmos.http.RawRpcPath
 import com.mesosphere.cosmos.http.MediaType
 import com.mesosphere.cosmos.http.RequestSession
 import com.twitter.io.Buf
