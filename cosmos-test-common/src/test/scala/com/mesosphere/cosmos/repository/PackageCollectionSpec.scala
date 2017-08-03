@@ -23,7 +23,7 @@ final class PackageCollectionSpec extends FreeSpec
   with TableDrivenPropertyChecks {
 
   def getRepository(
-    packageDefinitions : List[universe.v4.model.PackageDefinition] = List.empty[universe.v4.model.PackageDefinition],
+    packageDefinitions : List[universe.v4.model.PackageDefinition],
     uri: Uri = Uri.parse("/irrelevant")
   ): (universe.v4.model.Repository, Uri) = {
     (universe.v4.model.Repository(packageDefinitions), uri)
@@ -75,9 +75,9 @@ final class PackageCollectionSpec extends FreeSpec
 
       "should success on empty repositories" in {
         assertResult(
-          List.empty[universe.v4.model.PackageDefinition]
+          List.empty
         )(
-          PackageCollection.merge(List(getRepository()))
+          PackageCollection.merge(List(getRepository(List.empty)))
         )
       }
 
@@ -93,7 +93,7 @@ final class PackageCollectionSpec extends FreeSpec
       "should remove packages with same coordinates" in {
         val repositories = List(
           getRepository(List(a_88_1, a_99_2)),
-          getRepository(List(a_88_1, b_66_1))
+          getRepository(List(a_99_3, b_66_1))
         )
         assertResult(List(a_99_2, a_88_1, b_66_1))(PackageCollection.merge(repositories))
       }
@@ -127,7 +127,7 @@ final class PackageCollectionSpec extends FreeSpec
         )))
       }
 
-      "should sort packages by releaseVersion" in {
+      "should sort by smallest index before releaseVersion" in {
         assertResult(
           List(a_99_3, a_88_1, b_77_2, b_66_1, c_55_2, c_44_1)
         )(PackageCollection.merge(List(
@@ -139,13 +139,6 @@ final class PackageCollectionSpec extends FreeSpec
         )(PackageCollection.merge(List(
           getRepository(List(a_99_2)),
           getRepository(List(a_99_3))
-        )))
-
-        assertResult(
-          List(a_99_3)
-        )(PackageCollection.merge(List(
-          getRepository(List(a_99_3)),
-          getRepository(List(a_99_2))
         )))
       }
 
@@ -181,7 +174,7 @@ final class PackageCollectionSpec extends FreeSpec
       "package not found as repo is empty" in {
         Try(
           PackageCollection.getPackagesByPackageName(
-            List.empty[universe.v4.model.PackageDefinition],
+            List.empty,
             "test"
           )
         ) shouldBe Throw(
@@ -247,7 +240,7 @@ final class PackageCollectionSpec extends FreeSpec
       "not found" in {
         Try(
           PackageCollection.getPackagesByPackageVersion(
-            List.empty[(universe.v4.model.PackageDefinition, Uri)],
+            List.empty,
             "test",
             Some(a_99_2.version)
           )
@@ -257,7 +250,7 @@ final class PackageCollectionSpec extends FreeSpec
 
         Try(
           PackageCollection.getPackagesByPackageVersion(
-            List.empty[(universe.v4.model.PackageDefinition, Uri)],
+            List.empty,
             "test",
             None
           )
@@ -288,12 +281,12 @@ final class PackageCollectionSpec extends FreeSpec
         Try(
           PackageCollection.getPackagesByPackageVersion(
             List((a_99_2, Uri.parse("/test")), (a_99_3, Uri.parse("/test"))),
-            a_99_2.name,
+            a_88_1.name,
             Some(a_88_1.version)
           )
         ) shouldBe Throw(
           VersionNotFound(
-            a_99_2.name,
+            a_88_1.name,
             a_88_1.version
           ).exception
         )
@@ -349,13 +342,13 @@ final class PackageCollectionSpec extends FreeSpec
 
         Try(PackageCollection.getPackagesByPackageVersion(
           sameNamePackages,
-          b_99_2.name,
+          b_77_2.name,
           Some(b_77_2.version)
         )) shouldBe Return((b_77_2, t2))
 
         Try(PackageCollection.getPackagesByPackageVersion(
           sameNamePackages,
-          b_99_2.name,
+          b_66_1.name,
           None
         )) shouldBe Return((b_66_1, t0))
       }
@@ -375,21 +368,11 @@ final class PackageCollectionSpec extends FreeSpec
     "search" - {
 
       "not found" in {
-        assertResult(
-          Return(Nil)
-        )(
-          Try(
-            PackageCollection.search(List.empty[universe.v4.model.PackageDefinition], Some("test"))
-          )
-        )
+        assertResult(Return(Nil)
+        )(Try(PackageCollection.search(List.empty, Some("test"))))
 
-        assertResult(
-          Return(Nil)
-        )(
-          Try(
-            PackageCollection.search(List.empty[universe.v4.model.PackageDefinition], Some("mini*.+"))
-          )
-        )
+        assertResult(Return(Nil)
+        )(Try(PackageCollection.search(List.empty, Some("mini*.+"))))
       }
 
       "all" in {
@@ -402,8 +385,6 @@ final class PackageCollectionSpec extends FreeSpec
 
         Try(PackageCollection.search(all, Some("minimal")).map(_.name)) shouldBe
           Return(List("minimal"))
-
-        assertResult(Return(2))(Try(PackageCollection.search(all, None).length))
 
         val min2 = TestingPackages.MinimalV3ModelV2PackageDefinition.copy(
           version = universe.v3.model.Version("1.2.4")
@@ -422,20 +403,16 @@ final class PackageCollectionSpec extends FreeSpec
           min2
         )
 
-        assertResult(
-          Return(List("MAXIMAL", "minimal"))
+        assertResult(Return(List("MAXIMAL", "minimal"))
         )(Try(PackageCollection.search(clientdata, None).map(_.name).sorted))
 
-        assertResult(
-          Return(List("minimal"))
+        assertResult(Return(List("minimal"))
         )(Try(PackageCollection.search(clientdata, Some("minimal")).map(_.name)))
 
-        assertResult(
-          Return(List(Set(minver, min2ver)))
+        assertResult(Return(List(Set(minver, min2ver)))
         )(Try(PackageCollection.search(clientdata, Some("minimal")).map(_.versions.keys)))
 
-        assertResult(
-          Return(List(Set(maxver, max2ver)))
+        assertResult(Return(List(Set(maxver, max2ver)))
         )(Try(PackageCollection.search(clientdata, Some("MAXIMAL")).map(_.versions.keys)))
       }
 

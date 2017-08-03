@@ -167,12 +167,8 @@ object PackageCollection {
   }
 
   /**
-   *
    * The merge should remove all the packages that has same name+version value (with lowest index
    * value staying) and then should sort the rest initially by name and then index and then releaseVersion
-   *
-   * The sorting should use foldLeft as we need to iterate from left to right to preserve the order.
-   * Elements are appended at the end of Sequence and thus Vector is a better choice than List.
    */
   private def mergeWithURI(
     repositories: List[(universe.v4.model.Repository, Uri)]
