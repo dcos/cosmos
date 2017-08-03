@@ -1,6 +1,7 @@
 package com.mesosphere.cosmos
 
 import cats.data.Ior
+import com.mesosphere.cosmos.ItOps._
 import com.mesosphere.cosmos.error.IndexNotFound
 import com.mesosphere.cosmos.error.RepoNameOrUriMissing
 import com.mesosphere.cosmos.error.RepositoryAddIndexOutOfBounds
@@ -11,266 +12,222 @@ import com.mesosphere.cosmos.error.UniverseClientHttpError
 import com.mesosphere.cosmos.error.UnsupportedContentType
 import com.mesosphere.cosmos.error.UnsupportedRepositoryUri
 import com.mesosphere.cosmos.error.UnsupportedRepositoryVersion
-import com.mesosphere.cosmos.repository.DefaultRepositories
+import com.mesosphere.cosmos.rpc.v1.model.ErrorResponse
 import com.mesosphere.cosmos.rpc.v1.model.PackageRepository
 import com.mesosphere.universe.MediaTypes
 import com.mesosphere.universe.v2.model.UniverseVersion
+import com.netaporter.uri.Uri
 import com.netaporter.uri.dsl._
+import com.twitter.bijection.Conversion.asMethod
 import com.twitter.finagle.http.Status
 import org.jboss.netty.handler.codec.http.HttpMethod
-import org.scalatest.BeforeAndAfter
-import org.scalatest.BeforeAndAfterAll
 import org.scalatest.FeatureSpec
+import org.scalatest.Matchers
 
-class PackageRepositorySpec
-  extends FeatureSpec
-    with BeforeAndAfter
-    with BeforeAndAfterAll {
-
-  private[this] val defaultRepositories = DefaultRepositories().getOrThrow
-  private[this] var originalRepositories = Seq.empty[PackageRepository]
-
-  override def beforeAll(): Unit = {
-    super.beforeAll()
-    originalRepositories = ItUtil.listRepositories()
-  }
-
-  override def afterAll(): Unit = {
-    super.afterAll()
-    ItUtil.replaceRepositoriesWith(originalRepositories)
-  }
-
-  before {
-    ItUtil.replaceRepositoriesWith(defaultRepositories)
-  }
-
-  after {
-    ItUtil.replaceRepositoriesWith(originalRepositories)
-  }
+class PackageRepositorySpec extends FeatureSpec with Matchers {
 
   feature("The package/repository/list endpoint") {
-    scenario("The user should be able to see the currently installed repositories") {
-      val currentRepositories = ItUtil.listRepositories()
-      assertResult(defaultRepositories)(currentRepositories)
+    scenario("The user should be able to list added repositories") {
+      val name = "cli-test-4"
+      val uri: Uri = "https://github.com/mesosphere/universe/archive/cli-test-4.zip"
+      RoundTrips.withRepository(name, uri).runWith { _ =>
+        Requests.listRepositories() should contain(
+          rpc.v1.model.PackageRepository(name, uri)
+        )
+      }
+    }
+    scenario("The user should not see removed repositories") {
+      val name = "cli-test-4"
+      val uri: Uri = "https://github.com/mesosphere/universe/archive/cli-test-4.zip"
+      (RoundTrips.withRepository(name, uri) &:
+        RoundTrips.withDeletedRepository(Some(name), Some(uri))).runWith { _ =>
+        Requests.listRepositories() should not contain
+          rpc.v1.model.PackageRepository(name, uri)
+      }
     }
   }
 
   feature("The package/repository/add endpoint") {
-
     scenario("the user would like to add a repository at the default priority (lowest priority)") {
-      val uri = "https://github.com/mesosphere/universe/archive/cli-test-4.zip"
       val name = "cli-test-4"
-      val repository = rpc.v1.model.PackageRepository(name, uri)
-      val (status, actual) = ItUtil.addRepositoryEither(repository)
-      val expected = rpc.v1.model.PackageRepositoryAddResponse(
-        originalRepositories :+ repository
-      )
-      assertResult(Right(expected))(actual)
-      assertResult(Status.Ok)(status)
+      val uri: Uri = "https://github.com/mesosphere/universe/archive/cli-test-4.zip"
+      RoundTrips.withRepository(name, uri).runWith { response =>
+        val last = response.repositories.last
+        last.name shouldBe name
+        last.uri shouldBe uri
+      }
     }
-
     scenario("the user would like to add a repository at a specific priority") {
-      val uri = "https://github.com/mesosphere/universe/archive/cli-test-4.zip"
       val name = "cli-test-4"
+      val uri: Uri = "https://github.com/mesosphere/universe/archive/cli-test-4.zip"
       val index = 0
-      val repository = rpc.v1.model.PackageRepository(name, uri)
-      val (status, actual) = ItUtil.addRepositoryEither(repository, Some(index))
-      val expected = rpc.v1.model.PackageRepositoryAddResponse(
-        insert(originalRepositories, index, repository)
-      )
-      assertResult(Right(expected))(actual)
-      assertResult(Status.Ok)(status)
+      RoundTrips.withRepository(name, uri, Some(index)).runWith { response =>
+        val actual = response.repositories(index)
+        actual.name shouldBe name
+        actual.uri shouldBe uri
+      }
     }
-
-    scenario("the user should receive an error when trying to add a duplicated repository") {
-      val repository = defaultRepositories.head.copy(name = "dup")
-      val expected = RepositoryAlreadyPresent(
-        Ior.Right(repository.uri)
-      ).exception.errorResponse
-      val (status, actual) = ItUtil.addRepositoryEither(repository)
-      assertResult(Left(expected))(actual)
-      assertResult(Status.BadRequest)(status)
-      info(expected.message)
-    }
-
     scenario("the user should be able to add a repository at the end of the list using an index") {
-      val uri = "https://github.com/mesosphere/universe/archive/cli-test-4.zip"
       val name = "bounds"
-      val index = defaultRepositories.size
-      val repository = rpc.v1.model.PackageRepository(name, uri)
-      val (status, actual) = ItUtil.addRepositoryEither(repository, Some(index))
-      val expected = rpc.v1.model.PackageRepositoryAddResponse(
-        originalRepositories :+ repository
-      )
-      assertResult(Right(expected))(actual)
-      assertResult(Status.Ok)(status)
+      val uri: Uri = "https://github.com/mesosphere/universe/archive/cli-test-4.zip"
+      val index = Requests.listRepositories().size
+      RoundTrips.withRepository(name, uri, Some(index)).runWith { response =>
+        val last = response.repositories.last
+        last.name shouldBe name
+        last.uri shouldBe uri
+      }
+    }
+    scenario("the user should receive an error when trying to add a duplicated repository") {
+      val name = "cli-test-4"
+      val uri: Uri = "https://github.com/mesosphere/universe/archive/cli-test-4.zip"
+      val expectedError = RepositoryAlreadyPresent(Ior.Both(name, uri)).as[ErrorResponse]
+      RoundTrips.withRepository(name, uri).runWith { _ =>
+        val error = intercept[HttpErrorResponse] {
+          RoundTrips.withRepository(name, uri).run()
+        }
+        error.status shouldBe Status.BadRequest
+        error.errorResponse shouldBe expectedError
+      }
     }
     scenario("the user should receive an error when trying to add a repository out of bounds") {
-      val uri = "https://github.com/mesosphere/universe/archive/cli-test-4.zip"
       val name = "bounds"
+      val uri: Uri = "https://github.com/mesosphere/universe/archive/cli-test-4.zip"
       val index = Int.MaxValue
-      val repository = rpc.v1.model.PackageRepository(name, uri)
-      val (status, actual) = ItUtil.addRepositoryEither(repository, Some(index))
-      val expected = RepositoryAddIndexOutOfBounds(
-        attempted = index,
-        max = defaultRepositories.size
-      ).exception.errorResponse
-      assertResult(Left(expected))(actual)
-      assertResult(Status.BadRequest)(status)
-      info(expected.message)
+      val max = Requests.listRepositories().size
+      val expectedError = RepositoryAddIndexOutOfBounds(index, max).as[ErrorResponse]
+      val error = intercept[HttpErrorResponse] {
+        RoundTrips.withRepository(name, uri, Some(index)).run()
+      }
+      error.status shouldBe Status.BadRequest
+      error.errorResponse shouldBe expectedError
     }
-
-    scenario("Issue #204: the user should receive an error when trying to add a repository with a broken uri") {
-      val uri = "http://fake.fake"
-      val name = "unreachable"
-      val repository = rpc.v1.model.PackageRepository(name, uri)
-      val (status, actual) = ItUtil.addRepositoryEither(repository)
-      val expected = RepositoryUriConnection(
-        repository = repository,
-        cause = uri.stripPrefix("http://")
-      ).exception.errorResponse
-      assertResult(Left(expected))(actual)
-      assertResult(Status.BadRequest)(status)
-      info(expected.message)
+    scenario("Issue #204: the user should receive an error " +
+      "when trying to add a repository with a broken uri") {
+      val repo = rpc.v1.model.PackageRepository("unreachable", "http://fake.fake")
+      val expectedError = RepositoryUriConnection(
+        repo,
+        repo.uri.toString.stripPrefix("http://")
+      ).as[ErrorResponse]
+      val error = intercept[HttpErrorResponse] {
+        RoundTrips.withRepository(repo.name, repo.uri).run()
+      }
+      error.status shouldBe Status.BadRequest
+      error.errorResponse shouldBe expectedError
     }
-
     scenario("Issue #219: the user should receive an error when trying to add a repository " +
       "with a bad file layout") {
       // TODO: Use a more reliable URI
       val name = "invalid"
-      val uri = "https://github.com/mesosphere/dcos-cli/archive/master.zip"
-      val repository = rpc.v1.model.PackageRepository(name, uri)
-      val expected = IndexNotFound(uri).exception.errorResponse
-      val (status, actual) = ItUtil.addRepositoryEither(repository)
-      assertResult(Left(expected))(actual)
-      assertResult(Status.BadRequest)(status)
-      info(expected.message)
+      val uri: Uri = "https://github.com/mesosphere/dcos-cli/archive/master.zip"
+      val expectedError = IndexNotFound(uri).as[ErrorResponse]
+      val error = intercept[HttpErrorResponse] {
+        RoundTrips.withRepository(name, uri).run()
+      }
+      error.status shouldBe Status.BadRequest
+      error.errorResponse shouldBe expectedError
     }
-
     scenario("Issue #219: the user should receive an error when trying to add a repository " +
       "that is a non-zip-encoded repository bundle") {
       // TODO: Use a more reliable URI
       val name = "invalid"
-      val uri = "https://mesosphere.com/"
-      val repository = rpc.v1.model.PackageRepository(name, uri)
-      val expected = UnsupportedContentType(
+      val uri: Uri = "https://mesosphere.com/"
+      val expectedError = UnsupportedContentType(
         List(MediaTypes.UniverseV4Repository,
           MediaTypes.UniverseV3Repository,
           MediaTypes.UniverseV2Repository),
         Some("text/html;charset=utf-8")
-      ).exception.errorResponse
-      val (status, actual) = ItUtil.addRepositoryEither(repository)
-      assertResult(Left(expected))(actual)
-      assertResult(Status.BadRequest)(status)
-      info(expected.message)
+      ).as[ErrorResponse]
+      val error = intercept[HttpErrorResponse] {
+        RoundTrips.withRepository(name, uri).run()
+      }
+      error.status shouldBe Status.BadRequest
+      error.errorResponse shouldBe expectedError
     }
-
     scenario("the user should receive an error when trying to add a non-repository") {
-      val uri = "https://www.mesosphere.com/uontehusantoehusanth"
       val name = "not-repository"
-      val repository = rpc.v1.model.PackageRepository(name, uri)
-      val (status, actual) = ItUtil.addRepositoryEither(repository)
-      val expected = UniverseClientHttpError(
+      val uri: Uri = "https://www.mesosphere.com/uontehusantoehusanth"
+      val expectedError = UniverseClientHttpError(
         PackageRepository(name, uri),
         HttpMethod.GET,
         Status.NotFound
       ).exception(Status.BadRequest).errorResponse
-      assertResult(Left(expected))(actual)
-      assertResult(Status.BadRequest)(status)
-      info(expected.message)
+      val error = intercept[HttpErrorResponse] {
+        RoundTrips.withRepository(name, uri).run()
+      }
+      error.status shouldBe Status.BadRequest
+      error.errorResponse shouldBe expectedError
     }
-
-    scenario("Issue #209: the user must receive an error when adding an unsupported repository version") {
+    scenario("Issue #209: the user must receive an error " +
+      "when adding an unsupported repository version") {
       val name = "old-versioned-repository"
-      val uri = "https://github.com/mesosphere/universe/archive/version-1.x.zip"
+      val uri: Uri = "https://github.com/mesosphere/universe/archive/version-1.x.zip"
       val version = UniverseVersion("1.0.0-rc1")
-      val repository = rpc.v1.model.PackageRepository(name, uri)
-      val expected = UnsupportedRepositoryVersion(version).exception.errorResponse
-      val (status, actual) = ItUtil.addRepositoryEither(repository)
-      assertResult(Left(expected))(actual)
-      assertResult(Status.BadRequest)(status)
-      info(expected.message)
+      val expectedError = UnsupportedRepositoryVersion(version).as[ErrorResponse]
+      val error = intercept[HttpErrorResponse] {
+        RoundTrips.withRepository(name, uri).run()
+      }
+      error.status shouldBe Status.BadRequest
+      error.errorResponse shouldBe expectedError
     }
-
     scenario("the user must receive an error when trying to add " +
       "a repository with an unsupported protocol") {
       val name = "unsupported"
-      val uri = "file://foo/bar"
-      val repository = rpc.v1.model.PackageRepository(name, uri)
-      val expected = UnsupportedRepositoryUri(uri).exception.errorResponse
-      val (status, actual) = ItUtil.addRepositoryEither(repository)
-      assertResult(Left(expected))(actual)
-      assertResult(Status.BadRequest)(status)
-      info(expected.message)
+      val uri: Uri = "file://foo/bar"
+      val expectedError = UnsupportedRepositoryUri(uri).as[ErrorResponse]
+      val error = intercept[HttpErrorResponse] {
+        RoundTrips.withRepository(name, uri).run()
+      }
+      error.status shouldBe Status.BadRequest
+      error.errorResponse shouldBe expectedError
     }
   }
 
   feature("The package/repository/delete endpoint") {
-
     scenario("the user would like to delete a repository by name") {
-      val deletedRepository = defaultRepositories.head
-      val remainingRepositories = defaultRepositories.tail
-      val expected = rpc.v1.model.PackageRepositoryDeleteResponse(
-        remainingRepositories
-      )
-      val (status, actual) = ItUtil.deleteRepositoryEither(
-        name = Some(deletedRepository.name)
-      )
-      assertResult(Right(expected))(actual)
-      assertResult(Status.Ok)(status)
+      val deleted = Requests.listRepositories().head
+      RoundTrips.withDeletedRepository(Some(deleted.name)).runWith { dr =>
+        dr.repositories should not contain deleted
+        Requests.listRepositories() should not contain deleted
+      }
     }
-
     scenario("the user would like to delete a repository by uri") {
-      val deletedRepository = defaultRepositories.head
-      val remainingRepositories = defaultRepositories.tail
-      val expected = rpc.v1.model.PackageRepositoryDeleteResponse(
-        remainingRepositories
-      )
-      val (status, actual) = ItUtil.deleteRepositoryEither(uri = Some(deletedRepository.uri))
-      assertResult(Right(expected))(actual)
-      assertResult(Status.Ok)(status)
+      val deleted = Requests.listRepositories().head
+      RoundTrips.withDeletedRepository(uri = Some(deleted.uri)).runWith { dr =>
+        dr.repositories should not contain deleted
+        Requests.listRepositories() should not contain deleted
+      }
     }
-
-    scenario("Issue #200: the user should receive an error when trying to delete a non-existent repository") {
+    scenario("Issue #200: the user should receive an" +
+      " error when trying to delete a non-existent repository") {
       val name = "does-not-exist"
-      val expected = RepositoryNotPresent(
-        Ior.Left(name)
-      ).exception.errorResponse
-      val (status, actual) = ItUtil.deleteRepositoryEither(Some(name))
-      assertResult(Left(expected))(actual)
-      assertResult(Status.BadRequest)(status)
-      info(expected.message)
+      val expectedError = RepositoryNotPresent(Ior.Left(name)).as[ErrorResponse]
+      val error = intercept[HttpErrorResponse] {
+        RoundTrips.withDeletedRepository(Some(name)).run()
+      }
+      error.status shouldBe Status.BadRequest
+      error.errorResponse shouldBe expectedError
     }
-
     scenario("the user should receive an error when nether name nor uri are specified") {
-      val (status, actual) = ItUtil.deleteRepositoryEither()
-      val expected = RepoNameOrUriMissing().exception.errorResponse
-      assertResult(Left(expected))(actual)
-      assertResult(Status.BadRequest)(status)
-      info(expected.message)
+      val expectedError = RepoNameOrUriMissing().as[ErrorResponse]
+      val error = intercept[HttpErrorResponse] {
+        RoundTrips.withDeletedRepository().run()
+      }
+      error.status shouldBe Status.BadRequest
+      error.errorResponse shouldBe expectedError
     }
-
     scenario("the user should receive an error when trying to delete " +
       "a repository whose name exists but uri does not match") {
-      val repository = defaultRepositories.head
-      val badUri = "http://www.mesosphere.com/auntoheust"
-      val expected = RepositoryNotPresent(
-        Ior.Both(repository.name, badUri)
-      ).exception.errorResponse
-      val (status, actual) = ItUtil.deleteRepositoryEither(
-        name = Some(repository.name),
-        uri = Some(badUri)
-      )
-      assertResult(Left(expected))(actual)
-      assertResult(Status.BadRequest)(status)
-      info(expected.message)
+      val repo = Requests.listRepositories().head
+      val badUri: Uri = "http://www.mesosphere.com/auntoheust"
+      val expectedError = RepositoryNotPresent(
+        Ior.Both(repo.name, badUri)
+      ).as[ErrorResponse]
+      val error = intercept[HttpErrorResponse] {
+        RoundTrips.withDeletedRepository(Some(repo.name), Some(badUri)).run()
+      }
+      error.status shouldBe Status.BadRequest
+      error.errorResponse shouldBe expectedError
     }
-
-  }
-
-  def insert[T](seq: Seq[T], index: Int, value: T): Seq[T] = {
-    val (front, back) = seq.splitAt(index)
-    front ++ Seq(value) ++ back
   }
 
 }
