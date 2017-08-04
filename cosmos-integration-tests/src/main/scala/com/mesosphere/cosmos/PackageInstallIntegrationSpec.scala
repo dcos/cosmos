@@ -12,13 +12,6 @@ import com.mesosphere.universe
 import com.mesosphere.universe.v3.syntax.PackageDefinitionOps._
 import com.twitter.bijection.Conversion.asMethod
 import com.twitter.finagle.http._
-import com.twitter.util.Await
-import com.twitter.util.Future
-import java.util.UUID
-import org.scalatest.AppendedClues._
-import org.scalatest.Assertion
-import org.scalatest.BeforeAndAfterAll
-import org.scalatest.FreeSpec
 import org.scalatest.FeatureSpec
 import org.scalatest.Matchers
 
