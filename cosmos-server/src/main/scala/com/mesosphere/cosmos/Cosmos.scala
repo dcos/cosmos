@@ -23,7 +23,9 @@ import com.mesosphere.cosmos.handler.PackageRepositoryListHandler
 import com.mesosphere.cosmos.handler.PackageSearchHandler
 import com.mesosphere.cosmos.handler.ServiceDescribeHandler
 import com.mesosphere.cosmos.handler.UninstallHandler
+import com.mesosphere.cosmos.repository.PackageCollection
 import com.mesosphere.cosmos.repository.PackageSourcesStorage
+import com.mesosphere.cosmos.repository.RepositoryCache
 import com.mesosphere.cosmos.repository.UniverseClient
 import com.mesosphere.cosmos.repository.ZkRepositoryList
 import com.mesosphere.cosmos.rpc.MediaTypes
@@ -96,7 +98,12 @@ with Logging {
       zkClient,
       sourcesStorage,
       universeClient,
-      new MultiRepository(sourcesStorage, universeClient),
+      new PackageCollection(
+        new RepositoryCache(
+          sourcesStorage,
+          universeClient
+        )
+      ),
       new MarathonPackageRunner(adminRouter),
       ServiceUninstaller(adminRouter)
     )
@@ -276,7 +283,7 @@ object CosmosApp {
     val zkClient: CuratorFramework,
     val sourcesStorage: PackageSourcesStorage,
     val universeClient: UniverseClient,
-    val repositories: MultiRepository,
+    val repositories: PackageCollection,
     val packageRunner: MarathonPackageRunner,
     val marathonSdkJanitor: ServiceUninstaller
   )
