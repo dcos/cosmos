@@ -5,6 +5,7 @@ PROJECT_DIR=$(pwd -P)
 DCOS_IMAGE_DIR="${PROJECT_DIR}/dcos-image"
 TARGET_DIR="${DCOS_IMAGE_DIR}/target"
 
+: ${PROJECT_SCALA_VERSION?"Need to set PROJECT_SCALA_VERSION"}
 VERSION=${VERSION:-"dev"}
 CLEAN_VERSION=${VERSION//\//_}
 ONE_JAR="cosmos-server-${CLEAN_VERSION}-one-jar.jar"
@@ -22,7 +23,7 @@ function clean {(
 function copy {(
 
   mkdir -p ${TARGET_DIR}
-  cp ${PROJECT_DIR}/cosmos-server/target/scala-2.11/cosmos-server_2.11-*-one-jar.jar ${TARGET_DIR}/${ONE_JAR}
+  cp ${PROJECT_DIR}/cosmos-server/target/scala-${PROJECT_SCALA_VERSION}/cosmos-server_${PROJECT_SCALA_VERSION}-*-one-jar.jar ${TARGET_DIR}/${ONE_JAR}
   cp ${PROJECT_DIR}/cosmos-server/target/*.html ${TARGET_DIR}
   cp ${PROJECT_DIR}/cosmos-server/target/*.raml ${TARGET_DIR}
   cp ${PROJECT_DIR}/cosmos-server/target/*.swagger ${TARGET_DIR}
