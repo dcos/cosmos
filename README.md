@@ -24,6 +24,7 @@ management of DC/OS service packages.
 - [API Documentation](#api-documentation)
 	- [Cosmos Version 0.3.x](#cosmos-version-03x)
 - [Reporting Problems](#reporting-problems)
+TODO: Add Table of Content entry
 
 ## Running tests
 
@@ -70,7 +71,7 @@ The integration tests support three ways of configuring the tests. This is done 
 system propertyes:
 
 1. `com.mesosphere.cosmos.dcosUri` - Location of the DC/OS cluster as an HTTP URL.
-1. `com.mesosphere.cosmo.boot` - If `true` or defined the integration tests will automatically
+1. `com.mesosphere.cosmos.boot` - If `true` or defined the integration tests will automatically
 execute the Cosmos defined in this repository. If `false` then the integration tests will not
 execute a Cosmos.
 1. `com.mesosphere.cosmos.test.CosmosIntegrationTestClient.CosmosClient` - This property is not
@@ -92,25 +93,25 @@ sbt -Dcom.mesosphere.cosmos.dcosUri=<dcos-host-url> \
 ```
 
 2. Run the integration tests against the Cosmos running in a DC/OS cluster. This configuration can
-be enabled by setting the `com.mesosphere.cosmos.dcosUri` and `com.mesosphere.cosmo.boot=false`
+be enabled by setting the `com.mesosphere.cosmos.dcosUri` and `com.mesosphere.cosmos.boot=false`
 system properties.
 
 ```bash
 export COSMOS_AUTHORIZATION_HEADER="token=$(http --ignore-stdin <dcos-host-url>/acs/api/v1/auth/login uid=<dcos-user> password=<user-password> | jq -r ".token")"
 sbt -Dcom.mesosphere.cosmos.dcosUri=<dcos-host-url> \
-    -Dcom.mesosphere.cosmo.boot=false \
+    -Dcom.mesosphere.cosmos.boot=false \
     clean it:test
 ```
 
 3. Run the integration tests against an already Cosmos configure to controls a DC/OS cluster. This
 configuration can be enabled by setting the `com.mesosphere.cosmos.dcosUri`,
-`com.mesosphere.cosmo.boot=false` and
+`com.mesosphere.cosmos.boot=false` and
 `com.mesosphere.cosmos.test.CosmosIntegrationTestClient.CosmosClient` system properties.
 
 ```bash
 export COSMOS_AUTHORIZATION_HEADER="token=$(http --ignore-stdin <dcos-host-url>/acs/api/v1/auth/login uid=<dcos-user> password=<user-password> | jq -r ".token")"
 sbt -Dcom.mesosphere.cosmos.dcosUri=<dcos-host-url> \
-    -Dcom.mesosphere.cosmo.boot=false \
+    -Dcom.mesosphere.cosmos.boot=false \
     -Dcom.mesosphere.cosmos.test.CosmosIntegrationTestClient.CosmosClient=http://localhost:7070 \
     clean it:test
 ```

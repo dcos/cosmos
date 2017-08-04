@@ -79,7 +79,7 @@ object CosmosIntegrationTestClient extends Matchers {
     lazy val logger: Logger =
       LoggerFactory.getLogger("com.mesosphere.cosmos.test.CosmosIntegrationTestClient.CosmosClient")
 
-    val uri: String = getClientProperty("CosmosClient", "uri")
+    val uri: Uri = getClientProperty("CosmosClient", "uri")
 
     def call[Res](
       request: HttpRequest
@@ -117,7 +117,11 @@ object CosmosIntegrationTestClient extends Matchers {
           req
       }
 
-      val finagleReq = HttpRequest.toFinagle(reqWithAuth)
+      val reqWithAuthAndHost = reqWithAuth.copy(
+        headers = reqWithAuth.headers + (Fields.Host -> uri.host.get)
+      )
+
+      val finagleReq = HttpRequest.toFinagle(reqWithAuthAndHost)
       Await.result(client(finagleReq))
     }
 
@@ -139,6 +143,7 @@ object CosmosIntegrationTestClient extends Matchers {
 
     // Do not relax the visibility on this -- use `submit()` instead; see its Scaladoc for why
     private[this] val client = {
+      logger.debug(s"Configuring integration test client for $uri")
       Services.httpClient("cosmosIntegrationTestClient", uri, 5.megabytes, RequestLogging).get
     }
 

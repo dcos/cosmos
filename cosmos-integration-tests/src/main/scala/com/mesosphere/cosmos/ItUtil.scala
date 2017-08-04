@@ -7,12 +7,9 @@ import scala.concurrent.duration._
 
 object ItUtil {
 
-  def getRepoByName(name: String): String = {
-    DefaultRepositories()
-      .getOrThrow
-      .find(_.name == name)
-      .map(_.uri.toString)
-      .get
+  def getTestUniverseRepoByName: String = {
+    // TODO: Implement this better.
+    ???
   }
 
   def waitForDeployment(adminRouter: AdminRouter)(attempts: Int): Boolean = {
