@@ -1,6 +1,5 @@
 package com.mesosphere.cosmos.util
 
-import scala.language.implicitConversions
 import shapeless._
 
 class RoundTrip[A] private(

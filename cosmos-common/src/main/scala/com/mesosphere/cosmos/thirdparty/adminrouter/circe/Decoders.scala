@@ -1,6 +1,5 @@
 package com.mesosphere.cosmos.thirdparty.adminrouter.circe
 
-import cats.syntax.either._
 import com.mesosphere.cosmos.thirdparty.adminrouter.model.DcosVersion
 import com.mesosphere.universe
 import io.circe.Decoder

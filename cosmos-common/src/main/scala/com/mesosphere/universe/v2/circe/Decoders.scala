@@ -1,6 +1,5 @@
 package com.mesosphere.universe.v2.circe
 
-import cats.syntax.either._
 import com.mesosphere.universe.common.circe.Decoders._
 import com.mesosphere.universe.v2.model._
 import io.circe.Decoder

@@ -57,7 +57,6 @@ final class PackageCollectionSpec extends FreeSpec
 
     import universe.v3.model.Version
     import universe.v3.model.ReleaseVersion
-    import universe.v4.model.PackageDefinition
 
     val a_99_2 = singlePackageDefinition("a", Version("99"), ReleaseVersion(2))
     val a_88_1 = singlePackageDefinition("a", Version("88"), ReleaseVersion(1))

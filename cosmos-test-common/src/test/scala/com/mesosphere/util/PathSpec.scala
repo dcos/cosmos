@@ -5,7 +5,6 @@ import org.scalacheck.Gen
 import org.scalatest.Assertion
 import org.scalatest.FreeSpec
 import org.scalatest.prop.PropertyChecks
-import scala.language.implicitConversions
 import scala.reflect.ClassTag
 
 final class PathSpec extends FreeSpec with PropertyChecks {

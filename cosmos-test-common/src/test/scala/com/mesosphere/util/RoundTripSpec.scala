@@ -116,10 +116,11 @@ class RoundTripSpec extends FreeSpec with Matchers with MockitoSugar {
     when(doer.doB()).thenReturn(bVal)
     when(doer.doC()).thenReturn(cVal)
     val order: InOrder = Mockito.inOrder(doer)
+    val zero = 0
     assertThrows[ArithmeticException] {
       doA(doer)
         .flatMap(_ => doB(doer))
-        .map(_ => 42 / 0)
+        .map(_ => 42 / zero)
         .flatMap(_ => doC(doer))
         .run()
     }
@@ -157,9 +158,10 @@ class RoundTripSpec extends FreeSpec with Matchers with MockitoSugar {
     when(doer.doB()).thenReturn(bVal)
     when(doer.doC()).thenReturn(cVal)
     val order: InOrder = Mockito.inOrder(doer)
+    val zero = 0
     assertThrows[ArithmeticException] {
       (doA(doer) &:
-        doB(doer).map(_ => 42 / 0) &:
+        doB(doer).map(_ => 42 / zero) &:
         doC(doer)).run()
     }
     order.verify(doer, times(1)).doA()
@@ -180,18 +182,18 @@ object RoundTripSpec {
 
   def doC(doer: Doer): RoundTrip[Char] = RoundTrip(doer.doC())(doer.undoC)
 
-  class Doer {
-    def doA(): Int = 0
+  trait Doer {
+    def doA(): Int
 
-    def undoA(i: Int): Unit = ()
+    def undoA(i: Int): Unit
 
-    def doB(): String = "0"
+    def doB(): String
 
-    def undoB(s: String): Unit = ()
+    def undoB(s: String): Unit
 
-    def doC(): Char = '0'
+    def doC(): Char
 
-    def undoC(c: Char): Unit = ()
+    def undoC(c: Char): Unit
   }
 
 }

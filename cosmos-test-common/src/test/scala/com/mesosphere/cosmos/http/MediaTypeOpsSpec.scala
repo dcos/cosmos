@@ -175,7 +175,7 @@ class MediaTypeOpsSpec extends FreeSpec {
   }
 
   "Compatibility should ignore any present qValue" in {
-    shouldSucceed("type/subtype;something=awesome;q=0.9", "type/subtype;something=awesome")
+    shouldSucceed("type/subtype;something=awesome;q=0.9", "type/subtype;something=awesome")(MediaTypeOps.compatible)
   }
 
   "MediaTypeOps.qValue should return 1.0 if not specified" in {
@@ -187,11 +187,11 @@ class MediaTypeOpsSpec extends FreeSpec {
   ): Unit = {
 
     "type/subtype & type/subtype" in {
-      shouldSucceed("type/subtype", "type/subtype")
+      shouldSucceed("type/subtype", "type/subtype")(testedFn)
     }
 
     "type/subtype+suffix & type/subtype+suffix" in {
-      shouldSucceed("type/subtype+suffix", "type/subtype+suffix")
+      shouldSucceed("type/subtype+suffix", "type/subtype+suffix")(testedFn)
     }
 
   }
@@ -201,19 +201,19 @@ class MediaTypeOpsSpec extends FreeSpec {
   ): Unit = {
 
     "type/subtype & otherType/subtype" in {
-      shouldFail("type/subtype", "otherType/subtype")
+      shouldFail("type/subtype", "otherType/subtype")(testedFn)
     }
 
     "type/subtype & type/otherSubType" in {
-      shouldFail("type/subtype", "type/otherSubType")
+      shouldFail("type/subtype", "type/otherSubType")(testedFn)
     }
 
     "type/subtype+suffix & type/subtype" in {
-      shouldFail("type/subtype+suffix", "type/subtype")
+      shouldFail("type/subtype+suffix", "type/subtype")(testedFn)
     }
 
     "type/subtype & type/subtype+suffix" in {
-      shouldFail("type/subtype", "type/subtype+suffix")
+      shouldFail("type/subtype", "type/subtype+suffix")(testedFn)
     }
 
   }
@@ -223,21 +223,20 @@ class MediaTypeOpsSpec extends FreeSpec {
     behave like compatibleIgnoringParametersSuccessSpec(testedFn)
 
     "type/subtype;k=v & type/subtype;k=v" in  {
-      shouldSucceed("type/subtype;k=v", "type/subtype;k=v")
+      shouldSucceed("type/subtype;k=v", "type/subtype;k=v")(testedFn)
     }
 
     "type/subtype;charset=utf-8 & type/subtype;charset=utf-8" in {
-      shouldSucceed("type/subtype;charset=utf-8", "type/subtype;charset=utf-8")
+      shouldSucceed("type/subtype;charset=utf-8", "type/subtype;charset=utf-8")(testedFn)
     }
 
     "type/subtype & type/subtype;charset=utf-8" in {
-      shouldSucceed("type/subtype", "type/subtype;charset=utf-8")
+      shouldSucceed("type/subtype", "type/subtype;charset=utf-8")(testedFn)
     }
 
     "type/subtype;charset=utf-8 & type/subtype;charset=utf-8;foo=bar" in {
-      shouldSucceed("type/subtype;charset=utf-8", "type/subtype;charset=utf-8;foo=bar")
+      shouldSucceed("type/subtype;charset=utf-8", "type/subtype;charset=utf-8;foo=bar")(testedFn)
     }
-
   }
 
   private[this] def compatibleFailureSpec(testedFn: (MediaType, MediaType) => Boolean): Unit = {
@@ -245,35 +244,35 @@ class MediaTypeOpsSpec extends FreeSpec {
     behave like compatibleIgnoringParametersFailureSpec(testedFn)
 
     "type/subtype;charset=utf-8 & type/subtype" in {
-      shouldFail("type/subtype;charset=utf-8", "type/subtype")
+      shouldFail("type/subtype;charset=utf-8", "type/subtype")(testedFn)
     }
 
     "type/subtype;charset=utf-8 & type/subtype;charset=utf-16" in {
-      shouldFail("type/subtype;charset=utf-8", "type/subtype;charset=utf-16")
+      shouldFail("type/subtype;charset=utf-8", "type/subtype;charset=utf-16")(testedFn)
     }
 
     "type/subtype;charset=utf-8 & type/subtype;foo=utf-8" in {
-      shouldFail("type/subtype;charset=utf-8", "type/subtype;foo=utf-8")
+      shouldFail("type/subtype;charset=utf-8", "type/subtype;foo=utf-8")(testedFn)
     }
 
     "type/subtype;charset=utf-8 & type/subtype;foo=bar" in {
-      shouldFail("type/subtype;charset=utf-8", "type/subtype;foo=bar")
+      shouldFail("type/subtype;charset=utf-8", "type/subtype;foo=bar")(testedFn)
     }
 
   }
 
-  private[this] def shouldSucceed(expected: MediaType, actual: MediaType): Assertion = {
-    assertMatch(expected, actual, shouldPass = true)
+  private[this] def shouldSucceed(expected: MediaType, actual: MediaType)(matchFn: (MediaType, MediaType) => Boolean): Assertion = {
+    assertMatch(expected, actual, shouldPass = true)(matchFn)
   }
-  private[this] def shouldFail(expected: MediaType, actual: MediaType): Assertion = {
-    assertMatch(expected, actual, shouldPass = false)
+  private[this] def shouldFail(expected: MediaType, actual: MediaType)(matchFn: (MediaType, MediaType) => Boolean): Assertion = {
+    assertMatch(expected, actual, shouldPass = false)(matchFn)
   }
   private[this] def assertMatch(
     expected: MediaType,
     actual: MediaType,
     shouldPass: Boolean
-  ): Assertion = {
-    assert(MediaTypeOps.compatible(expected, actual) == shouldPass)
+  )(matchFn: (MediaType, MediaType) => Boolean): Assertion = {
+    assert(matchFn(expected, actual) == shouldPass)
   }
 
   private[this] implicit def stringToMediaType(s: String): MediaType = {

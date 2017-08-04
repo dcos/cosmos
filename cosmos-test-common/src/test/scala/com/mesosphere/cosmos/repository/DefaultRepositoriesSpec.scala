@@ -46,7 +46,7 @@ class DefaultRepositoriesSpec extends FreeSpec {
       "throw an error for a getOrThrow()" in {
         try { val _ = malformed.getOrThrow }
         catch {
-          case ParsingFailure(msg, cause) => // expected
+          case ParsingFailure(_, _) => // expected
         }
       }
 
@@ -64,7 +64,7 @@ class DefaultRepositoriesSpec extends FreeSpec {
         try {
           val _ = new DefaultRepositories("/does/not/exist").getOrThrow
         } catch {
-          case ies: IllegalStateException => // expected
+          case _: IllegalStateException => // expected
         }
       }
 

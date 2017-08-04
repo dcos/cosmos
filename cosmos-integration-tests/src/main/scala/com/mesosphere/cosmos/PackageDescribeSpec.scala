@@ -1,7 +1,6 @@
 package com.mesosphere.cosmos
 
 import _root_.io.circe.Json
-import cats.syntax.either._
 import com.mesosphere.cosmos.circe.Decoders.decode
 import com.mesosphere.cosmos.circe.Decoders.parse
 import com.mesosphere.cosmos.http.CosmosRequests

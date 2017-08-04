@@ -20,7 +20,7 @@ object QualityValue {
     Try { validateString(value) }
       .map { _.toDouble}
       .handle {
-        case e: NumberFormatException => throw err(value)
+        case _: NumberFormatException => throw err(value)
       }
       .map(QualityValue.apply)
   }

@@ -5,8 +5,6 @@ import io.circe.Json
 import io.circe.JsonObject
 import io.circe.generic.semiauto._
 import io.circe.syntax._
-import java.nio.charset.StandardCharsets
-import java.util.Base64
 import org.scalatest.FreeSpec
 import org.scalatest.prop.TableDrivenPropertyChecks
 
