@@ -72,5 +72,9 @@ package object http {
     request: HttpRequest
   )(
     implicit context: TestContext
-  ): Future[CosmosResponse[Resp]] = ???
+  ): Future[CosmosResponse[Resp]] = {
+    // TODO: Fix this!!!
+    if (context.direct) { val _ = request }
+    ???
+  }
 }

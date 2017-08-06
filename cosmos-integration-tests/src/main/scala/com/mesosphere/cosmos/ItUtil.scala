@@ -1,7 +1,6 @@
 package com.mesosphere.cosmos
 
 import com.mesosphere.cosmos.http.TestContext
-import com.mesosphere.cosmos.repository.DefaultRepositories
 import com.mesosphere.cosmos.test.CosmosIntegrationTestClient
 import com.twitter.util.Await
 import scala.concurrent.duration._

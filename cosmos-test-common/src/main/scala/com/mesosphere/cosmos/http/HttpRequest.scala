@@ -52,7 +52,8 @@ final case class PackageRpcPath(
 ) extends RpcPath {
   override def path: String = {
     // The path is always /package/...
-    s"/package/$action"
+    // TODO: Fix this...
+    if (testContext.direct) s"/package/$action" else s"/package/$action"
   }
 }
 
