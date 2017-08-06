@@ -6,10 +6,10 @@ import com.mesosphere.cosmos.http.CosmosRequests
 import com.mesosphere.cosmos.http.TestContext
 import com.mesosphere.cosmos.test.CosmosIntegrationTestClient.CosmosClient
 import com.twitter.finagle.http.Status
-import org.scalatest.FreeSpec
+import org.scalatest.FreeSpecLike
 import org.scalatest.Matchers
 
-final class ListVersionsSpec extends FreeSpec with Matchers {
+final class ListVersionsSpec extends FreeSpecLike with Matchers {
   private[this] implicit val testContext = TestContext.fromSystemProperties()
 
   "ListVersionHandler should" - {
