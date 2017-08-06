@@ -74,7 +74,7 @@ system propertyes:
 1. `com.mesosphere.cosmos.boot` - If `true` or defined the integration tests will automatically
 execute the Cosmos defined in this repository. If `false` then the integration tests will not
 execute a Cosmos.
-1. `com.mesosphere.cosmos.test.CosmosIntegrationTestClient.CosmosClient` - This property is not
+1. `com.mesosphere.cosmos.test.CosmosIntegrationTestClient.CosmosClient.uri` - This property is not
 required. If set to a URL, it will override the default value. The integration test assume that the
 Cosmos describe in this system property is configure to control the same cluster describe in
 `com.mesosphere.cosmos.dcosUri`
@@ -106,13 +106,13 @@ sbt -Dcom.mesosphere.cosmos.dcosUri=<dcos-host-url> \
 3. Run the integration tests against an already Cosmos configure to controls a DC/OS cluster. This
 configuration can be enabled by setting the `com.mesosphere.cosmos.dcosUri`,
 `com.mesosphere.cosmos.boot=false` and
-`com.mesosphere.cosmos.test.CosmosIntegrationTestClient.CosmosClient` system properties.
+`com.mesosphere.cosmos.test.CosmosIntegrationTestClient.CosmosClient.uri` system properties.
 
 ```bash
 export COSMOS_AUTHORIZATION_HEADER="token=$(http --ignore-stdin <dcos-host-url>/acs/api/v1/auth/login uid=<dcos-user> password=<user-password> | jq -r ".token")"
 sbt -Dcom.mesosphere.cosmos.dcosUri=<dcos-host-url> \
     -Dcom.mesosphere.cosmos.boot=false \
-    -Dcom.mesosphere.cosmos.test.CosmosIntegrationTestClient.CosmosClient=http://localhost:7070 \
+    -Dcom.mesosphere.cosmos.test.CosmosIntegrationTestClient.CosmosClient.uri=http://localhost:7070 \
     clean it:test
 ```
 
