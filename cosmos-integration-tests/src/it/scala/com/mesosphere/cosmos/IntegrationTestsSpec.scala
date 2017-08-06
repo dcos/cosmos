@@ -5,14 +5,20 @@ import com.netaporter.uri.dsl._
 import org.scalatest.BeforeAndAfterAll
 import org.scalatest.Suites
 
-final class IntegrationTestSpec extends Suites(
+final class IntegrationTestsSpec extends Suites(
   new ListVersionsSpec,
+  new NonSharedServiceDescribeSpec,
   new PackageDescribeSpec,
   new PackageInstallIntegrationSpec,
   new PackageListIntegrationSpec,
   new PackageRepositorySpec,
   new PackageSearchSpec,
-  new ServiceDescribeSpec
+  new ServiceDescribeSpec,
+  new handler.CapabilitiesHandlerSpec,
+  new handler.PackageRenderHandlerSpec,
+  new handler.RequestErrorsSpec,
+  new handler.UninstallHandlerSpec,
+  new rpc.v1.model.ErrorResponseSpec
 ) with BeforeAndAfterAll {
 
   private[this] implicit val testContext = TestContext.fromSystemProperties()
@@ -20,8 +26,10 @@ final class IntegrationTestSpec extends Suites(
   private[this] val universeUri = "https://downloads.mesosphere.com/universe/02493e40f8564a39446d06c002f8dcc8e7f6d61f/repo-up-to-1.8.json"
 
   override def beforeAll(): Unit = {
+    Requests.deleteRepository(Some("Universe"))
+
     Requests.addRepository(
-      "OldUniverse",
+      "Universe",
       universeUri,
       Some(0)
     )
@@ -35,6 +43,7 @@ final class IntegrationTestSpec extends Suites(
 
   override def afterAll(): Unit = {
     Requests.deleteRepository(Some("V4TestUniverse"))
-    val _ = Requests.deleteRepository(None, Some(universeUri))
+    Requests.deleteRepository(None, Some(universeUri))
+    val _ = Requests.addRepository("Universe", "https://universe.mesosphere.com/repo")
   }
 }
