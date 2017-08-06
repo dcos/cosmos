@@ -1,6 +1,5 @@
 package com.mesosphere.universe.v3.model
 
-import cats.syntax.either._
 import com.twitter.util.Return
 import com.twitter.util.Throw
 import com.twitter.util.Try

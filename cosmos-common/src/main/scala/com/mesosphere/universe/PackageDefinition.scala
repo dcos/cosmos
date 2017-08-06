@@ -1,7 +1,6 @@
 package com.mesosphere.universe
 
 import cats.data.NonEmptyList
-import cats.syntax.either._
 import com.mesosphere.cosmos.finch.MediaTypedDecoder
 import com.mesosphere.cosmos.finch.MediaTypedEncoder
 import com.mesosphere.cosmos.http.MediaType

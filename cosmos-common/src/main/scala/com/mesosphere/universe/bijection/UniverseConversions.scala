@@ -297,7 +297,7 @@ object UniverseConversions {
     Injection.buildCatchInvert { (value: universe.v3.model.V2Resource) =>
       universe.v3.model.V3Resource(value.assets, value.images)
     } {
-      case universe.v3.model.V3Resource(assets, images, Some(cli)) =>
+      case universe.v3.model.V3Resource(_, _, Some(_)) =>
         throw new IllegalArgumentException(
           "Version 3 resource value contains a cli so cannot convert to version 2 Resource"
         )

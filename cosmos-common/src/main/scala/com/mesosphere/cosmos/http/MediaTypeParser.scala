@@ -4,7 +4,7 @@ import com.google.common.collect.Multimaps
 import com.google.common.net.{MediaType => GMediaType}
 import com.twitter.util.Try
 
-import scala.collection.JavaConversions._
+import scala.collection.JavaConverters._
 import java.util
 
 case class MediaTypeParseError(msg: String, cause: Throwable) extends RuntimeException(msg, cause)
@@ -21,9 +21,10 @@ object MediaTypeParser {
         val parameters = mediaType.parameters()
         val params = Multimaps
           .asMap(parameters)
+          .asScala
           .toMap
           .map { case (key: String, v: util.List[String]) =>
-            key.toLowerCase -> v.toList.head
+            key.toLowerCase -> v.asScala.toList.head
           }
 
         MediaType(

@@ -191,7 +191,7 @@ private[cosmos] final class UninstallHandler(
     adminRouter.deleteApp(appId, force = true).map { resp =>
       resp.status match {
         case Status.Ok => MarathonAppDeleteSuccess()
-        case a => throw MarathonAppDeleteError(appId).exception
+        case _ => throw MarathonAppDeleteError(appId).exception
       }
     }
   }

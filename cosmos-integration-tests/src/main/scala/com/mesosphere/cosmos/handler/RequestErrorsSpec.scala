@@ -1,6 +1,5 @@
 package com.mesosphere.cosmos.handler
 
-import cats.syntax.either._
 import com.mesosphere.cosmos.http.CompoundMediaTypeParser
 import com.mesosphere.cosmos.http.HttpRequest
 import com.mesosphere.cosmos.http.PackageRpcPath
@@ -16,7 +15,6 @@ import io.circe.JsonObject
 import io.circe.jawn._
 import io.circe.syntax._
 import org.scalatest.FreeSpec
-import scala.language.implicitConversions
 import scala.util.Right
 
 class RequestErrorsSpec extends FreeSpec {

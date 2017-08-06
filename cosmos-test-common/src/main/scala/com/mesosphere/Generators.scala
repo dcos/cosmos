@@ -1,6 +1,5 @@
 package com.mesosphere
 
-import com.mesosphere.cosmos.rpc
 import com.netaporter.uri.Uri
 import io.circe.testing.instances._
 import java.nio.ByteBuffer

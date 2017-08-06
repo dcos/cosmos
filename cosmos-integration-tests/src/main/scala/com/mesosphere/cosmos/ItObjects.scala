@@ -3,7 +3,6 @@ package com.mesosphere.cosmos
 import _root_.io.circe.Json
 import _root_.io.circe.jawn._
 import _root_.io.circe.syntax._
-import cats.syntax.either._
 import com.mesosphere.cosmos.model.StorageEnvelope
 import com.mesosphere.universe
 import com.mesosphere.universe.MediaTypes

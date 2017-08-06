@@ -1,6 +1,5 @@
 package com.mesosphere.cosmos.render
 
-import cats.syntax.either._
 import com.mesosphere.cosmos.bijection.CosmosConversions._
 import com.mesosphere.cosmos.circe.Decoders.decode64
 import com.mesosphere.cosmos.circe.Decoders.parse

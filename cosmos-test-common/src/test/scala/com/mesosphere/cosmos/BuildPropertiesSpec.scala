@@ -30,7 +30,7 @@ class BuildPropertiesSpec extends FreeSpec {
         try {
           val _ = new BuildProperties("/does/not/exist")
         } catch {
-          case ies: IllegalStateException => // expected
+          case _: IllegalStateException => // expected
         }
       }
 

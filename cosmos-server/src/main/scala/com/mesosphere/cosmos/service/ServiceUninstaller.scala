@@ -3,7 +3,6 @@ package com.mesosphere.cosmos.service
 import com.mesosphere.cosmos.AdminRouter
 import com.mesosphere.cosmos.http.RequestSession
 import com.mesosphere.cosmos.thirdparty.marathon.model.AppId
-import com.mesosphere.cosmos.thirdparty.marathon.model.MarathonApp
 import com.twitter.finagle.http.Status
 import com.twitter.util.Try.PredicateDoesNotObtain
 import com.twitter.util.Duration

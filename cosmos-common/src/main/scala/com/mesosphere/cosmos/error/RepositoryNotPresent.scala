@@ -3,9 +3,7 @@ package com.mesosphere.cosmos.error
 import cats.data.Ior
 import com.mesosphere.universe.common.circe.Encoders._
 import com.netaporter.uri.Uri
-import io.circe.Encoder
 import io.circe.JsonObject
-import io.circe.generic.semiauto.deriveEncoder
 import io.circe.syntax._
 
 final case class RepositoryNotPresent(nameOrUri: Ior[String, Uri]) extends CosmosError {
