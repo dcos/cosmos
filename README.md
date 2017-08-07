@@ -46,7 +46,7 @@ tests run the following command:
 sbt clean coverage test:test coverageReport coverageAggregate
 ```
 
-The generated report can then be found at `target/scala-2.11/scoverage-report/index.html`
+The generated report can then be found at `target/scala-2.12/scoverage-report/index.html`
 
 _NOTE_: You should never run coverage at the same time as one-jar because the produced one-jar will
 contains scoverage instrumented class files and will fail to run.
@@ -96,11 +96,11 @@ We also need a One-JAR to run Cosmos:
 sbt oneJar
 ```
 
-The jar will be created in the `cosmos-server/target/scala-2.11/` directory. This can be executed
+The jar will be created in the `cosmos-server/target/scala-2.12/` directory. This can be executed
 with:
 
 ```bash
-java -jar cosmos-server/target/scala-2.11/cosmos-server_2.11-<version>-SNAPSHOT-one-jar.jar \
+java -jar cosmos-server/target/scala-2.12/cosmos-server_2.12-<version>-SNAPSHOT-one-jar.jar \
      -com.mesosphere.cosmos.dcosUri <dcos-host-url>
 ```
 
@@ -109,7 +109,7 @@ It can also be executed with ZooKeeper authentication with:
 ```bash
 export ZOOKEEPER_USER <user>
 export ZOOKEEPER_SECRET <secret>
-java -jar cosmos-server/target/scala-2.11/cosmos-server_2.11-<version>-SNAPSHOT-one-jar.jar \
+java -jar cosmos-server/target/scala-2.12/cosmos-server_2.12-<version>-SNAPSHOT-one-jar.jar \
      -com.mesosphere.cosmos.dcosUri <dcos-host-url>
 ```
 
