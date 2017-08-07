@@ -14,6 +14,16 @@ import org.scalatest.prop.TableFor2
 
 object ItObjects {
 
+  val thisShouldFail: String = trickCompiler(true)
+
+  def trickCompiler(tricked: Boolean): String = {
+    if (tricked) {
+      throw new IllegalArgumentException("Test TC sbt logger plugin")
+    } else {
+      "never happens"
+    }
+  }
+
   val v4TestUniverse: String = {
     ItUtil.getRepoByName("V4TestUniverse")
   }
