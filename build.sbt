@@ -60,8 +60,7 @@ lazy val testCommon = project.in(file("cosmos-test-common"))
       Deps.curator ++
       Deps.mockito ++
       Deps.scalaCheck ++
-      Deps.scalaCheckShapeless ++
-      Deps.scalaTest
+      Deps.scalaCheckShapeless
   )
   .dependsOn(
     server
@@ -84,7 +83,7 @@ lazy val integrationTests = project.in(file("cosmos-integration-tests"))
       // No additional properties needed for these tests
       additionalProperties = Nil,
       streamsValue = (streams in runMain).value
-    ),
+    ) ++ Seq(Tests.Argument(TestFrameworks.ScalaTest, "-oS")),
     // Uses (compile in Compile) in addition to (compile in IntegrationTest), the default
     definedTests in IntegrationTest := {
       val frameworkMap = (loadedTestFrameworks in IntegrationTest).value
