@@ -6,12 +6,15 @@ import com.mesosphere.cosmos.error.CosmosException
 import com.mesosphere.cosmos.error.RepositoryAddIndexOutOfBounds
 import com.mesosphere.cosmos.error.RepositoryAlreadyPresent
 import com.mesosphere.cosmos.error.RepositoryNotPresent
+import com.mesosphere.cosmos.error.TimeoutError
 import com.mesosphere.cosmos.model.StorageEnvelope
 import com.mesosphere.cosmos.repository.DefaultRepositories._
 import com.mesosphere.cosmos.rpc.v1.model.PackageRepository
 import com.netaporter.uri.Uri
 import com.twitter.finagle.stats.Stat
 import com.twitter.finagle.stats.StatsReceiver
+import com.twitter.util.Timer
+import com.twitter.util.Duration
 import com.twitter.util.Future
 import com.twitter.util.Promise
 import org.apache.curator.framework.CuratorFramework
@@ -25,7 +28,7 @@ import org.apache.zookeeper.data.{Stat => ZooKeeperStat}
 final class ZkRepositoryList private (
   zkClient: CuratorFramework
 )(
-  implicit statsReceiver: StatsReceiver
+  implicit statsReceiver: StatsReceiver, timer: Timer
 ) extends PackageSourcesStorage with AutoCloseable {
 
   import ZkRepositoryList._
@@ -35,6 +38,8 @@ final class ZkRepositoryList private (
   private[this] val stats = statsReceiver.scope("zkStorage")
 
   private[this] val DefaultRepos: List[PackageRepository] = DefaultRepositories().getOrElse(Nil)
+
+  private[this] val maxWaitTime: Duration = Duration.fromSeconds(60) //scalastyle:ignore magic.number
 
   override def read(): Future[List[PackageRepository]] = {
     Stat.timeFuture(stats.stat("read")) {
@@ -121,8 +126,7 @@ final class ZkRepositoryList private (
       ZkRepositoryList.PackageRepositoriesPath,
       StorageEnvelope.encodeData(repositories)
     )
-
-    promise
+    returnWithTimeout("Create", "ZooKeeper", promise)
   }
 
   private[this] def write(
@@ -137,8 +141,7 @@ final class ZkRepositoryList private (
       ZkRepositoryList.PackageRepositoriesPath,
       StorageEnvelope.encodeData(repositories)
     )
-
-    promise
+    returnWithTimeout("Write", "ZooKeeper", promise)
   }
 
   private[this] def readFromCache: Future[Option[(ZooKeeperStat, Array[Byte])]] = {
@@ -157,8 +160,7 @@ final class ZkRepositoryList private (
     ).forPath(
       ZkRepositoryList.PackageRepositoriesPath
     )
-
-    promise
+    returnWithTimeout("Read", "ZooKeeper", promise)
   }
 
   private[this] def addToList(
@@ -186,13 +188,23 @@ final class ZkRepositoryList private (
         list :+ elem
     }
   }
+
+  private[this] def returnWithTimeout[T](
+    operation: String,
+    destination: String,
+    promise: Promise[T]
+  ): Future[T] = {
+    Future.sleep(maxWaitTime).map(_ =>
+      throw TimeoutError(operation, destination, maxWaitTime.toString()).exception
+    ).select(promise)
+  }
 }
 
 object ZkRepositoryList {
   def apply(
     zkClient: CuratorFramework
   )(
-    implicit statsReceiver: StatsReceiver
+    implicit statsReceiver: StatsReceiver, timer: Timer
   ): ZkRepositoryList = {
     val repoList = new ZkRepositoryList(zkClient)
     repoList.start()
