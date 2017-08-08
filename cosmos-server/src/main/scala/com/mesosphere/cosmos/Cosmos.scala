@@ -21,6 +21,7 @@ import com.mesosphere.cosmos.handler.PackageRepositoryAddHandler
 import com.mesosphere.cosmos.handler.PackageRepositoryDeleteHandler
 import com.mesosphere.cosmos.handler.PackageRepositoryListHandler
 import com.mesosphere.cosmos.handler.PackageSearchHandler
+import com.mesosphere.cosmos.handler.ResourceProxyHandler
 import com.mesosphere.cosmos.handler.ServiceDescribeHandler
 import com.mesosphere.cosmos.handler.UninstallHandler
 import com.mesosphere.cosmos.repository.PackageCollection
@@ -52,15 +53,12 @@ import com.twitter.server.Lifecycle
 import com.twitter.server.Stats
 import com.twitter.util.Await
 import com.twitter.util.Try
+import io.finch.internal.ToResponse
 import org.apache.curator.framework.CuratorFramework
 import org.slf4j.Logger
-import scala.language.implicitConversions
 import shapeless.:+:
 import shapeless.CNil
-import shapeless.Coproduct
 import shapeless.HNil
-import shapeless.Inl
-import shapeless.Inr
 
 trait CosmosApp
 extends App
@@ -123,6 +121,7 @@ with Logging {
       packageRepositoryAdd = new PackageRepositoryAddHandler(sourcesStorage, universeClient),
       packageRepositoryDelete = new PackageRepositoryDeleteHandler(sourcesStorage),
       packageRepositoryList = new PackageRepositoryListHandler(sourcesStorage),
+      packageResource = ResourceProxyHandler(statsReceiver),
       packageSearch = new PackageSearchHandler(repositories),
       packageUninstall = new UninstallHandler(adminRouter, repositories, marathonSdkJanitor),
       serviceDescribe = new ServiceDescribeHandler(adminRouter, repositories)
@@ -146,13 +145,17 @@ with Logging {
       packageRepositoryAdd = standardEndpoint(pkg :: repo :: "add", packageRepositoryAdd),
       packageRepositoryDelete = standardEndpoint(pkg :: repo :: "delete", packageRepositoryDelete),
       packageRepositoryList = standardEndpoint(pkg :: repo :: "list", packageRepositoryList),
+      // TODO proxy Extract URI validation into RequestValidators
+      packageResource = get(pkg :: "resource" :: param("url").map(Uri.parse)).mapOutputAsync(packageResource(_)),
       packageSearch = standardEndpoint(pkg :: "search", packageSearch),
       packageUninstall = standardEndpoint(pkg :: "uninstall", packageUninstall),
       serviceDescribe = standardEndpoint("service" :: "describe", serviceDescribe)
     )
   }
 
-  protected final def start(allEndpoints: Endpoint[Json]): Unit = {
+  protected final def start[A](allEndpoints: Endpoint[A])(implicit
+    tr: ToResponse.Aux[A, Application.Json]
+  ): Unit = {
     HttpProxySupport.configureProxySupport()
     implicit val sr = statsReceiver
 
@@ -228,8 +231,9 @@ with Logging {
       }
   }
 
-  private[this] def buildService(endpoints: Endpoint[Json])(implicit
-    statsReceiver: StatsReceiver
+  private[this] def buildService[A](endpoints: Endpoint[A])(implicit
+    statsReceiver: StatsReceiver,
+    tr: ToResponse.Aux[A, Application.Json]
   ): Service[Request, Response] = {
     val stats = statsReceiver.scope("errorFilter")
 
@@ -299,6 +303,7 @@ object CosmosApp {
     val packageRepositoryAdd: EndpointHandler[rpc.v1.model.PackageRepositoryAddRequest, rpc.v1.model.PackageRepositoryAddResponse],
     val packageRepositoryDelete: EndpointHandler[rpc.v1.model.PackageRepositoryDeleteRequest, rpc.v1.model.PackageRepositoryDeleteResponse],
     val packageRepositoryList: EndpointHandler[rpc.v1.model.PackageRepositoryListRequest, rpc.v1.model.PackageRepositoryListResponse],
+    val packageResource: ResourceProxyHandler,
     val packageSearch: EndpointHandler[rpc.v1.model.SearchRequest, rpc.v1.model.SearchResponse],
     val packageUninstall: EndpointHandler[rpc.v1.model.UninstallRequest, rpc.v1.model.UninstallResponse],
     val serviceDescribe: EndpointHandler[rpc.v1.model.ServiceDescribeRequest, rpc.v1.model.ServiceDescribeResponse]
@@ -315,12 +320,15 @@ object CosmosApp {
     packageRepositoryAdd: Endpoint[Json],
     packageRepositoryDelete: Endpoint[Json],
     packageRepositoryList: Endpoint[Json],
+    packageResource: Endpoint[Response],
     packageSearch: Endpoint[Json],
     packageUninstall: Endpoint[Json],
     serviceDescribe: Endpoint[Json]
   ) {
 
-    def combine: Endpoint[Json] = {
+    def combine: Endpoint[
+      Json :+: Json :+: Json :+: Json :+: Json :+: Json :+: Json :+: Json :+: Json :+:
+        Response :+: Json :+: Json :+: Json :+: CNil] = {
       // Keep alphabetized
       (capabilities
         :+: packageDescribe
@@ -331,9 +339,10 @@ object CosmosApp {
         :+: packageRepositoryAdd
         :+: packageRepositoryDelete
         :+: packageRepositoryList
+        :+: packageResource
         :+: packageSearch
         :+: packageUninstall
-        :+: serviceDescribe).map(degenerateCoproduct)
+        :+: serviceDescribe)
     }
 
   }
@@ -383,13 +392,6 @@ object CosmosApp {
    */
   private def sanitizeClassName(clazz: Class[_]): String = {
     clazz.getName.replaceAllLiterally("$", ".")
-  }
-
-  implicit def degenerateCNil[A](cnil: CNil): A = cnil.impossible
-
-  implicit def degenerateCoproduct[H, T <: Coproduct](implicit toH: T => H): (H :+: T => H) = {
-    case Inl(h) => h
-    case Inr(t) => toH(t)
   }
 
 }

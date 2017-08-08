@@ -9,10 +9,9 @@ import io.circe.syntax._
 import io.finch.Input
 
 final case class HttpRequest(
-  method: Method,
   path: RpcPath,
   headers: Map[String, String],
-  body: HttpRequestBody
+  method: HttpRequestMethod
 )
 
 object HttpRequest {
@@ -28,7 +27,7 @@ object HttpRequest {
   }
 
   def get(path: RpcPath, accept: Option[String]): HttpRequest = {
-    HttpRequest(Method.Get, path, collectHeaders(Fields.Accept -> accept), NoBody)
+    HttpRequest(path, collectHeaders(Fields.Accept -> accept), Get())
   }
 
   def post[A](
@@ -47,7 +46,7 @@ object HttpRequest {
     accept: Option[String]
   ): HttpRequest = {
     val headers = collectHeaders(Fields.Accept -> accept, Fields.ContentType -> contentType)
-    HttpRequest(Method.Post, path, headers, Monolithic(Buf.Utf8(body)))
+    HttpRequest(path, headers, Post(Buf.Utf8(body)))
   }
 
   def post(
@@ -60,14 +59,14 @@ object HttpRequest {
       Fields.Accept -> toHeader(accept),
       Fields.ContentType -> toHeader(contentType)
     )
-    HttpRequest(Method.Post, path, headers, Monolithic(body))
+    HttpRequest(path, headers, Post(body))
   }
 
   def toFinagle(cosmosRequest: HttpRequest): Request = {
-    val finagleRequest = cosmosRequest.body match {
-      case NoBody =>
-        Request(cosmosRequest.path.path)
-      case Monolithic(buf) =>
+    val finagleRequest = cosmosRequest.method match {
+      case Get(params @ _*) =>
+        Request(cosmosRequest.path.path, params: _*)
+      case Post(buf) =>
         val req = Request(Method.Post, cosmosRequest.path.path)
         req.content = buf
         req.contentLength = buf.length.toLong

@@ -3,17 +3,16 @@ package com.mesosphere.cosmos.finch
 import cats.data.NonEmptyList
 import com.mesosphere.cosmos.http.Authorization
 import com.mesosphere.cosmos.http.CompoundMediaTypeParser
+import com.mesosphere.cosmos.http.Get
 import com.mesosphere.cosmos.http.HttpRequest
-import com.mesosphere.cosmos.http.HttpRequestBody
+import com.mesosphere.cosmos.http.HttpRequestMethod
 import com.mesosphere.cosmos.http.MediaType
 import com.mesosphere.cosmos.http.MediaTypeSpec
-import com.mesosphere.cosmos.http.Monolithic
-import com.mesosphere.cosmos.http.NoBody
+import com.mesosphere.cosmos.http.Post
 import com.mesosphere.cosmos.http.RawRpcPath
 import com.mesosphere.cosmos.http.RequestSession
 import com.mesosphere.cosmos.rpc.MediaTypes._
 import com.twitter.finagle.http.Fields
-import com.twitter.finagle.http.Method
 import com.twitter.io.Buf
 import com.twitter.util.Return
 import com.twitter.util.Throw
@@ -142,7 +141,7 @@ final class RequestValidatorsSpec extends FreeSpec with Matchers with PropertyCh
         )
         produces = DispatchingMediaTypedEncoder[Json](acceptHeader)
         validator = RequestValidators.standard(accepts, produces)
-        request <- genRequest(headers, Monolithic(Buf.Utf8("{}")))
+        request <- genRequest(Post(Buf.Utf8("{}")))(headers)
       } yield TestData(expectedContentTypeHeader, validator, request)
     }
 
@@ -312,19 +311,14 @@ final class RequestValidatorsSpec extends FreeSpec with Matchers with PropertyCh
 
 object RequestValidatorsSpec {
 
-  def genRequest(
-    genHeaders: Gen[Map[String, String]],
-    genBody: Gen[HttpRequestBody]
+  def genRequest(method: HttpRequestMethod)(
+    genHeaders: Gen[Map[String, String]]
   ): Gen[HttpRequest] = {
     for {
-      method <- genMethod
       path <- genPath
       headers <- genHeaders
-      body <- genBody
-    } yield HttpRequest(method, RawRpcPath(path), headers, body)
+    } yield HttpRequest(RawRpcPath(path), headers, method)
   }
-
-  val genMethod: Gen[Method] = Gen.alphaStr.map(Method(_))
 
   val genPath: Gen[String] = {
     Gen.listOf(Gen.frequency((10, Gen.alphaNumChar), Gen.freqTuple((1, '/')))).map(_.mkString)
@@ -386,7 +380,7 @@ object RequestValidatorsSpec {
     ): HttpRequest = {
       val headers =
         HttpRequest.collectHeaders(Fields.Accept -> accept, Fields.Authorization -> authorization)
-      HttpRequest(Method.Get, RawRpcPath("/what/ever"), headers, NoBody)
+      HttpRequest(RawRpcPath("/what/ever"), headers, Get())
     }
 
   }
@@ -411,12 +405,7 @@ object RequestValidatorsSpec {
         Fields.Authorization -> authorization,
         Fields.ContentType -> HttpRequest.toHeader(TestingMediaTypes.applicationJson)
       )
-      HttpRequest(
-        Method.Post,
-        RawRpcPath("/what/ever"),
-        headers,
-        Monolithic(Buf.Utf8(Json.Null.noSpaces))
-      )
+      HttpRequest(RawRpcPath("/what/ever"), headers, Post(Buf.Utf8(Json.Null.noSpaces)))
     }
 
   }

@@ -15,6 +15,7 @@ import com.mesosphere.cosmos.thirdparty.marathon.model.Deployment
 import com.mesosphere.cosmos.thirdparty.marathon.model.MarathonApp
 import com.mesosphere.universe
 import com.netaporter.uri.Uri
+import com.twitter.finagle.http.Response
 import com.twitter.util.Await
 import io.circe.Decoder
 import io.circe.JsonObject
@@ -208,6 +209,11 @@ object Requests {
     Await.result {
       CosmosIntegrationTestClient.adminRouter.listDeployments()
     }
+  }
+
+  def packageResource(resourceUri: Uri): Response = {
+    val request = CosmosRequests.packageResource(resourceUri)
+    CosmosClient.submit(request)
   }
 
   def callEndpoint[Res: Decoder](request: HttpRequest): Res = {
