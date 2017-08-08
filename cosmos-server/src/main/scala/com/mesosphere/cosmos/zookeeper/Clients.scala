@@ -29,7 +29,6 @@ object Clients {
   ): CuratorFramework = {
     val zkClientBuilder = CuratorFrameworkFactory
       .builder()
-      .namespace(zkUri.path.stripPrefix("/"))
       .connectString(zkUri.connectString)
       .retryPolicy(new ExponentialBackoffRetry(baseSleepTimeMs, retries))
 

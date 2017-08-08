@@ -211,7 +211,7 @@ object ZkRepositoryList {
     repoList
   }
 
-  private val PackageRepositoriesPath: String = "/package/repositories"
+  private val PackageRepositoriesPath: String = "/cosmos/package/repositories"
 
   private[cosmos] def getPredicate(nameOrUri: Ior[String, Uri]): PackageRepository => Boolean = {
     def namePredicate(n: String) = (repo: PackageRepository) => repo.name == n
