@@ -39,7 +39,7 @@ final class ZkRepositoryList private (
 
   private[this] val DefaultRepos: List[PackageRepository] = DefaultRepositories().getOrElse(Nil)
 
-  private[this] val maxWaitTime: Duration = Duration.fromSeconds(60) //scalastyle:ignore magic.number
+  private[this] val maxWaitTime: Duration = Duration.fromSeconds(5) //scalastyle:ignore magic.number
 
   override def read(): Future[List[PackageRepository]] = {
     Stat.timeFuture(stats.stat("read")) {
@@ -195,7 +195,7 @@ final class ZkRepositoryList private (
     promise: Promise[T]
   ): Future[T] = {
     Future.sleep(maxWaitTime).map(_ =>
-      throw TimeoutError(operation, destination, maxWaitTime.toString()).exception
+      throw TimeoutError(operation, destination, s"${maxWaitTime.inSeconds} seconds").exception
     ).select(promise)
   }
 }
