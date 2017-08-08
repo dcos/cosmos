@@ -109,6 +109,9 @@ private[cosmos] object HttpProxySupport {
     parseAllProperties(proxyEnvVariables)
       .foreach { case (key, value) => setPropertyIfUnset(key, value) }
 
+    // Ensure we can use Basic authentication for HTTPS tunneling through proxies
+    setPropertyIfUnset("jdk.http.auth.tunneling.disabledSchemes", "")
+
     val authenticator = new CosmosHttpProxyPasswordAuthenticator(proxyEnvVariables)
     setAuthenticator(authenticator)
   }
