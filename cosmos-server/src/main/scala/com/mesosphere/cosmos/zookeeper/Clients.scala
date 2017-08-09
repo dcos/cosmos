@@ -69,7 +69,7 @@ object Clients {
     updateAcls(
       zkClient,
       aclProvider,
-      zkClient.getChildren.forPath(zkUri.path).asScala.toList.map(zkUri.path + "/" + _ )
+      zkClient.getChildren.forPath(zkUri.path).asScala.toList.map(zkUri.path + "/" + _)
     )
   }
 

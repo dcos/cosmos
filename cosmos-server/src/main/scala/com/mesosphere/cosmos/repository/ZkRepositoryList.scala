@@ -8,6 +8,7 @@ import com.mesosphere.cosmos.error.RepositoryAlreadyPresent
 import com.mesosphere.cosmos.error.RepositoryNotPresent
 import com.mesosphere.cosmos.error.TimeoutError
 import com.mesosphere.cosmos.model.StorageEnvelope
+import com.mesosphere.cosmos.model.ZooKeeperUri
 import com.mesosphere.cosmos.repository.DefaultRepositories._
 import com.mesosphere.cosmos.rpc.v1.model.PackageRepository
 import com.netaporter.uri.Uri
@@ -26,14 +27,17 @@ import org.apache.zookeeper.KeeperException
 import org.apache.zookeeper.data.{Stat => ZooKeeperStat}
 
 final class ZkRepositoryList private (
-  zkClient: CuratorFramework
+  zkClient: CuratorFramework,
+  zkUri: ZooKeeperUri
 )(
   implicit statsReceiver: StatsReceiver, timer: Timer
 ) extends PackageSourcesStorage with AutoCloseable {
 
   import ZkRepositoryList._
 
-  private[this] val caching = new NodeCache(zkClient, ZkRepositoryList.PackageRepositoriesPath)
+  private[this] val caching = new NodeCache(
+    zkClient,
+    zkUri.path + ZkRepositoryList.PackageRepositoriesPath)
 
   private[this] val stats = statsReceiver.scope("zkStorage")
 
@@ -123,7 +127,7 @@ final class ZkRepositoryList private (
     zkClient.create.creatingParentsIfNeeded.inBackground(
       new CreateHandler(promise, repositories)
     ).forPath(
-      ZkRepositoryList.PackageRepositoriesPath,
+      zkUri.path + ZkRepositoryList.PackageRepositoriesPath,
       StorageEnvelope.encodeData(repositories)
     )
     returnWithTimeout("Create", "ZooKeeper", promise)
@@ -138,7 +142,7 @@ final class ZkRepositoryList private (
     zkClient.setData().withVersion(stat.getVersion).inBackground(
       new WriteHandler(promise, repositories)
     ).forPath(
-      ZkRepositoryList.PackageRepositoriesPath,
+      zkUri.path + ZkRepositoryList.PackageRepositoriesPath,
       StorageEnvelope.encodeData(repositories)
     )
     returnWithTimeout("Write", "ZooKeeper", promise)
@@ -158,7 +162,7 @@ final class ZkRepositoryList private (
     zkClient.getData().inBackground(
       new ReadHandler(promise)
     ).forPath(
-      ZkRepositoryList.PackageRepositoriesPath
+      zkUri.path + ZkRepositoryList.PackageRepositoriesPath
     )
     returnWithTimeout("Read", "ZooKeeper", promise)
   }
@@ -195,23 +199,24 @@ final class ZkRepositoryList private (
     promise: Promise[T]
   ): Future[T] = {
     Future.sleep(maxWaitTime).map(_ =>
-      throw TimeoutError(operation, destination, s"${maxWaitTime.inSeconds} seconds").exception
+      throw TimeoutError(operation, destination, maxWaitTime).exception
     ).select(promise)
   }
 }
 
 object ZkRepositoryList {
   def apply(
-    zkClient: CuratorFramework
+    zkClient: CuratorFramework,
+    zkUri: ZooKeeperUri
   )(
     implicit statsReceiver: StatsReceiver, timer: Timer
   ): ZkRepositoryList = {
-    val repoList = new ZkRepositoryList(zkClient)
+    val repoList = new ZkRepositoryList(zkClient, zkUri)
     repoList.start()
     repoList
   }
 
-  private val PackageRepositoriesPath: String = "/cosmos/package/repositories"
+  private val PackageRepositoriesPath: String = "/package/repositories"
 
   private[cosmos] def getPredicate(nameOrUri: Ior[String, Uri]): PackageRepository => Boolean = {
     def namePredicate(n: String) = (repo: PackageRepository) => repo.name == n
