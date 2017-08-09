@@ -55,20 +55,21 @@ object Clients {
 
     authInfo.foreach {
       case (_, aclProvider) =>
-        updateAcls(zkClient, aclProvider)
+        updateAcls(zkUri, zkClient, aclProvider)
     }
 
     zkClient
   }
 
   private[this] def updateAcls(
+    zkUri: ZooKeeperUri,
     zkClient: CuratorFramework,
     aclProvider: ACLProvider
   ): Unit = {
     updateAcls(
       zkClient,
       aclProvider,
-      zkClient.getChildren.forPath("/").asScala.toList.map("/" + _)
+      zkClient.getChildren.forPath(zkUri.path).asScala.toList.map(zkUri.path + "/" + _ )
     )
   }
 
