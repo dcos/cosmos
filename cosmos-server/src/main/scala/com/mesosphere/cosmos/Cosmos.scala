@@ -88,7 +88,7 @@ with Logging {
     val zkClient = zookeeper.Clients.createAndInitialize(zkUri)
     onExit(zkClient.close())
 
-    val sourcesStorage = ZkRepositoryList(zkClient)
+    val sourcesStorage = ZkRepositoryList(zkClient, zkUri)
     onExit(sourcesStorage.close())
 
     val universeClient = UniverseClient(adminRouter)
