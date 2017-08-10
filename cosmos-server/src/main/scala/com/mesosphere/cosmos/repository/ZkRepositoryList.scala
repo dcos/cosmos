@@ -37,7 +37,7 @@ final class ZkRepositoryList private (
 
   private[this] val caching = new NodeCache(
     zkClient,
-    zkUri.path + ZkRepositoryList.PackageRepositoriesPath)
+    ZkRepositoryList.getPackageRepositoriesPath(zkUri))
 
   private[this] val stats = statsReceiver.scope("zkStorage")
 
@@ -127,7 +127,7 @@ final class ZkRepositoryList private (
     zkClient.create.creatingParentsIfNeeded.inBackground(
       new CreateHandler(promise, repositories)
     ).forPath(
-      zkUri.path + ZkRepositoryList.PackageRepositoriesPath,
+      ZkRepositoryList.getPackageRepositoriesPath(zkUri),
       StorageEnvelope.encodeData(repositories)
     )
     returnWithTimeout("Create", "ZooKeeper", promise)
@@ -142,7 +142,7 @@ final class ZkRepositoryList private (
     zkClient.setData().withVersion(stat.getVersion).inBackground(
       new WriteHandler(promise, repositories)
     ).forPath(
-      zkUri.path + ZkRepositoryList.PackageRepositoriesPath,
+      ZkRepositoryList.getPackageRepositoriesPath(zkUri),
       StorageEnvelope.encodeData(repositories)
     )
     returnWithTimeout("Write", "ZooKeeper", promise)
@@ -150,7 +150,7 @@ final class ZkRepositoryList private (
 
   private[this] def readFromCache: Future[Option[(ZooKeeperStat, Array[Byte])]] = {
     Future {
-      Option(caching.getCurrentData()).map { data =>
+      Option(caching.getCurrentData).map { data =>
         (data.getStat, data.getData)
       }
     }
@@ -159,10 +159,10 @@ final class ZkRepositoryList private (
   private[this] def readFromZooKeeper: Future[Option[(ZooKeeperStat, Array[Byte])]] = {
     val promise = Promise[Option[(ZooKeeperStat, Array[Byte])]]()
 
-    zkClient.getData().inBackground(
+    zkClient.getData.inBackground(
       new ReadHandler(promise)
     ).forPath(
-      zkUri.path + ZkRepositoryList.PackageRepositoriesPath
+      ZkRepositoryList.getPackageRepositoriesPath(zkUri)
     )
     returnWithTimeout("Read", "ZooKeeper", promise)
   }
@@ -216,7 +216,11 @@ object ZkRepositoryList {
     repoList
   }
 
-  private val PackageRepositoriesPath: String = "/package/repositories"
+  private[this] val PackageRepositoriesPath: String = "/package/repositories"
+
+  private def getPackageRepositoriesPath(zkUri: ZooKeeperUri):String = {
+    zkUri.path + PackageRepositoriesPath
+  }
 
   private[cosmos] def getPredicate(nameOrUri: Ior[String, Uri]): PackageRepository => Boolean = {
     def namePredicate(n: String) = (repo: PackageRepository) => repo.name == n
