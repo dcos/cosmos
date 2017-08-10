@@ -18,14 +18,18 @@ object CosmosResponse {
     if (response.status.code / 100 == 2) {
       decode[Res](response.contentString) match {
         case Left(_) =>
-          Matchers.fail("Could not decode as successful response: " + response.contentString)
+          val status = response.status
+          val content = response.contentString
+          Matchers.fail(s"Could not decode as successful response ($status): '$content'")
         case Right(successfulResponse) =>
           SuccessCosmosResponse(successfulResponse)
       }
     } else {
       decode[rpc.v1.model.ErrorResponse](response.contentString) match {
         case Left(_) =>
-          Matchers.fail("Could not decode as error response: " + response.contentString)
+          val status = response.status
+          val content = response.contentString
+          Matchers.fail(s"Could not decode as error response ($status): '$content'")
         case Right(errorResponse) =>
           ErrorCosmosResponse(response.status, errorResponse)
       }

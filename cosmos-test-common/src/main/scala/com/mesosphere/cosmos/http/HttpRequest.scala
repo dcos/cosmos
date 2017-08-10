@@ -23,7 +23,7 @@ object TestContext {
 
     TestContext(
       // TODO: replace getOrElse with get
-      Option(System.getProperty(property)).map(_.toBoolean).getOrElse(false)
+      Option(System.getProperty(property)).map(_.toBoolean).getOrElse(true)
     )
   }
 }
