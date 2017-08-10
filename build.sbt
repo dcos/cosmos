@@ -38,7 +38,6 @@ lazy val server = project.in(file("cosmos-server"))
     name := baseDirectory.value.name,
     libraryDependencies ++=
       Deps.bijectionUtil ++
-      Deps.circe ++
       Deps.curator ++
       Deps.logback ++
       Deps.mustache ++
@@ -59,9 +58,7 @@ lazy val testCommon = project.in(file("cosmos-test-common"))
     libraryDependencies ++=
       Deps.curator ++
       Deps.mockito ++
-      Deps.scalaCheck ++
-      Deps.scalaCheckShapeless ++
-      Deps.scalaTest
+      Deps.scalaCheckShapeless
   )
   .dependsOn(
     server
