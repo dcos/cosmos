@@ -36,9 +36,8 @@ final class ServiceUninstaller(
     work.rescue {
       case ex if retries > 0  =>
         if (!ex.isInstanceOf[PredicateDoesNotObtain]) {
-          logger.info(s"Uninstall attempt for $appId didn't finish. $retries retries left.",
-            ex.getClass.getSimpleName,
-            ex.getMessage)
+          logger.info(s"Uninstall attempt for $appId didn't finish. $retries retries left." +
+            s" Type name: ${ex.getClass.getSimpleName}; Message: ${ex.getMessage}")
         }
 
         Future.sleep(
