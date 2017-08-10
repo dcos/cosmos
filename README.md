@@ -103,7 +103,7 @@ sbt -Dcom.mesosphere.cosmos.dcosUri=<dcos-host-url> \
     clean it:test
 ```
 
-3. Run the integration tests against an already Cosmos configure to controls a DC/OS cluster. This
+3. Run the integration tests against a Cosmos already configured to control a DC/OS cluster. This
 configuration can be enabled by setting the `com.mesosphere.cosmos.dcosUri`,
 `com.mesosphere.cosmos.boot=false` and
 `com.mesosphere.cosmos.test.CosmosIntegrationTestClient.CosmosClient.uri` system properties.
