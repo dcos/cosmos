@@ -29,8 +29,6 @@ object Requests {
     version: Option[universe.v2.model.PackageDetailsVersion] = None,
     options: Option[JsonObject] = None,
     appId: Option[AppId] = None
-  )(
-    implicit testContext: TestContext
   ): rpc.v1.model.InstallResponse = {
     callEndpoint[rpc.v1.model.InstallResponse](
       CosmosRequests.packageInstallV1(
@@ -49,8 +47,6 @@ object Requests {
     version: Option[universe.v2.model.PackageDetailsVersion] = None,
     options: Option[JsonObject] = None,
     appId: Option[AppId] = None
-  )(
-    implicit testContext: TestContext
   ): rpc.v2.model.InstallResponse = {
     callEndpoint[rpc.v2.model.InstallResponse](
       CosmosRequests.packageInstallV2(
@@ -68,8 +64,6 @@ object Requests {
     name: String,
     appId: Option[AppId] = None,
     all: Option[Boolean] = None
-  )(
-    implicit testContext: TestContext
   ): rpc.v1.model.UninstallResponse = {
     callEndpoint[rpc.v1.model.UninstallResponse](
       CosmosRequests.packageUninstall(
@@ -83,8 +77,6 @@ object Requests {
   }
 
   def listRepositories(
-  )(
-    implicit testContext: TestContext
   ): List[rpc.v1.model.PackageRepository] = {
     callEndpoint[rpc.v1.model.PackageRepositoryListResponse](
       CosmosRequests.packageRepositoryList
@@ -94,8 +86,6 @@ object Requests {
   def listPackages(
     name: Option[String] = None,
     appId: Option[AppId] = None
-  )(
-    implicit testContext: TestContext
   ): List[rpc.v1.model.Installation] = {
     callEndpoint[rpc.v1.model.ListResponse](
       CosmosRequests.packageList(
@@ -110,8 +100,6 @@ object Requests {
   def getHighestReleaseVersion(
     name: String,
     includePackageVersions: Boolean
-  )(
-    implicit testContext: TestContext
   ): Option[(universe.v2.model.PackageDetailsVersion, universe.v2.model.ReleaseVersion)] = {
     listPackageVersions(name, includePackageVersions)
       .results.toList.sortBy(_._2.toString.toInt).reverse.headOption
@@ -120,8 +108,6 @@ object Requests {
   def listPackageVersions(
     name: String,
     includePackageVersions: Boolean
-  )(
-    implicit testContext: TestContext
   ): rpc.v1.model.ListVersionsResponse = {
     callEndpoint[ListVersionsResponse](
       CosmosRequests.packageListVersions(
@@ -135,8 +121,6 @@ object Requests {
   def deleteRepository(
     name: Option[String] = None,
     uri: Option[Uri] = None
-  )(
-    implicit testContext: TestContext
   ): rpc.v1.model.PackageRepositoryDeleteResponse = {
     callEndpoint[rpc.v1.model.PackageRepositoryDeleteResponse](
       CosmosRequests.packageRepositoryDelete(
@@ -152,8 +136,6 @@ object Requests {
     name: String,
     uri: Uri,
     index: Option[Int] = None
-  )(
-    implicit testContext: TestContext
   ): rpc.v1.model.PackageRepositoryAddResponse = {
     callEndpoint[rpc.v1.model.PackageRepositoryAddResponse](
       CosmosRequests.packageRepositoryAdd(
@@ -183,8 +165,6 @@ object Requests {
   def describePackage(
     name: String,
     version: Option[universe.v2.model.PackageDetailsVersion]
-  )(
-    implicit testContext: TestContext
   ): rpc.v3.model.DescribeResponse = {
     callEndpoint[rpc.v3.model.DescribeResponse](
       CosmosRequests.packageDescribeV3(
@@ -198,8 +178,6 @@ object Requests {
 
   def getRepository(
     name: String
-  )(
-    implicit testContext: TestContext
   ): Option[rpc.v1.model.PackageRepository] = {
     listRepositories().find(_.name == name)
   }

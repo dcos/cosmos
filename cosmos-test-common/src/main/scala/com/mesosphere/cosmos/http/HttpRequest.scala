@@ -48,13 +48,9 @@ final case class ServiceRpcPath(
 
 final case class PackageRpcPath(
   action: String
-)(
-  implicit testContext: TestContext
 ) extends RpcPath {
   override def path: String = {
-    // The path is always /package/...
-    // TODO: Fix this...
-    if (testContext.direct) s"/package/$action" else s"/package/$action"
+    s"/package/$action"
   }
 }
 

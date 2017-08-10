@@ -2,7 +2,6 @@ package com.mesosphere.cosmos
 
 import _root_.io.circe.jawn._
 import com.mesosphere.cosmos.http.CosmosRequests
-import com.mesosphere.cosmos.http.TestContext
 import com.mesosphere.cosmos.rpc.v1.circe.Decoders._
 import com.mesosphere.cosmos.rpc.v1.model.SearchRequest
 import com.mesosphere.cosmos.rpc.v1.model.SearchResponse
@@ -17,8 +16,6 @@ import org.scalatest.prop.TableDrivenPropertyChecks
 final class PackageSearchSpec extends FreeSpec {
 
   import PackageSearchSpec._
-
-  private[this] implicit val testContext = TestContext.fromSystemProperties()
 
   "The package search endpoint can successfully find packages" - {
     "by term" in {

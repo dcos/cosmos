@@ -16,41 +16,29 @@ object CosmosRequests {
 
   def packageDescribeV2(
     describeRequest: rpc.v1.model.DescribeRequest
-  )(
-    implicit testContext: TestContext
   ): HttpRequest = {
     packageDescribe(describeRequest, accept = rpc.MediaTypes.V2DescribeResponse)
   }
 
   def packageDescribeV3(
     describeRequest: rpc.v1.model.DescribeRequest
-  )(
-    implicit testContext: TestContext
   ): HttpRequest = {
     packageDescribe(describeRequest, accept = rpc.MediaTypes.V3DescribeResponse)
   }
 
   def packageInstallV1(
     installRequest: rpc.v1.model.InstallRequest
-  )(
-    implicit testContext: TestContext
   ): HttpRequest = {
     packageInstall(installRequest, accept = rpc.MediaTypes.V1InstallResponse)
   }
 
   def packageInstallV2(
     installRequest: rpc.v1.model.InstallRequest
-  )(
-    implicit testContext: TestContext
   ): HttpRequest = {
     packageInstall(installRequest, accept = rpc.MediaTypes.V2InstallResponse)
   }
 
-  def packageList(
-    listRequest: rpc.v1.model.ListRequest
-  )(
-    implicit testContext: TestContext
-  ): HttpRequest = {
+  def packageList(listRequest: rpc.v1.model.ListRequest): HttpRequest = {
     HttpRequest.post(
       PackageRpcPath("list"),
       listRequest,
@@ -59,11 +47,7 @@ object CosmosRequests {
     )
   }
 
-  def packageListVersions(
-    listVersionsRequest: rpc.v1.model.ListVersionsRequest
-  )(
-    implicit testContext: TestContext
-  ): HttpRequest = {
+  def packageListVersions(listVersionsRequest: rpc.v1.model.ListVersionsRequest): HttpRequest = {
     HttpRequest.post(
       path = PackageRpcPath("list-versions"),
       body = listVersionsRequest,
@@ -72,11 +56,7 @@ object CosmosRequests {
     )
   }
 
-  def packageRender(
-    renderRequest: RenderRequest
-  )(
-    implicit testContext: TestContext
-  ): HttpRequest = {
+  def packageRender(renderRequest: RenderRequest): HttpRequest = {
     HttpRequest.post(
       path = PackageRpcPath("render"),
       body = renderRequest,
@@ -85,11 +65,7 @@ object CosmosRequests {
     )
   }
 
-  def packageSearch(
-    searchRequest: rpc.v1.model.SearchRequest
-  )(
-    implicit testContext: TestContext
-  ): HttpRequest = {
+  def packageSearch(searchRequest: rpc.v1.model.SearchRequest): HttpRequest = {
     HttpRequest.post(
       path = PackageRpcPath("search"),
       body = searchRequest,
@@ -100,8 +76,6 @@ object CosmosRequests {
 
   def packageRepositoryAdd(
     repositoryAddRequest: rpc.v1.model.PackageRepositoryAddRequest
-  )(
-    implicit testContext: TestContext
   ): HttpRequest = {
     HttpRequest.post(
       path = PackageRpcPath("repository/add"),
@@ -113,8 +87,6 @@ object CosmosRequests {
 
   def packageRepositoryDelete(
     repositoryDeleteRequest: rpc.v1.model.PackageRepositoryDeleteRequest
-  )(
-    implicit testContext: TestContext
   ): HttpRequest = {
     HttpRequest.post(
       path = PackageRpcPath("repository/delete"),
@@ -124,7 +96,7 @@ object CosmosRequests {
     )
   }
 
-  def packageRepositoryList(implicit testContext: TestContext): HttpRequest = {
+  def packageRepositoryList: HttpRequest = {
     HttpRequest.post(
       path = PackageRpcPath("repository/list"),
       body = PackageRepositoryListRequest(),
@@ -133,11 +105,7 @@ object CosmosRequests {
     )
   }
 
-  def packageUninstall(
-    uninstallRequest: rpc.v1.model.UninstallRequest
-  )(
-    implicit testContext: TestContext
-  ): HttpRequest = {
+  def packageUninstall(uninstallRequest: rpc.v1.model.UninstallRequest): HttpRequest = {
     HttpRequest.post(
       path = PackageRpcPath("uninstall"),
       body = uninstallRequest,
@@ -162,8 +130,6 @@ object CosmosRequests {
   private def packageDescribe(
     describeRequest: rpc.v1.model.DescribeRequest,
     accept: MediaType
-  )(
-    implicit testContext: TestContext
   ): HttpRequest = {
     HttpRequest.post(
       path = PackageRpcPath("describe"),
@@ -176,8 +142,6 @@ object CosmosRequests {
   private def packageInstall(
     installRequest: rpc.v1.model.InstallRequest,
     accept: MediaType
-  )(
-    implicit testContext: TestContext
   ): HttpRequest = {
     HttpRequest.post(
       path = PackageRpcPath("install"),

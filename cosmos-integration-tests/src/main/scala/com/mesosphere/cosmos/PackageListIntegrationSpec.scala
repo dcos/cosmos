@@ -2,7 +2,6 @@ package com.mesosphere.cosmos
 
 import com.mesosphere.cosmos.ItOps._
 import com.mesosphere.cosmos.converter.Response._
-import com.mesosphere.cosmos.http.TestContext
 import com.mesosphere.cosmos.thirdparty.marathon.model.AppId
 import com.mesosphere.cosmos.util.RoundTrip
 import com.twitter.bijection.Conversion.asMethod
@@ -11,7 +10,6 @@ import org.scalatest.FeatureSpec
 import org.scalatest.Matchers
 
 final class PackageListIntegrationSpec extends FeatureSpec with Matchers {
-  private[this] implicit val testContext = TestContext.fromSystemProperties()
 
   feature("The package/list endpoint") {
     scenario("should list installed packages") {

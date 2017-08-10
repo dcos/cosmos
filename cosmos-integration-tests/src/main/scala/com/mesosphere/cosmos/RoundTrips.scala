@@ -1,6 +1,5 @@
 package com.mesosphere.cosmos
 
-import com.mesosphere.cosmos.http.TestContext
 import com.mesosphere.cosmos.thirdparty.marathon.model.AppId
 import com.mesosphere.cosmos.util.RoundTrip
 import com.mesosphere.universe
@@ -14,8 +13,6 @@ object RoundTrips {
     version: Option[universe.v2.model.PackageDetailsVersion] = None,
     options: Option[JsonObject] = None,
     appId: Option[AppId] = None
-  )(
-    implicit testContext: TestContext
   ): RoundTrip[rpc.v1.model.InstallResponse] = {
     RoundTrip(
       Requests.installV1(name, version, options, appId)
@@ -28,8 +25,6 @@ object RoundTrips {
   def withDeletedRepository(
     name: Option[String] = None,
     uri: Option[Uri] = None
-  )(
-    implicit testContext: TestContext
   ): RoundTrip[rpc.v1.model.PackageRepositoryDeleteResponse] = {
     RoundTrip.lift {
       val repos = Requests.listRepositories()
@@ -46,8 +41,6 @@ object RoundTrips {
     name: String,
     uri: Uri,
     index: Option[Int] = None
-  )(
-    implicit testContext: TestContext
   ): RoundTrip[rpc.v1.model.PackageRepositoryAddResponse] = {
     RoundTrip(
       Requests.addRepository(name, uri, index))(_ =>
@@ -60,8 +53,6 @@ object RoundTrips {
     uri: Option[Uri],
     oldRepo: Option[rpc.v1.model.PackageRepository],
     oldIndex: Option[Int]
-  )(
-    implicit testContext: TestContext
   ): RoundTrip[rpc.v1.model.PackageRepositoryDeleteResponse] = {
     RoundTrip(
       Requests.deleteRepository(name, uri)

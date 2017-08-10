@@ -6,7 +6,6 @@ import com.mesosphere.cosmos.error.PackageAlreadyInstalled
 import com.mesosphere.cosmos.error.PackageNotFound
 import com.mesosphere.cosmos.error.ServiceMarathonTemplateNotFound
 import com.mesosphere.cosmos.error.VersionNotFound
-import com.mesosphere.cosmos.http.TestContext
 import com.mesosphere.cosmos.rpc.v1.model.ErrorResponse
 import com.mesosphere.cosmos.thirdparty.marathon.model._
 import com.mesosphere.universe
@@ -17,7 +16,6 @@ import org.scalatest.FeatureSpec
 import org.scalatest.Matchers
 
 final class PackageInstallIntegrationSpec extends FeatureSpec with Matchers {
-  private[this] implicit val testContext = TestContext.fromSystemProperties()
 
   feature("The package/install endpoint") {
     scenario("should store the correct labels") {

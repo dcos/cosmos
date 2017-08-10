@@ -1,6 +1,5 @@
 package com.mesosphere.cosmos
 
-import com.mesosphere.cosmos.http.TestContext
 import com.netaporter.uri.dsl._
 import org.scalatest.BeforeAndAfterAll
 import org.scalatest.Suites
@@ -20,8 +19,6 @@ final class IntegrationTestsSpec extends Suites(
   new handler.UninstallHandlerSpec,
   new rpc.v1.model.ErrorResponseSpec
 ) with BeforeAndAfterAll {
-
-  private[this] implicit val testContext = TestContext.fromSystemProperties()
 
   private[this] val universeUri = "https://downloads.mesosphere.com/universe/02493e40f8564a39446d06c002f8dcc8e7f6d61f/repo-up-to-1.8.json"
 

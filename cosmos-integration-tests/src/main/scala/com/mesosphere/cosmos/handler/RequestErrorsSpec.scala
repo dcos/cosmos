@@ -3,7 +3,6 @@ package com.mesosphere.cosmos.handler
 import com.mesosphere.cosmos.http.CompoundMediaTypeParser
 import com.mesosphere.cosmos.http.HttpRequest
 import com.mesosphere.cosmos.http.PackageRpcPath
-import com.mesosphere.cosmos.http.TestContext
 import com.mesosphere.cosmos.rpc.MediaTypes
 import com.mesosphere.cosmos.rpc.v1.model.PackageRepositoryAddRequest
 import com.mesosphere.cosmos.test.CosmosIntegrationTestClient._
@@ -18,7 +17,6 @@ import org.scalatest.FreeSpec
 import scala.util.Right
 
 class RequestErrorsSpec extends FreeSpec {
-  private[this] implicit val testContext = TestContext.fromSystemProperties()
 
   "Cosmos Error Handling" - {
     "Applicative handling" - {

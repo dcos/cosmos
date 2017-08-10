@@ -4,7 +4,6 @@ import _root_.io.circe.Json
 import com.mesosphere.cosmos.circe.Decoders.decode
 import com.mesosphere.cosmos.circe.Decoders.parse
 import com.mesosphere.cosmos.http.CosmosRequests
-import com.mesosphere.cosmos.http.TestContext
 import com.mesosphere.cosmos.test.CosmosIntegrationTestClient.CosmosClient
 import com.mesosphere.universe
 import com.mesosphere.universe.v3.syntax.PackageDefinitionOps._
@@ -20,8 +19,6 @@ final class PackageDescribeSpec
   extends FreeSpec with TableDrivenPropertyChecks with Matchers {
 
   import PackageDescribeSpec._
-
-  private[this] implicit val testContext = TestContext.fromSystemProperties()
 
   "The package describe endpoint" - {
     "returns an error when package w/ version not found" in {

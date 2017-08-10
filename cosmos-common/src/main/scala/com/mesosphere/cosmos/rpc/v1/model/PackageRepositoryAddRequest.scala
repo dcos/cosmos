@@ -8,7 +8,5 @@ import io.circe.generic.semiauto.deriveEncoder
 case class PackageRepositoryAddRequest(name: String, uri: Uri, index: Option[Int] = None)
 
 object PackageRepositoryAddRequest {
-  implicit val encoder: Encoder[PackageRepositoryAddRequest] = {
-    deriveEncoder[PackageRepositoryAddRequest]
-  }
+  implicit val encoder: Encoder[PackageRepositoryAddRequest] = deriveEncoder
 }

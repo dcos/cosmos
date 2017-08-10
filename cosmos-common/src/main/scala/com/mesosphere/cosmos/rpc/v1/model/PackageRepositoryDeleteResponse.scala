@@ -6,7 +6,5 @@ import io.circe.generic.semiauto.deriveDecoder
 case class PackageRepositoryDeleteResponse(repositories: Seq[PackageRepository])
 
 object PackageRepositoryDeleteResponse {
-  implicit val decoder: Decoder[PackageRepositoryDeleteResponse] = {
-    deriveDecoder[PackageRepositoryDeleteResponse]
-  }
+  implicit val decoder: Decoder[PackageRepositoryDeleteResponse] = deriveDecoder
 }

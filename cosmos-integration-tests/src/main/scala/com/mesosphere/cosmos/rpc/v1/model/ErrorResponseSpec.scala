@@ -2,7 +2,6 @@ package com.mesosphere.cosmos.rpc.v1.model
 
 import com.mesosphere.cosmos.http.HttpRequest
 import com.mesosphere.cosmos.http.PackageRpcPath
-import com.mesosphere.cosmos.http.TestContext
 import com.mesosphere.cosmos.rpc.MediaTypes
 import com.mesosphere.cosmos.test.CosmosIntegrationTestClient._
 import com.twitter.finagle.http.Fields
@@ -11,7 +10,6 @@ import io.circe.jawn._
 import org.scalatest.FreeSpec
 
 final class ErrorResponseSpec extends FreeSpec {
-  private[this] implicit val testContext = TestContext.fromSystemProperties()
 
   "An ErrorResponse should be returned as the body when a request can't be parsed" in {
     val request = HttpRequest.post(
