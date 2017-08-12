@@ -74,8 +74,6 @@ lazy val integrationTests = project.in(file("cosmos-integration-tests"))
     name := baseDirectory.value.name,
     testOptions in IntegrationTest ++= BuildPlugin.itTestOptions(
       javaHomeValue = (javaHome in run).value,
-      // The resources we need are in src/main/resources
-      classpathPrefix = (resourceDirectories in Compile).value,
       // The one-JAR to use is produced by cosmos-server
       oneJarValue = (oneJar in server).value,
       // No additional properties needed for these tests
