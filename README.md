@@ -68,15 +68,15 @@ being forked before the integration suite is ran.
 #### Running the tests
 
 The integration tests support three ways of configuring the tests. This is done using the following
-system propertyes:
+system properties:
 
 1. `com.mesosphere.cosmos.dcosUri` - Location of the DC/OS cluster as an HTTP URL.
-1. `com.mesosphere.cosmos.boot` - If `true` or defined the integration tests will automatically
+1. `com.mesosphere.cosmos.boot` - If `true` or undefined the integration tests will automatically
 execute the Cosmos defined in this repository. If `false` then the integration tests will not
 execute a Cosmos.
 1. `com.mesosphere.cosmos.test.CosmosIntegrationTestClient.CosmosClient.uri` - This property is not
-required. If set to a URL, it will override the default value. The integration test assume that the
-Cosmos describe in this system property is configure to control the same cluster describe in
+required. If set to a URL, it will override the default value. The integration tests assume that
+the Cosmos described in this system property is configured to control the same cluster described in
 `com.mesosphere.cosmos.dcosUri`
 
 ##### Example configurations
