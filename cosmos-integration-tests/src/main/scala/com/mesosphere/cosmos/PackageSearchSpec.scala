@@ -8,11 +8,10 @@ import com.mesosphere.cosmos.rpc.v1.model.SearchResponse
 import com.mesosphere.cosmos.rpc.v1.model.SearchResult
 import com.mesosphere.cosmos.test.CosmosIntegrationTestClient.CosmosClient
 import com.mesosphere.universe
-import com.twitter.finagle.http._
+import com.twitter.finagle.http.Status
 import org.scalatest.Assertion
 import org.scalatest.FreeSpec
 import org.scalatest.prop.TableDrivenPropertyChecks
-import scala.util.Right
 
 final class PackageSearchSpec extends FreeSpec {
 
@@ -40,7 +39,7 @@ final class PackageSearchSpec extends FreeSpec {
     }
   }
 
-  private[cosmos] def searchAndAssert(
+  private def searchAndAssert(
     query: String,
     status: Status,
     expectedResponse: SearchResponse

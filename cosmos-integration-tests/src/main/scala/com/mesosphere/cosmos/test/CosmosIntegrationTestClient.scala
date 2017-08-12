@@ -11,26 +11,18 @@ import com.mesosphere.cosmos.dcosUri
 import com.mesosphere.cosmos.http.Authorization
 import com.mesosphere.cosmos.http.HttpRequest
 import com.mesosphere.cosmos.http.RequestSession
-import com.mesosphere.cosmos.rpc.v1.model._
 import com.netaporter.uri.Uri
 import com.netaporter.uri.dsl._
 import com.twitter.conversions.storage._
 import com.twitter.finagle.Service
 import com.twitter.finagle.SimpleFilter
-import com.twitter.finagle.http.Status
 import com.twitter.finagle.http._
 import com.twitter.util.Await
 import com.twitter.util.Future
 import com.twitter.util.Try
-import io.circe.Decoder
-import io.circe.jawn._
 import java.util.concurrent.atomic.AtomicInteger
 import org.scalatest.Matchers
-import org.slf4j.Logger
 import org.slf4j.LoggerFactory
-import scala.util.Either
-import scala.util.Left
-import scala.util.Right
 
 object CosmosIntegrationTestClient extends Matchers {
 
@@ -75,25 +67,9 @@ object CosmosIntegrationTestClient extends Matchers {
   )
 
   object CosmosClient {
-    lazy val logger: Logger =
-      LoggerFactory.getLogger("com.mesosphere.cosmos.test.CosmosIntegrationTestClient.CosmosClient")
+    lazy val logger = LoggerFactory.getLogger(getClass())
 
-    val uri: String = getClientProperty("CosmosClient", "uri")
-
-    def call[Res](request: HttpRequest)(implicit
-      decoder: Decoder[Res]
-    ): (Status, Either[ErrorResponse, Res]) = {
-      val response = submit(request)
-      (response.status, toEither(response))
-    }
-
-    def callEndpoint[Res](request: HttpRequest, expectedStatus: Status = Status.Ok)(implicit
-      decoder: Decoder[Res]
-    ): Either[ErrorResponse, Res] = {
-      val response = submit(request)
-      assertResult(expectedStatus)(response.status)
-      toEither(response)
-    }
+    val uri: Uri = getClientProperty("CosmosClient", "uri")
 
     /** Ensures that we create Finagle requests correctly.
       *
@@ -111,28 +87,17 @@ object CosmosIntegrationTestClient extends Matchers {
           req
       }
 
-      val finagleReq = HttpRequest.toFinagle(reqWithAuth)
-      Await.result(client(finagleReq))
-    }
+      val reqWithAuthAndHost = reqWithAuth.copy(
+        headers = reqWithAuth.headers + (Fields.Host -> uri.host.get)
+      )
 
-    private def toEither[Res](response: Response)(implicit
-      decoder: Decoder[Res]
-    ): Either[ErrorResponse, Res] = {
-      if (response.status.code / 100 == 2) {
-        decode[Res](response.contentString) match {
-          case Left(_) => fail("Could not decode as successful response: " + response.contentString)
-          case Right(successfulResponse) => Right(successfulResponse)
-        }
-      } else {
-        decode[ErrorResponse](response.contentString) match {
-          case Left(_) => fail("Could not decode as error response: " + response.contentString)
-          case Right(errorResponse) => Left(errorResponse)
-        }
-      }
+      val finagleReq = HttpRequest.toFinagle(reqWithAuthAndHost)
+      Await.result(client(finagleReq))
     }
 
     // Do not relax the visibility on this -- use `submit()` instead; see its Scaladoc for why
     private[this] val client = {
+      logger.debug(s"Configuring integration test client for $uri")
       Services.httpClient("cosmosIntegrationTestClient", uri, 5.megabytes, RequestLogging).get
     }
 
@@ -152,7 +117,7 @@ object CosmosIntegrationTestClient extends Matchers {
         }
       }
 
-      private[this] def fmtHeaders(h: HeaderMap): String = {
+      private def fmtHeaders(h: HeaderMap): String = {
         h.map {
           case ("Authorization", _) => s"Authorization: ****"
           case (k, v) => s"$k: $v"
@@ -161,7 +126,7 @@ object CosmosIntegrationTestClient extends Matchers {
     }
   }
 
-  def getClientProperty(clientName: String, key: String): String = {
+  private def getClientProperty(clientName: String, key: String): String = {
     val property = s"com.mesosphere.cosmos.test.CosmosIntegrationTestClient.$clientName.$key"
       Option(System.getProperty(property))
         .getOrElse(throw new AssertionError(s"Missing system property '$property' "))

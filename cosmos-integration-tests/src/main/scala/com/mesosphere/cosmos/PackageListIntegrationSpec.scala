@@ -10,6 +10,7 @@ import org.scalatest.FeatureSpec
 import org.scalatest.Matchers
 
 final class PackageListIntegrationSpec extends FeatureSpec with Matchers {
+
   feature("The package/list endpoint") {
     scenario("should list installed packages") {
       RoundTrips.withInstallV1("helloworld").runWith { ir =>

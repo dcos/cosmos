@@ -172,11 +172,15 @@ final class UninstallHandlerSpec extends FreeSpec with Eventually with SpanSugar
 
 object UninstallHandlerSpec {
 
-  def submitInstallRequest(installRequest: InstallRequest): Response = {
+  def submitInstallRequest(
+    installRequest: InstallRequest
+  ): Response = {
     CosmosClient.submit(CosmosRequests.packageInstallV1(installRequest))
   }
 
-  def submitUninstallRequest(uninstallRequest: UninstallRequest): Response = {
+  def submitUninstallRequest(
+    uninstallRequest: UninstallRequest
+  ): Response = {
     CosmosClient.submit(CosmosRequests.packageUninstall(uninstallRequest))
   }
 

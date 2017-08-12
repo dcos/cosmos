@@ -16,6 +16,7 @@ import org.scalatest.FeatureSpec
 import org.scalatest.Matchers
 
 final class PackageInstallIntegrationSpec extends FeatureSpec with Matchers {
+
   feature("The package/install endpoint") {
     scenario("should store the correct labels") {
       val name = "helloworld"

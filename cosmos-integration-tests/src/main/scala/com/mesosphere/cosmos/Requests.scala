@@ -1,7 +1,9 @@
 package com.mesosphere.cosmos
 
 import com.mesosphere.cosmos.http.CosmosRequests
+import com.mesosphere.cosmos.http.CosmosResponse
 import com.mesosphere.cosmos.http.HttpRequest
+import com.mesosphere.cosmos.http.TestContext
 import com.mesosphere.cosmos.rpc.v1.circe.Decoders._
 import com.mesosphere.cosmos.rpc.v1.model.ListVersionsResponse
 import com.mesosphere.cosmos.rpc.v2.circe.Decoders._
@@ -130,18 +132,6 @@ object Requests {
     )
   }
 
-  def callEndpoint[Res](request: HttpRequest)(implicit
-    decoder: Decoder[Res]
-  ): Res = {
-    val (status, response) = CosmosClient.call[Res](request)
-    response match {
-      case Left(errorResponse) =>
-        throw HttpErrorResponse(status, errorResponse)
-      case Right(res) =>
-        res
-    }
-  }
-
   def addRepository(
     name: String,
     uri: Uri,
@@ -160,6 +150,8 @@ object Requests {
 
   def describeService(
     appId: AppId
+  )(
+    implicit testContext: TestContext
   ): rpc.v1.model.ServiceDescribeResponse = {
     callEndpoint[rpc.v1.model.ServiceDescribeResponse](
       CosmosRequests.serviceDescribe(
@@ -216,6 +208,14 @@ object Requests {
     Await.result {
       CosmosIntegrationTestClient.adminRouter.listDeployments()
     }
+  }
+
+  private def callEndpoint[Res: Decoder](request: HttpRequest): Res = {
+    submit[Res](request).get
+  }
+
+  private def submit[Res: Decoder](request: HttpRequest): CosmosResponse[Res] = {
+    CosmosResponse[Res](CosmosClient.submit(request))
   }
 
 }

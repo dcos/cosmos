@@ -74,23 +74,12 @@ lazy val integrationTests = project.in(file("cosmos-integration-tests"))
     name := baseDirectory.value.name,
     testOptions in IntegrationTest ++= BuildPlugin.itTestOptions(
       javaHomeValue = (javaHome in run).value,
-      // The resources we need are in src/main/resources
-      classpathPrefix = (resourceDirectories in Compile).value,
       // The one-JAR to use is produced by cosmos-server
       oneJarValue = (oneJar in server).value,
       // No additional properties needed for these tests
       additionalProperties = Nil,
       streamsValue = (streams in runMain).value
-    ),
-    // Uses (compile in Compile) in addition to (compile in IntegrationTest), the default
-    definedTests in IntegrationTest := {
-      val frameworkMap = (loadedTestFrameworks in IntegrationTest).value
-      val compileAnalysis = (compile in Compile).value
-      val itAnalysis = (compile in IntegrationTest).value
-      val s = (streams in IntegrationTest).value
-      Tests.discover(frameworkMap.values.toList, compileAnalysis, s.log)._1 ++
-        Tests.discover(frameworkMap.values.toList, itAnalysis, s.log)._1
-    }
+    )
   )
   .dependsOn(
     testCommon

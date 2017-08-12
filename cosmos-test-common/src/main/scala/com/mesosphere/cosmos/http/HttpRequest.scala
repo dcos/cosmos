@@ -8,16 +8,12 @@ import io.circe.Encoder
 import io.circe.syntax._
 import io.finch.Input
 
-case class HttpRequest(
+final case class HttpRequest(
   method: Method,
-  path: String,
+  path: RpcPath,
   headers: Map[String, String],
   body: HttpRequestBody
 )
-
-sealed trait HttpRequestBody
-case object NoBody extends HttpRequestBody
-case class Monolithic(data: Buf) extends HttpRequestBody
 
 object HttpRequest {
 
@@ -27,16 +23,16 @@ object HttpRequest {
       .toMap
   }
 
-  def get(path: String, accept: MediaType): HttpRequest = {
+  def get(path: RpcPath, accept: MediaType): HttpRequest = {
     get(path, toHeader(accept))
   }
 
-  def get(path: String, accept: Option[String]): HttpRequest = {
+  def get(path: RpcPath, accept: Option[String]): HttpRequest = {
     HttpRequest(Method.Get, path, collectHeaders(Fields.Accept -> accept), NoBody)
   }
 
   def post[A](
-    path: String,
+    path: RpcPath,
     body: A,
     contentType: MediaType,
     accept: MediaType
@@ -45,7 +41,7 @@ object HttpRequest {
   }
 
   def post(
-    path: String,
+    path: RpcPath,
     body: String,
     contentType: Option[String],
     accept: Option[String]
@@ -55,25 +51,24 @@ object HttpRequest {
   }
 
   def post(
-    path: String,
+    path: RpcPath,
     body: Buf,
     contentType: MediaType,
     accept: MediaType
   ): HttpRequest = {
-    val headers =
-      collectHeaders(Fields.Accept -> toHeader(accept), Fields.ContentType -> toHeader(contentType))
+    val headers = collectHeaders(
+      Fields.Accept -> toHeader(accept),
+      Fields.ContentType -> toHeader(contentType)
+    )
     HttpRequest(Method.Post, path, headers, Monolithic(body))
   }
 
   def toFinagle(cosmosRequest: HttpRequest): Request = {
-    val pathPrefix = if (cosmosRequest.path.startsWith("/")) "" else "/"
-    val absolutePath = pathPrefix + cosmosRequest.path
-
     val finagleRequest = cosmosRequest.body match {
       case NoBody =>
-        Request(absolutePath)
+        Request(cosmosRequest.path.path)
       case Monolithic(buf) =>
-        val req = Request(Method.Post, absolutePath)
+        val req = Request(Method.Post, cosmosRequest.path.path)
         req.content = buf
         req.contentLength = buf.length.toLong
         req

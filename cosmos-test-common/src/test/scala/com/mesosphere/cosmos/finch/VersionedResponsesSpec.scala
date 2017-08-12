@@ -2,6 +2,7 @@ package com.mesosphere.cosmos.finch
 
 import com.mesosphere.cosmos.finch.TestingMediaTypes._
 import com.mesosphere.cosmos.http.HttpRequest
+import com.mesosphere.cosmos.http.RawRpcPath
 import com.mesosphere.cosmos.http.MediaType
 import com.mesosphere.cosmos.http.RequestSession
 import com.twitter.io.Buf
@@ -70,7 +71,7 @@ object VersionedResponsesSpec {
   def buildInput(acceptHeader: MediaType, body: String): Input = {
     HttpRequest.toFinchInput(
       HttpRequest.post(
-        s"http://some.host/${endpointPath.mkString("/")}",
+        RawRpcPath(s"/${endpointPath.mkString("/")}"),
         Buf.Utf8(body),
         applicationJson,
         acceptHeader

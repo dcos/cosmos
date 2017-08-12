@@ -103,7 +103,9 @@ class PackageRenderHandlerSpec extends FreeSpec with Matchers with TableDrivenPr
 
 object PackageRenderHandlerSpec {
 
-  def packageRender(renderRequest: RenderRequest): Response = {
+  def packageRender(
+    renderRequest: RenderRequest
+  ): Response = {
     val request = CosmosRequests.packageRender(renderRequest)
     CosmosClient.submit(request)
   }
