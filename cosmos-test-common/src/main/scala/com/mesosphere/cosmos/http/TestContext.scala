@@ -7,8 +7,7 @@ object TestContext {
     val property = "com.mesosphere.cosmos.test.CosmosIntegrationTestClient.CosmosClient.direct"
 
     TestContext(
-      // TODO: replace getOrElse with get
-      Option(System.getProperty(property)).map(_.toBoolean).getOrElse(true)
+      Option(System.getProperty(property)).map(_.toBoolean).get
     )
   }
 }
