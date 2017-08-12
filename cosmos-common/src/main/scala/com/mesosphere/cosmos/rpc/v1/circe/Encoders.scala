@@ -44,16 +44,6 @@ object Encoders {
   implicit val encodeCapabilitiesResponse: Encoder[CapabilitiesResponse] = deriveEncoder[CapabilitiesResponse]
   implicit val encodeCapability: Encoder[Capability] = deriveEncoder[Capability]
 
-  implicit val encodePackageRepositoryListResponse: Encoder[PackageRepositoryListResponse] = {
-    deriveEncoder[PackageRepositoryListResponse]
-  }
-  implicit val encodePackageRepositoryAddResponse: Encoder[PackageRepositoryAddResponse] = {
-    deriveEncoder[PackageRepositoryAddResponse]
-  }
-  implicit val encodePackageRepositoryDeleteResponse: Encoder[PackageRepositoryDeleteResponse] = {
-    deriveEncoder[PackageRepositoryDeleteResponse]
-  }
-
   implicit val encodePackageCoordinate: Encoder[PackageCoordinate] =
     deriveEncoder[PackageCoordinate]
 

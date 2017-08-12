@@ -43,16 +43,6 @@ object Decoders {
   implicit val decodeCapabilitiesResponse: Decoder[CapabilitiesResponse] = deriveDecoder[CapabilitiesResponse]
   implicit val decodeCapability: Decoder[Capability] = deriveDecoder[Capability]
 
-  implicit val decodePackageRepositoryListRequest: Decoder[PackageRepositoryListRequest] = {
-    deriveDecoder[PackageRepositoryListRequest]
-  }
-  implicit val decodePackageRepositoryAddRequest: Decoder[PackageRepositoryAddRequest] = {
-    deriveDecoder[PackageRepositoryAddRequest]
-  }
-  implicit val decodePackageRepositoryDeleteRequest: Decoder[PackageRepositoryDeleteRequest] = {
-    deriveDecoder[PackageRepositoryDeleteRequest]
-  }
-
   implicit val decodePackageCoordinate: Decoder[PackageCoordinate] =
     deriveDecoder[PackageCoordinate]
 
