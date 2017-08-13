@@ -210,11 +210,11 @@ object Requests {
     }
   }
 
-  private def callEndpoint[Res: Decoder](request: HttpRequest): Res = {
+  def callEndpoint[Res: Decoder](request: HttpRequest): Res = {
     submit[Res](request).get
   }
 
-  private def submit[Res: Decoder](request: HttpRequest): CosmosResponse[Res] = {
+  def submit[Res: Decoder](request: HttpRequest): CosmosResponse[Res] = {
     CosmosResponse[Res](CosmosClient.submit(request))
   }
 
