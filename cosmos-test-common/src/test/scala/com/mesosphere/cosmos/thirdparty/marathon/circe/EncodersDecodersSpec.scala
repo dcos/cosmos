@@ -1,7 +1,5 @@
 package com.mesosphere.cosmos.thirdparty.marathon.circe
 
-import com.mesosphere.cosmos.thirdparty.marathon.circe.Decoders._
-import com.mesosphere.cosmos.thirdparty.marathon.circe.Encoders._
 import com.mesosphere.cosmos.thirdparty.marathon.model.AppId
 import io.circe.Json
 import io.circe.jawn.decode

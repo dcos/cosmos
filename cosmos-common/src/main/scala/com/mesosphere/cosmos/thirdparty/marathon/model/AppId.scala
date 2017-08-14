@@ -1,6 +1,9 @@
 package com.mesosphere.cosmos.thirdparty.marathon.model
 
 import com.netaporter.uri.Uri
+import io.circe.Decoder
+import io.circe.Encoder
+import io.circe.syntax._
 
 /** Normalizes the representation of Marathon app IDs to ensure we can compare them correctly.
   *
@@ -20,5 +23,8 @@ object AppId {
   def apply(s: String): AppId = new AppId(if (s.startsWith("/")) s else "/" + s)
 
   implicit val ordering: Ordering[AppId] = Ordering.by(_.toString)
+
+  implicit val decoder: Decoder[AppId] = Decoder.decodeString.map(apply)
+  implicit val encoder: Encoder[AppId] = Encoder.instance(_.toString.asJson)
 
 }

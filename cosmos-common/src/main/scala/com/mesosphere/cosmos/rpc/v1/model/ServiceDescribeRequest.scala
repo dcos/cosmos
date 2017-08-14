@@ -4,8 +4,6 @@ import com.mesosphere.cosmos.finch.MediaTypedDecoder
 import com.mesosphere.cosmos.finch.MediaTypedEncoder
 import com.mesosphere.cosmos.finch.MediaTypedRequestDecoder
 import com.mesosphere.cosmos.rpc.MediaTypes
-import com.mesosphere.cosmos.thirdparty.marathon.circe.Decoders.decodeAppId
-import com.mesosphere.cosmos.thirdparty.marathon.circe.Encoders.encodeAppId
 import com.mesosphere.cosmos.thirdparty.marathon.model.AppId
 import io.circe.Decoder
 import io.circe.Encoder

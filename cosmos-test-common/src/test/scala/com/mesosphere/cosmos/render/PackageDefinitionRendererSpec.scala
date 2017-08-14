@@ -11,7 +11,6 @@ import com.mesosphere.cosmos.error.MarathonTemplateMustBeJsonObject
 import com.mesosphere.cosmos.error.OptionsNotAllowed
 import com.mesosphere.cosmos.label
 import com.mesosphere.cosmos.model.StorageEnvelope
-import com.mesosphere.cosmos.thirdparty.marathon.circe.Decoders.decodeAppId
 import com.mesosphere.cosmos.thirdparty.marathon.model.AppId
 import com.mesosphere.cosmos.thirdparty.marathon.model.MarathonApp
 import com.mesosphere.universe
