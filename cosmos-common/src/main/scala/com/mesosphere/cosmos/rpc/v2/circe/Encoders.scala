@@ -1,6 +1,5 @@
 package com.mesosphere.cosmos.rpc.v2.circe
 
-import com.mesosphere.cosmos.thirdparty.marathon.circe.Encoders.encodeAppId
 import com.mesosphere.cosmos.rpc
 import com.mesosphere.cosmos.rpc.v2.model.DescribeResponse
 import io.circe.Encoder

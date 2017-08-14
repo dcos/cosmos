@@ -5,7 +5,6 @@ import io.circe.Decoder
 import io.circe.generic.semiauto._
 
 object Decoders {
-  implicit val decodeAppId: Decoder[AppId] = Decoder.decodeString.map(AppId(_))
   implicit val decodeMarathonApp: Decoder[MarathonApp] = deriveDecoder[MarathonApp]
   implicit val decodeMarathonAppContainer: Decoder[MarathonAppContainer] = deriveDecoder[MarathonAppContainer]
   implicit val decodeMarathonAppContainerDocker: Decoder[MarathonAppContainerDocker] = deriveDecoder[MarathonAppContainerDocker]
