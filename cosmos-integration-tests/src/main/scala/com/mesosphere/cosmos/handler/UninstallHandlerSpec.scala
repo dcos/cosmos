@@ -22,6 +22,7 @@ import io.circe.Json
 import io.circe.JsonObject
 import io.circe.jawn._
 import java.util.UUID
+import org.scalatest.Assertion
 import org.scalatest.FreeSpec
 import org.scalatest.concurrent.Eventually
 import org.scalatest.time.SpanSugar
@@ -104,72 +105,94 @@ final class UninstallHandlerSpec extends FreeSpec with Eventually with SpanSugar
     "SDK Based services use custom uninstall behavior" - {
 
       "Be able to uninstall a service in the middle of a Marathon deploy" in {
-        // Install the test fixture.
-        val installRequestOne = InstallRequest(
-          "hello-world",
-          options = Some(JsonObject.singleton("world", Json.fromJsonObject(JsonObject.singleton("count", Json.fromInt(1)))))
-        )
-        val installResponseOne = submitInstallRequest(installRequestOne)
-        assertResult(Status.Ok)(installResponseOne.status)
-
+        val installResponse = installHelloWorld()
+        assertResult(Status.Ok)(installResponse.status)
 
         // Immediately turn around and try to uninstall it, while it's still being initially deployed.
-        val uninstallRequestOne = UninstallRequest("hello-world", appId = Option(AppId("/hello-world")), Some(false))
-        val uninstallResponseOne = submitUninstallRequest(uninstallRequestOne)
-        assertResult(Status.Ok)(uninstallResponseOne.status)
-        assertResult(MediaTypes.UninstallResponse.show)(uninstallResponseOne.headerMap(Fields.ContentType))
+        assertUninstallRequest(HelloWorldPackageName, Some(HelloWorldAppId))
 
-        // Wait for the service to be deleted.
-        eventually(timeout(10 minutes), interval(10 seconds)) {
-          val exception = intercept[CosmosException](
-            Await.result(adminRouter.getApp(AppId("/hello-world")))
-          )
-
-          exception.error shouldBe a[MarathonAppNotFound]
-        }
+        waitUntilDeleted(HelloWorldAppId)
       }
 
       "be able to uninstall SDK packages after a second uninstall while the first is in progress" in {
-        val installRequest = InstallRequest(
-          "hello-world",
-          options = Some(JsonObject.singleton("world", Json.fromJsonObject(JsonObject.singleton("count", Json.fromInt(1)))))
-        )
-        val installResponse = submitInstallRequest(installRequest)
+        val installResponse = installHelloWorld()
         assertResult(Status.Ok)(installResponse.status)
 
-        // Wait for the service to deploy.
-        eventually(timeout(10 minutes), interval(10 seconds)) {
-          assertResult(Status.Ok)(
-            Await.result(
-              adminRouter.getSdkServicePlanStatus(AppId("hello-world"), "v1", "deploy")
-            ).status
-          )
-        }
-
-        val uninstallRequest = UninstallRequest("hello-world", appId = None, Some(false))
-        val uninstallResponse = submitUninstallRequest(uninstallRequest)
-        assertResult(Status.Ok)(uninstallResponse.status)
-        assertResult(MediaTypes.UninstallResponse.show)(uninstallResponse.headerMap(Fields.ContentType))
+        waitUntilDeployed(HelloWorldAppId)
+        assertUninstallRequest(HelloWorldPackageName, appId = None)
 
         // Try a second uninstall request
-        val secondResponse = submitUninstallRequest(uninstallRequest)
-        assertResult(Status.Ok)(secondResponse.status)
-        assertResult(MediaTypes.UninstallResponse.show)(secondResponse.headerMap(Fields.ContentType))
+        assertUninstallRequest(HelloWorldPackageName, appId = None)
 
         // Wait for the service to be deleted.
-        eventually(timeout(10 minutes), interval(10 seconds)) {
-          val exception = intercept[CosmosException](
-            Await.result(adminRouter.getApp(AppId("/hello-world")))
-          )
-
-          exception.error shouldBe a[MarathonAppNotFound]
-        }
+        waitUntilDeleted(HelloWorldAppId)
       }
+
+      "DCOS-17237: cancel pending uninstalls if their Marathon apps get deleted" in {
+        val installResponseOne = installHelloWorld()
+        assertResult(Status.Ok)(installResponseOne.status)
+
+        waitUntilDeployed(HelloWorldAppId)
+
+        // Make two uninstall requests, to queue one up for later
+        assertUninstallRequest(HelloWorldPackageName, appId = Some(HelloWorldAppId))
+        assertUninstallRequest(HelloWorldPackageName, appId = Some(HelloWorldAppId))
+
+        // Reinstall after deletion
+        waitUntilDeleted(HelloWorldAppId)
+        val installResponseTwo = installHelloWorld()
+        assertResult(Status.Ok)(installResponseTwo.status)
+
+        waitUntilDeployed(HelloWorldAppId)
+
+        // Confirm that the reinstalled package does not get deleted
+        Thread.sleep(30.seconds.toMillis)
+        Await.result(adminRouter.getApp(HelloWorldAppId))
+      }
+
     }
   }
+
+  def waitUntilDeployed(appId: AppId): Assertion = {
+    eventually(timeout(10.minutes), interval(10.seconds)) {
+      val statusFuture = adminRouter.getSdkServicePlanStatus(appId, "v1", "deploy")
+
+      assertResult(Status.Ok)(Await.result(statusFuture).status)
+    }
+  }
+
+  def assertUninstallRequest(packageName: String, appId: Option[AppId]): Assertion = {
+    val uninstallRequest = UninstallRequest(packageName, appId, Some(false))
+    val uninstallResponse = submitUninstallRequest(uninstallRequest)
+
+    assertResult(Status.Ok)(uninstallResponse.status)
+    assertResult(MediaTypes.UninstallResponse.show)(uninstallResponse.headerMap(Fields.ContentType))
+  }
+
+  def waitUntilDeleted(appId: AppId): Assertion = {
+    eventually(timeout(10.minutes), interval(10.seconds)) {
+      val exception = intercept[CosmosException](Await.result(adminRouter.getApp(appId)))
+
+      exception.error shouldBe a[MarathonAppNotFound]
+    }
+  }
+
 }
 
 object UninstallHandlerSpec {
+
+  val HelloWorldPackageName: String = "hello-world"
+  val HelloWorldAppId: AppId = AppId(HelloWorldPackageName)
+
+  def installHelloWorld(): Response = {
+    val options = JsonObject.singleton(
+      "world",
+      Json.fromJsonObject(JsonObject.singleton("count", Json.fromInt(1)))
+    )
+
+    val request = InstallRequest(HelloWorldPackageName, options = Some(options))
+    submitInstallRequest(request)
+  }
 
   def submitInstallRequest(
     installRequest: InstallRequest
