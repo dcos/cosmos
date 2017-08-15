@@ -135,7 +135,7 @@ The following table outlines which version of Cosmos is bundled with each versio
 | &ge; 1.8.0            | 0.2.0          |
 | &ge; 1.8.9            | 0.2.1          |
 | &ge; 1.9.0            | 0.3.0          |
-| &ge; 1.10.0           | 0.4.0          |
+| &ge; 1.10.0           | 0.4.1          |
 
 ### Universe
 
