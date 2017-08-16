@@ -4,6 +4,7 @@ import com.mesosphere.cosmos.error.CosmosException
 import com.mesosphere.cosmos.error.MarathonAppNotFound
 import com.mesosphere.cosmos.http.CosmosRequests
 import com.mesosphere.cosmos.rpc.MediaTypes
+import com.mesosphere.cosmos.service.ServiceUninstaller
 import com.mesosphere.cosmos.rpc.v1.circe.Decoders._
 import com.mesosphere.cosmos.rpc.v1.model.ErrorResponse
 import com.mesosphere.cosmos.rpc.v1.model.InstallRequest
@@ -134,27 +135,37 @@ final class UninstallHandlerSpec extends FreeSpec with Eventually with SpanSugar
 
         waitUntilDeployed(HelloWorldAppId)
 
-        // Make two uninstall requests, to queue one up for later
+        // Kick off two background uninstall tasks; the second should stop when the app is deleted
         assertUninstallRequest(HelloWorldPackageName, appId = Some(HelloWorldAppId))
         assertUninstallRequest(HelloWorldPackageName, appId = Some(HelloWorldAppId))
-
-        // Reinstall after deletion
         waitUntilDeleted(HelloWorldAppId)
+
+        // Give the second task time to notice the app was deleted
+        waitForServiceUninstaller()
+
+        // Reinstall; this will detect whether the second task has actually stopped as intended
         val installResponseTwo = installHelloWorld()
-        assertResult(Status.Ok)(installResponseTwo.status)
 
-        waitUntilDeployed(HelloWorldAppId)
+        try {
+          assertResult(Status.Ok)(installResponseTwo.status)
 
-        // Confirm that the reinstalled package does not get deleted
-        Thread.sleep(30.seconds.toMillis)
-        Await.result(adminRouter.getApp(HelloWorldAppId))
+          waitUntilDeployed(HelloWorldAppId)
+          waitForServiceUninstaller()
+
+          // Confirm that the reinstalled package does not get deleted
+          Await.result(adminRouter.getApp(HelloWorldAppId))
+        } finally {
+          // Since hello-world is an SDK package, we must wait until the app is actually gone
+          assertUninstallRequest(HelloWorldPackageName, appId = Some(HelloWorldAppId))
+          val _ = waitUntilDeleted(HelloWorldAppId)
+        }
       }
 
     }
   }
 
   def waitUntilDeployed(appId: AppId): Assertion = {
-    eventually(timeout(10.minutes), interval(10.seconds)) {
+    eventually(timeout(2.minutes), interval(10.seconds)) {
       val statusFuture = adminRouter.getSdkServicePlanStatus(appId, "v1", "deploy")
 
       assertResult(Status.Ok)(Await.result(statusFuture).status)
@@ -170,7 +181,7 @@ final class UninstallHandlerSpec extends FreeSpec with Eventually with SpanSugar
   }
 
   def waitUntilDeleted(appId: AppId): Assertion = {
-    eventually(timeout(10.minutes), interval(10.seconds)) {
+    eventually(timeout(2.minutes), interval(10.seconds)) {
       val exception = intercept[CosmosException](Await.result(adminRouter.getApp(appId)))
 
       exception.error shouldBe a[MarathonAppNotFound]
@@ -184,13 +195,17 @@ object UninstallHandlerSpec {
   val HelloWorldPackageName: String = "hello-world"
   val HelloWorldAppId: AppId = AppId(HelloWorldPackageName)
 
-  def installHelloWorld(): Response = {
-    val options = JsonObject.singleton(
+  // Ensure only one "world" pod is launched, to avoid resource starvation
+  val HelloWorldOptions: JsonObject = {
+    JsonObject.singleton(
       "world",
       Json.fromJsonObject(JsonObject.singleton("count", Json.fromInt(1)))
     )
+  }
 
-    val request = InstallRequest(HelloWorldPackageName, options = Some(options))
+  def installHelloWorld(): Response = {
+    // Always use the custom options to avoid a stuck install
+    val request = InstallRequest(HelloWorldPackageName, options = Some(HelloWorldOptions))
     submitInstallRequest(request)
   }
 
@@ -204,6 +219,10 @@ object UninstallHandlerSpec {
     uninstallRequest: UninstallRequest
   ): Response = {
     CosmosClient.submit(CosmosRequests.packageUninstall(uninstallRequest))
+  }
+
+  def waitForServiceUninstaller(): Unit = {
+    Thread.sleep(2 * ServiceUninstaller.RetryInterval.inMillis)
   }
 
 }
