@@ -1,0 +1,20 @@
+#%RAML 1.0
+title: DC/OS Package, Service, and Capabilities
+/package:
+  description: Implements all packaging operations required for managing packages in DC/OS.
+  /install: !include endpoints/package-install.raml
+  /uninstall: !include endpoints/package-uninstall.raml
+  /describe: !include endpoints/package-describe.raml
+  /render: !include endpoints/package-render.raml
+  /list-versions: !include endpoints/package-list-versions.raml
+  /search: !include endpoints/package-search.raml
+  /list: !include endpoints/package-list.raml
+  /add: !include endpoints/package-add.raml
+  /repository:
+    /list: !include endpoints/package-repository-list.raml
+    /add: !include endpoints/package-repository-add.raml
+    /delete: !include endpoints/package-repository-delete.raml
+/service:
+  /start: !include endpoints/service-start.raml
+  /describe: !include endpoints/service-describe.raml
+/capabilities: !include endpoints/capabilities.raml
