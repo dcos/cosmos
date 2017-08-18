@@ -13,9 +13,10 @@ import java.util.Base64
 import org.scalatest.prop.TableFor2
 
 object ItObjects {
-  val V4TestUniverse =
-    "https://downloads.mesosphere.com/universe/" +
+
+  val V4TestUniverse = "https://downloads.mesosphere.com/universe/" +
     "ae6a07ac0b53924154add2cd61403c5233272d93/repo/repo-up-to-1.10.json"
+  val V4TestUniverseConverterURI = "http://universe-converter.mesosphere.com/transform?url=" + V4TestUniverse
 
   val helloWorldMarathonMustache: String = {
     """{
@@ -220,14 +221,14 @@ object ItObjects {
   // scalastyle:on line.size.limit
 
   val defaultHelloWorldPackageDefinition: (Json, Json) =
-    parse(helloWorldPackageDefinition042).toOption.get -> V4TestUniverse.asJson
+    parse(helloWorldPackageDefinition042).toOption.get -> V4TestUniverseConverterURI.asJson
 
   val helloWorldPackageDefinitions: TableFor2[Json, Json] =
     new TableFor2(
       "Package Definition" -> "Package Source",
-      parse(helloWorldPackageDefinition0).toOption.get -> V4TestUniverse.asJson,
-      parse(helloWorldPackageDefinition3).toOption.get -> V4TestUniverse.asJson,
-      parse(helloWorldPackageDefinition4).toOption.get -> V4TestUniverse.asJson
+      parse(helloWorldPackageDefinition0).toOption.get -> V4TestUniverseConverterURI.asJson,
+      parse(helloWorldPackageDefinition3).toOption.get -> V4TestUniverseConverterURI.asJson,
+      parse(helloWorldPackageDefinition4).toOption.get -> V4TestUniverseConverterURI.asJson
     )
 
   val metadataFields: Set[String] = {
@@ -319,7 +320,7 @@ object ItObjects {
   def decodedHelloWorldLabels(
     packageDefinition: Json,
     options: Json,
-    packageSource: Json = V4TestUniverse.asJson
+    packageSource: Json = V4TestUniverseConverterURI.asJson
   ): Map[String, Json] = {
     val pkg = packageDefinition.asObject.get
     Map(
@@ -335,7 +336,7 @@ object ItObjects {
   def renderHelloWorldMarathonMustacheDecodedLabels(
     packageDefinition: Json,
     options: Json,
-    packageSource: Json = V4TestUniverse.asJson
+    packageSource: Json = V4TestUniverseConverterURI.asJson
   ): Json = {
     val mustache = renderHelloWorldMarathonMustacheNoLabels(options)
     val labels = decodedHelloWorldLabels(packageDefinition, options, packageSource)
@@ -352,7 +353,7 @@ object ItObjects {
   def helloWorldRenderResponseDecodedLabels(
     packageDefinition: Json,
     options: Json,
-    packageSource: Json = V4TestUniverse.asJson
+    packageSource: Json = V4TestUniverseConverterURI.asJson
   ): Json = {
     val marathonJson = renderHelloWorldMarathonMustacheDecodedLabels(
       packageDefinition,
