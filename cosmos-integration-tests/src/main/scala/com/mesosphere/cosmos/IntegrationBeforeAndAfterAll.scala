@@ -7,7 +7,7 @@ import org.scalatest.Suite
 trait IntegrationBeforeAndAfterAll extends BeforeAndAfterAll { this: Suite =>
 
   private[this] val universeUri = "https://downloads.mesosphere.com/universe/02493e40f8564a39446d06c002f8dcc8e7f6d61f/repo-up-to-1.8.json"
-  private[this] val universeConverterUri = "http://universe-converter.mesosphere.com/transform?url=" + universeUri
+  private[this] val universeConverterUri = "https://universe-converter.mesosphere.com/transform?url=" + universeUri
 
   override def beforeAll(): Unit = {
     Requests.deleteRepository(Some("Universe"))

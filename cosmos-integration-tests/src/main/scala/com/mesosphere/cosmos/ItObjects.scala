@@ -16,7 +16,7 @@ object ItObjects {
 
   val V4TestUniverse = "https://downloads.mesosphere.com/universe/" +
     "ae6a07ac0b53924154add2cd61403c5233272d93/repo/repo-up-to-1.10.json"
-  val V4TestUniverseConverterURI = "http://universe-converter.mesosphere.com/transform?url=" + V4TestUniverse
+  val V4TestUniverseConverterURI = "https://universe-converter.mesosphere.com/transform?url=" + V4TestUniverse
 
   val helloWorldMarathonMustache: String = {
     """{
