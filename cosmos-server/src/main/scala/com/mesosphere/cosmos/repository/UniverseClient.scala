@@ -113,7 +113,7 @@ final class DefaultUniverseClient(
     Stat.timeFuture(fetchScope.stat("histogram")) {
       Future { repository.uri.toURI.toURL.openConnection() } handle {
         case t @ (_: IllegalArgumentException | _: MalformedURLException | _: URISyntaxException) =>
-          throw CosmosException.apply(RepositoryUriSyntax(repository, t.getMessage), t)
+          throw CosmosException(RepositoryUriSyntax(repository, t.getMessage), t)
       } flatMap { case conn: HttpURLConnection =>
         // Set headers on request
         conn.setRequestProperty(
@@ -157,7 +157,7 @@ final class DefaultUniverseClient(
           }
         } handle {
           case t: IOException =>
-            throw CosmosException.apply(RepositoryUriConnection(repository, t.getMessage), t)
+            throw CosmosException(RepositoryUriConnection(repository, t.getMessage), t)
         } map { case (contentType, contentEncoding) =>
           contentEncoding match {
             case Some("gzip") =>
