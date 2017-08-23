@@ -110,35 +110,21 @@ final class UninstallHandlerSpec extends FreeSpec with Eventually with SpanSugar
         assertResult(Status.Ok)(installResponse.status)
 
         // Immediately turn around and try to uninstall it, while it's still being initially deployed.
-        assertUninstallRequest(HelloWorldPackageName, Some(HelloWorldAppId))
+        assertUninstallRequest(HelloWorldPackageName, Some(HelloWorldAppId), "uninstall")
 
-        waitUntilDeleted(HelloWorldAppId)
-      }
-
-      "be able to uninstall SDK packages after a second uninstall while the first is in progress" in {
-        val installResponse = installHelloWorld()
-        assertResult(Status.Ok)(installResponse.status)
-
-        waitUntilDeployed(HelloWorldAppId)
-        assertUninstallRequest(HelloWorldPackageName, appId = None)
-
-        // Try a second uninstall request
-        assertUninstallRequest(HelloWorldPackageName, appId = None)
-
-        // Wait for the service to be deleted.
-        waitUntilDeleted(HelloWorldAppId)
+        waitUntilDeleted(HelloWorldAppId, "wait")
       }
 
       "DCOS-17237: cancel pending uninstalls if their Marathon apps get deleted" in {
         val installResponseOne = installHelloWorld()
         assertResult(Status.Ok)(installResponseOne.status)
 
-        waitUntilDeployed(HelloWorldAppId)
+        waitUntilDeployed(HelloWorldAppId, "deploy 1")
 
         // Kick off two background uninstall tasks; the second should stop when the app is deleted
-        assertUninstallRequest(HelloWorldPackageName, appId = Some(HelloWorldAppId))
-        assertUninstallRequest(HelloWorldPackageName, appId = Some(HelloWorldAppId))
-        waitUntilDeleted(HelloWorldAppId)
+        assertUninstallRequest(HelloWorldPackageName, appId = Some(HelloWorldAppId), "uninstall 1")
+        assertUninstallRequest(HelloWorldPackageName, appId = Some(HelloWorldAppId), "uninstall 2")
+        waitUntilDeleted(HelloWorldAppId, "delete 1")
 
         // Give the second task time to notice the app was deleted
         waitForServiceUninstaller()
@@ -149,42 +135,43 @@ final class UninstallHandlerSpec extends FreeSpec with Eventually with SpanSugar
         try {
           assertResult(Status.Ok)(installResponseTwo.status)
 
-          waitUntilDeployed(HelloWorldAppId)
+          waitUntilDeployed(HelloWorldAppId, "deploy 2")
           waitForServiceUninstaller()
-
-          // Confirm that the reinstalled package does not get deleted
-          Await.result(adminRouter.getApp(HelloWorldAppId))
         } finally {
+          // This will fail if the app was already deleted
+          assertUninstallRequest(HelloWorldPackageName, appId = Some(HelloWorldAppId), "cleanup")
+
           // Since hello-world is an SDK package, we must wait until the app is actually gone
-          assertUninstallRequest(HelloWorldPackageName, appId = Some(HelloWorldAppId))
-          val _ = waitUntilDeleted(HelloWorldAppId)
+          val _ = waitUntilDeleted(HelloWorldAppId, "delete 2")
         }
       }
 
     }
   }
 
-  def waitUntilDeployed(appId: AppId): Assertion = {
+  def waitUntilDeployed(appId: AppId, clue: Any): Assertion = {
     eventually(timeout(2.minutes), interval(10.seconds)) {
       val statusFuture = adminRouter.getSdkServicePlanStatus(appId, "v1", "deploy")
 
-      assertResult(Status.Ok)(Await.result(statusFuture).status)
+      assertResult(Status.Ok, clue)(Await.result(statusFuture).status)
     }
   }
 
-  def assertUninstallRequest(packageName: String, appId: Option[AppId]): Assertion = {
+  def assertUninstallRequest(packageName: String, appId: Option[AppId], clue: Any): Assertion = {
     val uninstallRequest = UninstallRequest(packageName, appId, Some(false))
     val uninstallResponse = submitUninstallRequest(uninstallRequest)
+    assertResult(Status.Ok, clue)(uninstallResponse.status)
 
-    assertResult(Status.Ok)(uninstallResponse.status)
-    assertResult(MediaTypes.UninstallResponse.show)(uninstallResponse.headerMap(Fields.ContentType))
+    assertResult(MediaTypes.UninstallResponse.show, clue) {
+      uninstallResponse.headerMap(Fields.ContentType)
+    }
   }
 
-  def waitUntilDeleted(appId: AppId): Assertion = {
+  def waitUntilDeleted(appId: AppId, clue: Any): Assertion = {
     eventually(timeout(2.minutes), interval(10.seconds)) {
       val exception = intercept[CosmosException](Await.result(adminRouter.getApp(appId)))
 
-      exception.error shouldBe a[MarathonAppNotFound]
+      assert(exception.error.isInstanceOf[MarathonAppNotFound], clue)
     }
   }
 
