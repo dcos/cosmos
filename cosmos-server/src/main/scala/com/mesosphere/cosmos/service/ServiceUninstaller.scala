@@ -1,8 +1,11 @@
 package com.mesosphere.cosmos.service
 
 import com.mesosphere.cosmos.AdminRouter
+import com.mesosphere.cosmos.error.CosmosException
+import com.mesosphere.cosmos.error.MarathonAppNotFound
 import com.mesosphere.cosmos.http.RequestSession
 import com.mesosphere.cosmos.thirdparty.marathon.model.AppId
+import com.twitter.conversions.time._
 import com.twitter.finagle.http.Status
 import com.twitter.util.Try.PredicateDoesNotObtain
 import com.twitter.util.Duration
@@ -14,6 +17,9 @@ final class ServiceUninstaller(
 )(
   implicit timer: Timer
 ) {
+
+  import ServiceUninstaller._
+
   private[this] val logger: org.slf4j.Logger = org.slf4j.LoggerFactory.getLogger(getClass)
 
   def uninstall(
@@ -34,17 +40,17 @@ final class ServiceUninstaller(
     } yield ()
 
     work.rescue {
+      case ex: CosmosException if ex.error.isInstanceOf[MarathonAppNotFound] =>
+        // The app is already gone; stop now to avoid uninstalling a restarted app
+        Future.Done
       case ex if retries > 0  =>
         if (!ex.isInstanceOf[PredicateDoesNotObtain]) {
           logger.info(s"Uninstall attempt for $appId didn't finish. $retries retries left." +
             s" Type name: ${ex.getClass.getSimpleName}; Message: ${ex.getMessage}")
         }
 
-        Future.sleep(
-          Duration.fromSeconds(10) // scalastyle:ignore magic.number
-        ).before(
-          uninstall(appId, deploymentId, retries - 1)
-        )
+        Future.sleep(RetryInterval)
+          .before(uninstall(appId, deploymentId, retries - 1))
     }
   }
 
@@ -105,6 +111,8 @@ object ServiceUninstaller {
   ): ServiceUninstaller = {
     new ServiceUninstaller(adminRouter)
   }
+
+  val RetryInterval: Duration = 10.seconds
 
   private val CommonsVersionLabel: String = "DCOS_COMMONS_API_VERSION"
   private val DefaultRetries: Int = 50
