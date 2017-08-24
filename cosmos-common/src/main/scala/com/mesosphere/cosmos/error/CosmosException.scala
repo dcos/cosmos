@@ -23,7 +23,11 @@ object CosmosException {
     CosmosException(error, Status.BadRequest, Map.empty, None)
   }
 
-  def apply(error: CosmosError, causedBy: Throwable): CosmosException = {
-    CosmosException(error, Status.BadRequest, Map.empty, Option(causedBy))
+  def apply(
+    error: CosmosError,
+    causedBy: Throwable,
+    status: Status = Status.BadRequest
+  ): CosmosException = {
+    CosmosException(error, status, Map.empty, Option(causedBy))
   }
 }

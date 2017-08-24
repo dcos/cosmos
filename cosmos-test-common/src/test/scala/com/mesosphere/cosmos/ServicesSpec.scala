@@ -21,10 +21,10 @@ final class ServicesSpec extends FreeSpec {
 
         try {
           val request = RequestBuilder().url(url).buildGet()
-          val response = Await.result(client(request))
-          assertResult(response.status)(Status.ServiceUnavailable)
+          Await.result(client(request))
         } catch {
-          case e: CosmosException if e.error.isInstanceOf[ServiceUnavailable] => // Success
+          case e: CosmosException if e.error.isInstanceOf[ServiceUnavailable] =>
+            assertResult(e.status)(Status.ServiceUnavailable)
         } finally {
           val _ = Await.ready(client.close())
         }
