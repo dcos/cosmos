@@ -6,12 +6,12 @@
       "type": "string"
     },
     "includePackageVersions": {
-      "type": "boolean",
-      "default": false
+      "type": "boolean"
     }
   },
   "required": [
-    "packageName"
+    "packageName",
+    "includePackageVersions"
   ],
   "additionalProperties": false
 }
