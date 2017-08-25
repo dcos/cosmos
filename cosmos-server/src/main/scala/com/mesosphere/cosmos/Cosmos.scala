@@ -110,6 +110,11 @@ with Logging {
   final def buildHandlers(components: Components): Handlers = {
     import components._
 
+    val packageResource = ResourceProxyHandler(
+      ResourceProxyHandler.DefaultContentLengthLimit,
+      statsReceiver
+    )
+
     new Handlers(
       // Keep alphabetized
       capabilities = new CapabilitiesHandler,
@@ -121,7 +126,7 @@ with Logging {
       packageRepositoryAdd = new PackageRepositoryAddHandler(sourcesStorage, universeClient),
       packageRepositoryDelete = new PackageRepositoryDeleteHandler(sourcesStorage),
       packageRepositoryList = new PackageRepositoryListHandler(sourcesStorage),
-      packageResource = ResourceProxyHandler(statsReceiver),
+      packageResource = packageResource,
       packageSearch = new PackageSearchHandler(repositories),
       packageUninstall = new UninstallHandler(adminRouter, repositories, marathonSdkJanitor),
       serviceDescribe = new ServiceDescribeHandler(adminRouter, repositories)
@@ -326,9 +331,11 @@ object CosmosApp {
     serviceDescribe: Endpoint[Json]
   ) {
 
-    def combine: Endpoint[
-      Json :+: Json :+: Json :+: Json :+: Json :+: Json :+: Json :+: Json :+: Json :+:
-        Response :+: Json :+: Json :+: Json :+: CNil] = {
+    type Outputs =
+      Json :+: Json :+: Json :+: Json :+: Json :+: Json :+: Json :+: Json :+: Json :+: Response :+:
+        Json :+: Json :+: Json :+: CNil
+
+    def combine: Endpoint[Outputs] = {
       // Keep alphabetized
       (capabilities
         :+: packageDescribe

@@ -119,8 +119,12 @@ final class DefaultUniverseClient(
           Fields.Accept -> acceptedMediaTypes.show,
           Fields.AcceptEncoding -> "gzip",
           Fields.UserAgent -> s"cosmos/$cosmosVersion dcos/${dcosReleaseVersion.show}"
-        ) { (contentType, bodyInputStream) =>
-          decodeAndSortUniverse(contentType, bodyInputStream, repository.uri)
+        ) { responseData =>
+          decodeAndSortUniverse(
+            responseData.contentType,
+            responseData.contentStream,
+            repository.uri
+          )
         }
         .map {
           case Right(repositoryData) => repositoryData

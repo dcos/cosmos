@@ -15,10 +15,10 @@ final class HttpClientSpec extends FreeSpec {
   import HttpClientSpec._
 
   "HttpClient.fetch() retrieves the given URL" in {
-    val future = HttpClient.fetch(JsonContentUrl, stats) { (contentType, contentStream) =>
-      assertResult(universe.MediaTypes.UniverseV4Repository)(contentType)
+    val future = HttpClient.fetch(JsonContentUrl, stats) { responseData =>
+      assertResult(universe.MediaTypes.UniverseV4Repository)(responseData.contentType)
 
-      val contentString = Source.fromInputStream(contentStream).mkString
+      val contentString = Source.fromInputStream(responseData.contentStream).mkString
       assert(parse(contentString).isRight)
     }
 
@@ -28,17 +28,17 @@ final class HttpClientSpec extends FreeSpec {
   "HttpClient.fetch() reports URL syntax problems" - {
 
     "relative URI" in {
-      val Left(error) = Await.result(HttpClient.fetch("foo/bar", stats)((_, _) => ()))
+      val Left(error) = Await.result(HttpClient.fetch("foo/bar", stats)(_ => ()))
       assert(error.isInstanceOf[HttpClient.UriSyntax])
     }
 
     "unknown protocol" in {
-      val Left(error) = Await.result(HttpClient.fetch("foo://bar.com", stats)((_, _) => ()))
+      val Left(error) = Await.result(HttpClient.fetch("foo://bar.com", stats)(_ => ()))
       assert(error.isInstanceOf[HttpClient.UriSyntax])
     }
 
     "URISyntaxException" in {
-      val Left(error) = Await.result(HttpClient.fetch("/\\", stats)((_, _) => ()))
+      val Left(error) = Await.result(HttpClient.fetch("/\\", stats)(_ => ()))
       assert(error.isInstanceOf[HttpClient.UriSyntax])
     }
 

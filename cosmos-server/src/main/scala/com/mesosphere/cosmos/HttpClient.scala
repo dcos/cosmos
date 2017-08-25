@@ -22,7 +22,7 @@ object HttpClient {
     statsReceiver: StatsReceiver,
     headers: (String, String)*
   )(
-    processBody: (MediaType, InputStream) => A
+    processResponse: ResponseData => A
   ): Future[Either[Error, A]] = {
     implicit val sr: StatsReceiver = statsReceiver
 
@@ -34,15 +34,31 @@ object HttpClient {
       .flatMap { case conn: HttpURLConnection =>
         headers.foreach { case (name, value) => conn.setRequestProperty(name, value) }
 
-        val (contentType, contentEncoding) = parseContentHeaders(uri, conn)
-        val contentStream = prepareContentStream(conn, contentEncoding)
+        val responseData = extractResponseData(uri, conn)
 
-        Future(Right(processBody(contentType, contentStream)))
-          .ensure(contentStream.close())
+        Future(Right(processResponse(responseData)))
+          .ensure(responseData.contentStream.close())
           .ensure(conn.disconnect())
       }
       .handle { case e: IOException => throw UriConnection(e) }
       .handle { case e: Error => Left(e) }
+  }
+
+  private def extractResponseData(
+    uri: Uri,
+    conn: HttpURLConnection
+  )(implicit
+    sr: StatsReceiver
+  ): ResponseData = {
+    val (contentType, contentEncoding) = parseContentHeaders(uri, conn)
+
+    val contentLength = conn.getContentLengthLong match {
+      case len if len < 0 => None
+      case len => Some(len)
+    }
+
+    val contentStream = prepareContentStream(conn, contentEncoding)
+    ResponseData(contentType, contentLength, contentStream)
   }
 
   private def parseContentHeaders(
@@ -99,6 +115,12 @@ object HttpClient {
       PermanentRedirect
     )
   }
+
+  final case class ResponseData(
+    contentType: MediaType,
+    contentLength: Option[Long],
+    contentStream: InputStream
+  )
 
   sealed trait Error extends Exception
   final case class UriSyntax(cause: Throwable) extends Error
