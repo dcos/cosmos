@@ -33,9 +33,8 @@ final class ResourceProxyHandlerSpec extends FreeSpec with PropertyChecks {
       val resourceData = ResourceProxyData.IconSmall
       val lengthLimit = resourceData.contentLength + 1.bytes
       val proxyHandler = ResourceProxyHandler(HttpClient, lengthLimit, NullStatsReceiver)
-      val output = Await.result(proxyHandler(resourceData.uri))
 
-      assertResult(Status.Ok)(output.status)
+      assertSuccess(proxyHandler(resourceData.uri))
     }
 
     "Fails if Content-Length is at the limit" in {
@@ -84,9 +83,36 @@ final class ResourceProxyHandlerSpec extends FreeSpec with PropertyChecks {
       }
     }
 
-    // TODO proxy Test cases
-    // If ContentLength was not specified, and the stream is < the limit, pass
+    "Succeeds if the content stream length is < the limit" in {
+      type TestData = (StorageUnit, mutable.WrappedArray[Byte], Uri, MediaType)
+      val maxLengthLimit = 100
+      val genTestData: Gen[TestData] = for {
+        lengthLimit <- Gen.chooseNum(1, maxLengthLimit)
+        actualLength <- Gen.chooseNum(0, lengthLimit - 1)
+        contentBytes <- Gen.containerOfN[Array, Byte](actualLength, arbitrary[Byte])
+        uri <- arbitrary[Uri]
+        contentType <- arbitrary[MediaType]
+      } yield {
+        (lengthLimit.bytes, contentBytes, uri, contentType)
+      }
 
+      forAll (genTestData) { case (lengthLimit, contentBytes, uri, contentType) =>
+        whenever(contentBytes.length < lengthLimit.bytes) {
+          val contentStream = new ByteArrayInputStream(contentBytes.array)
+          val responseData = ResponseData(contentType, None, contentStream)
+          val httpClient = new ConstantResponseClient(responseData)
+          val proxyHandler = ResourceProxyHandler(httpClient, lengthLimit, NullStatsReceiver)
+
+          assertSuccess(proxyHandler(uri))
+        }
+      }
+    }
+
+  }
+
+  private[this] def assertSuccess(output: Future[Output[Response]]): Assertion = {
+    val result = Await.result(output)
+    assertResult(Status.Ok)(result.status)
   }
 
   private[this] def assertFailure(output: Future[Output[Response]]): Assertion = {
