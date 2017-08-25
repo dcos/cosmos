@@ -110,10 +110,7 @@ with Logging {
   final def buildHandlers(components: Components): Handlers = {
     import components._
 
-    val packageResource = ResourceProxyHandler(
-      ResourceProxyHandler.DefaultContentLengthLimit,
-      statsReceiver
-    )
+    implicit val sr = statsReceiver
 
     new Handlers(
       // Keep alphabetized
@@ -126,7 +123,7 @@ with Logging {
       packageRepositoryAdd = new PackageRepositoryAddHandler(sourcesStorage, universeClient),
       packageRepositoryDelete = new PackageRepositoryDeleteHandler(sourcesStorage),
       packageRepositoryList = new PackageRepositoryListHandler(sourcesStorage),
-      packageResource = packageResource,
+      packageResource = ResourceProxyHandler(),
       packageSearch = new PackageSearchHandler(repositories),
       packageUninstall = new UninstallHandler(adminRouter, repositories, marathonSdkJanitor),
       serviceDescribe = new ServiceDescribeHandler(adminRouter, repositories)

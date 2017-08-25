@@ -13,12 +13,13 @@ import com.twitter.util.StorageUnit
 import io.finch.Output
 
 final class ResourceProxyHandler private(
+  httpClient: HttpClient,
   contentLengthLimit: StorageUnit,
   statsReceiver: StatsReceiver
 ) {
 
   def apply(uri: Uri): Future[Output[Response]] = {
-    HttpClient
+    httpClient
       .fetch(uri, statsReceiver) { responseData =>
         val response = Response()
         if (responseData.contentLength.exists(_ >= contentLengthLimit.bytes)) {
@@ -47,8 +48,17 @@ object ResourceProxyHandler {
   // TODO proxy Determine what the actual limit should be; maybe use a flag?
   val DefaultContentLengthLimit: StorageUnit = 5.megabytes
 
-  def apply(contentLengthLimit: StorageUnit, statsReceiver: StatsReceiver): ResourceProxyHandler = {
-    new ResourceProxyHandler(contentLengthLimit, statsReceiver.scope("resourceProxyHandler"))
+  def apply()(implicit statsReceiver: StatsReceiver): ResourceProxyHandler = {
+    apply(HttpClient, DefaultContentLengthLimit, statsReceiver)
+  }
+
+  def apply(
+    httpClient: HttpClient,
+    contentLengthLimit: StorageUnit,
+    statsReceiver: StatsReceiver
+  ): ResourceProxyHandler = {
+    val handlerScope = statsReceiver.scope("resourceProxyHandler")
+    new ResourceProxyHandler(httpClient, contentLengthLimit, handlerScope)
   }
 
 }

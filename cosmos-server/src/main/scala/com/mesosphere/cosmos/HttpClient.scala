@@ -15,7 +15,21 @@ import java.net.MalformedURLException
 import java.net.URISyntaxException
 import java.util.zip.GZIPInputStream
 
-object HttpClient {
+trait HttpClient {
+
+  import HttpClient._
+
+  def fetch[A](
+    uri: Uri,
+    statsReceiver: StatsReceiver,
+    headers: (String, String)*
+  )(
+    processResponse: ResponseData => A
+  ): Future[Either[HttpClient.Error, A]]
+
+}
+
+object HttpClient extends HttpClient {
 
   def fetch[A](
     uri: Uri,
