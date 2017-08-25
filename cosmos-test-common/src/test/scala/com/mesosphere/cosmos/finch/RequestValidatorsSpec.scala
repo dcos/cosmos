@@ -1,13 +1,13 @@
 package com.mesosphere.cosmos.finch
 
 import cats.data.NonEmptyList
+import com.mesosphere.Generators.Implicits._
 import com.mesosphere.cosmos.http.Authorization
 import com.mesosphere.cosmos.http.CompoundMediaTypeParser
 import com.mesosphere.cosmos.http.Get
 import com.mesosphere.cosmos.http.HttpRequest
 import com.mesosphere.cosmos.http.HttpRequestMethod
 import com.mesosphere.cosmos.http.MediaType
-import com.mesosphere.cosmos.http.MediaTypeSpec
 import com.mesosphere.cosmos.http.Post
 import com.mesosphere.cosmos.http.RawRpcPath
 import com.mesosphere.cosmos.http.RequestSession
@@ -26,6 +26,7 @@ import io.finch.Error.NotPresent
 import io.finch.Error.NotValid
 import io.finch.Output
 import io.finch.items.HeaderItem
+import org.scalacheck.Arbitrary.arbitrary
 import org.scalacheck.Gen
 import org.scalatest.Assertion
 import org.scalatest.FreeSpec
@@ -81,7 +82,7 @@ final class RequestValidatorsSpec extends FreeSpec with Matchers with PropertyCh
 
     "fail if the Content-Type header is missing" in {
       val genTestCases = for {
-        expectedContentTypeHeader <- MediaTypeSpec.genMediaType
+        expectedContentTypeHeader <- arbitrary[MediaType]
         data <- genTestData(expectedContentTypeHeader, actualContentTypeHeader = None)
       } yield data
 
@@ -92,7 +93,7 @@ final class RequestValidatorsSpec extends FreeSpec with Matchers with PropertyCh
 
     "fail if the Content-Type header cannot be parsed as a MediaType" in {
       val genTestCases = for {
-        expectedContentTypeHeader <- MediaTypeSpec.genMediaType
+        expectedContentTypeHeader <- arbitrary[MediaType]
         actualContentTypeHeader <- Gen.alphaStr
         data <- genTestData(expectedContentTypeHeader, Some(actualContentTypeHeader))
       } yield data
@@ -104,7 +105,7 @@ final class RequestValidatorsSpec extends FreeSpec with Matchers with PropertyCh
 
     "include the Content-Type in the session if it was successfully parsed" in {
       val genTestCases = for {
-        expectedContentTypeHeader <- MediaTypeSpec.genMediaType
+        expectedContentTypeHeader <- arbitrary[MediaType]
         actualContentTypeHeader = HttpRequest.toHeader(expectedContentTypeHeader)
         data <- genTestData(expectedContentTypeHeader, actualContentTypeHeader)
       } yield data
@@ -116,8 +117,8 @@ final class RequestValidatorsSpec extends FreeSpec with Matchers with PropertyCh
 
     "fail if the Content-Type header doesn't match what the validator expects" in {
       val genTestCases = for {
-        expectedContentTypeHeader <- MediaTypeSpec.genMediaType
-        actualContentTypeHeader <- MediaTypeSpec.genMediaType.map(HttpRequest.toHeader)
+        expectedContentTypeHeader <- arbitrary[MediaType]
+        actualContentTypeHeader <- arbitrary[MediaType].map(HttpRequest.toHeader)
         data <- genTestData(expectedContentTypeHeader, actualContentTypeHeader)
       } yield data
 
@@ -134,7 +135,7 @@ final class RequestValidatorsSpec extends FreeSpec with Matchers with PropertyCh
       val accepts = MediaTypedRequestDecoder(mediaTypedDecoder)
 
       for {
-        acceptHeader <- MediaTypeSpec.genMediaType
+        acceptHeader <- arbitrary[MediaType]
         headers = HttpRequest.collectHeaders(
           Fields.Accept -> HttpRequest.toHeader(acceptHeader),
           Fields.ContentType -> actualContentTypeHeader

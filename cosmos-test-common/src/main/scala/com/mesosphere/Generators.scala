@@ -1,5 +1,6 @@
 package com.mesosphere
 
+import com.mesosphere.cosmos.http.MediaType
 import com.netaporter.uri.Uri
 import io.circe.testing.instances._
 import java.nio.ByteBuffer
@@ -213,6 +214,19 @@ object Generators {
     genNonEmptyString(Gen.alphaNumChar).map(universe.v3.model.DcosReleaseVersion.Suffix(_))
   }
 
+  // TODO package-add: Make this more general
+  private val genMediaType: Gen[MediaType] = {
+    val genTry = for {
+      typePart <- Gen.alphaStr.map(_.toLowerCase)
+      subTypePart <- Gen.alphaStr.map(_.toLowerCase)
+    } yield Try(MediaType(typePart, subTypePart))
+
+    genTry.flatMap {
+      case Success(mediaType) => mediaType
+      case _ => Gen.fail
+    }
+  }
+
   object Implicits {
 
     implicit val arbTag: Arbitrary[universe.v3.model.Tag] = Arbitrary(genTag)
@@ -248,6 +262,8 @@ object Generators {
     implicit val arbMetadata: Arbitrary[universe.v4.model.Metadata] = derived
 
     implicit val arbVersion: Arbitrary[universe.v3.model.Version] = Arbitrary(genVersion)
+
+    implicit val arbMediaType: Arbitrary[MediaType] = Arbitrary(genMediaType)
 
     def derived[A: MkArbitrary]: Arbitrary[A] = implicitly[MkArbitrary[A]].arbitrary
 

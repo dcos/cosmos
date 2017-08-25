@@ -1,14 +1,11 @@
 package com.mesosphere.cosmos.http
 
+import com.mesosphere.Generators.Implicits._
 import com.twitter.util.Return
-import com.twitter.util.Try
-import org.scalacheck.Gen
 import org.scalatest.FreeSpec
 import org.scalatest.prop.PropertyChecks
 
 final class MediaTypeSpec extends FreeSpec with PropertyChecks {
-
-  import MediaTypeSpec._
 
   private val testMediaType = MediaType(
     "application",
@@ -84,28 +81,11 @@ final class MediaTypeSpec extends FreeSpec with PropertyChecks {
   }
 
   "MediaType.show followed by MediaType.parse should be the identity function" in {
-    forAll (genMediaType) { mediaType =>
+    forAll { (mediaType: MediaType) =>
       assertResult(Return(mediaType))(MediaType.parse(mediaType.show))
     }
   }
 
   // TODO package-add: Test for case-insensitive comparison
-
-}
-
-object MediaTypeSpec {
-
-  // TODO package-add: Make this more general
-  val genMediaType: Gen[MediaType] = {
-    val genTry = for {
-      typePart <- Gen.alphaStr.map(_.toLowerCase)
-      subTypePart <- Gen.alphaStr.map(_.toLowerCase)
-    } yield Try(MediaType(typePart, subTypePart))
-
-    genTry.flatMap {
-      case Return(mediaType) => mediaType
-      case _ => Gen.fail
-    }
-  }
 
 }
