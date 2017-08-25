@@ -21,6 +21,13 @@ class AdminRouterClient(
     client(get(uri)).flatMap(decodeTo[DcosVersion](HttpMethod.GET, uri, _))
   }
 
+  def getSdkServiceFrameworkIds(service: AppId, apiVersion: String)(implicit
+    session: RequestSession
+  ): Future[List[String]] = {
+    val uri = "service" / service.toUri / apiVersion / "state" / "frameworkId"
+    client(get(uri)).flatMap(decodeTo[List[String]](HttpMethod.GET, uri, _))
+  }
+
   def getSdkServicePlanStatus(service: AppId, apiVersion: String, plan: String)(implicit session: RequestSession): Future[Response] = {
     val uri = "service" / service.toUri / apiVersion / "plans" / plan
     client(get(uri))

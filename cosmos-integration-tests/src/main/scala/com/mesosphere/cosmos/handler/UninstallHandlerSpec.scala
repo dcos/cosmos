@@ -146,11 +146,40 @@ final class UninstallHandlerSpec extends FreeSpec with Eventually with SpanSugar
         }
       }
 
+      "DCOS-17237: avoid uninstalling the app if its Mesos framework ID has changed" in {
+        val firstInstallResponse = installHelloWorld()
+        assertResult(Status.Ok)(firstInstallResponse.status)
+
+        try {
+          waitUntilDeployed(HelloWorldAppId, "deploy 1")
+
+          assertUninstallRequest(HelloWorldPackageName, appId = Some(HelloWorldAppId), "uninst 1")
+          assertUninstallRequest(HelloWorldPackageName, appId = Some(HelloWorldAppId), "uninst 2")
+          // Wait until app is deleted, but don't wait for the second task to notice
+          waitUntilDeleted(HelloWorldAppId, "deploy 2")
+
+          // Reinstall the app
+          val secondInstallResponse = installHelloWorld()
+          assertResult(Status.Ok)(secondInstallResponse.status)
+
+          // Wait until SDK is available, plus uninstaller delay; confirm app still exists
+          waitUntilDeployed(HelloWorldAppId, "deploy 3")
+          waitForServiceUninstaller()
+        } finally {
+          // This will fail if the app was already deleted
+          assertUninstallRequest(HelloWorldPackageName, appId = Some(HelloWorldAppId), "uninst 3")
+
+          // Since hello-world is an SDK package, we must wait until the app is actually gone
+          val _ = waitUntilDeleted(HelloWorldAppId, "delete")
+        }
+      }
+
     }
   }
 
   def waitUntilDeployed(appId: AppId, clue: Any): Assertion = {
     eventually(timeout(2.minutes), interval(10.seconds)) {
+      // TODO Get the CommonsVersionLabel ("v1") from the Marathon app, instead of hardcoding
       val statusFuture = adminRouter.getSdkServicePlanStatus(appId, "v1", "deploy")
 
       assertResult(Status.Ok, clue)(Await.result(statusFuture).status)

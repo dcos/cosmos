@@ -3,6 +3,7 @@ package com.mesosphere.cosmos.service
 import com.mesosphere.cosmos.AdminRouter
 import com.mesosphere.cosmos.error.CosmosException
 import com.mesosphere.cosmos.error.MarathonAppNotFound
+import com.mesosphere.cosmos.handler.UninstallHandler
 import com.mesosphere.cosmos.http.RequestSession
 import com.mesosphere.cosmos.thirdparty.marathon.model.AppId
 import com.twitter.conversions.time._
@@ -24,6 +25,7 @@ final class ServiceUninstaller(
 
   def uninstall(
     appId: AppId,
+    frameworkIds: Set[String],
     deploymentId: String,
     retries: Int = ServiceUninstaller.DefaultRetries
   )(
@@ -34,7 +36,8 @@ final class ServiceUninstaller(
       marathonResponse <- adminRouter.getApp(appId)
       uninstalled <- checkSdkUninstallCompleted(
         marathonResponse.app.id,
-        marathonResponse.app.labels.getOrElse(ServiceUninstaller.CommonsVersionLabel, "v1")
+        frameworkIds,
+        apiVersion = marathonResponse.app.labels.getOrElse(UninstallHandler.SdkVersionLabel, "v1")
       ) if uninstalled
       deleted <- delete(appId) if deleted
     } yield ()
@@ -50,7 +53,7 @@ final class ServiceUninstaller(
         }
 
         Future.sleep(RetryInterval)
-          .before(uninstall(appId, deploymentId, retries - 1))
+          .before(uninstall(appId, frameworkIds, deploymentId, retries - 1))
     }
   }
 
@@ -71,15 +74,23 @@ final class ServiceUninstaller(
 
   private def checkSdkUninstallCompleted(
     appId: AppId,
+    frameworkIds: Set[String],
     apiVersion: String
   )(
     implicit session: RequestSession
   ): Future[Boolean] = {
-    adminRouter.getSdkServicePlanStatus(
+    val deployed = adminRouter.getSdkServicePlanStatus(
       appId,
       apiVersion,
       "deploy"
     ).map(_.status == Status.Ok)
+
+    val sameFrameworkIds = adminRouter.getSdkServiceFrameworkIds(appId, apiVersion)
+      .map(_.toSet == frameworkIds)
+      // If we can't read the IDs, assume it's because the app is ready to be deleted
+      .handle { case _ => true }
+
+    deployed.joinWith(sameFrameworkIds)(_ && _)
   }
 
   private def delete(
@@ -114,6 +125,5 @@ object ServiceUninstaller {
 
   val RetryInterval: Duration = 10.seconds
 
-  private val CommonsVersionLabel: String = "DCOS_COMMONS_API_VERSION"
   private val DefaultRetries: Int = 50
 }

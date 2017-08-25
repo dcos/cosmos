@@ -86,6 +86,12 @@ class AdminRouter(
     adminRouterClient.getDcosVersion()
   }
 
+  def getSdkServiceFrameworkIds(service: AppId, apiVersion: String)(implicit
+    session: RequestSession
+  ): Future[List[String]] = {
+    adminRouterClient.getSdkServiceFrameworkIds(service, apiVersion)
+  }
+
   def getSdkServicePlanStatus(
     service: AppId,
     apiVersion: String,
