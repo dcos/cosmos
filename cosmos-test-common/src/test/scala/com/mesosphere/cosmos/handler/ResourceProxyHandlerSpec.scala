@@ -29,28 +29,39 @@ final class ResourceProxyHandlerSpec extends FreeSpec with PropertyChecks {
 
   "When Content-Length is provided by the upstream server" - {
 
-    "Succeeds if Content-Length is below the limit" in {
-      val resourceData = ResourceProxyData.IconSmall
-      val lengthLimit = resourceData.contentLength + 1.bytes
-      val proxyHandler = ResourceProxyHandler(HttpClient, lengthLimit, NullStatsReceiver)
+    "When Content-Length matches the actual content stream length" - {
 
-      assertSuccess(proxyHandler(resourceData.uri))
+      "Succeeds if Content-Length is below the limit" in {
+        val resourceData = ResourceProxyData.IconSmall
+        val lengthLimit = resourceData.contentLength + 1.bytes
+        val proxyHandler = ResourceProxyHandler(HttpClient, lengthLimit, NullStatsReceiver)
+
+        assertSuccess(proxyHandler(resourceData.uri))
+      }
+
+      "Fails if Content-Length is at the limit" in {
+        val resourceData = ResourceProxyData.IconSmall
+        val lengthLimit = resourceData.contentLength
+        val proxyHandler = ResourceProxyHandler(HttpClient, lengthLimit, NullStatsReceiver)
+
+        assertFailure(proxyHandler(resourceData.uri))
+      }
+
+      "Fails if Content-Length is above the limit" in {
+        val resourceData = ResourceProxyData.IconSmall
+        val lengthLimit = resourceData.contentLength - 1.bytes
+        val proxyHandler = ResourceProxyHandler(HttpClient, lengthLimit, NullStatsReceiver)
+
+        assertFailure(proxyHandler(resourceData.uri))
+      }
+
     }
 
-    "Fails if Content-Length is at the limit" in {
-      val resourceData = ResourceProxyData.IconSmall
-      val lengthLimit = resourceData.contentLength
-      val proxyHandler = ResourceProxyHandler(HttpClient, lengthLimit, NullStatsReceiver)
-
-      assertFailure(proxyHandler(resourceData.uri))
-    }
-
-    "Fails if Content-Length is above the limit" in {
-      val resourceData = ResourceProxyData.IconSmall
-      val lengthLimit = resourceData.contentLength - 1.bytes
-      val proxyHandler = ResourceProxyHandler(HttpClient, lengthLimit, NullStatsReceiver)
-
-      assertFailure(proxyHandler(resourceData.uri))
+    "When Content-Length does not match the actual content stream length" - {
+      // TODO proxy Test cases
+      // If ContentLength *was* specified, and the stream is > that, fail
+      // If ContentLength *was* specified, and the stream is <= that, pass
+      //   - In this case our response content length should be the size of the received data
     }
 
   }
@@ -121,12 +132,6 @@ final class ResourceProxyHandlerSpec extends FreeSpec with PropertyChecks {
     assertResult(Status.Forbidden)(exception.status)
     assert(exception.error.isInstanceOf[ResourceTooLarge])
   }
-
-  // TODO proxy Test cases
-  // If ContentLength *was* specified, and the stream is > that, fail
-  // If ContentLength *was* specified, and the stream is == that, pass
-  // If ContentLength *was* specified, and the stream is < that, pass (don't need to test this)
-  //   - Verify that our ContentLength is the actual size of the data
 
 }
 

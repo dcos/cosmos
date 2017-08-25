@@ -31,7 +31,7 @@ final class ResourceProxyHandler private(
         }
 
         // TODO proxy Fail if data is too large
-        // Allocate array of ContentLength size, or of the limit size - 1
+        // Allocate array of min(ContentLength size if defined, limit size - 1)
         // Buffer InputStream into array; if the end is reached but there's more data, fail
         // If the data runs out before the end of the array, truncate the array
         val contentBytes = Array.ofDim[Byte](contentLengthLimit.bytes.toInt - 1)
