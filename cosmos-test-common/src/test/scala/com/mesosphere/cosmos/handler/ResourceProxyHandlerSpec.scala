@@ -58,13 +58,13 @@ final class ResourceProxyHandlerSpec extends FreeSpec with PropertyChecks {
 
   "When Content-Length is not provided by the upstream server" - {
 
-    "Fails if the content stream length is above the limit" in {
+    "Fails if the content stream length is >= the limit" in {
       type TestData = (StorageUnit, mutable.WrappedArray[Byte], Uri, MediaType)
       val maxLengthLimit = 100
       val maxExcessLength = 20
       val genTestData: Gen[TestData] = for {
-        lengthLimit <- Gen.chooseNum(0, maxLengthLimit)
-        excessLength <- Gen.chooseNum(1, maxExcessLength)
+        lengthLimit <- Gen.chooseNum(1, maxLengthLimit)
+        excessLength <- Gen.chooseNum(0, maxExcessLength)
         contentBytes <- Gen.containerOfN[Array, Byte](lengthLimit + excessLength, arbitrary[Byte])
         uri <- arbitrary[Uri]
         contentType <- arbitrary[MediaType]
@@ -73,7 +73,7 @@ final class ResourceProxyHandlerSpec extends FreeSpec with PropertyChecks {
       }
 
       forAll (genTestData) { case (lengthLimit, contentBytes, uri, contentType) =>
-        whenever(contentBytes.length > lengthLimit.bytes) {
+        whenever(contentBytes.length >= lengthLimit.bytes) {
           val contentStream = new ByteArrayInputStream(contentBytes.array)
           val responseData = ResponseData(contentType, None, contentStream)
           val httpClient = new ConstantResponseClient(responseData)
@@ -85,7 +85,6 @@ final class ResourceProxyHandlerSpec extends FreeSpec with PropertyChecks {
     }
 
     // TODO proxy Test cases
-    // If ContentLength was not specified, and the stream is == the limit, fail
     // If ContentLength was not specified, and the stream is < the limit, pass
 
   }

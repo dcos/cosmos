@@ -31,10 +31,10 @@ final class ResourceProxyHandler private(
         }
 
         // TODO proxy Fail if data is too large
-        // Allocate array of ContentLength size, or of the limit size
+        // Allocate array of ContentLength size, or of the limit size - 1
         // Buffer InputStream into array; if the end is reached but there's more data, fail
         // If the data runs out before the end of the array, truncate the array
-        val contentBytes = Array.ofDim[Byte](contentLengthLimit.bytes.toInt)
+        val contentBytes = Array.ofDim[Byte](contentLengthLimit.bytes.toInt - 1)
         bufferFully(responseData.contentStream, contentBytes)
 
         if (bufferFully(responseData.contentStream, EofDetector) > 0) {
@@ -69,6 +69,7 @@ object ResourceProxyHandler {
     contentLengthLimit: StorageUnit,
     statsReceiver: StatsReceiver
   ): ResourceProxyHandler = {
+    assert(contentLengthLimit.bytes > 0)
     val handlerScope = statsReceiver.scope("resourceProxyHandler")
     new ResourceProxyHandler(httpClient, contentLengthLimit, handlerScope)
   }
