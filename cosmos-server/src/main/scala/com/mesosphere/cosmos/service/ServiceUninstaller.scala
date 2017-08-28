@@ -3,9 +3,11 @@ package com.mesosphere.cosmos.service
 import com.mesosphere.cosmos.AdminRouter
 import com.mesosphere.cosmos.error.CosmosException
 import com.mesosphere.cosmos.error.MarathonAppNotFound
+import com.mesosphere.cosmos.error.UninstallAlreadyQueued
 import com.mesosphere.cosmos.handler.UninstallHandler
 import com.mesosphere.cosmos.http.RequestSession
 import com.mesosphere.cosmos.thirdparty.marathon.model.AppId
+import com.mesosphere.cosmos.thirdparty.marathon.model.MarathonAppResponse
 import com.twitter.conversions.time._
 import com.twitter.finagle.http.Status
 import com.twitter.util.Try.PredicateDoesNotObtain
@@ -34,8 +36,7 @@ final class ServiceUninstaller(
   ): Future[Unit] = {
     val work = for {
       deployed <- checkDeploymentCompleted(deploymentId) if deployed
-      marathonResponse <- adminRouter.getApp(appId) if marathonResponse.app
-                          .labels.getOrElse(UninstallHandler.SdkUninstallEnvvar, "false").toBoolean
+      marathonResponse <- adminRouter.getApp(appId) if checkUninstallEnvVar(marathonResponse)
       uninstalled <- checkSdkUninstallCompleted(
         marathonResponse.app.id,
         frameworkIds,
@@ -47,6 +48,10 @@ final class ServiceUninstaller(
     work.rescue {
       case ex: CosmosException if ex.error.isInstanceOf[MarathonAppNotFound] =>
         // The app is already gone; stop now to avoid uninstalling a restarted app
+        Future.Done
+      case ex:CosmosException if ex.error.isInstanceOf[UninstallAlreadyQueued] =>
+        // The app is already being uninstalled / already uninstalled by some other thread.
+        // This is a fresh re-install and should be ignored
         Future.Done
       case ex if retries > 0  =>
         if (!ex.isInstanceOf[PredicateDoesNotObtain]) {
@@ -73,6 +78,12 @@ final class ServiceUninstaller(
       logger.info(s"Deployment $status. Id: $deploymentId")
       completed
     }
+  }
+
+  private def checkUninstallEnvVar(marathonResponse: MarathonAppResponse): Boolean = {
+    val sdkUninstall = marathonResponse.app.labels.getOrElse(UninstallHandler.SdkUninstallEnvvar, "false").toBoolean
+    if (!sdkUninstall) throw UninstallAlreadyQueued(marathonResponse.app.id).exception
+    sdkUninstall
   }
 
   private def checkSdkUninstallCompleted(
