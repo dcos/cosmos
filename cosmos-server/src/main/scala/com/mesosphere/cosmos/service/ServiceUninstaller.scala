@@ -6,6 +6,7 @@ import com.mesosphere.cosmos.error.MarathonAppNotFound
 import com.mesosphere.cosmos.handler.UninstallHandler
 import com.mesosphere.cosmos.http.RequestSession
 import com.mesosphere.cosmos.thirdparty.marathon.model.AppId
+import com.mesosphere.cosmos.thirdparty.marathon.model.MarathonAppResponse
 import com.twitter.conversions.time._
 import com.twitter.finagle.http.Status
 import com.twitter.util.Try.PredicateDoesNotObtain
@@ -23,6 +24,7 @@ final class ServiceUninstaller(
 
   private[this] val logger: org.slf4j.Logger = org.slf4j.LoggerFactory.getLogger(getClass)
 
+  // scalastyle:off cyclomatic.complexity
   def uninstall(
     appId: AppId,
     frameworkIds: Set[String],
@@ -33,7 +35,8 @@ final class ServiceUninstaller(
   ): Future[Unit] = {
     val work = for {
       deployed <- checkDeploymentCompleted(deploymentId) if deployed
-      marathonResponse <- adminRouter.getApp(appId)
+      marathonResponse <- adminRouter.getApp(appId) if marathonResponse.app
+                          .labels.getOrElse(UninstallHandler.SdkUninstallEnvvar, "false").toBoolean
       uninstalled <- checkSdkUninstallCompleted(
         marathonResponse.app.id,
         frameworkIds,
@@ -56,6 +59,7 @@ final class ServiceUninstaller(
           .before(uninstall(appId, frameworkIds, deploymentId, retries - 1))
     }
   }
+  // scalastyle:on cyclomatic.complexity
 
   private def checkDeploymentCompleted(
     deploymentId: String
