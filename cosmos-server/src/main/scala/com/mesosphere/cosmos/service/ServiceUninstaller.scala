@@ -81,7 +81,7 @@ final class ServiceUninstaller(
     }
   }
 
-  private def checkUninstallEnvVar(marathonResponse: MarathonAppResponse): Unit = {
+  private def checkUninstallEnvVar(marathonResponse: MarathonAppResponse): Future[Unit] = {
     val sdkUninstall = marathonResponse.app.labels.getOrElse(UninstallHandler.SdkUninstallEnvvar, "false").toBoolean
     logger.warn("############sdk uninstall " + sdkUninstall)
     if (sdkUninstall) Future.Unit
