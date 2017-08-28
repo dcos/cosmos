@@ -36,7 +36,8 @@ final class ServiceUninstaller(
   ): Future[Unit] = {
     val work = for {
       deployed <- checkDeploymentCompleted(deploymentId) if deployed
-      marathonResponse <- adminRouter.getApp(appId) if checkUninstallEnvVar(marathonResponse)
+      marathonResponse <- adminRouter.getApp(appId)
+      _ <- checkUninstallEnvVar(marathonResponse)
       uninstalled <- checkSdkUninstallCompleted(
         marathonResponse.app.id,
         frameworkIds,
@@ -80,10 +81,11 @@ final class ServiceUninstaller(
     }
   }
 
-  private def checkUninstallEnvVar(marathonResponse: MarathonAppResponse): Boolean = {
+  private def checkUninstallEnvVar(marathonResponse: MarathonAppResponse): Unit = {
     val sdkUninstall = marathonResponse.app.labels.getOrElse(UninstallHandler.SdkUninstallEnvvar, "false").toBoolean
-    if (!sdkUninstall) throw UninstallAlreadyQueued(marathonResponse.app.id).exception
-    sdkUninstall
+    logger.warn("############sdk uninstall " + sdkUninstall)
+    if (sdkUninstall) Future.Unit
+    else Future.exception(UninstallAlreadyQueued(marathonResponse.app.id).exception)
   }
 
   private def checkSdkUninstallCompleted(
