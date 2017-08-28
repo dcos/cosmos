@@ -6,7 +6,6 @@ import com.mesosphere.cosmos.error.MarathonAppNotFound
 import com.mesosphere.cosmos.handler.UninstallHandler
 import com.mesosphere.cosmos.http.RequestSession
 import com.mesosphere.cosmos.thirdparty.marathon.model.AppId
-import com.mesosphere.cosmos.thirdparty.marathon.model.MarathonAppResponse
 import com.twitter.conversions.time._
 import com.twitter.finagle.http.Status
 import com.twitter.util.Try.PredicateDoesNotObtain
