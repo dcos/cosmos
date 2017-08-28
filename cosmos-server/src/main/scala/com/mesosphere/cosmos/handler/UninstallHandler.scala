@@ -132,6 +132,13 @@ private[cosmos] final class UninstallHandler(
   ): Future[UninstallDetails] = {
     adminRouter.getApp(op.appId)
       .flatMap { response =>
+        val sdkUninstall = response.app.labels.getOrElse(UninstallHandler.SdkUninstallEnvvar, "false").toBoolean
+        if (sdkUninstall) {
+          throw FailedToStartUninstall(
+            op.appId,
+            s"App is already queued for uninstall ${response.app.labels.get(MarathonApp.nameLabel)}"
+          ).exception
+        }
         val sdkApiVersion = response.app.labels(SdkVersionLabel)
         adminRouter.getSdkServiceFrameworkIds(op.appId, sdkApiVersion)
       }
