@@ -29,6 +29,10 @@ class AdminRouter(
     marathon.getAppOption(appId)
   }
 
+  def getAppRawJson(appId: AppId)(implicit session: RequestSession): Future[JsonObject] = {
+    marathon.getAppRawJson(appId)
+  }
+
   def getApp(appId: AppId)(implicit session: RequestSession): Future[MarathonAppResponse] = {
     marathon.getApp(appId)
   }

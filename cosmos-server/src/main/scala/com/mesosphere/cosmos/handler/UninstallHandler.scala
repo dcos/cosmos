@@ -181,9 +181,9 @@ private[cosmos] final class UninstallHandler(
     // - uris
     // - version
     appJson.add(
-      "env",
+      envJsonField,
       Json.fromJsonObject(
-        appJson("env").get.asObject.get.add(SdkUninstallEnvvar, Json.fromString("true"))
+        appJson(envJsonField).get.asObject.get.add(SdkUninstallEnvvar, Json.fromString("true"))
       )
     )
   }
@@ -257,6 +257,7 @@ object UninstallHandler {
   val SdkServiceLabel: String = "DCOS_COMMONS_UNINSTALL"
   val SdkVersionLabel: String = "DCOS_COMMONS_API_VERSION"
   val SdkUninstallEnvvar: String = "SDK_UNINSTALL"
+  val envJsonField: String = "env"
   val DeploymentIdErrorMessage: String = "Marathon update response is not a JSON Object: %s"
 
   private case class MarathonAppDeleteSuccess()

@@ -3,6 +3,7 @@ package com.mesosphere.cosmos.service
 import com.mesosphere.cosmos.AdminRouter
 import com.mesosphere.cosmos.error.CosmosException
 import com.mesosphere.cosmos.error.MarathonAppNotFound
+import com.mesosphere.cosmos.error.UninstallAlreadyQueued
 import com.mesosphere.cosmos.handler.UninstallHandler
 import com.mesosphere.cosmos.http.RequestSession
 import com.mesosphere.cosmos.thirdparty.marathon.model.AppId
@@ -23,6 +24,7 @@ final class ServiceUninstaller(
 
   private[this] val logger: org.slf4j.Logger = org.slf4j.LoggerFactory.getLogger(getClass)
 
+  // scalastyle:off cyclomatic.complexity
   def uninstall(
     appId: AppId,
     frameworkIds: Set[String],
@@ -34,6 +36,7 @@ final class ServiceUninstaller(
     val work = for {
       deployed <- checkDeploymentCompleted(deploymentId) if deployed
       marathonResponse <- adminRouter.getApp(appId)
+      _ <- checkSdkUninstallEnvVar(appId)
       uninstalled <- checkSdkUninstallCompleted(
         marathonResponse.app.id,
         frameworkIds,
@@ -46,6 +49,10 @@ final class ServiceUninstaller(
       case ex: CosmosException if ex.error.isInstanceOf[MarathonAppNotFound] =>
         // The app is already gone; stop now to avoid uninstalling a restarted app
         Future.Done
+      case ex:CosmosException if ex.error.isInstanceOf[UninstallAlreadyQueued] =>
+        // The app is already being uninstalled / already uninstalled by some other thread.
+        // This is a fresh re-install and should be ignored
+        Future.Done
       case ex if retries > 0  =>
         if (!ex.isInstanceOf[PredicateDoesNotObtain]) {
           logger.info(s"Uninstall attempt for $appId didn't finish. $retries retries left." +
@@ -56,6 +63,7 @@ final class ServiceUninstaller(
           .before(uninstall(appId, frameworkIds, deploymentId, retries - 1))
     }
   }
+  // scalastyle:on cyclomatic.complexity
 
   private def checkDeploymentCompleted(
     deploymentId: String
@@ -69,6 +77,18 @@ final class ServiceUninstaller(
       val status = if (completed) "complete" else "still in progress"
       logger.info(s"Deployment $status. Id: $deploymentId")
       completed
+    }
+  }
+
+  def checkSdkUninstallEnvVar(appId: AppId)(
+    implicit session: RequestSession
+  ): Future[Unit] = {
+    adminRouter.getAppRawJson(appId).map { json =>
+      json.contains(UninstallHandler.envJsonField) &&
+        json(UninstallHandler.envJsonField).toString.toBoolean match {
+        case true => throw UninstallAlreadyQueued(appId).exception
+        case false => ()
+      }
     }
   }
 

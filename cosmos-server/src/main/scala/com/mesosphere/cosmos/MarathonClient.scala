@@ -67,12 +67,31 @@ class MarathonClient(
   )(
     implicit session: RequestSession
   ): Future[Option[MarathonAppResponse]] = {
+    getAppResponse(appId).map {
+      _ match {
+        case Some(response) => Some(decodeJsonTo[MarathonAppResponse](response))
+        case None => None
+      }
+    }
+  }
+
+  def getAppResponse(appId: AppId)(implicit session: RequestSession): Future[Option[Response]] = {
     val uri = "v2" / "apps" / appId.toUri
     client(get(uri)).map { response =>
       response.status match {
-        case Status.Ok => Some(decodeJsonTo[MarathonAppResponse](response))
+        case Status.Ok => Some(response)
         case Status.NotFound => None
         case s: Status => throw GenericHttpError(HttpMethod.GET, uri, s).exception(s)
+      }
+    }
+  }
+
+  def getAppRawJson(appId: AppId)(implicit session: RequestSession): Future[JsonObject] = {
+    getAppResponse(appId).map {
+      _ match {
+        // No need to return an option as Some json should always be present.
+        case Some(response) => decodeJsonTo[JsonObject](response)
+        case None => throw MarathonAppNotFound(appId).exception // Should not happen
       }
     }
   }
