@@ -49,9 +49,9 @@ final class ResourceProxyHandler private(
           case Left(error) => error match {
             case UriSyntax(cause) =>
               // TODO better name
-              throw CosmosException(EndpointUriSyntax("ProxyEndpoint", uri, cause.getMessage), cause)
+              throw CosmosException(EndpointUriSyntax("Proxy-Endpoint", uri, cause.getMessage), cause)
             case UriConnection(cause) =>
-              throw CosmosException(EndpointUriConnection("ProxyEndpoint", uri, cause.getMessage), cause)
+              throw CosmosException(EndpointUriConnection("Proxy-Endpoint", uri, cause.getMessage), cause)
             case UnexpectedStatus(clientStatus) =>
               throw GenericHttpError(
                 uri = uri,
@@ -90,7 +90,6 @@ object ResourceProxyHandler {
     responseData: ResponseData,
     contentLengthLimit: StorageUnit
   ):Array[Byte] = {
-
     validateContentLength(uri, responseData.contentLength, contentLengthLimit)
 
     // TODO proxy Fail if data is too large
@@ -102,7 +101,6 @@ object ResourceProxyHandler {
       case Some(len) => len.toInt
       case None => contentLengthLimit.bytes.toInt - 1
     }
-
     val contentBytes = Array.ofDim[Byte](length)
     val bytesRead = bufferFully(responseData.contentStream, contentBytes)
 

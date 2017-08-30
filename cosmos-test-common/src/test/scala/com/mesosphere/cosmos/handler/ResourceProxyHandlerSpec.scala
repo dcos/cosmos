@@ -13,7 +13,6 @@ import com.twitter.conversions.storage._
 import com.twitter.finagle.http.Response
 import com.twitter.finagle.http.Status
 import com.twitter.finagle.stats.NullStatsReceiver
-import com.twitter.finagle.stats.StatsReceiver
 import com.twitter.util.Await
 import com.twitter.util.Future
 import com.twitter.util.StorageUnit
@@ -28,6 +27,8 @@ import scala.collection.mutable
 
 final class ResourceProxyHandlerSpec extends FreeSpec with PropertyChecks {
 
+  type TestData = (StorageUnit, mutable.WrappedArray[Byte], Uri, MediaType)
+
   "When Content-Length is provided by the upstream server" - {
 
     "When Content-Length matches the actual content stream length" - {
@@ -35,16 +36,16 @@ final class ResourceProxyHandlerSpec extends FreeSpec with PropertyChecks {
       "Succeeds if Content-Length is below the limit" in {
         val resourceData = ResourceProxyData.IconSmall
         val lengthLimit = resourceData.contentLength + 1.bytes
-        val proxyHandler = ResourceProxyHandler(HttpClient, lengthLimit, NullStatsReceiver)
-
-        assertSuccess(proxyHandler(resourceData.uri))
+        val result = Await.result(
+          ResourceProxyHandler(HttpClient, lengthLimit, NullStatsReceiver)(resourceData.uri)
+        )
+        assertResult(Status.Ok)(result.status)
       }
 
       "Fails if Content-Length is at the limit" in {
         val resourceData = ResourceProxyData.IconSmall
         val lengthLimit = resourceData.contentLength
         val proxyHandler = ResourceProxyHandler(HttpClient, lengthLimit, NullStatsReceiver)
-
         assertFailure(proxyHandler(resourceData.uri))
       }
 
@@ -52,7 +53,6 @@ final class ResourceProxyHandlerSpec extends FreeSpec with PropertyChecks {
         val resourceData = ResourceProxyData.IconSmall
         val lengthLimit = resourceData.contentLength - 1.bytes
         val proxyHandler = ResourceProxyHandler(HttpClient, lengthLimit, NullStatsReceiver)
-
         assertFailure(proxyHandler(resourceData.uri))
       }
 
@@ -156,18 +156,10 @@ final class ResourceProxyHandlerSpec extends FreeSpec with PropertyChecks {
 
   }
 
-  type TestData = (StorageUnit, mutable.WrappedArray[Byte], Uri, MediaType)
-
-  private[this] def assertSuccess(output: Future[Output[Response]]): Assertion = {
-    val result = Await.result(output)
-    assertResult(Status.Ok)(result.status)
-  }
-
   private[this] def assertFailure(output: Future[Output[Response]]): Assertion = {
     val exception = intercept[CosmosException](Await.result(output))
 
     assertResult(Status.Forbidden)(exception.status)
     assert(exception.error.isInstanceOf[ResourceTooLarge])
   }
-
 }
