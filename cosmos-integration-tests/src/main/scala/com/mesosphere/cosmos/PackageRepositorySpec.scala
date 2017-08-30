@@ -7,7 +7,7 @@ import com.mesosphere.cosmos.error.RepoNameOrUriMissing
 import com.mesosphere.cosmos.error.RepositoryAddIndexOutOfBounds
 import com.mesosphere.cosmos.error.RepositoryAlreadyPresent
 import com.mesosphere.cosmos.error.RepositoryNotPresent
-import com.mesosphere.cosmos.error.RepositoryUriConnection
+import com.mesosphere.cosmos.error.EndpointUriConnection
 import com.mesosphere.cosmos.error.UniverseClientHttpError
 import com.mesosphere.cosmos.error.UnsupportedContentType
 import com.mesosphere.cosmos.error.UnsupportedRepositoryUri
@@ -104,8 +104,9 @@ class PackageRepositorySpec extends FeatureSpec with Matchers {
     scenario("Issue #204: the user should receive an error " +
       "when trying to add a repository with a broken uri") {
       val repo = rpc.v1.model.PackageRepository("unreachable", "http://fake.fake")
-      val expectedError = RepositoryUriConnection(
-        repo,
+      val expectedError = EndpointUriConnection(
+        repo.name,
+        repo.uri,
         repo.uri.toString.stripPrefix("http://")
       ).as[ErrorResponse]
       val error = intercept[HttpErrorResponse] {

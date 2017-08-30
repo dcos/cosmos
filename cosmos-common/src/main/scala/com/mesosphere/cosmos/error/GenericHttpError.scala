@@ -10,7 +10,7 @@ import io.circe.generic.semiauto.deriveEncoder
 import org.jboss.netty.handler.codec.http.HttpMethod
 
 final case class GenericHttpError(
-  method: HttpMethod,
+  method: HttpMethod = HttpMethod.GET,
   uri: Uri,
   clientStatus: Status
 ) extends CosmosError {

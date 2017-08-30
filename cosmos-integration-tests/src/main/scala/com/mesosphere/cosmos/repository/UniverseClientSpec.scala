@@ -1,8 +1,8 @@
 package com.mesosphere.cosmos.repository
 
-import com.mesosphere.cosmos.error.RepositoryUriConnection
+import com.mesosphere.cosmos.error.EndpointUriConnection
 import com.mesosphere.cosmos.error.CosmosException
-import com.mesosphere.cosmos.error.RepositoryUriSyntax
+import com.mesosphere.cosmos.error.EndpointUriSyntax
 import com.mesosphere.cosmos.error.UniverseClientHttpError
 import com.mesosphere.cosmos.rpc.v1.model.PackageRepository
 import com.mesosphere.cosmos.test.CosmosIntegrationTestClient
@@ -47,26 +47,26 @@ final class UniverseClientSpec extends FreeSpec with Matchers {
       "URI/URL syntax" - {
         "relative URI" in {
           val expectedRepo = PackageRepository(name = "FooBar", uri = Uri.parse("foo/bar"))
-          val Throw(CosmosException(RepositoryUriSyntax(actualRepo, _), _, _, Some(causedBy))) =
+          val Throw(CosmosException(EndpointUriSyntax(name: String, uri: Uri, _), _, _, Some(causedBy))) =
             Await.result(universeClient(expectedRepo, version1Dot8).liftToTry)
-          assertResult(expectedRepo)(actualRepo)
+          assertResult(expectedRepo)(PackageRepository(name, uri))
           assert(causedBy.isInstanceOf[IllegalArgumentException])
         }
 
         "unknown protocol" in {
           val expectedRepo = PackageRepository(name = "FooBar", uri = Uri.parse("foo://bar.com"))
-          val Throw(CosmosException(RepositoryUriSyntax(actualRepo, _), _, _, Some(causedBy))) =
+          val Throw(CosmosException(EndpointUriSyntax(name: String, uri: Uri, _), _, _, Some(causedBy))) =
             Await.result(universeClient(expectedRepo, version1Dot8).liftToTry)
-          assertResult(expectedRepo)(actualRepo)
+          assertResult(expectedRepo)(PackageRepository(name, uri))
           assert(causedBy.isInstanceOf[MalformedURLException])
         }
       }
 
       "Connection failure" in {
         val expectedRepo = PackageRepository(name = "BadRepo", uri = Uri.parse("http://foobar"))
-        val Throw(CosmosException(RepositoryUriConnection(actualRepo, _), _, _, Some(causedBy))) =
+        val Throw(CosmosException(EndpointUriConnection(name: String, uri: Uri, _), _, _, Some(causedBy))) =
           Await.result(universeClient(expectedRepo, version1Dot8).liftToTry)
-        assertResult(expectedRepo)(actualRepo)
+        assertResult(expectedRepo)(PackageRepository(name, uri))
         assert(causedBy.isInstanceOf[IOException])
       }
 

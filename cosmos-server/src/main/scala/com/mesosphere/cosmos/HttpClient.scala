@@ -8,16 +8,21 @@ import com.netaporter.uri.Uri
 import com.twitter.finagle.http.Fields
 import com.twitter.finagle.stats.StatsReceiver
 import com.twitter.util.Future
+import com.twitter.util.Return
+import com.twitter.util.Throw
 import java.io.IOException
 import java.io.InputStream
 import java.net.HttpURLConnection
 import java.net.MalformedURLException
 import java.net.URISyntaxException
 import java.util.zip.GZIPInputStream
+import org.slf4j.Logger
 
 trait HttpClient {
 
   import HttpClient._
+
+  lazy val logger: Logger = org.slf4j.LoggerFactory.getLogger(getClass)
 
   def fetch[A](
     uri: Uri,
@@ -85,9 +90,17 @@ object HttpClient extends HttpClient {
       case HttpURLConnection.HTTP_OK =>
         sr.scope("status").counter("200").incr()
         // TODO proxy Handle error cases
-        val contentType = MediaTypeParser.parseUnsafe(conn.getHeaderField(Fields.ContentType))
         val contentEncoding = Option(conn.getHeaderField(Fields.ContentEncoding))
-        (contentType, contentEncoding)
+        MediaTypeParser.parse(conn.getHeaderField(Fields.ContentType)) match {
+          case Return(contentType) => (contentType, contentEncoding)
+          case Throw(error) => {
+            logger.error(s"Error while parsing the Content-Type " +
+              s"${conn.getHeaderField(Fields.ContentType)} from URI $uri",
+              error
+            )
+            throw error
+          }
+        }
       case status if RedirectStatuses(status) =>
         sr.scope("status").counter(status.toString).incr()
         // Different forms of redirect, HttpURLConnection won't follow a redirect across schemes
