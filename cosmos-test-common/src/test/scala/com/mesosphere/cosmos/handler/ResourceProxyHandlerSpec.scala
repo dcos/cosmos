@@ -63,7 +63,7 @@ final class ResourceProxyHandlerSpec extends FreeSpec with PropertyChecks {
       // If ContentLength *was* specified, and the stream is > that, fail
       // If ContentLength *was* specified, and the stream is <= that, pass
       //   - In this case our response content length should be the size of the received data
-      "If ContentLength was specified, and the stream is not equal to that, fail" in {
+      "If ContentLength was specified, and the header value is less than actual stream, fail" in {
         val maxLengthLimit = 100
         val genTestData: Gen[TestData] = for {
           lengthLimit <- Gen.chooseNum(1, maxLengthLimit)
@@ -75,15 +75,34 @@ final class ResourceProxyHandlerSpec extends FreeSpec with PropertyChecks {
         }
 
         forAll (genTestData) { case (lengthLimit, contentBytes, uri, contentType) =>
-          whenever(contentBytes.array.length > 1) {
-            val contentStream = new ByteArrayInputStream(contentBytes.array)
-            val responseData = ResponseData(contentType, Some((contentBytes.size - 1).toLong), contentStream)
-            val ex = intercept[CosmosException](ResourceProxyHandler.getContentBytes(uri, responseData, lengthLimit))
-            assert(ex.error.isInstanceOf[GenericHttpError])
-            assertResult(Status.InternalServerError)(ex.error.asInstanceOf[GenericHttpError].clientStatus)
-          }
+          val contentStream = new ByteArrayInputStream(contentBytes.array)
+          val responseData = ResponseData(contentType, Some((contentBytes.size - 1).toLong), contentStream)
+          val ex = intercept[CosmosException](ResourceProxyHandler.getContentBytes(uri, responseData, lengthLimit))
+          assert(ex.error.isInstanceOf[GenericHttpError])
+          assertResult(Status.InternalServerError)(ex.error.asInstanceOf[GenericHttpError].clientStatus)
         }
       }
+
+      "If ContentLength was specified, and the header value is greater than actual stream, fail" in {
+        val maxLengthLimit = 100
+        val genTestData: Gen[TestData] = for {
+          lengthLimit <- Gen.chooseNum(3, maxLengthLimit)
+          contentBytes <- Gen.containerOfN[Array, Byte](lengthLimit-2, arbitrary[Byte])
+          uri <- arbitrary[Uri]
+          contentType <- arbitrary[MediaType]
+        } yield {
+          (lengthLimit.bytes, contentBytes, uri, contentType)
+        }
+
+        forAll (genTestData) { case (lengthLimit, contentBytes, uri, contentType) =>
+          val contentStream = new ByteArrayInputStream(contentBytes.array)
+          val responseData = ResponseData(contentType, Some((contentBytes.size + 1).toLong), contentStream)
+          val ex = intercept[CosmosException](ResourceProxyHandler.getContentBytes(uri, responseData, lengthLimit))
+          assert(ex.error.isInstanceOf[GenericHttpError])
+          assertResult(Status.InternalServerError)(ex.error.asInstanceOf[GenericHttpError].clientStatus)
+        }
+      }
+
     }
 
   }
@@ -149,20 +168,6 @@ final class ResourceProxyHandlerSpec extends FreeSpec with PropertyChecks {
 
     assertResult(Status.Forbidden)(exception.status)
     assert(exception.error.isInstanceOf[ResourceTooLarge])
-  }
-
-}
-
-final class ConstantResponseClient(responseData: ResponseData) extends HttpClient {
-
-  override def fetch[A](
-    uri: Uri,
-    statsReceiver: StatsReceiver,
-    headers: (String, String)*
-  )(
-    processResponse: ResponseData => A
-  ): Future[Either[HttpClient.Error, A]] = {
-    Future(Right(processResponse(responseData)))
   }
 
 }
