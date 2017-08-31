@@ -15,7 +15,7 @@ import com.twitter.finagle.http._
 import org.scalatest.FeatureSpec
 import org.scalatest.Matchers
 
-final class PackageInstallIntegrationSpecBreakEE extends FeatureSpec with Matchers {
+final class PackageInstallIntegrationSpecBreakEEAgain extends FeatureSpec with Matchers {
 
   feature("The package/install endpoint") {
     scenario("should store the correct labels") {
