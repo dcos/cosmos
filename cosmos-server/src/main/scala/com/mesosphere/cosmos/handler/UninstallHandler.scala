@@ -130,23 +130,32 @@ private[cosmos] final class UninstallHandler(
   )(
     implicit session: RequestSession
   ): Future[UninstallDetails] = {
-    adminRouter.modifyApp(op.appId, force = true)(setMarathonUninstall).map { response =>
-      response.status match {
-        case Status.Ok =>
-          val deploymentId = parseDeploymentId(response.contentString, op)
-          val _ = uninstaller.uninstall(op.appId, deploymentId).onFailure { exception =>
-            logger.error(s"Background uninstall for ${op.appId} failed", exception)
-          }
-
-          UninstallDetails.from(op)
-        case _ =>
-          logger.error("Encountered error in marathon request {}", response.contentString)
-          throw FailedToStartUninstall(
-            op.appId,
-            s"Encountered error in marathon request ${response.contentString}"
-          ).exception
+    adminRouter.getApp(op.appId)
+      .flatMap { response =>
+        val sdkApiVersion = response.app.labels(SdkVersionLabel)
+        adminRouter.getSdkServiceFrameworkIds(op.appId, sdkApiVersion)
       }
-    }
+      .handle { case _ => Nil }
+      .flatMap { frameworkIds =>
+        adminRouter.modifyApp(op.appId, force = true)(setMarathonUninstall).map { response =>
+          response.status match {
+            case Status.Ok =>
+              val deploymentId = parseDeploymentId(response.contentString, op)
+              val _ = uninstaller.uninstall(op.appId, frameworkIds.toSet, deploymentId)
+                .onFailure { exception =>
+                  logger.error(s"Background uninstall for ${op.appId} failed", exception)
+                }
+
+              UninstallDetails.from(op)
+            case _ =>
+              logger.error("Encountered error in marathon request {}", response.contentString)
+              throw FailedToStartUninstall(
+                op.appId,
+                s"Encountered error in marathon request ${response.contentString}"
+              ).exception
+          }
+        }
+      }
   }
 
   private[this] def parseDeploymentId(content: String, op: UninstallOperation): String = {
@@ -172,9 +181,9 @@ private[cosmos] final class UninstallHandler(
     // - uris
     // - version
     appJson.add(
-      "env",
+      envJsonField,
       Json.fromJsonObject(
-        appJson("env").get.asObject.get.add(SdkUninstallEnvvar, Json.fromString("true"))
+        appJson(envJsonField).get.asObject.get.add(SdkUninstallEnvvar, Json.fromString("true"))
       )
     )
   }
@@ -245,9 +254,11 @@ private[cosmos] final class UninstallHandler(
 }
 
 object UninstallHandler {
-  val SdkServiceLabel = "DCOS_COMMONS_UNINSTALL"
-  val SdkUninstallEnvvar = "SDK_UNINSTALL"
-  val DeploymentIdErrorMessage = "Marathon update response is not a JSON Object: %s"
+  val SdkServiceLabel: String = "DCOS_COMMONS_UNINSTALL"
+  val SdkVersionLabel: String = "DCOS_COMMONS_API_VERSION"
+  val SdkUninstallEnvvar: String = "SDK_UNINSTALL"
+  val envJsonField: String = "env"
+  val DeploymentIdErrorMessage: String = "Marathon update response is not a JSON Object: %s"
 
   private case class MarathonAppDeleteSuccess()
 
