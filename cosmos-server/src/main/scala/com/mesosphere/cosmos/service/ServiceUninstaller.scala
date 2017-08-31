@@ -3,7 +3,7 @@ package com.mesosphere.cosmos.service
 import com.mesosphere.cosmos.AdminRouter
 import com.mesosphere.cosmos.error.CosmosException
 import com.mesosphere.cosmos.error.MarathonAppNotFound
-import com.mesosphere.cosmos.error.UninstallAlreadyQueued
+import com.mesosphere.cosmos.error.SDKUninstallVarNotFound
 import com.mesosphere.cosmos.handler.UninstallHandler
 import com.mesosphere.cosmos.http.RequestSession
 import com.mesosphere.cosmos.thirdparty.marathon.model.AppId
@@ -49,7 +49,7 @@ final class ServiceUninstaller(
       case ex: CosmosException if ex.error.isInstanceOf[MarathonAppNotFound] =>
         // The app is already gone; stop now to avoid uninstalling a restarted app
         Future.Done
-      case ex:CosmosException if ex.error.isInstanceOf[UninstallAlreadyQueued] =>
+      case ex:CosmosException if ex.error.isInstanceOf[SDKUninstallVarNotFound] =>
         // The app is already being uninstalled / already uninstalled by some other thread.
         // This is a fresh re-install and should be ignored
         Future.Done
@@ -86,7 +86,7 @@ final class ServiceUninstaller(
     adminRouter.getAppRawJson(appId).map { json =>
       json.contains(UninstallHandler.envJsonField) &&
         json(UninstallHandler.envJsonField).toString.toBoolean match {
-        case true => throw UninstallAlreadyQueued(appId).exception
+        case true => throw SDKUninstallVarNotFound(appId).exception
         case false => ()
       }
     }
