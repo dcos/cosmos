@@ -6,7 +6,7 @@ final class IntegrationTestsSpec extends Suites(
   new ListVersionsSpec,
   new NonSharedServiceDescribeSpec,
   new PackageDescribeSpec,
-  new PackageInstallIntegrationSpec,
+  new PackageInstallIntegrationSpecBreakEE,
   new PackageListIntegrationSpec,
   new PackageRepositorySpec,
   new PackageSearchSpec,
