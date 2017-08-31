@@ -36,6 +36,12 @@ object TestingPackages {
     universe.v3.model.License(name = "XYZ", url = Uri.parse("http://foobar/x/y/z"))
   ))
   val MinDcosReleaseVersion = Some(universe.v3.model.DcosReleaseVersionParser.parseUnsafe("1.9.99"))
+
+  private val iconSmall = Some("small.png")
+  private val iconMedium = Some("medium.png")
+  private val iconLarge = Some("large.png")
+  private val screenshots = Some(List("ooh.png", "aah.png"))
+
   val Resource = Some(universe.v3.model.V3Resource(
     assets = Some(universe.v3.model.Assets(
       uris = Some(Map(
@@ -48,10 +54,10 @@ object TestingPackages {
       )))
     )),
     images = Some(universe.v3.model.Images(
-      iconSmall = Some("small.png"),
-      iconMedium = Some("medium.png"),
-      iconLarge = Some("large.png"),
-      screenshots = Some(List("ooh.png", "aah.png"))
+      iconSmall,
+      iconMedium,
+      iconLarge,
+      screenshots
     )),
     cli = Some(universe.v3.model.Cli(
       binaries = Some(universe.v3.model.Platforms(
@@ -154,10 +160,10 @@ object TestingPackages {
         )))
       )),
       images = Some(universe.v3.model.Images(
-        iconSmall = Some("small.png"),
-        iconMedium = Some("medium.png"),
-        iconLarge = Some("large.png"),
-        screenshots = Some(List("ooh.png", "aah.png"))
+        iconSmall,
+        iconMedium,
+        iconLarge,
+        screenshots
       ))
     )),
     config = MaximalV3ModelV3PackageDefinition.config,
@@ -221,10 +227,10 @@ object TestingPackages {
       )))
     )),
     images = Some(universe.v2.model.Images(
-      iconSmall = Some("small.png"),
-      iconMedium = Some("medium.png"),
-      iconLarge = Some("large.png"),
-      screenshots = Some(List("ooh.png", "aah.png"))
+      iconSmall,
+      iconMedium,
+      iconLarge,
+      screenshots
     ))
   )
 

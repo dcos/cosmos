@@ -23,10 +23,12 @@ import com.mesosphere.cosmos.http.MediaTypeOps._
 import com.mesosphere.cosmos.http.MediaTypeParseError
 import com.mesosphere.cosmos.http.MediaTypeParser
 import com.mesosphere.cosmos.http.RequestSession
-import com.mesosphere.cosmos.rpc.v1.model.PackageRepository
+import com.mesosphere.cosmos.rpc
+import com.mesosphere.cosmos.Util.rewriteWithProxyURL
 import com.mesosphere.universe
 import com.mesosphere.universe.MediaTypes
 import com.mesosphere.universe.bijection.UniverseConversions._
+import com.mesosphere.universe.v2.circe.Decoders._
 import com.mesosphere.universe.v2.circe.Decoders._
 import com.netaporter.uri.Uri
 import com.twitter.bijection.Conversion.asMethod
@@ -61,7 +63,7 @@ import scala.util.{Try => ScalaTry}
 
 trait UniverseClient {
   def apply(
-    repository: PackageRepository
+    repository: rpc.v1.model.PackageRepository
   )(
     implicit session: RequestSession
   ): Future[universe.v4.model.Repository]
@@ -82,7 +84,7 @@ final class DefaultUniverseClient(
   private[this] val cosmosVersion = BuildProperties().cosmosVersion
 
   def apply(
-    repository: PackageRepository
+    repository: rpc.v1.model.PackageRepository
   )(
     implicit session: RequestSession
   ): Future[universe.v4.model.Repository] = {
@@ -102,8 +104,8 @@ final class DefaultUniverseClient(
   }
 
   private[repository] def apply(
-      repository: PackageRepository,
-      dcosReleaseVersion: universe.v3.model.DcosReleaseVersion
+    repository: rpc.v1.model.PackageRepository,
+    dcosReleaseVersion: universe.v3.model.DcosReleaseVersion
   ): Future[universe.v4.model.Repository] = {
     fetchScope.counter("requestCount").incr()
     Stat.timeFuture(fetchScope.stat("histogram")) {
@@ -168,10 +170,14 @@ final class DefaultUniverseClient(
     }
 
     // Sort the packages
-    universe.v4.model.Repository(repo.packages.sorted.reverse)
+    rewriteResources(universe.v4.model.Repository(repo.packages.sorted.reverse))
+
   }
 
-  private[this] def handleError(error: HttpClient.Error, repository: PackageRepository): Nothing = {
+  private[this] def handleError(
+    error: HttpClient.Error,
+    repository: rpc.v1.model.PackageRepository
+  ): Nothing = {
     error match {
       case UriSyntax(cause) =>
         throw CosmosException(EndpointUriSyntax(repository.name, repository.uri, cause.getMessage), cause)
@@ -191,11 +197,11 @@ final class DefaultUniverseClient(
   }
 
   private[this] case class V2PackageInformation(
-      packageDetails: Option[universe.v2.model.PackageDetails] = None,
-      marathonMustache: Option[ByteBuffer] = None,
-      command: Option[universe.v2.model.Command] = None,
-      config: Option[JsonObject] = None,
-      resource: Option[universe.v2.model.Resource] = None
+    packageDetails: Option[universe.v2.model.PackageDetails] = None,
+    marathonMustache: Option[ByteBuffer] = None,
+    command: Option[universe.v2.model.Command] = None,
+    config: Option[JsonObject] = None,
+    resource: Option[universe.v2.model.Resource] = None
   )
 
   private[this] case class V2ZipState(
@@ -204,8 +210,8 @@ final class DefaultUniverseClient(
   )
 
   private[this] def processUniverseV2(
-      sourceUri: Uri,
-      inputStream: InputStream
+    sourceUri: Uri,
+    inputStream: InputStream
   ): universe.v4.model.Repository = {
     val bundle = new ZipInputStream(inputStream)
     // getNextEntry() returns null when there are no more entries
@@ -339,6 +345,75 @@ final class DefaultUniverseClient(
     )
   }
 
+  // scalastyle:off method.length
+  private[this] def rewriteResources(repository: universe.v4.model.Repository): universe.v4.model.Repository = {
+
+    def rewriteAssets(
+      assets: Option[universe.v3.model.Assets]
+    ) : Option[universe.v3.model.Assets] = {
+      if (assets.isDefined && assets.get.uris.isDefined) {
+        Some(assets.get.copy(uris = assets.get.uris.map(
+          //_.map( (_, rewriteWithProxyURL(_)))
+          _.map { case (key, value) => (key, rewriteWithProxyURL(value))}
+        )))
+      } else assets
+    }
+
+    def rewriteImages(
+      images: Option[universe.v3.model.Images]
+    ) : Option[universe.v3.model.Images] = {
+      images match {
+        case Some(images) => Some(universe.v3.model.Images(
+          iconSmall = images.iconSmall.map(rewriteWithProxyURL),
+          iconMedium = images.iconMedium.map(rewriteWithProxyURL),
+          iconLarge = images.iconLarge.map(rewriteWithProxyURL),
+          screenshots = images.screenshots.map(_.map(rewriteWithProxyURL))
+        ))
+        case None => None
+      }
+    }
+
+    def rewriteV3Resource(
+      resource : universe.v3.model.V3Resource
+    ): Option[universe.v3.model.V3Resource] = {
+      Some(
+        universe.v3.model.V3Resource(
+          rewriteAssets(resource.assets),
+          rewriteImages(resource.images)
+        )
+      )
+    }
+
+    def rewriteV2Resource(
+      resource : universe.v3.model.V2Resource
+    ): Option[universe.v3.model.V2Resource] = {
+      Some(
+        universe.v3.model.V2Resource(
+          rewriteAssets(resource.assets),
+          rewriteImages(resource.images)
+        )
+      )
+    }
+
+    universe.v4.model.Repository(
+      repository.packages.map{ _ match {
+        case v2: universe.v3.model.V2Package => v2.resource match {
+          case Some(r) => v2.copy(resource = rewriteV2Resource(r))
+          case None => v2
+        }
+        case v3: universe.v3.model.V3Package => v3.resource match {
+          case Some(r) => v3.copy(resource = rewriteV3Resource(r))
+          case None => v3
+        }
+        case v4: universe.v4.model.V4Package => v4.resource match {
+          case Some(r) => v4.copy(resource = rewriteV3Resource(r))
+          case None => v4
+        }
+      }}
+    )
+  }
+  // scalastyle:on method.length
+
   private[this] def processIndex(
     entryPath: Path,
     buffer: Array[Byte]
@@ -354,8 +429,8 @@ final class DefaultUniverseClient(
   }
 
   private[this] def parseAndVerify[A: Decoder](
-      path: Path,
-      content: String
+    path: Path,
+    content: String
   ): A = {
     parseJson(path, content).as[A] match {
       case Left(err) => throw PackageFileSchemaMismatch(path.toString, err).exception
@@ -364,8 +439,8 @@ final class DefaultUniverseClient(
   }
 
   private[this] def parseJson(
-      path: Path,
-      content: String
+    path: Path,
+    content: String
   ): Json = {
     parse(content) match {
       case Left(err) => throw PackageFileNotJson(path.toString, err.message).exception
