@@ -51,8 +51,7 @@ object HttpClientSpec {
   val stats: StatsReceiver = NullStatsReceiver
 
   // TODO proxy Use ItObjects.V4TestUniverse once Jose's PR is merged
-  val JsonContentUrl: Uri =
-    "https://downloads.mesosphere.com/universe/ae6a07ac0b53924154add2cd61403c5233272d93/repo" +
-      "/repo-up-to-1.10.json"
+  val JsonContentUrl: Uri = "https://downloads.mesosphere.com/universe/" +
+    "ae6a07ac0b53924154add2cd61403c5233272d93/repo/repo-up-to-1.10.json"
 
 }

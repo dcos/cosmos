@@ -35,7 +35,6 @@ final class ResourceProxyHandler private(
       .fetch(uri, statsReceiver) { responseData =>
         // TODO proxy May want to factor out a method that can be tested separately
         val contentBytes = getContentBytes(uri, responseData, contentLengthLimit)
-
         val response = Response()
         response.content = Buf.ByteArray.Owned(contentBytes)
         response.contentType = responseData.contentType.show
