@@ -3,6 +3,8 @@ package com.mesosphere.cosmos.service
 import com.mesosphere.cosmos.AdminRouter
 import com.mesosphere.cosmos.error.CosmosException
 import com.mesosphere.cosmos.error.MarathonAppNotFound
+import com.mesosphere.cosmos.error.SdkUninstallVarNotFound
+import com.mesosphere.cosmos.handler.UninstallHandler
 import com.mesosphere.cosmos.http.RequestSession
 import com.mesosphere.cosmos.thirdparty.marathon.model.AppId
 import com.mesosphere.cosmos.thirdparty.marathon.model.MarathonApp
@@ -23,8 +25,10 @@ final class ServiceUninstaller(
 
   private[this] val logger: org.slf4j.Logger = org.slf4j.LoggerFactory.getLogger(getClass)
 
+  // scalastyle:off cyclomatic.complexity
   def uninstall(
     appId: AppId,
+    frameworkIds: Set[String],
     deploymentId: String,
     retries: Int = ServiceUninstaller.DefaultRetries
   )(
@@ -33,9 +37,11 @@ final class ServiceUninstaller(
     val work = for {
       deployed <- checkDeploymentCompleted(deploymentId) if deployed
       marathonResponse <- adminRouter.getApp(appId)
+      _ <- checkSdkUninstallEnvVar(appId)
       uninstalled <- checkSdkUninstallCompleted(
         marathonResponse.app.id,
-        marathonResponse.app.labels.getOrElse(ServiceUninstaller.CommonsVersionLabel, "v1")
+        frameworkIds,
+        apiVersion = marathonResponse.app.labels.getOrElse(UninstallHandler.SdkVersionLabel, "v1")
       ) if uninstalled
       deleted <- delete(appId) if deleted
     } yield ()
@@ -44,15 +50,20 @@ final class ServiceUninstaller(
       case ex: CosmosException if ex.error.isInstanceOf[MarathonAppNotFound] =>
         // The app is already gone; stop now to avoid uninstalling a restarted app
         Future.Done
+      case ex:CosmosException if ex.error.isInstanceOf[SdkUninstallVarNotFound] =>
+        // The app is already being uninstalled / already uninstalled by some other thread.
+        // This is a fresh re-install and should be ignored
+        Future.Done
       case ex if retries > 0  =>
         if (!ex.isInstanceOf[PredicateDoesNotObtain]) {
           logger.info(s"Uninstall attempt for $appId didn't finish. $retries retries left.", ex)
         }
 
         Future.sleep(RetryInterval)
-          .before(uninstall(appId, deploymentId, retries - 1))
+          .before(uninstall(appId, frameworkIds, deploymentId, retries - 1))
     }
   }
+  // scalastyle:on cyclomatic.complexity
 
   private def checkDeploymentCompleted(
     deploymentId: String
@@ -69,17 +80,37 @@ final class ServiceUninstaller(
     }
   }
 
+  def checkSdkUninstallEnvVar(appId: AppId)(
+    implicit session: RequestSession
+  ): Future[Unit] = {
+    adminRouter.getAppRawJson(appId).map { json =>
+      json.contains(UninstallHandler.envJsonField) &&
+        json(UninstallHandler.envJsonField).toString.toBoolean match {
+        case true => throw SdkUninstallVarNotFound(appId).exception
+        case false => ()
+      }
+    }
+  }
+
   private def checkSdkUninstallCompleted(
     appId: AppId,
+    frameworkIds: Set[String],
     apiVersion: String
   )(
     implicit session: RequestSession
   ): Future[Boolean] = {
-    adminRouter.getSdkServicePlanStatus(
-      appId.toString,
+    val deployed = adminRouter.getSdkServicePlanStatus(
+      appId,
       apiVersion,
       "deploy"
     ).map(_.status == Status.Ok)
+
+    val sameFrameworkIds = adminRouter.getSdkServiceFrameworkIds(appId, apiVersion)
+      .map(_.toSet == frameworkIds)
+      // If we can't read the IDs, assume it's because the app is ready to be deleted
+      .handle { case _ => true }
+
+    deployed.joinWith(sameFrameworkIds)(_ && _)
   }
 
   private def delete(
@@ -114,6 +145,5 @@ object ServiceUninstaller {
 
   val RetryInterval: Duration = 10.seconds
 
-  private val CommonsVersionLabel: String = "DCOS_COMMONS_API_VERSION"
   private val DefaultRetries: Int = 50
 }

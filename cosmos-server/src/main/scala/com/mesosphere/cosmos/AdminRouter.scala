@@ -29,6 +29,10 @@ class AdminRouter(
     marathon.getAppOption(appId)
   }
 
+  def getAppRawJson(appId: AppId)(implicit session: RequestSession): Future[JsonObject] = {
+    marathon.getAppRawJson(appId)
+  }
+
   def getApp(appId: AppId)(implicit session: RequestSession): Future[MarathonAppResponse] = {
     marathon.getApp(appId)
   }
@@ -86,8 +90,14 @@ class AdminRouter(
     adminRouterClient.getDcosVersion()
   }
 
+  def getSdkServiceFrameworkIds(service: AppId, apiVersion: String)(implicit
+    session: RequestSession
+  ): Future[List[String]] = {
+    adminRouterClient.getSdkServiceFrameworkIds(service, apiVersion)
+  }
+
   def getSdkServicePlanStatus(
-    service: String,
+    service: AppId,
     apiVersion: String,
     plan: String
   )(

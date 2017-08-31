@@ -103,56 +103,86 @@ final class UninstallHandlerSpec extends FreeSpec with Eventually with SpanSugar
       val cleanupResponse = submitUninstallRequest(cleanupRequest)
       assertResult(Status.Ok)(cleanupResponse.status)
     }
+  }
 
-    "SDK Based services use custom uninstall behavior" - {
+  "SDK Based services use custom uninstall behavior" - {
 
-      "Be able to uninstall a service in the middle of a Marathon deploy" in {
-        val installResponse = installHelloWorld()
-        assertResult(Status.Ok)(installResponse.status)
+    "Be able to uninstall a service in the middle of a Marathon deploy" in {
+      val installResponse = installHelloWorld()
+      assertResult(Status.Ok)(installResponse.status)
 
-        // Immediately turn around and try to uninstall it, while it's still being initially deployed.
-        assertUninstallRequest(HelloWorldPackageName, Some(HelloWorldAppId), "uninstall")
+      // Immediately turn around and try to uninstall it, while it's still being initially deployed.
+      assertUninstallRequest(HelloWorldPackageName, Some(HelloWorldAppId), "uninstall")
 
-        waitUntilDeleted(HelloWorldAppId, "wait")
+      waitUntilDeleted(HelloWorldAppId, "wait")
+    }
+
+    "DCOS-17237: cancel pending uninstalls if their Marathon apps get deleted" in {
+      val installResponseOne = installHelloWorld()
+      assertResult(Status.Ok)(installResponseOne.status)
+
+      waitUntilDeployed(HelloWorldAppId, "deploy 1")
+
+      // Kick off two background uninstall tasks; the second should stop when the app is deleted
+      assertUninstallRequest(HelloWorldPackageName, appId = Some(HelloWorldAppId), "uninstall 1")
+      assertUninstallRequest(HelloWorldPackageName, appId = Some(HelloWorldAppId), "uninstall 2")
+      waitUntilDeleted(HelloWorldAppId, "delete 1")
+
+      // Give the second task time to notice the app was deleted
+      waitForServiceUninstaller()
+
+      // Reinstall; this will detect whether the second task has actually stopped as intended
+      val installResponseTwo = installHelloWorld()
+
+      try {
+        assertResult(Status.Ok)(installResponseTwo.status)
+
+        waitUntilDeployed(HelloWorldAppId, "deploy 2")
+        waitForServiceUninstaller()
+      } finally {
+        // This will fail if the app was already deleted
+        assertUninstallRequest(HelloWorldPackageName, appId = Some(HelloWorldAppId), "cleanup")
+
+        // Since hello-world is an SDK package, we must wait until the app is actually gone
+        val _ = waitUntilDeleted(HelloWorldAppId, "delete 2")
       }
+    }
 
-      "DCOS-17237: cancel pending uninstalls if their Marathon apps get deleted" in {
-        val installResponseOne = installHelloWorld()
-        assertResult(Status.Ok)(installResponseOne.status)
+    "DCOS-17237: avoid uninstalling the app if its Mesos framework ID has changed" in {
+      val firstInstallResponse = installHelloWorld()
+      assertResult(Status.Ok)(firstInstallResponse.status)
 
+      try {
         waitUntilDeployed(HelloWorldAppId, "deploy 1")
 
-        // Kick off two background uninstall tasks; the second should stop when the app is deleted
-        assertUninstallRequest(HelloWorldPackageName, appId = Some(HelloWorldAppId), "uninstall 1")
-        assertUninstallRequest(HelloWorldPackageName, appId = Some(HelloWorldAppId), "uninstall 2")
-        waitUntilDeleted(HelloWorldAppId, "delete 1")
+        assertUninstallRequest(HelloWorldPackageName, appId = Some(HelloWorldAppId), "uninst 1")
+        assertUninstallRequest(HelloWorldPackageName, appId = Some(HelloWorldAppId), "uninst 2")
+        // Wait until app is deleted, but don't wait for the second task to notice
+        waitUntilDeleted(HelloWorldAppId, "deploy 2")
 
-        // Give the second task time to notice the app was deleted
+        // Reinstall the app
+        val secondInstallResponse = installHelloWorld()
+        assertResult(Status.Ok)(secondInstallResponse.status)
+
+        // Wait until SDK is available, plus uninstaller delay; confirm app still exists
+        waitUntilDeployed(HelloWorldAppId, "deploy 3")
         waitForServiceUninstaller()
+      } finally {
+        // This will fail if the app was already deleted
+        assertUninstallRequest(HelloWorldPackageName, appId = Some(HelloWorldAppId), "uninst 3")
 
-        // Reinstall; this will detect whether the second task has actually stopped as intended
-        val installResponseTwo = installHelloWorld()
-
-        try {
-          assertResult(Status.Ok)(installResponseTwo.status)
-
-          waitUntilDeployed(HelloWorldAppId, "deploy 2")
-          waitForServiceUninstaller()
-        } finally {
-          // This will fail if the app was already deleted
-          assertUninstallRequest(HelloWorldPackageName, appId = Some(HelloWorldAppId), "cleanup")
-
-          // Since hello-world is an SDK package, we must wait until the app is actually gone
-          val _ = waitUntilDeleted(HelloWorldAppId, "delete 2")
-        }
+        // Since hello-world is an SDK package, we must wait until the app is actually gone
+        val _ = waitUntilDeleted(HelloWorldAppId, "delete")
       }
-
     }
+
   }
 
   def waitUntilDeployed(appId: AppId, clue: Any): Assertion = {
     eventually(timeout(2.minutes), interval(10.seconds)) {
-      val statusFuture = adminRouter.getSdkServicePlanStatus(appId, "v1", "deploy")
+      // TODO Get the CommonsVersionLabel ("v1") from the Marathon app, instead of hardcoding
+      val version = Await.result(adminRouter.getApp(appId).map(_.app.labels.getOrElse(UninstallHandler.SdkVersionLabel, "v1")))
+      val statusFuture = adminRouter.getSdkServicePlanStatus(appId, version, "deploy")
 
       assertResult(Status.Ok, clue)(Await.result(statusFuture).status)
     }
