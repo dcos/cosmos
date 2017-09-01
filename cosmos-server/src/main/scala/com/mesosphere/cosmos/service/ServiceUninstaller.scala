@@ -21,7 +21,6 @@ final class ServiceUninstaller(
 ) {
 
   import ServiceUninstaller._
-
   private[this] val logger: org.slf4j.Logger = org.slf4j.LoggerFactory.getLogger(getClass)
 
   // scalastyle:off cyclomatic.complexity
