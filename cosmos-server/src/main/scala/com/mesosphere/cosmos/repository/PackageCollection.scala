@@ -6,9 +6,11 @@ import com.mesosphere.cosmos.http.RequestSession
 import com.mesosphere.cosmos.rpc
 import com.mesosphere.universe
 import com.mesosphere.universe.v3.syntax.PackageDefinitionOps._
+import com.mesosphere.universe.v4.model.Repository
 import com.netaporter.uri.Uri
 import com.twitter.util.Future
 import java.util.regex.Pattern
+import scala.collection.breakOut
 import scala.math.Ordering.Implicits.infixOrderingOps
 import scala.util.matching.Regex
 
@@ -69,6 +71,10 @@ final class PackageCollection(repositoryCache: RepositoryCache) {
     repositoryCache.all().map { repositories =>
       PackageCollection.downgradesTo(PackageCollection.merge(repositories), packageDefinition)
     }
+  }
+
+  def allUrls()(implicit session: RequestSession): Future[Set[String]] = {
+    repositoryCache.all().map(PackageCollection.allUrls)
   }
 }
 
@@ -164,6 +170,33 @@ object PackageCollection {
     mergeWithURI(repositories).map { case (packageDefinition, _) =>
       packageDefinition
     }
+  }
+
+  def allUrls(repositories: List[(Repository, Uri)]): Set[String] = {
+    def merge(a : Option[Set[String]], b : Option[Set[String]]) : Option[Set[String]] = {
+      (a ++ b).reduceLeftOption(_ ++ _)
+    }
+
+    repositories.flatMap { case (repo, _) =>
+      repo.packages.flatMap {
+        _ match {
+          case v2: universe.v3.model.V2Package =>
+            v2.resource.map(x => (x.assets, x.images))
+          case v3: universe.v3.model.V3Package =>
+            v3.resource.map(x => (x.assets, x.images))
+          case v4: universe.v4.model.V4Package =>
+            v4.resource.map(x => (x.assets, x.images))
+        }
+      }.flatMap{ case ((assets, images)) =>
+        merge(
+          assets.flatMap(_.uris.flatMap( uris => Some(uris.values.toSet))),
+          merge(
+            images.map(image => Set() ++ image.iconSmall ++ image.iconMedium ++ image.iconLarge),
+            images.flatMap(_.screenshots.map(_.toSet))
+          )
+        )
+      }.flatten
+    }(breakOut)
   }
 
   /**

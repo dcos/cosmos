@@ -1,6 +1,7 @@
 package com.mesosphere.cosmos
 
 import com.mesosphere.Generators
+import com.mesosphere.Generators.Implicits._
 import com.mesosphere.cosmos.error.PackageNotFound
 import com.mesosphere.cosmos.error.VersionNotFound
 import com.mesosphere.cosmos.repository.PackageCollection
@@ -11,6 +12,9 @@ import com.netaporter.uri.Uri
 import com.twitter.util.Return
 import com.twitter.util.Throw
 import com.twitter.util.Try
+import java.nio.ByteBuffer
+import java.nio.charset.StandardCharsets
+import org.scalacheck.Arbitrary.arbitrary
 import org.scalacheck.Gen
 import org.scalatest.FreeSpec
 import org.scalatest.Matchers
@@ -39,36 +43,102 @@ final class PackageCollectionSpec extends FreeSpec
     Gen.option(Gen.listOf(genVersionSpecification))
   }
 
-  def singlePackageDefinition(
-    name: String,
-    version : universe.v3.model.Version,
-    releaseVersion: universe.v3.model.ReleaseVersion
+  def buildV4Package(
+    name: String = "whatever4",
+    version : universe.v3.model.Version = universe.v3.model.Version("424"),
+    releaseVersion: universe.v3.model.ReleaseVersion = universe.v3.model.ReleaseVersion(2),
+    resource: Option[universe.v3.model.V3Resource] = None
   ): universe.v4.model.PackageDefinition = {
     universe.v4.model.V4Package(
       name = name,
       version = version,
       releaseVersion = releaseVersion,
       maintainer = "cosmos@mesosphere.com",
-      description = "a package definition going through a life span of tests"
+      description = "a package definition going through a life span of tests",
+      resource = resource
     )
   }
+
+  def buildV3Package(
+    name: String = "whatever3",
+    version : universe.v3.model.Version = universe.v3.model.Version("423"),
+    releaseVersion: universe.v3.model.ReleaseVersion = universe.v3.model.ReleaseVersion(1),
+    resource: Option[universe.v3.model.V3Resource] = None
+  ): universe.v3.model.V3Package = {
+    universe.v3.model.V3Package(
+      name = name,
+      version = version,
+      releaseVersion = releaseVersion,
+      maintainer = "cosmos@mesosphere.com",
+      description = "a package definition going through a life span of tests",
+      resource = resource
+    )
+  }
+
+  def buildV2Package(
+    name: String = "whatever2",
+    version : universe.v3.model.Version = universe.v3.model.Version("422"),
+    releaseVersion: universe.v3.model.ReleaseVersion = universe.v3.model.ReleaseVersion(0),
+    resource: Option[universe.v3.model.V2Resource] = None
+  ): universe.v3.model.V2Package = {
+    universe.v3.model.V2Package(
+      name = name,
+      version = version,
+      releaseVersion = releaseVersion,
+      maintainer = "cosmos@mesosphere.com",
+      description = "a package definition going through a life span of tests",
+      marathon = universe.v3.model.Marathon(
+        v2AppMustacheTemplate = ByteBuffer.wrap("brief template".getBytes(StandardCharsets.UTF_8))
+      ),
+      resource = resource
+    )
+  }
+
+  import universe.v3.model.Assets
+  import universe.v3.model.Images
+
+  type TestData = (collection.immutable.Set[String], Option[Assets], Option[Images])
+
+  // scalastyle:off magic.number
+  private def genTestData() : Gen[TestData] = {
+    for {
+      numberOfUrls <- Gen.chooseNum(0, 10)
+      listOfUrls <- Gen.containerOfN[List, String](numberOfUrls, arbitrary[Uri].toString)
+      iconSmall <- arbitrary[Uri].map(_.toString)
+      iconMedium <- arbitrary[Uri].map(_.toString)
+      iconLarge <- arbitrary[Uri].map(_.toString)
+      screenshots <- Gen.containerOfN[List, String](numberOfUrls, arbitrary[Uri].toString)
+    } yield {
+      val assets = Some(Assets(uris = Some(
+        listOfUrls.zipWithIndex.map { case ((k, v)) =>
+          (v.toString, k)
+        }.toMap
+      ),
+        None
+      ))
+      val expectedSet = iconSmall :: iconMedium :: iconLarge :: ( listOfUrls ::: screenshots )
+      val images = Images(Some(iconSmall), Some(iconMedium), Some(iconLarge), Some(screenshots))
+      (expectedSet.toSet, assets, Some(images))
+    }
+  }
+  // scalastyle:on magic.number
 
   "Queries on PackageCollection" - {
 
     import universe.v3.model.Version
     import universe.v3.model.ReleaseVersion
 
-    val a_99_2 = singlePackageDefinition("a", Version("99"), ReleaseVersion(2))
-    val a_88_1 = singlePackageDefinition("a", Version("88"), ReleaseVersion(1))
-    val a_99_3 = singlePackageDefinition("a", Version("99"), ReleaseVersion(3))
+    val a_99_2 = buildV4Package("a", Version("99"), ReleaseVersion(2))
+    val a_88_1 = buildV4Package("a", Version("88"), ReleaseVersion(1))
+    val a_99_3 = buildV4Package("a", Version("99"), ReleaseVersion(3))
 
-    val b_99_2 = singlePackageDefinition("b", Version("99"), ReleaseVersion(2))
-    val b_77_2 = singlePackageDefinition("b", Version("77"), ReleaseVersion(2))
-    val b_66_1 = singlePackageDefinition("b", Version("66"), ReleaseVersion(1))
+    val b_99_2 = buildV4Package("b", Version("99"), ReleaseVersion(2))
+    val b_77_2 = buildV4Package("b", Version("77"), ReleaseVersion(2))
+    val b_66_1 = buildV4Package("b", Version("66"), ReleaseVersion(1))
 
-    val c_99_2 = singlePackageDefinition("c", Version("99"), ReleaseVersion(2))
-    val c_55_2 = singlePackageDefinition("c", Version("55"), ReleaseVersion(2))
-    val c_44_1 = singlePackageDefinition("c", Version("44"), ReleaseVersion(1))
+    val c_99_2 = buildV4Package("c", Version("99"), ReleaseVersion(2))
+    val c_55_2 = buildV4Package("c", Version("55"), ReleaseVersion(2))
+    val c_44_1 = buildV4Package("c", Version("44"), ReleaseVersion(1))
 
     "merge" - {
 
@@ -456,7 +526,7 @@ final class PackageCollectionSpec extends FreeSpec
       }
     }
 
-    "upgradesTo()" - {
+    "upgradesTo" - {
 
       "returns the list of versions of repo packages that can be upgraded from the given version" in {
         val genParameters = for {
@@ -509,6 +579,83 @@ final class PackageCollectionSpec extends FreeSpec
           }
         }
       }
+    }
+
+    "allUrls" - {
+      import universe.v3.model.V3Resource
+      import universe.v3.model.V2Resource
+      import universe.v4.model.Repository
+
+      val uri: Uri = Uri.parse("/irrelevant")
+
+      "All the urls should be returned for single package" in {
+        forAll(genTestData()) { case (expected, assets, images) =>
+            val v4package = buildV4Package(resource = Some(V3Resource(assets, images)))
+            assertResult(expected)(PackageCollection.allUrls(List(getRepository(List(v4package)))))
+        }
+      }
+
+      "All the urls should be returned for multiple package" in {
+        forAll(
+          genTestData(),
+          genTestData(),
+          genTestData()
+        ) { case (
+          (expected4, assets4, images4),
+          (expected3, assets3, images3),
+          (expected2, assets2, images2)
+          ) =>
+          val v4package = buildV4Package(resource = Some(V3Resource(assets4, images4)))
+          val v3package = buildV3Package(resource = Some(V3Resource(assets3, images3)))
+          val v2package = buildV2Package(resource = Some(V2Resource(assets2, images2)))
+          val expected = expected4 ++ expected3 ++ expected2
+          assertResult(expected)(PackageCollection.allUrls(
+            List(getRepository(List(v4package, v3package, v2package))))
+          )
+          assertResult(expected)(PackageCollection.allUrls(
+            List(
+              getRepository(List(v4package)),
+              (Repository(List(v3package)), uri),
+              (Repository(List(v2package)), uri)
+            )
+          ))
+          assertResult(expected)(PackageCollection.allUrls(
+            List(getRepository(List(v4package)),
+              (Repository(List(v3package, v2package)), uri)
+            )
+          ))
+        }
+      }
+
+      "Duplicate urls should be removed" in {
+        forAll(genTestData()) { case (expected, assets4, images4) =>
+          val v4package = buildV4Package(resource = Some(V3Resource(assets4, images4)))
+          val v3package = buildV3Package(resource = Some(V3Resource(assets4, images4)))
+          assertResult(expected)(PackageCollection.allUrls(
+            List(getRepository(List(v4package, v3package))))
+          )
+          assertResult(expected)(PackageCollection.allUrls(
+            List(
+              getRepository(List(v4package)),
+              (Repository(List(v3package)), uri)
+            )
+          ))
+          assertResult(expected)(PackageCollection.allUrls(
+            List((Repository(List(v3package, v4package)), uri))
+          ))
+        }
+      }
+
+      "Packages with no urls should return an empty set" in {
+        assertResult(Set())(PackageCollection.allUrls(List(getRepository(List(buildV4Package())))))
+        assertResult(Set())(PackageCollection.allUrls(List(getRepository(List(buildV3Package())))))
+        assertResult(Set())(PackageCollection.allUrls(List(getRepository(List(buildV2Package())))))
+      }
+
+      "Repo with zero packages should return an empty set" in {
+        assertResult(Set())(PackageCollection.allUrls(List.empty))
+      }
+
     }
 
   }
