@@ -123,7 +123,7 @@ with Logging {
       packageRepositoryAdd = new PackageRepositoryAddHandler(sourcesStorage, universeClient),
       packageRepositoryDelete = new PackageRepositoryDeleteHandler(sourcesStorage),
       packageRepositoryList = new PackageRepositoryListHandler(sourcesStorage),
-      packageResource = ResourceProxyHandler(proxyContentLimit()),
+      packageResource = ResourceProxyHandler(repositories, proxyContentLimit()),
       packageSearch = new PackageSearchHandler(repositories),
       packageUninstall = new UninstallHandler(adminRouter, repositories, marathonSdkJanitor),
       serviceDescribe = new ServiceDescribeHandler(adminRouter, repositories)

@@ -1,18 +1,15 @@
 package com.mesosphere.cosmos.handler
 
 import com.mesosphere.Generators.Implicits._
-import com.mesosphere.cosmos.HttpClient
 import com.mesosphere.cosmos.HttpClient.ResponseData
 import com.mesosphere.cosmos.error.CosmosException
 import com.mesosphere.cosmos.error.GenericHttpError
 import com.mesosphere.cosmos.error.ResourceTooLarge
 import com.mesosphere.cosmos.http.MediaType
-import com.mesosphere.cosmos.http.ResourceProxyData
 import com.netaporter.uri.Uri
 import com.twitter.conversions.storage._
 import com.twitter.finagle.http.Response
 import com.twitter.finagle.http.Status
-import com.twitter.finagle.stats.NullStatsReceiver
 import com.twitter.util.Await
 import com.twitter.util.Future
 import com.twitter.util.StorageUnit
@@ -34,26 +31,71 @@ final class ResourceProxyHandlerSpec extends FreeSpec with PropertyChecks {
     "When Content-Length matches the actual content stream length" - {
 
       "Succeeds if Content-Length is below the limit" in {
-        val resourceData = ResourceProxyData.IconSmall
-        val lengthLimit = resourceData.contentLength + 1.bytes
-        val result = Await.result(
-          ResourceProxyHandler(HttpClient, lengthLimit, NullStatsReceiver)(resourceData.uri)
-        )
-        assertResult(Status.Ok)(result.status)
+        val maxLengthLimit = 100
+        val genTestData: Gen[TestData] = for {
+          lengthLimit <- Gen.chooseNum(2, maxLengthLimit)
+          actualLength <- Gen.chooseNum(1, lengthLimit - 1)
+          contentBytes <- Gen.containerOfN[Array, Byte](actualLength, arbitrary[Byte])
+          uri <- arbitrary[Uri]
+          contentType <- arbitrary[MediaType]
+        } yield {
+          (lengthLimit.bytes, contentBytes, uri, contentType)
+        }
+
+        forAll (genTestData) { case (lengthLimit, contentBytes, uri, contentType) =>
+          whenever(contentBytes.length < lengthLimit.bytes) {
+            val contentStream = new ByteArrayInputStream(contentBytes.array)
+            val responseData = ResponseData(contentType, Some(contentBytes.array.size.toLong), contentStream)
+            val bytesRead = ResourceProxyHandler.getContentBytes(uri, responseData, lengthLimit)
+            assertResult(contentBytes.array)(bytesRead)
+          }
+        }
       }
 
-      "Fails if Content-Length is at the limit" in {
-        val resourceData = ResourceProxyData.IconSmall
-        val lengthLimit = resourceData.contentLength
-        val proxyHandler = ResourceProxyHandler(HttpClient, lengthLimit, NullStatsReceiver)
-        assertFailure(proxyHandler(resourceData.uri))
-      }
+      "Fails if Content-Length is" - {
+        val maxLengthLimit = 100
+        val genTestData: Gen[TestData] = for {
+          lengthLimit <- Gen.chooseNum(2, maxLengthLimit)
+          actualLength <- Gen.chooseNum(1, lengthLimit - 1)
+          contentBytes <- Gen.containerOfN[Array, Byte](actualLength, arbitrary[Byte])
+          uri <- arbitrary[Uri]
+          contentType <- arbitrary[MediaType]
+        } yield {
+          (lengthLimit.bytes, contentBytes, uri, contentType)
+        }
 
-      "Fails if Content-Length is above the limit" in {
-        val resourceData = ResourceProxyData.IconSmall
-        val lengthLimit = resourceData.contentLength - 1.bytes
-        val proxyHandler = ResourceProxyHandler(HttpClient, lengthLimit, NullStatsReceiver)
-        assertFailure(proxyHandler(resourceData.uri))
+        "at the limit" in {
+          forAll (genTestData) { case (lengthLimit, contentBytes, uri, contentType) =>
+            whenever(contentBytes.length < lengthLimit.bytes) {
+              val contentStream = new ByteArrayInputStream(contentBytes.array)
+              val responseData = ResponseData(contentType, Some(lengthLimit.bytes), contentStream)
+              val exception = intercept[CosmosException](ResourceProxyHandler.getContentBytes(uri, responseData, lengthLimit))
+              assert(exception.error.isInstanceOf[ResourceTooLarge])
+            }
+          }
+        }
+
+        "is above the limit" in {
+          forAll (genTestData) { case (lengthLimit, contentBytes, uri, contentType) =>
+            whenever(contentBytes.length < lengthLimit.bytes) {
+              val contentStream = new ByteArrayInputStream(contentBytes.array)
+              val responseData = ResponseData(contentType, Some(lengthLimit.bytes + 1), contentStream)
+              val exception = intercept[CosmosException](ResourceProxyHandler.getContentBytes(uri, responseData, lengthLimit))
+              assert(exception.error.isInstanceOf[ResourceTooLarge])
+            }
+          }
+        }
+
+        "is zero" in {
+          forAll (genTestData) { case (lengthLimit, contentBytes, uri, contentType) =>
+            whenever(contentBytes.length < lengthLimit.bytes) {
+              val contentStream = new ByteArrayInputStream(contentBytes.array)
+              val responseData = ResponseData(contentType, Some(0), contentStream)
+              val exception = intercept[CosmosException](ResourceProxyHandler.getContentBytes(uri, responseData, lengthLimit))
+              assert(exception.error.isInstanceOf[GenericHttpError])
+            }
+          }
+        }
       }
 
     }
@@ -156,7 +198,7 @@ final class ResourceProxyHandlerSpec extends FreeSpec with PropertyChecks {
 
   }
 
-  private[this] def assertFailure(output: Future[Output[Response]]): Assertion = {
+  def assertFailure(output: Future[Output[Response]]): Assertion = {
     val exception = intercept[CosmosException](Await.result(output))
 
     assertResult(Status.Forbidden)(exception.status)

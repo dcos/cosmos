@@ -32,7 +32,7 @@ import org.slf4j.Logger
 
 private[cosmos] final class UninstallHandler(
   adminRouter: AdminRouter,
-  packageCache: PackageCollection,
+  packageCollection: PackageCollection,
   uninstaller: ServiceUninstaller
 ) extends EndpointHandler[rpc.v1.model.UninstallRequest, rpc.v1.model.UninstallResponse] {
   lazy val logger: Logger = org.slf4j.LoggerFactory.getLogger(getClass)
@@ -58,7 +58,7 @@ private[cosmos] final class UninstallHandler(
       .flatMap { uninstallDetails =>
         Future.collect(
           uninstallDetails.map { detail =>
-            packageCache.getPackageByPackageVersion(detail.packageName, None)
+            packageCollection.getPackageByPackageVersion(detail.packageName, None)
               .map { case (pkg, _) =>
                 detail -> pkg.postUninstallNotes
               }

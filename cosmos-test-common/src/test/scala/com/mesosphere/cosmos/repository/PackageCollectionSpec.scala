@@ -657,7 +657,6 @@ final class PackageCollectionSpec extends FreeSpec
       }
 
     }
-
   }
 
   "createRegex" in {

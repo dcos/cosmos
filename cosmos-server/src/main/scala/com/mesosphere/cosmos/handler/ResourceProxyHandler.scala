@@ -10,8 +10,11 @@ import com.mesosphere.cosmos.error.CosmosError
 import com.mesosphere.cosmos.error.CosmosException
 import com.mesosphere.cosmos.error.EndpointUriConnection
 import com.mesosphere.cosmos.error.EndpointUriSyntax
+import com.mesosphere.cosmos.error.Forbidden
 import com.mesosphere.cosmos.error.GenericHttpError
 import com.mesosphere.cosmos.error.ResourceTooLarge
+import com.mesosphere.cosmos.http.RequestSession
+import com.mesosphere.cosmos.repository.PackageCollection
 import com.netaporter.uri.Uri
 import com.twitter.finagle.http.Response
 import com.twitter.finagle.http.Status
@@ -23,6 +26,7 @@ import io.finch.Output
 import java.io.InputStream
 
 final class ResourceProxyHandler private(
+  packageCollection: PackageCollection,
   httpClient: HttpClient,
   contentLengthLimit: StorageUnit,
   statsReceiver: StatsReceiver
@@ -30,7 +34,16 @@ final class ResourceProxyHandler private(
 
   import ResourceProxyHandler._
 
-  def apply(uri: Uri): Future[Output[Response]] = {
+  def apply(uri: Uri)(implicit
+    session: RequestSession = RequestSession(None)
+  ): Future[Output[Response]] = {
+
+    packageCollection.allUrls().map { urls =>
+      if (!urls.contains(uri.toString)) {
+        throw Forbidden(ResourceProxyHandler.getClass.getCanonicalName, Some(uri.toString)).exception
+      }
+    }
+
     httpClient
       .fetch(uri, statsReceiver) { responseData =>
         // TODO proxy May want to factor out a method that can be tested separately
@@ -48,9 +61,19 @@ final class ResourceProxyHandler private(
           case Left(error) => error match {
             case UriSyntax(cause) =>
               // TODO better name
-              throw CosmosException(EndpointUriSyntax("Proxy-Endpoint", uri, cause.getMessage), cause)
+              throw CosmosException(EndpointUriSyntax(
+                ResourceProxyHandler.getClass.getCanonicalName,
+                uri,
+                cause.getMessage),
+                cause
+              )
             case UriConnection(cause) =>
-              throw CosmosException(EndpointUriConnection("Proxy-Endpoint", uri, cause.getMessage), cause)
+              throw CosmosException(EndpointUriConnection(
+                ResourceProxyHandler.getClass.getCanonicalName,
+                uri,
+                cause.getMessage),
+                cause
+              )
             case UnexpectedStatus(clientStatus) =>
               throw GenericHttpError(
                 uri = uri,
@@ -69,19 +92,21 @@ object ResourceProxyHandler {
   private val EofDetector: Array[Byte] = Array.ofDim(1)
 
   def apply(
+    packageCollection: PackageCollection,
     contentLengthLimit: StorageUnit
   )(implicit statsReceiver: StatsReceiver): ResourceProxyHandler = {
-    apply(HttpClient, contentLengthLimit, statsReceiver)
+    apply(packageCollection, HttpClient, contentLengthLimit, statsReceiver)
   }
 
   def apply(
+    packageCollection: PackageCollection,
     httpClient: HttpClient,
     contentLengthLimit: StorageUnit,
     statsReceiver: StatsReceiver
   ): ResourceProxyHandler = {
     assert(contentLengthLimit.bytes > 0)
     val handlerScope = statsReceiver.scope("resourceProxyHandler")
-    new ResourceProxyHandler(httpClient, contentLengthLimit, handlerScope)
+    new ResourceProxyHandler(packageCollection, httpClient, contentLengthLimit, handlerScope)
   }
 
   def getContentBytes(
