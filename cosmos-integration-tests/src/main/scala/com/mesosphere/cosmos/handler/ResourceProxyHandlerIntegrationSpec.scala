@@ -25,12 +25,4 @@ final class ResourceProxyHandlerIntegrationSpec extends FreeSpec {
     assertResult(Some(data.contentLength.bytes))(response.contentLength)
   }
 
-  private def assertFailure(data: ResourceProxyData): Assertion = {
-    val response = Requests.packageResource(data.uri)
-    assertResult(Status.Ok)(response.status)
-    assertResult(Some(data.contentType))(response.contentType)
-    assertResult(Some(data.contentLength.bytes))(response.contentLength)
-  }
-
-
 }
