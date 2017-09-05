@@ -1,6 +1,5 @@
 package com.mesosphere.universe.v2.circe
 
-import com.mesosphere.universe.v2._
 import com.mesosphere.universe.v2.model.Images
 import io.circe.Decoder
 import io.circe.Json
@@ -8,9 +7,6 @@ import io.circe.syntax._
 import org.scalatest.FreeSpec
 
 class ImagesEncoderDecoderSpec extends FreeSpec {
-
-  import circe.Decoders._
-  import circe.Encoders._
   "Images" - {
     val json = Json.obj(
       "icon-small" -> "http://some.place/icon-small.png".asJson,

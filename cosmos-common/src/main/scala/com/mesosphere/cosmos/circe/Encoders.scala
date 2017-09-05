@@ -2,7 +2,6 @@ package com.mesosphere.cosmos.circe
 
 import cats.data.Ior
 import com.mesosphere.cosmos.error.CosmosException
-import com.mesosphere.cosmos.http.MediaType
 import com.mesosphere.cosmos.rpc.v1.model.ErrorResponse
 import com.twitter.finagle.http.Status
 import io.circe.DecodingFailure
@@ -23,7 +22,6 @@ object Encoders {
   }
 
   implicit val encodeStatus: Encoder[Status] = Encoder.encodeInt.contramap(_.code)
-  implicit val encodeMediaType: Encoder[MediaType] = Encoder.encodeString.contramap(_.show)
   implicit val encodeHttpMethod: Encoder[HttpMethod] = Encoder.encodeString.contramap(_.getName)
 
   implicit def encodeIor[A, B](implicit

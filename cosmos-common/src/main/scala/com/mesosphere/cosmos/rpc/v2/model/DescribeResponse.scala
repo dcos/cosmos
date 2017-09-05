@@ -1,7 +1,11 @@
 package com.mesosphere.cosmos.rpc.v2.model
 
 import com.mesosphere.universe
+import io.circe.Decoder
+import io.circe.Encoder
 import io.circe.JsonObject
+import io.circe.generic.semiauto.deriveDecoder
+import io.circe.generic.semiauto.deriveEncoder
 
 case class DescribeResponse(
   packagingVersion: universe.v3.model.PackagingVersion,
@@ -24,3 +28,12 @@ case class DescribeResponse(
   config: Option[JsonObject] = None,
   command: Option[universe.v3.model.Command] = None
 )
+
+object DescribeResponse {
+  implicit val encodeV2DescribeResponse: Encoder[DescribeResponse] = {
+    deriveEncoder[DescribeResponse]
+  }
+  implicit val decodeV2DescribeResponse: Decoder[DescribeResponse] = {
+    deriveDecoder[DescribeResponse]
+  }
+}

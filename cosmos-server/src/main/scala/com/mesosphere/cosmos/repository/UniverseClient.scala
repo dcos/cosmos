@@ -25,7 +25,6 @@ import com.mesosphere.cosmos.rpc.v1.model.PackageRepository
 import com.mesosphere.universe
 import com.mesosphere.universe.MediaTypes
 import com.mesosphere.universe.bijection.UniverseConversions._
-import com.mesosphere.universe.v2.circe.Decoders._
 import com.netaporter.uri.Uri
 import com.twitter.bijection.Conversion.asMethod
 import com.twitter.finagle.http.Fields
