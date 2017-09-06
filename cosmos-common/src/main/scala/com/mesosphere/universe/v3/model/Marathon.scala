@@ -1,7 +1,7 @@
 package com.mesosphere.universe.v3.model
 
-import com.mesosphere.universe.common.circe.Decoders._
-import com.mesosphere.universe.common.circe.Encoders._
+import com.mesosphere.cosmos.circe.Decoders._
+import com.mesosphere.cosmos.circe.Encoders._
 import io.circe.Decoder
 import io.circe.Encoder
 import io.circe.generic.semiauto.deriveDecoder

@@ -3,7 +3,10 @@ package com.mesosphere.cosmos.circe
 import cats.data.Ior
 import com.mesosphere.cosmos.error.CosmosException
 import com.mesosphere.cosmos.rpc.v1.model.ErrorResponse
+import com.mesosphere.universe.common.ByteBuffers
+import com.netaporter.uri.Uri
 import com.twitter.finagle.http.Status
+import com.twitter.util.Duration
 import io.circe.DecodingFailure
 import io.circe.Encoder
 import io.circe.CursorOp.opsToPath
@@ -13,12 +16,23 @@ import io.circe.generic.semiauto._
 import io.circe.syntax._
 import io.finch.Error
 import io.finch.Errors
+import java.nio.ByteBuffer
+import java.util.Base64
 import org.jboss.netty.handler.codec.http.HttpMethod
 
 object Encoders {
 
   implicit val exceptionEncoder: Encoder[Exception] = {
     Encoder.instance { e => exceptionErrorResponse(e).asJson }
+  }
+
+  implicit val encodeUri: Encoder[Uri] = Encoder.instance(_.toString.asJson)
+  implicit val encodeByteBuffer: Encoder[ByteBuffer] = Encoder.instance { bb =>
+    Base64.getEncoder.encodeToString(ByteBuffers.getBytes(bb)).asJson
+  }
+
+  implicit val encodeDurationToSeconds: Encoder[Duration] = Encoder.instance { duration =>
+    s"${duration.inSeconds} seconds".asJson
   }
 
   implicit val encodeStatus: Encoder[Status] = Encoder.encodeInt.contramap(_.code)

@@ -1,7 +1,7 @@
 package com.mesosphere.cosmos.error
 
 import com.mesosphere.cosmos.circe.Encoders._
-import com.mesosphere.universe.common.circe.Encoders._
+import com.mesosphere.cosmos.circe.Encoders._
 import com.netaporter.uri.Uri
 import com.twitter.finagle.http.Status
 import io.circe.Encoder

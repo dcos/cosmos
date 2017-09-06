@@ -3,8 +3,8 @@ package com.mesosphere.cosmos.rpc.v1.model
 import com.mesosphere.cosmos.finch.MediaTypedDecoder
 import com.mesosphere.cosmos.finch.MediaTypedRequestDecoder
 import com.mesosphere.cosmos.rpc.MediaTypes
-import com.mesosphere.universe.common.circe.Decoders.decodeUri
-import com.mesosphere.universe.common.circe.Encoders.encodeUri
+import com.mesosphere.cosmos.circe.Decoders.decodeUri
+import com.mesosphere.cosmos.circe.Encoders.encodeUri
 import com.netaporter.uri.Uri
 import io.circe.Decoder
 import io.circe.Encoder

@@ -6,8 +6,8 @@ import io.circe.Encoder
 import io.circe.JsonObject
 import io.circe.generic.semiauto.deriveDecoder
 import io.circe.generic.semiauto.deriveEncoder
-import com.mesosphere.universe.common.circe.Encoders.encodeUri
-import com.mesosphere.universe.common.circe.Decoders.decodeUri
+import com.mesosphere.cosmos.circe.Encoders.encodeUri
+import com.mesosphere.cosmos.circe.Decoders.decodeUri
 
 case class PackageFiles(
   revision: String,
