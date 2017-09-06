@@ -1,6 +1,7 @@
 package com.mesosphere.cosmos.handler
 
 import com.mesosphere.cosmos.Requests
+import com.mesosphere.cosmos.error.CosmosException
 import com.mesosphere.cosmos.http.ResourceProxyData
 import com.twitter.finagle.http.Status
 import org.scalatest.Assertion
@@ -15,6 +16,16 @@ final class ResourceProxyHandlerIntegrationSpec extends FreeSpec {
 
     "be able to proxy a subcommand binary" in {
       assertSuccess(ResourceProxyData.LinuxBinary)
+    }
+
+    "fail when the url is not in package collections" in {
+      val response = intercept[CosmosException](Requests.packageResource(ResourceProxyData.thirdPartyUnknownResource.uri))
+      assertResult(Status.Forbidden)(response.status)
+    }
+
+    "fail when the url returns a content length header that is not equal to the actual content" in {
+      val response = intercept[CosmosException](Requests.packageResource(ResourceProxyData.knownResourceWithInvalidHeader.uri))
+      assertResult(Status.InternalServerError)(response.error.exception.status)
     }
   }
 
