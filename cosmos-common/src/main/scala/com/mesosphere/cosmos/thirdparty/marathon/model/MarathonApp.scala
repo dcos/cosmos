@@ -7,7 +7,9 @@ import com.mesosphere.cosmos.model.StorageEnvelope
 import com.mesosphere.cosmos.model.PackageOrigin
 import com.mesosphere.universe
 import com.netaporter.uri.Uri
+import io.circe.Decoder
 import io.circe.JsonObject
+import io.circe.generic.semiauto._
 import scala.util.Try
 
 /** Partial Marathon AppDefinition.
@@ -29,6 +31,8 @@ object MarathonApp {
   val versionLabel = "DCOS_PACKAGE_VERSION"
   val optionsLabel = "DCOS_PACKAGE_OPTIONS"
   val packageLabel = "DCOS_PACKAGE_DEFINITION"
+
+  implicit val decodeMarathonApp: Decoder[MarathonApp] = deriveDecoder[MarathonApp]
 
   implicit final class Ops(val app: MarathonApp) extends AnyVal {
 
