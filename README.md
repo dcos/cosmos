@@ -242,6 +242,8 @@ Cosmos implements three different services. The documentation for each service i
    1. [RAML](https://downloads.dcos.io/cosmos/0.4.0-SNAPSHOT-232-master-2fdc5cf8ad/capabilities.raml)
    1. [Swagger](https://downloads.dcos.io/cosmos/0.4.0-SNAPSHOT-232-master-2fdc5cf8ad/capabilities.swagger)
 
+### [Cosmos Version 0.4.x](https://downloads.dcos.io/cosmos/0.5.0-SNAPSHOT-299-master-ac3f81b1ca/cosmos.html)
+
 ## Reporting Problems
 
 If you encounter a problem that seems to be related to a Cosmos bug, please create an issue at
