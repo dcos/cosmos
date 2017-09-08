@@ -99,7 +99,7 @@ abstract class ServiceClient(baseUri: Uri) {
   private[cosmos] final def baseRequestBuilder(uri: Uri)(implicit session: RequestSession): RequestBuilder[Yes, Nothing] = {
     val builder = RequestBuilder()
       .url(s"$cleanedBaseUri${uri.toString}")
-      .setHeader("User-Agent", s"cosmos/$cosmosVersion")
+      .setHeader(Fields.UserAgent, s"cosmos/$cosmosVersion")
 
     session.authorization match {
       case Some(auth) => builder.setHeader("Authorization", auth.headerValue)
