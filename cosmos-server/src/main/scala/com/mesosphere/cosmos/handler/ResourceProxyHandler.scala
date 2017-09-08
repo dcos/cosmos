@@ -50,7 +50,7 @@ final class ResourceProxyHandler private(
           uri,
           statsReceiver,
           Fields.UserAgent -> s"cosmos/${BuildProperties().cosmosVersion}"
-        ){ responseData =>
+        ){ responseData => // TODO proxy May want to factor out a method that can be tested separately
           val contentBytes = getContentBytes(uri, responseData, contentLengthLimit)
           val response = Response()
           response.content = Buf.ByteArray.Owned(contentBytes)

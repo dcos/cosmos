@@ -345,15 +345,15 @@ final class DefaultUniverseClient(
     )
   }
 
-  // scalastyle:off method.length
-  private[this] def rewriteResources(repository: universe.v4.model.Repository): universe.v4.model.Repository = {
+  private[this] def rewriteResources(
+    repository: universe.v4.model.Repository
+  ): universe.v4.model.Repository = {
 
     def rewriteAssets(
       assets: Option[universe.v3.model.Assets]
     ) : Option[universe.v3.model.Assets] = {
       if (assets.isDefined && assets.get.uris.isDefined) {
         Some(assets.get.copy(uris = assets.get.uris.map(
-          //_.map( (_, rewriteWithProxyURL(_)))
           _.map { case (key, value) => (key, rewriteWithProxyURL(value))}
         )))
       } else assets
@@ -373,46 +373,29 @@ final class DefaultUniverseClient(
       }
     }
 
-    def rewriteV3Resource(
-      resource : universe.v3.model.V3Resource
-    ): Option[universe.v3.model.V3Resource] = {
-      Some(
-        universe.v3.model.V3Resource(
-          rewriteAssets(resource.assets),
-          rewriteImages(resource.images)
-        )
-      )
-    }
-
-    def rewriteV2Resource(
-      resource : universe.v3.model.V2Resource
-    ): Option[universe.v3.model.V2Resource] = {
-      Some(
-        universe.v3.model.V2Resource(
-          rewriteAssets(resource.assets),
-          rewriteImages(resource.images)
-        )
-      )
-    }
-
     universe.v4.model.Repository(
       repository.packages.map{ _ match {
         case v2: universe.v3.model.V2Package => v2.resource match {
-          case Some(r) => v2.copy(resource = rewriteV2Resource(r))
+          case Some(r) => v2.copy(resource = Some(
+            universe.v3.model.V2Resource(rewriteAssets(r.assets), rewriteImages(r.images))
+          ))
           case None => v2
         }
         case v3: universe.v3.model.V3Package => v3.resource match {
-          case Some(r) => v3.copy(resource = rewriteV3Resource(r))
+          case Some(r) => v3.copy(resource = Some(
+            universe.v3.model.V3Resource(rewriteAssets(r.assets), rewriteImages(r.images))
+          ))
           case None => v3
         }
         case v4: universe.v4.model.V4Package => v4.resource match {
-          case Some(r) => v4.copy(resource = rewriteV3Resource(r))
+          case Some(r) => v4.copy(resource = Some(
+            universe.v3.model.V3Resource(rewriteAssets(r.assets), rewriteImages(r.images))
+          ))
           case None => v4
         }
       }}
     )
   }
-  // scalastyle:on method.length
 
   private[this] def processIndex(
     entryPath: Path,
