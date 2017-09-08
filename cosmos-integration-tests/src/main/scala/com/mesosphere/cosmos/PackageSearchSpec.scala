@@ -2,7 +2,6 @@ package com.mesosphere.cosmos
 
 import _root_.io.circe.jawn._
 import com.mesosphere.cosmos.http.CosmosRequests
-import com.mesosphere.cosmos.rpc.v1.circe.Decoders._
 import com.mesosphere.cosmos.rpc.v1.model.SearchRequest
 import com.mesosphere.cosmos.rpc.v1.model.SearchResponse
 import com.mesosphere.cosmos.rpc.v1.model.SearchResult

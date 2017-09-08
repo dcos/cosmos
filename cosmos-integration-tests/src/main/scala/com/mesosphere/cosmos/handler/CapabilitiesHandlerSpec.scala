@@ -2,7 +2,6 @@ package com.mesosphere.cosmos.handler
 
 import com.mesosphere.cosmos.http.CosmosRequests
 import com.mesosphere.cosmos.rpc.MediaTypes
-import com.mesosphere.cosmos.rpc.v1.circe.Decoders._
 import com.mesosphere.cosmos.rpc.v1.model.CapabilitiesResponse
 import com.mesosphere.cosmos.rpc.v1.model.Capability
 import com.mesosphere.cosmos.test.CosmosIntegrationTestClient._

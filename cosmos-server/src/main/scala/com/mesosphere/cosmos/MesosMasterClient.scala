@@ -1,7 +1,6 @@
 package com.mesosphere.cosmos
 
 import com.mesosphere.cosmos.http.RequestSession
-import com.mesosphere.cosmos.thirdparty.mesos.master.circe.Decoders._
 import com.netaporter.uri.Uri
 import com.netaporter.uri.dsl._
 import com.twitter.finagle.Service

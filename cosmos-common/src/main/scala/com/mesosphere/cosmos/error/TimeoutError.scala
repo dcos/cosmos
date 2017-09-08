@@ -5,7 +5,7 @@ import com.twitter.util.Duration
 import io.circe.Encoder
 import io.circe.JsonObject
 import io.circe.generic.semiauto.deriveEncoder
-import com.mesosphere.universe.common.circe.Encoders._
+import com.mesosphere.cosmos.circe.Encoders._
 
 final case class TimeoutError(
   operation: String,

@@ -6,7 +6,6 @@ import com.mesosphere.cosmos.circe.Decoders
 import com.mesosphere.cosmos.error.GenericHttpError
 import com.mesosphere.cosmos.error.MarathonAppNotFound
 import com.mesosphere.cosmos.http.RequestSession
-import com.mesosphere.cosmos.thirdparty.marathon.circe.Decoders._
 import com.mesosphere.cosmos.thirdparty.marathon.model.AppId
 import com.mesosphere.cosmos.thirdparty.marathon.model.Deployment
 import com.mesosphere.cosmos.thirdparty.marathon.model.MarathonAppResponse

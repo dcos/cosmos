@@ -1,6 +1,6 @@
 package com.mesosphere.cosmos.error
 
-import com.mesosphere.universe.common.circe.Encoders._
+import com.mesosphere.cosmos.circe.Encoders._
 import com.netaporter.uri.Uri
 import io.circe.Encoder
 import io.circe.JsonObject

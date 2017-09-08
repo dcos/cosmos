@@ -1,6 +1,5 @@
 package com.mesosphere.cosmos.error
 
-import com.mesosphere.cosmos.circe.Encoders._
 import com.mesosphere.cosmos.http.MediaType
 import io.circe.Encoder
 import io.circe.JsonObject

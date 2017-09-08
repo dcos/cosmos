@@ -120,7 +120,7 @@ final class PackageDescribeSpec
   ): Assertion = {
     val Right(name) = packageDefinition.hcursor.get[String]("name")
     val Right(version) = packageDefinition.hcursor.get[String]("version").map(
-      universe.v2.model.PackageDetailsVersion
+      universe.v2.model.PackageDetailsVersion(_)
     )
 
     val response = describeRequest(rpc.v1.model.DescribeRequest(name, Some(version)))

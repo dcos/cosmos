@@ -1,7 +1,7 @@
 package com.mesosphere.universe
 
 import com.mesosphere.universe
-import com.mesosphere.universe.common.circe.Decoders._
+import com.mesosphere.cosmos.circe.Decoders._
 import com.twitter.util.Return
 import com.twitter.util.Throw
 import com.twitter.util.Try

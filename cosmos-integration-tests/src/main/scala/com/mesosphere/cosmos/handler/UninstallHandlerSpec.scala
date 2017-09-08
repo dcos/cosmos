@@ -5,7 +5,6 @@ import com.mesosphere.cosmos.error.MarathonAppNotFound
 import com.mesosphere.cosmos.http.CosmosRequests
 import com.mesosphere.cosmos.rpc.MediaTypes
 import com.mesosphere.cosmos.service.ServiceUninstaller
-import com.mesosphere.cosmos.rpc.v1.circe.Decoders._
 import com.mesosphere.cosmos.rpc.v1.model.ErrorResponse
 import com.mesosphere.cosmos.rpc.v1.model.InstallRequest
 import com.mesosphere.cosmos.rpc.v1.model.UninstallRequest

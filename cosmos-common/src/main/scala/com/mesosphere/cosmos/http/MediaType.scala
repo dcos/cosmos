@@ -1,6 +1,7 @@
 package com.mesosphere.cosmos.http
 
 import com.twitter.util.Try
+import io.circe.Encoder
 
 
 case class MediaTypeSubType(value: String, suffix: Option[String] = None)
@@ -41,6 +42,8 @@ case class MediaType(
 
 
 object MediaType {
+
+  implicit val encodeMediaType: Encoder[MediaType] = Encoder.encodeString.contramap(_.show)
 
   def unapply(s: String): Option[MediaType] = {
     parse(s).toOption
