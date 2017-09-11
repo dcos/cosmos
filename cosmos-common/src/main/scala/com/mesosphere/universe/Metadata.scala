@@ -1,7 +1,7 @@
 package com.mesosphere.universe
 
 import com.mesosphere.universe
-import com.mesosphere.universe.common.circe.Decoders._
+import com.mesosphere.cosmos.circe.Decoders._
 import io.circe.JsonObject
 import io.circe.Decoder
 import io.circe.Encoder

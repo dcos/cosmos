@@ -1,7 +1,6 @@
 package com.mesosphere.cosmos.http
 
 import com.mesosphere.cosmos.rpc
-import com.mesosphere.cosmos.rpc.v1.circe.Encoders._
 import com.netaporter.uri.Uri
 
 object CosmosRequests {

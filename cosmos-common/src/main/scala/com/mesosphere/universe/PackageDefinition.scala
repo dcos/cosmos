@@ -5,7 +5,7 @@ import com.mesosphere.cosmos.finch.MediaTypedDecoder
 import com.mesosphere.cosmos.finch.MediaTypedEncoder
 import com.mesosphere.cosmos.http.MediaType
 import com.mesosphere.universe
-import com.mesosphere.universe.common.circe.Decoders._
+import com.mesosphere.cosmos.circe.Decoders._
 import com.mesosphere.universe.v3.syntax.PackageDefinitionOps._
 import io.circe.Decoder
 import io.circe.DecodingFailure

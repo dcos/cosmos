@@ -7,7 +7,6 @@ import com.mesosphere.cosmos.error.MarathonBadResponse
 import com.mesosphere.cosmos.error.MarathonGenericError
 import com.mesosphere.cosmos.error.ServiceAlreadyStarted
 import com.mesosphere.cosmos.http.RequestSession
-import com.mesosphere.cosmos.thirdparty.marathon.circe.Decoders._
 import com.mesosphere.cosmos.thirdparty.marathon.model.MarathonApp
 import com.mesosphere.cosmos.thirdparty.marathon.model.MarathonError
 import com.twitter.finagle.http.Status

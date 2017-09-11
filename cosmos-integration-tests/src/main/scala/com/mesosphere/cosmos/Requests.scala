@@ -4,9 +4,7 @@ import com.mesosphere.cosmos.http.CosmosRequests
 import com.mesosphere.cosmos.http.CosmosResponse
 import com.mesosphere.cosmos.http.HttpRequest
 import com.mesosphere.cosmos.http.TestContext
-import com.mesosphere.cosmos.rpc.v1.circe.Decoders._
 import com.mesosphere.cosmos.rpc.v1.model.ListVersionsResponse
-import com.mesosphere.cosmos.rpc.v2.circe.Decoders._
 import com.mesosphere.cosmos.test.CosmosIntegrationTestClient
 import com.mesosphere.cosmos.test.CosmosIntegrationTestClient.CosmosClient
 import com.mesosphere.cosmos.test.CosmosIntegrationTestClient.Session

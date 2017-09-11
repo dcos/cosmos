@@ -1,7 +1,7 @@
 package com.mesosphere.cosmos.error
 
 import cats.data.Ior
-import com.mesosphere.universe.common.circe.Encoders._
+import com.mesosphere.cosmos.circe.Encoders._
 import com.netaporter.uri.Uri
 import io.circe.JsonObject
 import io.circe.syntax._

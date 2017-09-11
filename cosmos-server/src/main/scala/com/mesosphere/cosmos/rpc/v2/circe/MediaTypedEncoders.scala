@@ -20,7 +20,7 @@ object MediaTypedEncoders {
           mediaType = MediaTypes.V3DescribeResponse
         ),
         MediaTypedEncoder(
-          encoder = rpc.v2.circe.Encoders.encodeV2DescribeResponse.contramap {
+          encoder = rpc.v2.model.DescribeResponse.encodeV2DescribeResponse.contramap {
             (pkg: universe.v4.model.PackageDefinition) =>
               pkg.as[Try[rpc.v2.model.DescribeResponse]].get()
           },
@@ -33,11 +33,11 @@ object MediaTypedEncoders {
   implicit val packageInstallResponseEncoder: DispatchingMediaTypedEncoder[rpc.v2.model.InstallResponse] = {
     DispatchingMediaTypedEncoder(Set(
       MediaTypedEncoder(
-        encoder = rpc.v2.circe.Encoders.encodeV2InstallResponse,
+        encoder = rpc.v2.model.InstallResponse.encodeV2InstallResponse,
         mediaType = MediaTypes.V2InstallResponse
       ),
       MediaTypedEncoder(
-        encoder = rpc.v1.circe.Encoders.encodeInstallResponse.contramap { (x: rpc.v2.model.InstallResponse) =>
+        encoder = rpc.v1.model.InstallResponse.encodeInstallResponse.contramap { (x: rpc.v2.model.InstallResponse) =>
           x.as[Try[rpc.v1.model.InstallResponse]].get()
         },
         mediaType = MediaTypes.V1InstallResponse

@@ -1,8 +1,6 @@
 package com.mesosphere.cosmos.label.v1.model
 
 import com.mesosphere.universe
-import com.mesosphere.universe.v2.circe.Encoders._
-import com.mesosphere.universe.v2.circe.Decoders._
 import io.circe.Decoder
 import io.circe.Encoder
 import io.circe.generic.semiauto._
