@@ -70,7 +70,7 @@ package cosmos {
   )
 
   object proxyContentLimit extends GlobalFlag[StorageUnit](
-    10.megabytes,
+    300.megabytes,
     "Maximum size for the proxy endpoint service while fetching a resource"
   )
   // scalastyle:on object.name

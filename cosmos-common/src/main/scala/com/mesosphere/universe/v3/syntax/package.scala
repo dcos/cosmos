@@ -59,8 +59,10 @@ package object syntax {
       case Some(origin) =>
         print(s"#############?>> Host : ${origin.host} Scheme :${origin.urlScheme}" +
           s" For: ${origin.forwardedFor} Port : ${origin.forwardedPort} Proto : ${origin.protocol}\n")
-        s"${origin.protocol}://${origin.forwardedFor}:${origin.forwardedPort}" +
-        s"/package/resource?url=${Uri.parse(url).toString}"
+        origin.urlScheme match {
+          case Some(scheme) => s"$scheme://${origin.host}/package/resource?url=${Uri.parse(url).toString}"
+          case None =>s"${origin.protocol}://${origin.host}/package/resource?url=${Uri.parse(url).toString}"
+        }
       case None => url
     }
   }
