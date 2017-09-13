@@ -33,6 +33,7 @@ object RequestValidators {
 
     val allValidators = baseValidator(produces) ::
       headerOption(Fields.Host) ::
+      headerOption(urlSchemeHeader) ::
       headerOption(forwardedProtoHeader) ::
       headerOption(forwardedForHeader) ::
       headerOption(forwardedPortHeader) ::
@@ -40,9 +41,9 @@ object RequestValidators {
       bodyValidator
 
     allValidators.map {
-      case authorization :: responseEncoder :: host :: proto :: forwardHost :: forwardPort :: contentType :: requestBody :: HNil =>
+      case authorization :: responseEncoder :: host :: urlScheme :: proto :: forwardHost :: forwardPort :: contentType :: requestBody :: HNil =>
         val session = RequestSession(authorization, Some(contentType),
-          Some(OriginHostScheme(host, proto, forwardHost, forwardPort)))
+          Some(OriginHostScheme(host, urlScheme, proto, forwardHost, forwardPort)))
         EndpointContext(requestBody, session, responseEncoder)
     }
   }
