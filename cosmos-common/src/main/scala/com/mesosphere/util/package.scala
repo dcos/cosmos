@@ -5,6 +5,11 @@ import scala.reflect.macros.blackbox.Context
 
 package object util {
 
+  val urlSchemeHeader = "X-Url-Scheme"
+  val forwardedProtoHeader = "X-Forwarded-Proto"
+  val forwardedForHeader = "X-Forwarded-For"
+  val forwardedPortHeader = "X-Forwarded-Port"
+
   implicit final class PathInterpolations(val sc: StringContext) extends AnyVal {
 
     def abspath(args: Any*): AbsolutePath = macro PathInterpolations.abspathMacro

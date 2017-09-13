@@ -3,6 +3,7 @@ package com.mesosphere.cosmos.repository
 import com.mesosphere.cosmos.error.PackageNotFound
 import com.mesosphere.cosmos.error.VersionNotFound
 import com.mesosphere.cosmos.http.RequestSession
+import com.mesosphere.cosmos.model.OriginHostScheme
 import com.mesosphere.cosmos.rpc
 import com.mesosphere.universe
 import com.mesosphere.universe.v3.syntax.PackageDefinitionOps._
@@ -44,7 +45,7 @@ final class PackageCollection(repositoryCache: RepositoryCache) {
     query: Option[String]
   )(implicit session: RequestSession): Future[List[rpc.v1.model.SearchResult]] = {
     repositoryCache.all().map { repositories =>
-      PackageCollection.search(PackageCollection.merge(repositories), query)
+      PackageCollection.search(PackageCollection.merge(repositories), query)(session.originInfo)
     }
   }
 
@@ -117,6 +118,8 @@ object PackageCollection {
   def search(
     packageDefinitions: List[universe.v4.model.PackageDefinition],
     query: Option[String]
+  )(
+    implicit originInfo : Option[OriginHostScheme]
   ): List[rpc.v1.model.SearchResult] = {
     val predicate = getPredicate(query)
 
@@ -270,7 +273,11 @@ object PackageCollection {
     }.mkString(".*")
   }
 
-  private def singleResult(pkg: universe.v4.model.PackageDefinition): rpc.v1.model.SearchResult = {
+  private def singleResult(
+    pkg: universe.v4.model.PackageDefinition
+  )(
+    implicit originInfo : Option[OriginHostScheme]
+  ): rpc.v1.model.SearchResult = {
     rpc.v1.model.SearchResult(
       pkg.name,
       pkg.version,
@@ -279,7 +286,7 @@ object PackageCollection {
       pkg.framework.getOrElse(false),
       pkg.tags,
       pkg.selected,
-      pkg.images
+      pkg.rewrite.images
     )
   }
 }

@@ -4,6 +4,7 @@ import com.mesosphere.Generators
 import com.mesosphere.Generators.Implicits._
 import com.mesosphere.cosmos.error.PackageNotFound
 import com.mesosphere.cosmos.error.VersionNotFound
+import com.mesosphere.cosmos.model.OriginHostScheme
 import com.mesosphere.cosmos.repository.PackageCollection
 import com.mesosphere.universe
 import com.mesosphere.universe.test.TestingPackages
@@ -435,6 +436,8 @@ final class PackageCollectionSpec extends FreeSpec
     }
 
     "search" - {
+
+      implicit val originInfo : Option[OriginHostScheme] = Some(OriginHostScheme())
 
       "not found" in {
         assertResult(Return(Nil)

@@ -24,7 +24,6 @@ import com.mesosphere.cosmos.http.MediaTypeParseError
 import com.mesosphere.cosmos.http.MediaTypeParser
 import com.mesosphere.cosmos.http.RequestSession
 import com.mesosphere.cosmos.rpc
-import com.mesosphere.cosmos.Util.rewriteWithProxyURL
 import com.mesosphere.universe
 import com.mesosphere.universe.MediaTypes
 import com.mesosphere.universe.bijection.UniverseConversions._
@@ -168,7 +167,7 @@ final class DefaultUniverseClient(
     }
 
     // Sort the packages
-    rewriteResources(universe.v4.model.Repository(repo.packages.sorted.reverse))
+    universe.v4.model.Repository(repo.packages.sorted.reverse)
 
   }
 
@@ -340,58 +339,6 @@ final class DefaultUniverseClient(
       packageInfo.resource.as[Option[universe.v3.model.V2Resource]],
       packageInfo.config,
       packageInfo.command.as[Option[universe.v3.model.Command]]
-    )
-  }
-
-  private[this] def rewriteResources(
-    repository: universe.v4.model.Repository
-  ): universe.v4.model.Repository = {
-
-    def rewriteAssets(
-      assets: Option[universe.v3.model.Assets]
-    ) : Option[universe.v3.model.Assets] = {
-      if (assets.isDefined && assets.get.uris.isDefined) {
-        Some(assets.get.copy(uris = assets.get.uris.map(
-          _.map { case (key, value) => (key, rewriteWithProxyURL(value))}
-        )))
-      } else assets
-    }
-
-    def rewriteImages(
-      images: Option[universe.v3.model.Images]
-    ) : Option[universe.v3.model.Images] = {
-      images match {
-        case Some(images) => Some(universe.v3.model.Images(
-          iconSmall = images.iconSmall.map(rewriteWithProxyURL),
-          iconMedium = images.iconMedium.map(rewriteWithProxyURL),
-          iconLarge = images.iconLarge.map(rewriteWithProxyURL),
-          screenshots = images.screenshots.map(_.map(rewriteWithProxyURL))
-        ))
-        case None => None
-      }
-    }
-
-    universe.v4.model.Repository(
-      repository.packages.map{ _ match {
-        case v2: universe.v3.model.V2Package => v2.resource match {
-          case Some(r) => v2.copy(resource = Some(
-            universe.v3.model.V2Resource(rewriteAssets(r.assets), rewriteImages(r.images))
-          ))
-          case None => v2
-        }
-        case v3: universe.v3.model.V3Package => v3.resource match {
-          case Some(r) => v3.copy(resource = Some(
-            universe.v3.model.V3Resource(rewriteAssets(r.assets), rewriteImages(r.images))
-          ))
-          case None => v3
-        }
-        case v4: universe.v4.model.V4Package => v4.resource match {
-          case Some(r) => v4.copy(resource = Some(
-            universe.v3.model.V3Resource(rewriteAssets(r.assets), rewriteImages(r.images))
-          ))
-          case None => v4
-        }
-      }}
     )
   }
 

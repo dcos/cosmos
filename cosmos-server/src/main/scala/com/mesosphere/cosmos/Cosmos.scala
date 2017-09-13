@@ -57,6 +57,7 @@ import org.slf4j.Logger
 import shapeless.:+:
 import shapeless.CNil
 import shapeless.HNil
+import com.mesosphere.util._
 
 trait CosmosApp
 extends App
@@ -160,8 +161,14 @@ with Logging {
     implicit val sr = statsReceiver
 
     val service = LoggingFilter.andThen(buildService(allEndpoints))
-    val maybeHttpServer = startServer(service)
-    val maybeHttpsServer = startTlsServer(service)
+    val maybeHttpServer = startServer(service.map { request: Request =>
+      request.headerMap.add(urlSchemeHeader, "http")
+      request
+    })
+    val maybeHttpsServer = startTlsServer(service.map { request: Request =>
+      request.headerMap.add(urlSchemeHeader, "https")
+      request
+    })
 
     // Log and close on exit
     for (httpServer <- maybeHttpServer) {

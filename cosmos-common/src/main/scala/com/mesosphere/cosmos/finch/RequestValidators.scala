@@ -5,10 +5,12 @@ import com.mesosphere.cosmos.http.Authorization
 import com.mesosphere.cosmos.http.CompoundMediaType
 import com.mesosphere.cosmos.http.MediaType
 import com.mesosphere.cosmos.http.RequestSession
+import com.mesosphere.cosmos.model.OriginHostScheme
 import com.twitter.finagle.http.Fields
 import io.finch._
 import shapeless.::
 import shapeless.HNil
+import com.mesosphere.util._
 
 object RequestValidators {
 
@@ -29,10 +31,18 @@ object RequestValidators {
 
     val bodyValidator = body[Req, Application.Json](accepts.decoder, accepts.classTag)
 
-    val allValidators = baseValidator(produces) :: contentTypeValidator :: bodyValidator
+    val allValidators = baseValidator(produces) ::
+      headerOption(Fields.Host) ::
+      headerOption(forwardedProtoHeader) ::
+      headerOption(forwardedForHeader) ::
+      headerOption(forwardedPortHeader) ::
+      contentTypeValidator ::
+      bodyValidator
+
     allValidators.map {
-      case authorization :: responseEncoder :: contentType :: requestBody :: HNil =>
-        val session = RequestSession(authorization, Some(contentType))
+      case authorization :: responseEncoder :: host :: proto :: forwardHost :: forwardPort :: contentType :: requestBody :: HNil =>
+        val session = RequestSession(authorization, Some(contentType),
+          Some(OriginHostScheme(host, proto, forwardHost, forwardPort)))
         EndpointContext(requestBody, session, responseEncoder)
     }
   }

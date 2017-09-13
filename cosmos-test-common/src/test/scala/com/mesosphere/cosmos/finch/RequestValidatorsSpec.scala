@@ -176,7 +176,7 @@ final class RequestValidatorsSpec extends FreeSpec with Matchers with PropertyCh
   ): Assertion = {
     assertResult(expectedContentType) {
       val Return(output) = validateOutput(validator, request)
-      val RequestSession(_, Some(contentType)) = output.value.session
+      val RequestSession(_, Some(contentType), _) = output.value.session
       contentType
     }
   }
@@ -213,7 +213,7 @@ final class RequestValidatorsSpec extends FreeSpec with Matchers with PropertyCh
     "include the Authorization header in the return value if it was included in the request" - {
       "to accurately forward the header's state to other services" in {
         val Return(context) = factory.validate(authorization = Some("53cr37"))
-        val RequestSession(Some(Authorization(auth)), _) = context.session
+        val RequestSession(Some(Authorization(auth)), _, _) = context.session
         assertResult("53cr37")(auth)
       }
     }
@@ -221,7 +221,7 @@ final class RequestValidatorsSpec extends FreeSpec with Matchers with PropertyCh
     "omit the Authorization header from the return value if it was omitted from the request" - {
       "to accurately forward the header's state to other services" in {
         val Return(context) = factory.validate(authorization = None)
-        val RequestSession(auth, _) = context.session
+        val RequestSession(auth, _, _) = context.session
         assertResult(None)(auth)
       }
     }

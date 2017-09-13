@@ -2,12 +2,13 @@ package com.mesosphere.cosmos
 
 import _root_.io.circe.jawn._
 import com.mesosphere.cosmos.http.CosmosRequests
+import com.mesosphere.cosmos.model.OriginHostScheme
 import com.mesosphere.cosmos.rpc.v1.model.SearchRequest
 import com.mesosphere.cosmos.rpc.v1.model.SearchResponse
 import com.mesosphere.cosmos.rpc.v1.model.SearchResult
 import com.mesosphere.cosmos.test.CosmosIntegrationTestClient.CosmosClient
-import com.mesosphere.cosmos.Util.rewriteWithProxyURL
 import com.mesosphere.universe
+import com.mesosphere.universe.v3.syntax.rewriteWithProxyURL
 import com.twitter.finagle.http.Status
 import org.scalatest.Assertion
 import org.scalatest.FreeSpec
@@ -54,6 +55,8 @@ final class PackageSearchSpec extends FreeSpec {
 }
 
 private object PackageSearchSpec extends TableDrivenPropertyChecks {
+
+  implicit val originInfo : Option[OriginHostScheme] = Some(OriginHostScheme())
 
   val ArangodbSearchResult = SearchResult(
     name = "arangodb",

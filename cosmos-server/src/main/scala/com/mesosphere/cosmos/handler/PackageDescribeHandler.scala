@@ -6,6 +6,7 @@ import com.mesosphere.cosmos.repository.PackageCollection
 import com.mesosphere.cosmos.rpc
 import com.mesosphere.universe
 import com.mesosphere.universe.bijection.UniverseConversions._
+import com.mesosphere.universe.v3.syntax.PackageDefinitionOps._
 import com.twitter.bijection.Conversion.asMethod
 import com.twitter.util.Future
 
@@ -21,7 +22,7 @@ private[cosmos] final class PackageDescribeHandler(
       request.packageVersion.as[Option[universe.v3.model.Version]]
     )
 
-    packageInfo.map { case (pkg, _) => pkg }
+    packageInfo.map { case (pkg, _) => pkg.rewrite(session.originInfo) }
   }
 
 }

@@ -7,6 +7,7 @@ import com.mesosphere.cosmos.finch.EndpointHandler
 import com.mesosphere.cosmos.http.RequestSession
 import com.mesosphere.cosmos.rpc
 import com.mesosphere.cosmos.thirdparty
+import com.mesosphere.universe.v3.syntax.PackageDefinitionOps._
 import com.twitter.bijection.Conversion.asMethod
 import com.twitter.util.Future
 
@@ -58,10 +59,15 @@ private[cosmos] final class ListHandler(
 
   private[this] def decodeInstalledPackageInformation(
     app: thirdparty.marathon.model.MarathonApp
+  )(
+    implicit session: RequestSession
   ): Option[rpc.v1.model.InstalledPackageInformation] = {
-    app.packageDefinition.map(_.as[rpc.v1.model.InstalledPackageInformation]).orElse(
-      app.packageMetadata.as[Option[rpc.v1.model.InstalledPackageInformation]]
-    )
+    app.packageDefinition
+      .map(_.rewrite(session.originInfo))
+      .map(_.as[rpc.v1.model.InstalledPackageInformation])
+      .orElse(
+        app.packageMetadata.as[Option[rpc.v1.model.InstalledPackageInformation]]
+      )
   }
 
 }
