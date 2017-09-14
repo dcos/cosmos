@@ -162,10 +162,12 @@ with Logging {
 
     val service = LoggingFilter.andThen(buildService(allEndpoints))
     val maybeHttpServer = startServer(service.map { request: Request =>
+      print(s"\n>>>>??## protocol si is http")
       request.headerMap.add(urlSchemeHeader, "http")
       request
     })
     val maybeHttpsServer = startTlsServer(service.map { request: Request =>
+      print(s"\n>>>>??## protocol si is https")
       request.headerMap.add(urlSchemeHeader, "https")
       request
     })

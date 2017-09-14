@@ -44,6 +44,7 @@ object RequestValidators {
       case authorization :: responseEncoder :: host :: urlScheme :: proto :: forwardHost :: forwardPort :: contentType :: requestBody :: HNil =>
         val session = RequestSession(authorization, Some(contentType),
           Some(OriginHostScheme(host, urlScheme, proto, forwardHost, forwardPort)))
+        print(s"\n\n>>>>>>> ${session.originInfo} \n\n")
         EndpointContext(requestBody, session, responseEncoder)
     }
   }

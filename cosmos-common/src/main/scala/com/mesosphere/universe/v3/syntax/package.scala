@@ -57,7 +57,7 @@ package object syntax {
   ) : String = {
     originInfo match {
       case Some(origin) =>
-        print(s"#############?>> Host : ${origin.host} Scheme :${origin.urlScheme}" +
+        print(s"#############?>>>> Host : ${origin.host} Scheme :${origin.urlScheme}" +
           s" For: ${origin.forwardedFor} Port : ${origin.forwardedPort} Proto : ${origin.protocol}\n")
         origin.urlScheme match {
           case Some(scheme) => s"$scheme://${origin.host}/package/resource?url=${Uri.parse(url).toString}"
