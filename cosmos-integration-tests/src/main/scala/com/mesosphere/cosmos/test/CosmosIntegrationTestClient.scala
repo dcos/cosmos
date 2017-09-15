@@ -8,6 +8,7 @@ import com.mesosphere.cosmos.Services
 import com.mesosphere.cosmos.Trys
 import com.mesosphere.cosmos.Uris
 import com.mesosphere.cosmos.dcosUri
+import com.mesosphere.cosmos.http.Authorization
 import com.mesosphere.cosmos.http.HttpRequest
 import com.mesosphere.cosmos.http.RequestSession
 import com.mesosphere.cosmos.model.OriginHostScheme
@@ -29,7 +30,12 @@ object CosmosIntegrationTestClient extends Matchers {
   val uri: Uri = getClientProperty("CosmosClient", "uri")
 
   implicit val Session = RequestSession(
-    None,
+    sys.env.get("COSMOS_AUTHORIZATION_HEADER").map { token =>
+      val maxDisplayWidth = 10
+      val tokenDisplay = token.stripPrefix("token=").take(maxDisplayWidth)
+      CosmosClient.logger.info(s"Loaded authorization token '$tokenDisplay...' from environment")
+      Authorization(token)
+    },
     OriginHostScheme(extractHostFromUri(uri), uri.scheme.get)
   )
 
@@ -84,7 +90,7 @@ object CosmosIntegrationTestClient extends Matchers {
       }
 
       val reqWithAuthAndHost = reqWithAuth.copy(
-        headers = reqWithAuth.headers + (Fields.Host -> s"${uri.host.get}:${uri.port.get}")
+        headers = reqWithAuth.headers + (Fields.Host -> extractHostFromUri(uri))
       )
 
       val finagleReq = HttpRequest.toFinagle(reqWithAuthAndHost)
