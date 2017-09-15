@@ -57,12 +57,9 @@ package object syntax {
   ) : String = {
     originInfo match {
       case Some(origin) =>
-        print(s"#############?>>>> Host : ${origin.host} Scheme :${origin.urlScheme}" +
-          s" For: ${origin.forwardedFor} Port : ${origin.forwardedPort} Proto : ${origin.protocol}\n")
-        origin.urlScheme match {
-          case Some(scheme) => s"$scheme://${origin.host}/package/resource?url=${Uri.parse(url).toString}"
-          case None =>s"${origin.protocol}://${origin.host}/package/resource?url=${Uri.parse(url).toString}"
-        }
+        // At least one of them will be defined (urlScheme is injected by cosmos)
+        val Some(prefix) = if (origin.urlScheme.isDefined) origin.urlScheme else origin.protocol
+        s"$prefix://${origin.host}/package/resource?url=${Uri.parse(url).toString}"
       case None => url
     }
   }

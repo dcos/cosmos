@@ -18,7 +18,7 @@ object RequestValidators {
     produces: DispatchingMediaTypedEncoder[Res]
   ): Endpoint[EndpointContext[Unit, Res]] = {
     baseValidator(produces).map { case authorization :: responseEncoder :: HNil =>
-      EndpointContext((), RequestSession(authorization, contentType = None), responseEncoder)
+      EndpointContext((), RequestSession(authorization), responseEncoder)
     }
   }
 
@@ -35,16 +35,17 @@ object RequestValidators {
       headerOption(Fields.Host) ::
       headerOption(urlSchemeHeader) ::
       headerOption(forwardedProtoHeader) ::
-      headerOption(forwardedForHeader) ::
-      headerOption(forwardedPortHeader) ::
       contentTypeValidator ::
       bodyValidator
 
     allValidators.map {
-      case authorization :: responseEncoder :: host :: urlScheme :: proto :: forwardHost :: forwardPort :: contentType :: requestBody :: HNil =>
-        val session = RequestSession(authorization, Some(contentType),
-          Some(OriginHostScheme(host, urlScheme, proto, forwardHost, forwardPort)))
-        print(s"\n\n>>>>>>> ${session.originInfo} \n\n")
+      case authorization :: responseEncoder :: httpHost :: urlScheme :: protocol ::
+        contentType :: requestBody :: HNil =>
+        val session = RequestSession(
+          authorization,
+          Some(contentType),
+          Some(OriginHostScheme(httpHost, urlScheme, protocol))
+        )
         EndpointContext(requestBody, session, responseEncoder)
     }
   }

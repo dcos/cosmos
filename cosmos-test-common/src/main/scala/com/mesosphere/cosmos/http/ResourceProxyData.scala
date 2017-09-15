@@ -24,15 +24,9 @@ object ResourceProxyData {
   )
 
   val thirdPartyUnknownResource: ResourceProxyData = ResourceProxyData(
-    uri = "https://httpbin.org/image",
+    uri = "https://www.google.com/",
     contentType = "does/not-matter",
     contentLength = 1.byte
   )
 
-  val knownResourceWithInvalidHeader: ResourceProxyData = ResourceProxyData(
-    uri = "https://infinity-artifacts.s3.amazonaws.com/uninstalltestfixture/v2" +
-      "/dcos-hello-world-linux",
-    contentType = "binary/octet-stream",
-    contentLength = 1.byte
-  )
 }
