@@ -1,7 +1,6 @@
 package com.mesosphere.cosmos.handler
 
 import com.google.common.io.ByteStreams
-import com.mesosphere.cosmos.BuildProperties
 import com.mesosphere.cosmos.HttpClient
 import com.mesosphere.cosmos.HttpClient.ResponseData
 import com.mesosphere.cosmos.HttpClient.UnexpectedStatus
@@ -17,7 +16,6 @@ import com.mesosphere.cosmos.error.ResourceTooLarge
 import com.mesosphere.cosmos.http.RequestSession
 import com.mesosphere.cosmos.repository.PackageCollection
 import com.netaporter.uri.Uri
-import com.twitter.finagle.http.Fields
 import com.twitter.finagle.http.Response
 import com.twitter.finagle.http.Status
 import com.twitter.finagle.stats.StatsReceiver
@@ -36,9 +34,9 @@ final class ResourceProxyHandler private(
 
   import ResourceProxyHandler._
 
-  def apply(uri: Uri)(implicit
-    session: RequestSession = RequestSession(None)
-  ): Future[Output[Response]] = {
+  def apply(data : (Uri, RequestSession)): Future[Output[Response]] = {
+    val uri = data._1
+    implicit val session = data._2
 
     packageCollection.allUrls().map { urls =>
       if (!urls.contains(uri.toString)) {
@@ -48,8 +46,7 @@ final class ResourceProxyHandler private(
       httpClient
         .fetch(
           uri,
-          statsReceiver,
-          Fields.UserAgent -> s"cosmos/${BuildProperties().cosmosVersion}"
+          statsReceiver
         ){ responseData => // TODO proxy May want to factor out a method that can be tested separately
           val contentBytes = getContentBytes(uri, responseData, contentLengthLimit)
           val response = Response()

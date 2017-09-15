@@ -11,7 +11,10 @@ import com.mesosphere.cosmos.http.MediaType
 import com.mesosphere.cosmos.http.Post
 import com.mesosphere.cosmos.http.RawRpcPath
 import com.mesosphere.cosmos.http.RequestSession
+import com.mesosphere.cosmos.httpInterface
 import com.mesosphere.cosmos.rpc.MediaTypes._
+import com.mesosphere.util.urlSchemeHeader
+import com.twitter.finagle.http.Fields
 import com.twitter.finagle.http.Fields
 import com.twitter.io.Buf
 import com.twitter.util.Return
@@ -138,7 +141,9 @@ final class RequestValidatorsSpec extends FreeSpec with Matchers with PropertyCh
         acceptHeader <- arbitrary[MediaType]
         headers = HttpRequest.collectHeaders(
           Fields.Accept -> HttpRequest.toHeader(acceptHeader),
-          Fields.ContentType -> actualContentTypeHeader
+          Fields.ContentType -> actualContentTypeHeader,
+          Fields.Host -> Some(httpInterface.toString()),
+          urlSchemeHeader -> Some("http")
         )
         produces = DispatchingMediaTypedEncoder[Json](acceptHeader)
         validator = RequestValidators.standard(accepts, produces)
@@ -176,7 +181,7 @@ final class RequestValidatorsSpec extends FreeSpec with Matchers with PropertyCh
   ): Assertion = {
     assertResult(expectedContentType) {
       val Return(output) = validateOutput(validator, request)
-      val RequestSession(_, Some(contentType), _) = output.value.session
+      val RequestSession(_, _, Some(contentType)) = output.value.session
       contentType
     }
   }
@@ -380,7 +385,12 @@ object RequestValidatorsSpec {
       authorization: Option[String]
     ): HttpRequest = {
       val headers =
-        HttpRequest.collectHeaders(Fields.Accept -> accept, Fields.Authorization -> authorization)
+        HttpRequest.collectHeaders(
+          Fields.Accept -> accept,
+          Fields.Authorization -> authorization,
+          Fields.Host -> Some(httpInterface.toString()),
+          urlSchemeHeader -> Some("http")
+        )
       HttpRequest(RawRpcPath("/what/ever"), headers, Get())
     }
 
@@ -404,6 +414,8 @@ object RequestValidatorsSpec {
       val headers = HttpRequest.collectHeaders(
         Fields.Accept -> accept,
         Fields.Authorization -> authorization,
+        Fields.Host -> Some(httpInterface.toString()),
+        urlSchemeHeader -> Some("http"),
         Fields.ContentType -> HttpRequest.toHeader(TestingMediaTypes.applicationJson)
       )
       HttpRequest(RawRpcPath("/what/ever"), headers, Post(Buf.Utf8(Json.Null.noSpaces)))

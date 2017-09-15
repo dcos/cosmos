@@ -7,7 +7,7 @@ import com.netaporter.uri.Uri
 package object syntax {
 
   def rewriteAssets(assets: Option[universe.v3.model.Assets])(
-    implicit originInfo : Option[OriginHostScheme]
+    implicit originInfo : OriginHostScheme
   ) : Option[universe.v3.model.Assets] = {
     if (assets.isDefined && assets.get.uris.isDefined) {
       Some(assets.get.copy(uris = assets.get.uris.map(
@@ -17,7 +17,7 @@ package object syntax {
   }
 
   def rewriteCli(cli: Option[universe.v3.model.Cli])(
-    implicit originInfo : Option[OriginHostScheme]
+    implicit originInfo : OriginHostScheme
   ) : Option[universe.v3.model.Cli] = {
 
     def rewriteArchitecture(
@@ -39,7 +39,7 @@ package object syntax {
   }
 
   def rewriteImages(images: Option[universe.v3.model.Images])(
-    implicit originInfo : Option[OriginHostScheme]
+    implicit originInfo : OriginHostScheme
   ) : Option[universe.v3.model.Images] = {
     images match {
       case Some(images) => Some(universe.v3.model.Images(
@@ -53,14 +53,9 @@ package object syntax {
   }
 
   def rewriteWithProxyURL(url : String)(
-    implicit originInfo : Option[OriginHostScheme]
+    implicit origin : OriginHostScheme
   ) : String = {
-    originInfo match {
-      case Some(origin) =>
-        // At least one of them will be defined (urlScheme is injected by cosmos)
-        val Some(prefix) = if (origin.urlScheme.isDefined) origin.urlScheme else origin.protocol
-        s"$prefix://${origin.host}/package/resource?url=${Uri.parse(url).toString}"
-      case None => url
-    }
+    Uri.parse(s"${origin.urlScheme}://${origin.host}" +
+      s"/package/resource?url=${Uri.parse(url).toString}").toString
   }
 }

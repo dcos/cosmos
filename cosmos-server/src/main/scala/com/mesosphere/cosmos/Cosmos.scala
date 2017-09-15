@@ -147,7 +147,7 @@ with Logging {
       packageRepositoryDelete = standardEndpoint(pkg :: repo :: "delete", packageRepositoryDelete),
       packageRepositoryList = standardEndpoint(pkg :: repo :: "list", packageRepositoryList),
       // TODO proxy Extract URI validation into RequestValidators
-      packageResource = proxyEndpoint(pkg :: "resource", param("url"), packageResource),
+      packageResource = get(pkg :: "resource" :: RequestValidators.proxyValidator).mapOutputAsync(packageResource(_)),
       packageSearch = standardEndpoint(pkg :: "search", packageSearch),
       packageUninstall = standardEndpoint(pkg :: "uninstall", packageUninstall),
       serviceDescribe = standardEndpoint("service" :: "describe", serviceDescribe)
@@ -364,14 +364,6 @@ object CosmosApp {
     produces: DispatchingMediaTypedEncoder[Res]
   ): Endpoint[Json] = {
     route(post(path), handler)(RequestValidators.standard)
-  }
-
-  def proxyEndpoint[Req, Res](
-    path: Endpoint[HNil],
-    urlParam: Endpoint[String],
-    resourceProxyHandler: ResourceProxyHandler
-  ): Endpoint[Response] = {
-    get(path :: urlParam.map(Uri.parse)).mapOutputAsync(resourceProxyHandler(_))
   }
 
   private def startServer(service: Service[Request, Response]): Option[ListeningServer] = {

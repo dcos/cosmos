@@ -23,6 +23,7 @@ trait HttpClient {
   import HttpClient._
 
   lazy val logger: Logger = org.slf4j.LoggerFactory.getLogger(getClass)
+  lazy val cosmosVersion = BuildProperties().cosmosVersion
 
   def fetch[A](
     uri: Uri,
@@ -52,6 +53,7 @@ object HttpClient extends HttpClient {
       }
       .flatMap { case conn: HttpURLConnection =>
         headers.foreach { case (name, value) => conn.setRequestProperty(name, value) }
+        conn.addRequestProperty(Fields.UserAgent, s"cosmos/$cosmosVersion")
 
         val responseData = extractResponseData(uri, conn)
 

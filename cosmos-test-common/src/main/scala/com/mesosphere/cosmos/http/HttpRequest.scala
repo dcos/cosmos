@@ -1,5 +1,7 @@
 package com.mesosphere.cosmos.http
 
+import com.mesosphere.cosmos.httpInterface
+import com.mesosphere.util.urlSchemeHeader
 import com.twitter.finagle.http.Fields
 import com.twitter.finagle.http.Method
 import com.twitter.finagle.http.Request
@@ -45,7 +47,12 @@ object HttpRequest {
     contentType: Option[String],
     accept: Option[String]
   ): HttpRequest = {
-    val headers = collectHeaders(Fields.Accept -> accept, Fields.ContentType -> contentType)
+    val headers = collectHeaders(
+      Fields.Accept -> accept,
+      Fields.ContentType -> contentType,
+      Fields.Host -> Some(httpInterface.toString()),
+      urlSchemeHeader -> Some("http")
+    )
     HttpRequest(path, headers, Post(Buf.Utf8(body)))
   }
 
@@ -57,7 +64,9 @@ object HttpRequest {
   ): HttpRequest = {
     val headers = collectHeaders(
       Fields.Accept -> toHeader(accept),
-      Fields.ContentType -> toHeader(contentType)
+      Fields.ContentType -> toHeader(contentType),
+      Fields.Host -> Some(httpInterface.toString()),
+      urlSchemeHeader -> Some("http")
     )
     HttpRequest(path, headers, Post(body))
   }

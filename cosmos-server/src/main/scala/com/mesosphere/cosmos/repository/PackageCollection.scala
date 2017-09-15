@@ -119,7 +119,7 @@ object PackageCollection {
     packageDefinitions: List[universe.v4.model.PackageDefinition],
     query: Option[String]
   )(
-    implicit originInfo : Option[OriginHostScheme]
+    implicit originInfo : OriginHostScheme
   ): List[rpc.v1.model.SearchResult] = {
     val predicate = getPredicate(query)
 
@@ -276,7 +276,7 @@ object PackageCollection {
   private def singleResult(
     pkg: universe.v4.model.PackageDefinition
   )(
-    implicit originInfo : Option[OriginHostScheme]
+    implicit originInfo : OriginHostScheme
   ): rpc.v1.model.SearchResult = {
     rpc.v1.model.SearchResult(
       pkg.name,

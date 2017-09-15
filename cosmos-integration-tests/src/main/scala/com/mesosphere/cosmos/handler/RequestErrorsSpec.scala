@@ -66,7 +66,7 @@ class RequestErrorsSpec extends FreeSpec {
         // assert Content-Type header error
         assertResult("not_valid")(contentTypeError.str("type"))
         val expectedContentTypeErrorMessage =
-          "Item header 'Content-Type' deemed invalid by rule: should match on of " +
+          "Item header 'Content-Type' deemed invalid by rule: should match one of " +
         "application/vnd.dcos.package.install-request+json;charset=utf-8;version=v1"
         assertResult(expectedContentTypeErrorMessage)(contentTypeError.str("message"))
 

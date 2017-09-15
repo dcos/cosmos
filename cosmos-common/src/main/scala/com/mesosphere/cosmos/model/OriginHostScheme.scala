@@ -1,5 +1,3 @@
 package com.mesosphere.cosmos.model
 
-case class OriginHostScheme(host: Option[String] = None,
-  urlScheme: Option[String] = None,
-  protocol: Option[String] = None)
+case class OriginHostScheme(host: String, urlScheme: String)

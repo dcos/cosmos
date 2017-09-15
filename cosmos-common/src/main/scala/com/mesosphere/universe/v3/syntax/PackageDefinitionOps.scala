@@ -177,7 +177,7 @@ final class PackageDefinitionOps(val pkgDef: universe.v4.model.PackageDefinition
 
   // -------- Utility methods to rewrite the resource urls for proxy endpoint ------
   def rewrite(
-    implicit originInfo : Option[OriginHostScheme]
+    implicit originInfo : OriginHostScheme
   ): universe.v4.model.PackageDefinition = {
     pkgDef match {
       case v2: universe.v3.model.V2Package => v2.resource match {
