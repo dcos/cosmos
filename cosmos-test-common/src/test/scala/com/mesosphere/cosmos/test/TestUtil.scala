@@ -5,6 +5,6 @@ import com.mesosphere.cosmos.model.OriginHostScheme
 
 object TestUtil {
 
-  implicit val Anonymous = RequestSession(None, OriginHostScheme("http", "localhost"))
+  implicit val Anonymous = RequestSession(None, OriginHostScheme("localhost", "http"))
 
 }

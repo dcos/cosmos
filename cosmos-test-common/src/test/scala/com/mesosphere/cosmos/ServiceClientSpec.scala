@@ -42,7 +42,7 @@ final class ServiceClientSpec extends FreeSpec with Inside {
 
           implicit val session = RequestSession(
             Some(Authorization("credentials")),
-            OriginHostScheme("http", "localhost")
+            OriginHostScheme("localhost", "http")
           )
 
           "with baseRequestBuilder()" in {

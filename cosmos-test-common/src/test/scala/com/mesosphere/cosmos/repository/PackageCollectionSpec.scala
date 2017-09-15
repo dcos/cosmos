@@ -437,7 +437,7 @@ final class PackageCollectionSpec extends FreeSpec
 
     "search" - {
 
-      implicit val originInfo : OriginHostScheme = OriginHostScheme("http", "localhost")
+      implicit val originInfo : OriginHostScheme = OriginHostScheme("localhost", "http")
 
       "not found" in {
         assertResult(Return(Nil)

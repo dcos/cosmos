@@ -53,11 +53,11 @@ object RequestValidators {
       bodyValidator
 
     allValidators.map {
-      case authorization :: responseEncoder :: httpHost :: urlScheme :: protocol ::
+      case authorization :: responseEncoder :: httpHost :: urlScheme :: forwardedProtocol ::
         contentType :: requestBody :: HNil =>
         val session = RequestSession(
           authorization,
-          OriginHostScheme(httpHost, protocol.getOrElse(urlScheme)),
+          OriginHostScheme(httpHost, forwardedProtocol.getOrElse(urlScheme)),
           Some(contentType)
         )
         EndpointContext(requestBody, session, responseEncoder)
@@ -88,12 +88,12 @@ object RequestValidators {
       headerOption(forwardedProtoHeader)
 
     validators.map {
-      case queryParam :: authorization :: httpHost :: urlScheme :: protocol :: HNil =>
+      case queryParam :: authorization :: httpHost :: urlScheme :: forwardedProtocol :: HNil =>
         (
           queryParam,
           RequestSession(
             authorization,
-            OriginHostScheme(httpHost, protocol.getOrElse(urlScheme)),
+            OriginHostScheme(httpHost, forwardedProtocol.getOrElse(urlScheme)),
             None
           )
         )
