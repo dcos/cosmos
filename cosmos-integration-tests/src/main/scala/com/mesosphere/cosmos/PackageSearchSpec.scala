@@ -56,7 +56,8 @@ final class PackageSearchSpec extends FreeSpec {
 
 private object PackageSearchSpec extends TableDrivenPropertyChecks {
 
-  implicit val originInfo : OriginHostScheme = OriginHostScheme("localhost", "http")
+  val host = httpInterface().map(x => s"${x.getHostName}:${x.getPort}").get
+  implicit val originInfo : OriginHostScheme = OriginHostScheme(host, "http")
 
   val ArangodbSearchResult = SearchResult(
     name = "arangodb",
