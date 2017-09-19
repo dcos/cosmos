@@ -15,15 +15,19 @@ import java.io.InputStream
 import java.net.HttpURLConnection
 import java.net.MalformedURLException
 import java.net.URISyntaxException
+import com.twitter.finagle.http.filter.LogFormatter
+import com.twitter.util.Time
+import java.util.TimeZone
 import java.util.zip.GZIPInputStream
+import org.apache.commons.lang.time.FastDateFormat
 import org.slf4j.Logger
 
 trait HttpClient {
 
   import HttpClient._
 
-  lazy val logger: Logger = org.slf4j.LoggerFactory.getLogger(getClass)
   lazy val cosmosVersion = BuildProperties().cosmosVersion
+  val logger: Logger = org.slf4j.LoggerFactory.getLogger(getClass)
 
   def fetch[A](
     uri: Uri,
@@ -52,9 +56,10 @@ object HttpClient extends HttpClient {
           throw UriSyntax(t)
       }
       .flatMap { case conn: HttpURLConnection =>
+        // TODO print
         headers.foreach { case (name, value) => conn.setRequestProperty(name, value) }
         conn.addRequestProperty(Fields.UserAgent, s"cosmos/$cosmosVersion")
-
+        logger.debug(format(conn))
         val responseData = extractResponseData(uri, conn)
 
         Future(Right(processResponse(responseData)))
@@ -130,6 +135,43 @@ object HttpClient extends HttpClient {
         sr.scope("contentEncoding").counter("plain").incr()
         conn.getInputStream
     }
+  }
+
+  def format(conn: HttpURLConnection) : String = {
+    val DateFormat = FastDateFormat.getInstance("dd/MMM/yyyy:HH:mm:ss Z",
+      TimeZone.getTimeZone("GMT"))
+    def escape(s: String): String = LogFormatter.escape(s)
+    def formattedDate(): String =
+      DateFormat.format(Time.now.toDate)
+
+    val remoteAddr = conn.getURL.getHost
+    val contentLength = conn.getContentLength
+    val contentLengthStr = if (contentLength > 0) contentLength.toString else "-"
+
+    val userAgent:Option[String] = Option(conn.getHeaderField(Fields.UserAgent))
+
+    val builder = new StringBuilder
+    builder.append(remoteAddr)
+    builder.append(" - - [")
+    builder.append(formattedDate)
+    builder.append("] \"")
+    builder.append(escape(conn.getRequestMethod))
+    builder.append(' ')
+    builder.append(escape(conn.getURL.toURI.toString))
+    builder.append(' ')
+    builder.append(escape(conn.getURL.getProtocol))
+    builder.append("\" ")
+    builder.append(conn.getResponseCode.toString)
+    builder.append(' ')
+    builder.append(contentLengthStr)
+    userAgent match {
+      case Some(uaStr) =>
+        builder.append(" \"")
+        builder.append(escape(uaStr))
+        builder.append('"')
+      case None => builder.append(' ')
+    }
+    builder.toString
   }
 
   val TemporaryRedirect: Int = 307

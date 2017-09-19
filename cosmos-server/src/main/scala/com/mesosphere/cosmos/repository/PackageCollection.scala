@@ -5,13 +5,11 @@ import com.mesosphere.cosmos.error.VersionNotFound
 import com.mesosphere.cosmos.http.RequestSession
 import com.mesosphere.cosmos.model.OriginHostScheme
 import com.mesosphere.cosmos.rpc
-import com.mesosphere.universe
 import com.mesosphere.universe.v3.syntax.PackageDefinitionOps._
-import com.mesosphere.universe.v4.model.Repository
+import com.mesosphere.universe
 import com.netaporter.uri.Uri
 import com.twitter.util.Future
 import java.util.regex.Pattern
-import scala.collection.breakOut
 import scala.math.Ordering.Implicits.infixOrderingOps
 import scala.util.matching.Regex
 
@@ -175,31 +173,41 @@ object PackageCollection {
     }
   }
 
-  def allUrls(repositories: List[(Repository, Uri)]): Set[String] = {
-    def merge(a : Option[Set[String]], b : Option[Set[String]]) : Option[Set[String]] = {
-      (a ++ b).reduceLeftOption(_ ++ _)
+  def allUrls(repositories: List[(universe.v4.model.Repository, Uri)]): Set[String] = {
+    def assetsSet(assets : universe.v3.model.Assets) : Set[String] = {
+      assets.uris.getOrElse(Map.empty).values.toSet
+    }
+
+    def imagesSet(images : universe.v3.model.Images) : Set[String] = {
+      Set() ++ images.iconSmall ++ images.iconMedium ++ images.iconLarge ++
+        images.screenshots.getOrElse(List()).toSet
+    }
+
+    def cliSet(cli : universe.v3.model.Cli) : Set[String] = {
+      cli.binaries match {
+        case Some(binaries) =>
+          Set() ++
+            binaries.linux.map(_.`x86-64`.url) ++
+            binaries.windows.map(_.`x86-64`.url) ++
+            binaries.darwin.map(_.`x86-64`.url)
+        case None => Set()
+      }
     }
 
     repositories.flatMap { case (repo, _) =>
       repo.packages.flatMap {
         _ match {
           case v2: universe.v3.model.V2Package =>
-            v2.resource.map(x => (x.assets, x.images))
+            v2.resource.map(r => r.assets.map(assetsSet) ++ r.images.map(imagesSet))
           case v3: universe.v3.model.V3Package =>
-            v3.resource.map(x => (x.assets, x.images))
+            v3.resource.map(r =>
+              r.assets.map(assetsSet) ++ r.images.map(imagesSet) ++ r.cli.map(cliSet))
           case v4: universe.v4.model.V4Package =>
-            v4.resource.map(x => (x.assets, x.images))
+            v4.resource.map(r =>
+              r.assets.map(assetsSet) ++ r.images.map(imagesSet) ++ r.cli.map(cliSet))
         }
-      }.flatMap{ case ((assets, images)) =>
-        merge(
-          assets.flatMap(_.uris.flatMap( uris => Some(uris.values.toSet))),
-          merge(
-            images.map(image => Set() ++ image.iconSmall ++ image.iconMedium ++ image.iconLarge),
-            images.flatMap(_.screenshots.map(_.toSet))
-          )
-        )
       }.flatten
-    }(breakOut)
+    }.flatten.toSet
   }
 
   /**

@@ -8,6 +8,9 @@ import com.mesosphere.cosmos.model.OriginHostScheme
 import com.mesosphere.cosmos.repository.PackageCollection
 import com.mesosphere.universe
 import com.mesosphere.universe.test.TestingPackages
+import com.mesosphere.universe.v3.model.Architectures
+import com.mesosphere.universe.v3.model.Binary
+import com.mesosphere.universe.v3.model.Platforms
 import com.mesosphere.universe.v3.syntax.PackageDefinitionOps._
 import com.netaporter.uri.Uri
 import com.twitter.util.Return
@@ -27,102 +30,7 @@ final class PackageCollectionSpec extends FreeSpec
   with PropertyChecks
   with TableDrivenPropertyChecks {
 
-  def getRepository(
-    packageDefinitions : List[universe.v4.model.PackageDefinition],
-    uri: Uri = Uri.parse("/irrelevant")
-  ): (universe.v4.model.Repository, Uri) = {
-    (universe.v4.model.Repository(packageDefinitions), uri)
-  }
-
-  def genIncompatibleUpgradesFrom(
-    versionToAvoid: universe.v3.model.Version
-  ): Gen[Option[List[universe.v3.model.VersionSpecification]]] = {
-    val genVersionSpecification = Generators.genVersion
-      .suchThat(_ != versionToAvoid)
-      .map(universe.v3.model.ExactVersion)
-
-    Gen.option(Gen.listOf(genVersionSpecification))
-  }
-
-  def buildV4Package(
-    name: String = "whatever4",
-    version : universe.v3.model.Version = universe.v3.model.Version("424"),
-    releaseVersion: universe.v3.model.ReleaseVersion = universe.v3.model.ReleaseVersion(2),
-    resource: Option[universe.v3.model.V3Resource] = None
-  ): universe.v4.model.PackageDefinition = {
-    universe.v4.model.V4Package(
-      name = name,
-      version = version,
-      releaseVersion = releaseVersion,
-      maintainer = "cosmos@mesosphere.com",
-      description = "a package definition going through a life span of tests",
-      resource = resource
-    )
-  }
-
-  def buildV3Package(
-    name: String = "whatever3",
-    version : universe.v3.model.Version = universe.v3.model.Version("423"),
-    releaseVersion: universe.v3.model.ReleaseVersion = universe.v3.model.ReleaseVersion(1),
-    resource: Option[universe.v3.model.V3Resource] = None
-  ): universe.v3.model.V3Package = {
-    universe.v3.model.V3Package(
-      name = name,
-      version = version,
-      releaseVersion = releaseVersion,
-      maintainer = "cosmos@mesosphere.com",
-      description = "a package definition going through a life span of tests",
-      resource = resource
-    )
-  }
-
-  def buildV2Package(
-    name: String = "whatever2",
-    version : universe.v3.model.Version = universe.v3.model.Version("422"),
-    releaseVersion: universe.v3.model.ReleaseVersion = universe.v3.model.ReleaseVersion(0),
-    resource: Option[universe.v3.model.V2Resource] = None
-  ): universe.v3.model.V2Package = {
-    universe.v3.model.V2Package(
-      name = name,
-      version = version,
-      releaseVersion = releaseVersion,
-      maintainer = "cosmos@mesosphere.com",
-      description = "a package definition going through a life span of tests",
-      marathon = universe.v3.model.Marathon(
-        v2AppMustacheTemplate = ByteBuffer.wrap("brief template".getBytes(StandardCharsets.UTF_8))
-      ),
-      resource = resource
-    )
-  }
-
-  import universe.v3.model.Assets
-  import universe.v3.model.Images
-
-  type TestData = (collection.immutable.Set[String], Option[Assets], Option[Images])
-
-  // scalastyle:off magic.number
-  private def genTestData() : Gen[TestData] = {
-    for {
-      numberOfUrls <- Gen.chooseNum(0, 10)
-      listOfUrls <- Gen.containerOfN[List, String](numberOfUrls, arbitrary[Uri].toString)
-      iconSmall <- arbitrary[Uri].map(_.toString)
-      iconMedium <- arbitrary[Uri].map(_.toString)
-      iconLarge <- arbitrary[Uri].map(_.toString)
-      screenshots <- Gen.containerOfN[List, String](numberOfUrls, arbitrary[Uri].toString)
-    } yield {
-      val assets = Some(Assets(uris = Some(
-        listOfUrls.zipWithIndex.map { case ((k, v)) =>
-          (v.toString, k)
-        }.toMap
-      ),
-        None
-      ))
-      val expectedSet = iconSmall :: iconMedium :: iconLarge :: ( listOfUrls ::: screenshots )
-      val images = Images(Some(iconSmall), Some(iconMedium), Some(iconLarge), Some(screenshots))
-      (expectedSet.toSet, assets, Some(images))
-    }
-  }
-  // scalastyle:on magic.number
+  import PackageCollectionSpec._
 
   "Queries on PackageCollection" - {
 
@@ -592,25 +500,29 @@ final class PackageCollectionSpec extends FreeSpec
       val uri: Uri = Uri.parse("/irrelevant")
 
       "All the urls should be returned for single package" in {
-        forAll(genTestData()) { case (expected, assets, images) =>
-            val v4package = buildV4Package(resource = Some(V3Resource(assets, images)))
-            assertResult(expected)(PackageCollection.allUrls(List(getRepository(List(v4package)))))
+        forAll(genV3TestData()) { case (expected, assets, images, clis) =>
+          val v4package = buildV4Package(resource = Some(V3Resource(Some(assets), Some(images), Some(clis))))
+          val actual = PackageCollection.allUrls(List(getRepository(List(v4package))))
+          if((actual.--(expected)).nonEmpty) {
+            print(s"\n\n$expected $assets $images $clis")
+          }
+          assertResult(expected)(actual)
         }
       }
 
       "All the urls should be returned for multiple package" in {
         forAll(
-          genTestData(),
-          genTestData(),
-          genTestData()
+          genV3TestData(),
+          genV3TestData(),
+          genV2TestData()
         ) { case (
-          (expected4, assets4, images4),
-          (expected3, assets3, images3),
-          (expected2, assets2, images2)
+            (expected4, assets4, images4, cli4),
+            (expected3, assets3, images3, cli3),
+            (expected2, assets2, images2)
           ) =>
-          val v4package = buildV4Package(resource = Some(V3Resource(assets4, images4)))
-          val v3package = buildV3Package(resource = Some(V3Resource(assets3, images3)))
-          val v2package = buildV2Package(resource = Some(V2Resource(assets2, images2)))
+          val v4package = buildV4Package(resource = Some(V3Resource(Some(assets4), Some(images4), Some(cli4))))
+          val v3package = buildV3Package(resource = Some(V3Resource(Some(assets3), Some(images3), Some(cli3))))
+          val v2package = buildV2Package(resource = Some(V2Resource(Some(assets2), Some(images2))))
           val expected = expected4 ++ expected3 ++ expected2
           assertResult(expected)(PackageCollection.allUrls(
             List(getRepository(List(v4package, v3package, v2package))))
@@ -631,9 +543,9 @@ final class PackageCollectionSpec extends FreeSpec
       }
 
       "Duplicate urls should be removed" in {
-        forAll(genTestData()) { case (expected, assets4, images4) =>
-          val v4package = buildV4Package(resource = Some(V3Resource(assets4, images4)))
-          val v3package = buildV3Package(resource = Some(V3Resource(assets4, images4)))
+        forAll(genV3TestData()) { case (expected, assets4, images4, cli4) =>
+          val v4package = buildV4Package(resource = Some(V3Resource(Some(assets4), Some(images4), Some(cli4))))
+          val v3package = buildV3Package(resource = Some(V3Resource(Some(assets4), Some(images4), Some(cli4))))
           assertResult(expected)(PackageCollection.allUrls(
             List(getRepository(List(v4package, v3package))))
           )
@@ -669,4 +581,144 @@ final class PackageCollectionSpec extends FreeSpec
     assertResult("^\\Qminimal\\E.*$")(PackageCollection.createRegex("minimal*").toString)
     assertResult("^\\Qminimal\\E.*.*$")(PackageCollection.createRegex("minimal**").toString)
   }
+}
+
+object PackageCollectionSpec {
+  def getRepository(
+    packageDefinitions : List[universe.v4.model.PackageDefinition],
+    uri: Uri = Uri.parse("/irrelevant")
+  ): (universe.v4.model.Repository, Uri) = {
+    (universe.v4.model.Repository(packageDefinitions), uri)
+  }
+
+  def genIncompatibleUpgradesFrom(
+    versionToAvoid: universe.v3.model.Version
+  ): Gen[Option[List[universe.v3.model.VersionSpecification]]] = {
+    val genVersionSpecification = Generators.genVersion
+      .suchThat(_ != versionToAvoid)
+      .map(universe.v3.model.ExactVersion)
+
+    Gen.option(Gen.listOf(genVersionSpecification))
+  }
+
+  def buildV4Package(
+    name: String = "whatever4",
+    version : universe.v3.model.Version = universe.v3.model.Version("424"),
+    releaseVersion: universe.v3.model.ReleaseVersion = universe.v3.model.ReleaseVersion(2),
+    resource: Option[universe.v3.model.V3Resource] = None
+  ): universe.v4.model.PackageDefinition = {
+    universe.v4.model.V4Package(
+      name = name,
+      version = version,
+      releaseVersion = releaseVersion,
+      maintainer = "cosmos@mesosphere.com",
+      description = "a package definition going through a life span of tests",
+      resource = resource
+    )
+  }
+
+  def buildV3Package(
+    name: String = "whatever3",
+    version : universe.v3.model.Version = universe.v3.model.Version("423"),
+    releaseVersion: universe.v3.model.ReleaseVersion = universe.v3.model.ReleaseVersion(1),
+    resource: Option[universe.v3.model.V3Resource] = None
+  ): universe.v3.model.V3Package = {
+    universe.v3.model.V3Package(
+      name = name,
+      version = version,
+      releaseVersion = releaseVersion,
+      maintainer = "cosmos@mesosphere.com",
+      description = "a package definition going through a life span of tests",
+      resource = resource
+    )
+  }
+
+  def buildV2Package(
+    name: String = "whatever2",
+    version : universe.v3.model.Version = universe.v3.model.Version("422"),
+    releaseVersion: universe.v3.model.ReleaseVersion = universe.v3.model.ReleaseVersion(0),
+    resource: Option[universe.v3.model.V2Resource] = None
+  ): universe.v3.model.V2Package = {
+    universe.v3.model.V2Package(
+      name = name,
+      version = version,
+      releaseVersion = releaseVersion,
+      maintainer = "cosmos@mesosphere.com",
+      description = "a package definition going through a life span of tests",
+      marathon = universe.v3.model.Marathon(
+        v2AppMustacheTemplate = ByteBuffer.wrap("brief template".getBytes(StandardCharsets.UTF_8))
+      ),
+      resource = resource
+    )
+  }
+
+  import universe.v3.model.Assets
+  import universe.v3.model.Images
+  import universe.v3.model.Cli
+
+  type V3TestData = (collection.immutable.Set[String], Assets, Images, Cli)
+  type V2TestData = (collection.immutable.Set[String], Assets, Images)
+
+  // scalastyle:off magic.number
+  private def genV3TestData() : Gen[V3TestData] = {
+    for {
+      numberOfUrls <- Gen.chooseNum(0, 10)
+      listOfUrls <- Gen.containerOfN[List, String](numberOfUrls, arbitrary[Uri].toString)
+      iconSmall <- arbitrary[Uri].map(_.toString)
+      iconMedium <- arbitrary[Uri].map(_.toString)
+      iconLarge <- arbitrary[Uri].map(_.toString)
+      screenshots <- Gen.containerOfN[List, String](numberOfUrls, arbitrary[Uri].toString)
+      windowsCli <- arbitrary[Uri].map(_.toString)
+      linuxCli <- arbitrary[Uri].map(_.toString)
+      darwinCli <- arbitrary[Uri].map(_.toString)
+    } yield {
+      val cli = Cli(Some(Platforms(
+        Some(Architectures(Binary("p", windowsCli, List.empty))),
+        Some(Architectures(Binary("q", linuxCli, List.empty))),
+        Some(Architectures(Binary("r", darwinCli, List.empty)))
+      )))
+      val assets = Assets(uris = Some(
+        listOfUrls.zipWithIndex.map { case ((k, v)) =>
+          (v.toString, k)
+        }.toMap
+      ),
+        None
+      )
+      val expectedSet = iconSmall ::
+        iconMedium ::
+        iconLarge ::
+        windowsCli ::
+        linuxCli ::
+        darwinCli ::
+        (listOfUrls ++ screenshots)
+      val images = Images(Some(iconSmall), Some(iconMedium), Some(iconLarge), Some(screenshots))
+      (expectedSet.toSet, assets, images, cli)
+    }
+  }
+
+  private def genV2TestData() : Gen[V2TestData] = {
+    for {
+      numberOfUrls <- Gen.chooseNum(0, 10)
+      listOfUrls <- Gen.containerOfN[List, String](numberOfUrls, arbitrary[Uri].toString)
+      iconSmall <- arbitrary[Uri].map(_.toString)
+      iconMedium <- arbitrary[Uri].map(_.toString)
+      iconLarge <- arbitrary[Uri].map(_.toString)
+      screenshots <- Gen.containerOfN[List, String](numberOfUrls, arbitrary[Uri].toString)
+    } yield {
+      val assets = Assets(uris = Some(
+        listOfUrls.zipWithIndex.map { case ((k, v)) =>
+          (v.toString, k)
+        }.toMap
+      ),
+        None
+      )
+      val expectedSet = iconSmall ::
+        iconMedium ::
+        iconLarge ::
+        (listOfUrls ++ screenshots)
+      val images = Images(Some(iconSmall), Some(iconMedium), Some(iconLarge), Some(screenshots))
+      (expectedSet.toSet, assets, images)
+    }
+  }
+  // scalastyle:on magic.number
 }

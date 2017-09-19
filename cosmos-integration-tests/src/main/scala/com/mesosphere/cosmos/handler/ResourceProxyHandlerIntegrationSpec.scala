@@ -29,28 +29,25 @@ final class ResourceProxyHandlerIntegrationSpec extends FreeSpec with TableDrive
       assertResult(Status.Forbidden)(response.status)
     }
 
-    "be able to download a rewritten uri " - {
-      for (packageName <- standardPackages) {
+    for (packageName <- standardPackages) {
+      s"be able to download rewritten uris for $packageName images and assets" in {
         val describeRequest = CosmosRequests.packageDescribeV3(DescribeRequest(packageName, None))
-        val Right(describeResponse) = decode[DescribeResponse](CosmosClient.submit(describeRequest).contentString)
+        val content = CosmosClient.submit(describeRequest).contentString
+        val Right(describeResponse) = decode[DescribeResponse](content)
+
         describeResponse.`package`.images.map { images =>
-          s"for images of $packageName" in {
-            images.iconSmall.map(assertURLDownload)
-            images.iconMedium.map(assertURLDownload)
-            images.iconLarge.map(assertURLDownload)
-            val screens = images.screenshots
-            if(screens.isDefined && !screens.isEmpty) assertURLDownload(screens.get.head)
+          images.iconSmall.map(assertURLDownload)
+          images.iconMedium.map(assertURLDownload)
+          images.iconLarge.map(assertURLDownload)
+          val screens = images.screenshots
+          if(screens.isDefined && !screens.isEmpty) {
+            assertURLDownload(screens.get.head)
           }
         }
 
-        s"for assets of $packageName" in {
-          describeResponse.`package`.assets.map(
-            _.uris
-              .map(_.values)
-              .map(_.head)
-              .map(assertURLDownload)
-          )
-        }
+        describeResponse.`package`.assets.map(
+          _.uris.map(x => assertURLDownload(x.values.head))
+        )
       }
     }
   }
@@ -60,13 +57,10 @@ final class ResourceProxyHandlerIntegrationSpec extends FreeSpec with TableDrive
       Uri.parse(url),
       stats
     ) { responseData =>
-      val buffer = Stream.continually(responseData.contentStream.read).takeWhile(_ != -1).map(_.toByte).toArray
-      (buffer, responseData.contentLength)
+      responseData.contentStream.read()
     }
-    val Right(result) = Await.result(future)
-    val (buffer, optContentLength) = result
-    if(optContentLength.isDefined) assert(optContentLength.get.toInt == buffer.length)
-    assert(buffer.length > 0)
+    val firstByte = Await.result(future).toTry.get
+    assert(firstByte != -1) // will fail if EOF is reached at the beginning of stream
   }
 
 }

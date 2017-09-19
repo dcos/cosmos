@@ -40,7 +40,8 @@ final class ResourceProxyHandler private(
 
     packageCollection.allUrls().map { urls =>
       if (!urls.contains(uri.toString)) {
-        throw Forbidden(ResourceProxyHandler.getClass.getCanonicalName, Some(uri.toString)).exception
+        // TODO better readability
+        throw Forbidden(ResourceProxyHandler.getClass.getSimpleName, Some(uri.toString)).exception
       }
     }.flatMap { _ =>
       httpClient
