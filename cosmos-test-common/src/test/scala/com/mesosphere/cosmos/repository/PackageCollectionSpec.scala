@@ -495,11 +495,7 @@ final class PackageCollectionSpec extends FreeSpec
       "All the urls should be returned for single package" in {
         forAll(Generators.genV3ResourceTestData()) { case (expected, assets, images, clis) =>
           val v4package = buildV4Package(resource = Some(V3Resource(Some(assets), Some(images), Some(clis))))
-          val actual = PackageCollection.allUrls(List(getRepository(List(v4package))))
-          if((actual.--(expected)).nonEmpty) {
-            print(s"\n\n$expected $assets $images $clis")
-          }
-          assertResult(expected)(actual)
+          assertResult(expected)(PackageCollection.allUrls(List(getRepository(List(v4package)))))
         }
       }
 

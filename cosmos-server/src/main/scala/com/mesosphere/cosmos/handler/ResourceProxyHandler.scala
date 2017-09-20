@@ -80,8 +80,6 @@ final class ResourceProxyHandler private(
 
 object ResourceProxyHandler {
 
-  // TODO proxy Determine what the actual limit should be; maybe use a flag?
-
   private val EofDetector: Array[Byte] = Array.ofDim(1)
 
   def apply(
@@ -109,7 +107,6 @@ object ResourceProxyHandler {
   ):Array[Byte] = {
     validateContentLength(uri, responseData.contentLength, contentLengthLimit)
 
-    // TODO proxy Fail if data is too large
     // Allocate array of min(ContentLength size if defined, limit size - 1)
     // Buffer InputStream into array; if the end is reached but there's more data, fail
     // If the data runs out before the end of the array, truncate the array

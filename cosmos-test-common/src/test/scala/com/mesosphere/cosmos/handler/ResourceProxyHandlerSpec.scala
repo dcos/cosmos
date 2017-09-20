@@ -102,11 +102,8 @@ final class ResourceProxyHandlerSpec extends FreeSpec with PropertyChecks {
     }
 
     "When Content-Length does not match the actual content stream length" - {
-      // TODO proxy Test cases
-      // If ContentLength *was* specified, and the stream is > that, fail
-      // If ContentLength *was* specified, and the stream is <= that, pass
-      //   - In this case our response content length should be the size of the received data
-      "If ContentLength was specified, and the header value is less than actual stream, fail" in {
+
+       "If ContentLength was specified, and the header value is less than actual stream, fail" in {
         val maxLengthLimit = 100
         val genTestData: Gen[TestData] = for {
           lengthLimit <- Gen.chooseNum(1, maxLengthLimit)
@@ -159,7 +156,6 @@ final class ResourceProxyHandlerSpec extends FreeSpec with PropertyChecks {
 
   def assertFailure(output: Future[Output[Response]]): Assertion = {
     val exception = intercept[CosmosException](Await.result(output))
-
     assertResult(Status.Forbidden)(exception.status)
     assert(exception.error.isInstanceOf[ResourceTooLarge])
   }

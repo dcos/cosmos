@@ -58,7 +58,6 @@ object HttpClient extends HttpClient {
           throw UriSyntax(t)
       }
       .flatMap { case conn: HttpURLConnection =>
-        // TODO print
         headers.foreach { case (name, value) => conn.setRequestProperty(name, value) }
         conn.addRequestProperty(Fields.UserAgent, s"cosmos/$cosmosVersion")
         logger.debug(format(conn))
@@ -98,7 +97,6 @@ object HttpClient extends HttpClient {
     conn.getResponseCode match {
       case HttpURLConnection.HTTP_OK =>
         sr.scope("status").counter("200").incr()
-        // TODO proxy Handle error cases
         val contentEncoding = Option(conn.getHeaderField(Fields.ContentEncoding))
         MediaTypeParser.parse(conn.getHeaderField(Fields.ContentType)) match {
           case Return(contentType) => (contentType, contentEncoding)

@@ -146,7 +146,6 @@ with Logging {
       packageRepositoryAdd = standardEndpoint(pkg :: repo :: "add", packageRepositoryAdd),
       packageRepositoryDelete = standardEndpoint(pkg :: repo :: "delete", packageRepositoryDelete),
       packageRepositoryList = standardEndpoint(pkg :: repo :: "list", packageRepositoryList),
-      // TODO proxy Extract URI validation into RequestValidators
       packageResource = get(pkg :: "resource" :: RequestValidators.proxyValidator).mapOutputAsync(packageResource(_)),
       packageSearch = standardEndpoint(pkg :: "search", packageSearch),
       packageUninstall = standardEndpoint(pkg :: "uninstall", packageUninstall),
