@@ -28,6 +28,8 @@ trait HttpClient {
 
   lazy val cosmosVersion = BuildProperties().cosmosVersion
   val logger: Logger = org.slf4j.LoggerFactory.getLogger(getClass)
+  val DateFormat = FastDateFormat.getInstance("dd/MMM/yyyy:HH:mm:ss Z", TimeZone.getTimeZone("GMT"))
+  def formattedDate(): String = DateFormat.format(Time.now.toDate)
 
   def fetch[A](
     uri: Uri,
@@ -138,40 +140,23 @@ object HttpClient extends HttpClient {
   }
 
   def format(conn: HttpURLConnection) : String = {
-    val DateFormat = FastDateFormat.getInstance("dd/MMM/yyyy:HH:mm:ss Z",
-      TimeZone.getTimeZone("GMT"))
-    def escape(s: String): String = LogFormatter.escape(s)
-    def formattedDate(): String =
-      DateFormat.format(Time.now.toDate)
-
-    val remoteAddr = conn.getURL.getHost
     val contentLength = conn.getContentLength
     val contentLengthStr = if (contentLength > 0) contentLength.toString else "-"
-
     val userAgent:Option[String] = Option(conn.getHeaderField(Fields.UserAgent))
 
-    val builder = new StringBuilder
-    builder.append(remoteAddr)
-    builder.append(" - - [")
-    builder.append(formattedDate)
-    builder.append("] \"")
-    builder.append(escape(conn.getRequestMethod))
-    builder.append(' ')
-    builder.append(escape(conn.getURL.toURI.toString))
-    builder.append(' ')
-    builder.append(escape(conn.getURL.getProtocol))
-    builder.append("\" ")
-    builder.append(conn.getResponseCode.toString)
-    builder.append(' ')
-    builder.append(contentLengthStr)
-    userAgent match {
-      case Some(uaStr) =>
-        builder.append(" \"")
-        builder.append(escape(uaStr))
-        builder.append('"')
-      case None => builder.append(' ')
-    }
-    builder.toString
+    def escape(s: String) = LogFormatter.escape(s)
+
+    s"${conn.getURL.getHost} -- " +
+      s"[$formattedDate] " +
+      s"${escape("\"")}${escape(conn.getRequestMethod)} " +
+      s"${escape(conn.getURL.toURI.toString)} " +
+      s"${escape(conn.getURL.getProtocol)}${escape("\"")} " +
+      s"${conn.getResponseCode} " +
+      s"${contentLengthStr}" +
+      s"${userAgent match {
+        case Some(uaStr) => s" ${escape("\"")}${escape(uaStr)}${escape("\"")}"
+        case None => " "
+      }}"
   }
 
   val TemporaryRedirect: Int = 307

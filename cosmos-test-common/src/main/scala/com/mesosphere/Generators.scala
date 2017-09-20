@@ -16,6 +16,8 @@ import scala.util.Try
 
 object Generators {
 
+  import com.mesosphere.Generators.Implicits._
+
   val genPackageName: Gen[String] = {
     val maxPackageNameLength = 64
     val genPackageNameChar = Gen.oneOf(Gen.numChar, Gen.alphaLowerChar)
@@ -138,6 +140,57 @@ object Generators {
       )
     }
   }
+
+  def genV3ResourceTestData() : Gen[(collection.immutable.Set[String],
+    universe.v3.model.Assets,
+    universe.v3.model.Images,
+    universe.v3.model.Cli)] = {
+    for {
+      v2 <- genV2ResourceTestData()
+      windowsCli <- arbitrary[Uri].map(_.toString)
+      linuxCli <- arbitrary[Uri].map(_.toString)
+      darwinCli <- arbitrary[Uri].map(_.toString)
+
+    } yield {
+      val cli = universe.v3.model.Cli(Some(universe.v3.model.Platforms(
+        Some(universe.v3.model.Architectures(universe.v3.model.Binary("p", windowsCli, List.empty))),
+        Some(universe.v3.model.Architectures(universe.v3.model.Binary("q", linuxCli, List.empty))),
+        Some(universe.v3.model.Architectures(universe.v3.model.Binary("r", darwinCli, List.empty)))
+      )))
+      val expectedSet = v2._1 + windowsCli + linuxCli + darwinCli
+      (expectedSet, v2._2, v2._3, cli)
+    }
+  }
+
+  // scalastyle:off magic.number
+  def genV2ResourceTestData() : Gen[(collection.immutable.Set[String],
+    universe.v3.model.Assets,
+    universe.v3.model.Images
+    )] = {
+    for {
+      numberOfUrls <- Gen.chooseNum(0, 10)
+      listOfUrls <- Gen.containerOfN[List, String](numberOfUrls, arbitrary[Uri].toString)
+      iconSmall <- arbitrary[Uri].map(_.toString)
+      iconMedium <- arbitrary[Uri].map(_.toString)
+      iconLarge <- arbitrary[Uri].map(_.toString)
+      screenshots <- Gen.containerOfN[List, String](numberOfUrls, arbitrary[Uri].toString)
+    } yield {
+      val assets = universe.v3.model.Assets(uris = Some(
+        listOfUrls.zipWithIndex.map { case ((k, v)) =>
+          (v.toString, k)
+        }.toMap
+      ),
+        None
+      )
+      val expectedSet = iconSmall ::
+        iconMedium ::
+        iconLarge ::
+        (listOfUrls ++ screenshots)
+      val images = universe.v3.model.Images(Some(iconSmall), Some(iconMedium), Some(iconLarge), Some(screenshots))
+      (expectedSet.toSet, assets, images)
+    }
+  }
+  // scalastyle:on magic.number
 
   /* This is just here to tell you that you need to update the generator below, when you
    * add a new packaging version. This is a little hacky but worth the error

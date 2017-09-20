@@ -35,7 +35,7 @@ trait IntegrationBeforeAndAfterAll extends BeforeAndAfterAll with Eventually { t
 
     // This package is present only in V4TestUniverse and this method ensures that the
     // package collection cache is cleared before starting the integration tests
-    val _ = waitUntilDeployed("helloworld-invalid")
+    val _ = waitUntilCacheReloads()
   }
 
   override def afterAll(): Unit = {
@@ -44,7 +44,8 @@ trait IntegrationBeforeAndAfterAll extends BeforeAndAfterAll with Eventually { t
     val _ = Requests.addRepository("Universe", "https://universe.mesosphere.com/repo")
   }
 
-  def waitUntilDeployed(packageName: String): Assertion = {
+  private[this] def waitUntilCacheReloads(): Assertion = {
+    val packageName = "helloworld-invalid"
     eventually(timeout(2.minutes), interval(10.seconds)) {
       val response = CosmosClient.submit(
         CosmosRequests.packageDescribeV3(rpc.v1.model.DescribeRequest(packageName, None))

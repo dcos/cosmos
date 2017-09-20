@@ -150,7 +150,6 @@ final class RequestValidatorsSpec extends FreeSpec with Matchers with PropertyCh
         request <- genRequest(Post(Buf.Utf8("{}")))(headers)
       } yield TestData(expectedContentTypeHeader, validator, request)
     }
-
   }
 
   def assertMissingContentType[Req, Res](

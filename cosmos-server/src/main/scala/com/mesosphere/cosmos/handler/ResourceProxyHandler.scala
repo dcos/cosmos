@@ -11,6 +11,7 @@ import com.mesosphere.cosmos.error.CosmosException
 import com.mesosphere.cosmos.error.EndpointUriConnection
 import com.mesosphere.cosmos.error.EndpointUriSyntax
 import com.mesosphere.cosmos.error.Forbidden
+import com.mesosphere.cosmos.error.GenericBadGateway
 import com.mesosphere.cosmos.error.GenericHttpError
 import com.mesosphere.cosmos.error.ResourceTooLarge
 import com.mesosphere.cosmos.http.RequestSession
@@ -40,7 +41,6 @@ final class ResourceProxyHandler private(
 
     packageCollection.allUrls().map { urls =>
       if (!urls.contains(uri.toString)) {
-        // TODO better readability
         throw Forbidden(ResourceProxyHandler.getClass.getSimpleName, Some(uri.toString)).exception
       }
     }.flatMap { _ =>
@@ -48,7 +48,7 @@ final class ResourceProxyHandler private(
         .fetch(
           uri,
           statsReceiver
-        ){ responseData => // TODO proxy May want to factor out a method that can be tested separately
+        ){ responseData =>
           val contentBytes = getContentBytes(uri, responseData, contentLengthLimit)
           val response = Response()
           response.content = Buf.ByteArray.Owned(contentBytes)
@@ -57,16 +57,15 @@ final class ResourceProxyHandler private(
           response
         }
         .map { result =>
-          // TODO proxy Handle errors
           result match {
             case Right(response) => Output.payload(response)
             case Left(error) => error match {
               case UriSyntax(cause) =>
                 throw CosmosException(EndpointUriSyntax(
-                  ResourceProxyHandler.getClass.getCanonicalName, uri, cause.getMessage), cause)
+                  ResourceProxyHandler.getClass.getSimpleName, uri, cause.getMessage), cause)
               case UriConnection(cause) =>
                 throw CosmosException(EndpointUriConnection(
-                  ResourceProxyHandler.getClass.getCanonicalName, uri, cause.getMessage), cause)
+                  ResourceProxyHandler.getClass.getSimpleName, uri, cause.getMessage), cause)
               case UnexpectedStatus(clientStatus) =>
                 throw GenericHttpError(
                   uri = uri,
@@ -162,11 +161,16 @@ object ResourceProxyHandler {
     contentLengthLimit: StorageUnit
   ):Unit = {
     contentLength match {
-      case l if l.exists(_ >= contentLengthLimit.bytes) =>
-        throw ResourceTooLarge(contentLength, contentLengthLimit.bytes).exception
-      case l if l.exists(_ <= 0) =>
-        throw GenericHttpError(uri = uri, clientStatus = Status.InternalServerError).exception
-      case _ => ()
+      case Some(length) =>
+        length match {
+          case l if l >= contentLengthLimit.bytes =>
+            throw ResourceTooLarge(contentLength, contentLengthLimit.bytes).exception
+          case l if l <= 0 =>
+            throw GenericHttpError(uri = uri, clientStatus = Status.InternalServerError).exception
+          case _ => ()
+        }
+      case None =>
+        throw GenericBadGateway(uri = uri, clientStatus = Status.BadGateway).exception
     }
   }
 

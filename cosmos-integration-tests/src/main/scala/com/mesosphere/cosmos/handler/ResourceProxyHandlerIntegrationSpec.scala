@@ -1,25 +1,30 @@
 package com.mesosphere.cosmos.handler
 
+import com.google.common.io.ByteStreams
 import com.mesosphere.cosmos.HttpClient
 import com.mesosphere.cosmos.Requests
 import com.mesosphere.cosmos.error.CosmosException
 import com.mesosphere.cosmos.http.CosmosRequests
-import com.mesosphere.cosmos.rpc.v1.model.DescribeRequest
-import com.mesosphere.cosmos.rpc.v3.model.DescribeResponse
+import com.mesosphere.cosmos.http.TestContext
+import com.mesosphere.cosmos.rpc
 import com.mesosphere.universe.v3.syntax.PackageDefinitionOps._
 import com.mesosphere.cosmos.test.CosmosIntegrationTestClient.CosmosClient
 import com.netaporter.uri.Uri
+import com.twitter.finagle.http.Fields
 import com.twitter.finagle.http.Status
 import com.twitter.finagle.stats.NullStatsReceiver
 import com.twitter.finagle.stats.StatsReceiver
 import com.twitter.util.Await
 import io.circe.jawn.decode
+import org.scalatest.Matchers
 import org.scalatest.Assertion
 import org.scalatest.FreeSpec
 import org.scalatest.prop.TableDrivenPropertyChecks
+import org.scalatest.prop.TableFor1
 
-final class ResourceProxyHandlerIntegrationSpec extends FreeSpec with TableDrivenPropertyChecks {
-
+final class ResourceProxyHandlerIntegrationSpec extends FreeSpec
+  with TableDrivenPropertyChecks
+  with Matchers {
   import ResourceProxyHandlerIntegrationSpec._
 
   "The ResourceProxyHandler should" - {
@@ -29,11 +34,15 @@ final class ResourceProxyHandlerIntegrationSpec extends FreeSpec with TableDrive
       assertResult(Status.Forbidden)(response.status)
     }
 
-    for (packageName <- standardPackages) {
-      s"be able to download rewritten uris for $packageName images and assets" in {
-        val describeRequest = CosmosRequests.packageDescribeV3(DescribeRequest(packageName, None))
-        val content = CosmosClient.submit(describeRequest).contentString
-        val Right(describeResponse) = decode[DescribeResponse](content)
+    "be able to download rewritten uris for images and assets" in {
+      forAll(standardPackages) { packageName =>
+        val Right(describeResponse) = decode[rpc.v3.model.DescribeResponse](
+          CosmosClient.submit(
+            CosmosRequests.packageDescribeV3(
+              rpc.v1.model.DescribeRequest(packageName, None)
+            )
+          ).contentString
+        )
 
         describeResponse.`package`.images.map { images =>
           images.iconSmall.map(assertURLDownload)
@@ -55,18 +64,31 @@ final class ResourceProxyHandlerIntegrationSpec extends FreeSpec with TableDrive
   private def assertURLDownload(url : String) : Assertion = {
     val future = HttpClient.fetch(
       Uri.parse(url),
-      stats
+      stats,
+      Fields.Authorization -> testContext.token.get.headerValue
     ) { responseData =>
-      responseData.contentStream.read()
+      val contentLength = responseData.contentLength
+      contentLength shouldBe defined
+      val buffer = Array.ofDim[Byte](contentLength.get.toInt)
+      val numberOfBytesRead = ByteStreams.read(responseData.contentStream, buffer, 0, buffer.length)
+      val lastRead = ByteStreams.read(responseData.contentStream, Array.ofDim(1), 0, 1)
+      (contentLength.get, numberOfBytesRead, lastRead)
     }
-    val firstByte = Await.result(future).toTry.get
-    assert(firstByte != -1) // will fail if EOF is reached at the beginning of stream
-  }
+    val (contentLength, numberOfBytesRead, lastRead) = Await.result(future).toTry.get
 
+    contentLength.toInt should be > 0
+    contentLength shouldEqual numberOfBytesRead
+    lastRead shouldEqual 0
+  }
 }
 
 object ResourceProxyHandlerIntegrationSpec {
+  lazy val testContext = TestContext.fromSystemProperties()
   val stats: StatsReceiver = NullStatsReceiver
-  val standardPackages = List("arangodb", "hello-world")
+  val standardPackages = new TableFor1(
+    "packageName",
+    "arangodb",
+    "hello-world"
+  )
   val thirdPartyUnknownResource = Uri.parse("https://www.google.com/")
 }

@@ -8,14 +8,14 @@ import io.circe.JsonObject
 import io.circe.generic.semiauto.deriveEncoder
 import org.jboss.netty.handler.codec.http.HttpMethod
 
-final case class GenericHttpError(
+final case class GenericBadGateway(
   method: HttpMethod = HttpMethod.GET,
   uri: Uri,
   clientStatus: Status
 ) extends CosmosError {
   override def data: Option[JsonObject] = CosmosError.deriveData(this)
   override def message: String = {
-    s"Unexpected down stream http error: ${method.getName} ${uri.toString} ${clientStatus.code}"
+    s"Unexpected error from upstream server: ${method.getName} ${uri.toString} ${clientStatus.code}"
   }
 
   def exception(status: Status): CosmosException = {
@@ -23,6 +23,6 @@ final case class GenericHttpError(
   }
 }
 
-object GenericHttpError {
-  implicit val encoder: Encoder[GenericHttpError] = deriveEncoder
+object GenericBadGateway {
+  implicit val encoder: Encoder[GenericBadGateway] = deriveEncoder
 }

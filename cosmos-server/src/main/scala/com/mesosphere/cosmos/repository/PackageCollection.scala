@@ -174,26 +174,6 @@ object PackageCollection {
   }
 
   def allUrls(repositories: List[(universe.v4.model.Repository, Uri)]): Set[String] = {
-    def assetsSet(assets : universe.v3.model.Assets) : Set[String] = {
-      assets.uris.getOrElse(Map.empty).values.toSet
-    }
-
-    def imagesSet(images : universe.v3.model.Images) : Set[String] = {
-      Set() ++ images.iconSmall ++ images.iconMedium ++ images.iconLarge ++
-        images.screenshots.getOrElse(List()).toSet
-    }
-
-    def cliSet(cli : universe.v3.model.Cli) : Set[String] = {
-      cli.binaries match {
-        case Some(binaries) =>
-          Set() ++
-            binaries.linux.map(_.`x86-64`.url) ++
-            binaries.windows.map(_.`x86-64`.url) ++
-            binaries.darwin.map(_.`x86-64`.url)
-        case None => Set()
-      }
-    }
-
     repositories.flatMap { case (repo, _) =>
       repo.packages.flatMap {
         _ match {
@@ -281,7 +261,7 @@ object PackageCollection {
     }.mkString(".*")
   }
 
-  private def singleResult(
+  private[this] def singleResult(
     pkg: universe.v4.model.PackageDefinition
   )(
     implicit originInfo : OriginHostScheme
@@ -296,5 +276,25 @@ object PackageCollection {
       pkg.selected,
       pkg.rewrite.images
     )
+  }
+
+  private[this] def assetsSet(assets : universe.v3.model.Assets) : Set[String] = {
+    assets.uris.getOrElse(Map.empty).values.toSet
+  }
+
+  private[this] def imagesSet(images : universe.v3.model.Images) : Set[String] = {
+    Set() ++ images.iconSmall ++ images.iconMedium ++ images.iconLarge ++
+      images.screenshots.getOrElse(List()).toSet
+  }
+
+  private[this] def cliSet(cli : universe.v3.model.Cli) : Set[String] = {
+    cli.binaries match {
+      case Some(binaries) =>
+        Set() ++
+          binaries.linux.map(_.`x86-64`.url) ++
+          binaries.windows.map(_.`x86-64`.url) ++
+          binaries.darwin.map(_.`x86-64`.url)
+      case None => Set()
+    }
   }
 }

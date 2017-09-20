@@ -8,10 +8,9 @@ import com.mesosphere.cosmos.Services
 import com.mesosphere.cosmos.Trys
 import com.mesosphere.cosmos.Uris
 import com.mesosphere.cosmos.dcosUri
-import com.mesosphere.cosmos.http.Authorization
 import com.mesosphere.cosmos.http.HttpRequest
 import com.mesosphere.cosmos.http.RequestSession
-import com.mesosphere.cosmos.model.OriginHostScheme
+import com.mesosphere.cosmos.http.TestContext
 import com.netaporter.uri.Uri
 import com.netaporter.uri.dsl._
 import com.twitter.conversions.storage._
@@ -27,17 +26,10 @@ import org.slf4j.LoggerFactory
 
 object CosmosIntegrationTestClient extends Matchers {
 
-  val uri: Uri = getClientProperty("CosmosClient", "uri")
+  val testContext = TestContext.fromSystemProperties()
+  val uri = testContext.uri
 
-  implicit val Session = RequestSession(
-    sys.env.get("COSMOS_AUTHORIZATION_HEADER").map { token =>
-      val maxDisplayWidth = 10
-      val tokenDisplay = token.stripPrefix("token=").take(maxDisplayWidth)
-      CosmosClient.logger.info(s"Loaded authorization token '$tokenDisplay...' from environment")
-      Authorization(token)
-    },
-    OriginHostScheme(extractHostFromUri(uri), uri.scheme.get)
-  )
+  implicit val Session = RequestSession(testContext.token, testContext.originInfo)
 
   val adminRouter: AdminRouter = {
     val property = dcosUri.name
@@ -90,7 +82,7 @@ object CosmosIntegrationTestClient extends Matchers {
       }
 
       val reqWithAuthAndHost = reqWithAuth.copy(
-        headers = reqWithAuth.headers + (Fields.Host -> extractHostFromUri(uri))
+        headers = reqWithAuth.headers + (Fields.Host -> TestContext.extractHostFromUri(uri))
       )
 
       val finagleReq = HttpRequest.toFinagle(reqWithAuthAndHost)
@@ -144,21 +136,6 @@ object CosmosIntegrationTestClient extends Matchers {
       }
 
     }
-  }
-
-  private def getClientProperty(clientName: String, key: String): String = {
-    val property = s"com.mesosphere.cosmos.test.CosmosIntegrationTestClient.$clientName.$key"
-      Option(System.getProperty(property))
-        .getOrElse(throw new AssertionError(s"Missing system property '$property' "))
-  }
-
-  private def extractHostFromUri(uri: Uri): String = {
-    s"${uri.host.get}${
-      uri.port match {
-        case Some(x) => s":$x"
-        case None => ""
-      }
-    }"
   }
 
 }

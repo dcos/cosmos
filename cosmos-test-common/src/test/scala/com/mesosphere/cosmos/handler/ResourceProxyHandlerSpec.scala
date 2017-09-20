@@ -3,6 +3,7 @@ package com.mesosphere.cosmos.handler
 import com.mesosphere.Generators.Implicits._
 import com.mesosphere.cosmos.HttpClient.ResponseData
 import com.mesosphere.cosmos.error.CosmosException
+import com.mesosphere.cosmos.error.GenericBadGateway
 import com.mesosphere.cosmos.error.GenericHttpError
 import com.mesosphere.cosmos.error.ResourceTooLarge
 import com.mesosphere.cosmos.http.MediaType
@@ -149,53 +150,11 @@ final class ResourceProxyHandlerSpec extends FreeSpec with PropertyChecks {
 
   }
 
-  "When Content-Length is not provided by the upstream server" - {
-
-    "Fails if the content stream length is >= the limit" in {
-      val maxLengthLimit = 100
-      val maxExcessLength = 20
-      val genTestData: Gen[TestData] = for {
-        lengthLimit <- Gen.chooseNum(1, maxLengthLimit)
-        excessLength <- Gen.chooseNum(0, maxExcessLength)
-        contentBytes <- Gen.containerOfN[Array, Byte](lengthLimit + excessLength, arbitrary[Byte])
-        uri <- arbitrary[Uri]
-        contentType <- arbitrary[MediaType]
-      } yield {
-        (lengthLimit.bytes, contentBytes, uri, contentType)
-      }
-
-      forAll (genTestData) { case (lengthLimit, contentBytes, uri, contentType) =>
-        whenever(contentBytes.length >= lengthLimit.bytes) {
-          val contentStream = new ByteArrayInputStream(contentBytes.array)
-          val responseData = ResponseData(contentType, None, contentStream)
-          val exception = intercept[CosmosException](ResourceProxyHandler.getContentBytes(uri, responseData, lengthLimit))
-          assert(exception.error.isInstanceOf[ResourceTooLarge])
-        }
-      }
-    }
-
-    "Succeeds if the content stream length is < the limit" in {
-      val maxLengthLimit = 100
-      val genTestData: Gen[TestData] = for {
-        lengthLimit <- Gen.chooseNum(1, maxLengthLimit)
-        actualLength <- Gen.chooseNum(0, lengthLimit - 1)
-        contentBytes <- Gen.containerOfN[Array, Byte](actualLength, arbitrary[Byte])
-        uri <- arbitrary[Uri]
-        contentType <- arbitrary[MediaType]
-      } yield {
-        (lengthLimit.bytes, contentBytes, uri, contentType)
-      }
-
-      forAll (genTestData) { case (lengthLimit, contentBytes, uri, contentType) =>
-        whenever(contentBytes.length < lengthLimit.bytes) {
-          val contentStream = new ByteArrayInputStream(contentBytes.array)
-          val responseData = ResponseData(contentType, None, contentStream)
-          val bytesRead = ResourceProxyHandler.getContentBytes(uri, responseData, lengthLimit)
-          assertResult(contentBytes.array)(bytesRead)
-        }
-      }
-    }
-
+  "Fails when Content-Length is not provided by the upstream server" in {
+    val contentStream = new ByteArrayInputStream("bytes".getBytes)
+    val responseData = ResponseData(MediaType.parse("application/random").get, None, contentStream)
+    val exception = intercept[CosmosException](ResourceProxyHandler.getContentBytes(Uri.parse("/random"), responseData, 1.bytes))
+    assert(exception.error.isInstanceOf[GenericBadGateway])
   }
 
   def assertFailure(output: Future[Output[Response]]): Assertion = {

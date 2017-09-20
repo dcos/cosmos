@@ -63,9 +63,10 @@ private[cosmos] final class ListHandler(
     implicit session: RequestSession
   ): Option[rpc.v1.model.InstalledPackageInformation] = {
     app.packageDefinition
-      .map(_.rewrite(session.originInfo))
-      .map(_.as[rpc.v1.model.InstalledPackageInformation])
-      .orElse(
+      .map(
+        _.rewrite(session.originInfo)
+         .as[rpc.v1.model.InstalledPackageInformation]
+      ).orElse(
         app.packageMetadata.as[Option[rpc.v1.model.InstalledPackageInformation]]
       )
   }

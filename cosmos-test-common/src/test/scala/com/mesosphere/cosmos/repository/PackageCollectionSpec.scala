@@ -1,16 +1,12 @@
 package com.mesosphere.cosmos
 
 import com.mesosphere.Generators
-import com.mesosphere.Generators.Implicits._
 import com.mesosphere.cosmos.error.PackageNotFound
 import com.mesosphere.cosmos.error.VersionNotFound
 import com.mesosphere.cosmos.model.OriginHostScheme
 import com.mesosphere.cosmos.repository.PackageCollection
 import com.mesosphere.universe
 import com.mesosphere.universe.test.TestingPackages
-import com.mesosphere.universe.v3.model.Architectures
-import com.mesosphere.universe.v3.model.Binary
-import com.mesosphere.universe.v3.model.Platforms
 import com.mesosphere.universe.v3.syntax.PackageDefinitionOps._
 import com.netaporter.uri.Uri
 import com.twitter.util.Return
@@ -18,17 +14,14 @@ import com.twitter.util.Throw
 import com.twitter.util.Try
 import java.nio.ByteBuffer
 import java.nio.charset.StandardCharsets
-import org.scalacheck.Arbitrary.arbitrary
 import org.scalacheck.Gen
 import org.scalatest.FreeSpec
 import org.scalatest.Matchers
 import org.scalatest.prop.PropertyChecks
-import org.scalatest.prop.TableDrivenPropertyChecks
 
 final class PackageCollectionSpec extends FreeSpec
   with Matchers
-  with PropertyChecks
-  with TableDrivenPropertyChecks {
+  with PropertyChecks {
 
   import PackageCollectionSpec._
 
@@ -500,7 +493,7 @@ final class PackageCollectionSpec extends FreeSpec
       val uri: Uri = Uri.parse("/irrelevant")
 
       "All the urls should be returned for single package" in {
-        forAll(genV3TestData()) { case (expected, assets, images, clis) =>
+        forAll(Generators.genV3ResourceTestData()) { case (expected, assets, images, clis) =>
           val v4package = buildV4Package(resource = Some(V3Resource(Some(assets), Some(images), Some(clis))))
           val actual = PackageCollection.allUrls(List(getRepository(List(v4package))))
           if((actual.--(expected)).nonEmpty) {
@@ -512,9 +505,9 @@ final class PackageCollectionSpec extends FreeSpec
 
       "All the urls should be returned for multiple package" in {
         forAll(
-          genV3TestData(),
-          genV3TestData(),
-          genV2TestData()
+          Generators.genV3ResourceTestData(),
+          Generators.genV3ResourceTestData(),
+          Generators.genV2ResourceTestData()
         ) { case (
             (expected4, assets4, images4, cli4),
             (expected3, assets3, images3, cli3),
@@ -543,7 +536,7 @@ final class PackageCollectionSpec extends FreeSpec
       }
 
       "Duplicate urls should be removed" in {
-        forAll(genV3TestData()) { case (expected, assets4, images4, cli4) =>
+        forAll(Generators.genV3ResourceTestData()) { case (expected, assets4, images4, cli4) =>
           val v4package = buildV4Package(resource = Some(V3Resource(Some(assets4), Some(images4), Some(cli4))))
           val v3package = buildV3Package(resource = Some(V3Resource(Some(assets4), Some(images4), Some(cli4))))
           assertResult(expected)(PackageCollection.allUrls(
@@ -651,74 +644,4 @@ object PackageCollectionSpec {
       resource = resource
     )
   }
-
-  import universe.v3.model.Assets
-  import universe.v3.model.Images
-  import universe.v3.model.Cli
-
-  type V3TestData = (collection.immutable.Set[String], Assets, Images, Cli)
-  type V2TestData = (collection.immutable.Set[String], Assets, Images)
-
-  // scalastyle:off magic.number
-  private def genV3TestData() : Gen[V3TestData] = {
-    for {
-      numberOfUrls <- Gen.chooseNum(0, 10)
-      listOfUrls <- Gen.containerOfN[List, String](numberOfUrls, arbitrary[Uri].toString)
-      iconSmall <- arbitrary[Uri].map(_.toString)
-      iconMedium <- arbitrary[Uri].map(_.toString)
-      iconLarge <- arbitrary[Uri].map(_.toString)
-      screenshots <- Gen.containerOfN[List, String](numberOfUrls, arbitrary[Uri].toString)
-      windowsCli <- arbitrary[Uri].map(_.toString)
-      linuxCli <- arbitrary[Uri].map(_.toString)
-      darwinCli <- arbitrary[Uri].map(_.toString)
-    } yield {
-      val cli = Cli(Some(Platforms(
-        Some(Architectures(Binary("p", windowsCli, List.empty))),
-        Some(Architectures(Binary("q", linuxCli, List.empty))),
-        Some(Architectures(Binary("r", darwinCli, List.empty)))
-      )))
-      val assets = Assets(uris = Some(
-        listOfUrls.zipWithIndex.map { case ((k, v)) =>
-          (v.toString, k)
-        }.toMap
-      ),
-        None
-      )
-      val expectedSet = iconSmall ::
-        iconMedium ::
-        iconLarge ::
-        windowsCli ::
-        linuxCli ::
-        darwinCli ::
-        (listOfUrls ++ screenshots)
-      val images = Images(Some(iconSmall), Some(iconMedium), Some(iconLarge), Some(screenshots))
-      (expectedSet.toSet, assets, images, cli)
-    }
-  }
-
-  private def genV2TestData() : Gen[V2TestData] = {
-    for {
-      numberOfUrls <- Gen.chooseNum(0, 10)
-      listOfUrls <- Gen.containerOfN[List, String](numberOfUrls, arbitrary[Uri].toString)
-      iconSmall <- arbitrary[Uri].map(_.toString)
-      iconMedium <- arbitrary[Uri].map(_.toString)
-      iconLarge <- arbitrary[Uri].map(_.toString)
-      screenshots <- Gen.containerOfN[List, String](numberOfUrls, arbitrary[Uri].toString)
-    } yield {
-      val assets = Assets(uris = Some(
-        listOfUrls.zipWithIndex.map { case ((k, v)) =>
-          (v.toString, k)
-        }.toMap
-      ),
-        None
-      )
-      val expectedSet = iconSmall ::
-        iconMedium ::
-        iconLarge ::
-        (listOfUrls ++ screenshots)
-      val images = Images(Some(iconSmall), Some(iconMedium), Some(iconLarge), Some(screenshots))
-      (expectedSet.toSet, assets, images)
-    }
-  }
-  // scalastyle:on magic.number
 }

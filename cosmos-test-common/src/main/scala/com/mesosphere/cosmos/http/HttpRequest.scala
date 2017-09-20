@@ -1,6 +1,5 @@
 package com.mesosphere.cosmos.http
 
-import com.mesosphere.cosmos.httpInterface
 import com.mesosphere.util.urlSchemeHeader
 import com.twitter.finagle.http.Fields
 import com.twitter.finagle.http.Method
@@ -18,8 +17,6 @@ final case class HttpRequest(
 
 object HttpRequest {
 
-  lazy val httpHostHeader = httpInterface().map(x => s"${x.getHostName}:${x.getPort}")
-
   def collectHeaders(entries: (String, Option[String])*): Map[String, String] = {
     entries
       .flatMap { case (key, value) => value.map(key -> _) }
@@ -31,7 +28,7 @@ object HttpRequest {
   }
 
   def get(path: RpcPath, accept: Option[String]): HttpRequest = {
-    HttpRequest(path, collectHeaders(Fields.Accept -> accept, Fields.Host -> httpHostHeader), Get())
+    HttpRequest(path, collectHeaders(Fields.Accept -> accept), Get())
   }
 
   def post[A](
@@ -51,9 +48,7 @@ object HttpRequest {
   ): HttpRequest = {
     val headers = collectHeaders(
       Fields.Accept -> accept,
-      Fields.ContentType -> contentType,
-      Fields.Host -> httpHostHeader,
-      urlSchemeHeader -> Some("http")
+      Fields.ContentType -> contentType
     )
     HttpRequest(path, headers, Post(Buf.Utf8(body)))
   }
@@ -62,13 +57,15 @@ object HttpRequest {
     path: RpcPath,
     body: Buf,
     contentType: MediaType,
-    accept: MediaType
+    accept: MediaType,
+    host: String,
+    urlScheme: String
   ): HttpRequest = {
     val headers = collectHeaders(
       Fields.Accept -> toHeader(accept),
       Fields.ContentType -> toHeader(contentType),
-      Fields.Host -> httpHostHeader,
-      urlSchemeHeader -> Some("http")
+      Fields.Host -> Some(host),
+      urlSchemeHeader -> Some(urlScheme)
     )
     HttpRequest(path, headers, Post(body))
   }

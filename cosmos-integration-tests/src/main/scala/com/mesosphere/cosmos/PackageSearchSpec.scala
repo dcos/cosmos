@@ -2,6 +2,7 @@ package com.mesosphere.cosmos
 
 import _root_.io.circe.jawn._
 import com.mesosphere.cosmos.http.CosmosRequests
+import com.mesosphere.cosmos.http.TestContext
 import com.mesosphere.cosmos.model.OriginHostScheme
 import com.mesosphere.cosmos.rpc.v1.model.SearchRequest
 import com.mesosphere.cosmos.rpc.v1.model.SearchResponse
@@ -56,8 +57,8 @@ final class PackageSearchSpec extends FreeSpec {
 
 private object PackageSearchSpec extends TableDrivenPropertyChecks {
 
-  val host = httpInterface().map(x => s"${x.getHostName}:${x.getPort}").get
-  implicit val originInfo : OriginHostScheme = OriginHostScheme(host, "http")
+  val uri = TestContext.fromSystemProperties().uri
+  implicit val originInfo = OriginHostScheme(s"${uri.host.get}:${uri.port.get}", uri.scheme.get)
 
   val ArangodbSearchResult = SearchResult(
     name = "arangodb",
