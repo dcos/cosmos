@@ -12,8 +12,8 @@ import com.mesosphere.cosmos.error.IndexNotFound
 import com.mesosphere.cosmos.error.PackageFileMissing
 import com.mesosphere.cosmos.error.PackageFileNotJson
 import com.mesosphere.cosmos.error.PackageFileSchemaMismatch
-import com.mesosphere.cosmos.error.EndpointUriConnection
-import com.mesosphere.cosmos.error.EndpointUriSyntax
+import com.mesosphere.cosmos.error.RepositoryUriConnection
+import com.mesosphere.cosmos.error.RepositoryUriSyntax
 import com.mesosphere.cosmos.error.UniverseClientHttpError
 import com.mesosphere.cosmos.error.UnsupportedContentType
 import com.mesosphere.cosmos.error.UnsupportedRepositoryVersion
@@ -177,9 +177,9 @@ final class DefaultUniverseClient(
   ): Nothing = {
     error match {
       case UriSyntax(cause) =>
-        throw CosmosException(EndpointUriSyntax(repository.name, repository.uri, cause.getMessage), cause)
+        throw CosmosException(RepositoryUriSyntax(repository, cause.getMessage), cause)
       case UriConnection(cause) =>
-        throw CosmosException(EndpointUriConnection(repository.name, repository.uri, cause.getMessage), cause)
+        throw CosmosException(RepositoryUriConnection(repository, cause.getMessage), cause)
       case UnexpectedStatus(clientStatus) =>
         /* If we are unable to get the latest Universe we should not forward the status code
          * returned. We should instead return 500 to the client and include the actual error

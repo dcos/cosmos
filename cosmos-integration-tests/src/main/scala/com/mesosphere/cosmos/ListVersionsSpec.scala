@@ -8,7 +8,7 @@ import com.twitter.finagle.http.Status
 import org.scalatest.FreeSpec
 import org.scalatest.Matchers
 
-class ListVersionsSpec extends FreeSpec with Matchers {
+final class ListVersionsSpec extends FreeSpec with Matchers {
 
   "ListVersionHandler should" - {
     "list only helloworld versions found in the first repo with helloworld packages" in {

@@ -15,7 +15,7 @@ final case class GenericHttpError(
 ) extends CosmosError {
   override def data: Option[JsonObject] = CosmosError.deriveData(this)
   override def message: String = {
-    s"Unexpected down stream http error: ${method.getName} ${uri.toString} ${clientStatus.code}"
+    s"Unexpected upstream http error: ${method.getName} ${uri.toString} ${clientStatus.code}"
   }
 
   def exception(status: Status): CosmosException = {

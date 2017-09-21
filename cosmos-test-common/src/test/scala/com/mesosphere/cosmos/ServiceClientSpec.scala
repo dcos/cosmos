@@ -1,8 +1,8 @@
 package com.mesosphere.cosmos
 
 import _root_.io.circe.Json
+import com.mesosphere.cosmos.http.OriginHostScheme
 import com.mesosphere.cosmos.http.{Authorization, RequestSession}
-import com.mesosphere.cosmos.model.OriginHostScheme
 import com.mesosphere.cosmos.test.TestUtil
 import com.netaporter.uri.Uri
 import com.twitter.finagle.http.Request

@@ -7,13 +7,12 @@ import io.circe.JsonObject
 import io.circe.generic.semiauto.deriveEncoder
 
 final case class EndpointUriConnection(
-  name: String,
   destination: Uri,
   cause: String
 ) extends CosmosError {
   override def data: Option[JsonObject] = CosmosError.deriveData(this)
   override def message: String = {
-    s"Could not access data at URI for endpoint [${name}]: ${destination}"
+    s"Could not access data at URI ${destination}"
   }
 }
 

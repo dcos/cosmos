@@ -2,8 +2,8 @@ package com.mesosphere.cosmos.finch
 
 import com.mesosphere.cosmos.http.Authorization
 import com.mesosphere.cosmos.http.MediaType
+import com.mesosphere.cosmos.http.OriginHostScheme
 import com.mesosphere.cosmos.http.RequestSession
-import com.mesosphere.cosmos.model.OriginHostScheme
 import com.twitter.finagle.http.Fields
 import com.twitter.finagle.http.Status
 import com.twitter.util.Await

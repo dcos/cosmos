@@ -22,26 +22,12 @@ import java.util.zip.GZIPInputStream
 import org.apache.commons.lang.time.FastDateFormat
 import org.slf4j.Logger
 
-trait HttpClient {
+object HttpClient {
 
-  import HttpClient._
-
-  lazy val cosmosVersion = BuildProperties().cosmosVersion
   val logger: Logger = org.slf4j.LoggerFactory.getLogger(getClass)
   val DateFormat = FastDateFormat.getInstance("dd/MMM/yyyy:HH:mm:ss Z", TimeZone.getTimeZone("GMT"))
+
   def formattedDate(): String = DateFormat.format(Time.now.toDate)
-
-  def fetch[A](
-    uri: Uri,
-    statsReceiver: StatsReceiver,
-    headers: (String, String)*
-  )(
-    processResponse: ResponseData => A
-  ): Future[Either[HttpClient.Error, A]]
-
-}
-
-object HttpClient extends HttpClient {
 
   def fetch[A](
     uri: Uri,
@@ -59,7 +45,7 @@ object HttpClient extends HttpClient {
       }
       .flatMap { case conn: HttpURLConnection =>
         headers.foreach { case (name, value) => conn.setRequestProperty(name, value) }
-        conn.addRequestProperty(Fields.UserAgent, s"cosmos/$cosmosVersion")
+        conn.addRequestProperty(Fields.UserAgent, s"cosmos/${BuildProperties().cosmosVersion}")
         logger.debug(format(conn))
         val responseData = extractResponseData(uri, conn)
 
@@ -157,6 +143,12 @@ object HttpClient extends HttpClient {
       }}"
   }
 
+  final case class ResponseData(
+    contentType: MediaType,
+    contentLength: Option[Long],
+    contentStream: InputStream
+  )
+
   val TemporaryRedirect: Int = 307
   val PermanentRedirect: Int = 308
 
@@ -170,11 +162,6 @@ object HttpClient extends HttpClient {
     )
   }
 
-  final case class ResponseData(
-    contentType: MediaType,
-    contentLength: Option[Long],
-    contentStream: InputStream
-  )
 
   sealed trait Error extends Exception
   final case class UriSyntax(cause: Throwable) extends Error

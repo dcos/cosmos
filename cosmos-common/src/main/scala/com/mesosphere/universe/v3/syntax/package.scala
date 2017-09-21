@@ -1,55 +1,57 @@
 package com.mesosphere.universe.v3
 
-import com.mesosphere.cosmos.model.OriginHostScheme
+import com.mesosphere.cosmos.http.OriginHostScheme
 import com.mesosphere.universe
 import com.netaporter.uri.Uri
 
 package object syntax {
 
-  def rewriteAssets(assets: Option[universe.v3.model.Assets])(
+  def rewriteAssets(assets: universe.v3.model.Assets)(
     implicit originInfo : OriginHostScheme
-  ) : Option[universe.v3.model.Assets] = {
-    if (assets.isDefined && assets.get.uris.isDefined) {
-      Some(assets.get.copy(uris = assets.get.uris.map(
-        _.map { case (key, value) => (key, rewriteWithProxyURL(value))}
-      )))
-    } else assets
+  ) : universe.v3.model.Assets = {
+    assets.copy(
+      uris = assets.uris.map(
+        _.map { case (key, value) =>
+          (key, rewriteWithProxyURL(value))
+        }
+      )
+    )
   }
 
-  def rewriteCli(cli: Option[universe.v3.model.Cli])(
+  def rewriteCli(cli: universe.v3.model.Cli)(
     implicit originInfo : OriginHostScheme
-  ) : Option[universe.v3.model.Cli] = {
+  ) : universe.v3.model.Cli = {
 
-    def rewriteArchitecture(
-      architecture: Option[universe.v3.model.Architectures]
-    ): Option[universe.v3.model.Architectures] = {
-      architecture.flatMap { arch =>
-        Some(arch.copy(`x86-64` = arch.`x86-64`.copy(url = rewriteWithProxyURL(arch.`x86-64`.url))))
-      }
+    cli.binaries match {
+      case Some(platforms) =>
+        universe.v3.model.Cli(Some(platforms.copy(
+          windows = platforms.windows.map(rewriteArchitecture),
+          linux = platforms.linux.map(rewriteArchitecture),
+          darwin = platforms.darwin.map(rewriteArchitecture),
+        )))
+      case None => cli
     }
-
-    if (cli.isDefined && cli.get.binaries.isDefined) {
-      val initial = cli.get.binaries.get
-      Some(universe.v3.model.Cli(Some(initial.copy(
-        windows = rewriteArchitecture(initial.windows),
-        linux = rewriteArchitecture(initial.linux),
-        darwin = rewriteArchitecture(initial.darwin)
-      ))))
-    } else cli
   }
 
-  def rewriteImages(images: Option[universe.v3.model.Images])(
+  def rewriteArchitecture(architecture: universe.v3.model.Architectures)(
     implicit originInfo : OriginHostScheme
-  ) : Option[universe.v3.model.Images] = {
-    images match {
-      case Some(images) => Some(universe.v3.model.Images(
-        iconSmall = images.iconSmall.map(rewriteWithProxyURL),
-        iconMedium = images.iconMedium.map(rewriteWithProxyURL),
-        iconLarge = images.iconLarge.map(rewriteWithProxyURL),
-        screenshots = images.screenshots.map(_.map(rewriteWithProxyURL))
-      ))
-      case None => None
-    }
+  ): universe.v3.model.Architectures = {
+    architecture.copy(
+      `x86-64` = architecture.`x86-64`.copy(
+        url = rewriteWithProxyURL(architecture.`x86-64`.url)
+      )
+    )
+  }
+
+  def rewriteImages(images: universe.v3.model.Images)(
+    implicit originInfo : OriginHostScheme
+  ) : universe.v3.model.Images = {
+    universe.v3.model.Images(
+      iconSmall = images.iconSmall.map(rewriteWithProxyURL),
+      iconMedium = images.iconMedium.map(rewriteWithProxyURL),
+      iconLarge = images.iconLarge.map(rewriteWithProxyURL),
+      screenshots = images.screenshots.map(_.map(rewriteWithProxyURL))
+    )
   }
 
   def rewriteWithProxyURL(url : String)(

@@ -11,12 +11,19 @@ final case class Forbidden(
 ) extends CosmosError {
   override def data: Option[JsonObject] = CosmosError.deriveData(this)
   override def message: String = {
-    s"Unable to complete request due to Forbidden response from service [$serviceName]" +
-      s"${if (destination.isDefined) " while accessing" + destination}"
+    s"Unable to complete request due to Forbidden response from service " +
+      s"[$serviceName]$destinationMessage"
   }
 
   override def exception: CosmosException = {
     CosmosException(this, Status.Forbidden, Map.empty, None)
+  }
+
+  private def destinationMessage():String = {
+    destination match {
+      case Some(endpoint) => s" while accessing$endpoint"
+      case None => ""
+    }
   }
 }
 

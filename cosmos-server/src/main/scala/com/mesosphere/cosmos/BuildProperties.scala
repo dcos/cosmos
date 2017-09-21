@@ -21,9 +21,9 @@ object BuildProperties {
 
   def apply(): BuildProperties = loaded
 
-  implicit class BuildPropertiesOps(val bp: BuildProperties) {
+  implicit class BuildPropertiesOps(val bp: BuildProperties) extends AnyVal {
 
-    val cosmosVersion: String = Option(bp.props.getProperty("cosmos.version")).getOrElse("unknown-version")
+    def cosmosVersion: String = Option(bp.props.getProperty("cosmos.version")).getOrElse("unknown-version")
 
   }
 

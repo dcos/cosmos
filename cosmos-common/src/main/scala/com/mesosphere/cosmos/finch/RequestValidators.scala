@@ -4,8 +4,8 @@ import com.mesosphere.cosmos.finch.FinchExtensions._
 import com.mesosphere.cosmos.http.Authorization
 import com.mesosphere.cosmos.http.CompoundMediaType
 import com.mesosphere.cosmos.http.MediaType
+import com.mesosphere.cosmos.http.OriginHostScheme
 import com.mesosphere.cosmos.http.RequestSession
-import com.mesosphere.cosmos.model.OriginHostScheme
 import com.twitter.finagle.http.Fields
 import io.finch._
 import shapeless.::
@@ -80,7 +80,7 @@ object RequestValidators {
     auth :: accept
   }
 
-  val proxyValidator:Endpoint[(Uri, RequestSession)] = {
+  val proxyValidator: Endpoint[(Uri, RequestSession)] = {
     val validators = param("url").map(Uri.parse) ::
       headerOption(Fields.Authorization).map(_.map(Authorization)) ::
       header(Fields.Host) ::

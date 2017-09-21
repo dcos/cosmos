@@ -2,8 +2,8 @@ package com.mesosphere.cosmos
 
 import _root_.io.circe.jawn._
 import com.mesosphere.cosmos.http.CosmosRequests
+import com.mesosphere.cosmos.http.OriginHostScheme
 import com.mesosphere.cosmos.http.TestContext
-import com.mesosphere.cosmos.model.OriginHostScheme
 import com.mesosphere.cosmos.rpc.v1.model.SearchRequest
 import com.mesosphere.cosmos.rpc.v1.model.SearchResponse
 import com.mesosphere.cosmos.rpc.v1.model.SearchResult

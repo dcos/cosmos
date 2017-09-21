@@ -2,8 +2,8 @@ package com.mesosphere.cosmos.repository
 
 import com.mesosphere.cosmos.error.PackageNotFound
 import com.mesosphere.cosmos.error.VersionNotFound
+import com.mesosphere.cosmos.http.OriginHostScheme
 import com.mesosphere.cosmos.http.RequestSession
-import com.mesosphere.cosmos.model.OriginHostScheme
 import com.mesosphere.cosmos.rpc
 import com.mesosphere.universe.v3.syntax.PackageDefinitionOps._
 import com.mesosphere.universe

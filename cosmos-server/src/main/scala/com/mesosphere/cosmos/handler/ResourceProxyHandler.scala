@@ -11,7 +11,6 @@ import com.mesosphere.cosmos.error.CosmosException
 import com.mesosphere.cosmos.error.EndpointUriConnection
 import com.mesosphere.cosmos.error.EndpointUriSyntax
 import com.mesosphere.cosmos.error.Forbidden
-import com.mesosphere.cosmos.error.GenericBadGateway
 import com.mesosphere.cosmos.error.GenericHttpError
 import com.mesosphere.cosmos.error.ResourceTooLarge
 import com.mesosphere.cosmos.http.RequestSession
@@ -28,7 +27,6 @@ import java.io.InputStream
 
 final class ResourceProxyHandler private(
   packageCollection: PackageCollection,
-  httpClient: HttpClient,
   contentLengthLimit: StorageUnit,
   statsReceiver: StatsReceiver
 ) {
@@ -44,7 +42,7 @@ final class ResourceProxyHandler private(
         throw Forbidden(ResourceProxyHandler.getClass.getSimpleName, Some(uri.toString)).exception
       }
     }.flatMap { _ =>
-      httpClient
+      HttpClient
         .fetch(
           uri,
           statsReceiver
@@ -61,11 +59,9 @@ final class ResourceProxyHandler private(
             case Right(response) => Output.payload(response)
             case Left(error) => error match {
               case UriSyntax(cause) =>
-                throw CosmosException(EndpointUriSyntax(
-                  ResourceProxyHandler.getClass.getSimpleName, uri, cause.getMessage), cause)
+                throw CosmosException(EndpointUriSyntax(uri, cause.getMessage), cause)
               case UriConnection(cause) =>
-                throw CosmosException(EndpointUriConnection(
-                  ResourceProxyHandler.getClass.getSimpleName, uri, cause.getMessage), cause)
+                throw CosmosException(EndpointUriConnection(uri, cause.getMessage), cause)
               case UnexpectedStatus(clientStatus) =>
                 throw GenericHttpError(
                   uri = uri,
@@ -86,18 +82,9 @@ object ResourceProxyHandler {
     packageCollection: PackageCollection,
     contentLengthLimit: StorageUnit
   )(implicit statsReceiver: StatsReceiver): ResourceProxyHandler = {
-    apply(packageCollection, HttpClient, contentLengthLimit, statsReceiver)
-  }
-
-  def apply(
-    packageCollection: PackageCollection,
-    httpClient: HttpClient,
-    contentLengthLimit: StorageUnit,
-    statsReceiver: StatsReceiver
-  ): ResourceProxyHandler = {
     assert(contentLengthLimit.bytes > 0)
-    val handlerScope = statsReceiver.scope("resourceProxyHandler")
-    new ResourceProxyHandler(packageCollection, httpClient, contentLengthLimit, handlerScope)
+    implicit val handlerScope = statsReceiver.scope("resourceProxyHandler")
+    new ResourceProxyHandler(packageCollection, contentLengthLimit, handlerScope)
   }
 
   def getContentBytes(
@@ -167,7 +154,7 @@ object ResourceProxyHandler {
           case _ => ()
         }
       case None =>
-        throw GenericBadGateway(uri = uri, clientStatus = Status.BadGateway).exception
+        throw GenericHttpError(uri = uri, clientStatus = Status.BadGateway).exception
     }
   }
 

@@ -5,8 +5,8 @@ management of DC/OS service packages.
 
 | Build | Status |
 |---|---|
-|CI | [![Build Status](https://teamcity.mesosphere.io/guestAuth/app/rest/builds/buildType:(id:DcosIo_Cosmos_Ci)/statusIcon)](https://teamcity.mesosphere.io/viewType.html?buildTypeId=DcosIo_Cosmos_Ci&guest=1)|
-|Cosmos | [![Build Status](https://teamcity.mesosphere.io/guestAuth/app/rest/builds/buildType:(id:DcosIo_Cosmos_FullClusterIntegrationTests)/statusIcon)](https://teamcity.mesosphere.io/viewType.html?buildTypeId=DcosIo_Cosmos_FullClusterIntegrationTests&guest=1)|
+|Unit Tests | [![Build Status](https://teamcity.mesosphere.io/guestAuth/app/rest/builds/buildType:(id:DcosIo_Cosmos_Ci)/statusIcon)](https://teamcity.mesosphere.io/viewType.html?buildTypeId=DcosIo_Cosmos_Ci&guest=1)|
+|Integration Tests | [![Build Status](https://teamcity.mesosphere.io/guestAuth/app/rest/builds/buildType:(id:DcosIo_Cosmos_FullClusterIntegrationTests)/statusIcon)](https://teamcity.mesosphere.io/viewType.html?buildTypeId=DcosIo_Cosmos_FullClusterIntegrationTests&guest=1)|
 
 #### Table of Contents
 - [Running tests](#running-tests)

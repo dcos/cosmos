@@ -3,7 +3,7 @@ package com.mesosphere.cosmos.handler
 import com.mesosphere.Generators.Implicits._
 import com.mesosphere.cosmos.HttpClient.ResponseData
 import com.mesosphere.cosmos.error.CosmosException
-import com.mesosphere.cosmos.error.GenericBadGateway
+import com.mesosphere.cosmos.error.GenericHttpError
 import com.mesosphere.cosmos.error.GenericHttpError
 import com.mesosphere.cosmos.error.ResourceTooLarge
 import com.mesosphere.cosmos.http.MediaType
@@ -151,7 +151,7 @@ final class ResourceProxyHandlerSpec extends FreeSpec with PropertyChecks {
     val contentStream = new ByteArrayInputStream("bytes".getBytes)
     val responseData = ResponseData(MediaType.parse("application/random").get, None, contentStream)
     val exception = intercept[CosmosException](ResourceProxyHandler.getContentBytes(Uri.parse("/random"), responseData, 1.bytes))
-    assert(exception.error.isInstanceOf[GenericBadGateway])
+    assert(exception.error.isInstanceOf[GenericHttpError])
   }
 
   def assertFailure(output: Future[Output[Response]]): Assertion = {

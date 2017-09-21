@@ -2,7 +2,6 @@ package com.mesosphere.cosmos.handler
 
 import com.google.common.io.ByteStreams
 import com.mesosphere.cosmos.HttpClient
-import com.mesosphere.cosmos.Requests
 import com.mesosphere.cosmos.error.CosmosException
 import com.mesosphere.cosmos.http.CosmosRequests
 import com.mesosphere.cosmos.http.TestContext
@@ -30,7 +29,9 @@ final class ResourceProxyHandlerIntegrationSpec extends FreeSpec
   "The ResourceProxyHandler should" - {
 
     "fail when the url is not in package collections" in {
-      val response = intercept[CosmosException](Requests.packageResource(thirdPartyUnknownResource))
+      val response = intercept[CosmosException](CosmosClient.submit(
+        CosmosRequests.packageResource(thirdPartyUnknownResource)
+      ))
       assertResult(Status.Forbidden)(response.status)
     }
 
@@ -74,6 +75,7 @@ final class ResourceProxyHandlerIntegrationSpec extends FreeSpec
       val lastRead = ByteStreams.read(responseData.contentStream, Array.ofDim(1), 0, 1)
       (contentLength.get, numberOfBytesRead, lastRead)
     }
+
     val (contentLength, numberOfBytesRead, lastRead) = Await.result(future).toTry.get
 
     contentLength.toInt should be > 0
