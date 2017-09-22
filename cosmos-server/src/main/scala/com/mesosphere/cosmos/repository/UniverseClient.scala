@@ -76,7 +76,7 @@ final class DefaultUniverseClient(
 
   private[this] val logger = org.slf4j.LoggerFactory.getLogger(getClass)
   private[this] val stats = statsReceiver.scope("repositoryFetcher")
-  implicit private[this] val fetchScope = stats.scope("fetch")
+  private[this] val fetchScope = stats.scope("fetch")
 
   private[this] val cosmosVersion = BuildProperties().cosmosVersion
 
