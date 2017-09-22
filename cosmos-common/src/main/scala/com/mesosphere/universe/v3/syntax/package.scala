@@ -27,7 +27,7 @@ package object syntax {
         universe.v3.model.Cli(Some(platforms.copy(
           windows = platforms.windows.map(rewriteArchitecture),
           linux = platforms.linux.map(rewriteArchitecture),
-          darwin = platforms.darwin.map(rewriteArchitecture),
+          darwin = platforms.darwin.map(rewriteArchitecture)
         )))
       case None => cli
     }

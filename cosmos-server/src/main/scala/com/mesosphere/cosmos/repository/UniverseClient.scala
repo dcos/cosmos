@@ -76,7 +76,7 @@ final class DefaultUniverseClient(
 
   private[this] val logger = org.slf4j.LoggerFactory.getLogger(getClass)
   private[this] val stats = statsReceiver.scope("repositoryFetcher")
-  private[this] val fetchScope = stats.scope("fetch")
+  implicit private[this] val fetchScope = stats.scope("fetch")
 
   private[this] val cosmosVersion = BuildProperties().cosmosVersion
 
@@ -114,7 +114,6 @@ final class DefaultUniverseClient(
       HttpClient
         .fetch(
           repository.uri,
-          fetchScope,
           Fields.Accept -> acceptedMediaTypes.show,
           Fields.AcceptEncoding -> "gzip",
           Fields.UserAgent -> s"cosmos/$cosmosVersion dcos/${dcosReleaseVersion.show}"
@@ -124,7 +123,7 @@ final class DefaultUniverseClient(
             responseData.contentStream,
             repository.uri
           )
-        }
+        }(fetchScope)
         .map {
           case Right(repositoryData) => repositoryData
           case Left(error) => handleError(error, repository)

@@ -31,13 +31,12 @@ object HttpClient {
 
   def fetch[A](
     uri: Uri,
-    statsReceiver: StatsReceiver,
     headers: (String, String)*
   )(
     processResponse: ResponseData => A
+  )(
+    implicit statsReceiver: StatsReceiver
   ): Future[Either[Error, A]] = {
-    implicit val sr: StatsReceiver = statsReceiver
-
     Future(uri.toURI.toURL.openConnection())
       .handle {
         case t @ (_: IllegalArgumentException | _: MalformedURLException | _: URISyntaxException) =>

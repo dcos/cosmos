@@ -65,7 +65,6 @@ final class ResourceProxyHandlerIntegrationSpec extends FreeSpec
   private def assertURLDownload(url : String) : Assertion = {
     val future = HttpClient.fetch(
       Uri.parse(url),
-      stats,
       Fields.Authorization -> testContext.token.get.headerValue
     ) { responseData =>
       val contentLength = responseData.contentLength
@@ -86,7 +85,7 @@ final class ResourceProxyHandlerIntegrationSpec extends FreeSpec
 
 object ResourceProxyHandlerIntegrationSpec {
   lazy val testContext = TestContext.fromSystemProperties()
-  val stats: StatsReceiver = NullStatsReceiver
+  implicit val stats: StatsReceiver = NullStatsReceiver
   val standardPackages = new TableFor1(
     "packageName",
     "arangodb",

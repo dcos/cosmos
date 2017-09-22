@@ -30,8 +30,9 @@ final class ResourceProxyHandler private(
   contentLengthLimit: StorageUnit,
   statsReceiver: StatsReceiver
 ) {
-
   import ResourceProxyHandler._
+
+  implicit val sr = statsReceiver
 
   def apply(data : (Uri, RequestSession)): Future[Output[Response]] = {
     val uri = data._1
@@ -44,8 +45,7 @@ final class ResourceProxyHandler private(
     }.flatMap { _ =>
       HttpClient
         .fetch(
-          uri,
-          statsReceiver
+          uri
         ){ responseData =>
           val contentBytes = getContentBytes(uri, responseData, contentLengthLimit)
           val response = Response()
