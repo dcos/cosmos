@@ -8,6 +8,8 @@ import scala.util.Left
 import scala.util.Right
 import scala.util.Success
 import scala.util.Try
+import com.twitter.bijection.Injection
+import com.mesosphere.universe
 
 // Implements relaxed: http://semver.org/#semantic-versioning-200
 final case class SemVer(
@@ -93,6 +95,14 @@ object SemVer {
       case (major, minor, patch, preReleases, build) =>
         SemVer(major, minor, patch, preReleases, build)
     }
+  }
+
+  implicit val versionToString = Injection.build[universe.v3.model.SemVer, String] { version =>
+    version.toString
+  } { string =>
+    universe.v3.model.SemVer(string).map(Success(_)).getOrElse(
+      Failure(new IllegalArgumentException(s"Unable to parse $string as semver"))
+    )
   }
 
   def apply(value: String): Option[SemVer] = {
