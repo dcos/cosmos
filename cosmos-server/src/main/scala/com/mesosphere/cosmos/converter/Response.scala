@@ -5,7 +5,6 @@ import com.mesosphere.cosmos.error.ServiceMarathonTemplateNotFound
 import com.mesosphere.cosmos.rpc
 import com.mesosphere.universe
 import com.mesosphere.universe.bijection.UniverseConversions._
-import com.mesosphere.universe.v3.syntax.PackageDefinitionOps._
 import com.twitter.bijection.Bijection._
 import com.twitter.bijection.Conversion
 import com.twitter.bijection.Conversion.asMethod

@@ -1,10 +1,9 @@
-package com.mesosphere.universe.v3
+package com.mesosphere
 
 import com.mesosphere.cosmos.http.OriginHostScheme
-import com.mesosphere.universe
 import com.netaporter.uri.Uri
 
-package object syntax {
+package object universe {
 
   def rewriteAssets(assets: universe.v3.model.Assets)(
     implicit originInfo : OriginHostScheme

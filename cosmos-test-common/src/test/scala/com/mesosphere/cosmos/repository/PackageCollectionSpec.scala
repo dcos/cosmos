@@ -7,7 +7,6 @@ import com.mesosphere.cosmos.http.OriginHostScheme
 import com.mesosphere.cosmos.repository.PackageCollection
 import com.mesosphere.universe
 import com.mesosphere.universe.test.TestingPackages
-import com.mesosphere.universe.v3.syntax.PackageDefinitionOps._
 import com.netaporter.uri.Uri
 import com.twitter.util.Return
 import com.twitter.util.Throw

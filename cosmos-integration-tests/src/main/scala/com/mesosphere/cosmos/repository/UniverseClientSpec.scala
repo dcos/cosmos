@@ -7,7 +7,6 @@ import com.mesosphere.cosmos.error.UniverseClientHttpError
 import com.mesosphere.cosmos.rpc.v1.model.PackageRepository
 import com.mesosphere.cosmos.test.CosmosIntegrationTestClient
 import com.mesosphere.universe
-import com.mesosphere.universe.v3.syntax.PackageDefinitionOps._
 import com.netaporter.uri.Uri
 import com.netaporter.uri.dsl._
 import com.twitter.finagle.http.Status

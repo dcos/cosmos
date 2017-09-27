@@ -10,7 +10,6 @@ import org.scalatest.BeforeAndAfterAll
 import org.scalatest.Suite
 import org.scalatest.concurrent.Eventually
 import scala.concurrent.duration._
-import com.mesosphere.universe.v3.syntax.PackageDefinitionOps._
 
 
 trait IntegrationBeforeAndAfterAll extends BeforeAndAfterAll with Eventually { this: Suite =>

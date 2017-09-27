@@ -9,7 +9,7 @@ import com.mesosphere.cosmos.rpc.v1.model.SearchResponse
 import com.mesosphere.cosmos.rpc.v1.model.SearchResult
 import com.mesosphere.cosmos.test.CosmosIntegrationTestClient.CosmosClient
 import com.mesosphere.universe
-import com.mesosphere.universe.v3.syntax.rewriteWithProxyURL
+import com.mesosphere.universe.rewriteWithProxyURL
 import com.twitter.finagle.http.Status
 import org.scalatest.Assertion
 import org.scalatest.FreeSpec

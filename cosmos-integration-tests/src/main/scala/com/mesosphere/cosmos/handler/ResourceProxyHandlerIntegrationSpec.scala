@@ -6,7 +6,6 @@ import com.mesosphere.cosmos.error.CosmosException
 import com.mesosphere.cosmos.http.CosmosRequests
 import com.mesosphere.cosmos.http.TestContext
 import com.mesosphere.cosmos.rpc
-import com.mesosphere.universe.v3.syntax.PackageDefinitionOps._
 import com.mesosphere.cosmos.test.CosmosIntegrationTestClient.CosmosClient
 import com.netaporter.uri.Uri
 import com.twitter.finagle.http.Fields

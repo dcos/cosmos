@@ -2,7 +2,6 @@ package com.mesosphere.universe.v3.circe
 
 import com.mesosphere.universe
 import com.mesosphere.universe.test.TestingPackages
-import com.mesosphere.universe.v3.syntax.PackageDefinitionOps._
 import io.circe.Json
 import io.circe.jawn.parse
 import io.circe.syntax._

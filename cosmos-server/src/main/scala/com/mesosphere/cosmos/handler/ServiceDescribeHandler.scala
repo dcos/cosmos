@@ -8,7 +8,6 @@ import com.mesosphere.cosmos.repository.PackageCollection
 import com.mesosphere.cosmos.rpc
 import com.mesosphere.cosmos.thirdparty.marathon.model.MarathonApp
 import com.mesosphere.universe
-import com.mesosphere.universe.v3.syntax.PackageDefinitionOps._
 import com.mesosphere.universe.v4.model.PackageDefinition
 import com.twitter.util.Future
 import io.circe.JsonObject
