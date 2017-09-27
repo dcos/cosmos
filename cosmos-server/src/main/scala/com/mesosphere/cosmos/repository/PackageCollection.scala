@@ -42,7 +42,8 @@ final class PackageCollection(repositoryCache: RepositoryCache) {
     query: Option[String]
   )(implicit session: RequestSession): Future[List[rpc.v1.model.SearchResult]] = {
     repositoryCache.all().map { repositories =>
-      PackageCollection.search(PackageCollection.merge(repositories), query)(session.originInfo)
+      implicit val originInfo = session.originInfo
+      PackageCollection.search(PackageCollection.merge(repositories), query)
     }
   }
 
@@ -175,16 +176,15 @@ object PackageCollection {
   def allUrls(repositories: List[(universe.v4.model.Repository, Uri)]): Set[String] = {
     repositories.flatMap { case (repo, _) =>
       repo.packages.flatMap {
-        _ match {
-          case v2: universe.v3.model.V2Package =>
-            v2.resource.map(r => r.assets.map(assetsSet) ++ r.images.map(imagesSet))
-          case v3: universe.v3.model.V3Package =>
-            v3.resource.map(r =>
-              r.assets.map(assetsSet) ++ r.images.map(imagesSet) ++ r.cli.map(cliSet))
-          case v4: universe.v4.model.V4Package =>
-            v4.resource.map(r =>
-              r.assets.map(assetsSet) ++ r.images.map(imagesSet) ++ r.cli.map(cliSet))
-        }
+        case v2: universe.v3.model.V2Package =>
+          v2.resource.map(r =>
+            r.assets.map(assetsSet) ++ r.images.map(imagesSet))
+        case v3: universe.v3.model.V3Package =>
+          v3.resource.map(r =>
+            r.assets.map(assetsSet) ++ r.images.map(imagesSet) ++ r.cli.map(cliSet))
+        case v4: universe.v4.model.V4Package =>
+          v4.resource.map(r =>
+            r.assets.map(assetsSet) ++ r.images.map(imagesSet) ++ r.cli.map(cliSet))
       }.flatten
     }.flatten.toSet
   }
@@ -282,15 +282,16 @@ object PackageCollection {
   }
 
   private[this] def imagesSet(images : universe.v3.model.Images) : Set[String] = {
-    Set() ++ images.iconSmall ++ images.iconMedium ++ images.iconLarge ++
-      images.screenshots.getOrElse(List()).toSet
+    images.screenshots.getOrElse(List()).toSet ++
+      images.iconSmall ++
+      images.iconMedium ++
+      images.iconLarge
   }
 
   private[this] def cliSet(cli : universe.v3.model.Cli) : Set[String] = {
     cli.binaries match {
       case Some(binaries) =>
-        Set() ++
-          binaries.linux.map(_.`x86-64`.url) ++
+          binaries.linux.map(_.`x86-64`.url).toSet ++
           binaries.windows.map(_.`x86-64`.url) ++
           binaries.darwin.map(_.`x86-64`.url)
       case None => Set()

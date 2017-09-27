@@ -4,7 +4,6 @@ import com.mesosphere.Generators.Implicits._
 import com.mesosphere.cosmos.HttpClient.ResponseData
 import com.mesosphere.cosmos.error.CosmosException
 import com.mesosphere.cosmos.error.GenericHttpError
-import com.mesosphere.cosmos.error.GenericHttpError
 import com.mesosphere.cosmos.error.ResourceTooLarge
 import com.mesosphere.cosmos.http.MediaType
 import com.netaporter.uri.Uri
@@ -119,7 +118,7 @@ final class ResourceProxyHandlerSpec extends FreeSpec with PropertyChecks {
           val responseData = ResponseData(contentType, Some((contentBytes.size - 1).toLong), contentStream)
           val ex = intercept[CosmosException](ResourceProxyHandler.getContentBytes(uri, responseData, lengthLimit))
           assert(ex.error.isInstanceOf[GenericHttpError])
-          assertResult(Status.InternalServerError)(ex.error.asInstanceOf[GenericHttpError].clientStatus)
+          assertResult(Status.BadGateway)(ex.error.asInstanceOf[GenericHttpError].clientStatus)
         }
       }
 
@@ -139,7 +138,7 @@ final class ResourceProxyHandlerSpec extends FreeSpec with PropertyChecks {
           val responseData = ResponseData(contentType, Some((contentBytes.size + 1).toLong), contentStream)
           val ex = intercept[CosmosException](ResourceProxyHandler.getContentBytes(uri, responseData, lengthLimit))
           assert(ex.error.isInstanceOf[GenericHttpError])
-          assertResult(Status.InternalServerError)(ex.error.asInstanceOf[GenericHttpError].clientStatus)
+          assertResult(Status.BadGateway)(ex.error.asInstanceOf[GenericHttpError].clientStatus)
         }
       }
 

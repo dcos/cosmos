@@ -6,12 +6,12 @@ import com.mesosphere.cosmos.HttpClient.ResponseData
 import com.mesosphere.cosmos.HttpClient.UnexpectedStatus
 import com.mesosphere.cosmos.HttpClient.UriConnection
 import com.mesosphere.cosmos.HttpClient.UriSyntax
-import com.mesosphere.cosmos.error.CosmosError
 import com.mesosphere.cosmos.error.CosmosException
 import com.mesosphere.cosmos.error.EndpointUriConnection
 import com.mesosphere.cosmos.error.EndpointUriSyntax
 import com.mesosphere.cosmos.error.Forbidden
 import com.mesosphere.cosmos.error.GenericHttpError
+import com.mesosphere.cosmos.error.InvalidContentLengthLimit
 import com.mesosphere.cosmos.error.ResourceTooLarge
 import com.mesosphere.cosmos.http.RequestSession
 import com.mesosphere.cosmos.repository.PackageCollection
@@ -27,12 +27,9 @@ import java.io.InputStream
 
 final class ResourceProxyHandler private(
   packageCollection: PackageCollection,
-  contentLengthLimit: StorageUnit,
-  statsReceiver: StatsReceiver
-) {
+  contentLengthLimit: StorageUnit
+)(implicit statsReceiver: StatsReceiver) {
   import ResourceProxyHandler._
-
-  implicit val sr = statsReceiver
 
   def apply(data : (Uri, RequestSession)): Future[Output[Response]] = {
     val uri = data._1
@@ -82,9 +79,12 @@ object ResourceProxyHandler {
     packageCollection: PackageCollection,
     contentLengthLimit: StorageUnit
   )(implicit statsReceiver: StatsReceiver): ResourceProxyHandler = {
-    assert(contentLengthLimit.bytes > 0)
+    if(contentLengthLimit.bytes <= 0) {
+      throw InvalidContentLengthLimit(contentLengthLimit).exception
+    }
+
     implicit val handlerScope = statsReceiver.scope("resourceProxyHandler")
-    new ResourceProxyHandler(packageCollection, contentLengthLimit, handlerScope)
+    new ResourceProxyHandler(packageCollection, contentLengthLimit)(handlerScope)
   }
 
   def getContentBytes(
@@ -94,49 +94,28 @@ object ResourceProxyHandler {
   ):Array[Byte] = {
     validateContentLength(uri, responseData.contentLength, contentLengthLimit)
 
-    // Allocate array of min(ContentLength size if defined, limit size - 1)
+    // Allocate array of ContentLength size
     // Buffer InputStream into array; if the end is reached but there's more data, fail
-    // If the data runs out before the end of the array, truncate the array
+    // If the data runs out before the end of the array, fail
 
-    val length = responseData.contentLength match {
-      case Some(len) => len.toInt
-      case None => contentLengthLimit.bytes.toInt - 1
-    }
+    val Some(length) = responseData.contentLength.map(_.toInt)
     val contentBytes = Array.ofDim[Byte](length)
     val bytesRead = bufferFully(responseData.contentStream, contentBytes)
-
-    if (responseData.contentLength.isDefined && bytesRead < contentBytes.length) {
-      throw GenericHttpError(uri = uri, clientStatus = Status.InternalServerError).exception
+    if (bytesRead < contentBytes.length) {
+      throw GenericHttpError(uri = uri, clientStatus = Status.BadGateway).exception
     }
 
     bufferFully(responseData.contentStream, EofDetector) match {
       case 0 if responseData.contentLength.isEmpty =>
         contentBytes.dropRight(contentBytes.length - bytesRead)
       case x if x > 0 =>
-        throw convertToCosmosError(uri, responseData, contentLengthLimit).exception
+        throw GenericHttpError(uri = uri, clientStatus = Status.BadGateway).exception
       case _ => contentBytes
     }
   }
 
   private def bufferFully(is: InputStream, buffer: Array[Byte]): Int = {
     ByteStreams.read(is, buffer, 0, buffer.length)
-  }
-
-  private def convertToCosmosError(
-    uri: Uri,
-    responseData: ResponseData,
-    contentLengthLimit: StorageUnit
-  ):CosmosError = {
-    responseData.contentLength match {
-      case Some(_) => GenericHttpError(
-        uri = uri,
-        clientStatus = Status.InternalServerError
-      )
-      case None => ResourceTooLarge (
-        contentLength = None,
-        contentLengthLimit.bytes
-      )
-    }
   }
 
   private def validateContentLength(
@@ -150,7 +129,7 @@ object ResourceProxyHandler {
           case l if l >= contentLengthLimit.bytes =>
             throw ResourceTooLarge(contentLength, contentLengthLimit.bytes).exception
           case l if l <= 0 =>
-            throw GenericHttpError(uri = uri, clientStatus = Status.InternalServerError).exception
+            throw GenericHttpError(uri = uri, clientStatus = Status.BadGateway).exception
           case _ => ()
         }
       case None =>

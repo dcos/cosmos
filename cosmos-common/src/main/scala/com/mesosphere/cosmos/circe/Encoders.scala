@@ -7,6 +7,7 @@ import com.mesosphere.universe.common.ByteBuffers
 import com.netaporter.uri.Uri
 import com.twitter.finagle.http.Status
 import com.twitter.util.Duration
+import com.twitter.util.StorageUnit
 import io.circe.DecodingFailure
 import io.circe.Encoder
 import io.circe.CursorOp.opsToPath
@@ -27,6 +28,11 @@ object Encoders {
   }
 
   implicit val encodeUri: Encoder[Uri] = Encoder.instance(_.toString.asJson)
+
+  implicit val encodeStorageUnit: Encoder[StorageUnit] = Encoder.instance{
+    _.bytes.toString.asJson
+  }
+
   implicit val encodeByteBuffer: Encoder[ByteBuffer] = Encoder.instance { bb =>
     Base64.getEncoder.encodeToString(ByteBuffers.getBytes(bb)).asJson
   }

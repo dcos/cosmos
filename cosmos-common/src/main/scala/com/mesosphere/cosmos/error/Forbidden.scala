@@ -19,7 +19,7 @@ final case class Forbidden(
     CosmosException(this, Status.Forbidden, Map.empty, None)
   }
 
-  private def destinationMessage():String = {
+  private def destinationMessage:String = {
     destination match {
       case Some(endpoint) => s" while accessing$endpoint"
       case None => ""
