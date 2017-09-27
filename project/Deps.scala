@@ -134,6 +134,11 @@ object Deps {
     "com.twitter.common" % "quantity" % "0.0.100"
   )
 
+  // APLv2.0
+  val apacheCommons = Seq(
+    "commons-codec" % "commons-codec" % "1.10"
+  )
+
 }
 
 object V {

@@ -15,6 +15,7 @@ lazy val common = project.in(file("cosmos-common"))
   .settings(
     name := baseDirectory.value.name,
     libraryDependencies ++=
+      Deps.apacheCommons ++
       Deps.bijection ++
       Deps.circe ++
       Deps.fastparse ++
