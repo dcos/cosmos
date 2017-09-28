@@ -8,9 +8,9 @@ import com.mesosphere.cosmos.Services
 import com.mesosphere.cosmos.Trys
 import com.mesosphere.cosmos.Uris
 import com.mesosphere.cosmos.dcosUri
-import com.mesosphere.cosmos.http.Authorization
 import com.mesosphere.cosmos.http.HttpRequest
 import com.mesosphere.cosmos.http.RequestSession
+import com.mesosphere.cosmos.http.TestContext
 import com.netaporter.uri.Uri
 import com.netaporter.uri.dsl._
 import com.twitter.conversions.storage._
@@ -25,6 +25,11 @@ import org.scalatest.Matchers
 import org.slf4j.LoggerFactory
 
 object CosmosIntegrationTestClient extends Matchers {
+
+  val testContext = TestContext.fromSystemProperties()
+  val uri = testContext.uri
+
+  implicit val Session = RequestSession(testContext.token, testContext.originInfo)
 
   val adminRouter: AdminRouter = {
     val property = dcosUri.name
@@ -57,19 +62,8 @@ object CosmosIntegrationTestClient extends Matchers {
     ar.get
   }
 
-  implicit val Session = RequestSession(
-    sys.env.get("COSMOS_AUTHORIZATION_HEADER").map { token =>
-      val maxDisplayWidth = 10
-      val tokenDisplay = token.stripPrefix("token=").take(maxDisplayWidth)
-      CosmosClient.logger.info(s"Loaded authorization token '$tokenDisplay...' from environment")
-      Authorization(token)
-    }
-  )
-
   object CosmosClient {
     lazy val logger = LoggerFactory.getLogger(getClass())
-
-    val uri: Uri = getClientProperty("CosmosClient", "uri")
 
     /** Ensures that we create Finagle requests correctly.
       *
@@ -88,7 +82,7 @@ object CosmosIntegrationTestClient extends Matchers {
       }
 
       val reqWithAuthAndHost = reqWithAuth.copy(
-        headers = reqWithAuth.headers + (Fields.Host -> uri.host.get)
+        headers = reqWithAuth.headers + (Fields.Host -> TestContext.extractHostFromUri(uri))
       )
 
       val finagleReq = HttpRequest.toFinagle(reqWithAuthAndHost)
@@ -102,18 +96,30 @@ object CosmosIntegrationTestClient extends Matchers {
     }
 
     private[this] object RequestLogging extends SimpleFilter[Request, Response] {
+
       val counter = new AtomicInteger()
+
       override def apply(req: Request, service: Service[Request, Response]): Future[Response] = {
         val c = counter.getAndIncrement
+
         logger.debug(
-          s"$c -> ${req.method} ${req.path} ${fmtHeaders(req.headerMap)} ${req.contentString}"
+          "{} -> {} {} {} {}",
+          c.toString,
+          req.method,
+          req.path,
+          fmtHeaders(req.headerMap),
+          fmtContent(req.contentType, req.contentString)
         )
-        service(req) map { res =>
+
+        service(req) onSuccess { res =>
           logger.debug(
-            s"$c <- ${res.status.code} ${res.status.reason} " +
-            s"${fmtHeaders(res.headerMap)} ${res.contentString}"
+            "{} <- {} {} {} {}",
+            c.toString,
+            res.status.code.toString,
+            res.status.reason,
+            fmtHeaders(res.headerMap),
+            fmtContent(res.contentType, res.contentString)
           )
-          res
         }
       }
 
@@ -123,13 +129,13 @@ object CosmosIntegrationTestClient extends Matchers {
           case (k, v) => s"$k: $v"
         } mkString " "
       }
-    }
-  }
 
-  private def getClientProperty(clientName: String, key: String): String = {
-    val property = s"com.mesosphere.cosmos.test.CosmosIntegrationTestClient.$clientName.$key"
-      Option(System.getProperty(property))
-        .getOrElse(throw new AssertionError(s"Missing system property '$property' "))
+      private[this] def fmtContent(contentType: Option[String], contentString: String): String = {
+        // All human-readable endpoints speak JSON, so look for that
+        if (contentType.forall(_.contains("json"))) contentString else "[non-JSON data elided]"
+      }
+
+    }
   }
 
 }

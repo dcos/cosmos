@@ -41,15 +41,17 @@ private[cosmos] final class ServiceDescribeHandler(
     app: MarathonApp)(implicit
     session: RequestSession
   ): Future[universe.v4.model.PackageDefinition] = {
-    app.packageDefinition.map(Future.value).getOrElse {
-      val (name, version) =
-        app.packageName.flatMap(name => app.packageVersion.map(name -> _))
-          .getOrElse(throw new IllegalStateException(
-            "The name and version of the service were not found in the labels"))
-      packageCollection
-        .getPackageByPackageVersion(name, Some(version))
-        .map(_._1)
-    }
+    app.packageDefinition
+      .map(pkg => Future.value(pkg.rewrite(session.originInfo)))
+      .getOrElse {
+        val (name, version) =
+          app.packageName.flatMap(name => app.packageVersion.map(name -> _))
+            .getOrElse(throw new IllegalStateException(
+              "The name and version of the service were not found in the labels"))
+        packageCollection
+          .getPackageByPackageVersion(name, Some(version))
+          .map(_._1)
+      }
   }
 
   private def getResolvedOptions(

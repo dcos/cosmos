@@ -1,19 +1,21 @@
 package com.mesosphere.cosmos.finch
 
 import cats.data.NonEmptyList
+import com.mesosphere.Generators.Implicits._
 import com.mesosphere.cosmos.http.Authorization
 import com.mesosphere.cosmos.http.CompoundMediaTypeParser
+import com.mesosphere.cosmos.http.Get
 import com.mesosphere.cosmos.http.HttpRequest
-import com.mesosphere.cosmos.http.HttpRequestBody
+import com.mesosphere.cosmos.http.HttpRequestMethod
 import com.mesosphere.cosmos.http.MediaType
-import com.mesosphere.cosmos.http.MediaTypeSpec
-import com.mesosphere.cosmos.http.Monolithic
-import com.mesosphere.cosmos.http.NoBody
+import com.mesosphere.cosmos.http.Post
 import com.mesosphere.cosmos.http.RawRpcPath
 import com.mesosphere.cosmos.http.RequestSession
+import com.mesosphere.cosmos.httpInterface
 import com.mesosphere.cosmos.rpc.MediaTypes._
+import com.mesosphere.util.urlSchemeHeader
 import com.twitter.finagle.http.Fields
-import com.twitter.finagle.http.Method
+import com.twitter.finagle.http.Fields
 import com.twitter.io.Buf
 import com.twitter.util.Return
 import com.twitter.util.Throw
@@ -27,6 +29,7 @@ import io.finch.Error.NotPresent
 import io.finch.Error.NotValid
 import io.finch.Output
 import io.finch.items.HeaderItem
+import org.scalacheck.Arbitrary.arbitrary
 import org.scalacheck.Gen
 import org.scalatest.Assertion
 import org.scalatest.FreeSpec
@@ -82,7 +85,7 @@ final class RequestValidatorsSpec extends FreeSpec with Matchers with PropertyCh
 
     "fail if the Content-Type header is missing" in {
       val genTestCases = for {
-        expectedContentTypeHeader <- MediaTypeSpec.genMediaType
+        expectedContentTypeHeader <- arbitrary[MediaType]
         data <- genTestData(expectedContentTypeHeader, actualContentTypeHeader = None)
       } yield data
 
@@ -93,7 +96,7 @@ final class RequestValidatorsSpec extends FreeSpec with Matchers with PropertyCh
 
     "fail if the Content-Type header cannot be parsed as a MediaType" in {
       val genTestCases = for {
-        expectedContentTypeHeader <- MediaTypeSpec.genMediaType
+        expectedContentTypeHeader <- arbitrary[MediaType]
         actualContentTypeHeader <- Gen.alphaStr
         data <- genTestData(expectedContentTypeHeader, Some(actualContentTypeHeader))
       } yield data
@@ -105,7 +108,7 @@ final class RequestValidatorsSpec extends FreeSpec with Matchers with PropertyCh
 
     "include the Content-Type in the session if it was successfully parsed" in {
       val genTestCases = for {
-        expectedContentTypeHeader <- MediaTypeSpec.genMediaType
+        expectedContentTypeHeader <- arbitrary[MediaType]
         actualContentTypeHeader = HttpRequest.toHeader(expectedContentTypeHeader)
         data <- genTestData(expectedContentTypeHeader, actualContentTypeHeader)
       } yield data
@@ -117,8 +120,8 @@ final class RequestValidatorsSpec extends FreeSpec with Matchers with PropertyCh
 
     "fail if the Content-Type header doesn't match what the validator expects" in {
       val genTestCases = for {
-        expectedContentTypeHeader <- MediaTypeSpec.genMediaType
-        actualContentTypeHeader <- MediaTypeSpec.genMediaType.map(HttpRequest.toHeader)
+        expectedContentTypeHeader <- arbitrary[MediaType]
+        actualContentTypeHeader <- arbitrary[MediaType].map(HttpRequest.toHeader)
         data <- genTestData(expectedContentTypeHeader, actualContentTypeHeader)
       } yield data
 
@@ -135,17 +138,18 @@ final class RequestValidatorsSpec extends FreeSpec with Matchers with PropertyCh
       val accepts = MediaTypedRequestDecoder(mediaTypedDecoder)
 
       for {
-        acceptHeader <- MediaTypeSpec.genMediaType
+        acceptHeader <- arbitrary[MediaType]
         headers = HttpRequest.collectHeaders(
           Fields.Accept -> HttpRequest.toHeader(acceptHeader),
-          Fields.ContentType -> actualContentTypeHeader
+          Fields.ContentType -> actualContentTypeHeader,
+          Fields.Host -> Some(httpInterface.toString()),
+          urlSchemeHeader -> Some("http")
         )
         produces = DispatchingMediaTypedEncoder[Json](acceptHeader)
         validator = RequestValidators.standard(accepts, produces)
-        request <- genRequest(headers, Monolithic(Buf.Utf8("{}")))
+        request <- genRequest(Post(Buf.Utf8("{}")))(headers)
       } yield TestData(expectedContentTypeHeader, validator, request)
     }
-
   }
 
   def assertMissingContentType[Req, Res](
@@ -176,7 +180,7 @@ final class RequestValidatorsSpec extends FreeSpec with Matchers with PropertyCh
   ): Assertion = {
     assertResult(expectedContentType) {
       val Return(output) = validateOutput(validator, request)
-      val RequestSession(_, Some(contentType)) = output.value.session
+      val RequestSession(_, _, Some(contentType)) = output.value.session
       contentType
     }
   }
@@ -213,7 +217,7 @@ final class RequestValidatorsSpec extends FreeSpec with Matchers with PropertyCh
     "include the Authorization header in the return value if it was included in the request" - {
       "to accurately forward the header's state to other services" in {
         val Return(context) = factory.validate(authorization = Some("53cr37"))
-        val RequestSession(Some(Authorization(auth)), _) = context.session
+        val RequestSession(Some(Authorization(auth)), _, _) = context.session
         assertResult("53cr37")(auth)
       }
     }
@@ -221,7 +225,7 @@ final class RequestValidatorsSpec extends FreeSpec with Matchers with PropertyCh
     "omit the Authorization header from the return value if it was omitted from the request" - {
       "to accurately forward the header's state to other services" in {
         val Return(context) = factory.validate(authorization = None)
-        val RequestSession(auth, _) = context.session
+        val RequestSession(auth, _, _) = context.session
         assertResult(None)(auth)
       }
     }
@@ -312,19 +316,14 @@ final class RequestValidatorsSpec extends FreeSpec with Matchers with PropertyCh
 
 object RequestValidatorsSpec {
 
-  def genRequest(
-    genHeaders: Gen[Map[String, String]],
-    genBody: Gen[HttpRequestBody]
+  def genRequest(method: HttpRequestMethod)(
+    genHeaders: Gen[Map[String, String]]
   ): Gen[HttpRequest] = {
     for {
-      method <- genMethod
       path <- genPath
       headers <- genHeaders
-      body <- genBody
-    } yield HttpRequest(method, RawRpcPath(path), headers, body)
+    } yield HttpRequest(RawRpcPath(path), headers, method)
   }
-
-  val genMethod: Gen[Method] = Gen.alphaStr.map(Method(_))
 
   val genPath: Gen[String] = {
     Gen.listOf(Gen.frequency((10, Gen.alphaNumChar), Gen.freqTuple((1, '/')))).map(_.mkString)
@@ -385,8 +384,13 @@ object RequestValidatorsSpec {
       authorization: Option[String]
     ): HttpRequest = {
       val headers =
-        HttpRequest.collectHeaders(Fields.Accept -> accept, Fields.Authorization -> authorization)
-      HttpRequest(Method.Get, RawRpcPath("/what/ever"), headers, NoBody)
+        HttpRequest.collectHeaders(
+          Fields.Accept -> accept,
+          Fields.Authorization -> authorization,
+          Fields.Host -> Some(httpInterface.toString()),
+          urlSchemeHeader -> Some("http")
+        )
+      HttpRequest(RawRpcPath("/what/ever"), headers, Get())
     }
 
   }
@@ -409,14 +413,11 @@ object RequestValidatorsSpec {
       val headers = HttpRequest.collectHeaders(
         Fields.Accept -> accept,
         Fields.Authorization -> authorization,
+        Fields.Host -> Some(httpInterface.toString()),
+        urlSchemeHeader -> Some("http"),
         Fields.ContentType -> HttpRequest.toHeader(TestingMediaTypes.applicationJson)
       )
-      HttpRequest(
-        Method.Post,
-        RawRpcPath("/what/ever"),
-        headers,
-        Monolithic(Buf.Utf8(Json.Null.noSpaces))
-      )
+      HttpRequest(RawRpcPath("/what/ever"), headers, Post(Buf.Utf8(Json.Null.noSpaces)))
     }
 
   }

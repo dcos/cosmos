@@ -1,7 +1,7 @@
 package com.mesosphere.cosmos.repository
 
-import com.mesosphere.cosmos.error.RepositoryUriConnection
 import com.mesosphere.cosmos.error.CosmosException
+import com.mesosphere.cosmos.error.RepositoryUriConnection
 import com.mesosphere.cosmos.error.RepositoryUriSyntax
 import com.mesosphere.cosmos.error.UniverseClientHttpError
 import com.mesosphere.cosmos.rpc.v1.model.PackageRepository

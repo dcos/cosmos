@@ -74,7 +74,9 @@ object VersionedResponsesSpec {
         RawRpcPath(s"/${endpointPath.mkString("/")}"),
         Buf.Utf8(body),
         applicationJson,
-        acceptHeader
+        acceptHeader,
+        "localhost",
+        "http"
       )
     )
   }

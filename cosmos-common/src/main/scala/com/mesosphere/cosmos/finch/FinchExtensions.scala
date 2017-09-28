@@ -13,7 +13,7 @@ import shapeless.HNil
 object FinchExtensions {
 
   def beTheExpectedTypes(expectedTypes: List[MediaType]): ValidationRule[MediaType] =
-    ValidationRule(s"match on of ${expectedTypes.map(_.show).mkString(", ")}") { actual =>
+    ValidationRule(s"match one of ${expectedTypes.map(_.show).mkString(", ")}") { actual =>
       expectedTypes.exists(expected => MediaTypeOps.compatible(expected, actual))
     }
 

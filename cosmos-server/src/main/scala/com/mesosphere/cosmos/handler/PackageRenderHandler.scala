@@ -12,7 +12,7 @@ import com.twitter.bijection.Conversion.asMethod
 import com.twitter.util.Future
 
 private[cosmos] final class PackageRenderHandler(
-  packageCache: PackageCollection
+  packageCollection: PackageCollection
 ) extends EndpointHandler[rpc.v1.model.RenderRequest, rpc.v1.model.RenderResponse] {
 
   override def apply(
@@ -20,7 +20,7 @@ private[cosmos] final class PackageRenderHandler(
   )(
     implicit session: RequestSession
   ): Future[rpc.v1.model.RenderResponse] = {
-    packageCache
+    packageCollection
       .getPackageByPackageVersion(
         request.packageName,
         request.packageVersion.as[Option[universe.v3.model.Version]]

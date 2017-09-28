@@ -1,8 +1,7 @@
 package com.mesosphere.cosmos.http
 
 import com.mesosphere.cosmos.rpc
-import com.mesosphere.cosmos.rpc.v1.model.PackageRepositoryListRequest
-import com.mesosphere.cosmos.rpc.v1.model.RenderRequest
+import com.netaporter.uri.Uri
 
 object CosmosRequests {
 
@@ -55,7 +54,7 @@ object CosmosRequests {
     )
   }
 
-  def packageRender(renderRequest: RenderRequest): HttpRequest = {
+  def packageRender(renderRequest: rpc.v1.model.RenderRequest): HttpRequest = {
     HttpRequest.post(
       path = PackageRpcPath("render"),
       body = renderRequest,
@@ -98,7 +97,7 @@ object CosmosRequests {
   def packageRepositoryList: HttpRequest = {
     HttpRequest.post(
       path = PackageRpcPath("repository/list"),
-      body = PackageRepositoryListRequest(),
+      body = rpc.v1.model.PackageRepositoryListRequest(),
       contentType = rpc.MediaTypes.PackageRepositoryListRequest,
       accept = rpc.MediaTypes.PackageRepositoryListResponse
     )
@@ -123,6 +122,14 @@ object CosmosRequests {
       body = describeRequest,
       contentType =  rpc.MediaTypes.ServiceDescribeRequest,
       accept = rpc.MediaTypes.ServiceDescribeResponse
+    )
+  }
+
+  def packageResource(resourceUri: Uri): HttpRequest = {
+    HttpRequest(
+      path = PackageRpcPath("resource"),
+      headers = Map.empty,
+      method = Get("url" -> resourceUri.toString)
     )
   }
 

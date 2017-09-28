@@ -2,11 +2,14 @@ package com.mesosphere.cosmos
 
 import _root_.io.circe.jawn._
 import com.mesosphere.cosmos.http.CosmosRequests
+import com.mesosphere.cosmos.http.OriginHostScheme
+import com.mesosphere.cosmos.http.TestContext
 import com.mesosphere.cosmos.rpc.v1.model.SearchRequest
 import com.mesosphere.cosmos.rpc.v1.model.SearchResponse
 import com.mesosphere.cosmos.rpc.v1.model.SearchResult
 import com.mesosphere.cosmos.test.CosmosIntegrationTestClient.CosmosClient
 import com.mesosphere.universe
+import com.mesosphere.universe.rewriteWithProxyURL
 import com.twitter.finagle.http.Status
 import org.scalatest.Assertion
 import org.scalatest.FreeSpec
@@ -54,6 +57,9 @@ final class PackageSearchSpec extends FreeSpec {
 
 private object PackageSearchSpec extends TableDrivenPropertyChecks {
 
+  val uri = TestContext.fromSystemProperties().uri
+  implicit val originInfo = OriginHostScheme(s"${uri.host.get}:${uri.port.get}", uri.scheme.get)
+
   val ArangodbSearchResult = SearchResult(
     name = "arangodb",
     currentVersion = universe.v3.model.Version("0.3.0"),
@@ -67,9 +73,9 @@ private object PackageSearchSpec extends TableDrivenPropertyChecks {
       .map(universe.v3.model.Tag(_)),
     selected = Some(true),
     images = Some(universe.v3.model.Images(
-      iconSmall = Some("https://raw.githubusercontent.com/arangodb/arangodb-dcos/master/icons/arangodb_small.png"),
-      iconMedium = Some("https://raw.githubusercontent.com/arangodb/arangodb-dcos/master/icons/arangodb_medium.png"),
-      iconLarge = Some("https://raw.githubusercontent.com/arangodb/arangodb-dcos/master/icons/arangodb_large.png"),
+      iconSmall = Some(rewriteWithProxyURL("https://raw.githubusercontent.com/arangodb/arangodb-dcos/master/icons/arangodb_small.png")),
+      iconMedium = Some(rewriteWithProxyURL("https://raw.githubusercontent.com/arangodb/arangodb-dcos/master/icons/arangodb_medium.png")),
+      iconLarge = Some(rewriteWithProxyURL("https://raw.githubusercontent.com/arangodb/arangodb-dcos/master/icons/arangodb_large.png")),
       screenshots = None
     ))
   )
@@ -93,9 +99,9 @@ private object PackageSearchSpec extends TableDrivenPropertyChecks {
     tags = List("data", "database", "nosql").map(universe.v3.model.Tag(_)),
     selected = Some(true),
     images = Some(universe.v3.model.Images(
-      iconSmall = Some("https://downloads.mesosphere.com/cassandra-mesos/assets/cassandra-small.png"),
-      iconMedium = Some("https://downloads.mesosphere.com/cassandra-mesos/assets/cassandra-medium.png"),
-      iconLarge = Some("https://downloads.mesosphere.com/cassandra-mesos/assets/cassandra-large.png"),
+      iconSmall = Some(rewriteWithProxyURL("https://downloads.mesosphere.com/cassandra-mesos/assets/cassandra-small.png")),
+      iconMedium = Some(rewriteWithProxyURL("https://downloads.mesosphere.com/cassandra-mesos/assets/cassandra-medium.png")),
+      iconLarge = Some(rewriteWithProxyURL("https://downloads.mesosphere.com/cassandra-mesos/assets/cassandra-large.png")),
       screenshots = None
     ))
   )
@@ -112,9 +118,9 @@ private object PackageSearchSpec extends TableDrivenPropertyChecks {
     ).map(universe.v3.model.Tag(_)),
     selected = None,
     images = Some(universe.v3.model.Images(
-      Some("https://downloads.mesosphere.com/universe/assets/icon-service-crate-small.png"),
-      Some("https://downloads.mesosphere.com/universe/assets/icon-service-crate-medium.png"),
-      Some("https://downloads.mesosphere.com/universe/assets/icon-service-crate-large.png"),
+      Some(rewriteWithProxyURL("https://downloads.mesosphere.com/universe/assets/icon-service-crate-small.png")),
+      Some(rewriteWithProxyURL("https://downloads.mesosphere.com/universe/assets/icon-service-crate-medium.png")),
+      Some(rewriteWithProxyURL("https://downloads.mesosphere.com/universe/assets/icon-service-crate-large.png")),
       None
     ))
   )
@@ -130,9 +136,9 @@ private object PackageSearchSpec extends TableDrivenPropertyChecks {
     tags = List("mysql", "database", "rdbms").map(universe.v3.model.Tag(_)),
     selected = None,
     images = Some(universe.v3.model.Images(
-      Some("https://downloads.mesosphere.com/universe/assets/icon-service-memsql-small.png"),
-      Some("https://downloads.mesosphere.com/universe/assets/icon-service-memsql-medium.png"),
-      Some("https://downloads.mesosphere.com/universe/assets/icon-service-memsql-large.png"),
+      Some(rewriteWithProxyURL("https://downloads.mesosphere.com/universe/assets/icon-service-memsql-small.png")),
+      Some(rewriteWithProxyURL("https://downloads.mesosphere.com/universe/assets/icon-service-memsql-medium.png")),
+      Some(rewriteWithProxyURL("https://downloads.mesosphere.com/universe/assets/icon-service-memsql-large.png")),
       None
     ))
   )
@@ -166,11 +172,11 @@ private object PackageSearchSpec extends TableDrivenPropertyChecks {
     ).map(universe.v3.model.Tag(_)),
     selected = None,
     images = Some(universe.v3.model.Images(
-      Some("https://downloads.mesosphere.com/universe/assets/icon-service-riak-small.png"),
-      Some("https://downloads.mesosphere.com/universe/assets/icon-service-riak-medium.png"),
-      Some("https://downloads.mesosphere.com/universe/assets/icon-service-riak-large.png"),
+      Some(rewriteWithProxyURL("https://downloads.mesosphere.com/universe/assets/icon-service-riak-small.png")),
+      Some(rewriteWithProxyURL("https://downloads.mesosphere.com/universe/assets/icon-service-riak-medium.png")),
+      Some(rewriteWithProxyURL("https://downloads.mesosphere.com/universe/assets/icon-service-riak-large.png")),
       Some(List(
-        "http://riak-tools.s3.amazonaws.com/riak-mesos/riak-mesos-screenshot.png"
+        rewriteWithProxyURL("http://riak-tools.s3.amazonaws.com/riak-mesos/riak-mesos-screenshot.png")
       ))
     ))
   )

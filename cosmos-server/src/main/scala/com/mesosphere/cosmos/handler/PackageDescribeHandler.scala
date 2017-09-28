@@ -21,7 +21,7 @@ private[cosmos] final class PackageDescribeHandler(
       request.packageVersion.as[Option[universe.v3.model.Version]]
     )
 
-    packageInfo.map { case (pkg, _) => pkg }
+    packageInfo.map { case (pkg, _) => pkg.rewrite(session.originInfo) }
   }
 
 }

@@ -2,6 +2,10 @@ package com.mesosphere.cosmos.repository
 
 import com.mesosphere.cosmos.AdminRouter
 import com.mesosphere.cosmos.BuildProperties
+import com.mesosphere.cosmos.HttpClient
+import com.mesosphere.cosmos.HttpClient.UnexpectedStatus
+import com.mesosphere.cosmos.HttpClient.UriConnection
+import com.mesosphere.cosmos.HttpClient.UriSyntax
 import com.mesosphere.cosmos.circe.Decoders.decode
 import com.mesosphere.cosmos.error.CosmosException
 import com.mesosphere.cosmos.error.IndexNotFound
@@ -11,9 +15,7 @@ import com.mesosphere.cosmos.error.PackageFileSchemaMismatch
 import com.mesosphere.cosmos.error.RepositoryUriConnection
 import com.mesosphere.cosmos.error.RepositoryUriSyntax
 import com.mesosphere.cosmos.error.UniverseClientHttpError
-import com.mesosphere.cosmos.error.UnsupportedContentEncoding
 import com.mesosphere.cosmos.error.UnsupportedContentType
-import com.mesosphere.cosmos.error.UnsupportedRedirect
 import com.mesosphere.cosmos.error.UnsupportedRepositoryVersion
 import com.mesosphere.cosmos.http.CompoundMediaType
 import com.mesosphere.cosmos.http.MediaType
@@ -21,7 +23,7 @@ import com.mesosphere.cosmos.http.MediaTypeOps._
 import com.mesosphere.cosmos.http.MediaTypeParseError
 import com.mesosphere.cosmos.http.MediaTypeParser
 import com.mesosphere.cosmos.http.RequestSession
-import com.mesosphere.cosmos.rpc.v1.model.PackageRepository
+import com.mesosphere.cosmos.rpc
 import com.mesosphere.universe
 import com.mesosphere.universe.MediaTypes
 import com.mesosphere.universe.bijection.UniverseConversions._
@@ -42,15 +44,10 @@ import io.circe.DecodingFailure
 import io.circe.Json
 import io.circe.JsonObject
 import io.circe.jawn.parse
-import java.io.IOException
 import java.io.InputStream
-import java.net.HttpURLConnection
-import java.net.MalformedURLException
-import java.net.URISyntaxException
 import java.nio.ByteBuffer
 import java.nio.file.Path
 import java.nio.file.Paths
-import java.util.zip.GZIPInputStream
 import java.util.zip.ZipInputStream
 import org.jboss.netty.handler.codec.http.HttpMethod
 import scala.collection.JavaConverters._
@@ -63,7 +60,7 @@ import scala.util.{Try => ScalaTry}
 
 trait UniverseClient {
   def apply(
-    repository: PackageRepository
+    repository: rpc.v1.model.PackageRepository
   )(
     implicit session: RequestSession
   ): Future[universe.v4.model.Repository]
@@ -84,7 +81,7 @@ final class DefaultUniverseClient(
   private[this] val cosmosVersion = BuildProperties().cosmosVersion
 
   def apply(
-    repository: PackageRepository
+    repository: rpc.v1.model.PackageRepository
   )(
     implicit session: RequestSession
   ): Future[universe.v4.model.Repository] = {
@@ -103,82 +100,36 @@ final class DefaultUniverseClient(
     }
   }
 
-  // scalastyle:off cyclomatic.complexity method.length
   private[repository] def apply(
-      repository: PackageRepository,
-      dcosReleaseVersion: universe.v3.model.DcosReleaseVersion
+    repository: rpc.v1.model.PackageRepository,
+    dcosReleaseVersion: universe.v3.model.DcosReleaseVersion
   ): Future[universe.v4.model.Repository] = {
     fetchScope.counter("requestCount").incr()
     Stat.timeFuture(fetchScope.stat("histogram")) {
-      Future { repository.uri.toURI.toURL.openConnection() } handle {
-        case t @ (_: IllegalArgumentException | _: MalformedURLException | _: URISyntaxException) =>
-          throw CosmosException(RepositoryUriSyntax(repository, t.getMessage), t)
-      } flatMap { case conn: HttpURLConnection =>
-        // Set headers on request
-        conn.setRequestProperty(
-          "Accept", CompoundMediaType(MediaTypes.UniverseV4Repository, MediaTypes.UniverseV3Repository).show
-        )
-        conn.setRequestProperty("Accept-Encoding", "gzip")
-        conn.setRequestProperty(
-          "User-Agent",
-          s"cosmos/$cosmosVersion dcos/${dcosReleaseVersion.show}"
-        )
+      val acceptedMediaTypes = CompoundMediaType(
+        MediaTypes.UniverseV4Repository,
+        MediaTypes.UniverseV3Repository
+      )
 
-        // Handle the response
-        Future {
-          conn.getResponseCode match {
-            case HttpURLConnection.HTTP_OK =>
-              fetchScope.scope("status").counter("200").incr()
-              val contentType = parseContentType(
-                Option(conn.getHeaderField(Fields.ContentType))
-              ).get
-              val contentEncoding = Option(conn.getHeaderField(Fields.ContentEncoding))
-              (contentType, contentEncoding)
-            case x @ (HttpURLConnection.HTTP_MOVED_PERM |
-                      HttpURLConnection.HTTP_MOVED_TEMP |
-                      HttpURLConnection.HTTP_SEE_OTHER |
-                      TemporaryRedirect |
-                      PermanentRedirect) =>
-              fetchScope.scope("status").counter(x.toString).incr()
-              // Different forms of redirect, HttpURLConnection won't follow a redirect across schemes
-              val loc = Option(conn.getHeaderField("Location")).map(Uri.parse).flatMap(_.scheme)
-              throw UnsupportedRedirect(List(repository.uri.scheme.get), loc).exception
-            case x =>
-              fetchScope.scope("status").counter(x.toString).incr()
-              /* If we are unable to get the latest Universe we should not forward the status code returned.
-               * We should instead return 500 to the client and include the actual error in the message.
-               */
-              throw UniverseClientHttpError(
-                repository,
-                HttpMethod.GET,
-                Status.fromCode(x)
-              ).exception(Status.InternalServerError)
-          }
-        } handle {
-          case t: IOException =>
-            throw CosmosException(RepositoryUriConnection(repository, t.getMessage), t)
-        } map { case (contentType, contentEncoding) =>
-          contentEncoding match {
-            case Some("gzip") =>
-              fetchScope.scope("contentEncoding").counter("gzip").incr()
-              (contentType, new GZIPInputStream(conn.getInputStream))
-            case ce@Some(_) =>
-              throw UnsupportedContentEncoding(List("gzip"), ce).exception
-            case _ =>
-              fetchScope.scope("contentEncoding").counter("plain").incr()
-              (contentType, conn.getInputStream)
-          }
-        } map { case (contentType, bodyInputStream) =>
-          try {
-            decodeAndSortUniverse(contentType, bodyInputStream, repository.uri)
-          } finally bodyInputStream.close()
-        } ensure {
-          conn.disconnect()
+      HttpClient
+        .fetch(
+          repository.uri,
+          Fields.Accept -> acceptedMediaTypes.show,
+          Fields.AcceptEncoding -> "gzip",
+          Fields.UserAgent -> s"cosmos/$cosmosVersion dcos/${dcosReleaseVersion.show}"
+        ) { responseData =>
+          decodeAndSortUniverse(
+            responseData.contentType,
+            responseData.contentStream,
+            repository.uri
+          )
+        }(fetchScope)
+        .map {
+          case Right(repositoryData) => repositoryData
+          case Left(error) => handleError(error, repository)
         }
-      }
     }
   }
-  // scalastyle:on cyclomatic.complexity method.length
 
   private[this] def decodeAndSortUniverse(
     contentType: MediaType,
@@ -216,14 +167,37 @@ final class DefaultUniverseClient(
 
     // Sort the packages
     universe.v4.model.Repository(repo.packages.sorted.reverse)
+
+  }
+
+  private[this] def handleError(
+    error: HttpClient.Error,
+    repository: rpc.v1.model.PackageRepository
+  ): Nothing = {
+    error match {
+      case UriSyntax(cause) =>
+        throw CosmosException(RepositoryUriSyntax(repository, cause.getMessage), cause)
+      case UriConnection(cause) =>
+        throw CosmosException(RepositoryUriConnection(repository, cause.getMessage), cause)
+      case UnexpectedStatus(clientStatus) =>
+        /* If we are unable to get the latest Universe we should not forward the status code
+         * returned. We should instead return 500 to the client and include the actual error
+         * in the message.
+         */
+        throw UniverseClientHttpError(
+          repository,
+          HttpMethod.GET,
+          Status.fromCode(clientStatus)
+        ).exception(Status.InternalServerError)
+    }
   }
 
   private[this] case class V2PackageInformation(
-      packageDetails: Option[universe.v2.model.PackageDetails] = None,
-      marathonMustache: Option[ByteBuffer] = None,
-      command: Option[universe.v2.model.Command] = None,
-      config: Option[JsonObject] = None,
-      resource: Option[universe.v2.model.Resource] = None
+    packageDetails: Option[universe.v2.model.PackageDetails] = None,
+    marathonMustache: Option[ByteBuffer] = None,
+    command: Option[universe.v2.model.Command] = None,
+    config: Option[JsonObject] = None,
+    resource: Option[universe.v2.model.Resource] = None
   )
 
   private[this] case class V2ZipState(
@@ -232,8 +206,8 @@ final class DefaultUniverseClient(
   )
 
   private[this] def processUniverseV2(
-      sourceUri: Uri,
-      inputStream: InputStream
+    sourceUri: Uri,
+    inputStream: InputStream
   ): universe.v4.model.Repository = {
     val bundle = new ZipInputStream(inputStream)
     // getNextEntry() returns null when there are no more entries
@@ -382,8 +356,8 @@ final class DefaultUniverseClient(
   }
 
   private[this] def parseAndVerify[A: Decoder](
-      path: Path,
-      content: String
+    path: Path,
+    content: String
   ): A = {
     parseJson(path, content).as[A] match {
       case Left(err) => throw PackageFileSchemaMismatch(path.toString, err).exception
@@ -392,8 +366,8 @@ final class DefaultUniverseClient(
   }
 
   private[this] def parseJson(
-      path: Path,
-      content: String
+    path: Path,
+    content: String
   ): Json = {
     parse(content) match {
       case Left(err) => throw PackageFileNotJson(path.toString, err.message).exception

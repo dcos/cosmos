@@ -14,6 +14,7 @@ final class IntegrationTestsSpec extends Suites(
   new handler.CapabilitiesHandlerSpec,
   new handler.PackageRenderHandlerSpec,
   new handler.RequestErrorsSpec,
+  new handler.ResourceProxyHandlerIntegrationSpec,
   new handler.UninstallHandlerSpec,
   new rpc.v1.model.ErrorResponseSpec
 ) with IntegrationBeforeAndAfterAll

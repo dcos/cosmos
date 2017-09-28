@@ -2,6 +2,7 @@ package com.mesosphere.cosmos.repository
 
 import com.mesosphere.cosmos.error.PackageNotFound
 import com.mesosphere.cosmos.error.VersionNotFound
+import com.mesosphere.cosmos.http.OriginHostScheme
 import com.mesosphere.cosmos.http.RequestSession
 import com.mesosphere.cosmos.rpc
 import com.mesosphere.universe
@@ -41,6 +42,7 @@ final class PackageCollection(repositoryCache: RepositoryCache) {
     query: Option[String]
   )(implicit session: RequestSession): Future[List[rpc.v1.model.SearchResult]] = {
     repositoryCache.all().map { repositories =>
+      implicit val originInfo = session.originInfo
       PackageCollection.search(PackageCollection.merge(repositories), query)
     }
   }
@@ -68,6 +70,10 @@ final class PackageCollection(repositoryCache: RepositoryCache) {
     repositoryCache.all().map { repositories =>
       PackageCollection.downgradesTo(PackageCollection.merge(repositories), packageDefinition)
     }
+  }
+
+  def allUrls()(implicit session: RequestSession): Future[Set[String]] = {
+    repositoryCache.all().map(PackageCollection.allUrls)
   }
 }
 
@@ -110,6 +116,8 @@ object PackageCollection {
   def search(
     packageDefinitions: List[universe.v4.model.PackageDefinition],
     query: Option[String]
+  )(
+    implicit originInfo : OriginHostScheme
   ): List[rpc.v1.model.SearchResult] = {
     val predicate = getPredicate(query)
 
@@ -163,6 +171,22 @@ object PackageCollection {
     mergeWithURI(repositories).map { case (packageDefinition, _) =>
       packageDefinition
     }
+  }
+
+  def allUrls(repositories: List[(universe.v4.model.Repository, Uri)]): Set[String] = {
+    repositories.flatMap { case (repo, _) =>
+      repo.packages.flatMap {
+        case v2: universe.v3.model.V2Package =>
+          v2.resource.map(r =>
+            r.assets.map(assetsSet) ++ r.images.map(imagesSet))
+        case v3: universe.v3.model.V3Package =>
+          v3.resource.map(r =>
+            r.assets.map(assetsSet) ++ r.images.map(imagesSet) ++ r.cli.map(cliSet))
+        case v4: universe.v4.model.V4Package =>
+          v4.resource.map(r =>
+            r.assets.map(assetsSet) ++ r.images.map(imagesSet) ++ r.cli.map(cliSet))
+      }.flatten
+    }.flatten.toSet
   }
 
   /**
@@ -236,7 +260,11 @@ object PackageCollection {
     }.mkString(".*")
   }
 
-  private def singleResult(pkg: universe.v4.model.PackageDefinition): rpc.v1.model.SearchResult = {
+  private[this] def singleResult(
+    pkg: universe.v4.model.PackageDefinition
+  )(
+    implicit originInfo : OriginHostScheme
+  ): rpc.v1.model.SearchResult = {
     rpc.v1.model.SearchResult(
       pkg.name,
       pkg.version,
@@ -245,7 +273,28 @@ object PackageCollection {
       pkg.framework.getOrElse(false),
       pkg.tags,
       pkg.selected,
-      pkg.images
+      pkg.rewrite.images
     )
+  }
+
+  private[this] def assetsSet(assets : universe.v3.model.Assets) : Set[String] = {
+    assets.uris.getOrElse(Map.empty).values.toSet
+  }
+
+  private[this] def imagesSet(images : universe.v3.model.Images) : Set[String] = {
+    images.screenshots.getOrElse(List()).toSet ++
+      images.iconSmall ++
+      images.iconMedium ++
+      images.iconLarge
+  }
+
+  private[this] def cliSet(cli : universe.v3.model.Cli) : Set[String] = {
+    cli.binaries match {
+      case Some(binaries) =>
+          binaries.linux.map(_.`x86-64`.url).toSet ++
+          binaries.windows.map(_.`x86-64`.url) ++
+          binaries.darwin.map(_.`x86-64`.url)
+      case None => Set()
+    }
   }
 }

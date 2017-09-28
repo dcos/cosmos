@@ -4,19 +4,35 @@ import com.mesosphere.cosmos.finch.FinchExtensions._
 import com.mesosphere.cosmos.http.Authorization
 import com.mesosphere.cosmos.http.CompoundMediaType
 import com.mesosphere.cosmos.http.MediaType
+import com.mesosphere.cosmos.http.OriginHostScheme
 import com.mesosphere.cosmos.http.RequestSession
 import com.twitter.finagle.http.Fields
 import io.finch._
 import shapeless.::
 import shapeless.HNil
+import com.mesosphere.util._
+import com.netaporter.uri.Uri
 
 object RequestValidators {
 
   def noBody[Res](implicit
     produces: DispatchingMediaTypedEncoder[Res]
   ): Endpoint[EndpointContext[Unit, Res]] = {
-    baseValidator(produces).map { case authorization :: responseEncoder :: HNil =>
-      EndpointContext((), RequestSession(authorization, contentType = None), responseEncoder)
+    val allValidators = baseValidator(produces) ::
+      header(Fields.Host) ::
+      header(urlSchemeHeader) ::
+      headerOption(forwardedProtoHeader)
+
+    allValidators.map { case authorization :: responseEncoder ::
+      httpHost :: urlScheme :: forwardedProtocol :: HNil =>
+      EndpointContext(
+        (),
+        RequestSession(
+          authorization,
+          OriginHostScheme(httpHost, forwardedProtocol.getOrElse(urlScheme))
+        ),
+        responseEncoder
+      )
     }
   }
 
@@ -29,10 +45,21 @@ object RequestValidators {
 
     val bodyValidator = body[Req, Application.Json](accepts.decoder, accepts.classTag)
 
-    val allValidators = baseValidator(produces) :: contentTypeValidator :: bodyValidator
+    val allValidators = baseValidator(produces) ::
+      header(Fields.Host) ::
+      header(urlSchemeHeader) ::
+      headerOption(forwardedProtoHeader) ::
+      contentTypeValidator ::
+      bodyValidator
+
     allValidators.map {
-      case authorization :: responseEncoder :: contentType :: requestBody :: HNil =>
-        val session = RequestSession(authorization, Some(contentType))
+      case authorization :: responseEncoder :: httpHost :: urlScheme :: forwardedProtocol ::
+        contentType :: requestBody :: HNil =>
+        val session = RequestSession(
+          authorization,
+          OriginHostScheme(httpHost, forwardedProtocol.getOrElse(urlScheme)),
+          Some(contentType)
+        )
         EndpointContext(requestBody, session, responseEncoder)
     }
   }
@@ -53,4 +80,23 @@ object RequestValidators {
     auth :: accept
   }
 
+  val proxyValidator: Endpoint[(Uri, RequestSession)] = {
+    val validators = param("url").map(Uri.parse) ::
+      headerOption(Fields.Authorization).map(_.map(Authorization)) ::
+      header(Fields.Host) ::
+      header(urlSchemeHeader) ::
+      headerOption(forwardedProtoHeader)
+
+    validators.map {
+      case queryParam :: authorization :: httpHost :: urlScheme :: forwardedProtocol :: HNil =>
+        (
+          queryParam,
+          RequestSession(
+            authorization,
+            OriginHostScheme(httpHost, forwardedProtocol.getOrElse(urlScheme)),
+            None
+          )
+        )
+    }
+  }
 }

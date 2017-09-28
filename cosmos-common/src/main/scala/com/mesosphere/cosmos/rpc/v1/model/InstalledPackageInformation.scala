@@ -1,6 +1,6 @@
 package com.mesosphere.cosmos.rpc.v1.model
 
-import com.mesosphere.universe.v2.model.Resource
+import com.mesosphere.universe
 import io.circe.Decoder
 import io.circe.Encoder
 import io.circe.generic.semiauto.deriveDecoder
@@ -8,7 +8,7 @@ import io.circe.generic.semiauto.deriveEncoder
 
 case class InstalledPackageInformation(
   packageDefinition: InstalledPackageInformationPackageDetails,
-  resourceDefinition: Option[Resource] = None
+  resourceDefinition: Option[universe.v2.model.Resource] = None
 )
 
 object InstalledPackageInformation {

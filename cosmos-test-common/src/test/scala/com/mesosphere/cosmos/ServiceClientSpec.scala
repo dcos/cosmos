@@ -1,6 +1,7 @@
 package com.mesosphere.cosmos
 
 import _root_.io.circe.Json
+import com.mesosphere.cosmos.http.OriginHostScheme
 import com.mesosphere.cosmos.http.{Authorization, RequestSession}
 import com.mesosphere.cosmos.test.TestUtil
 import com.netaporter.uri.Uri
@@ -39,7 +40,10 @@ final class ServiceClientSpec extends FreeSpec with Inside {
 
         "header provided" - {
 
-          implicit val session = RequestSession(Some(Authorization("credentials")))
+          implicit val session = RequestSession(
+            Some(Authorization("credentials")),
+            OriginHostScheme("localhost", "http")
+          )
 
           "with baseRequestBuilder()" in {
             val requestBuilder = testClient.baseRequestBuilder(Uri.parse("/foo/bar/baz"))

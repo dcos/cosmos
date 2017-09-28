@@ -2,6 +2,7 @@ package com.mesosphere.cosmos.finch
 
 import com.mesosphere.cosmos.http.Authorization
 import com.mesosphere.cosmos.http.MediaType
+import com.mesosphere.cosmos.http.OriginHostScheme
 import com.mesosphere.cosmos.http.RequestSession
 import com.twitter.finagle.http.Fields
 import com.twitter.finagle.http.Status
@@ -47,12 +48,15 @@ final class EndpointHandlerSpec extends FreeSpec {
       "so that the business logic of the EndpointHandler can use it" - {
 
         "with value Some" in {
-          val result = callWithRequestSession(RequestSession(Some(Authorization("53cr37"))))
+          val result = callWithRequestSession(RequestSession(
+            Some(Authorization("53cr37")),
+            OriginHostScheme("localhost", "http"))
+          )
           val responseBody = extractBody[Option[String]](result)
           assertResult(Some("53cr37"))(responseBody)
         }
         "with value None" in {
-          val result = callWithRequestSession(RequestSession(None))
+          val result = callWithRequestSession(RequestSession(None, OriginHostScheme("localhost", "http")))
           val responseBody = extractBody[Option[String]](result)
           assertResult(None)(responseBody)
         }
@@ -165,7 +169,7 @@ object EndpointHandlerSpec {
 
   def buildEndpointContext[Req, Res](
     requestBody: Req,
-    session: RequestSession = RequestSession(None)
+    session: RequestSession = RequestSession(None, OriginHostScheme("localhost", "http"))
   )(implicit responseEncoder: MediaTypedEncoder[Res]): EndpointContext[Req, Res] = {
     EndpointContext(requestBody, session, responseEncoder)
   }
