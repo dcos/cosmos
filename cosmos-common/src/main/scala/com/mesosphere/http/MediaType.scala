@@ -1,10 +1,10 @@
 package com.mesosphere.http
 
-import com.twitter.util.Try
 import io.circe.Encoder
-
+import scala.util.Try
 
 case class MediaTypeSubType(value: String, suffix: Option[String] = None)
+
 object MediaTypeSubType {
   def parse(s: String): MediaTypeSubType = {
     s.split('+').toList match {

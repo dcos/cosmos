@@ -21,8 +21,6 @@ import com.mesosphere.cosmos.http.RequestSession
 import com.mesosphere.cosmos.rpc
 import com.mesosphere.http.CompoundMediaType
 import com.mesosphere.http.MediaType
-import com.mesosphere.http.MediaTypeParseError
-import com.mesosphere.http.MediaTypeParser
 import com.mesosphere.universe
 import com.mesosphere.universe.MediaTypes
 import com.mesosphere.universe.bijection.UniverseConversions._
@@ -37,7 +35,6 @@ import com.twitter.io.StreamIO
 import com.twitter.util.Future
 import com.twitter.util.Return
 import com.twitter.util.Throw
-import com.twitter.util.{Try => TwitterTry}
 import io.circe.Decoder
 import io.circe.DecodingFailure
 import io.circe.Json
@@ -382,16 +379,6 @@ object DefaultUniverseClient {
 
   val SupportedMediaTypes: List[MediaType] =
     List(MediaTypes.UniverseV4Repository, MediaTypes.UniverseV3Repository, MediaTypes.UniverseV2Repository)
-
-  def parseContentType(header: Option[String]): TwitterTry[MediaType] = {
-    TwitterTry(header.getOrElse(throw UnsupportedContentType(SupportedMediaTypes).exception))
-      .flatMap(MediaTypeParser.parse)
-      .handle {
-        case MediaTypeParseError(_, _) =>
-          throw UnsupportedContentType(SupportedMediaTypes).exception
-      }
-  }
-
 }
 
 object UniverseClient {

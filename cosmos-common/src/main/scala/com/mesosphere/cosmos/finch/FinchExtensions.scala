@@ -3,6 +3,7 @@ package com.mesosphere.cosmos.finch
 import com.mesosphere.http.CompoundMediaType
 import com.mesosphere.http.CompoundMediaTypeParser
 import com.mesosphere.http.MediaType
+import com.twitter.util.Try
 import io.circe.Json
 import io.finch.DecodeEntity
 import io.finch.Endpoint
@@ -17,11 +18,11 @@ object FinchExtensions {
     }
 
   implicit val decodeMediaType: DecodeEntity[MediaType] = {
-    DecodeEntity.instance(s => MediaType.parse(s))
+    DecodeEntity.instance(s => Try.fromScala(MediaType.parse(s)))
   }
 
   implicit val decodeCompoundMediaType: DecodeEntity[CompoundMediaType] = {
-    DecodeEntity.instance(s => CompoundMediaTypeParser.parse(s))
+    DecodeEntity.instance(s => Try.fromScala(CompoundMediaTypeParser.parse(s)))
   }
 
   def route[Req, Res](

@@ -1,10 +1,9 @@
 package com.mesosphere.http
 
 import com.mesosphere.Generators.Implicits._
-// TODO: Replace twitter's Try and Return
-import com.twitter.util.Return
 import org.scalatest.FreeSpec
 import org.scalatest.prop.PropertyChecks
+import scala.util.Success
 
 final class MediaTypeSpec extends FreeSpec with PropertyChecks {
 
@@ -16,12 +15,12 @@ final class MediaTypeSpec extends FreeSpec with PropertyChecks {
 
   "MediaType.parse(string) should" -  {
     "parse basic type" in  {
-      val Return(t) = MediaType.parse("text/html")
+      val Success(t) = MediaType.parse("text/html")
       assertResult("text/html")(t.show)
     }
 
     "parse with suffix" in  {
-      val Return(t) = MediaType.parse("""image/svg+xml""")
+      val Success(t) = MediaType.parse("""image/svg+xml""")
       assertResult("image")(t.`type`)
       assertResult("svg")(t.subType.value)
       assertResult(Some("xml"))(t.subType.suffix)
@@ -29,7 +28,7 @@ final class MediaTypeSpec extends FreeSpec with PropertyChecks {
     }
 
     "parse parameters" in  {
-      val Return(t) = MediaType.parse("""text/html; charset=utf-8; foo=bar""")
+      val Success(t) = MediaType.parse("""text/html; charset=utf-8; foo=bar""")
       assertResult("text")(t.`type`)
       assertResult("html")(t.subType.value)
       assertResult(Map(
@@ -39,12 +38,12 @@ final class MediaTypeSpec extends FreeSpec with PropertyChecks {
     }
 
     "lower-case type" in  {
-      val Return(t) = MediaType.parse("""IMAGE/SVG+XML""")
+      val Success(t) = MediaType.parse("""IMAGE/SVG+XML""")
       assertResult("""image/svg+xml""")(t.show)
     }
 
     "lower-case parameter names" in  {
-      val Return(t) = MediaType.parse("""text/html; Charset=utf-8""")
+      val Success(t) = MediaType.parse("""text/html; Charset=utf-8""")
       assertResult("text")(t.`type`)
       assertResult("html")(t.subType.value)
       assertResult(Map(
@@ -53,12 +52,12 @@ final class MediaTypeSpec extends FreeSpec with PropertyChecks {
     }
 
     "parse a vendor type" in {
-      val Return(t) = MediaType.parse("application/vnd.dcos.test+json; charset=utf-8; version=v1")
+      val Success(t) = MediaType.parse("application/vnd.dcos.test+json; charset=utf-8; version=v1")
       assertResult(testMediaType)(t)
     }
 
     "unquote parameter values" in  {
-      val Return(t) = MediaType.parse("""text/html; charset="utf-8"""")
+      val Success(t) = MediaType.parse("""text/html; charset="utf-8"""")
       assertResult("text")(t.`type`)
       assertResult("html")(t.subType.value)
       assertResult(Map(
@@ -83,7 +82,7 @@ final class MediaTypeSpec extends FreeSpec with PropertyChecks {
 
   "MediaType.show followed by MediaType.parse should be the identity function" in {
     forAll { (mediaType: MediaType) =>
-      assertResult(Return(mediaType))(MediaType.parse(mediaType.show))
+      assertResult(Success(mediaType))(MediaType.parse(mediaType.show))
     }
   }
 

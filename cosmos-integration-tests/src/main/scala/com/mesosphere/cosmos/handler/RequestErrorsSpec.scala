@@ -24,7 +24,7 @@ class RequestErrorsSpec extends FreeSpec {
         val accept = CompoundMediaTypeParser.parse(Seq(
           MediaTypes.V2DescribeResponse.show + ";q=0.1",
           MediaTypes.V3DescribeResponse.show + ";q=0.9"
-        ).mkString(",")).get()
+        ).mkString(",")).get
 
         val body = PackageRepositoryAddRequest(
           "bad",

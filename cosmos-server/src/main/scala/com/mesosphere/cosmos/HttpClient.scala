@@ -9,8 +9,6 @@ import com.twitter.finagle.http.Fields
 import com.twitter.finagle.http.filter.LogFormatter
 import com.twitter.finagle.stats.StatsReceiver
 import com.twitter.util.Future
-import com.twitter.util.Return
-import com.twitter.util.Throw
 import com.twitter.util.Time
 import java.io.IOException
 import java.io.InputStream
@@ -21,6 +19,8 @@ import java.util.TimeZone
 import java.util.zip.GZIPInputStream
 import org.apache.commons.lang.time.FastDateFormat
 import org.slf4j.Logger
+import scala.util.Failure
+import scala.util.Success
 
 object HttpClient {
 
@@ -84,8 +84,8 @@ object HttpClient {
         sr.scope("status").counter("200").incr()
         val contentEncoding = Option(conn.getHeaderField(Fields.ContentEncoding))
         MediaTypeParser.parse(conn.getHeaderField(Fields.ContentType)) match {
-          case Return(contentType) => (contentType, contentEncoding)
-          case Throw(error) => {
+          case Success(contentType) => (contentType, contentEncoding)
+          case Failure(error) => {
             logger.error(s"Error while parsing the Content-Type " +
               s"${conn.getHeaderField(Fields.ContentType)} from URI $uri",
               error

@@ -1,17 +1,22 @@
 package com.mesosphere.http
 
-// TODO: Remove twitter's Return and Try
-import com.twitter.util.Return
-import com.twitter.util.Try
+import cats.instances.list._
+import cats.instances.try_._
+import cats.syntax.traverse._
+import scala.util.Success
+import scala.util.Try
 
 object CompoundMediaTypeParser {
 
   def parse(s: String): Try[CompoundMediaType] = {
     s.split(',').toList.filterNot(_.trim.isEmpty) match {
-      case Nil => Return(new CompoundMediaType(Set.empty))
+      case Nil => Success(new CompoundMediaType(Set.empty))
       case mts =>
-        Try.collect(mts.map(MediaType.parse))
-          .map { mediaTypes => CompoundMediaType(backfillParams(mediaTypes.toList)._2.toSet) }
+        mts.map(MediaType.parse)
+          .sequence
+          .map { mediaTypes =>
+            CompoundMediaType(backfillParams(mediaTypes)._2.toSet)
+          }
     }
   }
 

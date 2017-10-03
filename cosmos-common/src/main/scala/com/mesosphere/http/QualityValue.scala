@@ -1,7 +1,8 @@
 package com.mesosphere.http
 
-// TODO: Replace twitter's Try and Return
-import com.twitter.util.{Return, Try}
+import scala.util.Failure
+import scala.util.Success
+import scala.util.Try
 
 /**
   * Case class that represents the QualityValue defined in the HTTP RFC
@@ -20,15 +21,15 @@ object QualityValue {
   def parse(value: String): Try[QualityValue] = {
     Try { validateString(value) }
       .map { _.toDouble}
-      .handle {
-        case _: NumberFormatException => throw err(value)
+      .recoverWith {
+        case _: NumberFormatException => Failure(err(value))
       }
       .map(QualityValue.apply)
   }
 
   def getFromMediaType(mt: MediaType): Try[Option[QualityValue]] = {
     mt.parameters.get("q") match {
-      case None => Return(None)
+      case None => Success(None)
       case Some(s) => parse(s).map(Some(_))
     }
   }
@@ -59,6 +60,8 @@ object QualityValue {
   }
 
   private[this] def err(value: String): IllegalArgumentException = {
-    new IllegalArgumentException(s"Unexpected q value '$value'. Expected 0.0 <= q <= 1.0 with no more than 3 decimal places")
+    new IllegalArgumentException(
+      s"Unexpected q value '$value'. Expected 0.0 <= q <= 1.0 with no more than 3 decimal places"
+    )
   }
 }
