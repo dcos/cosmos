@@ -1,8 +1,7 @@
 package com.mesosphere.cosmos.finch
 
 import cats.data.NonEmptyList
-import com.mesosphere.cosmos.http.MediaType
-import com.mesosphere.cosmos.http.MediaTypeOps
+import com.mesosphere.http.MediaType
 import io.circe.Decoder
 import io.circe.HCursor
 
@@ -13,7 +12,7 @@ trait MediaTypedDecoder[A] {
   val mediaTypes: NonEmptyList[MediaType]
 
   def apply(cursor: HCursor, mediaType: MediaType): Decoder.Result[A] = {
-    if (mediaTypes.exists(current => MediaTypeOps.compatible(current, mediaType))) {
+    if (mediaTypes.exists(current => MediaType.compatible(current, mediaType))) {
       decoder(cursor)
     } else {
       throw new IllegalArgumentException(

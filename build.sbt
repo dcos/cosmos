@@ -1,16 +1,7 @@
 import com.mesosphere.cosmos.CosmosBuild._
 import com.mesosphere.cosmos.Deps
 
-lazy val cosmos = project.in(file("."))
-  .settings(sharedSettings)
-  .aggregate(
-    common,
-    integrationTests,
-    server,
-    testCommon
-  )
-
-lazy val common = project.in(file("cosmos-common"))
+val common = project.in(file("cosmos-common"))
   .settings(sharedSettings)
   .settings(
     name := baseDirectory.value.name,
@@ -31,7 +22,7 @@ lazy val common = project.in(file("cosmos-common"))
       Deps.twitterUtil
   )
 
-lazy val server = project.in(file("cosmos-server"))
+val server = project.in(file("cosmos-server"))
   .settings(sharedSettings)
   .settings(filterSettings)
   .settings(BuildPlugin.allOneJarSettings("com.mesosphere.cosmos.Cosmos"))
@@ -52,7 +43,7 @@ lazy val server = project.in(file("cosmos-server"))
     common
   )
 
-lazy val testCommon = project.in(file("cosmos-test-common"))
+val testCommon = project.in(file("cosmos-test-common"))
   .settings(sharedSettings)
   .settings(
     name := baseDirectory.value.name,
@@ -69,7 +60,7 @@ lazy val testCommon = project.in(file("cosmos-test-common"))
  * Integration test code. Sources are located in the "main" subdirectory so the JAR can be
  * published to Maven repositories with a standard POM.
  */
-lazy val integrationTests = project.in(file("cosmos-integration-tests"))
+val integrationTests = project.in(file("cosmos-integration-tests"))
   .settings(sharedSettings)
   .settings(
     name := baseDirectory.value.name,
@@ -83,5 +74,14 @@ lazy val integrationTests = project.in(file("cosmos-integration-tests"))
     )
   )
   .dependsOn(
+    testCommon
+  )
+
+val cosmos = project.in(file("."))
+  .settings(sharedSettings)
+  .aggregate(
+    common,
+    integrationTests,
+    server,
     testCommon
   )

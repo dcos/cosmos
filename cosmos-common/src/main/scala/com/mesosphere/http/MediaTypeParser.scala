@@ -1,11 +1,11 @@
-package com.mesosphere.cosmos.http
+package com.mesosphere.http
 
 import com.google.common.collect.Multimaps
 import com.google.common.net.{MediaType => GMediaType}
+// TODO: replace twitter's Try
 import com.twitter.util.Try
-
-import scala.collection.JavaConverters._
 import java.util
+import scala.collection.JavaConverters._
 
 case class MediaTypeParseError(msg: String, cause: Throwable) extends RuntimeException(msg, cause)
 

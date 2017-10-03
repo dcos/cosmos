@@ -1,6 +1,6 @@
 package com.mesosphere.cosmos
 
-import com.mesosphere.cosmos.http.MediaType
+import com.mesosphere.http.MediaType
 import com.twitter.finagle.http.Fields
 import io.finch.Error
 import io.finch.items.HeaderItem

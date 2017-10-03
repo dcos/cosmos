@@ -1,7 +1,8 @@
-package com.mesosphere.cosmos.http
+package com.mesosphere.http
 
 import org.scalatest.FreeSpec
 
+// TODO: Replace twitter's Return and Trow
 import com.twitter.util.{Return, Throw}
 
 class QualityValueSpec extends FreeSpec {

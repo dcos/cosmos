@@ -5,9 +5,9 @@ import _root_.io.circe.Json
 import com.mesosphere.cosmos.circe.Decoders.decode
 import com.mesosphere.cosmos.error.GenericHttpError
 import com.mesosphere.cosmos.error.UnsupportedContentType
-import com.mesosphere.cosmos.http.MediaTypeOps
 import com.mesosphere.cosmos.http.MediaTypes
 import com.mesosphere.cosmos.http.RequestSession
+import com.mesosphere.http.MediaType
 import com.netaporter.uri.Uri
 import com.twitter.finagle.http.Fields
 import com.twitter.finagle.http.Request
@@ -70,9 +70,12 @@ abstract class ServiceClient(baseUri: Uri) {
   protected def decodeJsonTo[A: ClassTag](response: Response)(implicit d: Decoder[A]): A = {
     response.headerMap.get(Fields.ContentType) match {
       case Some(ct) =>
-        http.MediaType.parse(ct).map { mediaType =>
+        MediaType.parse(ct).map { mediaType =>
           // Marathon and Mesos don't specify 'charset=utf-8' on it's json, so we are lax in our comparison here.
-          MediaTypeOps.compatibleIgnoringParameters(MediaTypes.applicationJson, mediaType) match {
+          MediaType.compatibleIgnoringParameters(
+            MediaTypes.applicationJson,
+            mediaType
+          ) match {
             case false =>
               throw UnsupportedContentType.forMediaType(
                 List(MediaTypes.applicationJson),
@@ -96,7 +99,11 @@ abstract class ServiceClient(baseUri: Uri) {
       .map(decodeJsonTo[A])
   }
 
-  private[cosmos] final def baseRequestBuilder(uri: Uri)(implicit session: RequestSession): RequestBuilder[Yes, Nothing] = {
+  private[cosmos] final def baseRequestBuilder(
+    uri: Uri
+  )(
+    implicit session: RequestSession
+  ): RequestBuilder[Yes, Nothing] = {
     val builder = RequestBuilder()
       .url(s"$cleanedBaseUri${uri.toString}")
       .setHeader(Fields.UserAgent, s"cosmos/$cosmosVersion")

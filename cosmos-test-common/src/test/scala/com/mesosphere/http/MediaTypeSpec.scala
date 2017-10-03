@@ -1,6 +1,7 @@
-package com.mesosphere.cosmos.http
+package com.mesosphere.http
 
 import com.mesosphere.Generators.Implicits._
+// TODO: Replace twitter's Try and Return
 import com.twitter.util.Return
 import org.scalatest.FreeSpec
 import org.scalatest.prop.PropertyChecks

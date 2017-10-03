@@ -1,5 +1,6 @@
-package com.mesosphere.cosmos.http
+package com.mesosphere.http
 
+// TODO: Replace twitter's Try and Return
 import com.twitter.util.{Return, Try}
 
 /**

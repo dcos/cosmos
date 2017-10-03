@@ -1,6 +1,5 @@
-package com.mesosphere.cosmos.http
+package com.mesosphere.http
 
-import com.mesosphere.cosmos.http.CompoundMediaTypeOps.compoundMediaTypeToCompoundMediaTypeOps
 import com.mesosphere.universe.{MediaTypes => UMediaTypes}
 import com.twitter.util.Return
 import org.scalatest.FreeSpec
@@ -50,7 +49,7 @@ class CompoundMediaTypeSpec extends FreeSpec {
   }
 
 
-  "CompoundMediaTypeOps.calculateIntersectionAndOrder should be able to" - {
+  "CompoundMediaType.calculateIntersectionAndOrder should be able to" - {
     "return a prioritized intersection" in {
       val expected = List(v2, v1)
 
@@ -61,7 +60,7 @@ class CompoundMediaTypeSpec extends FreeSpec {
 
       val accepted = Set(v1, v2)
 
-      val actual = CompoundMediaTypeOps.calculateIntersectionAndOrder(cmt, accepted)
+      val actual = CompoundMediaType.calculateIntersectionAndOrder(cmt, accepted)
 
       assertResult(expected)(actual)
     }
@@ -78,7 +77,7 @@ class CompoundMediaTypeSpec extends FreeSpec {
         UMediaTypes.applicationZip
       )
 
-      val actual = CompoundMediaTypeOps.calculateIntersectionAndOrder(cmt, accepted)
+      val actual = CompoundMediaType.calculateIntersectionAndOrder(cmt, accepted)
 
       assertResult(expected)(actual)
     }
@@ -98,14 +97,14 @@ class CompoundMediaTypeSpec extends FreeSpec {
         v2
       )
 
-      val actual = CompoundMediaTypeOps.calculateIntersectionAndOrder(cmt, accepted)
+      val actual = CompoundMediaType.calculateIntersectionAndOrder(cmt, accepted)
 
       assertResult(expected)(actual)
 
     }
   }
 
-  "CompoundMediaTypeOps.getMostAppropriateMediaType should be able to" - {
+  "CompoundMediaType.getMostAppropriateMediaType should be able to" - {
     "return the highest quality value when multiple choices" in {
       val expected = Some(
         v2

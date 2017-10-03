@@ -1,5 +1,6 @@
 package com.mesosphere.cosmos.http
 
+import com.mesosphere.http.MediaType
 import com.mesosphere.util.urlSchemeHeader
 import com.twitter.finagle.http.Fields
 import com.twitter.finagle.http.Method

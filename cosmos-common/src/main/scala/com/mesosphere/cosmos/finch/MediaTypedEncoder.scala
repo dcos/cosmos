@@ -1,7 +1,7 @@
 package com.mesosphere.cosmos.finch
 
 import cats.data.NonEmptyList
-import com.mesosphere.cosmos.http.MediaType
+import com.mesosphere.http.MediaType
 import io.circe.Encoder
 import io.circe.Json
 

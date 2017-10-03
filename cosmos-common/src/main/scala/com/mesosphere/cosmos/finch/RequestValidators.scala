@@ -2,16 +2,16 @@ package com.mesosphere.cosmos.finch
 
 import com.mesosphere.cosmos.finch.FinchExtensions._
 import com.mesosphere.cosmos.http.Authorization
-import com.mesosphere.cosmos.http.CompoundMediaType
-import com.mesosphere.cosmos.http.MediaType
 import com.mesosphere.cosmos.http.OriginHostScheme
 import com.mesosphere.cosmos.http.RequestSession
+import com.mesosphere.http.CompoundMediaType
+import com.mesosphere.http.MediaType
+import com.mesosphere.util._
+import com.netaporter.uri.Uri
 import com.twitter.finagle.http.Fields
 import io.finch._
 import shapeless.::
 import shapeless.HNil
-import com.mesosphere.util._
-import com.netaporter.uri.Uri
 
 object RequestValidators {
 

@@ -1,6 +1,7 @@
 package com.mesosphere.universe
 
-import com.mesosphere.cosmos.http.{MediaType, MediaTypeSubType}
+import com.mesosphere.http.MediaType
+import com.mesosphere.http.MediaTypeSubType
 
 object MediaTypes {
 

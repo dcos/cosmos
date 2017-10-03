@@ -1,9 +1,9 @@
 package com.mesosphere.cosmos.finch
 
 import com.mesosphere.cosmos.http.Authorization
-import com.mesosphere.cosmos.http.MediaType
 import com.mesosphere.cosmos.http.OriginHostScheme
 import com.mesosphere.cosmos.http.RequestSession
+import com.mesosphere.http.MediaType
 import com.twitter.finagle.http.Fields
 import com.twitter.finagle.http.Status
 import com.twitter.util.Await
@@ -15,7 +15,6 @@ import io.circe.syntax._
 import io.finch._
 import org.scalatest.Assertion
 import org.scalatest.FreeSpec
-import scala.util.Right
 
 final class EndpointHandlerSpec extends FreeSpec {
 

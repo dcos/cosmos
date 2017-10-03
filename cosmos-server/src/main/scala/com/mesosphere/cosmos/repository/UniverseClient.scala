@@ -17,13 +17,12 @@ import com.mesosphere.cosmos.error.RepositoryUriSyntax
 import com.mesosphere.cosmos.error.UniverseClientHttpError
 import com.mesosphere.cosmos.error.UnsupportedContentType
 import com.mesosphere.cosmos.error.UnsupportedRepositoryVersion
-import com.mesosphere.cosmos.http.CompoundMediaType
-import com.mesosphere.cosmos.http.MediaType
-import com.mesosphere.cosmos.http.MediaTypeOps._
-import com.mesosphere.cosmos.http.MediaTypeParseError
-import com.mesosphere.cosmos.http.MediaTypeParser
 import com.mesosphere.cosmos.http.RequestSession
 import com.mesosphere.cosmos.rpc
+import com.mesosphere.http.CompoundMediaType
+import com.mesosphere.http.MediaType
+import com.mesosphere.http.MediaTypeParseError
+import com.mesosphere.http.MediaTypeParser
 import com.mesosphere.universe
 import com.mesosphere.universe.MediaTypes
 import com.mesosphere.universe.bijection.UniverseConversions._

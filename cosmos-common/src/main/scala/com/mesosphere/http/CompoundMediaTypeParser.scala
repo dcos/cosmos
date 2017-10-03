@@ -1,6 +1,8 @@
-package com.mesosphere.cosmos.http
+package com.mesosphere.http
 
-import com.twitter.util.{Return, Try}
+// TODO: Remove twitter's Return and Try
+import com.twitter.util.Return
+import com.twitter.util.Try
 
 object CompoundMediaTypeParser {
 
@@ -29,7 +31,9 @@ object CompoundMediaTypeParser {
     * @see https://tools.ietf.org/html/rfc7231#section-5.3.2 for full details on the spec for the Accept header
     * and content negotiation.
     */
-  private[this] def backfillParams(mts: List[MediaType]): (Map[String, String], List[MediaType]) = {
+  private[this] def backfillParams(
+    mts: List[MediaType]
+  ): (Map[String, String], List[MediaType]) = {
     mts match {
       case Nil => (Map.empty, Nil)
       case x :: xs =>

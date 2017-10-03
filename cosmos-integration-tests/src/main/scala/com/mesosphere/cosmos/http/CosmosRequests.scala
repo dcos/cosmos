@@ -1,6 +1,7 @@
 package com.mesosphere.cosmos.http
 
 import com.mesosphere.cosmos.rpc
+import com.mesosphere.http.MediaType
 import com.netaporter.uri.Uri
 
 object CosmosRequests {

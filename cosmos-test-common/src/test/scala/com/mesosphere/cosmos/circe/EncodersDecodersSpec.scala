@@ -1,8 +1,8 @@
 package com.mesosphere.cosmos.circe
 
 import com.google.common.io.CharStreams
-import com.mesosphere.cosmos.http.MediaType
-import com.mesosphere.cosmos.http.MediaTypeSubType
+import com.mesosphere.http.MediaType
+import com.mesosphere.http.MediaTypeSubType
 import com.mesosphere.universe
 import com.mesosphere.universe.test.TestingPackages
 import io.circe.DecodingFailure

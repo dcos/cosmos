@@ -5,7 +5,7 @@ import com.mesosphere.cosmos.HttpClient.ResponseData
 import com.mesosphere.cosmos.error.CosmosException
 import com.mesosphere.cosmos.error.GenericHttpError
 import com.mesosphere.cosmos.error.ResourceTooLarge
-import com.mesosphere.cosmos.http.MediaType
+import com.mesosphere.http.MediaType
 import com.netaporter.uri.Uri
 import com.twitter.conversions.storage._
 import com.twitter.finagle.http.Response
