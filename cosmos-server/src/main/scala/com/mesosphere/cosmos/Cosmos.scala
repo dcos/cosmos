@@ -1,8 +1,9 @@
 package com.mesosphere.cosmos
 
 import _root_.io.circe.Json
+import _root_.io.finch.ToResponse
 import _root_.io.finch._
-import _root_.io.finch.circe.dropNullKeys._
+import _root_.io.finch.circe.dropNullValues._
 import com.mesosphere.cosmos.app.Logging
 import com.mesosphere.cosmos.circe.Encoders._
 import com.mesosphere.cosmos.error.CosmosException
@@ -51,7 +52,6 @@ import com.twitter.server.Lifecycle
 import com.twitter.server.Stats
 import com.twitter.util.Await
 import com.twitter.util.Try
-import io.finch.internal.ToResponse
 import org.apache.curator.framework.CuratorFramework
 import org.slf4j.Logger
 import shapeless.:+:

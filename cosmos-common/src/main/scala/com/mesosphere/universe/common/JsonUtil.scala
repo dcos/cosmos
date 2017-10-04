@@ -5,7 +5,7 @@ import io.circe.JsonObject
 import io.circe.Printer
 
 object JsonUtil {
-  val dropNullKeysPrinter: Printer = Printer.noSpaces.copy(dropNullKeys = true)
+  val dropNullKeysPrinter: Printer = Printer.noSpaces.copy(dropNullValues = true)
 
   /** Merges two JSON objects into one JSON object.
    *

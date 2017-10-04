@@ -36,7 +36,7 @@ final class SelectedPackageSpec extends FreeSpec with MockitoSugar {
         }
 
         "drop null" in {
-          assertEncodeDecode(makeSearchResult(selected = None), dropNullKeys = true)
+          assertEncodeDecode(makeSearchResult(selected = None), dropNullValues = true)
         }
       }
     }
@@ -56,17 +56,17 @@ final class SelectedPackageSpec extends FreeSpec with MockitoSugar {
         }
 
         "drop null" in {
-          assertEncodeDecode(makePackageDetails(makeSearchResult(selected = None)), dropNullKeys = true)
+          assertEncodeDecode(makePackageDetails(makeSearchResult(selected = None)), dropNullValues = true)
         }
       }
     }
 
     def assertEncodeDecode[A](
       data: A,
-      dropNullKeys: Boolean = false
+      dropNullValues: Boolean = false
     )(implicit d: Decoder[A], e: Encoder[A]): Assertion = {
       assertResult(Right(data)) {
-        decode[A](Printer.noSpaces.copy(dropNullKeys = dropNullKeys).pretty(data.asJson))
+        decode[A](Printer.noSpaces.copy(dropNullValues = dropNullValues).pretty(data.asJson))
       }
     }
   }

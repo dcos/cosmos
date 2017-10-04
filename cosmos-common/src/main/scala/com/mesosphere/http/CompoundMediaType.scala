@@ -1,8 +1,14 @@
 package com.mesosphere.http
 
+import scala.util.Try
+
 case class CompoundMediaType(mediaTypes: Set[MediaType]) {
   val show: String = {
     mediaTypes.map(_.show).mkString(",")
+  }
+
+  def combine(that: CompoundMediaType): CompoundMediaType = {
+    CompoundMediaType(mediaTypes ++ that.mediaTypes)
   }
 }
 
@@ -15,6 +21,10 @@ object CompoundMediaType {
 
   def apply(mediaTypes: MediaType*): CompoundMediaType = {
     new CompoundMediaType(mediaTypes.toSet)
+  }
+
+  def parse(s: String): Try[CompoundMediaType] = {
+    CompoundMediaTypeParser.parse(s)
   }
 
   implicit final class CompoundMediaTypeOps(val cmt: CompoundMediaType) extends AnyVal {
