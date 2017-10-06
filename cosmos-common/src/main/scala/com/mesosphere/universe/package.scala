@@ -5,21 +5,38 @@ import com.netaporter.uri.Uri
 
 package object universe {
 
-  def rewriteAssets(assets: universe.v3.model.Assets)(
-    implicit originInfo : OriginHostScheme
-  ) : universe.v3.model.Assets = {
+  def rewriteAssets(
+    rewriteDocker: Boolean
+  )(
+    assets: universe.v3.model.Assets
+  )(
+    implicit originInfo: OriginHostScheme
+  ): universe.v3.model.Assets = {
+    /*
+    val newContainer = for {
+      container <- assets.container
+      (key, value) <- container.docker
+    } yield {
+      (key, rewriteWithProxyHost(value))
+    }
+    */
+    !rewriteDocker // Make compiler happy
+
     assets.copy(
       uris = assets.uris.map(
         _.map { case (key, value) =>
           (key, rewriteWithProxyURL(value))
         }
       )
+
     )
   }
 
-  def rewriteCli(cli: universe.v3.model.Cli)(
-    implicit originInfo : OriginHostScheme
-  ) : universe.v3.model.Cli = {
+  def rewriteCli(
+    cli: universe.v3.model.Cli
+  )(
+    implicit originInfo: OriginHostScheme
+  ): universe.v3.model.Cli = {
 
     cli.binaries match {
       case Some(platforms) =>
@@ -32,8 +49,10 @@ package object universe {
     }
   }
 
-  def rewriteArchitecture(architecture: universe.v3.model.Architectures)(
-    implicit originInfo : OriginHostScheme
+  def rewriteArchitecture(
+    architecture: universe.v3.model.Architectures
+  )(
+    implicit originInfo: OriginHostScheme
   ): universe.v3.model.Architectures = {
     architecture.copy(
       `x86-64` = architecture.`x86-64`.copy(
@@ -42,9 +61,11 @@ package object universe {
     )
   }
 
-  def rewriteImages(images: universe.v3.model.Images)(
-    implicit originInfo : OriginHostScheme
-  ) : universe.v3.model.Images = {
+  def rewriteImages(
+    images: universe.v3.model.Images
+  )(
+    implicit originInfo: OriginHostScheme
+  ): universe.v3.model.Images = {
     universe.v3.model.Images(
       iconSmall = images.iconSmall.map(rewriteWithProxyURL),
       iconMedium = images.iconMedium.map(rewriteWithProxyURL),
@@ -53,10 +74,23 @@ package object universe {
     )
   }
 
-  def rewriteWithProxyURL(url : String)(
-    implicit origin : OriginHostScheme
-  ) : String = {
-    Uri.parse(s"${origin.urlScheme}://${origin.host}" +
-      s"/package/resource?url=${Uri.parse(url).toString}").toString
+  def rewriteUrlWithProxyInfo(
+    url: Uri
+  )(
+    implicit origin: OriginHostScheme
+  ): Uri = {
+    // TODO: This can throw!!
+    Uri.parse(
+      s"${origin.urlScheme}://${origin.host}/package/resource?url=$url"
+    )
+  }
+
+  def rewriteDockerIdWithProxyInfo(
+    dockerId: DockerId
+  )(
+    implicit origin: OriginHostScheme
+  ): DockerId = {
+    dockerId.copy(
+      hostAndPort = Some(s"${origin.host}
   }
 }

@@ -13,7 +13,7 @@ import com.mesosphere.cosmos.httpInterface
 import com.mesosphere.cosmos.rpc.MediaTypes._
 import com.mesosphere.http.CompoundMediaTypeParser
 import com.mesosphere.http.MediaType
-import com.mesosphere.util.urlSchemeHeader
+import com.mesosphere.util.UrlSchemeHeader
 import com.twitter.finagle.http.Fields
 import com.twitter.finagle.http.Fields
 import com.twitter.io.Buf
@@ -144,7 +144,7 @@ final class RequestValidatorsSpec extends FreeSpec with Matchers with PropertyCh
           Fields.Accept -> HttpRequest.toHeader(acceptHeader),
           Fields.ContentType -> actualContentTypeHeader,
           Fields.Host -> Some(httpInterface.toString()),
-          urlSchemeHeader -> Some("http")
+          UrlSchemeHeader -> Some("http")
         )
         produces = DispatchingMediaTypedEncoder[Json](acceptHeader)
         validator = RequestValidators.standard(accepts, produces)
@@ -389,7 +389,7 @@ object RequestValidatorsSpec {
           Fields.Accept -> accept,
           Fields.Authorization -> authorization,
           Fields.Host -> Some(httpInterface.toString()),
-          urlSchemeHeader -> Some("http")
+          UrlSchemeHeader -> Some("http")
         )
       HttpRequest(RawRpcPath("/what/ever"), headers, Get())
     }
@@ -415,7 +415,7 @@ object RequestValidatorsSpec {
         Fields.Accept -> accept,
         Fields.Authorization -> authorization,
         Fields.Host -> Some(httpInterface.toString()),
-        urlSchemeHeader -> Some("http"),
+        UrlSchemeHeader -> Some("http"),
         Fields.ContentType -> HttpRequest.toHeader(TestingMediaTypes.applicationJson)
       )
       HttpRequest(RawRpcPath("/what/ever"), headers, Post(Buf.Utf8(Json.Null.noSpaces)))

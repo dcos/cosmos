@@ -42,7 +42,7 @@ private[cosmos] final class ServiceDescribeHandler(
     session: RequestSession
   ): Future[universe.v4.model.PackageDefinition] = {
     app.packageDefinition
-      .map(pkg => Future.value(pkg.rewrite(session.originInfo)))
+      .map(pkg => Future.value(pkg.rewrite(false)(session.originInfo)))
       .getOrElse {
         val (name, version) =
           app.packageName.flatMap(name => app.packageVersion.map(name -> _))

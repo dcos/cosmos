@@ -63,7 +63,7 @@ private[cosmos] final class ListHandler(
   ): Option[rpc.v1.model.InstalledPackageInformation] = {
     app.packageDefinition
       .map(
-        _.rewrite(session.originInfo)
+        _.rewrite(false)(session.originInfo)
          .as[rpc.v1.model.InstalledPackageInformation]
       ).orElse(
         app.packageMetadata.as[Option[rpc.v1.model.InstalledPackageInformation]]

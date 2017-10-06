@@ -273,7 +273,7 @@ object PackageCollection {
       pkg.framework.getOrElse(false),
       pkg.tags,
       pkg.selected,
-      pkg.rewrite.images
+      pkg.rewrite(false).images
     )
   }
 

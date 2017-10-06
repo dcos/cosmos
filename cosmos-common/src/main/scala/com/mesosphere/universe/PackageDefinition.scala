@@ -353,34 +353,43 @@ package v4.model {
 
       // -------- Utility methods to rewrite the resource urls for proxy endpoint ------
       def rewrite(
+        rewriteDocker: Boolean
+      )(
         implicit originInfo : OriginHostScheme
       ): universe.v4.model.PackageDefinition = {
         pkgDef match {
           case v2: universe.v3.model.V2Package => v2.resource match {
             case Some(r) => v2.copy(
               resource = Some(
-                universe.v3.model.V2Resource(r.assets.map(rewriteAssets), r.images.map(rewriteImages))
+                universe.v3.model.V2Resource(
+                  r.assets.map(rewriteAssets(rewriteDocker)),
+                  r.images.map(rewriteImages)
+                )
               )
             )
             case None => v2
           }
           case v3: universe.v3.model.V3Package => v3.resource match {
             case Some(r) => v3.copy(
-              resource = Some(universe.v3.model.V3Resource(
-                r.assets.map(rewriteAssets),
-                r.images.map(rewriteImages),
-                r.cli.map(rewriteCli)
-              ))
+              resource = Some(
+                universe.v3.model.V3Resource(
+                  r.assets.map(rewriteAssets(rewriteDocker)),
+                  r.images.map(rewriteImages),
+                  r.cli.map(rewriteCli)
+                )
+              )
             )
             case None => v3
           }
           case v4: universe.v4.model.V4Package => v4.resource match {
             case Some(r) => v4.copy(
-              resource = Some(universe.v3.model.V3Resource(
-                r.assets.map(rewriteAssets),
-                r.images.map(rewriteImages),
-                r.cli.map(rewriteCli)
-              ))
+              resource = Some(
+                universe.v3.model.V3Resource(
+                  r.assets.map(rewriteAssets(rewriteDocker)),
+                  r.images.map(rewriteImages),
+                  r.cli.map(rewriteCli)
+                )
+              )
             )
             case None => v4
           }

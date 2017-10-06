@@ -1,7 +1,7 @@
 package com.mesosphere.cosmos.http
 
 import com.mesosphere.http.MediaType
-import com.mesosphere.util.urlSchemeHeader
+import com.mesosphere.util.UrlSchemeHeader
 import com.twitter.finagle.http.Fields
 import com.twitter.finagle.http.Method
 import com.twitter.finagle.http.Request
@@ -66,7 +66,7 @@ object HttpRequest {
       Fields.Accept -> toHeader(accept),
       Fields.ContentType -> toHeader(contentType),
       Fields.Host -> Some(host),
-      urlSchemeHeader -> Some(urlScheme)
+      UrlSchemeHeader -> Some(urlScheme)
     )
     HttpRequest(path, headers, Post(body))
   }

@@ -44,7 +44,7 @@ private[cosmos] final class PackageInstallHandler(
                   packageVersion = pkg.version,
                   appId = Some(runnerResponse.id),
                   postInstallNotes = pkg.postInstallNotes,
-                  cli = pkg.rewrite(session.originInfo).cli
+                  cli = pkg.rewrite(false)(session.originInfo).cli
                 )
               }
               .handle {
@@ -58,7 +58,7 @@ private[cosmos] final class PackageInstallHandler(
                 packageVersion = pkg.version,
                 appId = None,
                 postInstallNotes = pkg.postInstallNotes,
-                cli = pkg.rewrite(session.originInfo).cli
+                cli = pkg.rewrite(false)(session.originInfo).cli
               )
             }
         }

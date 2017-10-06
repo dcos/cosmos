@@ -34,6 +34,7 @@ import com.mesosphere.cosmos.rpc.MediaTypes
 import com.mesosphere.cosmos.rpc.v2.circe.MediaTypedEncoders._
 import com.mesosphere.cosmos.service.ServiceUninstaller
 import com.mesosphere.universe
+import com.mesosphere.util.UrlSchemeHeader
 import com.netaporter.uri.Uri
 import com.twitter.app.App
 import com.twitter.finagle.Http
@@ -57,7 +58,6 @@ import org.slf4j.Logger
 import shapeless.:+:
 import shapeless.CNil
 import shapeless.HNil
-import com.mesosphere.util._
 
 trait CosmosApp
 extends App
@@ -161,11 +161,11 @@ with Logging {
 
     val service = LoggingFilter.andThen(buildService(allEndpoints))
     val maybeHttpServer = startServer(service.map { request: Request =>
-      request.headerMap.add(urlSchemeHeader, "http")
+      request.headerMap.add(UrlSchemeHeader, "http")
       request
     })
     val maybeHttpsServer = startTlsServer(service.map { request: Request =>
-      request.headerMap.add(urlSchemeHeader, "https")
+      request.headerMap.add(UrlSchemeHeader, "https")
       request
     })
 
