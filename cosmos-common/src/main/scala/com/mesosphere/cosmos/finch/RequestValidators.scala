@@ -30,7 +30,10 @@ object RequestValidators {
         (),
         RequestSession(
           authorization,
-          OriginHostScheme(httpHost, forwardedProtocol.getOrElse(urlScheme))
+          OriginHostScheme(
+            httpHost,
+            parseScheme(forwardedProtocol.getOrElse(urlScheme))
+          )
         ),
         responseEncoder
       )
@@ -58,7 +61,10 @@ object RequestValidators {
         contentType :: requestBody :: HNil =>
         val session = RequestSession(
           authorization,
-          OriginHostScheme(httpHost, forwardedProtocol.getOrElse(urlScheme)),
+          OriginHostScheme(
+            httpHost,
+            parseScheme(forwardedProtocol.getOrElse(urlScheme))
+          ),
           Some(contentType)
         )
         EndpointContext(requestBody, session, responseEncoder)
@@ -89,15 +95,23 @@ object RequestValidators {
       headerOption(ForwardedProtoHeader)
 
     validators.map {
-      case queryParam :: authorization :: httpHost :: urlScheme :: forwardedProtocol :: HNil =>
+      case queryParam :: authorization :: httpHost :: urlScheme ::
+           forwardedProtocol :: HNil =>
         (
           queryParam,
           RequestSession(
             authorization,
-            OriginHostScheme(httpHost, forwardedProtocol.getOrElse(urlScheme)),
+            OriginHostScheme(
+              httpHost,
+              parseScheme(forwardedProtocol.getOrElse(urlScheme))
+            ),
             None
           )
         )
     }
+  }
+
+  private def parseScheme(value: String): OriginHostScheme.Scheme = {
+    OriginHostScheme.Scheme(value).getOrElse(throw incompatibleScheme(value))
   }
 }

@@ -8,7 +8,20 @@ final case class DockerId(
   hostAndPort: Option[String],
   name: String,
   tagOrDigest: Either[String, Digest]
-)
+) {
+  def show: String = {
+    val hostPart = hostAndPort.map { value =>
+      s"$value/"
+    }.getOrElse("")
+
+    val manifestPart = tagOrDigest.fold(
+      ":" + _,
+      "@" + _.toString
+    )
+
+    s"$hostPart$name$manifestPart"
+  }
+}
 
 final object DockerId {
   def parse(value: String): Option[DockerId] = {
@@ -26,7 +39,7 @@ final object DockerId {
       val host = CharIn('a' to 'z', '0' to '9', ".").rep(1)
       val port = (":" ~ CharIn('0' to '9').rep(1))
 
-      (host ~ port ~ &("/")).!.?
+      ((host ~ port).! ~ "/").?
     }
 
     val repo = CharIn('a' to 'z', '0' to '9', "/").rep(1).!
@@ -40,7 +53,8 @@ final object DockerId {
 
     P (
       (hostAndPort ~ repo ~ tagOrDigest).map {
-        case (hostAndPort, name, tagOrDigest) => DockerId(hostAndPort, name, tagOrDigest)
+        case (hostAndPort, name, tagOrDigest) =>
+          DockerId(hostAndPort, name, tagOrDigest)
       }
     )
   }

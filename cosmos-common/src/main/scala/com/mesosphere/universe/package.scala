@@ -1,7 +1,11 @@
 package com.mesosphere
 
 import com.mesosphere.cosmos.http.OriginHostScheme
+import com.mesosphere.http.DockerId
 import com.netaporter.uri.Uri
+import scala.util.Failure
+import scala.util.Success
+import scala.util.Try
 
 package object universe {
 
@@ -12,23 +16,25 @@ package object universe {
   )(
     implicit originInfo: OriginHostScheme
   ): universe.v3.model.Assets = {
-    /*
-    val newContainer = for {
-      container <- assets.container
-      (key, value) <- container.docker
-    } yield {
-      (key, rewriteWithProxyHost(value))
+    val newContainer = if (rewriteDocker) {
+      assets.container.map { container =>
+        val newMap = container.docker.map { case (key, value) =>
+          (key, rewriteDockerIdWithProxyInfo(value))
+        }
+
+        container.copy(docker = newMap)
+      }
+    } else assets.container
+
+    val newUris = assets.uris.map { uris =>
+      uris.map { case (key, value) =>
+        (key, rewriteUrlWithProxyInfo(value))
+      }
     }
-    */
-    !rewriteDocker // Make compiler happy
 
     assets.copy(
-      uris = assets.uris.map(
-        _.map { case (key, value) =>
-          (key, rewriteWithProxyURL(value))
-        }
-      )
-
+      uris = newUris,
+      container = newContainer
     )
   }
 
@@ -56,7 +62,7 @@ package object universe {
   ): universe.v3.model.Architectures = {
     architecture.copy(
       `x86-64` = architecture.`x86-64`.copy(
-        url = rewriteWithProxyURL(architecture.`x86-64`.url)
+        url = rewriteUrlWithProxyInfo(architecture.`x86-64`.url)
       )
     )
   }
@@ -67,30 +73,38 @@ package object universe {
     implicit originInfo: OriginHostScheme
   ): universe.v3.model.Images = {
     universe.v3.model.Images(
-      iconSmall = images.iconSmall.map(rewriteWithProxyURL),
-      iconMedium = images.iconMedium.map(rewriteWithProxyURL),
-      iconLarge = images.iconLarge.map(rewriteWithProxyURL),
-      screenshots = images.screenshots.map(_.map(rewriteWithProxyURL))
+      iconSmall = images.iconSmall.map(rewriteUrlWithProxyInfo),
+      iconMedium = images.iconMedium.map(rewriteUrlWithProxyInfo),
+      iconLarge = images.iconLarge.map(rewriteUrlWithProxyInfo),
+      screenshots = images.screenshots.map(_.map(rewriteUrlWithProxyInfo))
     )
   }
 
   def rewriteUrlWithProxyInfo(
-    url: Uri
+    value: String
   )(
     implicit origin: OriginHostScheme
-  ): Uri = {
-    // TODO: This can throw!!
-    Uri.parse(
-      s"${origin.urlScheme}://${origin.host}/package/resource?url=$url"
-    )
+  ): String = {
+    Try(Uri.parse(value)) match {
+      case Success(url) =>
+        // TODO: This can throw!!
+        Uri.parse(
+          s"${origin.urlScheme}://${origin.rawHost}/package/resource?url=$url"
+        ).toString
+      case Failure(_) =>
+        value
+    }
   }
 
   def rewriteDockerIdWithProxyInfo(
-    dockerId: DockerId
+    value: String
   )(
     implicit origin: OriginHostScheme
-  ): DockerId = {
-    dockerId.copy(
-      hostAndPort = Some(s"${origin.host}
+  ): String = {
+    DockerId.parse(value).map { id =>
+      id.copy(hostAndPort = id.hostAndPort.map(_ => origin.hostAndPort))
+        .show
+    }
+    .getOrElse(value)
   }
 }

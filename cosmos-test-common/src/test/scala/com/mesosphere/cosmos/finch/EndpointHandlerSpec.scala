@@ -47,15 +47,22 @@ final class EndpointHandlerSpec extends FreeSpec {
       "so that the business logic of the EndpointHandler can use it" - {
 
         "with value Some" in {
-          val result = callWithRequestSession(RequestSession(
-            Some(Authorization("53cr37")),
-            OriginHostScheme("localhost", "http"))
+          val result = callWithRequestSession(
+            RequestSession(
+              Some(Authorization("53cr37")),
+              OriginHostScheme("localhost", OriginHostScheme.Scheme.http)
+            )
           )
           val responseBody = extractBody[Option[String]](result)
           assertResult(Some("53cr37"))(responseBody)
         }
         "with value None" in {
-          val result = callWithRequestSession(RequestSession(None, OriginHostScheme("localhost", "http")))
+          val result = callWithRequestSession(
+            RequestSession(
+              None,
+              OriginHostScheme("localhost", OriginHostScheme.Scheme.http)
+            )
+          )
           val responseBody = extractBody[Option[String]](result)
           assertResult(None)(responseBody)
         }
@@ -168,7 +175,10 @@ object EndpointHandlerSpec {
 
   def buildEndpointContext[Req, Res](
     requestBody: Req,
-    session: RequestSession = RequestSession(None, OriginHostScheme("localhost", "http"))
+    session: RequestSession = RequestSession(
+      None,
+      OriginHostScheme("localhost", OriginHostScheme.Scheme.http)
+    )
   )(implicit responseEncoder: MediaTypedEncoder[Res]): EndpointContext[Req, Res] = {
     EndpointContext(requestBody, session, responseEncoder)
   }
