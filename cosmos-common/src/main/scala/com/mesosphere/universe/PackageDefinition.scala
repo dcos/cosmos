@@ -107,8 +107,6 @@ package v3.model {
 
 package v4.model {
 
-  import com.mesosphere.cosmos.http.OriginHostScheme
-
   sealed trait PackageDefinition
 
   object PackageDefinition {
@@ -353,17 +351,16 @@ package v4.model {
 
       // -------- Utility methods to rewrite the resource urls for proxy endpoint ------
       def rewrite(
-        rewriteDocker: Boolean
-      )(
-        implicit originInfo : OriginHostScheme
+        urlRewrite: (String) => String,
+        dockerIdRewrite: (String) => String
       ): universe.v4.model.PackageDefinition = {
         pkgDef match {
           case v2: universe.v3.model.V2Package => v2.resource match {
             case Some(r) => v2.copy(
               resource = Some(
                 universe.v3.model.V2Resource(
-                  r.assets.map(rewriteAssets(rewriteDocker)),
-                  r.images.map(rewriteImages)
+                  r.assets.map(rewriteAssets(urlRewrite, dockerIdRewrite)),
+                  r.images.map(rewriteImages(urlRewrite))
                 )
               )
             )
@@ -373,9 +370,9 @@ package v4.model {
             case Some(r) => v3.copy(
               resource = Some(
                 universe.v3.model.V3Resource(
-                  r.assets.map(rewriteAssets(rewriteDocker)),
-                  r.images.map(rewriteImages),
-                  r.cli.map(rewriteCli)
+                  r.assets.map(rewriteAssets(urlRewrite, dockerIdRewrite)),
+                  r.images.map(rewriteImages(urlRewrite)),
+                  r.cli.map(rewriteCli(urlRewrite))
                 )
               )
             )
@@ -385,9 +382,9 @@ package v4.model {
             case Some(r) => v4.copy(
               resource = Some(
                 universe.v3.model.V3Resource(
-                  r.assets.map(rewriteAssets(rewriteDocker)),
-                  r.images.map(rewriteImages),
-                  r.cli.map(rewriteCli)
+                  r.assets.map(rewriteAssets(urlRewrite, dockerIdRewrite)),
+                  r.images.map(rewriteImages(urlRewrite)),
+                  r.cli.map(rewriteCli(urlRewrite))
                 )
               )
             )

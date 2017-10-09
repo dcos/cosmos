@@ -5,6 +5,7 @@ import com.mesosphere.cosmos.converter.Label._
 import com.mesosphere.cosmos.converter.Response._
 import com.mesosphere.cosmos.finch.EndpointHandler
 import com.mesosphere.cosmos.http.RequestSession
+import com.mesosphere.cosmos.repository.rewriteUrlWithProxyInfo
 import com.mesosphere.cosmos.rpc
 import com.mesosphere.cosmos.thirdparty
 import com.twitter.bijection.Conversion.asMethod
@@ -63,7 +64,7 @@ private[cosmos] final class ListHandler(
   ): Option[rpc.v1.model.InstalledPackageInformation] = {
     app.packageDefinition
       .map(
-        _.rewrite(false)(session.originInfo)
+        _.rewrite(rewriteUrlWithProxyInfo(session.originInfo), identity)
          .as[rpc.v1.model.InstalledPackageInformation]
       ).orElse(
         app.packageMetadata.as[Option[rpc.v1.model.InstalledPackageInformation]]

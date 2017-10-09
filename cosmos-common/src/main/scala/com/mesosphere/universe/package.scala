@@ -1,34 +1,24 @@
 package com.mesosphere
 
-import com.mesosphere.cosmos.http.OriginHostScheme
-import com.mesosphere.http.DockerId
-import com.netaporter.uri.Uri
-import scala.util.Failure
-import scala.util.Success
-import scala.util.Try
-
 package object universe {
 
   def rewriteAssets(
-    rewriteDocker: Boolean
+    urlRewrite: (String) => String,
+    dockerIdRewrite: (String) => String
   )(
     assets: universe.v3.model.Assets
-  )(
-    implicit originInfo: OriginHostScheme
   ): universe.v3.model.Assets = {
-    val newContainer = if (rewriteDocker) {
-      assets.container.map { container =>
-        val newMap = container.docker.map { case (key, value) =>
-          (key, rewriteDockerIdWithProxyInfo(value))
-        }
-
-        container.copy(docker = newMap)
+    val newContainer = assets.container.map { container =>
+      val newMap = container.docker.map { case (key, value) =>
+        (key, dockerIdRewrite(value))
       }
-    } else assets.container
+
+      container.copy(docker = newMap)
+    }
 
     val newUris = assets.uris.map { uris =>
       uris.map { case (key, value) =>
-        (key, rewriteUrlWithProxyInfo(value))
+        (key, urlRewrite(value))
       }
     }
 
@@ -39,72 +29,44 @@ package object universe {
   }
 
   def rewriteCli(
-    cli: universe.v3.model.Cli
+    urlRewrite: (String) => String
   )(
-    implicit originInfo: OriginHostScheme
+    cli: universe.v3.model.Cli
   ): universe.v3.model.Cli = {
 
     cli.binaries match {
       case Some(platforms) =>
         universe.v3.model.Cli(Some(platforms.copy(
-          windows = platforms.windows.map(rewriteArchitecture),
-          linux = platforms.linux.map(rewriteArchitecture),
-          darwin = platforms.darwin.map(rewriteArchitecture)
+          windows = platforms.windows.map(rewriteArchitecture(urlRewrite)),
+          linux = platforms.linux.map(rewriteArchitecture(urlRewrite)),
+          darwin = platforms.darwin.map(rewriteArchitecture(urlRewrite))
         )))
       case None => cli
     }
   }
 
   def rewriteArchitecture(
-    architecture: universe.v3.model.Architectures
+    urlRewrite: (String) => String
   )(
-    implicit originInfo: OriginHostScheme
+    architecture: universe.v3.model.Architectures
   ): universe.v3.model.Architectures = {
     architecture.copy(
       `x86-64` = architecture.`x86-64`.copy(
-        url = rewriteUrlWithProxyInfo(architecture.`x86-64`.url)
+        url = urlRewrite(architecture.`x86-64`.url)
       )
     )
   }
 
   def rewriteImages(
-    images: universe.v3.model.Images
+    urlRewrite: (String) => String
   )(
-    implicit originInfo: OriginHostScheme
+    images: universe.v3.model.Images
   ): universe.v3.model.Images = {
     universe.v3.model.Images(
-      iconSmall = images.iconSmall.map(rewriteUrlWithProxyInfo),
-      iconMedium = images.iconMedium.map(rewriteUrlWithProxyInfo),
-      iconLarge = images.iconLarge.map(rewriteUrlWithProxyInfo),
-      screenshots = images.screenshots.map(_.map(rewriteUrlWithProxyInfo))
+      iconSmall = images.iconSmall.map(urlRewrite),
+      iconMedium = images.iconMedium.map(urlRewrite),
+      iconLarge = images.iconLarge.map(urlRewrite),
+      screenshots = images.screenshots.map(_.map(urlRewrite))
     )
-  }
-
-  def rewriteUrlWithProxyInfo(
-    value: String
-  )(
-    implicit origin: OriginHostScheme
-  ): String = {
-    Try(Uri.parse(value)) match {
-      case Success(url) =>
-        // TODO: This can throw!!
-        Uri.parse(
-          s"${origin.urlScheme}://${origin.rawHost}/package/resource?url=$url"
-        ).toString
-      case Failure(_) =>
-        value
-    }
-  }
-
-  def rewriteDockerIdWithProxyInfo(
-    value: String
-  )(
-    implicit origin: OriginHostScheme
-  ): String = {
-    DockerId.parse(value).map { id =>
-      id.copy(hostAndPort = id.hostAndPort.map(_ => origin.hostAndPort))
-        .show
-    }
-    .getOrElse(value)
   }
 }

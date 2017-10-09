@@ -5,6 +5,7 @@ import com.mesosphere.cosmos.finch.EndpointHandler
 import com.mesosphere.cosmos.http.RequestSession
 import com.mesosphere.cosmos.render.PackageDefinitionRenderer
 import com.mesosphere.cosmos.repository.PackageCollection
+import com.mesosphere.cosmos.repository.rewriteUrlWithProxyInfo
 import com.mesosphere.cosmos.rpc
 import com.mesosphere.cosmos.thirdparty.marathon.model.MarathonApp
 import com.mesosphere.universe
@@ -42,7 +43,7 @@ private[cosmos] final class ServiceDescribeHandler(
     session: RequestSession
   ): Future[universe.v4.model.PackageDefinition] = {
     app.packageDefinition
-      .map(pkg => Future.value(pkg.rewrite(false)(session.originInfo)))
+      .map(pkg => Future.value(pkg.rewrite(rewriteUrlWithProxyInfo(session.originInfo), identity)))
       .getOrElse {
         val (name, version) =
           app.packageName.flatMap(name => app.packageVersion.map(name -> _))

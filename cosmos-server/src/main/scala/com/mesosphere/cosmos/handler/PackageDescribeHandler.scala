@@ -3,6 +3,7 @@ package com.mesosphere.cosmos.handler
 import com.mesosphere.cosmos.finch.EndpointHandler
 import com.mesosphere.cosmos.http.RequestSession
 import com.mesosphere.cosmos.repository.PackageCollection
+import com.mesosphere.cosmos.repository.rewriteUrlWithProxyInfo
 import com.mesosphere.cosmos.rpc
 import com.mesosphere.universe
 import com.mesosphere.universe.bijection.UniverseConversions._
@@ -23,7 +24,9 @@ private[cosmos] final class PackageDescribeHandler(
       request.packageVersion.as[Option[universe.v3.model.Version]]
     )
 
-    packageInfo.map { case (pkg, _) => pkg.rewrite(false)(session.originInfo) }
+    packageInfo.map { case (pkg, _) =>
+      pkg.rewrite(rewriteUrlWithProxyInfo(session.originInfo), identity)
+    }
   }
 
 }

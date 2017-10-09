@@ -9,7 +9,7 @@ import com.mesosphere.cosmos.rpc.v1.model.SearchResponse
 import com.mesosphere.cosmos.rpc.v1.model.SearchResult
 import com.mesosphere.cosmos.test.CosmosIntegrationTestClient.CosmosClient
 import com.mesosphere.universe
-import com.mesosphere.universe.rewriteUrlWithProxyInfo
+import com.mesosphere.cosmos.repository.rewriteUrlWithProxyInfo
 import com.twitter.finagle.http.Status
 import org.scalatest.Assertion
 import org.scalatest.FreeSpec
@@ -58,7 +58,7 @@ final class PackageSearchSpec extends FreeSpec {
 private object PackageSearchSpec extends TableDrivenPropertyChecks {
 
   val uri = TestContext.fromSystemProperties().uri
-  implicit val originInfo = OriginHostScheme(
+  val originInfo = OriginHostScheme(
     s"${uri.host.get}:${uri.port.get}",
     OriginHostScheme.Scheme(uri.scheme.get).get
   )
@@ -79,18 +79,24 @@ private object PackageSearchSpec extends TableDrivenPropertyChecks {
       universe.v3.model.Images(
         iconSmall = Some(
           rewriteUrlWithProxyInfo(
+            originInfo
+          )(
             "https://raw.githubusercontent.com/arangodb/arangodb-dcos/master/" +
             "icons/arangodb_small.png"
           )
         ),
         iconMedium = Some(
           rewriteUrlWithProxyInfo(
+            originInfo
+          )(
             "https://raw.githubusercontent.com/arangodb/arangodb-dcos/master/" +
             "icons/arangodb_medium.png"
           )
         ),
         iconLarge = Some(
           rewriteUrlWithProxyInfo(
+            originInfo
+          )(
             "https://raw.githubusercontent.com/arangodb/arangodb-dcos/master/" +
             "icons/arangodb_large.png"
           )
@@ -122,18 +128,24 @@ private object PackageSearchSpec extends TableDrivenPropertyChecks {
       universe.v3.model.Images(
         iconSmall = Some(
           rewriteUrlWithProxyInfo(
+            originInfo
+          )(
             "https://downloads.mesosphere.com/cassandra-mesos/assets/" +
             "cassandra-small.png"
           )
         ),
         iconMedium = Some(
           rewriteUrlWithProxyInfo(
+            originInfo
+          )(
             "https://downloads.mesosphere.com/cassandra-mesos/assets/" +
             "cassandra-medium.png"
           )
         ),
         iconLarge = Some(
           rewriteUrlWithProxyInfo(
+            originInfo
+          )(
             "https://downloads.mesosphere.com/cassandra-mesos/assets/" +
             "cassandra-large.png"
           )
@@ -158,18 +170,24 @@ private object PackageSearchSpec extends TableDrivenPropertyChecks {
       universe.v3.model.Images(
         Some(
           rewriteUrlWithProxyInfo(
+            originInfo
+          )(
             "https://downloads.mesosphere.com/universe/assets/" +
             "icon-service-crate-small.png"
           )
         ),
         Some(
           rewriteUrlWithProxyInfo(
+            originInfo
+          )(
             "https://downloads.mesosphere.com/universe/assets/" +
             "icon-service-crate-medium.png"
           )
         ),
         Some(
           rewriteUrlWithProxyInfo(
+            originInfo
+          )(
             "https://downloads.mesosphere.com/universe/assets/" +
             "icon-service-crate-large.png"
           )
@@ -193,18 +211,24 @@ private object PackageSearchSpec extends TableDrivenPropertyChecks {
       universe.v3.model.Images(
         Some(
           rewriteUrlWithProxyInfo(
+            originInfo
+          )(
             "https://downloads.mesosphere.com/universe/assets/" +
             "icon-service-memsql-small.png"
           )
         ),
         Some(
           rewriteUrlWithProxyInfo(
+            originInfo
+          )(
             "https://downloads.mesosphere.com/universe/assets/" +
             "icon-service-memsql-medium.png"
           )
         ),
         Some(
           rewriteUrlWithProxyInfo(
+            originInfo
+          )(
             "https://downloads.mesosphere.com/universe/assets/" +
             "icon-service-memsql-large.png"
           )
@@ -246,18 +270,24 @@ private object PackageSearchSpec extends TableDrivenPropertyChecks {
       universe.v3.model.Images(
         Some(
           rewriteUrlWithProxyInfo(
+            originInfo
+          )(
             "https://downloads.mesosphere.com/universe/assets/" +
             "icon-service-riak-small.png"
           )
         ),
         Some(
           rewriteUrlWithProxyInfo(
+            originInfo
+          )(
             "https://downloads.mesosphere.com/universe/assets/" +
             "icon-service-riak-medium.png"
           )
         ),
         Some(
           rewriteUrlWithProxyInfo(
+            originInfo
+          )(
             "https://downloads.mesosphere.com/universe/assets/" +
             "icon-service-riak-large.png"
           )
@@ -265,6 +295,8 @@ private object PackageSearchSpec extends TableDrivenPropertyChecks {
         Some(
           List(
             rewriteUrlWithProxyInfo(
+              originInfo
+            )(
               "http://riak-tools.s3.amazonaws.com/riak-mesos/riak-mesos-screenshot.png"
             )
           )
