@@ -6,7 +6,6 @@ import java.util.{List => JList}
 import scala.collection.JavaConverters._
 import scala.util.Failure
 import scala.util.Try
-import scala.util.control.NonFatal
 
 case class MediaTypeParseError(msg: String, cause: Throwable) extends RuntimeException(msg, cause)
 
@@ -35,7 +34,9 @@ object MediaTypeParser {
         )
       }
       .recoverWith {
-        case NonFatal(ex) =>
+        case ex: IllegalArgumentException =>
+          Failure(MediaTypeParseError(s"Unable to parse MediaType for input: '$s'", ex))
+        case ex: IllegalStateException =>
           Failure(MediaTypeParseError(s"Unable to parse MediaType for input: '$s'", ex))
       }
   }

@@ -35,7 +35,6 @@ import org.scalatest.Assertion
 import org.scalatest.FreeSpec
 import org.scalatest.Matchers
 import org.scalatest.prop.PropertyChecks
-import scala.util.Failure
 import scala.util.Random
 
 final class RequestValidatorsSpec extends FreeSpec with Matchers with PropertyChecks {
@@ -168,8 +167,8 @@ final class RequestValidatorsSpec extends FreeSpec with Matchers with PropertyCh
   ): Assertion = {
     whenever (MediaType.parse(request.headers(Fields.ContentType)).isFailure) {
       validateOutput(validator, request) should matchPattern {
-        case Failure(NotParsed(HeaderItem(Fields.ContentType), _, _)) =>
-        case Failure(NotValid(HeaderItem(Fields.ContentType), _)) =>
+        case Throw(NotParsed(HeaderItem(Fields.ContentType), _, _)) =>
+        case Throw(NotValid(HeaderItem(Fields.ContentType), _)) =>
       }
     }
   }
