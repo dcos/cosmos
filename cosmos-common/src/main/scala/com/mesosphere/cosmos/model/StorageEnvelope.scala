@@ -1,13 +1,13 @@
 package com.mesosphere.cosmos.model
 
 import com.mesosphere.cosmos.circe.Decoders.decode
+import com.mesosphere.cosmos.circe.Decoders.decodeByteBuffer
 import com.mesosphere.cosmos.circe.Decoders.mediaTypedDecode
+import com.mesosphere.cosmos.circe.Encoders.encodeByteBuffer
 import com.mesosphere.cosmos.finch.MediaTypedDecoder
 import com.mesosphere.cosmos.finch.MediaTypedEncoder
-import com.mesosphere.cosmos.http.MediaType
+import com.mesosphere.http.MediaType
 import com.mesosphere.universe.common.ByteBuffers
-import com.mesosphere.cosmos.circe.Decoders.decodeByteBuffer
-import com.mesosphere.cosmos.circe.Encoders.encodeByteBuffer
 import com.twitter.finagle.http.Fields
 import com.twitter.io.StreamIO
 import io.circe.Decoder

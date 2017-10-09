@@ -8,6 +8,7 @@ import com.mesosphere.cosmos.finch.EndpointHandler
 import com.mesosphere.cosmos.http.RequestSession
 import com.mesosphere.cosmos.render.PackageDefinitionRenderer
 import com.mesosphere.cosmos.repository.PackageCollection
+import com.mesosphere.cosmos.repository.rewriteUrlWithProxyInfo
 import com.mesosphere.cosmos.rpc
 import com.mesosphere.universe
 import com.mesosphere.universe.bijection.UniverseConversions._
@@ -44,7 +45,7 @@ private[cosmos] final class PackageInstallHandler(
                   packageVersion = pkg.version,
                   appId = Some(runnerResponse.id),
                   postInstallNotes = pkg.postInstallNotes,
-                  cli = pkg.rewrite(session.originInfo).cli
+                  cli = pkg.rewrite(rewriteUrlWithProxyInfo(session.originInfo), identity).cli
                 )
               }
               .handle {
@@ -58,7 +59,7 @@ private[cosmos] final class PackageInstallHandler(
                 packageVersion = pkg.version,
                 appId = None,
                 postInstallNotes = pkg.postInstallNotes,
-                cli = pkg.rewrite(session.originInfo).cli
+                cli = pkg.rewrite(rewriteUrlWithProxyInfo(session.originInfo), identity).cli
               )
             }
         }

@@ -19,7 +19,7 @@ object Deps {
     "io.circe" %% "circe-core" % V.circe,
     "io.circe" %% "circe-testing" % V.circe,
     "io.circe" %% "circe-generic" % V.circe,
-    "io.circe" %% "circe-jawn" % V.circe
+    "io.circe" %% "circe-parser" % V.circe
   )
 
   // APLv2.0
@@ -145,11 +145,11 @@ object V {
   val projectScalaVersion = "2.12.3"
   val projectVersion = "0.5.0-SNAPSHOT"
 
-  val bijection = "0.9.5"
-  val circe = "0.8.0"
+  val bijection = "0.9.6"
+  val circe = "0.9.0-M1"
   val curator = "2.12.0"
   val fastparse = "0.4.3"
-  val finch = "0.15.1"
+  val finch = "0.16.0-M2"
   val guava = "22.0"
   val jsonSchema = "2.2.6"
   val logback = "1.2.3"
@@ -161,6 +161,6 @@ object V {
   val scalaTest = "3.0.1"
   val scalaUri = "0.4.16"
   val slf4j = "1.7.25"
-  val twitterServer = "1.30.0"
-  val twitterUtil = "6.45.0"
+  val twitterServer = "1.32.0"
+  val twitterUtil = "7.1.0"
 }

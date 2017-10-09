@@ -27,7 +27,10 @@ object TestContext {
       Option(System.getProperty(directProperty)).map(_.toBoolean).get,
       url,
       token,
-      OriginHostScheme(extractHostFromUri(url), url.scheme.get)
+      OriginHostScheme(
+        extractHostFromUri(url),
+        OriginHostScheme.Scheme(url.scheme.get).get
+      )
     )
   }
 

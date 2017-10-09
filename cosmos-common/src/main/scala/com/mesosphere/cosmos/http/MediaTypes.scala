@@ -1,5 +1,8 @@
 package com.mesosphere.cosmos.http
 
+import com.mesosphere.http.MediaType
+import com.mesosphere.http.MediaTypeSubType
+
 object MediaTypes {
 
   // RPC Media Types

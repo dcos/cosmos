@@ -2,16 +2,17 @@ package com.mesosphere.cosmos.finch
 
 import com.mesosphere.cosmos.finch.FinchExtensions._
 import com.mesosphere.cosmos.http.Authorization
-import com.mesosphere.cosmos.http.CompoundMediaType
-import com.mesosphere.cosmos.http.MediaType
 import com.mesosphere.cosmos.http.OriginHostScheme
 import com.mesosphere.cosmos.http.RequestSession
+import com.mesosphere.http.CompoundMediaType
+import com.mesosphere.http.MediaType
+import com.mesosphere.util.ForwardedProtoHeader
+import com.mesosphere.util.UrlSchemeHeader
+import com.netaporter.uri.Uri
 import com.twitter.finagle.http.Fields
 import io.finch._
 import shapeless.::
 import shapeless.HNil
-import com.mesosphere.util._
-import com.netaporter.uri.Uri
 
 object RequestValidators {
 
@@ -20,8 +21,8 @@ object RequestValidators {
   ): Endpoint[EndpointContext[Unit, Res]] = {
     val allValidators = baseValidator(produces) ::
       header(Fields.Host) ::
-      header(urlSchemeHeader) ::
-      headerOption(forwardedProtoHeader)
+      header(UrlSchemeHeader) ::
+      headerOption(ForwardedProtoHeader)
 
     allValidators.map { case authorization :: responseEncoder ::
       httpHost :: urlScheme :: forwardedProtocol :: HNil =>
@@ -29,7 +30,10 @@ object RequestValidators {
         (),
         RequestSession(
           authorization,
-          OriginHostScheme(httpHost, forwardedProtocol.getOrElse(urlScheme))
+          OriginHostScheme(
+            httpHost,
+            parseScheme(forwardedProtocol.getOrElse(urlScheme))
+          )
         ),
         responseEncoder
       )
@@ -47,8 +51,8 @@ object RequestValidators {
 
     val allValidators = baseValidator(produces) ::
       header(Fields.Host) ::
-      header(urlSchemeHeader) ::
-      headerOption(forwardedProtoHeader) ::
+      header(UrlSchemeHeader) ::
+      headerOption(ForwardedProtoHeader) ::
       contentTypeValidator ::
       bodyValidator
 
@@ -57,7 +61,10 @@ object RequestValidators {
         contentType :: requestBody :: HNil =>
         val session = RequestSession(
           authorization,
-          OriginHostScheme(httpHost, forwardedProtocol.getOrElse(urlScheme)),
+          OriginHostScheme(
+            httpHost,
+            parseScheme(forwardedProtocol.getOrElse(urlScheme))
+          ),
           Some(contentType)
         )
         EndpointContext(requestBody, session, responseEncoder)
@@ -84,19 +91,27 @@ object RequestValidators {
     val validators = param("url").map(Uri.parse) ::
       headerOption(Fields.Authorization).map(_.map(Authorization)) ::
       header(Fields.Host) ::
-      header(urlSchemeHeader) ::
-      headerOption(forwardedProtoHeader)
+      header(UrlSchemeHeader) ::
+      headerOption(ForwardedProtoHeader)
 
     validators.map {
-      case queryParam :: authorization :: httpHost :: urlScheme :: forwardedProtocol :: HNil =>
+      case queryParam :: authorization :: httpHost :: urlScheme ::
+           forwardedProtocol :: HNil =>
         (
           queryParam,
           RequestSession(
             authorization,
-            OriginHostScheme(httpHost, forwardedProtocol.getOrElse(urlScheme)),
+            OriginHostScheme(
+              httpHost,
+              parseScheme(forwardedProtocol.getOrElse(urlScheme))
+            ),
             None
           )
         )
     }
+  }
+
+  private def parseScheme(value: String): OriginHostScheme.Scheme = {
+    OriginHostScheme.Scheme(value).getOrElse(throw incompatibleScheme(value))
   }
 }

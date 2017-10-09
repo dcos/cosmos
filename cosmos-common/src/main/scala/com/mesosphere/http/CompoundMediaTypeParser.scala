@@ -1,15 +1,22 @@
-package com.mesosphere.cosmos.http
+package com.mesosphere.http
 
-import com.twitter.util.{Return, Try}
+import cats.instances.list._
+import cats.instances.try_._
+import cats.syntax.traverse._
+import scala.util.Success
+import scala.util.Try
 
 object CompoundMediaTypeParser {
 
   def parse(s: String): Try[CompoundMediaType] = {
     s.split(',').toList.filterNot(_.trim.isEmpty) match {
-      case Nil => Return(new CompoundMediaType(Set.empty))
+      case Nil => Success(new CompoundMediaType(Set.empty))
       case mts =>
-        Try.collect(mts.map(MediaType.parse))
-          .map { mediaTypes => CompoundMediaType(backfillParams(mediaTypes.toList)._2.toSet) }
+        mts.map(MediaType.parse)
+          .sequence
+          .map { mediaTypes =>
+            CompoundMediaType(backfillParams(mediaTypes)._2.toSet)
+          }
     }
   }
 
@@ -29,7 +36,9 @@ object CompoundMediaTypeParser {
     * @see https://tools.ietf.org/html/rfc7231#section-5.3.2 for full details on the spec for the Accept header
     * and content negotiation.
     */
-  private[this] def backfillParams(mts: List[MediaType]): (Map[String, String], List[MediaType]) = {
+  private[this] def backfillParams(
+    mts: List[MediaType]
+  ): (Map[String, String], List[MediaType]) = {
     mts match {
       case Nil => (Map.empty, Nil)
       case x :: xs =>

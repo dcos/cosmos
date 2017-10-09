@@ -1,7 +1,7 @@
 package com.mesosphere.cosmos.finch
 
-import com.mesosphere.cosmos.http.MediaType
-import com.mesosphere.cosmos.http.MediaTypeSubType
+import com.mesosphere.http.MediaType
+import com.mesosphere.http.MediaTypeSubType
 
 object TestingMediaTypes {
 
