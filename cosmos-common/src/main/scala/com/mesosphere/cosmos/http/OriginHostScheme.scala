@@ -45,9 +45,11 @@ object OriginHostScheme {
 
   final object Http extends Scheme {
     override val defaultPort: String = "80"
+    override def toString(): String = "http"
   }
 
   final object Https extends Scheme {
     override val defaultPort: String = "443"
+    override def toString(): String = "https"
   }
 }
