@@ -2,10 +2,10 @@ package com.mesosphere.cosmos.finch
 
 import com.mesosphere.cosmos.finch.FinchExtensions._
 import com.mesosphere.cosmos.http.Authorization
-import com.mesosphere.cosmos.http.OriginHostScheme
 import com.mesosphere.cosmos.http.RequestSession
 import com.mesosphere.http.CompoundMediaType
 import com.mesosphere.http.MediaType
+import com.mesosphere.http.OriginHostScheme
 import com.mesosphere.util.ForwardedProtoHeader
 import com.mesosphere.util.UrlSchemeHeader
 import com.netaporter.uri.Uri

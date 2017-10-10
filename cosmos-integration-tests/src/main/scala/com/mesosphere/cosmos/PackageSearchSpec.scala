@@ -1,15 +1,15 @@
 package com.mesosphere.cosmos
 
-import _root_.io.circe.jawn._
+import _root_.io.circe.parser.decode
 import com.mesosphere.cosmos.http.CosmosRequests
-import com.mesosphere.cosmos.http.OriginHostScheme
 import com.mesosphere.cosmos.http.TestContext
+import com.mesosphere.cosmos.repository.rewriteUrlWithProxyInfo
 import com.mesosphere.cosmos.rpc.v1.model.SearchRequest
 import com.mesosphere.cosmos.rpc.v1.model.SearchResponse
 import com.mesosphere.cosmos.rpc.v1.model.SearchResult
 import com.mesosphere.cosmos.test.CosmosIntegrationTestClient.CosmosClient
+import com.mesosphere.http.OriginHostScheme
 import com.mesosphere.universe
-import com.mesosphere.cosmos.repository.rewriteUrlWithProxyInfo
 import com.twitter.finagle.http.Status
 import org.scalatest.Assertion
 import org.scalatest.FreeSpec

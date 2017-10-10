@@ -1,5 +1,6 @@
 package com.mesosphere.cosmos.http
 
+import com.mesosphere.http.OriginHostScheme
 import com.netaporter.uri.Uri
 import org.slf4j.LoggerFactory
 

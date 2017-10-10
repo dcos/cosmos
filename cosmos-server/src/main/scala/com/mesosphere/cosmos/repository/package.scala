@@ -1,6 +1,6 @@
 package com.mesosphere.cosmos
 
-import com.mesosphere.cosmos.http.OriginHostScheme
+import com.mesosphere.http.OriginHostScheme
 import com.netaporter.uri.Uri
 import scala.util.Failure
 import scala.util.Success

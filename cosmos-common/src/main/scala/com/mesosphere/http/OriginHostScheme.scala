@@ -1,4 +1,4 @@
-package com.mesosphere.cosmos.http
+package com.mesosphere.http
 
 case class OriginHostScheme(
   host: String,

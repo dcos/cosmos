@@ -1,6 +1,6 @@
 package com.mesosphere.cosmos.test
 
-import com.mesosphere.cosmos.http.OriginHostScheme
+import com.mesosphere.http.OriginHostScheme
 import com.mesosphere.cosmos.http.RequestSession
 
 object TestUtil {
