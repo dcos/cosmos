@@ -1,7 +1,6 @@
 package com.mesosphere.universe.v4.model
 
 import com.mesosphere.universe
-import com.mesosphere.cosmos.circe.Decoders._
 import io.circe.Decoder
 import io.circe.Encoder
 import io.circe.generic.semiauto.deriveDecoder

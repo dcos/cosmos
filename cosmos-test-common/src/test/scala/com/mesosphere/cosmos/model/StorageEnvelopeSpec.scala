@@ -1,9 +1,12 @@
 package com.mesosphere.cosmos.model
 
-import com.mesosphere.cosmos.finch.{MediaTypedDecoder, MediaTypedEncoder}
-import com.mesosphere.cosmos.http.{MediaType, MediaTypeSubType}
+import com.mesosphere.cosmos.finch.MediaTypedDecoder
+import com.mesosphere.cosmos.finch.MediaTypedEncoder
+import com.mesosphere.http.MediaType
+import com.mesosphere.http.MediaTypeSubType
+import io.circe.Decoder
+import io.circe.Encoder
 import io.circe.generic.semiauto._
-import io.circe.{Decoder, Encoder}
 import org.scalatest.FreeSpec
 
 class StorageEnvelopeSpec extends FreeSpec {

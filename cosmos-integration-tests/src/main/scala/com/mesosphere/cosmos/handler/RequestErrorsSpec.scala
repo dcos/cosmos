@@ -1,11 +1,11 @@
 package com.mesosphere.cosmos.handler
 
-import com.mesosphere.cosmos.http.CompoundMediaTypeParser
 import com.mesosphere.cosmos.http.HttpRequest
 import com.mesosphere.cosmos.http.PackageRpcPath
 import com.mesosphere.cosmos.rpc.MediaTypes
 import com.mesosphere.cosmos.rpc.v1.model.PackageRepositoryAddRequest
 import com.mesosphere.cosmos.test.CosmosIntegrationTestClient._
+import com.mesosphere.http.CompoundMediaTypeParser
 import com.netaporter.uri.dsl._
 import com.twitter.finagle.http.Fields
 import com.twitter.finagle.http.Status
@@ -24,7 +24,7 @@ class RequestErrorsSpec extends FreeSpec {
         val accept = CompoundMediaTypeParser.parse(Seq(
           MediaTypes.V2DescribeResponse.show + ";q=0.1",
           MediaTypes.V3DescribeResponse.show + ";q=0.9"
-        ).mkString(",")).get()
+        ).mkString(",")).get
 
         val body = PackageRepositoryAddRequest(
           "bad",

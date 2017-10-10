@@ -3,8 +3,8 @@ package com.mesosphere.cosmos
 import com.mesosphere.Generators
 import com.mesosphere.cosmos.error.PackageNotFound
 import com.mesosphere.cosmos.error.VersionNotFound
-import com.mesosphere.cosmos.http.OriginHostScheme
 import com.mesosphere.cosmos.repository.PackageCollection
+import com.mesosphere.http.OriginHostScheme
 import com.mesosphere.universe
 import com.mesosphere.universe.test.TestingPackages
 import com.netaporter.uri.Uri
@@ -337,7 +337,10 @@ final class PackageCollectionSpec extends FreeSpec
 
     "search" - {
 
-      implicit val originInfo : OriginHostScheme = OriginHostScheme("localhost", "http")
+      implicit val originInfo : OriginHostScheme = OriginHostScheme(
+        "localhost",
+        OriginHostScheme.Scheme.http
+      )
 
       "not found" in {
         assertResult(Return(Nil)

@@ -1,15 +1,15 @@
 package com.mesosphere.cosmos
 
-import _root_.io.circe.jawn._
+import _root_.io.circe.parser.decode
 import com.mesosphere.cosmos.http.CosmosRequests
-import com.mesosphere.cosmos.http.OriginHostScheme
 import com.mesosphere.cosmos.http.TestContext
+import com.mesosphere.cosmos.repository.rewriteUrlWithProxyInfo
 import com.mesosphere.cosmos.rpc.v1.model.SearchRequest
 import com.mesosphere.cosmos.rpc.v1.model.SearchResponse
 import com.mesosphere.cosmos.rpc.v1.model.SearchResult
 import com.mesosphere.cosmos.test.CosmosIntegrationTestClient.CosmosClient
+import com.mesosphere.http.OriginHostScheme
 import com.mesosphere.universe
-import com.mesosphere.universe.rewriteWithProxyURL
 import com.twitter.finagle.http.Status
 import org.scalatest.Assertion
 import org.scalatest.FreeSpec
@@ -58,7 +58,10 @@ final class PackageSearchSpec extends FreeSpec {
 private object PackageSearchSpec extends TableDrivenPropertyChecks {
 
   val uri = TestContext.fromSystemProperties().uri
-  implicit val originInfo = OriginHostScheme(s"${uri.host.get}:${uri.port.get}", uri.scheme.get)
+  val originInfo = OriginHostScheme(
+    s"${uri.host.get}:${uri.port.get}",
+    OriginHostScheme.Scheme(uri.scheme.get).get
+  )
 
   val ArangodbSearchResult = SearchResult(
     name = "arangodb",
@@ -72,12 +75,35 @@ private object PackageSearchSpec extends TableDrivenPropertyChecks {
     tags = List("arangodb", "NoSQL", "database")
       .map(universe.v3.model.Tag(_)),
     selected = Some(true),
-    images = Some(universe.v3.model.Images(
-      iconSmall = Some(rewriteWithProxyURL("https://raw.githubusercontent.com/arangodb/arangodb-dcos/master/icons/arangodb_small.png")),
-      iconMedium = Some(rewriteWithProxyURL("https://raw.githubusercontent.com/arangodb/arangodb-dcos/master/icons/arangodb_medium.png")),
-      iconLarge = Some(rewriteWithProxyURL("https://raw.githubusercontent.com/arangodb/arangodb-dcos/master/icons/arangodb_large.png")),
-      screenshots = None
-    ))
+    images = Some(
+      universe.v3.model.Images(
+        iconSmall = Some(
+          rewriteUrlWithProxyInfo(
+            originInfo
+          )(
+            "https://raw.githubusercontent.com/arangodb/arangodb-dcos/master/" +
+            "icons/arangodb_small.png"
+          )
+        ),
+        iconMedium = Some(
+          rewriteUrlWithProxyInfo(
+            originInfo
+          )(
+            "https://raw.githubusercontent.com/arangodb/arangodb-dcos/master/" +
+            "icons/arangodb_medium.png"
+          )
+        ),
+        iconLarge = Some(
+          rewriteUrlWithProxyInfo(
+            originInfo
+          )(
+            "https://raw.githubusercontent.com/arangodb/arangodb-dcos/master/" +
+            "icons/arangodb_large.png"
+          )
+        ),
+        screenshots = None
+      )
+    )
   )
 
   val CassandraSearchResult = SearchResult(
@@ -98,12 +124,35 @@ private object PackageSearchSpec extends TableDrivenPropertyChecks {
     framework = true,
     tags = List("data", "database", "nosql").map(universe.v3.model.Tag(_)),
     selected = Some(true),
-    images = Some(universe.v3.model.Images(
-      iconSmall = Some(rewriteWithProxyURL("https://downloads.mesosphere.com/cassandra-mesos/assets/cassandra-small.png")),
-      iconMedium = Some(rewriteWithProxyURL("https://downloads.mesosphere.com/cassandra-mesos/assets/cassandra-medium.png")),
-      iconLarge = Some(rewriteWithProxyURL("https://downloads.mesosphere.com/cassandra-mesos/assets/cassandra-large.png")),
-      screenshots = None
-    ))
+    images = Some(
+      universe.v3.model.Images(
+        iconSmall = Some(
+          rewriteUrlWithProxyInfo(
+            originInfo
+          )(
+            "https://downloads.mesosphere.com/cassandra-mesos/assets/" +
+            "cassandra-small.png"
+          )
+        ),
+        iconMedium = Some(
+          rewriteUrlWithProxyInfo(
+            originInfo
+          )(
+            "https://downloads.mesosphere.com/cassandra-mesos/assets/" +
+            "cassandra-medium.png"
+          )
+        ),
+        iconLarge = Some(
+          rewriteUrlWithProxyInfo(
+            originInfo
+          )(
+            "https://downloads.mesosphere.com/cassandra-mesos/assets/" +
+            "cassandra-large.png"
+          )
+        ),
+        screenshots = None
+      )
+    )
   )
 
   val CrateSearchResult = SearchResult(
@@ -117,12 +166,35 @@ private object PackageSearchSpec extends TableDrivenPropertyChecks {
       "nosql"
     ).map(universe.v3.model.Tag(_)),
     selected = None,
-    images = Some(universe.v3.model.Images(
-      Some(rewriteWithProxyURL("https://downloads.mesosphere.com/universe/assets/icon-service-crate-small.png")),
-      Some(rewriteWithProxyURL("https://downloads.mesosphere.com/universe/assets/icon-service-crate-medium.png")),
-      Some(rewriteWithProxyURL("https://downloads.mesosphere.com/universe/assets/icon-service-crate-large.png")),
-      None
-    ))
+    images = Some(
+      universe.v3.model.Images(
+        Some(
+          rewriteUrlWithProxyInfo(
+            originInfo
+          )(
+            "https://downloads.mesosphere.com/universe/assets/" +
+            "icon-service-crate-small.png"
+          )
+        ),
+        Some(
+          rewriteUrlWithProxyInfo(
+            originInfo
+          )(
+            "https://downloads.mesosphere.com/universe/assets/" +
+            "icon-service-crate-medium.png"
+          )
+        ),
+        Some(
+          rewriteUrlWithProxyInfo(
+            originInfo
+          )(
+            "https://downloads.mesosphere.com/universe/assets/" +
+            "icon-service-crate-large.png"
+          )
+        ),
+        None
+      )
+    )
   )
 
   val MemsqlSearchResult = SearchResult(
@@ -135,12 +207,35 @@ private object PackageSearchSpec extends TableDrivenPropertyChecks {
     framework = true,
     tags = List("mysql", "database", "rdbms").map(universe.v3.model.Tag(_)),
     selected = None,
-    images = Some(universe.v3.model.Images(
-      Some(rewriteWithProxyURL("https://downloads.mesosphere.com/universe/assets/icon-service-memsql-small.png")),
-      Some(rewriteWithProxyURL("https://downloads.mesosphere.com/universe/assets/icon-service-memsql-medium.png")),
-      Some(rewriteWithProxyURL("https://downloads.mesosphere.com/universe/assets/icon-service-memsql-large.png")),
-      None
-    ))
+    images = Some(
+      universe.v3.model.Images(
+        Some(
+          rewriteUrlWithProxyInfo(
+            originInfo
+          )(
+            "https://downloads.mesosphere.com/universe/assets/" +
+            "icon-service-memsql-small.png"
+          )
+        ),
+        Some(
+          rewriteUrlWithProxyInfo(
+            originInfo
+          )(
+            "https://downloads.mesosphere.com/universe/assets/" +
+            "icon-service-memsql-medium.png"
+          )
+        ),
+        Some(
+          rewriteUrlWithProxyInfo(
+            originInfo
+          )(
+            "https://downloads.mesosphere.com/universe/assets/" +
+            "icon-service-memsql-large.png"
+          )
+        ),
+        None
+      )
+    )
   )
 
   val MysqlSearchResult = SearchResult(
@@ -171,14 +266,43 @@ private object PackageSearchSpec extends TableDrivenPropertyChecks {
       "NoSql"
     ).map(universe.v3.model.Tag(_)),
     selected = None,
-    images = Some(universe.v3.model.Images(
-      Some(rewriteWithProxyURL("https://downloads.mesosphere.com/universe/assets/icon-service-riak-small.png")),
-      Some(rewriteWithProxyURL("https://downloads.mesosphere.com/universe/assets/icon-service-riak-medium.png")),
-      Some(rewriteWithProxyURL("https://downloads.mesosphere.com/universe/assets/icon-service-riak-large.png")),
-      Some(List(
-        rewriteWithProxyURL("http://riak-tools.s3.amazonaws.com/riak-mesos/riak-mesos-screenshot.png")
-      ))
-    ))
+    images = Some(
+      universe.v3.model.Images(
+        Some(
+          rewriteUrlWithProxyInfo(
+            originInfo
+          )(
+            "https://downloads.mesosphere.com/universe/assets/" +
+            "icon-service-riak-small.png"
+          )
+        ),
+        Some(
+          rewriteUrlWithProxyInfo(
+            originInfo
+          )(
+            "https://downloads.mesosphere.com/universe/assets/" +
+            "icon-service-riak-medium.png"
+          )
+        ),
+        Some(
+          rewriteUrlWithProxyInfo(
+            originInfo
+          )(
+            "https://downloads.mesosphere.com/universe/assets/" +
+            "icon-service-riak-large.png"
+          )
+        ),
+        Some(
+          List(
+            rewriteUrlWithProxyInfo(
+              originInfo
+            )(
+              "http://riak-tools.s3.amazonaws.com/riak-mesos/riak-mesos-screenshot.png"
+            )
+          )
+        )
+      )
+    )
   )
 
 

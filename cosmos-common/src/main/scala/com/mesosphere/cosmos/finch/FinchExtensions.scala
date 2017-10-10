@@ -1,9 +1,9 @@
 package com.mesosphere.cosmos.finch
 
-import com.mesosphere.cosmos.http.CompoundMediaType
-import com.mesosphere.cosmos.http.CompoundMediaTypeParser
-import com.mesosphere.cosmos.http.MediaType
-import com.mesosphere.cosmos.http.MediaTypeOps
+import com.mesosphere.http.CompoundMediaType
+import com.mesosphere.http.CompoundMediaTypeParser
+import com.mesosphere.http.MediaType
+import com.twitter.util.Try
 import io.circe.Json
 import io.finch.DecodeEntity
 import io.finch.Endpoint
@@ -14,15 +14,15 @@ object FinchExtensions {
 
   def beTheExpectedTypes(expectedTypes: List[MediaType]): ValidationRule[MediaType] =
     ValidationRule(s"match one of ${expectedTypes.map(_.show).mkString(", ")}") { actual =>
-      expectedTypes.exists(expected => MediaTypeOps.compatible(expected, actual))
+      expectedTypes.exists(expected => MediaType.compatible(expected, actual))
     }
 
   implicit val decodeMediaType: DecodeEntity[MediaType] = {
-    DecodeEntity.instance(s => MediaType.parse(s))
+    DecodeEntity.instance(s => Try.fromScala(MediaType.parse(s)))
   }
 
   implicit val decodeCompoundMediaType: DecodeEntity[CompoundMediaType] = {
-    DecodeEntity.instance(s => CompoundMediaTypeParser.parse(s))
+    DecodeEntity.instance(s => Try.fromScala(CompoundMediaTypeParser.parse(s)))
   }
 
   def route[Req, Res](

@@ -3,17 +3,17 @@ package com.mesosphere.cosmos.finch
 import cats.data.NonEmptyList
 import com.mesosphere.Generators.Implicits._
 import com.mesosphere.cosmos.http.Authorization
-import com.mesosphere.cosmos.http.CompoundMediaTypeParser
 import com.mesosphere.cosmos.http.Get
 import com.mesosphere.cosmos.http.HttpRequest
 import com.mesosphere.cosmos.http.HttpRequestMethod
-import com.mesosphere.cosmos.http.MediaType
 import com.mesosphere.cosmos.http.Post
 import com.mesosphere.cosmos.http.RawRpcPath
 import com.mesosphere.cosmos.http.RequestSession
 import com.mesosphere.cosmos.httpInterface
 import com.mesosphere.cosmos.rpc.MediaTypes._
-import com.mesosphere.util.urlSchemeHeader
+import com.mesosphere.http.CompoundMediaTypeParser
+import com.mesosphere.http.MediaType
+import com.mesosphere.util.UrlSchemeHeader
 import com.twitter.finagle.http.Fields
 import com.twitter.finagle.http.Fields
 import com.twitter.io.Buf
@@ -143,7 +143,7 @@ final class RequestValidatorsSpec extends FreeSpec with Matchers with PropertyCh
           Fields.Accept -> HttpRequest.toHeader(acceptHeader),
           Fields.ContentType -> actualContentTypeHeader,
           Fields.Host -> Some(httpInterface.toString()),
-          urlSchemeHeader -> Some("http")
+          UrlSchemeHeader -> Some("http")
         )
         produces = DispatchingMediaTypedEncoder[Json](acceptHeader)
         validator = RequestValidators.standard(accepts, produces)
@@ -165,7 +165,7 @@ final class RequestValidatorsSpec extends FreeSpec with Matchers with PropertyCh
     validator: Endpoint[EndpointContext[Req, Res]],
     request: HttpRequest
   ): Assertion = {
-    whenever (MediaType.parse(request.headers(Fields.ContentType)).isThrow) {
+    whenever (MediaType.parse(request.headers(Fields.ContentType)).isFailure) {
       validateOutput(validator, request) should matchPattern {
         case Throw(NotParsed(HeaderItem(Fields.ContentType), _, _)) =>
         case Throw(NotValid(HeaderItem(Fields.ContentType), _)) =>
@@ -388,7 +388,7 @@ object RequestValidatorsSpec {
           Fields.Accept -> accept,
           Fields.Authorization -> authorization,
           Fields.Host -> Some(httpInterface.toString()),
-          urlSchemeHeader -> Some("http")
+          UrlSchemeHeader -> Some("http")
         )
       HttpRequest(RawRpcPath("/what/ever"), headers, Get())
     }
@@ -414,7 +414,7 @@ object RequestValidatorsSpec {
         Fields.Accept -> accept,
         Fields.Authorization -> authorization,
         Fields.Host -> Some(httpInterface.toString()),
-        urlSchemeHeader -> Some("http"),
+        UrlSchemeHeader -> Some("http"),
         Fields.ContentType -> HttpRequest.toHeader(TestingMediaTypes.applicationJson)
       )
       HttpRequest(RawRpcPath("/what/ever"), headers, Post(Buf.Utf8(Json.Null.noSpaces)))

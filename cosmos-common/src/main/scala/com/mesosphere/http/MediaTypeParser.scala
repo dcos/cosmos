@@ -1,11 +1,11 @@
-package com.mesosphere.cosmos.http
+package com.mesosphere.http
 
 import com.google.common.collect.Multimaps
 import com.google.common.net.{MediaType => GMediaType}
-import com.twitter.util.Try
-
+import java.util.{List => JList}
 import scala.collection.JavaConverters._
-import java.util
+import scala.util.Failure
+import scala.util.Try
 
 case class MediaTypeParseError(msg: String, cause: Throwable) extends RuntimeException(msg, cause)
 
@@ -23,7 +23,7 @@ object MediaTypeParser {
           .asMap(parameters)
           .asScala
           .toMap
-          .map { case (key: String, v: util.List[String]) =>
+          .map { case (key: String, v: JList[String]) =>
             key.toLowerCase -> v.asScala.toList.head
           }
 
@@ -33,11 +33,11 @@ object MediaTypeParser {
           parameters = params
         )
       }
-      .handle {
-        case iae: IllegalArgumentException =>
-          throw MediaTypeParseError(s"Unable to parse MediaType for input: '$s'", iae)
-        case ise: IllegalStateException =>
-          throw MediaTypeParseError(s"Unable to parse MediaType for input: '$s'", ise)
+      .recoverWith {
+        case ex: IllegalArgumentException =>
+          Failure(MediaTypeParseError(s"Unable to parse MediaType for input: '$s'", ex))
+        case ex: IllegalStateException =>
+          Failure(MediaTypeParseError(s"Unable to parse MediaType for input: '$s'", ex))
       }
   }
 }

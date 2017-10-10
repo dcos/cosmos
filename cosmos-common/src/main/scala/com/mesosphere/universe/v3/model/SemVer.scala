@@ -1,15 +1,11 @@
 package com.mesosphere.universe.v3.model
 
+import com.mesosphere.universe
+import com.twitter.bijection.Injection
 import fastparse.all._
-import fastparse.core.Parsed
-import fastparse.core.Parser
 import scala.util.Failure
-import scala.util.Left
-import scala.util.Right
 import scala.util.Success
 import scala.util.Try
-import com.twitter.bijection.Injection
-import com.mesosphere.universe
 
 // Implements relaxed: http://semver.org/#semantic-versioning-200
 final case class SemVer(
@@ -73,7 +69,7 @@ object SemVer {
 
     // Implements: http://semver.org/#spec-item-9
     val preRelease = {
-      val preReleasePart: Parser[Either[String, Long], Char, String] = {
+      val preReleasePart: Parser[Either[String, Long]] = {
         (alpha | digit | "-").rep(1).!.map { value =>
           Try(value.toLong) match {
             case Success(long) => Right(long)

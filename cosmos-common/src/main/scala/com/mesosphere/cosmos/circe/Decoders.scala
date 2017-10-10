@@ -4,7 +4,7 @@ import cats.syntax.either._
 import com.mesosphere.cosmos.error.JsonDecodingError
 import com.mesosphere.cosmos.error.JsonParsingError
 import com.mesosphere.cosmos.finch.MediaTypedDecoder
-import com.mesosphere.cosmos.http.MediaType
+import com.mesosphere.http.MediaType
 import com.netaporter.uri.Uri
 import io.circe.Decoder
 import io.circe.DecodingFailure
@@ -31,11 +31,6 @@ object Decoders {
       { e => DecodingFailure("Base64 string value expected", c.history) },
       { s => ByteBuffer.wrap(Base64.getDecoder.decode(s)) }
     )
-  }
-
-  // Work around for Circe issue https://github.com/circe/circe/issues/549
-  implicit def decodeListA[A](implicit decoder: Decoder[A]): Decoder[List[A]] = {
-    Decoder.decodeCanBuildFrom[A, List]
   }
 
   def decode[T: Decoder: ClassTag](value: String): T = {

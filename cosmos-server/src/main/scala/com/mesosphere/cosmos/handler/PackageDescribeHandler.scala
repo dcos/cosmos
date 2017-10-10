@@ -3,6 +3,7 @@ package com.mesosphere.cosmos.handler
 import com.mesosphere.cosmos.finch.EndpointHandler
 import com.mesosphere.cosmos.http.RequestSession
 import com.mesosphere.cosmos.repository.PackageCollection
+import com.mesosphere.cosmos.repository.rewriteUrlWithProxyInfo
 import com.mesosphere.cosmos.rpc
 import com.mesosphere.universe
 import com.mesosphere.universe.bijection.UniverseConversions._
@@ -13,15 +14,19 @@ private[cosmos] final class PackageDescribeHandler(
   packageCollection: PackageCollection
 ) extends EndpointHandler[rpc.v1.model.DescribeRequest, universe.v4.model.PackageDefinition] {
 
-  override def apply(request: rpc.v1.model.DescribeRequest)(implicit
-    session: RequestSession
+  override def apply(
+    request: rpc.v1.model.DescribeRequest
+  )(
+    implicit session: RequestSession
   ): Future[universe.v4.model.PackageDefinition] = {
     val packageInfo = packageCollection.getPackageByPackageVersion(
       request.packageName,
       request.packageVersion.as[Option[universe.v3.model.Version]]
     )
 
-    packageInfo.map { case (pkg, _) => pkg.rewrite(session.originInfo) }
+    packageInfo.map { case (pkg, _) =>
+      pkg.rewrite(rewriteUrlWithProxyInfo(session.originInfo), identity)
+    }
   }
 
 }

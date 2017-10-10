@@ -1,33 +1,32 @@
-package com.mesosphere.cosmos.http
+package com.mesosphere.http
 
-import com.mesosphere.cosmos.http.MediaTypeOps.mediaTypeToMediaTypeOps
 import org.scalatest.Assertion
 import org.scalatest.FreeSpec
 import scala.language.implicitConversions
 
 class MediaTypeOpsSpec extends FreeSpec {
 
-  "MediaTypeOps.compatibleIgnoringParameters(MediaType, MediaType) should" - {
+  "MediaType.compatibleIgnoringParameters(MediaType, MediaType) should" - {
     "pass for" - {
-      behave like compatibleIgnoringParametersSuccessSpec(MediaTypeOps.compatibleIgnoringParameters)
+      behave like compatibleIgnoringParametersSuccessSpec(MediaType.compatibleIgnoringParameters)
     }
 
     "fail for" - {
-      behave like compatibleIgnoringParametersFailureSpec(MediaTypeOps.compatibleIgnoringParameters)
+      behave like compatibleIgnoringParametersFailureSpec(MediaType.compatibleIgnoringParameters)
     }
   }
 
-  "MediaTypeOps.compatible(MediaType, MediaType) should" - {
+  "MediaType.compatible(MediaType, MediaType) should" - {
     "pass for" - {
-      behave like compatibleSuccessSpec(MediaTypeOps.compatible)
+      behave like compatibleSuccessSpec(MediaType.compatible)
     }
 
     "fail for" - {
-      behave like compatibleFailureSpec(MediaTypeOps.compatible)
+      behave like compatibleFailureSpec(MediaType.compatible)
     }
   }
 
-  "MediaTypeOps.isCompatibleWith(MediaType) should" - {
+  "MediaType.isCompatibleWith(MediaType) should" - {
     "pass for" - {
       behave like compatibleSuccessSpec((m1, m2) => m1.isCompatibleWith(m2))
     }
@@ -37,31 +36,31 @@ class MediaTypeOpsSpec extends FreeSpec {
     }
   }
 
-  "MediaTypeOps.qValue(MediaType) should" - {
+  "MediaType.qValue(MediaType) should" - {
     "return the correct value when present and in the valid range" - {
       "0.0" in {
-        assertResult(0.0)(MediaTypeOps.qValue("text/html;q=0.0").quality)
+        assertResult(0.0)(MediaType.qValue("text/html;q=0.0").quality)
       }
       "0.25" in {
-        assertResult(0.25)(MediaTypeOps.qValue("text/html;q=0.25").quality)
+        assertResult(0.25)(MediaType.qValue("text/html;q=0.25").quality)
       }
       "1.0" in {
-        assertResult(1.0)(MediaTypeOps.qValue("text/html;q=1.0").quality)
+        assertResult(1.0)(MediaType.qValue("text/html;q=1.0").quality)
       }
     }
 
     "return default value when the value is present and outside the valid range" - {
       "-0.009" in {
-        assertResult(QualityValue.default)(MediaTypeOps.qValue("text/html;q=-0.009"))
+        assertResult(QualityValue.default)(MediaType.qValue("text/html;q=-0.009"))
       }
       "1.1" in {
-        assertResult(QualityValue.default)(MediaTypeOps.qValue("text/html;q=1.1"))
+        assertResult(QualityValue.default)(MediaType.qValue("text/html;q=1.1"))
       }
     }
   }
 
-  "MediaTypeOps.mediaTypeOrdering should" - {
-    import MediaTypeOps.mediaTypeOrdering
+  "MediaType.mediaTypeOrdering should" - {
+    import MediaType.mediaTypeOrdering
     "priority 1: qvalue" in {
       val expected: List[MediaType] = List(
         "text/html;level=1;q=1.0",
@@ -175,11 +174,11 @@ class MediaTypeOpsSpec extends FreeSpec {
   }
 
   "Compatibility should ignore any present qValue" in {
-    shouldSucceed("type/subtype;something=awesome;q=0.9", "type/subtype;something=awesome")(MediaTypeOps.compatible)
+    shouldSucceed("type/subtype;something=awesome;q=0.9", "type/subtype;something=awesome")(MediaType.compatible)
   }
 
-  "MediaTypeOps.qValue should return 1.0 if not specified" in {
-    assertResult(QualityValue(1.0))(MediaTypeOps.qValue("*/*"))
+  "MediaType.qValue should return 1.0 if not specified" in {
+    assertResult(QualityValue(1.0))(MediaType.qValue("*/*"))
   }
 
   private[this] def compatibleIgnoringParametersSuccessSpec(
