@@ -136,6 +136,7 @@ final class DefaultUniverseClient(
                 HttpMethod.GET,
                 clientStatus
               ).exception(Status.InternalServerError)
+            case e => throw e.exception
           }
         }
     }

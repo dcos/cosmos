@@ -1,5 +1,6 @@
 package com.mesosphere.cosmos
 
+import com.mesosphere.cosmos.error.CosmosException
 import com.mesosphere.cosmos.error.EndpointUriConnection
 import com.mesosphere.cosmos.error.EndpointUriSyntax
 import com.mesosphere.cosmos.error.GenericHttpError
@@ -45,7 +46,7 @@ object HttpClient {
     Future(uri.toURI.toURL.openConnection())
       .handle {
         case t @ (_: IllegalArgumentException | _: MalformedURLException | _: URISyntaxException) =>
-          throw EndpointUriSyntax(uri, t.getMessage).exception
+          throw CosmosException(EndpointUriSyntax(uri, t.getMessage), t)
       }
       .flatMap { case conn: HttpURLConnection =>
         conn.setRequestProperty(Fields.UserAgent, s"cosmos/${BuildProperties().cosmosVersion}")
@@ -58,7 +59,9 @@ object HttpClient {
           .ensure(responseData.contentStream.close())
           .ensure(conn.disconnect())
       }
-      .handle { case e: IOException => throw EndpointUriConnection(uri, e.getMessage).exception }
+      .handle { case e: IOException =>
+        throw CosmosException(EndpointUriConnection(uri, e.getMessage), e)
+      }
   }
 
   private def extractResponseData(
