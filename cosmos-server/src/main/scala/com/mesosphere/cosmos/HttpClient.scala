@@ -1,11 +1,15 @@
 package com.mesosphere.cosmos
 
+import com.mesosphere.cosmos.error.EndpointUriConnection
+import com.mesosphere.cosmos.error.EndpointUriSyntax
+import com.mesosphere.cosmos.error.GenericHttpError
 import com.mesosphere.cosmos.error.UnsupportedContentEncoding
 import com.mesosphere.cosmos.error.UnsupportedRedirect
 import com.mesosphere.http.MediaType
 import com.mesosphere.http.MediaTypeParser
 import com.netaporter.uri.Uri
 import com.twitter.finagle.http.Fields
+import com.twitter.finagle.http.Status
 import com.twitter.finagle.http.filter.LogFormatter
 import com.twitter.finagle.stats.StatsReceiver
 import com.twitter.util.Future
@@ -18,6 +22,7 @@ import java.net.URISyntaxException
 import java.util.TimeZone
 import java.util.zip.GZIPInputStream
 import org.apache.commons.lang.time.FastDateFormat
+import org.jboss.netty.handler.codec.http.HttpMethod
 import org.slf4j.Logger
 import scala.util.Failure
 import scala.util.Success
@@ -36,11 +41,11 @@ object HttpClient {
     processResponse: ResponseData => A
   )(
     implicit statsReceiver: StatsReceiver
-  ): Future[Either[Error, A]] = {
+  ): Future[A] = {
     Future(uri.toURI.toURL.openConnection())
       .handle {
         case t @ (_: IllegalArgumentException | _: MalformedURLException | _: URISyntaxException) =>
-          throw UriSyntax(t)
+          throw EndpointUriSyntax(uri, t.getMessage).exception
       }
       .flatMap { case conn: HttpURLConnection =>
         headers.foreach { case (name, value) => conn.setRequestProperty(name, value) }
@@ -48,12 +53,11 @@ object HttpClient {
         logger.debug(format(conn))
         val responseData = extractResponseData(uri, conn)
 
-        Future(Right(processResponse(responseData)))
+        Future(processResponse(responseData))
           .ensure(responseData.contentStream.close())
           .ensure(conn.disconnect())
       }
-      .handle { case e: IOException => throw UriConnection(e) }
-      .handle { case e: Error => Left(e) }
+      .handle { case e: IOException => throw EndpointUriConnection(uri, e.getMessage).exception }
   }
 
   private def extractResponseData(
@@ -100,7 +104,7 @@ object HttpClient {
         throw UnsupportedRedirect(List(uri.scheme.get), loc).exception
       case status =>
         sr.scope("status").counter(status.toString).incr()
-        throw UnexpectedStatus(status)
+        throw GenericHttpError(HttpMethod.GET, uri, Status.fromCode(status)).exception
     }
   }
 
@@ -160,11 +164,5 @@ object HttpClient {
       PermanentRedirect
     )
   }
-
-
-  sealed trait Error extends Exception
-  final case class UriSyntax(cause: Throwable) extends Error
-  final case class UriConnection(cause: IOException) extends Error
-  final case class UnexpectedStatus(clientStatus: Int) extends Error
 
 }

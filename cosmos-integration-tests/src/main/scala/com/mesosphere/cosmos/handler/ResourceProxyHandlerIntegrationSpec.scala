@@ -74,7 +74,7 @@ final class ResourceProxyHandlerIntegrationSpec extends FreeSpec
       (contentLength.get, numberOfBytesRead, lastRead)
     }
 
-    val (contentLength, numberOfBytesRead, lastRead) = Await.result(future).toTry.get
+    val (contentLength, numberOfBytesRead, lastRead) = Await.result(future)
 
     contentLength.toInt should be > 0
     contentLength shouldEqual numberOfBytesRead
