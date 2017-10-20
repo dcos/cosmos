@@ -149,7 +149,7 @@ object V {
   val circe = "0.9.0-M1"
   val curator = "2.12.0"
   val fastparse = "0.4.3"
-  val finch = "0.16.0-M2"
+  val finch = "0.16.0-M3"
   val guava = "22.0"
   val jsonSchema = "2.2.6"
   val logback = "1.2.3"

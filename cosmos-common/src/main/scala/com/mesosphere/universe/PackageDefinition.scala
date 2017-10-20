@@ -4,9 +4,7 @@ import cats.data.NonEmptyList
 import com.mesosphere.cosmos.circe.Decoders._
 import com.mesosphere.cosmos.finch.MediaTypedDecoder
 import com.mesosphere.cosmos.finch.MediaTypedEncoder
-import com.mesosphere.cosmos.rpc.v1.model.PackageCoordinate
 import com.mesosphere.http.MediaType
-import com.mesosphere.universe
 import com.mesosphere.universe
 import io.circe.Decoder
 import io.circe.DecodingFailure
@@ -183,8 +181,8 @@ package v4.model {
 
     implicit final class PackageDefinitionOps(val pkgDef: universe.v4.model.PackageDefinition) extends AnyVal {
 
-      def packageCoordinate: PackageCoordinate =  {
-        PackageCoordinate(name, version)
+      def packageCoordinate: universe.v1.model.PackageCoordinate =  {
+        universe.v1.model.PackageCoordinate(name, version)
       }
 
       def packagingVersion: universe.v4.model.PackagingVersion = pkgDef match {
