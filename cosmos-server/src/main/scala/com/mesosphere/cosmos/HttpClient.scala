@@ -48,8 +48,9 @@ object HttpClient {
           throw EndpointUriSyntax(uri, t.getMessage).exception
       }
       .flatMap { case conn: HttpURLConnection =>
+        conn.setRequestProperty(Fields.UserAgent, s"cosmos/${BuildProperties().cosmosVersion}")
+        // UserAgent set above can be overridden below.
         headers.foreach { case (name, value) => conn.setRequestProperty(name, value) }
-        conn.addRequestProperty(Fields.UserAgent, s"cosmos/${BuildProperties().cosmosVersion}")
         logger.debug(format(conn))
         val responseData = extractResponseData(uri, conn)
 
