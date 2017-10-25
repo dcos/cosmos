@@ -27,7 +27,7 @@ object Digest {
 
     P (
       (algorithm ~ ":" ~ digest).map {
-        case( algorithm, digest) =>
+        case (algorithm, digest) =>
           Digest(algorithm, ByteBufUtil.decodeHexDump(digest))
       }
     )
