@@ -3,11 +3,11 @@ package com.mesosphere.cosmos.repository
 import com.mesosphere.cosmos.AdminRouter
 import com.mesosphere.cosmos.BuildProperties
 import com.mesosphere.cosmos.HttpClient
-import com.mesosphere.cosmos.HttpClient.UnexpectedStatus
-import com.mesosphere.cosmos.HttpClient.UriConnection
-import com.mesosphere.cosmos.HttpClient.UriSyntax
 import com.mesosphere.cosmos.circe.Decoders.decode
 import com.mesosphere.cosmos.error.CosmosException
+import com.mesosphere.cosmos.error.EndpointUriConnection
+import com.mesosphere.cosmos.error.EndpointUriSyntax
+import com.mesosphere.cosmos.error.GenericHttpError
 import com.mesosphere.cosmos.error.IndexNotFound
 import com.mesosphere.cosmos.error.PackageFileMissing
 import com.mesosphere.cosmos.error.PackageFileNotJson
@@ -120,9 +120,24 @@ final class DefaultUniverseClient(
             repository.uri
           )
         }(fetchScope)
-        .map {
-          case Right(repositoryData) => repositoryData
-          case Left(error) => handleError(error, repository)
+        .handle { case cosmosException: CosmosException =>
+          cosmosException.error match {
+            case EndpointUriSyntax(_, message) =>
+              throw cosmosException.copy(error = RepositoryUriSyntax(repository, message))
+            case EndpointUriConnection(_, message) =>
+              throw cosmosException.copy(error = RepositoryUriConnection(repository, message))
+            case GenericHttpError(_, _, clientStatus) =>
+              /* If we are unable to get the latest Universe we should not forward the status code
+               * returned. We should instead return 500 to the client and include the actual error
+               * in the message.
+               */
+              throw UniverseClientHttpError(
+                repository,
+                HttpMethod.GET,
+                clientStatus
+              ).exception(Status.InternalServerError)
+            case e => throw e.exception
+          }
         }
     }
   }
@@ -166,27 +181,7 @@ final class DefaultUniverseClient(
 
   }
 
-  private[this] def handleError(
-    error: HttpClient.Error,
-    repository: rpc.v1.model.PackageRepository
-  ): Nothing = {
-    error match {
-      case UriSyntax(cause) =>
-        throw CosmosException(RepositoryUriSyntax(repository, cause.getMessage), cause)
-      case UriConnection(cause) =>
-        throw CosmosException(RepositoryUriConnection(repository, cause.getMessage), cause)
-      case UnexpectedStatus(clientStatus) =>
-        /* If we are unable to get the latest Universe we should not forward the status code
-         * returned. We should instead return 500 to the client and include the actual error
-         * in the message.
-         */
-        throw UniverseClientHttpError(
-          repository,
-          HttpMethod.GET,
-          Status.fromCode(clientStatus)
-        ).exception(Status.InternalServerError)
-    }
-  }
+
 
   private[this] case class V2PackageInformation(
     packageDetails: Option[universe.v2.model.PackageDetails] = None,

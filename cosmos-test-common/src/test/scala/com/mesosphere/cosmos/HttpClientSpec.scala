@@ -1,5 +1,7 @@
 package com.mesosphere.cosmos
 
+import com.mesosphere.cosmos.error.CosmosException
+import com.mesosphere.cosmos.error.EndpointUriSyntax
 import com.mesosphere.universe
 import com.netaporter.uri.Uri
 import com.netaporter.uri.dsl._
@@ -28,18 +30,24 @@ final class HttpClientSpec extends FreeSpec {
   "HttpClient.fetch() reports URL syntax problems" - {
 
     "relative URI" in {
-      val Left(error) = Await.result(HttpClient.fetch("foo/bar")(_ => ()))
-      assert(error.isInstanceOf[HttpClient.UriSyntax])
+      val cosmosException = intercept[CosmosException](
+        Await.result(HttpClient.fetch("foo/bar")(_ => ()))
+      )
+      assert(cosmosException.error.isInstanceOf[EndpointUriSyntax])
     }
 
     "unknown protocol" in {
-      val Left(error) = Await.result(HttpClient.fetch("foo://bar.com")(_ => ()))
-      assert(error.isInstanceOf[HttpClient.UriSyntax])
+      val cosmosException = intercept[CosmosException](
+        Await.result(HttpClient.fetch("foo://bar.com")(_ => ()))
+      )
+      assert(cosmosException.error.isInstanceOf[EndpointUriSyntax])
     }
 
     "URISyntaxException" in {
-      val Left(error) = Await.result(HttpClient.fetch("/\\")(_ => ()))
-      assert(error.isInstanceOf[HttpClient.UriSyntax])
+      val cosmosException = intercept[CosmosException](
+        Await.result(HttpClient.fetch("/\\")(_ => ()))
+      )
+      assert(cosmosException.error.isInstanceOf[EndpointUriSyntax])
     }
 
   }

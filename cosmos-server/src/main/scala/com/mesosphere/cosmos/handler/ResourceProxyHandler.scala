@@ -3,12 +3,6 @@ package com.mesosphere.cosmos.handler
 import com.google.common.io.ByteStreams
 import com.mesosphere.cosmos.HttpClient
 import com.mesosphere.cosmos.HttpClient.ResponseData
-import com.mesosphere.cosmos.HttpClient.UnexpectedStatus
-import com.mesosphere.cosmos.HttpClient.UriConnection
-import com.mesosphere.cosmos.HttpClient.UriSyntax
-import com.mesosphere.cosmos.error.CosmosException
-import com.mesosphere.cosmos.error.EndpointUriConnection
-import com.mesosphere.cosmos.error.EndpointUriSyntax
 import com.mesosphere.cosmos.error.Forbidden
 import com.mesosphere.cosmos.error.GenericHttpError
 import com.mesosphere.cosmos.error.InvalidContentLengthLimit
@@ -51,22 +45,7 @@ final class ResourceProxyHandler private(
           response.contentLength = contentBytes.length.toLong
           response
         }
-        .map { result =>
-          result match {
-            case Right(response) => Output.payload(response)
-            case Left(error) => error match {
-              case UriSyntax(cause) =>
-                throw CosmosException(EndpointUriSyntax(uri, cause.getMessage), cause)
-              case UriConnection(cause) =>
-                throw CosmosException(EndpointUriConnection(uri, cause.getMessage), cause)
-              case UnexpectedStatus(clientStatus) =>
-                throw GenericHttpError(
-                  uri = uri,
-                  clientStatus = Status.fromCode(clientStatus)
-                ).exception(Status.InternalServerError)
-            }
-          }
-        }
+        .map(Output.payload(_))
     }
   }
 }
