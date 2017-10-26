@@ -130,12 +130,12 @@ class PackageRepositorySpec extends FeatureSpec with Matchers {
       "that is a non-zip-encoded repository bundle") {
       // TODO: Use a more reliable URI
       val name = "invalid"
-      val uri: Uri = "https://mesosphere.com/"
+      val uri: Uri = "https://www.google.com/"
       val expectedError = UnsupportedContentType(
         List(MediaTypes.UniverseV4Repository,
           MediaTypes.UniverseV3Repository,
           MediaTypes.UniverseV2Repository),
-        Some("text/html;charset=utf-8")
+        Some("text/html;charset=iso-8859-1")
       ).as[ErrorResponse]
       val error = intercept[HttpErrorResponse] {
         RoundTrips.withRepository(name, uri).run()
@@ -145,7 +145,7 @@ class PackageRepositorySpec extends FeatureSpec with Matchers {
     }
     scenario("the user should receive an error when trying to add a non-repository") {
       val name = "not-repository"
-      val uri: Uri = "https://www.mesosphere.com/uontehusantoehusanth"
+      val uri: Uri = "https://www.github.com/uontehusantoehusanth"
       val expectedError = UniverseClientHttpError(
         PackageRepository(name, uri),
         HttpMethod.GET,
