@@ -158,29 +158,29 @@ final class ResourceProxyHandlerSpec extends FreeSpec with PropertyChecks with M
 
     ResourceProxyHandler.getFileNameFromUrl(
       Uri.parse("http://doesntreallymatter.com/c.d")
-    ) shouldEqual "c.d"
+    ) shouldEqual Some("c.d")
 
     ResourceProxyHandler.getFileNameFromUrl(
       Uri.parse("http://doesntreallymatter.com/a/b/c.d")
-    ) shouldEqual "c.d"
+    ) shouldEqual Some("c.d")
 
     ResourceProxyHandler.getFileNameFromUrl(
       Uri.parse("http://doesntreallymatter.com/a/b/c")
-    ) shouldEqual "c"
+    ) shouldEqual Some("c")
 
     ResourceProxyHandler.getFileNameFromUrl(
       Uri.parse("http://doesntreallymatter.com/a/b/c/")
-    ) shouldEqual "c"
+    ) shouldEqual Some("c")
 
     // These should never happen, but just in case.
 
     ResourceProxyHandler.getFileNameFromUrl(
       Uri.parse("http://doesntreallymatter.com/")
-    ) shouldEqual "doesntreallymatter.com"
+    ) shouldEqual None
 
     ResourceProxyHandler.getFileNameFromUrl(
       Uri.parse("https://doesntreallymatter.com")
-    ) shouldEqual "doesntreallymatter.com"
+    ) shouldEqual None
 
   }
 

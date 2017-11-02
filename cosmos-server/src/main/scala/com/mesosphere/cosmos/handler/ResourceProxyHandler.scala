@@ -44,8 +44,11 @@ final class ResourceProxyHandler private(
           response.content = Buf.ByteArray.Owned(contentBytes)
           response.contentType = responseData.contentType.show
           response.contentLength = contentBytes.length.toLong
-          response.headerMap.add(Fields.ContentDisposition,
-            s"""attachment; filename="${getFileNameFromUrl(uri)}"""")
+          getFileNameFromUrl(uri) match {
+            case Some(filename) => response.headerMap.add(Fields.ContentDisposition,
+              s"""attachment; filename="$filename"""")
+            case _ =>
+          }
           response
         }
         .map(Output.payload(_))
@@ -96,11 +99,11 @@ object ResourceProxyHandler {
     }
   }
 
-  def getFileNameFromUrl(url: Uri): String = {
+  def getFileNameFromUrl(url: Uri): Option[String] = {
     url.pathParts match {
-      case _ :+ last if !last.part.isEmpty => last.part
-      case _ :+ secondLast :+ last if last.part.isEmpty => secondLast.part
-      case _ => url.host.getOrElse("")
+      case _ :+ last if !last.part.isEmpty => Some(last.part)
+      case _ :+ secondLast :+ last if last.part.isEmpty => Some(secondLast.part)
+      case _ => None
     }
   }
 
