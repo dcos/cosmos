@@ -44,10 +44,9 @@ final class ResourceProxyHandler private(
           response.content = Buf.ByteArray.Owned(contentBytes)
           response.contentType = responseData.contentType.show
           response.contentLength = contentBytes.length.toLong
-          getFileNameFromUrl(uri) match {
-            case Some(filename) => response.headerMap.add(Fields.ContentDisposition,
+          for (filename <- getFileNameFromUrl(uri)) {
+            response.headerMap.add(Fields.ContentDisposition,
               s"""attachment; filename="$filename"""")
-            case _ =>
           }
           response
         }
