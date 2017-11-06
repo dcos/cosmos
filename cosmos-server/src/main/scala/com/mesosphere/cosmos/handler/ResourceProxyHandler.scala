@@ -10,6 +10,7 @@ import com.mesosphere.cosmos.error.ResourceTooLarge
 import com.mesosphere.cosmos.http.RequestSession
 import com.mesosphere.cosmos.repository.PackageCollection
 import com.netaporter.uri.Uri
+import com.twitter.finagle.http.Fields
 import com.twitter.finagle.http.Response
 import com.twitter.finagle.http.Status
 import com.twitter.finagle.stats.StatsReceiver
@@ -43,6 +44,10 @@ final class ResourceProxyHandler private(
           response.content = Buf.ByteArray.Owned(contentBytes)
           response.contentType = responseData.contentType.show
           response.contentLength = contentBytes.length.toLong
+          for (filename <- getFileNameFromUrl(uri)) {
+            response.headerMap.add(Fields.ContentDisposition,
+              s"""attachment; filename="$filename"""")
+          }
           response
         }
         .map(Output.payload(_))
@@ -90,6 +95,14 @@ object ResourceProxyHandler {
       case x if x > 0 =>
         throw GenericHttpError(uri = uri, clientStatus = Status.BadGateway).exception
       case _ => contentBytes
+    }
+  }
+
+  def getFileNameFromUrl(url: Uri): Option[String] = {
+    url.pathParts match {
+      case _ :+ last if !last.part.isEmpty => Some(last.part)
+      case _ :+ secondLast :+ last if last.part.isEmpty => Some(secondLast.part)
+      case _ => None
     }
   }
 

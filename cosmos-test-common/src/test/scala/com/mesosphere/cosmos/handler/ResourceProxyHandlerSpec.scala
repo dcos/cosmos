@@ -19,10 +19,11 @@ import org.scalacheck.Arbitrary.arbitrary
 import org.scalacheck.Gen
 import org.scalatest.Assertion
 import org.scalatest.FreeSpec
+import org.scalatest.Matchers
 import org.scalatest.prop.PropertyChecks
 import scala.collection.mutable
 
-final class ResourceProxyHandlerSpec extends FreeSpec with PropertyChecks {
+final class ResourceProxyHandlerSpec extends FreeSpec with PropertyChecks with Matchers {
 
   type TestData = (StorageUnit, mutable.WrappedArray[Byte], Uri, MediaType)
 
@@ -151,6 +152,36 @@ final class ResourceProxyHandlerSpec extends FreeSpec with PropertyChecks {
     val responseData = ResponseData(MediaType.parse("application/random").get, None, contentStream)
     val exception = intercept[CosmosException](ResourceProxyHandler.getContentBytes(Uri.parse("/random"), responseData, 1.bytes))
     assert(exception.error.isInstanceOf[GenericHttpError])
+  }
+
+  "Parses the filename correctly" in {
+
+    ResourceProxyHandler.getFileNameFromUrl(
+      Uri.parse("http://doesntreallymatter.com/c.d")
+    ) shouldEqual Some("c.d")
+
+    ResourceProxyHandler.getFileNameFromUrl(
+      Uri.parse("http://doesntreallymatter.com/a/b/c.d")
+    ) shouldEqual Some("c.d")
+
+    ResourceProxyHandler.getFileNameFromUrl(
+      Uri.parse("http://doesntreallymatter.com/a/b/c")
+    ) shouldEqual Some("c")
+
+    ResourceProxyHandler.getFileNameFromUrl(
+      Uri.parse("http://doesntreallymatter.com/a/b/c/")
+    ) shouldEqual Some("c")
+
+    // These should never happen, but just in case.
+
+    ResourceProxyHandler.getFileNameFromUrl(
+      Uri.parse("http://doesntreallymatter.com/")
+    ) shouldEqual None
+
+    ResourceProxyHandler.getFileNameFromUrl(
+      Uri.parse("https://doesntreallymatter.com")
+    ) shouldEqual None
+
   }
 
   def assertFailure(output: Future[Output[Response]]): Assertion = {
