@@ -9,6 +9,7 @@ val common = project.in(file("cosmos-common"))
       Deps.apacheCommons ++
       Deps.bijection ++
       Deps.circe ++
+      Deps.curator ++
       Deps.fastparse ++
       Deps.finch ++
       Deps.findbugs ++
