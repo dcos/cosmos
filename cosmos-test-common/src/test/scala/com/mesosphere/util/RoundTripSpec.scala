@@ -1,6 +1,5 @@
 package com.mesosphere.util
 
-import com.mesosphere.cosmos.util.RoundTrip
 import org.mockito.InOrder
 import org.mockito.Mockito._
 import org.mockito._

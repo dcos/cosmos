@@ -1,8 +1,8 @@
 package com.mesosphere.cosmos
 
 import com.mesosphere.cosmos.thirdparty.marathon.model.AppId
-import com.mesosphere.cosmos.util.RoundTrip
 import com.mesosphere.universe
+import com.mesosphere.util.RoundTrip
 import com.netaporter.uri.Uri
 import io.circe.JsonObject
 
