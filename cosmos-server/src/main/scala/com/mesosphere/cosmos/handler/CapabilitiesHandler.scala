@@ -12,7 +12,8 @@ private[cosmos] final class CapabilitiesHandler
     List(Capability("PACKAGE_MANAGEMENT"),
          Capability("SUPPORT_CLUSTER_REPORT"),
          Capability("METRONOME"),
-         Capability("LOGGING")))
+         Capability("LOGGING"),
+         Capability("LOGGING_V2")))
 
   override def apply(v1: Unit)(implicit
     session: RequestSession
