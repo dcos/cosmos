@@ -1,4 +1,4 @@
-package com.mesosphere.cosmos.util
+package com.mesosphere.util
 
 import shapeless._
 

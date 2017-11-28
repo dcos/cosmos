@@ -3,7 +3,7 @@ package com.mesosphere.cosmos
 import com.mesosphere.cosmos.ItOps._
 import com.mesosphere.cosmos.converter.Response._
 import com.mesosphere.cosmos.thirdparty.marathon.model.AppId
-import com.mesosphere.cosmos.util.RoundTrip
+import com.mesosphere.util.RoundTrip
 import com.twitter.bijection.Conversion.asMethod
 import java.util.UUID
 import org.scalatest.FeatureSpec
