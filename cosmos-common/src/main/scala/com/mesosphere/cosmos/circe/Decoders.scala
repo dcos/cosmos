@@ -1,6 +1,7 @@
 package com.mesosphere.cosmos.circe
 
 import cats.syntax.either._
+import com.mesosphere.cosmos.error.CosmosError
 import com.mesosphere.cosmos.error.JsonDecodingError
 import com.mesosphere.cosmos.error.JsonParsingError
 import com.mesosphere.cosmos.finch.MediaTypedDecoder
@@ -67,6 +68,29 @@ object Decoders {
       throw JsonParsingError(underlying.getClass.getName, message, inputValue).exception
     case Left(DecodingFailure(message, _)) =>
       throw JsonDecodingError(classTag[T].runtimeClass.getName, message, inputValue).exception
+  }
+
+  def convertToCosmosError[T: ClassTag](
+    result: Either[Error, T],
+    inputValue: String
+  ): Either[CosmosError, T] = result match {
+    case Right(value) => Right(value)
+    case Left(ParsingFailure(message, underlying)) =>
+      Left(
+        JsonParsingError(
+          underlying.getClass.getName,
+          message,
+          inputValue
+        )
+      )
+    case Left(DecodingFailure(message, _)) =>
+      Left(
+        JsonDecodingError(
+          classTag[T].runtimeClass.getName,
+          message,
+          inputValue
+        )
+      )
   }
 
   private[this] def base64DecodeString(value: String): String = {
