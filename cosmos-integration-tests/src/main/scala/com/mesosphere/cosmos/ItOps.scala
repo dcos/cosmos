@@ -12,7 +12,7 @@ import java.util.UUID
 object ItOps {
 
   implicit def cosmosErrorToErrorResponse[E <: CosmosError]: Conversion[E, ErrorResponse] = {
-    Conversion.fromFunction(_.exception.errorResponse)
+    Conversion.fromFunction(_.errorResponse)
   }
 
   implicit val uuidToAppId: Conversion[UUID, AppId] = {
