@@ -23,7 +23,8 @@ final class CapabilitiesHandlerSpec extends FreeSpec {
       Capability("PACKAGE_MANAGEMENT"),
       Capability("SUPPORT_CLUSTER_REPORT"),
       Capability("METRONOME"),
-      Capability("LOGGING")
+      Capability("LOGGING"),
+      Capability("LOGGING_V2")
     ))
     assertResult(expected)(body)
   }
