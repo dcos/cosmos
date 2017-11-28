@@ -62,13 +62,10 @@ object Decoders {
   def convertToCosmosException[T: ClassTag](
     result: Either[Error, T],
     inputValue: String
-  ): T = result match {
-    case Right(value) => value
-    case Left(ParsingFailure(message, underlying)) =>
-      throw JsonParsingError(underlying.getClass.getName, message, inputValue).exception
-    case Left(DecodingFailure(message, _)) =>
-      throw JsonDecodingError(classTag[T].runtimeClass.getName, message, inputValue).exception
-  }
+  ): T = convertToCosmosError(result, inputValue).fold(
+    ce => throw ce.exception,
+    identity
+  )
 
   def convertToCosmosError[T: ClassTag](
     result: Either[Error, T],
