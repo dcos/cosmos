@@ -2,6 +2,7 @@ package com.mesosphere.cosmos.circe
 
 import cats.data.Ior
 import com.mesosphere.cosmos.error.CosmosException
+import com.mesosphere.cosmos.rpc
 import com.mesosphere.cosmos.rpc.v1.model.ErrorResponse
 import com.mesosphere.universe.common.ByteBuffers
 import com.netaporter.uri.Uri
@@ -67,7 +68,7 @@ object Encoders {
         "Multiple errors while processing request",
         Some(JsonObject.singleton("errors", details))
       )
-    case ce: CosmosException => ce.errorResponse
+    case ce: CosmosException => rpc.v1.model.ErrorResponse(ce.error)
     case t: Throwable =>
       ErrorResponse("unhandled_exception", t.getMessage)
   }

@@ -146,11 +146,11 @@ class PackageRepositorySpec extends FeatureSpec with Matchers {
     scenario("the user should receive an error when trying to add a non-repository") {
       val name = "not-repository"
       val uri: Uri = "https://www.github.com/uontehusantoehusanth"
-      val expectedError = UniverseClientHttpError(
+      val expectedError = rpc.v1.model.ErrorResponse(UniverseClientHttpError(
         PackageRepository(name, uri),
         HttpMethod.GET,
         Status.NotFound
-      ).exception(Status.BadRequest).errorResponse
+      ).exception(Status.BadRequest).error)
       val error = intercept[HttpErrorResponse] {
         RoundTrips.withRepository(name, uri).run()
       }

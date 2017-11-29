@@ -1,6 +1,5 @@
 package com.mesosphere.cosmos.error
 
-import com.mesosphere.cosmos.rpc
 import io.circe.Encoder
 import io.circe.JsonObject
 
@@ -10,14 +9,6 @@ trait CosmosError {
 
   def exception: CosmosException = {
     CosmosException(this)
-  }
-
-  def errorResponse: rpc.v1.model.ErrorResponse = {
-    rpc.v1.model.ErrorResponse(
-      getClass.getSimpleName,
-      message,
-      data
-    )
   }
 }
 
