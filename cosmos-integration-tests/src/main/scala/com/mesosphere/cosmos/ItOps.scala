@@ -1,7 +1,6 @@
 package com.mesosphere.cosmos
 
 import com.mesosphere.cosmos.error.CosmosError
-import com.mesosphere.cosmos.rpc.v1.model.ErrorResponse
 import com.mesosphere.cosmos.thirdparty.marathon.model.AppId
 import com.mesosphere.universe
 import com.twitter.bijection.Conversion
@@ -11,7 +10,8 @@ import java.util.UUID
 
 object ItOps {
 
-  implicit def cosmosErrorToErrorResponse[E <: CosmosError]: Conversion[E, ErrorResponse] = {
+  implicit def cosmosErrorToErrorResponse[E <: CosmosError]
+    : Conversion[E, rpc.v1.model.ErrorResponse] = {
     Conversion.fromFunction(rpc.v1.model.ErrorResponse(_))
   }
 
