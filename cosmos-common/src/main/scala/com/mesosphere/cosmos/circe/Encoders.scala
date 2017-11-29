@@ -49,10 +49,10 @@ object Encoders {
   implicit val encodeHttpMethod: Encoder[HttpMethod] =
     Encoder.encodeString.contramap(_.getName)
 
-  implicit def encodeIor[A, B](implicit
-                               encodeA: Encoder[A],
-                               encodeB: Encoder[B]): Encoder[Ior[A, B]] =
-    deriveEncoder[Ior[A, B]]
+  implicit def encodeIor[A, B](
+    implicit encodeA: Encoder[A],
+    encodeB: Encoder[B]
+  ): Encoder[Ior[A, B]] = deriveEncoder[Ior[A, B]]
 
   def exceptionErrorResponse(t: Throwable): rpc.v1.model.ErrorResponse =
     t match {
@@ -60,7 +60,8 @@ object Encoders {
       case Error.NotPresent(item) =>
         rpc.v1.model.ErrorResponse(
           "not_present",
-          s"Item ${item.description} not present but required")
+          s"Item ${item.description} not present but required"
+        )
       case Error.NotParsed(item, _, cause) =>
         rpc.v1.model.ErrorResponse(
           "not_parsed",
@@ -69,7 +70,8 @@ object Encoders {
       case Error.NotValid(item, rule) =>
         rpc.v1.model.ErrorResponse(
           "not_valid",
-          s"Item ${item.description} deemed invalid by rule: $rule")
+          s"Item ${item.description} deemed invalid by rule: $rule"
+        )
       case Errors(ts) =>
         val details = ts.map(exceptionErrorResponse).toList.asJson
         rpc.v1.model.ErrorResponse(
@@ -95,7 +97,9 @@ object Encoders {
               Map(
                 "type" -> "parse".asJson,
                 "reason" -> pf.message.asJson
-              )))
+              )
+            )
+          )
         )
       case df: DecodingFailure =>
         val path = opsToPath(df.history)
@@ -108,7 +112,9 @@ object Encoders {
                 "type" -> "decode".asJson,
                 "reason" -> df.message.asJson,
                 "path" -> path.asJson
-              )))
+              )
+            )
+          )
         )
     }
   }

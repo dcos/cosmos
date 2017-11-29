@@ -1,11 +1,11 @@
 package com.mesosphere.cosmos.circe
 
 import cats.syntax.either._
-import com.mesosphere.cosmos.error.CosmosError
 import com.mesosphere.cosmos.error.JsonDecodingError
 import com.mesosphere.cosmos.error.JsonParsingError
 import com.mesosphere.cosmos.finch.MediaTypedDecoder
 import com.mesosphere.error.Result
+import com.mesosphere.error._
 import com.mesosphere.http.MediaType
 import com.netaporter.uri.Uri
 import io.circe.Decoder
@@ -32,12 +32,6 @@ object Decoders {
       { e => DecodingFailure("Base64 string value expected", c.history) },
       { s => ByteBuffer.wrap(Base64.getDecoder.decode(s)) }
     )
-  }
-
-  implicit final class ResultOps[T](
-    val value: Result[T]
-  ) extends AnyVal {
-    def getOrThrow: T = value.fold( ce => throw ce.exception, identity)
   }
 
   def decode[T: Decoder: ClassTag](value: String): T = {
@@ -73,7 +67,7 @@ object Decoders {
   def convertToCosmosError[T: ClassTag](
     result: Either[Error, T],
     inputValue: String
-  ): Either[CosmosError, T] = result match {
+  ): Result[T] = result match {
     case Right(value) => Right(value)
     case Left(ParsingFailure(message, underlying)) =>
       Left(
