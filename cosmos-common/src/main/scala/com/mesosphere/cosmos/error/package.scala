@@ -1,6 +1,4 @@
-package com.mesosphere
-
-import com.mesosphere.cosmos.error.CosmosError
+package com.mesosphere.cosmos
 
 package object error {
   type Result[A] = Either[CosmosError, A]

@@ -81,7 +81,7 @@ object Encoders {
         )
       case ce: CosmosException => rpc.v1.model.ErrorResponse(ce.error)
       case t: Throwable =>
-        rpc.v1.model.ErrorResponse("unhandled_exception", t.getMessage)
+        rpc.v1.model.ErrorResponse("unhandled_exception", Option(t.getMessage).getOrElse(""))
     }
 
   private[this] def circeErrorResponse(
