@@ -4,6 +4,8 @@ import cats.syntax.either._
 import com.mesosphere.cosmos.error.JsonDecodingError
 import com.mesosphere.cosmos.error.JsonParsingError
 import com.mesosphere.cosmos.finch.MediaTypedDecoder
+import com.mesosphere.cosmos.error.Result
+import com.mesosphere.cosmos.error.ResultOps
 import com.mesosphere.http.MediaType
 import com.netaporter.uri.Uri
 import io.circe.Decoder
@@ -24,7 +26,6 @@ object Decoders {
   implicit val decodeString: Decoder[String] = {
     Decoder.decodeString.withErrorMessage("String value expected")
   }
-
 
   implicit val decodeByteBuffer: Decoder[ByteBuffer] = Decoder.instance { c =>
     c.as[String].bimap(
@@ -61,12 +62,29 @@ object Decoders {
   def convertToCosmosException[T: ClassTag](
     result: Either[Error, T],
     inputValue: String
-  ): T = result match {
-    case Right(value) => value
+  ): T = convertToCosmosError(result, inputValue).getOrThrow
+
+  def convertToCosmosError[T: ClassTag](
+    result: Either[Error, T],
+    inputValue: String
+  ): Result[T] = result match {
+    case Right(value) => Right(value)
     case Left(ParsingFailure(message, underlying)) =>
-      throw JsonParsingError(underlying.getClass.getName, message, inputValue).exception
+      Left(
+        JsonParsingError(
+          underlying.getClass.getName,
+          message,
+          inputValue
+        )
+      )
     case Left(DecodingFailure(message, _)) =>
-      throw JsonDecodingError(classTag[T].runtimeClass.getName, message, inputValue).exception
+      Left(
+        JsonDecodingError(
+          classTag[T].runtimeClass.getName,
+          message,
+          inputValue
+        )
+      )
   }
 
   private[this] def base64DecodeString(value: String): String = {

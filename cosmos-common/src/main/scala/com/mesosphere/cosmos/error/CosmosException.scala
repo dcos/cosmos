@@ -1,6 +1,5 @@
 package com.mesosphere.cosmos.error
 
-import com.mesosphere.cosmos.rpc.v1.model.ErrorResponse
 import com.twitter.finagle.http.Status
 
 final case class CosmosException(
@@ -8,15 +7,7 @@ final case class CosmosException(
   status: Status,
   headers: Map[String, String],
   causedBy: Option[Throwable]
-) extends RuntimeException(error.message, causedBy.orNull) {
-  def errorResponse: ErrorResponse = {
-    ErrorResponse(
-      error.getClass.getSimpleName,
-      error.message,
-      error.data
-    )
-  }
-}
+) extends RuntimeException(error.message, causedBy.orNull)
 
 object CosmosException {
   def apply(error: CosmosError): CosmosException = {

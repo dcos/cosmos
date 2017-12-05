@@ -4,7 +4,6 @@ import com.mesosphere.cosmos.http.CosmosRequests
 import com.mesosphere.cosmos.http.CosmosResponse
 import com.mesosphere.cosmos.http.HttpRequest
 import com.mesosphere.cosmos.http.TestContext
-import com.mesosphere.cosmos.rpc.v1.model.ListVersionsResponse
 import com.mesosphere.cosmos.test.CosmosIntegrationTestClient
 import com.mesosphere.cosmos.test.CosmosIntegrationTestClient.CosmosClient
 import com.mesosphere.cosmos.test.CosmosIntegrationTestClient.Session
@@ -107,7 +106,7 @@ object Requests {
     name: String,
     includePackageVersions: Boolean
   ): rpc.v1.model.ListVersionsResponse = {
-    callEndpoint[ListVersionsResponse](
+    callEndpoint[rpc.v1.model.ListVersionsResponse](
       CosmosRequests.packageListVersions(
         rpc.v1.model.ListVersionsRequest(
           name, includePackageVersions

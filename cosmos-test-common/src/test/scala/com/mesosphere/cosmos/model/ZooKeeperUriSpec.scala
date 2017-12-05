@@ -1,6 +1,5 @@
 package com.mesosphere.cosmos.model
 
-import com.twitter.util.Return
 import org.scalatest.FreeSpec
 import org.scalatest.prop.TableDrivenPropertyChecks
 
@@ -12,13 +11,13 @@ final class ZooKeeperUriSpec extends FreeSpec with TableDrivenPropertyChecks {
 
     "invalid uris" in {
       forAll(InvalidUris) { stringToParse =>
-        assert(ZooKeeperUri.parse(stringToParse).isThrow)
+        assert(ZooKeeperUri.parse(stringToParse).isLeft)
       }
     }
 
     "valid uris" in {
       forAll(ValidUris) { (stringToParse, connectString, path) =>
-        val Return(zkUri) = ZooKeeperUri.parse(stringToParse)
+        val Right(zkUri) = ZooKeeperUri.parse(stringToParse)
         assertResult(connectString)(zkUri.connectString)
         assertResult(path)(zkUri.path)
       }
@@ -29,7 +28,7 @@ final class ZooKeeperUriSpec extends FreeSpec with TableDrivenPropertyChecks {
   "toString" - {
     "valid uris" in {
       forAll(ValidUris) { (stringToParse, _, _) =>
-        val Return(uri) = ZooKeeperUri.parse(stringToParse)
+        val Right(uri) = ZooKeeperUri.parse(stringToParse)
         assertResult(stringToParse)(uri.toString)
       }
     }

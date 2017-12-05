@@ -13,7 +13,11 @@ trait CosmosError {
 }
 
 object CosmosError {
-  def deriveData[T <: CosmosError](error: T)(implicit encoder: Encoder[T]): Option[JsonObject] = {
+  def deriveData[T <: CosmosError](
+    error: T
+  )(
+    implicit encoder: Encoder[T]
+  ): Option[JsonObject] = {
     encoder(error).asObject
   }
 }

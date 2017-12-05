@@ -1,7 +1,6 @@
 package com.mesosphere.cosmos.model
 
-import com.twitter.util.{Return, Throw, Try}
-
+import com.mesosphere.cosmos.error.ZooKeeperUriParseError
 import scala.util.matching.Regex
 
 case class ZooKeeperUri private(connectString: String, path: String) {
@@ -17,10 +16,10 @@ object ZooKeeperUri {
   private[this] val ValidationRegex: Regex =
     s"""^zk://($HostAndPort(?:,$HostAndPort)*)(/$PathSegment(?:/$PathSegment)*)$$""".r
 
-  def parse(s: String): Try[ZooKeeperUri] = {
+  def parse(s: String): Either[ZooKeeperUriParseError, ZooKeeperUri] = {
     s match {
-      case ValidationRegex(hosts, path) => Return(new ZooKeeperUri(hosts, path))
-      case _ => Throw(new RuntimeException(s"ZooKeeper URI not parsable: $s"))
+      case ValidationRegex(hosts, path) => Right(new ZooKeeperUri(hosts, path))
+      case _ => Left(ZooKeeperUriParseError(s))
     }
   }
 
