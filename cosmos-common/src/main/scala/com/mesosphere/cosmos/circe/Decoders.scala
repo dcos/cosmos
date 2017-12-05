@@ -5,7 +5,7 @@ import com.mesosphere.cosmos.error.JsonDecodingError
 import com.mesosphere.cosmos.error.JsonParsingError
 import com.mesosphere.cosmos.finch.MediaTypedDecoder
 import com.mesosphere.cosmos.error.Result
-import com.mesosphere.cosmos.error._
+import com.mesosphere.cosmos.error.ResultOps
 import com.mesosphere.http.MediaType
 import com.netaporter.uri.Uri
 import io.circe.Decoder
