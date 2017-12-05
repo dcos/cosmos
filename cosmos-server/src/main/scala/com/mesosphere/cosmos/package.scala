@@ -41,7 +41,7 @@ package cosmos {
   )
 
   object zookeeperUri extends GlobalFlag[ZooKeeperUri](
-    ZooKeeperUri.parse("zk://127.0.0.1:2181/cosmos").right.get,
+    ZooKeeperUri.parse("zk://127.0.0.1:2181/cosmos").getOrThrow,
     "The ZooKeeper connection string"
   )
 

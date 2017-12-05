@@ -12,7 +12,7 @@ object Flaggables {
   implicit val flagOfFilePath: Flaggable[file.Path] = Flaggable.mandatory(s => file.Paths.get(s))
 
   implicit val flagOfZooKeeperUri: Flaggable[ZooKeeperUri] =
-    Flaggable.mandatory(s => ZooKeeperUri.parse(s).right.get)
+    Flaggable.mandatory(s => ZooKeeperUri.parse(s).getOrThrow)
 
   implicit def flagOfOption[T](implicit flaggable: Flaggable[T]): Flaggable[Option[T]] = {
     Flaggable.mandatory { string =>
