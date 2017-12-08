@@ -9,12 +9,11 @@ title: DC/OS Package, Service, and Capabilities
   /list-versions: !include endpoints/package-list-versions.raml
   /search: !include endpoints/package-search.raml
   /list: !include endpoints/package-list.raml
-  /add: !include endpoints/package-add.raml
+  /resource: !include endpoints/package-resource.raml
   /repository:
     /list: !include endpoints/package-repository-list.raml
     /add: !include endpoints/package-repository-add.raml
     /delete: !include endpoints/package-repository-delete.raml
 /service:
-  /start: !include endpoints/service-start.raml
   /describe: !include endpoints/service-describe.raml
 /capabilities: !include endpoints/capabilities.raml
