@@ -24,6 +24,8 @@ import org.scalatest.Matchers
 class ServiceUpdateSpec extends FeatureSpec with Matchers {
   private[this] implicit val testContext = TestContext.fromSystemProperties()
 
+  import ServiceUpdateSpec._
+
   // scalastyle:off multiple.string.literals
   val helloworld = "helloworld"
 
@@ -132,17 +134,25 @@ class ServiceUpdateSpec extends FeatureSpec with Matchers {
     }
   }
 
-  private def waitForDeployment() = {
-    // scalastyle:off magic.number
-    ItUtil.waitForDeployment(CosmosIntegrationTestClient.adminRouter)(60)
-    // scalastyle:on magic.number
+  // scalastyle:on multiple.string.literals
+}
+
+object ServiceUpdateSpec {
+
+  def waitForDeployment():Boolean = {
+    val timeout = 60
+    ItUtil.waitForDeployment(
+      CosmosIntegrationTestClient.adminRouter
+    )(timeout)
   }
 
-  private def serviceUpdate(
+  def serviceUpdate(
     appId: AppId,
     packageVersion: Option[universe.v3.model.Version],
     options: Option[JsonObject],
     replace: Boolean
+  )(
+    implicit testContext: TestContext
   ): rpc.v1.model.ServiceUpdateResponse = {
     Requests.callEndpoint[rpc.v1.model.ServiceUpdateResponse](
       HttpRequest.post(
@@ -159,5 +169,4 @@ class ServiceUpdateSpec extends FeatureSpec with Matchers {
     )
   }
 
-  // scalastyle:on multiple.string.literals
 }

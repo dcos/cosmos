@@ -1,6 +1,5 @@
 package com.mesosphere.cosmos
 
-import com.mesosphere.cosmos.handler.ServiceUpdateSpec
 import org.scalatest.Suites
 
 final class IntegrationTestsSpec extends Suites(
@@ -11,7 +10,8 @@ final class IntegrationTestsSpec extends Suites(
   new PackageRepositorySpec,
   new PackageSearchSpec,
   new ServiceDescribeSpec,
-  new ServiceUpdateSpec,
+  new handler.ServiceUpdateSpec,
+  new handler.NonSharedServiceUpdateSpec,
   new handler.CapabilitiesHandlerSpec,
   new handler.PackageRenderHandlerSpec,
   new handler.RequestErrorsSpec,
