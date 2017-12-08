@@ -12,7 +12,7 @@ final case class UniverseClientHttpError(
   packageRepository: rpc.v1.model.PackageRepository,
   method: HttpMethod,
   clientStatus: Status,
-  comsosStatus: Status
+  cosmosStatus: Status
 ) extends CosmosError {
   override def data: Option[JsonObject] = CosmosError.deriveData(this)
 
@@ -23,7 +23,7 @@ final case class UniverseClientHttpError(
       s"${method.getName} ${clientStatus.code}"
   }
 
-  override def status: Status = clientStatus
+  override def status: Status = cosmosStatus
 
 }
 
