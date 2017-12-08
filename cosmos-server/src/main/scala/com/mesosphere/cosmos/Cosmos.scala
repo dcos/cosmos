@@ -24,6 +24,7 @@ import com.mesosphere.cosmos.handler.PackageRepositoryListHandler
 import com.mesosphere.cosmos.handler.PackageSearchHandler
 import com.mesosphere.cosmos.handler.ResourceProxyHandler
 import com.mesosphere.cosmos.handler.ServiceDescribeHandler
+import com.mesosphere.cosmos.handler.ServiceUpdateHandler
 import com.mesosphere.cosmos.handler.UninstallHandler
 import com.mesosphere.cosmos.repository.PackageCollection
 import com.mesosphere.cosmos.repository.PackageSourcesStorage
@@ -102,7 +103,8 @@ with Logging {
         )
       ),
       new MarathonPackageRunner(adminRouter),
-      ServiceUninstaller(adminRouter)
+      ServiceUninstaller(adminRouter),
+      new ServiceUpdater(adminRouter)
     )
   }
 
@@ -125,7 +127,8 @@ with Logging {
       packageResource = ResourceProxyHandler(repositories, proxyContentLimit()),
       packageSearch = new PackageSearchHandler(repositories),
       packageUninstall = new UninstallHandler(adminRouter, repositories, marathonSdkJanitor),
-      serviceDescribe = new ServiceDescribeHandler(adminRouter, repositories)
+      serviceDescribe = new ServiceDescribeHandler(adminRouter, repositories),
+      serviceUpdate = new ServiceUpdateHandler(adminRouter, repositories, serviceUpdater)
     )
   }
 
@@ -149,7 +152,8 @@ with Logging {
       packageResource = get(pkg :: "resource" :: RequestValidators.proxyValidator).mapOutputAsync(packageResource(_)),
       packageSearch = standardEndpoint(pkg :: "search", packageSearch),
       packageUninstall = standardEndpoint(pkg :: "uninstall", packageUninstall),
-      serviceDescribe = standardEndpoint("service" :: "describe", serviceDescribe)
+      serviceDescribe = standardEndpoint("service" :: "describe", serviceDescribe),
+      serviceUpdate = standardEndpoint("service" :: "update", serviceUpdate)
     )
   }
 
@@ -295,7 +299,8 @@ object CosmosApp {
     val universeClient: UniverseClient,
     val repositories: PackageCollection,
     val packageRunner: MarathonPackageRunner,
-    val marathonSdkJanitor: ServiceUninstaller
+    val marathonSdkJanitor: ServiceUninstaller,
+    val serviceUpdater: ServiceUpdater
   )
 
   final class Handlers(
@@ -312,7 +317,8 @@ object CosmosApp {
     val packageResource: ResourceProxyHandler,
     val packageSearch: EndpointHandler[rpc.v1.model.SearchRequest, rpc.v1.model.SearchResponse],
     val packageUninstall: EndpointHandler[rpc.v1.model.UninstallRequest, rpc.v1.model.UninstallResponse],
-    val serviceDescribe: EndpointHandler[rpc.v1.model.ServiceDescribeRequest, rpc.v1.model.ServiceDescribeResponse]
+    val serviceDescribe: EndpointHandler[rpc.v1.model.ServiceDescribeRequest, rpc.v1.model.ServiceDescribeResponse],
+    val serviceUpdate: EndpointHandler[rpc.v1.model.ServiceUpdateRequest, rpc.v1.model.ServiceUpdateResponse]
   )
 
   final case class Endpoints(
@@ -329,12 +335,13 @@ object CosmosApp {
     packageResource: Endpoint[Response],
     packageSearch: Endpoint[Json],
     packageUninstall: Endpoint[Json],
-    serviceDescribe: Endpoint[Json]
+    serviceDescribe: Endpoint[Json],
+    serviceUpdate: Endpoint[Json]
   ) {
 
     type Outputs =
       Json :+: Json :+: Json :+: Json :+: Json :+: Json :+: Json :+: Json :+: Json :+: Response :+:
-        Json :+: Json :+: Json :+: CNil
+        Json :+: Json :+: Json :+: Json :+: CNil
 
     def combine: Endpoint[Outputs] = {
       // Keep alphabetized
@@ -350,7 +357,8 @@ object CosmosApp {
         :+: packageResource
         :+: packageSearch
         :+: packageUninstall
-        :+: serviceDescribe)
+        :+: serviceDescribe
+        :+: serviceUpdate)
     }
 
   }
