@@ -30,15 +30,13 @@ final class ServiceUpdateHandler(
 
   import ServiceUpdateHandler._
 
-  type PackageWithSource = (universe.v4.model.PackageDefinition, Uri)
-
   override def apply(
     request: rpc.v1.model.ServiceUpdateRequest
   )(
     implicit session: RequestSession
   ): Future[rpc.v1.model.ServiceUpdateResponse] = {
     adminRouter.getApp(request.appId).flatMap { marathonAppResponse =>
-      getPackageWithSource(marathonAppResponse.app).flatMap {
+      getPackageWithSource(packageCollection, marathonAppResponse.app).flatMap {
         case (packageDefinition, packageSource) =>
           if (request.packageVersion.exists(_ != packageDefinition.version)) {
             Future.exception(
@@ -49,6 +47,7 @@ final class ServiceUpdateHandler(
             )
           } else {
             update(
+              serviceUpdater,
               marathonAppResponse,
               request,
               packageDefinition,
@@ -59,7 +58,14 @@ final class ServiceUpdateHandler(
     }
   }
 
+}
+
+object ServiceUpdateHandler {
+
+  type PackageWithSource = (universe.v4.model.PackageDefinition, Uri)
+
   def update(
+    serviceUpdater: ServiceUpdater,
     marathonAppResponse: MarathonAppResponse,
     serviceUpdateRequest: ServiceUpdateRequest,
     packageDefinition: universe.v4.model.PackageDefinition,
@@ -98,13 +104,27 @@ final class ServiceUpdateHandler(
     }
   }
 
-  private[this] def getPackageWithSource(
+  def mergeStoredAndProvided(
+    storedOptions: Option[JsonObject],
+    providedOptions: Option[JsonObject],
+    replace: Boolean
+  ): Option[JsonObject] = {
+    (replace, storedOptions, providedOptions) match {
+      case (true, _, _) => providedOptions
+      case (false, None, _) => throw OptionsNotStored().exception
+      case (false, _: Some[_], None) => storedOptions
+      case (false, Some(stored), Some(provided)) => Some(JsonUtil.merge(stored, provided))
+    }
+  }
+
+  def getPackageWithSource(
+    packageCollection: PackageCollection,
     marathonApp: MarathonApp
   )(
     implicit session: RequestSession
   ): Future[PackageWithSource] = {
     orElse(Future.value(getStoredPackageWithSource(marathonApp)))(
-      lookupPackageWithSource(marathonApp)
+      lookupPackageWithSource(packageCollection, marathonApp)
     ).map(_.getOrElse {
       throw new IllegalStateException(
         "Unable to retrieve the old package definition"
@@ -122,6 +142,7 @@ final class ServiceUpdateHandler(
   }
 
   private[this] def lookupPackageWithSource(
+    packageCollection: PackageCollection,
     marathonApp: MarathonApp
   )(
     implicit session: RequestSession
@@ -145,24 +166,7 @@ final class ServiceUpdateHandler(
       .orElse(fromMetadata)
   }
 
-}
-
-object ServiceUpdateHandler {
-
-  def mergeStoredAndProvided(
-    storedOptions: Option[JsonObject],
-    providedOptions: Option[JsonObject],
-    replace: Boolean
-  ): Option[JsonObject] = {
-    (replace, storedOptions, providedOptions) match {
-      case (true, _, _) => providedOptions
-      case (false, None, _) => throw OptionsNotStored().exception
-      case (false, _: Some[_], None) => storedOptions
-      case (false, Some(stored), Some(provided)) => Some(JsonUtil.merge(stored, provided))
-    }
-  }
-
-  private def traverse[A, B](a: Option[A])(fun: A => Future[B]): Future[Option[B]] = {
+  def traverse[A, B](a: Option[A])(fun: A => Future[B]): Future[Option[B]] = {
     a.map(fun) match {
       case None => Future.value(None)
       case Some(v) => v.map(Some(_))
