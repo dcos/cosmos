@@ -8,7 +8,7 @@ post:
       enum: [application/vnd.dcos.package.describe-response+json;charset=utf-8;version=v3]
   body:
     application/vnd.dcos.package.describe-request+json;charset=utf-8;version=v1:
-      type: !include ../schemas//cosmos/rpc/v1/model/DescribeRequest-schema.json
+      type: !include ../schemas/cosmos/rpc/v1/model/DescribeRequest-schema.json
       example:
         packageName: cassandra
         packageVersion: 1.0.24-3.0.10
