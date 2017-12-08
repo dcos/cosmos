@@ -13,10 +13,6 @@ final case class MarathonBadGateway(marathonStatus: Status) extends CosmosError 
   }
 
   override def status: Status = Status.BadGateway
-
-  override def exception: CosmosException = {
-    CosmosException(this, status, Map.empty, None)
-  }
 }
 
 object MarathonBadGateway {

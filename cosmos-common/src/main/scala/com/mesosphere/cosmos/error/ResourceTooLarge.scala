@@ -16,10 +16,6 @@ final case class ResourceTooLarge(contentLength: Option[Long], limit: Long) exte
 
   override def status: Status = Status.Forbidden
 
-  override def exception: CosmosException = {
-    CosmosException(this, status, headers = Map.empty, causedBy = None)
-  }
-
 }
 
 object ResourceTooLarge {

@@ -31,7 +31,7 @@ final class ResourceProxyHandlerIntegrationSpec extends FreeSpec
       val response = intercept[CosmosException](CosmosClient.submit(
         CosmosRequests.packageResource(thirdPartyUnknownResource)
       ))
-      assertResult(Status.Forbidden)(response.status)
+      assertResult(Status.Forbidden)(response.error.status)
     }
 
     "be able to download rewritten uris for images and assets" in {

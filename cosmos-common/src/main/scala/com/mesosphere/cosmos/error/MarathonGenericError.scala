@@ -14,10 +14,6 @@ final case class MarathonGenericError(marathonStatus: Status) extends CosmosErro
   }
 
   override def status: Status = Status.InternalServerError
-
-  override def exception: CosmosException = {
-    CosmosException(this, status, Map.empty, None)
-  }
 }
 
 object MarathonGenericError {

@@ -1,6 +1,7 @@
 package com.mesosphere.cosmos.handler
 
 import com.mesosphere.cosmos.error.CosmosException
+import com.mesosphere.cosmos.error.UniverseClientHttpError
 import com.mesosphere.cosmos.error.UnsupportedRepositoryUri
 import com.mesosphere.cosmos.finch.EndpointHandler
 import com.mesosphere.cosmos.http.RequestSession
@@ -46,7 +47,17 @@ private[cosmos] final class PackageRepositoryAddHandler(
      */
     universeClient(repository).unit.handle {
       case ce: CosmosException =>
-        throw ce.copy(status = Status.BadRequest)
+        ce.error match {
+          case uce : UniverseClientHttpError =>
+            throw ce.copy(
+              error = UniverseClientHttpError(
+                uce.packageRepository,
+                uce.method,
+                uce.clientStatus,
+                Status.BadRequest
+              )
+            )
+        }
     }
   }
 

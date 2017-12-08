@@ -186,7 +186,7 @@ final class ResourceProxyHandlerSpec extends FreeSpec with PropertyChecks with M
 
   def assertFailure(output: Future[Output[Response]]): Assertion = {
     val exception = intercept[CosmosException](Await.result(output))
-    assertResult(Status.Forbidden)(exception.status)
+    assertResult(Status.Forbidden)(exception.error.status)
     assert(exception.error.isInstanceOf[ResourceTooLarge])
   }
 }

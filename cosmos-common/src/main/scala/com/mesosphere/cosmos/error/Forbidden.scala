@@ -17,10 +17,6 @@ final case class Forbidden(
 
   override def status: Status = Status.Forbidden
 
-  override def exception: CosmosException = {
-    CosmosException(this, status, Map.empty, None)
-  }
-
   private def destinationMessage:String = {
     destination match {
       case Some(endpoint) => s" while accessing$endpoint"

@@ -46,7 +46,7 @@ final class UniverseClientSpec extends FreeSpec with Matchers {
       "URI/URL syntax" - {
         "relative URI" in {
           val expectedRepo = PackageRepository(name = "FooBar", uri = Uri.parse("foo/bar"))
-          val Throw(CosmosException(RepositoryUriSyntax(actualRepo, _), _, _, Some(causedBy))) =
+          val Throw(CosmosException(RepositoryUriSyntax(actualRepo, _), _, Some(causedBy))) =
             Await.result(universeClient(expectedRepo, version1Dot8).liftToTry)
           assertResult(expectedRepo)(actualRepo)
           assert(causedBy.isInstanceOf[IllegalArgumentException])
@@ -54,7 +54,7 @@ final class UniverseClientSpec extends FreeSpec with Matchers {
 
         "unknown protocol" in {
           val expectedRepo = PackageRepository(name = "FooBar", uri = Uri.parse("foo://bar.com"))
-          val Throw(CosmosException(RepositoryUriSyntax(actualRepo, _), _, _, Some(causedBy))) =
+          val Throw(CosmosException(RepositoryUriSyntax(actualRepo, _), _, Some(causedBy))) =
             Await.result(universeClient(expectedRepo, version1Dot8).liftToTry)
           assertResult(expectedRepo)(actualRepo)
           assert(causedBy.isInstanceOf[MalformedURLException])
@@ -63,7 +63,7 @@ final class UniverseClientSpec extends FreeSpec with Matchers {
 
       "Connection failure" in {
         val expectedRepo = PackageRepository(name = "BadRepo", uri = Uri.parse("http://foobar"))
-        val Throw(CosmosException(RepositoryUriConnection(actualRepo, _), _, _, Some(causedBy))) =
+        val Throw(CosmosException(RepositoryUriConnection(actualRepo, _), _, Some(causedBy))) =
           Await.result(universeClient(expectedRepo, version1Dot8).liftToTry)
         assertResult(expectedRepo)(actualRepo)
         assert(causedBy.isInstanceOf[IOException])
@@ -119,7 +119,7 @@ final class UniverseClientSpec extends FreeSpec with Matchers {
       val expectedPkgRepo = PackageRepository("badRepo", repoUri)
       val result = universeClient(expectedPkgRepo, version)
       val Throw(
-        CosmosException(UniverseClientHttpError(actualPkgRepo, method, clientStatus, status), _, _, _)
+        CosmosException(UniverseClientHttpError(actualPkgRepo, method, clientStatus, status), _, _)
       ) = Await.result(
         result.liftToTry
       )

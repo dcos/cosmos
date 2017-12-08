@@ -14,10 +14,6 @@ final case class ServiceUnavailable(
   }
 
   override def status: Status = Status.ServiceUnavailable
-
-  override def exception: CosmosException = {
-    CosmosException(this, status, Map.empty, None)
-  }
 }
 
 object ServiceUnavailable {
