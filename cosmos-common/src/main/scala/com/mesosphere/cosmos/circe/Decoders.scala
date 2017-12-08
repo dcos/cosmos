@@ -4,8 +4,8 @@ import cats.syntax.either._
 import com.mesosphere.cosmos.error.JsonDecodingError
 import com.mesosphere.cosmos.error.JsonParsingError
 import com.mesosphere.cosmos.finch.MediaTypedDecoder
-import com.mesosphere.cosmos.error.Result
-import com.mesosphere.cosmos.error.ResultOps
+import com.mesosphere.error.Result
+import com.mesosphere.error.ResultOps
 import com.mesosphere.http.MediaType
 import com.netaporter.uri.Uri
 import io.circe.Decoder

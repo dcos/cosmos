@@ -1,6 +1,7 @@
 package com.mesosphere.cosmos.model
 
 import com.mesosphere.cosmos.error.ZooKeeperUriParseError
+import com.mesosphere.error.Result
 import scala.util.matching.Regex
 
 case class ZooKeeperUri private(connectString: String, path: String) {
@@ -16,7 +17,7 @@ object ZooKeeperUri {
   private[this] val ValidationRegex: Regex =
     s"""^zk://($HostAndPort(?:,$HostAndPort)*)(/$PathSegment(?:/$PathSegment)*)$$""".r
 
-  def parse(s: String): Either[ZooKeeperUriParseError, ZooKeeperUri] = {
+  def parse(s: String): Result[ZooKeeperUri] = {
     s match {
       case ValidationRegex(hosts, path) => Right(new ZooKeeperUri(hosts, path))
       case _ => Left(ZooKeeperUriParseError(s))
