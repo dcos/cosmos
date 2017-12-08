@@ -8,11 +8,6 @@ get:
       type:        string
       required:    true
       example:     http://somedomain.com/resource.txt
-  headers:
-     X-Forwarded-Proto?:
-       description: The X-Forwarded-Proto (XFP) header is a de-facto standard header for identifying the protocol (HTTP or HTTPS) that a client used to connect to your proxy or load balancer.
-       enum: [http, https]
-       example: http
   responses:
     200:
       headers:
