@@ -14,10 +14,12 @@ final case class Unauthorized(
     s"Unable to complete request due to Unauthorized response from service [$serviceName]"
   }
 
+  override def status: Status = Status.Unauthorized
+
   override def exception: CosmosException = {
     CosmosException(
       this,
-      Status.Unauthorized,
+      status,
       realm.map(r => Map("WWW-Authenticate" -> r)).getOrElse(Map.empty),
       None
     )

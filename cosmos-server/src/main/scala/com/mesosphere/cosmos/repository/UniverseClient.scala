@@ -134,8 +134,9 @@ final class DefaultUniverseClient(
               throw UniverseClientHttpError(
                 repository,
                 HttpMethod.GET,
-                clientStatus
-              ).exception(Status.InternalServerError)
+                clientStatus,
+                Status.InternalServerError
+              ).exception
             case e => throw e.exception
           }
         }

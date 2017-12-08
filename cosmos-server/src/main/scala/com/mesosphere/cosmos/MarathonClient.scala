@@ -80,7 +80,7 @@ class MarathonClient(
       response.status match {
         case Status.Ok => Some(response)
         case Status.NotFound => None
-        case s: Status => throw GenericHttpError(HttpMethod.GET, uri, s).exception(s)
+        case s: Status => throw GenericHttpError(HttpMethod.GET, uri, s).exception
       }
     }
   }

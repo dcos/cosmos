@@ -11,7 +11,8 @@ import org.jboss.netty.handler.codec.http.HttpMethod
 final case class UniverseClientHttpError(
   packageRepository: rpc.v1.model.PackageRepository,
   method: HttpMethod,
-  clientStatus: Status
+  clientStatus: Status,
+  comsosStatus: Status
 ) extends CosmosError {
   override def data: Option[JsonObject] = CosmosError.deriveData(this)
 
@@ -22,9 +23,8 @@ final case class UniverseClientHttpError(
       s"${method.getName} ${clientStatus.code}"
   }
 
-  def exception(status: Status): CosmosException = {
-    CosmosException(this, status, Map.empty, None)
-  }
+  override def status: Status = clientStatus
+
 }
 
 object UniverseClientHttpError {

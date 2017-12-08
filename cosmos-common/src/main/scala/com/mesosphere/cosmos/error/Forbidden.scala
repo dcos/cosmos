@@ -15,8 +15,10 @@ final case class Forbidden(
       s"[$serviceName]$destinationMessage"
   }
 
+  override def status: Status = Status.Forbidden
+
   override def exception: CosmosException = {
-    CosmosException(this, Status.Forbidden, Map.empty, None)
+    CosmosException(this, status, Map.empty, None)
   }
 
   private def destinationMessage:String = {

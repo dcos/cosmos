@@ -18,9 +18,8 @@ final case class GenericHttpError(
     s"Unexpected upstream http error: ${method.getName} ${uri.toString} ${clientStatus.code}"
   }
 
-  def exception(status: Status): CosmosException = {
-    CosmosException(this, status, Map.empty, None)
-  }
+  override def status: Status = clientStatus
+
 }
 
 object GenericHttpError {

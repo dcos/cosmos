@@ -119,7 +119,7 @@ final class UniverseClientSpec extends FreeSpec with Matchers {
       val expectedPkgRepo = PackageRepository("badRepo", repoUri)
       val result = universeClient(expectedPkgRepo, version)
       val Throw(
-        CosmosException(UniverseClientHttpError(actualPkgRepo, method, clientStatus), status, _, _)
+        CosmosException(UniverseClientHttpError(actualPkgRepo, method, clientStatus, status), _, _, _)
       ) = Await.result(
         result.liftToTry
       )

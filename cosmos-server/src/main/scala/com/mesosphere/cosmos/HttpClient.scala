@@ -46,7 +46,7 @@ object HttpClient {
     Future(uri.toURI.toURL.openConnection())
       .handle {
         case t @ (_: IllegalArgumentException | _: MalformedURLException | _: URISyntaxException) =>
-          throw CosmosException(EndpointUriSyntax(uri, t.getMessage), t)
+          throw CosmosException(EndpointUriSyntax(uri, t.getMessage), Some(t))
       }
       .flatMap { case conn: HttpURLConnection =>
         conn.setRequestProperty(Fields.UserAgent, s"cosmos/${BuildProperties().cosmosVersion}")
@@ -60,7 +60,7 @@ object HttpClient {
           .ensure(conn.disconnect())
       }
       .handle { case e: IOException =>
-        throw CosmosException(EndpointUriConnection(uri, e.getMessage), e)
+        throw CosmosException(EndpointUriConnection(uri, e.getMessage), Some(e))
       }
   }
 

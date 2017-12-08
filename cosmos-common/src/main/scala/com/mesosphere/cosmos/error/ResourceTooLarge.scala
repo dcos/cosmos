@@ -14,8 +14,10 @@ final case class ResourceTooLarge(contentLength: Option[Long], limit: Long) exte
 
   override def data: Option[JsonObject] = CosmosError.deriveData(this)
 
+  override def status: Status = Status.Forbidden
+
   override def exception: CosmosException = {
-    CosmosException(this, Status.Forbidden, headers = Map.empty, causedBy = None)
+    CosmosException(this, status, headers = Map.empty, causedBy = None)
   }
 
 }

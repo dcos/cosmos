@@ -13,8 +13,10 @@ final case class ServiceUnavailable(
     s"Unable to complete request due to service [$serviceName] unavailability"
   }
 
+  override def status: Status = Status.ServiceUnavailable
+
   override def exception: CosmosException = {
-    CosmosException(this, Status.ServiceUnavailable, Map.empty, None)
+    CosmosException(this, status, Map.empty, None)
   }
 }
 
