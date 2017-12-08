@@ -2,6 +2,7 @@ package com.mesosphere
 
 import com.mesosphere.cosmos.Flaggables._
 import com.mesosphere.cosmos.model.ZooKeeperUri
+import com.mesosphere.error.ResultOps
 import com.netaporter.uri.Uri
 import com.twitter.app.GlobalFlag
 import com.twitter.conversions.storage._

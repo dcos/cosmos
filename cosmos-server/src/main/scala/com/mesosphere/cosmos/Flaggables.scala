@@ -1,6 +1,7 @@
 package com.mesosphere.cosmos
 
 import com.mesosphere.cosmos.model.ZooKeeperUri
+import com.mesosphere.error.ResultOps
 import com.netaporter.uri.Uri
 import com.twitter.app.Flaggable
 import com.twitter.conversions.storage._
