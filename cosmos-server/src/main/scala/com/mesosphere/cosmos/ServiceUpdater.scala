@@ -24,3 +24,9 @@ final class ServiceUpdater(adminRouter: AdminRouter) {
     }
   }
 }
+
+object ServiceUpdater {
+  def apply(adminRouter: AdminRouter): ServiceUpdater = {
+    new ServiceUpdater(adminRouter)
+  }
+}

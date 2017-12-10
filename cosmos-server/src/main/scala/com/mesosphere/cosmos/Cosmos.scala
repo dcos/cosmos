@@ -104,7 +104,7 @@ with Logging {
       ),
       new MarathonPackageRunner(adminRouter),
       ServiceUninstaller(adminRouter),
-      new ServiceUpdater(adminRouter)
+      ServiceUpdater(adminRouter)
     )
   }
 
