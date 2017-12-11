@@ -252,7 +252,7 @@ private final class WriteHandler(
           // BADVERSION is expected so let's display a friendlier error
           CosmosException(
             ConcurrentAccess(),
-            Some(KeeperException.create(code, event.getPath))
+            KeeperException.create(code, event.getPath)
           )
         } else {
           KeeperException.create(code, event.getPath)
@@ -282,7 +282,7 @@ private final class CreateHandler(
           // NODEEXISTS is expected so let's display a friendlier error
           CosmosException(
             ConcurrentAccess(),
-            Some(KeeperException.create(code, event.getPath))
+            KeeperException.create(code, event.getPath)
           )
         } else {
           KeeperException.create(code, event.getPath)

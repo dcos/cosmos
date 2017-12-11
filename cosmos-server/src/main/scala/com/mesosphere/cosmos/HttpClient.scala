@@ -10,11 +10,11 @@ import com.mesosphere.http.MediaType
 import com.mesosphere.http.MediaTypeParser
 import com.netaporter.uri.Uri
 import com.twitter.finagle.http.Fields
-import com.twitter.finagle.http.Status
 import com.twitter.finagle.http.filter.LogFormatter
 import com.twitter.finagle.stats.StatsReceiver
 import com.twitter.util.Future
 import com.twitter.util.Time
+import io.netty.handler.codec.http.HttpResponseStatus
 import java.io.IOException
 import java.io.InputStream
 import java.net.HttpURLConnection
@@ -23,7 +23,6 @@ import java.net.URISyntaxException
 import java.util.TimeZone
 import java.util.zip.GZIPInputStream
 import org.apache.commons.lang.time.FastDateFormat
-import org.jboss.netty.handler.codec.http.HttpMethod
 import org.slf4j.Logger
 import scala.util.Failure
 import scala.util.Success
@@ -46,7 +45,7 @@ object HttpClient {
     Future(uri.toURI.toURL.openConnection())
       .handle {
         case t @ (_: IllegalArgumentException | _: MalformedURLException | _: URISyntaxException) =>
-          throw CosmosException(EndpointUriSyntax(uri, t.getMessage), Some(t))
+          throw CosmosException(EndpointUriSyntax(uri, t.getMessage), t)
       }
       .flatMap { case conn: HttpURLConnection =>
         conn.setRequestProperty(Fields.UserAgent, s"cosmos/${BuildProperties().cosmosVersion}")
@@ -60,7 +59,7 @@ object HttpClient {
           .ensure(conn.disconnect())
       }
       .handle { case e: IOException =>
-        throw CosmosException(EndpointUriConnection(uri, e.getMessage), Some(e))
+        throw CosmosException(EndpointUriConnection(uri, e.getMessage), e)
       }
   }
 
@@ -108,7 +107,7 @@ object HttpClient {
         throw UnsupportedRedirect(List(uri.scheme.get), loc).exception
       case status =>
         sr.scope("status").counter(status.toString).incr()
-        throw GenericHttpError(HttpMethod.GET, uri, Status.fromCode(status)).exception
+        throw GenericHttpError(uri = uri, clientStatus = HttpResponseStatus.valueOf(status)).exception
     }
   }
 

@@ -17,6 +17,7 @@ import com.twitter.finagle.http.Response
 import com.twitter.finagle.http.Status
 import com.twitter.io.Buf
 import com.twitter.util.Future
+import io.netty.handler.codec.http.HttpResponseStatus
 import org.jboss.netty.handler.codec.http.HttpMethod
 import scala.reflect.ClassTag
 
@@ -63,7 +64,7 @@ abstract class ServiceClient(baseUri: Uri) {
       case Status.Ok =>
         Future.value(response)
       case s: Status =>
-        throw GenericHttpError(method, uri, s).exception
+        throw GenericHttpError(method, uri, HttpResponseStatus.valueOf(s.code)).exception
     }
   }
 

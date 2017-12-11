@@ -9,9 +9,9 @@ import com.mesosphere.cosmos.test.CosmosIntegrationTestClient
 import com.mesosphere.universe
 import com.netaporter.uri.Uri
 import com.netaporter.uri.dsl._
-import com.twitter.finagle.http.Status
 import com.twitter.util.Await
 import com.twitter.util.Throw
+import io.netty.handler.codec.http.HttpResponseStatus
 import java.io.IOException
 import java.net.MalformedURLException
 import org.scalatest.FreeSpec
@@ -125,8 +125,8 @@ final class UniverseClientSpec extends FreeSpec with Matchers {
       )
       assertResult("GET")(method.getName)
       assertResult(expectedPkgRepo)(actualPkgRepo)
-      assertResult(Status.Forbidden)(clientStatus)
-      assertResult(Status.InternalServerError)(status)
+      assertResult(HttpResponseStatus.FORBIDDEN)(clientStatus)
+      assertResult(HttpResponseStatus.INTERNAL_SERVER_ERROR)(status)
     }
 
   }

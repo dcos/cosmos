@@ -8,8 +8,8 @@ import com.mesosphere.cosmos.http.RequestSession
 import com.mesosphere.cosmos.repository.PackageSourcesStorage
 import com.mesosphere.cosmos.repository.UniverseClient
 import com.mesosphere.cosmos.rpc
-import com.twitter.finagle.http.Status
 import com.twitter.util.Future
+import io.netty.handler.codec.http.HttpResponseStatus
 
 private[cosmos] final class PackageRepositoryAddHandler(
   sourcesStorage: PackageSourcesStorage,
@@ -49,14 +49,8 @@ private[cosmos] final class PackageRepositoryAddHandler(
       case ce: CosmosException =>
         ce.error match {
           case uce : UniverseClientHttpError =>
-            throw ce.copy(
-              error = UniverseClientHttpError(
-                uce.packageRepository,
-                uce.method,
-                uce.clientStatus,
-                Status.BadRequest
-              )
-            )
+            throw ce.copy(error = uce.copy(status = HttpResponseStatus.BAD_REQUEST))
+          case _ => throw ce
         }
     }
   }

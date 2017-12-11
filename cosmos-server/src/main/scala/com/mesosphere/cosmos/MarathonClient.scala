@@ -15,6 +15,7 @@ import com.netaporter.uri.dsl._
 import com.twitter.finagle.Service
 import com.twitter.finagle.http._
 import com.twitter.util.Future
+import io.netty.handler.codec.http.HttpResponseStatus
 import org.jboss.netty.handler.codec.http.HttpMethod
 
 class MarathonClient(
@@ -80,7 +81,8 @@ class MarathonClient(
       response.status match {
         case Status.Ok => Some(response)
         case Status.NotFound => None
-        case s: Status => throw GenericHttpError(HttpMethod.GET, uri, s).exception
+        case s: Status =>
+          throw GenericHttpError(HttpMethod.GET, uri, HttpResponseStatus.valueOf(s.code)).exception
       }
     }
   }

@@ -7,11 +7,11 @@ final case class CosmosException(
 ) extends RuntimeException(error.message, causedBy.orNull)
 
 object CosmosException {
+  def apply(error: CosmosError): CosmosException = {
+    CosmosException(error, Map.empty, None)
+  }
 
-  def apply(
-    error: CosmosError,
-    causedBy: Option[Throwable] = None
-  ): CosmosException = {
-    CosmosException(error, Map.empty, causedBy)
+  def apply(error: CosmosError, causedBy: Throwable): CosmosException = {
+    CosmosException(error, Map.empty, Option(causedBy))
   }
 }

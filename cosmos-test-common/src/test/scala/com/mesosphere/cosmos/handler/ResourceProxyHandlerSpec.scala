@@ -9,11 +9,11 @@ import com.mesosphere.http.MediaType
 import com.netaporter.uri.Uri
 import com.twitter.conversions.storage._
 import com.twitter.finagle.http.Response
-import com.twitter.finagle.http.Status
 import com.twitter.util.Await
 import com.twitter.util.Future
 import com.twitter.util.StorageUnit
 import io.finch.Output
+import io.netty.handler.codec.http.HttpResponseStatus
 import java.io.ByteArrayInputStream
 import org.scalacheck.Arbitrary.arbitrary
 import org.scalacheck.Gen
@@ -119,7 +119,7 @@ final class ResourceProxyHandlerSpec extends FreeSpec with PropertyChecks with M
           val responseData = ResponseData(contentType, Some((contentBytes.size - 1).toLong), contentStream)
           val ex = intercept[CosmosException](ResourceProxyHandler.getContentBytes(uri, responseData, lengthLimit))
           assert(ex.error.isInstanceOf[GenericHttpError])
-          assertResult(Status.BadGateway)(ex.error.asInstanceOf[GenericHttpError].clientStatus)
+          assertResult(HttpResponseStatus.BAD_GATEWAY)(ex.error.asInstanceOf[GenericHttpError].clientStatus)
         }
       }
 
@@ -139,7 +139,7 @@ final class ResourceProxyHandlerSpec extends FreeSpec with PropertyChecks with M
           val responseData = ResponseData(contentType, Some((contentBytes.size + 1).toLong), contentStream)
           val ex = intercept[CosmosException](ResourceProxyHandler.getContentBytes(uri, responseData, lengthLimit))
           assert(ex.error.isInstanceOf[GenericHttpError])
-          assertResult(Status.BadGateway)(ex.error.asInstanceOf[GenericHttpError].clientStatus)
+          assertResult(HttpResponseStatus.BAD_GATEWAY)(ex.error.asInstanceOf[GenericHttpError].clientStatus)
         }
       }
 
@@ -186,7 +186,7 @@ final class ResourceProxyHandlerSpec extends FreeSpec with PropertyChecks with M
 
   def assertFailure(output: Future[Output[Response]]): Assertion = {
     val exception = intercept[CosmosException](Await.result(output))
-    assertResult(Status.Forbidden)(exception.error.status)
+    assertResult(HttpResponseStatus.FORBIDDEN)(exception.error.status)
     assert(exception.error.isInstanceOf[ResourceTooLarge])
   }
 }

@@ -2,12 +2,12 @@ package com.mesosphere.cosmos.error
 
 import io.circe.Encoder
 import io.circe.JsonObject
-import com.twitter.finagle.http.Status
+import io.netty.handler.codec.http.HttpResponseStatus
 
-trait CosmosError {
+trait CosmosError{
   def message: String
   def data: Option[JsonObject]
-  def status: Status = Status.BadRequest
+  def status: HttpResponseStatus = HttpResponseStatus.BAD_REQUEST
 
   def exception: CosmosException = {
     CosmosException(this)

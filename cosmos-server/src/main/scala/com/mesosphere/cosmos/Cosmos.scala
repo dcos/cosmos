@@ -248,7 +248,7 @@ with Logging {
         stats.counter(s"definedError/${sanitizeClassName(ce.error.getClass)}").incr()
         val output = Output.failure(
           ce,
-          ce.error.status
+          Status.fromCode(ce.error.status.code)
         ).withHeader(
           Fields.ContentType -> MediaTypes.ErrorResponse.show
         )

@@ -49,7 +49,7 @@ private[cosmos] final class PackageInstallHandler(
                 )
               }
               .handle {
-                case CosmosException(ServiceAlreadyStarted(), _, _) =>
+                case CosmosException(ServiceAlreadyStarted(_), _, _) =>
                   throw PackageAlreadyInstalled().exception
               }
           case None =>

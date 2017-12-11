@@ -20,6 +20,7 @@ import com.netaporter.uri.Uri
 import com.netaporter.uri.dsl._
 import com.twitter.bijection.Conversion.asMethod
 import com.twitter.finagle.http.Status
+import io.netty.handler.codec.http.HttpResponseStatus
 import org.jboss.netty.handler.codec.http.HttpMethod
 import org.scalatest.FeatureSpec
 import org.scalatest.Matchers
@@ -111,6 +112,7 @@ class PackageRepositorySpec extends FeatureSpec with Matchers {
       val error = intercept[HttpErrorResponse] {
         RoundTrips.withRepository(repo.name, repo.uri).run()
       }
+      print("^^^^^^^^^^^^^" + error.errorResponse)
       error.status shouldBe Status.BadRequest
       error.errorResponse shouldBe expectedError
     }
@@ -150,8 +152,8 @@ class PackageRepositorySpec extends FeatureSpec with Matchers {
         UniverseClientHttpError(
           PackageRepository(name, uri),
           HttpMethod.GET,
-          Status.NotFound,
-          Status.BadRequest
+          HttpResponseStatus.NOT_FOUND,
+          HttpResponseStatus.BAD_REQUEST
         )
       )
       val error = intercept[HttpErrorResponse] {
