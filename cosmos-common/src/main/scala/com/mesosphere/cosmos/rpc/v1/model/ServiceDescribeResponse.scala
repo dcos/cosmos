@@ -20,11 +20,7 @@ case class ServiceDescribeResponse(
 
 object ServiceDescribeResponse {
 
-  implicit val encode: Encoder[ServiceDescribeResponse] = {
-    deriveEncoder[ServiceDescribeResponse].contramap[ServiceDescribeResponse] { sdr =>
-      sdr.copy(resolvedOptions = None, userProvidedOptions = None)
-    }
-  }
+  implicit val encode: Encoder[ServiceDescribeResponse] = deriveEncoder
 
   implicit val decode: Decoder[ServiceDescribeResponse] = deriveDecoder
 
