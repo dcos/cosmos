@@ -176,7 +176,7 @@ directories.
 
 ### RPC Conventions
 
-All the list of RPC's that cosmos supports are located in `com/mesosphere/cosmos/rpc` package in the
+All the list of RPCs that cosmos supports are located in `com/mesosphere/cosmos/rpc` package in the
 `cosmos-common` module. The RPC's are structured according to their version like `v1`, `v2` and so on.
 As `cosmos` grows, only the two most recent versions of rpc will be supported. Every time a new rpc is
 added, the oldest rpc will be removed if there are more than two versions. In essence, this means
