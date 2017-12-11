@@ -17,6 +17,7 @@ import io.circe.generic.semiauto._
 import io.circe.syntax._
 import io.finch.Error
 import io.finch.Errors
+import io.netty.handler.codec.http.HttpResponseStatus
 import java.nio.ByteBuffer
 import java.util.Base64
 import org.jboss.netty.handler.codec.http.HttpMethod
@@ -46,6 +47,10 @@ object Encoders {
 
   implicit val encodeStatus: Encoder[Status] =
     Encoder.encodeInt.contramap(_.code)
+
+  implicit val encodeNettyStatus: Encoder[HttpResponseStatus] =
+    Encoder.encodeInt.contramap(_.code)
+
   implicit val encodeHttpMethod: Encoder[HttpMethod] =
     Encoder.encodeString.contramap(_.getName)
 

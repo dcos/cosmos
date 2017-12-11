@@ -12,12 +12,12 @@ import com.mesosphere.cosmos.repository.PackageCollection
 import com.netaporter.uri.Uri
 import com.twitter.finagle.http.Fields
 import com.twitter.finagle.http.Response
-import com.twitter.finagle.http.Status
 import com.twitter.finagle.stats.StatsReceiver
 import com.twitter.io.Buf
 import com.twitter.util.Future
 import com.twitter.util.StorageUnit
 import io.finch.Output
+import io.netty.handler.codec.http.HttpResponseStatus
 import java.io.InputStream
 
 final class ResourceProxyHandler private(
@@ -86,14 +86,14 @@ object ResourceProxyHandler {
     val contentBytes = Array.ofDim[Byte](length)
     val bytesRead = bufferFully(responseData.contentStream, contentBytes)
     if (bytesRead < contentBytes.length) {
-      throw GenericHttpError(uri = uri, clientStatus = Status.BadGateway).exception
+      throw GenericHttpError(uri = uri, clientStatus = HttpResponseStatus.BAD_GATEWAY).exception
     }
 
     bufferFully(responseData.contentStream, EofDetector) match {
       case 0 if responseData.contentLength.isEmpty =>
         contentBytes.dropRight(contentBytes.length - bytesRead)
       case x if x > 0 =>
-        throw GenericHttpError(uri = uri, clientStatus = Status.BadGateway).exception
+        throw GenericHttpError(uri = uri, clientStatus = HttpResponseStatus.BAD_GATEWAY).exception
       case _ => contentBytes
     }
   }
@@ -121,11 +121,11 @@ object ResourceProxyHandler {
           case l if l >= contentLengthLimit.bytes =>
             throw ResourceTooLarge(contentLength, contentLengthLimit.bytes).exception
           case l if l <= 0 =>
-            throw GenericHttpError(uri = uri, clientStatus = Status.BadGateway).exception
+            throw GenericHttpError(uri = uri, clientStatus = HttpResponseStatus.BAD_GATEWAY).exception
           case _ => ()
         }
       case None =>
-        throw GenericHttpError(uri = uri, clientStatus = Status.BadGateway).exception
+        throw GenericHttpError(uri = uri, clientStatus = HttpResponseStatus.BAD_GATEWAY).exception
     }
   }
 

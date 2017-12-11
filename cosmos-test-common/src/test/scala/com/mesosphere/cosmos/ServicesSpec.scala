@@ -5,9 +5,9 @@ import com.mesosphere.cosmos.error.ServiceUnavailable
 import com.netaporter.uri.dsl._
 import com.twitter.conversions.storage._
 import com.twitter.finagle.http.RequestBuilder
-import com.twitter.finagle.http.Status
 import com.twitter.util.Await
 import com.twitter.util.Return
+import io.netty.handler.codec.http.HttpResponseStatus
 import org.scalatest.FreeSpec
 
 final class ServicesSpec extends FreeSpec {
@@ -24,7 +24,7 @@ final class ServicesSpec extends FreeSpec {
           Await.result(client(request))
         } catch {
           case e: CosmosException if e.error.isInstanceOf[ServiceUnavailable] =>
-            assertResult(e.status)(Status.ServiceUnavailable)
+            assertResult(HttpResponseStatus.SERVICE_UNAVAILABLE)(e.error.status)
         } finally {
           val _ = Await.ready(client.close())
         }

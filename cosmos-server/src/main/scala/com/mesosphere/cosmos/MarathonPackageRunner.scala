@@ -11,6 +11,7 @@ import com.mesosphere.cosmos.thirdparty.marathon.model.MarathonApp
 import com.mesosphere.cosmos.thirdparty.marathon.model.MarathonError
 import com.twitter.finagle.http.Status
 import com.twitter.util.Future
+import io.netty.handler.codec.http.HttpResponseStatus
 import scala.util.Failure
 import scala.util.Success
 import scala.util.Try
@@ -33,10 +34,10 @@ final class MarathonPackageRunner(adminRouter: AdminRouter) {
               case Success(marathonError) =>
                 throw MarathonBadResponse(marathonError).exception
               case Failure(_) =>
-                throw MarathonGenericError(status).exception
+                throw MarathonGenericError(HttpResponseStatus.valueOf(status.code)).exception
             }
           case status if (500 until 600).contains(status.code) =>
-            throw MarathonBadGateway(status).exception
+            throw MarathonBadGateway(HttpResponseStatus.valueOf(status.code)).exception
           case _ =>
             decode[MarathonApp](response.contentString)
         }

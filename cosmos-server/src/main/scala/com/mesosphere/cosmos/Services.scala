@@ -77,22 +77,16 @@ object Services {
       service(request)
         .rescue {
           case ce: ChannelException =>
-            Future.exception(CosmosException.apply(
-              ServiceUnavailable(serviceName),
-              ce,
-              Status.ServiceUnavailable)
+            Future.exception(
+              CosmosException(ServiceUnavailable(serviceName), ce)
             )
           case e: NoBrokersAvailableException =>
-            Future.exception(CosmosException.apply(
-              ServiceUnavailable(serviceName),
-              e,
-              Status.ServiceUnavailable)
+            Future.exception(
+              CosmosException(ServiceUnavailable(serviceName), e)
             )
           case e: RequestException =>
-            Future.exception(CosmosException.apply(
-              ServiceUnavailable(serviceName),
-              e,
-              Status.ServiceUnavailable)
+            Future.exception(
+              CosmosException(ServiceUnavailable(serviceName), e)
             )
         }
     }

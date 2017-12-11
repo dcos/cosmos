@@ -250,7 +250,10 @@ private final class WriteHandler(
       } else {
         val exception = if (code == KeeperException.Code.BADVERSION) {
           // BADVERSION is expected so let's display a friendlier error
-          CosmosException(ConcurrentAccess(), KeeperException.create(code, event.getPath))
+          CosmosException(
+            ConcurrentAccess(),
+            KeeperException.create(code, event.getPath)
+          )
         } else {
           KeeperException.create(code, event.getPath)
         }
@@ -277,7 +280,10 @@ private final class CreateHandler(
       } else {
         val exception = if (code == KeeperException.Code.NODEEXISTS) {
           // NODEEXISTS is expected so let's display a friendlier error
-          CosmosException(ConcurrentAccess(), KeeperException.create(code, event.getPath))
+          CosmosException(
+            ConcurrentAccess(),
+            KeeperException.create(code, event.getPath)
+          )
         } else {
           KeeperException.create(code, event.getPath)
         }

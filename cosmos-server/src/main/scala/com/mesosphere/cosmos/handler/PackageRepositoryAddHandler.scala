@@ -1,14 +1,15 @@
 package com.mesosphere.cosmos.handler
 
 import com.mesosphere.cosmos.error.CosmosException
+import com.mesosphere.cosmos.error.UniverseClientHttpError
 import com.mesosphere.cosmos.error.UnsupportedRepositoryUri
 import com.mesosphere.cosmos.finch.EndpointHandler
 import com.mesosphere.cosmos.http.RequestSession
 import com.mesosphere.cosmos.repository.PackageSourcesStorage
 import com.mesosphere.cosmos.repository.UniverseClient
 import com.mesosphere.cosmos.rpc
-import com.twitter.finagle.http.Status
 import com.twitter.util.Future
+import io.netty.handler.codec.http.HttpResponseStatus
 
 private[cosmos] final class PackageRepositoryAddHandler(
   sourcesStorage: PackageSourcesStorage,
@@ -46,7 +47,11 @@ private[cosmos] final class PackageRepositoryAddHandler(
      */
     universeClient(repository).unit.handle {
       case ce: CosmosException =>
-        throw ce.copy(status = Status.BadRequest)
+        ce.error match {
+          case uce : UniverseClientHttpError =>
+            throw ce.copy(error = uce.copy(status = HttpResponseStatus.BAD_REQUEST))
+          case _ => throw ce
+        }
     }
   }
 

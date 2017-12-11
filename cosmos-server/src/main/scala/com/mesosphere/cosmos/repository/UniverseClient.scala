@@ -27,7 +27,6 @@ import com.mesosphere.universe.bijection.UniverseConversions._
 import com.netaporter.uri.Uri
 import com.twitter.bijection.Conversion.asMethod
 import com.twitter.finagle.http.Fields
-import com.twitter.finagle.http.Status
 import com.twitter.finagle.stats.NullStatsReceiver
 import com.twitter.finagle.stats.Stat
 import com.twitter.finagle.stats.StatsReceiver
@@ -40,6 +39,7 @@ import io.circe.DecodingFailure
 import io.circe.Json
 import io.circe.JsonObject
 import io.circe.jawn.parse
+import io.netty.handler.codec.http.HttpResponseStatus
 import java.io.InputStream
 import java.nio.ByteBuffer
 import java.nio.file.Path
@@ -126,7 +126,7 @@ final class DefaultUniverseClient(
               throw cosmosException.copy(error = RepositoryUriSyntax(repository, message))
             case EndpointUriConnection(_, message) =>
               throw cosmosException.copy(error = RepositoryUriConnection(repository, message))
-            case GenericHttpError(_, _, clientStatus) =>
+            case GenericHttpError(_, _, clientStatus, _) =>
               /* If we are unable to get the latest Universe we should not forward the status code
                * returned. We should instead return 500 to the client and include the actual error
                * in the message.
@@ -134,8 +134,9 @@ final class DefaultUniverseClient(
               throw UniverseClientHttpError(
                 repository,
                 HttpMethod.GET,
-                clientStatus
-              ).exception(Status.InternalServerError)
+                clientStatus,
+                HttpResponseStatus.INTERNAL_SERVER_ERROR
+              ).exception
             case e => throw e.exception
           }
         }

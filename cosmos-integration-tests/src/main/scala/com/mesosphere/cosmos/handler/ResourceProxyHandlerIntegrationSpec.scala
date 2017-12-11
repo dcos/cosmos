@@ -9,11 +9,11 @@ import com.mesosphere.cosmos.rpc
 import com.mesosphere.cosmos.test.CosmosIntegrationTestClient.CosmosClient
 import com.netaporter.uri.Uri
 import com.twitter.finagle.http.Fields
-import com.twitter.finagle.http.Status
 import com.twitter.finagle.stats.NullStatsReceiver
 import com.twitter.finagle.stats.StatsReceiver
 import com.twitter.util.Await
 import io.circe.jawn.decode
+import io.netty.handler.codec.http.HttpResponseStatus
 import org.scalatest.Matchers
 import org.scalatest.Assertion
 import org.scalatest.FreeSpec
@@ -31,7 +31,7 @@ final class ResourceProxyHandlerIntegrationSpec extends FreeSpec
       val response = intercept[CosmosException](CosmosClient.submit(
         CosmosRequests.packageResource(thirdPartyUnknownResource)
       ))
-      assertResult(Status.Forbidden)(response.status)
+      assertResult(HttpResponseStatus.FORBIDDEN)(response.error.status)
     }
 
     "be able to download rewritten uris for images and assets" in {

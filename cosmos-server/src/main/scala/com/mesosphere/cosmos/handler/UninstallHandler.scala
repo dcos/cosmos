@@ -111,12 +111,8 @@ private[cosmos] final class UninstallHandler(
             case all =>
               throw MultipleFrameworkIds(op.packageName, op.packageVersion, fwName, all).exception
           } handle {
-            case su @ CosmosException(ServiceUnavailable(_), _, _, _) =>
-              throw CosmosException.apply(
-                IncompleteUninstall(op.packageName),
-                su,
-                Status.ServiceUnavailable
-              )
+            case su @ CosmosException(ServiceUnavailable(_, _), _, _) =>
+              throw CosmosException(IncompleteUninstall(op.packageName), su)
           }
         case None =>
           Future.value(UninstallDetails.from(op))
