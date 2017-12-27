@@ -12,7 +12,8 @@
             "type": "string"
         },
         "replace": {
-            "type": "boolean"
+            "type": "boolean",
+            "description": "If true any stored configuration will be ignored when producing the updated service configuration."
         }
     },
     "required": [
