@@ -380,7 +380,7 @@ package v4.model {
               )
             )
           ).asInstanceOf[T]
-          case None => v2.asInstanceOf[T]
+          case None => pkg
         }
         case v3: universe.v3.model.V3Package => v3.resource match {
           case Some(r) => v3.copy(
@@ -392,7 +392,7 @@ package v4.model {
               )
             )
           ).asInstanceOf[T]
-          case None => v3.asInstanceOf[T]
+          case None => pkg
         }
         case v4: universe.v4.model.V4Package => v4.resource match {
           case Some(r) => v4.copy(
@@ -404,7 +404,7 @@ package v4.model {
               )
             )
           ).asInstanceOf[T]
-          case None => v4.asInstanceOf[T]
+          case None => pkg
         }
       }
     }
