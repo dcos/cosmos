@@ -59,7 +59,12 @@ class MarathonClient(
   )(
     implicit session: RequestSession
   ): Future[Response] = {
-    client(put("v2" / "apps" / appId.toUri, Json.fromJsonObject(appJson)))
+    client(
+      put(
+        "v2" / "apps" / appId.toUri ? ("force" -> "true"),
+        Json.fromJsonObject(appJson)
+      )
+    )
   }
 
   def getAppOption(
