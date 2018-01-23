@@ -15,7 +15,7 @@ import com.mesosphere.cosmos.error.UninstallNonExistentAppForPackage
 import com.mesosphere.cosmos.finch.EndpointHandler
 import com.mesosphere.cosmos.handler.UninstallHandler._
 import com.mesosphere.cosmos.http.RequestSession
-import com.mesosphere.cosmos.repository.PackageCollection
+import com.mesosphere.cosmos.label.v1.model.PackageMetadata
 import com.mesosphere.cosmos.rpc
 import com.mesosphere.cosmos.service.ServiceUninstaller
 import com.mesosphere.cosmos.thirdparty.marathon.model.AppId
@@ -31,7 +31,6 @@ import org.slf4j.Logger
 
 private[cosmos] final class UninstallHandler(
   adminRouter: AdminRouter,
-  packageCollection: PackageCollection,
   uninstaller: ServiceUninstaller
 ) extends EndpointHandler[rpc.v1.model.UninstallRequest, rpc.v1.model.UninstallResponse] {
   lazy val logger: Logger = org.slf4j.LoggerFactory.getLogger(getClass)
@@ -54,23 +53,16 @@ private[cosmos] final class UninstallHandler(
         }
       }
       .flatMap(runUninstalls)
-      .flatMap { uninstallDetails =>
-        Future.collect(
-          uninstallDetails.map { detail =>
-            packageCollection.getPackageByPackageVersion(detail.packageName, None)
-              .map { case (pkg, _) =>
-                detail -> pkg.postUninstallNotes
-              }
-          }
-        )
-      }
-      .map { detailsAndNotes =>
-        val results = detailsAndNotes.map { case (detail, postUninstallNotes) =>
+      .map { details =>
+        val results = details.map { case detail =>
           rpc.v1.model.UninstallResult(
             detail.packageName,
             detail.appId,
             detail.packageVersion,
-            postUninstallNotes
+            detail.packageMetadata match {
+              case Some(metadata) => metadata.postUninstallNotes
+              case None => None
+            }
           )
         }
         rpc.v1.model.UninstallResponse(results.toList)
@@ -237,6 +229,7 @@ private[cosmos] final class UninstallHandler(
         packageName = packageName,
         frameworkName = labels.get(MarathonApp.frameworkNameLabel),
         packageVersion = app.packageVersion.as[Option[universe.v2.model.PackageDetailsVersion]],
+        packageMetadata = app.packageMetadata,
         uninstallType = if (labels.contains(SdkServiceLabel)) SdkUninstall else MarathonUninstall
       )
     }
@@ -261,6 +254,7 @@ object UninstallHandler {
     appId: AppId,
     packageName: String,
     packageVersion: Option[universe.v2.model.PackageDetailsVersion],
+    packageMetadata: Option[PackageMetadata],
     frameworkName: Option[String],
     uninstallType: UninstallType
   )
@@ -269,6 +263,7 @@ object UninstallHandler {
    appId: AppId,
    packageName: String,
    packageVersion: Option[universe.v2.model.PackageDetailsVersion],
+   packageMetadata: Option[PackageMetadata],
    frameworkName: Option[String] = None,
    frameworkId: Option[String] = None
   )
@@ -278,6 +273,7 @@ object UninstallHandler {
         appId = uninstallOperation.appId,
         packageName = uninstallOperation.packageName,
         packageVersion = uninstallOperation.packageVersion,
+        packageMetadata = uninstallOperation.packageMetadata,
         frameworkName = uninstallOperation.frameworkName
       )
     }
