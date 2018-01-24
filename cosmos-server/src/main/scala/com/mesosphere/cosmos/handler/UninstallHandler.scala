@@ -15,7 +15,7 @@ import com.mesosphere.cosmos.error.UninstallNonExistentAppForPackage
 import com.mesosphere.cosmos.finch.EndpointHandler
 import com.mesosphere.cosmos.handler.UninstallHandler._
 import com.mesosphere.cosmos.http.RequestSession
-import com.mesosphere.cosmos.label.v1.model.PackageMetadata
+import com.mesosphere.cosmos.label
 import com.mesosphere.cosmos.rpc
 import com.mesosphere.cosmos.service.ServiceUninstaller
 import com.mesosphere.cosmos.thirdparty.marathon.model.AppId
@@ -254,7 +254,7 @@ object UninstallHandler {
     appId: AppId,
     packageName: String,
     packageVersion: Option[universe.v2.model.PackageDetailsVersion],
-    packageMetadata: Option[PackageMetadata],
+    packageMetadata: Option[label.v1.model.PackageMetadata],
     frameworkName: Option[String],
     uninstallType: UninstallType
   )
@@ -263,7 +263,7 @@ object UninstallHandler {
    appId: AppId,
    packageName: String,
    packageVersion: Option[universe.v2.model.PackageDetailsVersion],
-   packageMetadata: Option[PackageMetadata],
+   packageMetadata: Option[label.v1.model.PackageMetadata],
    frameworkName: Option[String] = None,
    frameworkId: Option[String] = None
   )
