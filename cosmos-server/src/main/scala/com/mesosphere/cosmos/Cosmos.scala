@@ -126,7 +126,7 @@ with Logging {
       packageRepositoryList = new PackageRepositoryListHandler(sourcesStorage),
       packageResource = ResourceProxyHandler(repositories, proxyContentLimit()),
       packageSearch = new PackageSearchHandler(repositories),
-      packageUninstall = new UninstallHandler(adminRouter, marathonSdkJanitor),
+      packageUninstall = new UninstallHandler(adminRouter, repositories, marathonSdkJanitor),
       serviceDescribe = new ServiceDescribeHandler(adminRouter, repositories),
       serviceUpdate = new ServiceUpdateHandler(adminRouter, repositories, serviceUpdater)
     )
