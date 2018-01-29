@@ -8,7 +8,7 @@ import com.mesosphere.cosmos.error.VersionUpgradeNotSupportedInOpen
 import com.mesosphere.cosmos.finch.EndpointHandler
 import com.mesosphere.cosmos.http.RequestSession
 import com.mesosphere.cosmos.render.PackageDefinitionRenderer
- import com.mesosphere.cosmos.repository.PackageCollection
+import com.mesosphere.cosmos.repository.PackageCollection
 import com.mesosphere.cosmos.rpc
 import com.mesosphere.cosmos.rpc.v1.model.ServiceUpdateRequest
 import com.mesosphere.cosmos.thirdparty.marathon.model.AppId
