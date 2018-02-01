@@ -1,7 +1,5 @@
 package com.mesosphere.cosmos.handler
 
-import cats.instances.option._
-import cats.syntax.apply._
 import com.mesosphere.cosmos.AdminRouter
 import com.mesosphere.cosmos.ServiceUpdater
 import com.mesosphere.cosmos.error.AppIdChanged
@@ -14,7 +12,6 @@ import com.mesosphere.cosmos.repository.PackageCollection
 import com.mesosphere.cosmos.rpc
 import com.mesosphere.cosmos.rpc.v1.model.ServiceUpdateRequest
 import com.mesosphere.cosmos.thirdparty.marathon.model.AppId
-import com.mesosphere.cosmos.thirdparty.marathon.model.MarathonApp
 import com.mesosphere.cosmos.thirdparty.marathon.model.MarathonAppResponse
 import com.mesosphere.universe
 import com.mesosphere.universe.common.JsonUtil
@@ -36,7 +33,7 @@ final class ServiceUpdateHandler(
     implicit session: RequestSession
   ): Future[rpc.v1.model.ServiceUpdateResponse] = {
     adminRouter.getApp(request.appId).flatMap { marathonAppResponse =>
-      getPackageWithSource(packageCollection, marathonAppResponse.app).flatMap {
+      getPackageWithSourceOrThrow(packageCollection, marathonAppResponse.app).flatMap {
         case (packageDefinition, packageSource) =>
           if (request.packageVersion.exists(_ != packageDefinition.version)) {
             Future.exception(
@@ -61,8 +58,6 @@ final class ServiceUpdateHandler(
 }
 
 object ServiceUpdateHandler {
-
-  type PackageWithSource = (universe.v4.model.PackageDefinition, Uri)
 
   def update(
     serviceUpdater: ServiceUpdater,
@@ -114,73 +109,6 @@ object ServiceUpdateHandler {
       case (false, None, _) => throw OptionsNotStored().exception
       case (false, _: Some[_], None) => storedOptions
       case (false, Some(stored), Some(provided)) => Some(JsonUtil.merge(stored, provided))
-    }
-  }
-
-  def getPackageWithSource(
-    packageCollection: PackageCollection,
-    marathonApp: MarathonApp
-  )(
-    implicit session: RequestSession
-  ): Future[PackageWithSource] = {
-    orElse(Future.value(getStoredPackageWithSource(marathonApp)))(
-      lookupPackageWithSource(packageCollection, marathonApp)
-    ).map(_.getOrElse {
-      throw new IllegalStateException(
-        "Unable to retrieve the old package definition"
-      )
-    })
-  }
-
-  private[this] def getStoredPackageWithSource(
-    marathonApp: MarathonApp
-  ): Option[PackageWithSource] = {
-    (
-      marathonApp.packageDefinition,
-      marathonApp.packageRepository.map(_.uri)
-    ).tupled
-  }
-
-  private[this] def lookupPackageWithSource(
-    packageCollection: PackageCollection,
-    marathonApp: MarathonApp
-  )(
-    implicit session: RequestSession
-  ): Future[Option[PackageWithSource]] = {
-    traverse(getPackageCoordinate(marathonApp)) { case (name, version) =>
-      packageCollection.getPackageByPackageVersion(name, Some(version))
-    }
-  }
-
-  private[this] def getPackageCoordinate(
-    marathonApp: MarathonApp
-  ): Option[(String, universe.v3.model.Version)] = {
-    val fromMetadata = marathonApp.packageMetadata.map { metadata =>
-      val version = universe.v3.model.Version(metadata.version.toString)
-      (metadata.name, version)
-    }
-    (
-      marathonApp.packageName,
-      marathonApp.packageVersion
-    ).tupled
-      .orElse(fromMetadata)
-  }
-
-  def traverse[A, B](a: Option[A])(fun: A => Future[B]): Future[Option[B]] = {
-    a.map(fun) match {
-      case None => Future.value(None)
-      case Some(v) => v.map(Some(_))
-    }
-  }
-
-  private def orElse[A](
-    f1: Future[Option[A]]
-  )(
-    f2: => Future[Option[A]]
-  ): Future[Option[A]] = {
-    f1.flatMap {
-      case r: Some[A] => Future.value(r)
-      case None => f2
     }
   }
 

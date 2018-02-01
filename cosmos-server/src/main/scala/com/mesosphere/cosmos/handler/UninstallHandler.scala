@@ -50,17 +50,28 @@ private[cosmos] final class UninstallHandler(
         if (all || uninstallOps.size <= 1) {
           uninstallOps
         } else {
-          throw AmbiguousAppId(req.packageName, uninstallOps.map(_.appId)).exception
+          throw AmbiguousAppId(req.packageName, uninstallOps.map(_._2.appId)).exception
         }
       }
-      .flatMap(runUninstalls)
+      .flatMap { uninstallOps =>
+        Future.collect(
+          uninstallOps
+            .map { case (app, uninstallOp) => (app, runUninstall(uninstallOp)) }
+            .map { case (app, f) => f.map(app -> _) }
+        )
+      }
       .flatMap { uninstallDetails =>
         Future.collect(
-          uninstallDetails.map { detail =>
-            packageCollection.getPackageByPackageVersion(detail.packageName, None)
-              .map { case (pkg, _) =>
-                detail -> pkg.postUninstallNotes
-              }
+          uninstallDetails.map { case (app, detail) =>
+            getPackageWithSource(packageCollection, app).map { res =>
+              (
+                detail,
+                res match {
+                  case Some((pkg, _)) => pkg.postUninstallNotes
+                  case None => None
+                }
+              )
+            }
           }
         )
       }
@@ -77,19 +88,15 @@ private[cosmos] final class UninstallHandler(
       }
   }
 
-  private def runUninstalls(
-    uninstallOps: List[UninstallOperation]
+  private def runUninstall(
+    uninstallOp: UninstallOperation
   )(
     implicit session: RequestSession
-  ): Future[Seq[UninstallDetails]] = {
-    val futures = uninstallOps.map { op =>
-      op.uninstallType match {
-        case MarathonUninstall => runMarathonUninstall(op)
-        case SdkUninstall => runSdkUninstall(op)
-      }
+  ): Future[UninstallDetails] = {
+    uninstallOp.uninstallType match {
+      case MarathonUninstall => runMarathonUninstall(uninstallOp)
+      case SdkUninstall => runSdkUninstall(uninstallOp)
     }
-
-    Future.collect(futures)
   }
 
   private[this] def runMarathonUninstall(
@@ -224,20 +231,22 @@ private[cosmos] final class UninstallHandler(
   private[this] def createUninstallOperations(
     requestedPackageName: String,
     apps: List[MarathonApp]
-  ): List[UninstallOperation] = {
+  ): List[(MarathonApp, UninstallOperation)] = {
     val uninstallOperations = for {
       app <- apps
       labels = app.labels
       packageName <- labels.get(MarathonApp.nameLabel)
       if packageName == requestedPackageName
     } yield {
-
-      UninstallOperation(
-        appId = app.id,
-        packageName = packageName,
-        frameworkName = labels.get(MarathonApp.frameworkNameLabel),
-        packageVersion = app.packageVersion.as[Option[universe.v2.model.PackageDetailsVersion]],
-        uninstallType = if (labels.contains(SdkServiceLabel)) SdkUninstall else MarathonUninstall
+      (
+        app,
+        UninstallOperation(
+          appId = app.id,
+          packageName = packageName,
+          frameworkName = labels.get(MarathonApp.frameworkNameLabel),
+          packageVersion = app.packageVersion.as[Option[universe.v2.model.PackageDetailsVersion]],
+          uninstallType = if (labels.contains(SdkServiceLabel)) SdkUninstall else MarathonUninstall
+        )
       )
     }
 
@@ -266,11 +275,11 @@ object UninstallHandler {
   )
 
   private[handler] case class UninstallDetails(
-   appId: AppId,
-   packageName: String,
-   packageVersion: Option[universe.v2.model.PackageDetailsVersion],
-   frameworkName: Option[String] = None,
-   frameworkId: Option[String] = None
+    appId: AppId,
+    packageName: String,
+    packageVersion: Option[universe.v2.model.PackageDetailsVersion],
+    frameworkName: Option[String] = None,
+    frameworkId: Option[String] = None
   )
   private case object UninstallDetails {
     def from(uninstallOperation: UninstallOperation): UninstallDetails = {
