@@ -33,7 +33,7 @@ final class ServiceUpdateHandler(
     implicit session: RequestSession
   ): Future[rpc.v1.model.ServiceUpdateResponse] = {
     adminRouter.getApp(request.appId).flatMap { marathonAppResponse =>
-      getPackageWithSource(packageCollection, marathonAppResponse.app).flatMap {
+      getPackageWithSourceOrThrow(packageCollection, marathonAppResponse.app).flatMap {
         case (packageDefinition, packageSource) =>
           if (request.packageVersion.exists(_ != packageDefinition.version)) {
             Future.exception(

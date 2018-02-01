@@ -63,8 +63,14 @@ private[cosmos] final class UninstallHandler(
       .flatMap { uninstallDetails =>
         Future.collect(
           uninstallDetails.map { case (app, detail) =>
-            getPackageWithSource(packageCollection, app).map { case (packageDefinition, _) =>
-              detail -> packageDefinition.postUninstallNotes
+            getPackageWithSource(packageCollection, app).map { res =>
+              (
+                detail,
+                res match {
+                  case Some((pkg, _)) => pkg.postUninstallNotes
+                  case None => None
+                }
+              )
             }
           }
         )
