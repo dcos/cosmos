@@ -230,24 +230,9 @@ The below table is a compatibility matrix between Cosmos and Universe packaging 
 
 ## API Documentation
 
-Cosmos implements three different services. The documentation for each service is outlined below.
+### [Cosmos Version 0.3.x Docs](https://docs.mesosphere.com/1.10/deploying-services/package-api/)
 
-### Cosmos Version 0.3.x
-
-1. **Service Manager**
-   1. [HTML](https://downloads.dcos.io/cosmos/0.4.0-SNAPSHOT-232-master-2fdc5cf8ad/service.html)
-   1. [RAML](https://downloads.dcos.io/cosmos/0.4.0-SNAPSHOT-232-master-2fdc5cf8ad/service.raml)
-   1. [Swagger](https://downloads.dcos.io/cosmos/0.4.0-SNAPSHOT-232-master-2fdc5cf8ad/service.swagger)
-1. **Package Manager**
-   1. [HTML](https://downloads.dcos.io/cosmos/0.4.0-SNAPSHOT-232-master-2fdc5cf8ad/package.html)
-   1. [RAML](https://downloads.dcos.io/cosmos/0.4.0-SNAPSHOT-232-master-2fdc5cf8ad/package.raml)
-   1. [Swagger](https://downloads.dcos.io/cosmos/0.4.0-SNAPSHOT-232-master-2fdc5cf8ad/package.swagger)
-1. **Capability Manager**
-   1. [HTML](https://downloads.dcos.io/cosmos/0.4.0-SNAPSHOT-232-master-2fdc5cf8ad/capabilities.html)
-   1. [RAML](https://downloads.dcos.io/cosmos/0.4.0-SNAPSHOT-232-master-2fdc5cf8ad/capabilities.raml)
-   1. [Swagger](https://downloads.dcos.io/cosmos/0.4.0-SNAPSHOT-232-master-2fdc5cf8ad/capabilities.swagger)
-
-### [Cosmos Version 0.4.x](https://downloads.dcos.io/cosmos/0.5.0-SNAPSHOT-299-master-ac3f81b1ca/cosmos.html)
+### [Cosmos Version 0.4.x Docs](https://docs.mesosphere.com/1.11/deploying-services/package-api/)
 
 ## Reporting Problems
 
