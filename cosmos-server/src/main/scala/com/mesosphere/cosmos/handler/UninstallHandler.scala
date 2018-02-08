@@ -3,10 +3,10 @@ package com.mesosphere.cosmos.handler
 import com.mesosphere.cosmos.AdminRouter
 import com.mesosphere.cosmos.circe.Decoders
 import com.mesosphere.cosmos.error.AmbiguousAppId
-import com.mesosphere.cosmos.error.JsonParsingError
 import com.mesosphere.cosmos.error.CosmosException
 import com.mesosphere.cosmos.error.FailedToStartUninstall
 import com.mesosphere.cosmos.error.IncompleteUninstall
+import com.mesosphere.cosmos.error.JsonParsingError
 import com.mesosphere.cosmos.error.MarathonAppDeleteError
 import com.mesosphere.cosmos.error.MultipleFrameworkIds
 import com.mesosphere.cosmos.error.PackageNotInstalled
@@ -20,6 +20,7 @@ import com.mesosphere.cosmos.rpc
 import com.mesosphere.cosmos.service.ServiceUninstaller
 import com.mesosphere.cosmos.thirdparty.marathon.model.AppId
 import com.mesosphere.cosmos.thirdparty.marathon.model.MarathonApp
+import com.mesosphere.error.ResultOps
 import com.mesosphere.universe
 import com.mesosphere.universe.bijection.UniverseConversions._
 import com.twitter.bijection.Conversion.asMethod
@@ -162,7 +163,7 @@ private[cosmos] final class UninstallHandler(
 
   private[this] def parseDeploymentId(content: String, op: UninstallOperation): String = {
     try {
-      Decoders.parse(content).hcursor.get[String]("deploymentId") match {
+      Decoders.parse(content).getOrThrow.hcursor.get[String]("deploymentId") match {
         case Right(deploymentId) => deploymentId
         case Left(_) =>
           throw FailedToStartUninstall(

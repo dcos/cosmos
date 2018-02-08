@@ -5,6 +5,7 @@ import com.mesosphere.cosmos.circe.Decoders.decode
 import com.mesosphere.cosmos.circe.Decoders.parse
 import com.mesosphere.cosmos.http.CosmosRequests
 import com.mesosphere.cosmos.test.CosmosIntegrationTestClient.CosmosClient
+import com.mesosphere.error.ResultOps
 import com.mesosphere.universe
 import com.twitter.finagle.http.Response
 import com.twitter.finagle.http.Status
@@ -68,7 +69,7 @@ final class PackageDescribeSpec
 
         response.status shouldBe Status.Ok
 
-        val packageInfo = parse(response.contentString)
+        val packageInfo = parse(response.contentString).getOrThrow
         packageInfo.hcursor.downField("package").get[String]("name") shouldBe Right("helloworld")
         packageInfo.hcursor.downField("package").get[String]("version") shouldBe Right("0.4.1")
       }
@@ -96,7 +97,9 @@ final class PackageDescribeSpec
 
     response.status shouldBe Status.Ok
 
-    val description = decode[rpc.v3.model.DescribeResponse](response.contentString)
+    val description = decode[rpc.v3.model.DescribeResponse](
+      response.contentString
+    ).getOrThrow
     description.`package`.version shouldBe expectedVersion
   }
 
@@ -110,7 +113,9 @@ final class PackageDescribeSpec
       rpc.v1.model.DescribeRequest(packageName, version)
     )
     assertResult(status)(response.status)
-    val errorResponse = decode[rpc.v1.model.ErrorResponse](response.contentString)
+    val errorResponse = decode[rpc.v1.model.ErrorResponse](
+      response.contentString
+    ).getOrThrow
     assertResult(expectedMessage)(errorResponse.message)
   }
 
@@ -125,7 +130,7 @@ final class PackageDescribeSpec
     val response = describeRequest(rpc.v1.model.DescribeRequest(name, Some(version)))
 
     response.status shouldBe Status.Ok withClue response.contentString
-    val actualContent = parse(response.contentString)
+    val actualContent = parse(response.contentString).getOrThrow
 
     actualContent.hcursor.downField("package").focus shouldBe Some(packageDefinition)
   }
@@ -140,7 +145,7 @@ final class PackageDescribeSpec
 
     response.status shouldBe Status.Ok
 
-    val packageInfo = parse(response.contentString)
+    val packageInfo = parse(response.contentString).getOrThrow
 
     packageInfo shouldBe HelloWorld042PackageDefinition
   }
@@ -213,7 +218,7 @@ private object PackageDescribeSpec extends TableDrivenPropertyChecks {
     """
     // scalastyle:on line.size.limit
 
-    parse(pkgJson)
+    parse(pkgJson).getOrThrow
   }
 
 }

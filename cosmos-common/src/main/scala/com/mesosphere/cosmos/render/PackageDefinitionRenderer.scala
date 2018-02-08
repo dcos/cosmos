@@ -3,7 +3,7 @@ package com.mesosphere.cosmos.render
 import com.github.fge.jsonschema.main.JsonSchemaFactory
 import com.github.mustachejava.DefaultMustacheFactory
 import com.mesosphere.cosmos.bijection.CosmosConversions._
-import com.mesosphere.cosmos.circe.Decoders.convertToCosmosException
+import com.mesosphere.cosmos.circe.Decoders.convertToCosmosError
 import com.mesosphere.cosmos.circe.Decoders.parse
 import com.mesosphere.cosmos.error.JsonSchemaMismatch
 import com.mesosphere.cosmos.error.MarathonTemplateMustBeJsonObject
@@ -13,6 +13,7 @@ import com.mesosphere.cosmos.label
 import com.mesosphere.cosmos.model.StorageEnvelope
 import com.mesosphere.cosmos.thirdparty.marathon.model.AppId
 import com.mesosphere.cosmos.thirdparty.marathon.model.MarathonApp
+import com.mesosphere.error.ResultOps
 import com.mesosphere.universe
 import com.mesosphere.universe.common.ByteBuffers
 import com.mesosphere.universe.common.JsonUtil
@@ -97,7 +98,7 @@ object PackageDefinitionRenderer {
       output.toString
     }
 
-    parse(renderedJsonString).asObject match {
+    parse(renderedJsonString).getOrThrow.asObject match {
       case None => throw MarathonTemplateMustBeJsonObject.exception
       case Some(json) => json
     }
@@ -198,10 +199,10 @@ object PackageDefinitionRenderer {
     // the user know here where we can craft a more informational error message.
     // If marathon ever changes its schema for labels then this code will most likely need a
     // new version with this version left intact for backward compatibility reasons.
-    val labels = convertToCosmosException(
+    val labels = convertToCosmosError(
       obj.hcursor.getOrElse[Map[String, String]]("labels")(Map.empty),
       obj.noSpaces
-    )
+    ).getOrThrow
     Json.fromFields(labels.mapValues(_.asJson))
   }
 }

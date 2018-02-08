@@ -4,15 +4,16 @@ import com.mesosphere.cosmos.bijection.CosmosConversions._
 import com.mesosphere.cosmos.circe.Decoders.decode64
 import com.mesosphere.cosmos.circe.Decoders.parse
 import com.mesosphere.cosmos.circe.Decoders.parse64
+import com.mesosphere.cosmos.error.CosmosException
 import com.mesosphere.cosmos.error.JsonDecodingError
 import com.mesosphere.cosmos.error.JsonParsingError
-import com.mesosphere.cosmos.error.CosmosException
 import com.mesosphere.cosmos.error.MarathonTemplateMustBeJsonObject
 import com.mesosphere.cosmos.error.OptionsNotAllowed
 import com.mesosphere.cosmos.label
 import com.mesosphere.cosmos.model.StorageEnvelope
 import com.mesosphere.cosmos.thirdparty.marathon.model.AppId
 import com.mesosphere.cosmos.thirdparty.marathon.model.MarathonApp
+import com.mesosphere.error.ResultOps
 import com.mesosphere.universe
 import com.mesosphere.universe.test.TestingPackages
 import com.mesosphere.universe.v3.model._
@@ -146,7 +147,7 @@ class PackageDefinitionRendererSpec extends FreeSpec with Matchers with TableDri
       "user specified appId" +
       "]" in {
       val s = classpathJsonString("/com/mesosphere/cosmos/render/test-schema.json")
-      val schema = parse(s).asObject.get
+      val schema = parse(s).getOrThrow.asObject.get
 
       val mustache =
         """
