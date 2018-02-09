@@ -19,6 +19,7 @@ import com.mesosphere.cosmos.error.UnsupportedContentType
 import com.mesosphere.cosmos.error.UnsupportedRepositoryVersion
 import com.mesosphere.cosmos.http.RequestSession
 import com.mesosphere.cosmos.rpc
+import com.mesosphere.error.ResultOps
 import com.mesosphere.http.CompoundMediaType
 import com.mesosphere.http.MediaType
 import com.mesosphere.universe
@@ -157,7 +158,7 @@ final class DefaultUniverseClient(
       Stat.time(scope.stat("histogram")) {
         decode[universe.v4.model.Repository](
           Source.fromInputStream(bodyInputStream).mkString
-        )
+        ).getOrThrow
       }
     } else if (contentType.isCompatibleWith(MediaTypes.UniverseV3Repository)) {
       val scope = decodeScope.scope("v3")
@@ -165,7 +166,7 @@ final class DefaultUniverseClient(
       Stat.time(scope.stat("histogram")) {
         decode[universe.v4.model.Repository](
           Source.fromInputStream(bodyInputStream).mkString
-        )
+        ).getOrThrow
       }
     } else if (contentType.isCompatibleWith(MediaTypes.UniverseV2Repository)) {
       val v2Scope = decodeScope.scope("v2")

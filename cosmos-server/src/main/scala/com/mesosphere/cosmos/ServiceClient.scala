@@ -7,6 +7,7 @@ import com.mesosphere.cosmos.error.GenericHttpError
 import com.mesosphere.cosmos.error.UnsupportedContentType
 import com.mesosphere.cosmos.http.MediaTypes
 import com.mesosphere.cosmos.http.RequestSession
+import com.mesosphere.error.ResultOps
 import com.mesosphere.http.MediaType
 import com.netaporter.uri.Uri
 import com.twitter.finagle.http.Fields
@@ -83,7 +84,7 @@ abstract class ServiceClient(baseUri: Uri) {
                 Some(mediaType)
               ).exception
             case true =>
-              decode[A](response.contentString)
+              decode[A](response.contentString).getOrThrow
           }
         }.get
       case _ =>

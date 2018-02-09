@@ -2,6 +2,7 @@ package com.mesosphere.universe.v1.model
 
 import fastparse.all._
 import com.mesosphere.cosmos.circe.Decoders.decode
+import com.mesosphere.error.ResultOps
 import com.mesosphere.universe
 import io.circe.Decoder
 import io.circe.Encoder
@@ -40,7 +41,7 @@ object PackageCoordinate {
           StandardCharsets.UTF_8
         )
 
-        decode[PackageCoordinate](coordinate)
+        decode[PackageCoordinate](coordinate).getOrThrow
       } fold (
         _ => Fail,
         pc => PassWith(pc)

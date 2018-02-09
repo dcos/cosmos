@@ -10,6 +10,7 @@ import com.mesosphere.cosmos.thirdparty.marathon.model.AppId
 import com.mesosphere.cosmos.thirdparty.marathon.model.Deployment
 import com.mesosphere.cosmos.thirdparty.marathon.model.MarathonAppResponse
 import com.mesosphere.cosmos.thirdparty.marathon.model.MarathonAppsResponse
+import com.mesosphere.error.ResultOps
 import com.netaporter.uri.Uri
 import com.netaporter.uri.dsl._
 import com.twitter.finagle.Service
@@ -37,7 +38,7 @@ class MarathonClient(
   ): Future[Response] = {
     client(get("v2" / "apps" / appId.toUri)).flatMap { response =>
 
-      val appJson = Decoders.parse(response.contentString).asObject.get
+      val appJson = Decoders.parse(response.contentString).getOrThrow.asObject.get
         .apply("app").get.asObject.get
           // Note, Marathon appends extraneous fields when you fetch the current configuration.
           // Those are removed here to ensure the Marathon update succeeds.

@@ -9,6 +9,7 @@ import com.mesosphere.cosmos.error.ServiceAlreadyStarted
 import com.mesosphere.cosmos.http.RequestSession
 import com.mesosphere.cosmos.thirdparty.marathon.model.MarathonApp
 import com.mesosphere.cosmos.thirdparty.marathon.model.MarathonError
+import com.mesosphere.error.ResultOps
 import com.twitter.finagle.http.Status
 import com.twitter.util.Future
 import io.netty.handler.codec.http.HttpResponseStatus
@@ -30,7 +31,7 @@ final class MarathonPackageRunner(adminRouter: AdminRouter) {
           case Status.Conflict =>
             throw ServiceAlreadyStarted().exception
           case status if (400 until 500).contains(status.code) =>
-            Try(decode[MarathonError](response.contentString)) match {
+            Try(decode[MarathonError](response.contentString).getOrThrow) match {
               case Success(marathonError) =>
                 throw MarathonBadResponse(marathonError).exception
               case Failure(_) =>
@@ -39,7 +40,7 @@ final class MarathonPackageRunner(adminRouter: AdminRouter) {
           case status if (500 until 600).contains(status.code) =>
             throw MarathonBadGateway(HttpResponseStatus.valueOf(status.code)).exception
           case _ =>
-            decode[MarathonApp](response.contentString)
+            decode[MarathonApp](response.contentString).getOrThrow
         }
       }
   }

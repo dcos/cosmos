@@ -34,8 +34,8 @@ object Decoders {
     )
   }
 
-  def decode[T: Decoder: ClassTag](value: String): T = {
-    convertToCosmosException(io.circe.jawn.decode[T](value), value)
+  def decode[T: Decoder: ClassTag](value: String): Result[T] = {
+    convertToCosmosError(io.circe.jawn.decode[T](value), value)
   }
 
   def mediaTypedDecode[T: ClassTag](
@@ -44,25 +44,26 @@ object Decoders {
   )(
     implicit decoder: MediaTypedDecoder[T]
   ): T = {
-    convertToCosmosException(decoder(parse(value).hcursor, mediaType), value)
+    convertToCosmosError(
+      decoder(
+        parse(value).getOrThrow.hcursor,
+        mediaType
+      ),
+      value
+    ).getOrThrow
   }
 
-  def parse(value: String): Json = {
-    convertToCosmosException(io.circe.jawn.parse(value), value)
+  def parse(value: String): Result[Json] = {
+    convertToCosmosError(io.circe.jawn.parse(value), value)
   }
 
   def decode64[T: Decoder: ClassTag](value: String): T = {
-    decode[T](base64DecodeString(value))
+    decode[T](base64DecodeString(value)).getOrThrow
   }
 
   def parse64(value: String): Json = {
-    parse(base64DecodeString(value))
+    parse(base64DecodeString(value)).getOrThrow
   }
-
-  def convertToCosmosException[T: ClassTag](
-    result: Either[Error, T],
-    inputValue: String
-  ): T = convertToCosmosError(result, inputValue).getOrThrow
 
   def convertToCosmosError[T: ClassTag](
     result: Either[Error, T],
