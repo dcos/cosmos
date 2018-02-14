@@ -1,5 +1,7 @@
 package com.mesosphere.http
 
+import io.circe.Encoder
+import io.circe.generic.semiauto
 import scala.util.Try
 
 case class CompoundMediaType(mediaTypes: Set[MediaType]) {
@@ -53,4 +55,7 @@ object CompoundMediaType {
         rhs.exists(MediaType.compatible(mt, _))
       }
   }
+
+  implicit val encoder: Encoder[CompoundMediaType] =
+    semiauto.deriveEncoder
 }
