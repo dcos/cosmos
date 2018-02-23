@@ -24,9 +24,6 @@ function copy {(
 
   mkdir -p ${TARGET_DIR}
   cp ${PROJECT_DIR}/cosmos-server/target/scala-${PROJECT_SCALA_VERSION}/cosmos-server_${PROJECT_SCALA_VERSION}-*-one-jar.jar ${TARGET_DIR}/${ONE_JAR}
-  cp ${PROJECT_DIR}/cosmos-server/target/*.html ${TARGET_DIR}
-  cp ${PROJECT_DIR}/cosmos-server/target/*.raml ${TARGET_DIR}
-  cp ${PROJECT_DIR}/cosmos-server/target/*.swagger ${TARGET_DIR}
 
 )}
 
