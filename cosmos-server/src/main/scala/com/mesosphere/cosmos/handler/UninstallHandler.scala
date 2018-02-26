@@ -27,6 +27,7 @@ import com.twitter.finagle.http.Status
 import com.twitter.util.Future
 import io.circe.Json
 import io.circe.JsonObject
+import io.circe.syntax._
 import org.slf4j.Logger
 
 private[cosmos] final class UninstallHandler(
@@ -170,15 +171,13 @@ private[cosmos] final class UninstallHandler(
   }
 
   private[this] def setMarathonUninstall(appJson: JsonObject): JsonObject = {
-    // Note, Marathon appends extraneous fields when you fetch the current configuration.
-    // Those are removed here to ensure the Marathon update succeeds.
-    // Presently, those fields are:
-    // - uris
-    // - version
     appJson.add(
       envJsonField,
       Json.fromJsonObject(
-        appJson(envJsonField).get.asObject.get.add(SdkUninstallEnvvar, Json.fromString("true"))
+        appJson(envJsonField)
+          .flatMap(_.asObject)
+          .getOrElse(JsonObject())
+          .add(SdkUninstallEnvvar, "true".asJson)
       )
     )
   }
