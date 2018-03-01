@@ -56,14 +56,6 @@ function deploy {(
   aws s3 cp ${TARGET_DIR}/${ONE_JAR} ${S3_DEPLOY_BUCKET}/${ONE_JAR}
   aws s3 cp ${TARGET_DIR}/${SHA1_FILE} ${S3_DEPLOY_BUCKET}/${SHA1_FILE}
 
-  # Copy the documentation to S3
-  info "Uploading documentation to: ${S3_DEPLOY_BUCKET}"
-  for TYPE in raml swagger html ; do
-    for FILE in "${TARGET_DIR}"/*.${TYPE} ; do
-      aws s3 cp "${FILE}" ${S3_DEPLOY_BUCKET}/
-    done
-  done
-
   info "Generating buildinfo.json"
   cat ${DCOS_IMAGE_DIR}/buildinfo.json | \
     jq ".single_source.url |= \"${HTTPS_READ_BUCKET}/${ONE_JAR}\" | .single_source.sha1 |= \"$(getSha1)\"" \
