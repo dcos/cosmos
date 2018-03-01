@@ -19,6 +19,7 @@ import io.finch.Error
 import io.finch.Errors
 import io.netty.handler.codec.http.HttpResponseStatus
 import java.nio.ByteBuffer
+import java.nio.file.Path
 import java.util.Base64
 import org.jboss.netty.handler.codec.http.HttpMethod
 
@@ -44,6 +45,9 @@ object Encoders {
     duration =>
       s"${duration.inSeconds} seconds".asJson
   }
+  
+  implicit val encodePath: Encoder[Path] =
+    Encoder.encodeString.contramap(_.toString)
 
   implicit val encodeStatus: Encoder[Status] =
     Encoder.encodeInt.contramap(_.code)
