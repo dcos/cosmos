@@ -6,7 +6,7 @@ import com.mesosphere.cosmos.circe.Decoders.mediaTypedDecode
 import com.mesosphere.cosmos.circe.Encoders.encodeByteBuffer
 import com.mesosphere.cosmos.finch.MediaTypedDecoder
 import com.mesosphere.cosmos.finch.MediaTypedEncoder
-import com.mesosphere.error.ResultOps
+import com.mesosphere.error.Result
 import com.mesosphere.http.MediaType
 import com.mesosphere.universe.common.ByteBuffers
 import com.twitter.finagle.http.Fields
@@ -90,8 +90,8 @@ object StorageEnvelope {
     StorageEnvelope(data).asJson.noSpaces.getBytes(StandardCharsets.UTF_8)
   }
 
-  def decodeData[T: MediaTypedDecoder: ClassTag](data: Array[Byte]): T = {
-    decode[StorageEnvelope](new String(data, StandardCharsets.UTF_8)).getOrThrow.decodeData
+  def decodeData[T: MediaTypedDecoder: ClassTag](data: Array[Byte]): Result[T] = {
+    decode[StorageEnvelope](new String(data, StandardCharsets.UTF_8)).map(_.decodeData)
   }
 
   implicit val encoder: Encoder[StorageEnvelope] = deriveEncoder[StorageEnvelope]
