@@ -43,14 +43,14 @@ object Decoders {
     mediaType: MediaType
   )(
     implicit decoder: MediaTypedDecoder[T]
-  ): T = {
-    convertToCosmosError(
-      decoder(
-        parse(value).getOrThrow.hcursor,
+  ): Result[T] = {
+    for {
+      json <- parse(value)
+      result <- decoder(
+        json.hcursor,
         mediaType
-      ),
-      value
-    ).getOrThrow
+      )
+    } yield result
   }
 
   def parse(value: String): Result[Json] = {

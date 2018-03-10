@@ -1,7 +1,9 @@
 package com.mesosphere.cosmos.model
 
+import com.mesosphere.cosmos.error.CosmosException
 import com.mesosphere.cosmos.finch.MediaTypedDecoder
 import com.mesosphere.cosmos.finch.MediaTypedEncoder
+import com.mesosphere.error.ResultOps
 import com.mesosphere.http.MediaType
 import com.mesosphere.http.MediaTypeSubType
 import io.circe.Decoder
@@ -14,14 +16,16 @@ class StorageEnvelopeSpec extends FreeSpec {
 
   "Decoding the result of an encoding should yield back the original data" in {
     val exp = TestClass("fooooo")
-    val act = StorageEnvelope.decodeData[TestClass](StorageEnvelope.encodeData(exp))
+    val act = StorageEnvelope.decodeData[TestClass](
+      StorageEnvelope.encodeData(exp)
+    ).getOrThrow
     assertResult(exp)(act)
   }
 
   "Decoding the result of an encoding as a different type should throw an exception" in {
     val input = TestClass2("fooooo")
-    intercept[IllegalArgumentException] {
-      StorageEnvelope.decodeData[TestClass](StorageEnvelope.encodeData(input))
+    intercept[CosmosException] {
+      StorageEnvelope.decodeData[TestClass](StorageEnvelope.encodeData(input)).getOrThrow
     }
     ()
   }

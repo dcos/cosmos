@@ -3,8 +3,9 @@ package com.mesosphere.cosmos.thirdparty.marathon.model
 import com.mesosphere.cosmos.circe.Decoders.decode64
 import com.mesosphere.cosmos.circe.Decoders.parse64
 import com.mesosphere.cosmos.label
-import com.mesosphere.cosmos.model.StorageEnvelope
 import com.mesosphere.cosmos.model.PackageOrigin
+import com.mesosphere.cosmos.model.StorageEnvelope
+import com.mesosphere.error.ResultOps
 import com.mesosphere.universe
 import com.netaporter.uri.Uri
 import io.circe.Decoder
@@ -55,7 +56,9 @@ object MarathonApp {
 
     def packageDefinition: Option[universe.v4.model.PackageDefinition] = {
       app.labels.get(MarathonApp.packageLabel).map { string =>
-        decode64[StorageEnvelope](string).decodeData[universe.v4.model.PackageDefinition]
+        decode64[StorageEnvelope](
+          string
+        ).decodeData[universe.v4.model.PackageDefinition].getOrThrow
       }
     }
 

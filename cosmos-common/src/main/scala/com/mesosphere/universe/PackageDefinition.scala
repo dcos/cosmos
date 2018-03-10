@@ -158,8 +158,6 @@ package v4.model {
 
     implicit val mediaTypedDecoder: MediaTypedDecoder[PackageDefinition] = MediaTypedDecoder(
       mediaTypes
-    )(
-      decoder
     )
 
     implicit val mediaTypedEncoder: MediaTypedEncoder[PackageDefinition] = {

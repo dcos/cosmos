@@ -4,6 +4,8 @@ import com.mesosphere.cosmos.circe.Decoders.decode
 import com.mesosphere.cosmos.circe.Decoders.decodeByteBuffer
 import com.mesosphere.cosmos.circe.Decoders.mediaTypedDecode
 import com.mesosphere.cosmos.circe.Encoders.encodeByteBuffer
+import com.mesosphere.cosmos.error.UnsupportedContentEncoding
+import com.mesosphere.cosmos.error.UnsupportedContentType
 import com.mesosphere.cosmos.finch.MediaTypedDecoder
 import com.mesosphere.cosmos.finch.MediaTypedEncoder
 import com.mesosphere.error.Result
@@ -25,32 +27,52 @@ import scala.reflect.ClassTag
 
 
 final case class StorageEnvelope private (metadata: Map[String, String], data: ByteBuffer) {
-  def decodeData[T: MediaTypedDecoder: ClassTag]: T = {
-    val contentType = metadata.get(Fields.ContentType).flatMap { contentTypeValue =>
-      MediaType.parse(contentTypeValue).toOption
-    } getOrElse {
-      throw new IllegalArgumentException(
-        "Error while trying to deserialize envelope data. Content-Type not defined."
+  def decodeData[T](
+    implicit decoder: MediaTypedDecoder[T],
+    classTag: ClassTag[T]
+  ): Result[T] = {
+    for {
+      contentType <- envelopeContentType
+      storageData <- envelopeStorageData
+      result <- mediaTypedDecode(
+        new String(storageData, StandardCharsets.UTF_8),
+        contentType
       )
-    }
+    } yield result
+  }
 
-    val storageData = metadata.get(Fields.ContentEncoding) match {
+
+  private def envelopeStorageData: Result[Array[Byte]] = {
+     metadata.get(Fields.ContentEncoding) match {
       case Some(encoding) =>
         if (encoding == StorageEnvelope.GzipEncoding) {
-          StorageEnvelope.decodeGzip(ByteBuffers.getBytes(data))
+          Right(StorageEnvelope.decodeGzip(ByteBuffers.getBytes(data)))
         } else {
-          throw new IllegalArgumentException(
-            s"Error while trying to deserialize envelope data. Unknown Content-Encoding: $encoding."
+          Left(
+            UnsupportedContentEncoding(
+              List(StorageEnvelope.GzipEncoding),
+              Some(encoding)
+            )
           )
         }
       case None =>
-        ByteBuffers.getBytes(data)
+        Right(ByteBuffers.getBytes(data))
     }
+  }
 
-    mediaTypedDecode(
-      new String(storageData, StandardCharsets.UTF_8),
-      contentType
-    )
+  private def envelopeContentType[T](
+    implicit decoder: MediaTypedDecoder[T]
+  ): Result[MediaType] = {
+    metadata.get(Fields.ContentType).flatMap { contentTypeValue =>
+      MediaType.parse(contentTypeValue).toOption.map(Right(_))
+    } getOrElse {
+      Left(
+        UnsupportedContentType(
+          decoder.mediaTypes.toList,
+          None
+        )
+      )
+    }
   }
 }
 
@@ -91,7 +113,9 @@ object StorageEnvelope {
   }
 
   def decodeData[T: MediaTypedDecoder: ClassTag](data: Array[Byte]): Result[T] = {
-    decode[StorageEnvelope](new String(data, StandardCharsets.UTF_8)).map(_.decodeData)
+    decode[StorageEnvelope](
+      new String(data, StandardCharsets.UTF_8)
+    ).flatMap(_.decodeData)
   }
 
   implicit val encoder: Encoder[StorageEnvelope] = deriveEncoder[StorageEnvelope]
