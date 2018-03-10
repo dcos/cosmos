@@ -100,7 +100,9 @@ object JsonSchema {
           .asObject
           .flatMap { propertyObject =>
             propertyObject("default").orElse {
-              propertyObject("properties").map(filterDefaults)
+              propertyObject("properties")
+                .map(filterDefaults)
+                .filter(_.asObject.exists(_.size > 0))
             }
           }
           .map(propertyName -> _)
