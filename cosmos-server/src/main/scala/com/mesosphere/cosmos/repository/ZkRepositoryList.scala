@@ -11,6 +11,7 @@ import com.mesosphere.cosmos.model.StorageEnvelope
 import com.mesosphere.cosmos.model.ZooKeeperUri
 import com.mesosphere.cosmos.repository.DefaultRepositories._
 import com.mesosphere.cosmos.rpc.v1.model.PackageRepository
+import com.mesosphere.error.ResultOps
 import com.netaporter.uri.Uri
 import com.twitter.finagle.stats.Stat
 import com.twitter.finagle.stats.StatsReceiver
@@ -49,7 +50,7 @@ final class ZkRepositoryList private (
     Stat.timeFuture(stats.stat("read")) {
       readFromZooKeeper.flatMap {
         case Some((_, bytes)) =>
-          Future(StorageEnvelope.decodeData[List[PackageRepository]](bytes))
+          Future(StorageEnvelope.decodeData[List[PackageRepository]](bytes).getOrThrow)
         case None =>
           create(DefaultRepos)
       }
@@ -62,7 +63,7 @@ final class ZkRepositoryList private (
       readFromCache.flatMap {
         case Some((_, bytes)) =>
           readCacheStats.counter("hit").incr
-          Future(StorageEnvelope.decodeData[List[PackageRepository]](bytes))
+          Future(StorageEnvelope.decodeData[List[PackageRepository]](bytes).getOrThrow)
         case None =>
           readCacheStats.counter("miss").incr
           read()
@@ -82,7 +83,7 @@ final class ZkRepositoryList private (
             addToList(
               index,
               packageRepository,
-              StorageEnvelope.decodeData[List[PackageRepository]](bytes)
+              StorageEnvelope.decodeData[List[PackageRepository]](bytes).getOrThrow
             )
           )
 
@@ -97,7 +98,9 @@ final class ZkRepositoryList private (
       Stat.timeFuture(stats.stat("delete")) {
         readFromZooKeeper.flatMap {
           case Some((stat, bytes)) =>
-            val originalData = StorageEnvelope.decodeData[List[PackageRepository]](bytes)
+            val originalData = StorageEnvelope.decodeData[List[PackageRepository]](
+              bytes
+            ).getOrThrow
             val updatedData = originalData.filterNot(predicate)
             if (originalData.size == updatedData.size) {
               throw RepositoryNotPresent(nameOrUri).exception

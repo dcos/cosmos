@@ -4,6 +4,7 @@ import _root_.io.circe.Json
 import _root_.io.circe.jawn._
 import _root_.io.circe.syntax._
 import com.mesosphere.cosmos.model.StorageEnvelope
+import com.mesosphere.error.ResultOps
 import com.mesosphere.universe
 import com.mesosphere.universe.MediaTypes
 import com.mesosphere.universe.common.JsonUtil
@@ -390,7 +391,7 @@ object ItObjects {
         val envelope = json.as[StorageEnvelope].right.get
         Json.obj(
           "metadata" -> envelope.metadata.asJson,
-          "data" -> envelope.decodeData[universe.v4.model.PackageDefinition].asJson
+          "data" -> envelope.decodeData[universe.v4.model.PackageDefinition].getOrThrow.asJson
         )
       }.top
       .get
