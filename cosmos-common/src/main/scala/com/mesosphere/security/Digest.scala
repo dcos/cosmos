@@ -8,7 +8,7 @@ final case class Digest private (
     digest: String
 ) {
   override def toString(): String = {
-    s"$algorithm:$digest}"
+    s"$algorithm:$digest"
   }
 }
 
