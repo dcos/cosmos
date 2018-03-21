@@ -9,7 +9,7 @@ import org.scalacheck.Arbitrary
 import org.scalacheck.Arbitrary.arbitrary
 import org.scalacheck.Gen
 import org.scalacheck.Gen.Choose
-import org.scalacheck.Shapeless._
+import org.scalacheck.ScalacheckShapeless._
 import org.scalacheck.derive.MkArbitrary
 import scala.util.Success
 import scala.util.Try

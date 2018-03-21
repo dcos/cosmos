@@ -20,9 +20,9 @@ object RequestValidators {
     produces: DispatchingMediaTypedEncoder[Res]
   ): Endpoint[EndpointContext[Unit, Res]] = {
     val allValidators = baseValidator(produces) ::
-      header(Fields.Host) ::
-      header(UrlSchemeHeader) ::
-      headerOption(ForwardedProtoHeader)
+      header[String](Fields.Host) ::
+      header[String](UrlSchemeHeader) ::
+      headerOption[String](ForwardedProtoHeader)
 
     allValidators.map { case authorization :: responseEncoder ::
       httpHost :: urlScheme :: forwardedProtocol :: HNil =>
@@ -45,14 +45,14 @@ object RequestValidators {
     produces: DispatchingMediaTypedEncoder[Res]
   ): Endpoint[EndpointContext[Req, Res]] = {
     val contentTypeRule = beTheExpectedTypes(accepts.mediaTypedDecoder.mediaTypes.toList)
-    val contentTypeValidator = header(Fields.ContentType).as[MediaType].should(contentTypeRule)
+    val contentTypeValidator = header[MediaType](Fields.ContentType).should(contentTypeRule)
 
     val bodyValidator = body[Req, Application.Json](accepts.decoder, accepts.classTag)
 
     val allValidators = baseValidator(produces) ::
-      header(Fields.Host) ::
-      header(UrlSchemeHeader) ::
-      headerOption(ForwardedProtoHeader) ::
+      header[String](Fields.Host) ::
+      header[String](UrlSchemeHeader) ::
+      headerOption[String](ForwardedProtoHeader) ::
       contentTypeValidator ::
       bodyValidator
 
@@ -74,8 +74,7 @@ object RequestValidators {
   def baseValidator[Res](
     produces: DispatchingMediaTypedEncoder[Res]
   ): Endpoint[Option[Authorization] :: MediaTypedEncoder[Res] :: HNil] = {
-    val accept = header(Fields.Accept)
-      .as[CompoundMediaType]
+    val accept = header[CompoundMediaType](Fields.Accept)
       .map { accept =>
         produces(accept) match {
           case Some(x) => x
@@ -83,16 +82,16 @@ object RequestValidators {
             throw incompatibleAcceptHeader(produces.mediaTypes, accept.mediaTypes)
         }
       }
-    val auth = headerOption(Fields.Authorization).map(_.map(Authorization))
+    val auth = headerOption[String](Fields.Authorization).map(_.map(Authorization))
     auth :: accept
   }
 
   val proxyValidator: Endpoint[(Uri, RequestSession)] = {
-    val validators = param("url").map(Uri.parse) ::
-      headerOption(Fields.Authorization).map(_.map(Authorization)) ::
-      header(Fields.Host) ::
-      header(UrlSchemeHeader) ::
-      headerOption(ForwardedProtoHeader)
+    val validators = param[String]("url").map(Uri.parse) ::
+      headerOption[String](Fields.Authorization).map(_.map(Authorization)) ::
+      header[String](Fields.Host) ::
+      header[String](UrlSchemeHeader) ::
+      headerOption[String](ForwardedProtoHeader)
 
     validators.map {
       case queryParam :: authorization :: httpHost :: urlScheme ::

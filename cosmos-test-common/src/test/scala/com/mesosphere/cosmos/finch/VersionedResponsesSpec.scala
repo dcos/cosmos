@@ -14,7 +14,7 @@ import io.circe.syntax._
 import io.finch./
 import io.finch.Endpoint
 import io.finch.Input
-import io.finch.post
+import io.finch.syntax.post
 import org.scalatest.FreeSpec
 
 final class VersionedResponsesSpec extends FreeSpec {

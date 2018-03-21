@@ -45,7 +45,7 @@ object Deps {
 
   // APLv2.0
   val twitterServer = Seq(
-    "com.twitter" %% "twitter-server" % V.twitterServer
+    "com.twitter" %% "twitter-server" % V.twitterUtil
   )
 
   // APLv2.0
@@ -136,31 +136,30 @@ object Deps {
 
   // APLv2.0
   val apacheCommons = Seq(
-    "commons-codec" % "commons-codec" % "1.10"
+    "commons-codec" % "commons-codec" % "1.11"
   )
 
 }
 
 object V {
-  val projectScalaVersion = "2.12.3"
+  val projectScalaVersion = "2.12.5"
   val projectVersion = "0.6.0-SNAPSHOT"
 
   val bijection = "0.9.6"
-  val circe = "0.9.0-M1"
+  val circe = "0.9.2"
   val curator = "2.12.0"
-  val fastparse = "0.4.3"
-  val finch = "0.16.0-M3"
-  val guava = "22.0"
+  val fastparse = "1.0.0"
+  val finch = "0.18.0"
+  val guava = "24.1-jre"
   val jsonSchema = "2.2.6"
   val logback = "1.2.3"
-  val mockito = "2.8.47"
+  val mockito = "2.16.0"
   val mustache = "0.9.5"
-  val netty = "4.1.13.Final"
-  val scalaCheck = "1.13.4"
-  val scalaCheckShapeless = "1.1.3"
-  val scalaTest = "3.0.1"
+  val netty = "4.1.22.Final"
+  val scalaCheck = "1.13.5"
+  val scalaCheckShapeless = "1.1.8"
+  val scalaTest = "3.0.5"
   val scalaUri = "0.4.16"
   val slf4j = "1.7.25"
-  val twitterServer = "1.32.0"
-  val twitterUtil = "7.1.0"
+  val twitterUtil = "18.3.0"
 }
