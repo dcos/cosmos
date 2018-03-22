@@ -54,10 +54,7 @@ object Encoders {
   implicit val encodeHttpMethod: Encoder[HttpMethod] =
     Encoder.encodeString.contramap(_.getName)
 
-  implicit def encodeIor[A, B](
-    implicit encodeA: Encoder[A],
-    encodeB: Encoder[B]
-  ): Encoder[Ior[A, B]] = deriveEncoder[Ior[A, B]]
+  implicit def encodeIor[A : Encoder, B : Encoder]: Encoder[Ior[A, B]] = deriveEncoder[Ior[A, B]]
 
   def exceptionErrorResponse(t: Throwable): rpc.v1.model.ErrorResponse =
     t match {

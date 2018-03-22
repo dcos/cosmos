@@ -29,6 +29,7 @@ import io.finch.Error.NotPresent
 import io.finch.Error.NotValid
 import io.finch.Output
 import io.finch.items.HeaderItem
+import io.finch.items.ParamItem
 import org.scalacheck.Arbitrary.arbitrary
 import org.scalacheck.Gen
 import org.scalatest.Assertion
@@ -166,9 +167,10 @@ final class RequestValidatorsSpec extends FreeSpec with Matchers with PropertyCh
     request: HttpRequest
   ): Assertion = {
     whenever (MediaType.parse(request.headers(Fields.ContentType)).isFailure) {
+      // Work around for DCOS_OSS-2289
       validateOutput(validator, request) should matchPattern {
-        case Throw(NotParsed(HeaderItem(Fields.ContentType), _, _)) =>
-        case Throw(NotValid(HeaderItem(Fields.ContentType), _)) =>
+        case Throw(NotParsed(ParamItem(Fields.ContentType), _, _)) =>
+        case Throw(NotValid(ParamItem(Fields.ContentType), _)) =>
       }
     }
   }

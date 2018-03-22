@@ -13,7 +13,6 @@ import com.netaporter.uri.Uri
 import com.twitter.finagle.http.Fields
 import com.twitter.finagle.http.Request
 import com.twitter.finagle.http.RequestBuilder
-import com.twitter.finagle.http.RequestConfig.Yes
 import com.twitter.finagle.http.Response
 import com.twitter.finagle.http.Status
 import com.twitter.io.Buf
@@ -105,7 +104,7 @@ abstract class ServiceClient(baseUri: Uri) {
     uri: Uri
   )(
     implicit session: RequestSession
-  ): RequestBuilder[Yes, Nothing] = {
+  ): RequestBuilder[RequestBuilder.Valid, Nothing] = {
     val builder = RequestBuilder()
       .url(s"$cleanedBaseUri${uri.toString}")
       .setHeader(Fields.UserAgent, s"cosmos/$cosmosVersion")
