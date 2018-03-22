@@ -84,11 +84,6 @@ object Deps {
     "com.github.spullara.mustache.java" % "compiler" % V.mustache
   )
 
-  // APLv2.0
-  val netty = Seq(
-    "io.netty" % "netty-common" % V.netty
-  )
-
   // BSD 3-clause
   val scalaCheck = Seq(
     "org.scalacheck" %% "scalacheck" % V.scalaCheck % "test"
@@ -155,7 +150,6 @@ object V {
   val logback = "1.2.3"
   val mockito = "2.16.0"
   val mustache = "0.9.5"
-  val netty = "4.1.22.Final"
   val scalaCheck = "1.13.5"
   val scalaCheckShapeless = "1.1.8"
   val scalaTest = "3.0.5"

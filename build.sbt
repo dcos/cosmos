@@ -37,8 +37,7 @@ val server = project.in(file("cosmos-server"))
       Deps.scalaUri ++
       Deps.slf4j ++
       Deps.twitterCommons ++
-      Deps.twitterServer ++
-      Deps.netty
+      Deps.twitterServer
   )
   .dependsOn(
     common
