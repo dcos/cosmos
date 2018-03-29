@@ -28,7 +28,7 @@
     <appender-ref ref="NOEXCEPTION"/>
   </logger>
 
-  <root level="info">
+  <root level="${DCOS_COSMOS_LOG_LEVEL:-info}">
     <appender-ref ref="STDOUT"/>
   </root>
 </configuration>
