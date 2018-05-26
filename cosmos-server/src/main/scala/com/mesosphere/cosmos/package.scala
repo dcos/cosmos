@@ -97,7 +97,7 @@ package cosmos {
   )
 
   object maxClientResponseSize extends GlobalFlag[StorageUnit](
-    5.megabytes,
+    40.megabytes,
     "Maximum size for the response for requests initiated by Cosmos in Megabytes"
   )
   // scalastyle:on object.name

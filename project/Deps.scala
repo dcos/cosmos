@@ -143,7 +143,7 @@ object Deps {
 
 object V {
   val projectScalaVersion = "2.11.7"
-  val projectVersion = "0.4.2"
+  val projectVersion = "0.4.3"
 
   val aws = "1.11.63"
   val bijection = "0.9.4"
