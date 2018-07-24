@@ -55,8 +55,41 @@ object HttpClient {
         val responseData = extractResponseData(uri, conn)
 
         Future(processResponse(responseData))
-          .ensure(responseData.contentStream.close())
-          .ensure(conn.disconnect())
+          .ensure({
+            logger.debug("about to close stream")
+            responseData.contentStream.close()
+          })
+          .ensure({
+            logger.debug("about to close conn")
+            conn.disconnect()
+          })
+      }
+      .handle { case e: IOException =>
+        throw CosmosException(EndpointUriConnection(uri, e.getMessage), e)
+      }
+  }
+
+  def fetchStream[A](
+    uri: Uri,
+    headers: (String, String)*
+  )(
+    processResponse: ResponseData => A
+  )(
+    implicit statsReceiver: StatsReceiver
+  ): Future[A] = {
+    Future(uri.toURI.toURL.openConnection())
+      .handle {
+        case t @ (_: IllegalArgumentException | _: MalformedURLException | _: URISyntaxException) =>
+          throw CosmosException(EndpointUriSyntax(uri, t.getMessage), t)
+      }
+      .flatMap { case conn: HttpURLConnection =>
+        conn.setRequestProperty(Fields.UserAgent, s"cosmos/${BuildProperties().cosmosVersion}")
+        // UserAgent set above can be overridden below.
+        headers.foreach { case (name, value) => conn.setRequestProperty(name, value) }
+        logger.debug(format(conn))
+        val responseData = extractResponseData(uri, conn)
+
+        Future(processResponse(responseData))
       }
       .handle { case e: IOException =>
         throw CosmosException(EndpointUriConnection(uri, e.getMessage), e)

@@ -3,6 +3,7 @@ package com.mesosphere.cosmos.handler
 import com.google.common.io.ByteStreams
 import com.mesosphere.cosmos.HttpClient
 import com.mesosphere.cosmos.HttpClient.ResponseData
+import com.mesosphere.cosmos.HttpClient.logger
 import com.mesosphere.cosmos.error.Forbidden
 import com.mesosphere.cosmos.error.GenericHttpError
 import com.mesosphere.cosmos.error.InvalidContentLengthLimit
@@ -12,8 +13,9 @@ import com.mesosphere.cosmos.repository.PackageCollection
 import com.netaporter.uri.Uri
 import com.twitter.finagle.http.Fields
 import com.twitter.finagle.http.Response
+import com.twitter.finagle.http.Status
 import com.twitter.finagle.stats.StatsReceiver
-import com.twitter.io.Buf
+import com.twitter.io.Reader
 import com.twitter.util.Future
 import com.twitter.util.StorageUnit
 import io.finch.Output
@@ -39,18 +41,25 @@ final class ResourceProxyHandler private(
         .fetch(
           uri
         ){ responseData =>
-          val contentBytes = getContentBytes(uri, responseData, contentLengthLimit)
-          val response = Response()
-          response.content = Buf.ByteArray.Owned(contentBytes)
+          // val contentBytes = getContentBytes(uri, responseData, contentLengthLimit)
+          // val response = Response()
+          assert(contentLengthLimit.bytes > 0)
+          val response = Response(
+            com.twitter.finagle.http.Version.Http11,
+            Status.Ok,
+            Reader.fromStream(responseData.contentStream)
+          )
+          logger.warn("RPH built response")
+          // response.content = Buf.ByteArray.Owned(contentBytes)
           response.contentType = responseData.contentType.show
-          response.contentLength = contentBytes.length.toLong
+          // response.contentLength = contentBytes.length.toLong
           for (filename <- getFileNameFromUrl(uri)) {
             response.headerMap.add(Fields.ContentDisposition,
               s"""attachment; filename="$filename"""")
           }
-          response
+          logger.warn("RPH ret response")
+          Output.payload(response)
         }
-        .map(Output.payload(_))
     }
   }
 }
