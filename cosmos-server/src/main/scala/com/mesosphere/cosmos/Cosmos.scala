@@ -250,6 +250,7 @@ with Logging {
 
     val api = endpoints.handle {
       case ce: CosmosException =>
+        logger.warn("Cosmos Exception", ce)
         stats.counter(s"definedError/${sanitizeClassName(ce.error.getClass)}").incr()
         val output = Output.failure(
           ce,
@@ -259,6 +260,7 @@ with Logging {
         )
         ce.headers.foldLeft(output) { case (out, kv) => out.withHeader(kv) }
       case fe @ (_: _root_.io.finch.Error | _: _root_.io.finch.Errors) =>
+        logger.warn("Finch Exception", fe)
         stats.counter(s"finchError/${sanitizeClassName(fe.getClass)}").incr()
         Output.failure(
           fe.asInstanceOf[Exception], // Must be an Exception based on the types
