@@ -93,14 +93,11 @@ object PackageDefinitionRenderer {
     context: JsonObject
   ): JsonObject = {
     val renderedJsonString = {
-      logger.info(s"template : $template")
-      logger.info(s"context : $context")
       val mustache = MustacheFactory.compile(new StringReader(template), ".marathon.v2AppMustacheTemplate")
       val params = jsonToJava(Json.fromJsonObject(context))
-      logger.info("jsonToJava [{}]", params)
       val output = new StringWriter()
       mustache.execute(output, params).flush()
-      logger.info("mustache.execute [{}]", output.toString)
+      logger.info(s"template : $template context : $context jsonToJava $params mustache.execute ${output.toString}")
       output.toString
     }
 
@@ -114,37 +111,6 @@ object PackageDefinitionRenderer {
     val bytes = JsonUtil.dropNullKeysPrinter.pretty(json).getBytes(StandardCharsets.UTF_8)
     Base64.getEncoder.encodeToString(bytes)
   }
-
-  /*
-  def mapJsonArray(jsonArray: Vector[Json]) : Any = {
-    val r = mutable.ArrayBuffer.empty[Any]
-    jsonArray.foreach { entry =>
-      if (!entry.isNull) {
-        if (entry.isArray) {
-          r += mapJsonArray(entry.asArray.get)
-        } else if (entry.isObject) {
-          r += mapJsonObject(entry.asObject.get)
-        } else if (entry.isString) {
-          r += entry.asString.get
-        } else {
-          r += entry
-        }
-      }
-    }
-    r
-  }
-
-  def mapJsonObject(jsonObject: JsonObject): mutable.HashMap[String, Any] = {
-    val result = new mutable.HashMap[String, Any]()
-    jsonObject.toMap.foreach{ case (key, value) =>
-      if (key.nonEmpty && !value.isNull) result(key) = if (value.isObject) mapJsonObject(value.asObject.get)
-      else if (value.isArray) mapJsonArray(value.asArray.get)
-      else if (value.isString) value.asString.get
-      else value
-    }
-    result
-  }
-  */
 
   private[this] def nonOverridableLabels(
     pkg: universe.v4.model.PackageDefinition,
