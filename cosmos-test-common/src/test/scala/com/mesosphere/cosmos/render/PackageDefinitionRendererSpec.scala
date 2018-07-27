@@ -1,6 +1,5 @@
 package com.mesosphere.cosmos.render
 
-import com.github.mustachejava.DefaultMustacheFactory
 import com.mesosphere.cosmos.bijection.CosmosConversions._
 import com.mesosphere.cosmos.circe.Decoders.decode64
 import com.mesosphere.cosmos.circe.Decoders.parse
@@ -12,7 +11,6 @@ import com.mesosphere.cosmos.error.MarathonTemplateMustBeJsonObject
 import com.mesosphere.cosmos.error.OptionsNotAllowed
 import com.mesosphere.cosmos.label
 import com.mesosphere.cosmos.model.StorageEnvelope
-import com.mesosphere.cosmos.render.PackageDefinitionRenderer.jsonToJava
 import com.mesosphere.cosmos.thirdparty.marathon.model.AppId
 import com.mesosphere.cosmos.thirdparty.marathon.model.MarathonApp
 import com.mesosphere.error.ResultOps
@@ -24,8 +22,6 @@ import com.twitter.bijection.Conversion.asMethod
 import io.circe.Json
 import io.circe.JsonObject
 import io.circe.syntax._
-import java.io.StringReader
-import java.io.StringWriter
 import java.nio.ByteBuffer
 import java.nio.charset.StandardCharsets
 import org.scalatest.Assertion
@@ -483,159 +479,182 @@ class PackageDefinitionRendererSpec extends FreeSpec with Matchers with TableDri
       )
     }
 
-    "mustache rendering should work for a simple JSON instance data model" in {
-      val instanceBlob =
-        """
-          |{
-          |  "a-numeric-value" : 1,
-          |  "another-numeric-value" : 2.2,
-          |  "a-boolean-key" : true,
-          |  "a-simple-string" : "foobar",
-          |  "a-numeric-array" : [1, 2, 3],
-          |  "2d-numeric-array": [[1, 2], [3, 4]],
-          |  "a-boolean-array" : [true, false, true],
-          |  "2d-boolean-array" : [[true, false, true], [true, false, true]],
-          |  "a-float-array" : [1, 2, 3],
-          |  "2d-float-array" : [[1, 2, 3], [1, 2, 3]],
-          |  "a-string-array" : ["one", "two", "three"],
-          |  "2d-string-array" : [["one", "two", "three"], ["one", "two", "three"]],
-          |  "an-ascii-string" : "foobar!@#$%^&*()_+{}[]|';:./,<>?`~",
-          |  "a-unicode-string" : "ÿöłø"
-          |}
-        """.stripMargin
-      val templateInstanceBlob =
-        """
-          |{
-          |  "a-numeric-value" : {{service.a-numeric-value}},
-          |  "another-numeric-value" : {{service.another-numeric-value}},
-          |  "a-boolean-key" : {{service.a-boolean-key}},
-          |  "a-simple-string" : "{{service.a-simple-string}}",
-          |  "a-numeric-array" : {{service.a-numeric-array}},
-          |  "2d-numeric-array": {{service.2d-numeric-array}},
-          |  "a-boolean-array" : {{service.a-boolean-array}},
-          |  "2d-boolean-array" : {{service.2d-boolean-array}},
-          |  "a-float-array" : {{service.a-float-array}},
-          |  {{#service.2d-float-array}}
-          |  "2d-float-array" : {{service.2d-float-array}},
-          |  {{/service.2d-float-array}}
-          |  {{#service.non-existent-array}}
-          |  "absent-key" : "absent-value",
-          |  {{/service.non-existent-array}}
-          |  "a-string-array" : {{service.a-string-array}},
-          |  "2d-string-array" : {{service.2d-string-array}},
-          |  "an-ascii-string" : "{{service.an-ascii-string}}",
-          |  "a-unicode-string" : "{{service.a-unicode-string}}"
-          |}
-        """.stripMargin
-      val expected =
-        s"""
-           |{
-           | "blob" : $instanceBlob,
-           | "array" : [$instanceBlob, $instanceBlob]
-           |}
-        """.stripMargin
-      //  "must-escape" : "\\\"\""
-      checkTemplateRenders(
+    val instanceBlob =
+      """
+        |{
+        |  "a-numeric-value" : 1,
+        |  "another-numeric-value" : 2.2,
+        |  "a-boolean-key" : true,
+        |  "a-simple-string" : "foobar",
+        |  "a-numeric-array" : [1, 2, 3],
+        |  "2d-numeric-array": [[1, 2], [3, 4]],
+        |  "a-boolean-array" : [true, false, true],
+        |  "2d-boolean-array" : [[true, false, true], [true, false, true]],
+        |  "a-float-array" : [1, 2, 3],
+        |  "2d-float-array" : [[1, 2, 3], [1, 2, 3]],
+        |  "a-string-array" : ["one", "two", "three"],
+        |  "2d-string-array" : [["one", "two", "three"], ["one", "two", "three"]],
+        |  "an-ascii-string" : "foobar!@#$%^&*()_+{}[]|';:./,<>?`~",
+        |  "a-unicode-string" : "ÿöłø"
+        |}
+      """.stripMargin
+
+    val context = s"""{"service":$instanceBlob}"""
+
+    val templateInstanceBlob =
+      """
+        |{
+        |  "a-numeric-value" : {{service.a-numeric-value}},
+        |  "another-numeric-value" : {{service.another-numeric-value}},
+        |  "a-boolean-key" : {{service.a-boolean-key}},
+        |  "a-simple-string" : "{{service.a-simple-string}}",
+        |  "a-numeric-array" : {{service.a-numeric-array}},
+        |  "2d-numeric-array": {{service.2d-numeric-array}},
+        |  "a-boolean-array" : {{service.a-boolean-array}},
+        |  "2d-boolean-array" : {{service.2d-boolean-array}},
+        |  "a-float-array" : {{service.a-float-array}},
+        |  {{#service.2d-float-array}}
+        |  "2d-float-array" : {{service.2d-float-array}},
+        |  {{/service.2d-float-array}}
+        |  {{#service.non-existent-array}}
+        |  "absent-key" : "absent-value",
+        |  {{/service.non-existent-array}}
+        |  {{^service.absent-value}}
+        |  "a-string-array" : {{service.a-string-array}},
+        |  {{/service.absent-value}}
+        |  "2d-string-array" : {{service.2d-string-array}},
+        |  "an-ascii-string" : "{{service.an-ascii-string}}",
+        |  "a-unicode-string" : "{{service.a-unicode-string}}"
+        |}
+      """.stripMargin
+
+    "should work for a simple JSON instance data model" in {
+      checkPlainTextRenders(
         mustacheTemplate =
           s"""
              |{
              |  "blob" : $templateInstanceBlob,
-             |  "array" : [$templateInstanceBlob, $templateInstanceBlob]
+             |  "array" : [$templateInstanceBlob, $templateInstanceBlob],
+             |  "jsonObj" : {"key1":$templateInstanceBlob, "key2":$templateInstanceBlob}
              |}
-          """.stripMargin, //  "must-escape" : "{{service.must-escape}}",
-        context = s"""{"service":$instanceBlob}""",
-        expected
+          """.stripMargin,
+        context,
+        expected =
+          s"""
+             |{
+             | "blob" : $instanceBlob,
+             | "array" : [$instanceBlob, $instanceBlob],
+             | "jsonObj" : {"key1":$instanceBlob, "key2":$instanceBlob}
+             |}
+        """.stripMargin
       )
     }
 
-    "mustache factory should behave as expected" in {
-      val r1 = io.circe.jawn.parse(
-        """
-          |{
-          |  "name": "cassandra",
-          |  "cpus": 1.1,
-          |  "user": "nobody",
-          |  "secrets": "takirala",
-          |  "constraints": [["hostname", "MAX_PER", 1]]
-          |}
-        """.stripMargin)
-      print(r1)
-      print(s"======> ${r1.toOption.get.asObject.get}")
-      val serviceTemplate: String =
-        """
-          |{
-          |  "name": "{{service.name}}",
-          |  "cpus": {{service.cpus}},
-          |  "user": "{{service.user}}",
-          |  {{#service.secrets}}
-          |  "secrets": "{{service.secrets.account}}",
-          |  {{/service.secrets}}
-          |  "constraints": {{{service.constraints}}}
-          |}
+    val nestedTemplateInstanceBlob =
+      s"""
+         |{
+         | "nestedJson" : $templateInstanceBlob,
+         | "arrayJson" : [$templateInstanceBlob, $templateInstanceBlob],
+         | "nestedArray": [{"key1": $templateInstanceBlob},{"key2": $templateInstanceBlob}]
+         |}
         """.stripMargin
 
-      val expectedResult = parse(
+    val expectedNestedTemplateInstanceBlob =
+      s"""
+         |{
+         | "nestedJson" : $instanceBlob,
+         | "arrayJson" : [$instanceBlob, $instanceBlob],
+         | "nestedArray": [{"key1": $instanceBlob},{"key2": $instanceBlob}]
+         |}
+        """.stripMargin
+
+    "should work for a nested JSON instance data model" in {
+      checkPlainTextRenders(
+        mustacheTemplate =
+          s"""{"nd-array": [[[[$templateInstanceBlob, $templateInstanceBlob]
+             |,[$templateInstanceBlob, $templateInstanceBlob]]]]}""".stripMargin,
+        context,
+        expected = s"""{"nd-array": [[[[$instanceBlob, $instanceBlob],[$instanceBlob, $instanceBlob]]]]}"""
+      )
+
+      checkPlainTextRenders(
+        mustacheTemplate =
+          s"""
+             |{
+             |  "blob" : $nestedTemplateInstanceBlob,
+             |  "array" : [$nestedTemplateInstanceBlob, $nestedTemplateInstanceBlob],
+             |  "jsonObj" : {"key1":$nestedTemplateInstanceBlob, "key2":$nestedTemplateInstanceBlob}
+             |}
+          """.stripMargin,
+        context,
+        expected =
+          s"""
+             |{
+             | "blob" : $expectedNestedTemplateInstanceBlob,
+             | "array" : [$expectedNestedTemplateInstanceBlob, $expectedNestedTemplateInstanceBlob],
+             | "jsonObj" : {"key1":$expectedNestedTemplateInstanceBlob, "key2":$expectedNestedTemplateInstanceBlob}
+             |}
+        """.stripMargin
+      )
+    }
+
+    "should behave as expected" in {
+      checkJsonRenders(
         """
           |{
-          |  "name" : "cassandra",
-          |  "cpus" : 1.1,
-          |  "user" : "nobody",
-          |  "secrets" : "takirala",
-          |  "constraints" : [["hostname", "MAX_PER", 1]]
+          |  "name": "{{name}}",
+          |  "cpus": {{cpus}},
+          |  "secrets": "{{secrets.account}}",
+          |  "constraints": {{constraints}},
+          |  "user": "{{user}}"
           |}
-        """.stripMargin
-      ).getOrThrow
-
-      val context = parse(
-        """
-          |{
-          |  "service" : {
-          |    "name" : "cassandra",
-          |    "cpus" : 1.1,
-          |    "user" : "nobody",
-          |    "secrets" : {
-          |      "account" : "takirala"
-          |    },
-          |    "constraints" : [["hostname", "MAX_PER", 1]]
-          |  }
-          |}
-        """.stripMargin
-      ).getOrThrow
-
-      print("\n==========Template===========\n")
-      print(serviceTemplate)
-      print("\n==========Context===========\n")
-      print(context)
-
-      val MustacheFactory = new DefaultMustacheFactory()
-      val strReader = new StringReader(serviceTemplate)
-      val mustache = MustacheFactory.compile(strReader, ".marathon.v2AppMustacheTemplate")
-      val params = jsonToJava(context)
-      print("\n==========JsonToJava===========\n")
-      print(params)
-      val output = new StringWriter()
-      mustache.execute(output, params)
-      print("\n==========Result===========\n")
-      print(output)
-      print("\n==========Expected===========\n")
-      print(expectedResult.asJson.toString())
-      print(output.toString)
-      parse(output.toString).getOrThrow.noSpaces shouldEqual expectedResult.asJson.noSpaces
-
-      print("\n==========PDR===========\n")
-      PackageDefinitionRenderer.renderTemplate(serviceTemplate, context.asObject.get)
+        """.stripMargin,
+        parse(
+          """
+            |{
+            |  "name" : "cassandra",
+            |  "cpus" : 1.1,
+            |  "secrets" : {
+            |    "account" : "takirala"
+            |  },
+            |  "constraints" : [["hostname", "MAX_PER", 1]]
+            |}
+          """.stripMargin)
+          .getOrThrow
+          .asObject
+          .get
+          .add("user", "\n\'\"\\\r\t\b\f".asJson),
+        parse(
+          """
+            |{
+            |  "name" : "cassandra",
+            |  "cpus" : 1.1,
+            |  "secrets" : "takirala",
+            |  "constraints" : [["hostname", "MAX_PER", 1]]
+            |}
+          """.stripMargin)
+          .getOrThrow
+          .asObject
+          .get
+          .add("user", "\n\'\"\\\r\t\b\f".asJson)
+          .asJson
+      )
 
     }
   }
 
-  private[this] def checkTemplateRenders(mustacheTemplate: String, context: String, expected: String): Assertion = {
-    logger.info(s"Mustache template:\n$mustacheTemplate\nContext:\n$context\nExpected:\n$expected\n")
+  private[this] def checkPlainTextRenders(mustacheTemplate: String, context: String, expected: String): Assertion = {
+    logger.info(s"Context:\n$context\nExpected:\n$expected\n")
     val parsedContext = io.circe.jawn.parse(context).toOption.get.asObject.get
     val parsedExpected = io.circe.jawn.parse(expected).toOption.get
-    logger.info(s"ParsedContext:\n$parsedContext\nExpectedContext:\n$parsedExpected\n")
-    val result = PackageDefinitionRenderer.renderTemplate(mustacheTemplate, parsedContext)
+    checkJsonRenders(mustacheTemplate, parsedContext, parsedExpected)
+  }
+
+  private[this] def checkJsonRenders(mustacheTemplate: String, context: JsonObject, expected: Json): Assertion = {
+    logger.info(s"Mustache template:\n$mustacheTemplate\nContextJsonObject:\n$context\nExpectedJson:\n$expected\n")
+    val result = PackageDefinitionRenderer.renderTemplate(mustacheTemplate, context)
     logger.info(s"Result:\n$result\n")
-    result.asJson.noSpaces shouldEqual parsedExpected.noSpaces
+    result.asJson.noSpaces shouldEqual expected.noSpaces
   }
 
   private[this] val Examples = Table(
