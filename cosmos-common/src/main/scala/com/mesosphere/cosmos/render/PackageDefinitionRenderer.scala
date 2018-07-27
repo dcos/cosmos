@@ -25,11 +25,14 @@ import io.circe.JsonObject
 import io.circe.syntax._
 import java.io.StringReader
 import java.io.StringWriter
+import org.slf4j.Logger
 import java.io.Writer
 import java.nio.charset.StandardCharsets
 import java.util.Base64
 
 object PackageDefinitionRenderer {
+  val logger: Logger = org.slf4j.LoggerFactory.getLogger(getClass)
+
   private[this] final val MustacheFactory = new DefaultMustacheFactory {
     /* The encode method for DefaultMustacheFactory does HTML based encoding.
      * We are not generating HTML. This disables it and just passes the raw value along.
@@ -90,11 +93,14 @@ object PackageDefinitionRenderer {
     context: JsonObject
   ): JsonObject = {
     val renderedJsonString = {
-      val strReader = new StringReader(template)
-      val mustache = MustacheFactory.compile(strReader, ".marathon.v2AppMustacheTemplate")
+      logger.info(s"template : $template")
+      logger.info(s"context : $context")
+      val mustache = MustacheFactory.compile(new StringReader(template), ".marathon.v2AppMustacheTemplate")
       val params = jsonToJava(Json.fromJsonObject(context))
+      logger.info("jsonToJava [{}]", params)
       val output = new StringWriter()
-      mustache.execute(output, params)
+      mustache.execute(output, params).flush()
+      logger.info("mustache.execute [{}]", output.toString)
       output.toString
     }
 
@@ -109,6 +115,36 @@ object PackageDefinitionRenderer {
     Base64.getEncoder.encodeToString(bytes)
   }
 
+  /*
+  def mapJsonArray(jsonArray: Vector[Json]) : Any = {
+    val r = mutable.ArrayBuffer.empty[Any]
+    jsonArray.foreach { entry =>
+      if (!entry.isNull) {
+        if (entry.isArray) {
+          r += mapJsonArray(entry.asArray.get)
+        } else if (entry.isObject) {
+          r += mapJsonObject(entry.asObject.get)
+        } else if (entry.isString) {
+          r += entry.asString.get
+        } else {
+          r += entry
+        }
+      }
+    }
+    r
+  }
+
+  def mapJsonObject(jsonObject: JsonObject): mutable.HashMap[String, Any] = {
+    val result = new mutable.HashMap[String, Any]()
+    jsonObject.toMap.foreach{ case (key, value) =>
+      if (key.nonEmpty && !value.isNull) result(key) = if (value.isObject) mapJsonObject(value.asObject.get)
+      else if (value.isArray) mapJsonArray(value.asArray.get)
+      else if (value.isString) value.asString.get
+      else value
+    }
+    result
+  }
+  */
 
   private[this] def nonOverridableLabels(
     pkg: universe.v4.model.PackageDefinition,
@@ -171,7 +207,7 @@ object PackageDefinitionRenderer {
     }
   }
 
-  private[this] def jsonToJava(json: Json): Any = {
+  def jsonToJava(json: Json, isParentArray : Boolean = false): Any = {
     import scala.collection.JavaConverters._
     json.fold(
       jsonNull = null,  // scalastyle:ignore null
@@ -182,10 +218,13 @@ object PackageDefinitionRenderer {
          * The slicing operation always succeeds because the small JSON string is "".
          */
         val string = value.asJson.noSpaces
-        string.slice(1, string.length - 1)
+        val trimLen = if (isParentArray) 0 else 1
+        val res = string.slice(trimLen, string.length - trimLen)
+        logger.info(s"Received $string Sent $res")
+        res
       },
-      jsonArray = _.map(jsonToJava).asJava,
-      jsonObject = _.toMap.mapValues(jsonToJava).asJava
+      jsonArray = _.map(x => jsonToJava(x, isParentArray = true)).asJava,
+      jsonObject = _.toMap.mapValues(jsonToJava(_)).asJava
     )
   }
 
