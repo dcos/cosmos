@@ -437,18 +437,12 @@ class PackageDefinitionRendererSpec extends FreeSpec with Matchers with TableDri
 
   "renderTemplate" - {
     "should not use html encoding for special characters" in {
-      /* This means that we don't support rendering arrays or objects!
-       * E.g.
-       * {
-       *   "array": {{arrayExample}},
-       *   "object": {{objectExample}}
-       * }
-       */
       val template =
         """
           |{
           |  "string": "{{stringExample}}",
           |  "simpleString": "{{simpleStringExample}}",
+          |  "htmlString": "{{htmlStringExample}}",
           |  "int": {{intExample}},
           |  "double": {{doubleExample}},
           |  "boolean": {{booleanExample}}
@@ -458,7 +452,8 @@ class PackageDefinitionRendererSpec extends FreeSpec with Matchers with TableDri
       val context = JsonObject.fromMap(
         Map(
           ("stringExample", "\n\'\"\\\r\t\b\f".asJson),
-          ("simpleStringExample", "foo-bar".asJson),
+          ("simpleStringExample", "foo\"bar".asJson),
+          ("htmlStringExample", "<a>Foo&Bar Inc.</a>".asJson),
           ("intExample", 42.asJson),
           ("doubleExample", 42.1.asJson),
           ("booleanExample", Json.False)
@@ -471,7 +466,8 @@ class PackageDefinitionRendererSpec extends FreeSpec with Matchers with TableDri
       ) shouldBe JsonObject.fromMap(
         Map(
           ("string", "\n\'\"\\\r\t\b\f".asJson),
-          ("simpleString", "foo-bar".asJson),
+          ("simpleString", "foo\"bar".asJson),
+          ("htmlString", "<a>Foo&Bar Inc.</a>".asJson),
           ("int", 42.asJson),
           ("double", 42.1.asJson),
           ("boolean", Json.False)
@@ -519,9 +515,9 @@ class PackageDefinitionRendererSpec extends FreeSpec with Matchers with TableDri
         |  {{#service.non-existent-array}}
         |  "absent-key" : "absent-value",
         |  {{/service.non-existent-array}}
-        |  {{^service.absent-value}}
+        |  {{^service.non-existent-value}}
         |  "a-string-array" : {{service.a-string-array}},
-        |  {{/service.absent-value}}
+        |  {{/service.non-existent-value}}
         |  "2d-string-array" : {{service.2d-string-array}},
         |  "an-ascii-string" : "{{service.an-ascii-string}}",
         |  "a-unicode-string" : "{{service.a-unicode-string}}"
@@ -574,7 +570,8 @@ class PackageDefinitionRendererSpec extends FreeSpec with Matchers with TableDri
           s"""{"nd-array": [[[[$templateInstanceBlob, $templateInstanceBlob]
              |,[$templateInstanceBlob, $templateInstanceBlob]]]]}""".stripMargin,
         context,
-        expected = s"""{"nd-array": [[[[$instanceBlob, $instanceBlob],[$instanceBlob, $instanceBlob]]]]}"""
+        expected =
+          s"""{"nd-array": [[[[$instanceBlob, $instanceBlob],[$instanceBlob, $instanceBlob]]]]}"""
       )
 
       checkPlainTextRenders(
@@ -583,7 +580,10 @@ class PackageDefinitionRendererSpec extends FreeSpec with Matchers with TableDri
              |{
              |  "blob" : $nestedTemplateInstanceBlob,
              |  "array" : [$nestedTemplateInstanceBlob, $nestedTemplateInstanceBlob],
-             |  "jsonObj" : {"key1":$nestedTemplateInstanceBlob, "key2":$nestedTemplateInstanceBlob}
+             |  "jsonObj" : {
+             |    "key1":$nestedTemplateInstanceBlob,
+             |    "key2":$nestedTemplateInstanceBlob
+             |  }
              |}
           """.stripMargin,
         context,
@@ -591,69 +591,38 @@ class PackageDefinitionRendererSpec extends FreeSpec with Matchers with TableDri
           s"""
              |{
              | "blob" : $expectedNestedTemplateInstanceBlob,
-             | "array" : [$expectedNestedTemplateInstanceBlob, $expectedNestedTemplateInstanceBlob],
-             | "jsonObj" : {"key1":$expectedNestedTemplateInstanceBlob, "key2":$expectedNestedTemplateInstanceBlob}
+             | "array" : [
+             |   $expectedNestedTemplateInstanceBlob,
+             |   $expectedNestedTemplateInstanceBlob
+             | ],
+             | "jsonObj" : {
+             |   "key1":$expectedNestedTemplateInstanceBlob,
+             |   "key2":$expectedNestedTemplateInstanceBlob
+             | }
              |}
         """.stripMargin
       )
     }
-
-    "should behave as expected" in {
-      checkJsonRenders(
-        """
-          |{
-          |  "name": "{{name}}",
-          |  "cpus": {{cpus}},
-          |  "secrets": "{{secrets.account}}",
-          |  "constraints": {{constraints}},
-          |  "user": "{{user}}"
-          |}
-        """.stripMargin,
-        parse(
-          """
-            |{
-            |  "name" : "cassandra",
-            |  "cpus" : 1.1,
-            |  "secrets" : {
-            |    "account" : "takirala"
-            |  },
-            |  "constraints" : [["hostname", "MAX_PER", 1]]
-            |}
-          """.stripMargin)
-          .getOrThrow
-          .asObject
-          .get
-          .add("user", "\n\'\"\\\r\t\b\f".asJson),
-        parse(
-          """
-            |{
-            |  "name" : "cassandra",
-            |  "cpus" : 1.1,
-            |  "secrets" : "takirala",
-            |  "constraints" : [["hostname", "MAX_PER", 1]]
-            |}
-          """.stripMargin)
-          .getOrThrow
-          .asObject
-          .get
-          .add("user", "\n\'\"\\\r\t\b\f".asJson)
-          .asJson
-      )
-
-    }
   }
 
-  private[this] def checkPlainTextRenders(mustacheTemplate: String, context: String, expected: String): Assertion = {
-    logger.info(s"Context:\n$context\nExpected:\n$expected\n")
-    val parsedContext = io.circe.jawn.parse(context).toOption.get.asObject.get
-    val parsedExpected = io.circe.jawn.parse(expected).toOption.get
+  private[this] def checkPlainTextRenders(
+    mustacheTemplate: String,
+    context: String,
+    expected: String
+  ): Assertion = {
+    val parsedContext = parse(context).toOption.get.asObject.get
+    val parsedExpected = parse(expected).toOption.get
     checkJsonRenders(mustacheTemplate, parsedContext, parsedExpected)
   }
 
-  private[this] def checkJsonRenders(mustacheTemplate: String, context: JsonObject, expected: Json): Assertion = {
-    logger.info(s"Mustache template:\n$mustacheTemplate\nContextJsonObject:\n$context\nExpectedJson:\n$expected\n")
+  private[this] def checkJsonRenders(
+    mustacheTemplate: String,
+    context: JsonObject,
+    expected: Json
+  ): Assertion = {
+    logger.info(s"Mustache template:\n$mustacheTemplate\nContextJsonObject" +
+      s":\n$context\nExpectedJson:\n$expected\n")
     val result = PackageDefinitionRenderer.renderTemplate(mustacheTemplate, context)
-    logger.info(s"Result:\n$result\n")
     result.asJson.noSpaces shouldEqual expected.noSpaces
   }
 

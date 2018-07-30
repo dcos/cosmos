@@ -10,21 +10,12 @@ import io.finch._
 
 abstract class EndpointHandler[Request, Response](successStatus: Status = Status.Ok) {
 
-  private[this] val logger = org.slf4j.LoggerFactory.getLogger(getClass)
-
   final def apply(context: EndpointContext[Request, Response]): Future[Output[Json]] = {
     apply(context.requestBody)(context.session).map { response =>
       val encodedResponse = response.asJson(context.responseEncoder.encoder)
-      Output
-        .payload(encodedResponse, successStatus)
+
+      Output.payload(encodedResponse, successStatus)
         .withHeader(Fields.ContentType -> context.responseEncoder.mediaType(response).show)
-        .map { r => logger.debug(
-            s"""
-              |Request : ${context.requestBody}
-              |Response :\n $r
-            """.stripMargin)
-          r
-        }
     }
   }
 

@@ -25,13 +25,14 @@ import io.circe.JsonObject
 import io.circe.syntax._
 import java.io.StringReader
 import java.io.StringWriter
-import org.slf4j.Logger
 import java.io.Writer
 import java.nio.charset.StandardCharsets
 import java.util.Base64
+import org.slf4j.Logger
+import org.slf4j.LoggerFactory
 
 object PackageDefinitionRenderer {
-  val logger: Logger = org.slf4j.LoggerFactory.getLogger(getClass)
+  lazy val logger: Logger = LoggerFactory.getLogger(getClass)
 
   private[this] final val MustacheFactory = new DefaultMustacheFactory {
     /* The encode method for DefaultMustacheFactory does HTML based encoding.
@@ -94,10 +95,9 @@ object PackageDefinitionRenderer {
   ): JsonObject = {
     val renderedJsonString = {
       val mustache = MustacheFactory.compile(new StringReader(template), ".marathon.v2AppMustacheTemplate")
-      val params = jsonToJava(Json.fromJsonObject(context))
+      val params = jsonToJava(Json.fromJsonObject(context), false)
       val output = new StringWriter()
       mustache.execute(output, params).flush()
-      logger.info(s"template : $template context : $context jsonToJava $params mustache.execute ${output.toString}")
       output.toString
     }
 
@@ -173,24 +173,22 @@ object PackageDefinitionRenderer {
     }
   }
 
-  def jsonToJava(json: Json, isParentArray : Boolean = false): Any = {
+  private[this] def jsonToJava(json: Json, isParentArray : Boolean): Any = {
     import scala.collection.JavaConverters._
     json.fold(
       jsonNull = null,  // scalastyle:ignore null
       jsonBoolean = identity,
       jsonNumber = n => n.toInt.getOrElse(n.toDouble),
       jsonString = value => {
-        /* Encode the string using a JSON string encoding and remove the beginning and ending ".
-         * The slicing operation always succeeds because the small JSON string is "".
+        /* Encode the string using a JSON string encoding and remove the beginning and ending " unless the strings are
+         * keys of a JSON Array. The slicing operation always succeeds because the small JSON string is "".
          */
         val string = value.asJson.noSpaces
         val trimLen = if (isParentArray) 0 else 1
-        val res = string.slice(trimLen, string.length - trimLen)
-        logger.info(s"Received $string Sent $res")
-        res
+        string.slice(trimLen, string.length - trimLen)
       },
-      jsonArray = _.map(x => jsonToJava(x, isParentArray = true)).asJava,
-      jsonObject = _.toMap.mapValues(jsonToJava(_)).asJava
+      jsonArray = _.map(jsonToJava(_, isParentArray = true)).asJava,
+      jsonObject = _.toMap.mapValues(jsonToJava(_, isParentArray = false)).asJava
     )
   }
 
