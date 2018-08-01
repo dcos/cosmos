@@ -16,7 +16,6 @@ import com.twitter.finagle.SimpleFilter
 import com.twitter.finagle.http.Request
 import com.twitter.finagle.http.Response
 import com.twitter.finagle.http.Status
-import com.twitter.finagle.http.filter.LoggingFilter
 import com.twitter.finagle.http.param.MaxResponseSize
 import com.twitter.util.Future
 import com.twitter.util.StorageUnit
@@ -58,7 +57,7 @@ object Services {
           Http.client.withTls(hostname)
       }
 
-      LoggingFilter.andThen(
+      CustomLoggingFilter.andThen(
         new ConnectionExceptionHandler(serviceName).andThen(
           new AuthFilter(serviceName).andThen(
             postAuthFilter.andThen(
