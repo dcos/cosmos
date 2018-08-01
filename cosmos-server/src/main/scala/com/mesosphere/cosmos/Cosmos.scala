@@ -46,6 +46,7 @@ import com.twitter.finagle.http.Fields
 import com.twitter.finagle.http.Request
 import com.twitter.finagle.http.Response
 import com.twitter.finagle.http.Status
+import com.twitter.finagle.http.filter.CommonLogFormatter
 import com.twitter.finagle.http.filter.LoggingFilter
 import com.twitter.finagle.param.Label
 import com.twitter.finagle.stats.StatsReceiver
@@ -54,6 +55,7 @@ import com.twitter.server.AdminHttpServer
 import com.twitter.server.Lifecycle
 import com.twitter.server.Stats
 import com.twitter.util.Await
+import com.twitter.util.Duration
 import com.twitter.util.Try
 import org.apache.curator.framework.CuratorFramework
 import org.slf4j.Logger
@@ -62,13 +64,13 @@ import shapeless.CNil
 import shapeless.HNil
 
 trait CosmosApp
-extends App
-with AdminHttpServer
-with Admin
-with Lifecycle
-with Lifecycle.Warmup
-with Stats
-with Logging {
+  extends App
+    with AdminHttpServer
+    with Admin
+    with Lifecycle
+    with Lifecycle.Warmup
+    with Stats
+    with Logging {
 
   import CosmosApp._
 
@@ -164,7 +166,7 @@ with Logging {
     HttpProxySupport.configureProxySupport()
     implicit val sr = statsReceiver
 
-    val service = LoggingFilter.andThen(buildService(allEndpoints))
+    val service = logWrapper(buildService(allEndpoints))
     val maybeHttpServer = startServer(service.map { request: Request =>
       request.headerMap.add(UrlSchemeHeader, "http")
       request
@@ -193,6 +195,45 @@ with Logging {
     for (httpServer <- maybeHttpsServer) {
       Await.result(httpServer)
     }
+  }
+
+  private[this] def logWrapper(service: Service[Request, Response]): Service[Request, Response] = {
+    object CustomLoggingFilter extends LoggingFilter[Request](
+      log = com.twitter.logging.Logger("access"),
+      formatter = new CommonLogFormatter {
+        override def format(request: Request, response: Response, responseTime: Duration): String = {
+          val remoteAddr = request.remoteAddress.getHostAddress
+
+          val contentLength = response.length
+          val contentLengthStr = if (contentLength > 0) contentLength.toString else "-"
+
+          val builder = new StringBuilder
+          builder.append(remoteAddr)
+          builder.append(" - \"")
+          builder.append(escape(request.method.toString))
+          builder.append(' ')
+          builder.append(escape(request.uri))
+          builder.append(' ')
+          builder.append(escape(request.version.toString))
+          builder.append("\" ")
+          builder.append(response.statusCode.toString)
+          builder.append(' ')
+          builder.append(contentLengthStr)
+          builder.append("B ")
+          builder.append(responseTime.inMillis)
+          builder.append("ms \"")
+          builder.append(escape(request.userAgent.getOrElse("-")))
+          builder.append('"')
+
+          if (response.statusCode / 100 != 2) {
+            builder.append(s" Headers : (${request.headerMap.map(_.productIterator.mkString(":")).mkString(", ")})")
+          }
+
+          builder.toString
+        }
+      }
+    )
+    CustomLoggingFilter andThen service
   }
 
   private[this] def configureDcosClients(): Try[AdminRouter] = {
