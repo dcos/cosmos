@@ -226,7 +226,12 @@ trait CosmosApp
           builder.append('"')
 
           if (response.statusCode / 100 != 2) {
-            builder.append(s" Headers : (${request.headerMap.map(_.productIterator.mkString(":")).mkString(", ")})")
+            val headersMap = request.headerMap
+            headersMap.get(Fields.Authorization) match {
+              case Some(_) => headersMap.put(Fields.Authorization, "********")
+              case None => ()
+            }
+            builder.append(s" Headers : (${headersMap.map(_.productIterator.mkString(":")).mkString(", ")})")
           }
 
           builder.toString
