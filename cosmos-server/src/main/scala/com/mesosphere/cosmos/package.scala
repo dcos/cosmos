@@ -67,7 +67,6 @@ package object cosmos {
  * must instead use regular package declarations
  */
 package cosmos {
-
   // scalastyle:off object.name
   object dcosUri extends GlobalFlag[Uri](
     s"The URI where the DCOS Admin Router is located. If this flag is set, " +
@@ -123,5 +122,4 @@ package cosmos {
     "Maximum size for the proxy endpoint service while fetching a resource"
   )
   // scalastyle:on object.name
-
 }

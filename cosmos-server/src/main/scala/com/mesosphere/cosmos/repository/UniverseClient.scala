@@ -83,7 +83,6 @@ final class DefaultUniverseClient(
     implicit session: RequestSession
   ): Future[universe.v4.model.Repository] = {
     adminRouter.getDcosVersion().flatMap { dcosVersion =>
-
       apply(repository, dcosVersion.version).respond {
         case Return(_) =>
           logger.info(
