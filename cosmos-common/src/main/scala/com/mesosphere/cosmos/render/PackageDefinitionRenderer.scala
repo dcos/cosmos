@@ -28,8 +28,12 @@ import java.io.StringWriter
 import java.io.Writer
 import java.nio.charset.StandardCharsets
 import java.util.Base64
+import org.slf4j.Logger
+import org.slf4j.LoggerFactory
 
 object PackageDefinitionRenderer {
+  lazy val logger: Logger = LoggerFactory.getLogger(getClass)
+
   private[this] final val MustacheFactory = new DefaultMustacheFactory {
     /* The encode method for DefaultMustacheFactory does HTML based encoding.
      * We are not generating HTML. This disables it and just passes the raw value along.
@@ -90,11 +94,10 @@ object PackageDefinitionRenderer {
     context: JsonObject
   ): JsonObject = {
     val renderedJsonString = {
-      val strReader = new StringReader(template)
-      val mustache = MustacheFactory.compile(strReader, ".marathon.v2AppMustacheTemplate")
-      val params = jsonToJava(Json.fromJsonObject(context))
+      val mustache = MustacheFactory.compile(new StringReader(template), ".marathon.v2AppMustacheTemplate")
+      val params = jsonToJava(Json.fromJsonObject(context), false)
       val output = new StringWriter()
-      mustache.execute(output, params)
+      mustache.execute(output, params).flush()
       output.toString
     }
 
@@ -108,7 +111,6 @@ object PackageDefinitionRenderer {
     val bytes = JsonUtil.dropNullKeysPrinter.pretty(json).getBytes(StandardCharsets.UTF_8)
     Base64.getEncoder.encodeToString(bytes)
   }
-
 
   private[this] def nonOverridableLabels(
     pkg: universe.v4.model.PackageDefinition,
@@ -171,21 +173,22 @@ object PackageDefinitionRenderer {
     }
   }
 
-  private[this] def jsonToJava(json: Json): Any = {
+  private[this] def jsonToJava(json: Json, isParentArray : Boolean): Any = {
     import scala.collection.JavaConverters._
     json.fold(
       jsonNull = null,  // scalastyle:ignore null
       jsonBoolean = identity,
       jsonNumber = n => n.toInt.getOrElse(n.toDouble),
       jsonString = value => {
-        /* Encode the string using a JSON string encoding and remove the beginning and ending ".
-         * The slicing operation always succeeds because the small JSON string is "".
+        /* Encode the string using a JSON string encoding and remove the beginning and ending " unless the strings are
+         * keys of a JSON Array. The slicing operation always succeeds because the small JSON string is "".
          */
         val string = value.asJson.noSpaces
-        string.slice(1, string.length - 1)
+        val trimLen = if (isParentArray) 0 else 1
+        string.slice(trimLen, string.length - trimLen)
       },
-      jsonArray = _.map(jsonToJava).asJava,
-      jsonObject = _.toMap.mapValues(jsonToJava).asJava
+      jsonArray = _.map(jsonToJava(_, isParentArray = true)).asJava,
+      jsonObject = _.toMap.mapValues(jsonToJava(_, isParentArray = false)).asJava
     )
   }
 
