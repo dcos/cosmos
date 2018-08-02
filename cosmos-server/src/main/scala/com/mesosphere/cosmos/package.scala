@@ -21,6 +21,16 @@ import java.nio.file.Path
 package object cosmos {
   implicit val globalTimer: Timer = new ScheduledThreadPoolTimer()
 
+  def trimContentForPrinting(content: String) : String = {
+    val maxLimit = maxClientResponseSize().bytes
+    if (content.length < maxLimit) {
+      content
+    } else {
+      s"${content.substring(0, (maxLimit.toInt-1)/2)}..." +
+        s"...${content.substring(content.length - (maxLimit.toInt-1)/2)}"
+    }
+  }
+
   object CustomLoggingFilter extends LoggingFilter[Request](
     log = com.twitter.logging.Logger("access"),
     formatter = new CommonLogFormatter {
@@ -120,6 +130,11 @@ package cosmos {
   object proxyContentLimit extends GlobalFlag[StorageUnit](
     100.megabytes,
     "Maximum size for the proxy endpoint service while fetching a resource"
+  )
+
+  object maxPayloadPrintLimit extends GlobalFlag[StorageUnit](
+    1.kilobytes,
+    "Maximum size of the payload that can be printed in the logs"
   )
   // scalastyle:on object.name
 }

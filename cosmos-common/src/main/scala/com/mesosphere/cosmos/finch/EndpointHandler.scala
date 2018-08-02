@@ -16,7 +16,8 @@ abstract class EndpointHandler[Request, Response](successStatus: Status = Status
   final def apply(context: EndpointContext[Request, Response]): Future[Output[Json]] = {
     apply(context.requestBody)(context.session)
       .respond {
-        case Throw(e) => logger.warn(s"Processing [${context.requestBody}] resulted in : ${e.getMessage}")
+        case Throw(e) =>
+          logger.warn(s"Processing [${context.requestBody}] resulted in : ${e.getMessage}")
         case _ => ()
       }
       .map { response =>

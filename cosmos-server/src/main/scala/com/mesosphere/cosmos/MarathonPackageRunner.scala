@@ -34,7 +34,8 @@ final class MarathonPackageRunner(adminRouter: AdminRouter) {
           case Status.Conflict =>
             throw ServiceAlreadyStarted().exception
           case status if (400 until 500).contains(status.code) =>
-            logger.warn(s"Marathon returned [${status.code}]: ${response.contentString}")
+            logger.warn(s"Marathon returned [${status.code}]: " +
+              s"${trimContentForPrinting(response.contentString)}")
             Try(decode[MarathonError](response.contentString).getOrThrow) match {
               case Success(marathonError) =>
                 throw MarathonBadResponse(marathonError).exception
@@ -42,7 +43,8 @@ final class MarathonPackageRunner(adminRouter: AdminRouter) {
                 throw MarathonGenericError(HttpResponseStatus.valueOf(status.code)).exception
             }
           case status if (500 until 600).contains(status.code) =>
-            logger.warn(s"Marathon returned [${status.code}]: ${response.contentString}")
+            logger.warn(s"Marathon returned [${status.code}]: " +
+              s"${trimContentForPrinting(response.contentString)}")
             throw MarathonBadGateway(HttpResponseStatus.valueOf(status.code)).exception
           case _ =>
             decode[MarathonApp](response.contentString).getOrThrow
