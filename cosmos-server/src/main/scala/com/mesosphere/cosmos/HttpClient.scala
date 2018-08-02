@@ -42,18 +42,8 @@ object HttpClient {
   )(
     implicit statsReceiver: StatsReceiver
   ): Future[A] = {
-    Future(uri.toURI.toURL.openConnection())
-      .handle {
-        case t @ (_: IllegalArgumentException | _: MalformedURLException | _: URISyntaxException) =>
-          throw CosmosException(EndpointUriSyntax(uri, t.getMessage), t)
-      }
-      .flatMap { case conn: HttpURLConnection =>
-        conn.setRequestProperty(Fields.UserAgent, s"cosmos/${BuildProperties().cosmosVersion}")
-        // UserAgent set above can be overridden below.
-        headers.foreach { case (name, value) => conn.setRequestProperty(name, value) }
-        logger.debug(format(conn))
-        val responseData = extractResponseData(uri, conn)
-
+    fetchResponse(uri, headers: _*)
+      .flatMap { case (responseData, conn) =>
         Future(processResponse(responseData))
           .ensure(responseData.contentStream.close())
           .ensure(conn.disconnect())
@@ -63,7 +53,44 @@ object HttpClient {
       }
   }
 
-  private def extractResponseData(
+  def fetchStream[A](
+    uri: Uri,
+    headers: (String, String)*
+  )(
+    processResponse: (ResponseData, HttpURLConnection) => A
+  )(
+    implicit statsReceiver: StatsReceiver
+  ): Future[A] = {
+    fetchResponse(uri, headers: _*)
+      .map { case (responseData, conn) => processResponse(responseData, conn) }
+      .handle { case e: IOException =>
+        throw CosmosException(EndpointUriConnection(uri, e.getMessage), e)
+      }
+  }
+
+  private[this] def fetchResponse(
+    uri: Uri,
+    headers: (String, String)*
+  )(
+    implicit statsReceiver: StatsReceiver
+  ): Future[(ResponseData, HttpURLConnection)] = {
+    Future(uri.toURI.toURL.openConnection())
+      .handle {
+        case t @ (_: IllegalArgumentException | _: MalformedURLException | _: URISyntaxException) =>
+          throw CosmosException(EndpointUriSyntax(uri, t.getMessage), t)
+      }
+      .map { case conn: HttpURLConnection =>
+        conn.setRequestProperty(Fields.UserAgent, s"cosmos/${BuildProperties().cosmosVersion}")
+        // UserAgent set above can be overridden below.
+        headers.foreach { case (name, value) => conn.setRequestProperty(name, value) }
+        logger.debug(format(conn))
+        val responseData = extractResponseData(uri, conn)
+
+        (responseData, conn)
+      }
+  }
+
+  private[this] def extractResponseData(
     uri: Uri,
     conn: HttpURLConnection
   )(implicit
@@ -129,10 +156,10 @@ object HttpClient {
     }
   }
 
-  def format(conn: HttpURLConnection) : String = {
+  def format(conn: HttpURLConnection): String = {
     val contentLength = conn.getContentLength
     val contentLengthStr = if (contentLength > 0) contentLength.toString else "-"
-    val userAgent:Option[String] = Option(conn.getHeaderField(Fields.UserAgent))
+    val userAgent: Option[String] = Option(conn.getHeaderField(Fields.UserAgent))
 
     def escape(s: String) = LogFormatter.escape(s)
 
@@ -143,10 +170,12 @@ object HttpClient {
       s"${escape(conn.getURL.getProtocol)}${escape("\"")} " +
       s"${conn.getResponseCode} " +
       s"${contentLengthStr}" +
-      s"${userAgent match {
-        case Some(uaStr) => s" ${escape("\"")}${escape(uaStr)}${escape("\"")}"
-        case None => " "
-      }}"
+      s"${
+        userAgent match {
+          case Some(uaStr) => s" ${escape("\"")}${escape(uaStr)}${escape("\"")}"
+          case None => " "
+        }
+      }"
   }
 
   final case class ResponseData(
