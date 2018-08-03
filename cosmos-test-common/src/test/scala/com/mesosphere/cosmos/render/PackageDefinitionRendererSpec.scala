@@ -24,12 +24,15 @@ import io.circe.JsonObject
 import io.circe.syntax._
 import java.nio.ByteBuffer
 import java.nio.charset.StandardCharsets
+import org.scalatest.Assertion
 import org.scalatest.FreeSpec
 import org.scalatest.Matchers
 import org.scalatest.prop.TableDrivenPropertyChecks
+import org.slf4j.Logger
 import scala.io.Source
 
 class PackageDefinitionRendererSpec extends FreeSpec with Matchers with TableDrivenPropertyChecks {
+  val logger: Logger = org.slf4j.LoggerFactory.getLogger(getClass)
 
   "if .labels from .marathon.v2AppMustacheTemplate " - {
     "isn't Map[String, String] an error is returned" in {
@@ -50,7 +53,7 @@ class PackageDefinitionRendererSpec extends FreeSpec with Matchers with TableDri
         val exception = intercept[CosmosException](PackageDefinitionRenderer.renderMarathonV2App("http://someplace", pd, None, None))
 
         exception.error match {
-          case js : JsonDecodingError =>
+          case js: JsonDecodingError =>
             assertResult("Unable to decode the JSON value as a scala.collection.immutable.Map")(js.message)
           case _ =>
             fail("expected JsonDecodingError")
@@ -105,7 +108,7 @@ class PackageDefinitionRendererSpec extends FreeSpec with Matchers with TableDri
   "Merging JSON objects" - {
 
     "should happen as part of marathon AppDefinition rendering" in {
-      forAll (Examples) { (defaultsJson, optionsJson, mergedJson) =>
+      forAll(Examples) { (defaultsJson, optionsJson, mergedJson) =>
         val packageName = "options-test"
         val mustacheTemplate = buildMustacheTemplate(mergedJson)
         val mustacheBytes = ByteBuffer.wrap(mustacheTemplate.getBytes(StandardCharsets.UTF_8))
@@ -434,25 +437,23 @@ class PackageDefinitionRendererSpec extends FreeSpec with Matchers with TableDri
 
   "renderTemplate" - {
     "should not use html encoding for special characters" in {
-      /* This means that we don't support rendering arrays or objects!
-       * E.g.
-       * {
-       *   "array": {{arrayExample}},
-       *   "object": {{objectExample}}
-       * }
-       */
-      val template = """
-      |{
-      |  "string": "{{stringExample}}",
-      |  "int": {{intExample}},
-      |  "double": {{doubleExample}},
-      |  "boolean": {{booleanExample}}
-      |}
-      |""".stripMargin
+      val template =
+        """
+          |{
+          |  "string": "{{stringExample}}",
+          |  "simpleString": "{{simpleStringExample}}",
+          |  "htmlString": "{{htmlStringExample}}",
+          |  "int": {{intExample}},
+          |  "double": {{doubleExample}},
+          |  "boolean": {{booleanExample}}
+          |}
+          |""".stripMargin
 
       val context = JsonObject.fromMap(
         Map(
           ("stringExample", "\n\'\"\\\r\t\b\f".asJson),
+          ("simpleStringExample", "foo\"bar".asJson),
+          ("htmlStringExample", "<a>Foo&Bar Inc.</a>".asJson),
           ("intExample", 42.asJson),
           ("doubleExample", 42.1.asJson),
           ("booleanExample", Json.False)
@@ -463,14 +464,166 @@ class PackageDefinitionRendererSpec extends FreeSpec with Matchers with TableDri
         template,
         context
       ) shouldBe JsonObject.fromMap(
-          Map(
-            ("string", "\n\'\"\\\r\t\b\f".asJson),
-            ("int", 42.asJson),
-            ("double", 42.1.asJson),
-            ("boolean", Json.False)
-          )
+        Map(
+          ("string", "\n\'\"\\\r\t\b\f".asJson),
+          ("simpleString", "foo\"bar".asJson),
+          ("htmlString", "<a>Foo&Bar Inc.</a>".asJson),
+          ("int", 42.asJson),
+          ("double", 42.1.asJson),
+          ("boolean", Json.False)
+        )
       )
     }
+
+    val instanceBlob =
+      """
+        |{
+        |  "a-numeric-value" : 1,
+        |  "another-numeric-value" : 2.2,
+        |  "a-boolean-key" : true,
+        |  "a-simple-string" : "foobar",
+        |  "a-numeric-array" : [1, 2, 3],
+        |  "2d-numeric-array": [[1, 2], [3, 4]],
+        |  "a-boolean-array" : [true, false, true],
+        |  "2d-boolean-array" : [[true, false, true], [true, false, true]],
+        |  "a-float-array" : [1, 2, 3],
+        |  "2d-float-array" : [[1, 2, 3], [1, 2, 3]],
+        |  "a-string-array" : ["one", "two", "three"],
+        |  "2d-string-array" : [["one", "two", "three"], ["one", "two", "three"]],
+        |  "an-ascii-string" : "foobar!@#$%^&*()_+{}[]|';:./,<>?`~",
+        |  "a-unicode-string" : "ÿöłø"
+        |}
+      """.stripMargin
+
+    val context = s"""{"service":$instanceBlob}"""
+
+    val templateInstanceBlob =
+      """
+        |{
+        |  "a-numeric-value" : {{service.a-numeric-value}},
+        |  "another-numeric-value" : {{service.another-numeric-value}},
+        |  "a-boolean-key" : {{service.a-boolean-key}},
+        |  "a-simple-string" : "{{service.a-simple-string}}",
+        |  "a-numeric-array" : {{service.a-numeric-array}},
+        |  "2d-numeric-array": {{service.2d-numeric-array}},
+        |  "a-boolean-array" : {{service.a-boolean-array}},
+        |  "2d-boolean-array" : {{service.2d-boolean-array}},
+        |  "a-float-array" : {{service.a-float-array}},
+        |  {{#service.2d-float-array}}
+        |  "2d-float-array" : {{service.2d-float-array}},
+        |  {{/service.2d-float-array}}
+        |  {{#service.non-existent-array}}
+        |  "absent-key" : "absent-value",
+        |  {{/service.non-existent-array}}
+        |  {{^service.non-existent-value}}
+        |  "a-string-array" : {{service.a-string-array}},
+        |  {{/service.non-existent-value}}
+        |  "2d-string-array" : {{service.2d-string-array}},
+        |  "an-ascii-string" : "{{service.an-ascii-string}}",
+        |  "a-unicode-string" : "{{service.a-unicode-string}}"
+        |}
+      """.stripMargin
+
+    "should work for a simple JSON instance data model" in {
+      checkPlainTextRenders(
+        mustacheTemplate =
+          s"""
+             |{
+             |  "blob" : $templateInstanceBlob,
+             |  "array" : [$templateInstanceBlob, $templateInstanceBlob],
+             |  "jsonObj" : {"key1":$templateInstanceBlob, "key2":$templateInstanceBlob}
+             |}
+          """.stripMargin,
+        context,
+        expected =
+          s"""
+             |{
+             | "blob" : $instanceBlob,
+             | "array" : [$instanceBlob, $instanceBlob],
+             | "jsonObj" : {"key1":$instanceBlob, "key2":$instanceBlob}
+             |}
+        """.stripMargin
+      )
+    }
+
+    val nestedTemplateInstanceBlob =
+      s"""
+         |{
+         | "nestedJson" : $templateInstanceBlob,
+         | "arrayJson" : [$templateInstanceBlob, $templateInstanceBlob],
+         | "nestedArray": [{"key1": $templateInstanceBlob},{"key2": $templateInstanceBlob}]
+         |}
+        """.stripMargin
+
+    val expectedNestedTemplateInstanceBlob =
+      s"""
+         |{
+         | "nestedJson" : $instanceBlob,
+         | "arrayJson" : [$instanceBlob, $instanceBlob],
+         | "nestedArray": [{"key1": $instanceBlob},{"key2": $instanceBlob}]
+         |}
+        """.stripMargin
+
+    "should work for a nested JSON instance data model" in {
+      checkPlainTextRenders(
+        mustacheTemplate =
+          s"""{"nd-array": [[[[$templateInstanceBlob, $templateInstanceBlob]
+             |,[$templateInstanceBlob, $templateInstanceBlob]]]]}""".stripMargin,
+        context,
+        expected =
+          s"""{"nd-array": [[[[$instanceBlob, $instanceBlob],[$instanceBlob, $instanceBlob]]]]}"""
+      )
+
+      checkPlainTextRenders(
+        mustacheTemplate =
+          s"""
+             |{
+             |  "blob" : $nestedTemplateInstanceBlob,
+             |  "array" : [$nestedTemplateInstanceBlob, $nestedTemplateInstanceBlob],
+             |  "jsonObj" : {
+             |    "key1":$nestedTemplateInstanceBlob,
+             |    "key2":$nestedTemplateInstanceBlob
+             |  }
+             |}
+          """.stripMargin,
+        context,
+        expected =
+          s"""
+             |{
+             | "blob" : $expectedNestedTemplateInstanceBlob,
+             | "array" : [
+             |   $expectedNestedTemplateInstanceBlob,
+             |   $expectedNestedTemplateInstanceBlob
+             | ],
+             | "jsonObj" : {
+             |   "key1":$expectedNestedTemplateInstanceBlob,
+             |   "key2":$expectedNestedTemplateInstanceBlob
+             | }
+             |}
+        """.stripMargin
+      )
+    }
+  }
+
+  private[this] def checkPlainTextRenders(
+    mustacheTemplate: String,
+    context: String,
+    expected: String
+  ): Assertion = {
+    val parsedContext = parse(context).toOption.get.asObject.get
+    val parsedExpected = parse(expected).toOption.get
+    checkJsonRenders(mustacheTemplate, parsedContext, parsedExpected)
+  }
+
+  private[this] def checkJsonRenders(
+    mustacheTemplate: String,
+    context: JsonObject,
+    expected: Json
+  ): Assertion = {
+    logger.info(s"Mustache template:\n$mustacheTemplate\nContextJsonObject" +
+      s":\n$context\nExpectedJson:\n$expected\n")
+    val result = PackageDefinitionRenderer.renderTemplate(mustacheTemplate, context)
+    result.asJson.noSpaces shouldEqual expected.noSpaces
   }
 
   private[this] val Examples = Table(
@@ -544,7 +697,7 @@ class PackageDefinitionRendererSpec extends FreeSpec with Matchers with TableDri
       jsonNumber = number => JsonObject.fromMap(Map("type" -> "number".asJson, "default" -> defaultsJson)),
       jsonString = string => JsonObject.fromMap(Map("type" -> "string".asJson, "default" -> defaultsJson)),
       jsonArray = array => JsonObject.fromMap(Map("type" -> "array".asJson, "default" -> defaultsJson)),
-      jsonObject =  { obj =>
+      jsonObject = { obj =>
         JsonObject.fromMap(Map(
           "type" -> "object".asJson,
           "properties" -> obj.toMap.mapValues(buildConfig).asJson
