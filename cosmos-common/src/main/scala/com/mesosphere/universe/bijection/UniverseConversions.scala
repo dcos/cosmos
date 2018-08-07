@@ -56,6 +56,15 @@ object UniverseConversions {
     Injection.connect[universe.v4.model.V4PackagingVersion.type, String, universe.v2.model.PackagingVersion]
   }
 
+  implicit val v5V5PackagingVersionToString: Injection[universe.v5.model.V5PackagingVersion.type, String] = {
+    packagingVersionSubclassToString(universe.v5.model.V5PackagingVersion)
+  }
+
+  implicit val v5V5PackagingVersionToV2PackagingVersion:
+    Injection[universe.v5.model.V5PackagingVersion.type, universe.v2.model.PackagingVersion] = {
+    Injection.connect[universe.v5.model.V5PackagingVersion.type, String, universe.v2.model.PackagingVersion]
+  }
+
   implicit val v3PackagingVersionToV2PackagingVersion:
     Injection[universe.v4.model.PackagingVersion, universe.v2.model.PackagingVersion] = {
     Injection.connect[universe.v4.model.PackagingVersion, String, universe.v2.model.PackagingVersion]
@@ -161,6 +170,35 @@ object UniverseConversions {
     )
   }
 
+  private implicit val v5MetadataToV5Package:
+    Conversion[(universe.v5.model.V5Metadata, universe.v3.model.ReleaseVersion),
+      universe.v5.model.V5Package] = Conversion.fromFunction { case (metadata, releaseVersion) =>
+    universe.v5.model.V5Package(
+      packagingVersion=metadata.packagingVersion,
+      name=metadata.name,
+      version=metadata.version,
+      releaseVersion=releaseVersion,
+      maintainer=metadata.maintainer,
+      description=metadata.description,
+      tags=metadata.tags,
+      selected=None, // Selected package is an Universe concept. Setting to the default value.
+      scm=metadata.scm,
+      website=metadata.website,
+      framework=metadata.framework,
+      preInstallNotes=metadata.preInstallNotes,
+      postInstallNotes=metadata.postInstallNotes,
+      postUninstallNotes=metadata.postUninstallNotes,
+      licenses=metadata.licenses,
+      minDcosReleaseVersion=metadata.minDcosReleaseVersion,
+      marathon=metadata.marathon,
+      resource=metadata.resource,
+      config=metadata.config,
+      upgradesFrom=metadata.upgradesFrom,
+      downgradesTo=metadata.downgradesTo,
+      manager=metadata.manager
+    )
+  }
+
   implicit val metadataToSupportedPackageDefinition:
     Conversion[(universe.v4.model.Metadata, universe.v3.model.ReleaseVersion),
       universe.v4.model.SupportedPackageDefinition] = Conversion.fromFunction { case (metadata, releaseVersion) =>
@@ -169,6 +207,8 @@ object UniverseConversions {
         (v3Metadata, releaseVersion).as[universe.v3.model.V3Package]
       case v4Metadata: universe.v4.model.V4Metadata =>
         (v4Metadata, releaseVersion).as[universe.v4.model.V4Package]
+      case v5Metadata: universe.v5.model.V5Metadata =>
+        (v5Metadata, releaseVersion).as[universe.v5.model.V5Package]
     }
   }
 
@@ -178,6 +218,29 @@ object UniverseConversions {
       case v2Package: universe.v3.model.V2Package => v2Package.as[universe.v2.model.PackageDetails]
       case v3Package: universe.v3.model.V3Package => v3Package.as[universe.v2.model.PackageDetails]
       case v4Package: universe.v4.model.V4Package => v4Package.as[universe.v2.model.PackageDetails]
+      case v5Package: universe.v5.model.V5Package => v5Package.as[universe.v2.model.PackageDetails]
+    }
+  }
+
+  implicit val v5V5PackageToV2PackageDetails:
+    Conversion[universe.v5.model.V5Package, universe.v2.model.PackageDetails] = {
+    Conversion.fromFunction { (pkg: universe.v5.model.V5Package) =>
+      universe.v2.model.PackageDetails(
+        packagingVersion = pkg.packagingVersion.as[universe.v2.model.PackagingVersion],
+        name = pkg.name,
+        version = pkg.version.as[universe.v2.model.PackageDetailsVersion],
+        maintainer = pkg.maintainer,
+        description = pkg.description,
+        tags = pkg.tags.as[List[String]],
+        selected = pkg.selected,
+        scm = pkg.scm,
+        website = pkg.website,
+        framework = pkg.framework,
+        preInstallNotes = pkg.preInstallNotes,
+        postInstallNotes = pkg.postInstallNotes,
+        postUninstallNotes = pkg.postUninstallNotes,
+        licenses = pkg.licenses.as[Option[List[universe.v2.model.License]]]
+      )
     }
   }
 

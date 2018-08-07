@@ -185,6 +185,9 @@ object PackageCollection {
         case v4: universe.v4.model.V4Package =>
           v4.resource.map(r =>
             r.assets.map(assetsSet) ++ r.images.map(imagesSet) ++ r.cli.map(cliSet))
+        case v5: universe.v5.model.V5Package =>
+          v5.resource.map(r =>
+            r.assets.map(assetsSet) ++ r.images.map(imagesSet) ++ r.cli.map(cliSet))
       }.flatten
     }.flatten.toSet
   }

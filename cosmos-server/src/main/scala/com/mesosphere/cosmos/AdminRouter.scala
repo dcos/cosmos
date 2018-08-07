@@ -2,6 +2,7 @@ package com.mesosphere.cosmos
 
 import _root_.io.circe.JsonObject
 import com.mesosphere.cosmos.http.RequestSession
+import com.mesosphere.cosmos.rpc.v1.model.{InstallRequest, UninstallRequest}
 import com.mesosphere.cosmos.thirdparty.adminrouter.model.DcosVersion
 import com.mesosphere.cosmos.thirdparty.marathon.model.AppId
 import com.mesosphere.cosmos.thirdparty.marathon.model.Deployment
@@ -97,14 +98,33 @@ class AdminRouter(
   }
 
   def getSdkServicePlanStatus(
+     service: AppId,
+     apiVersion: String,
+     plan: String
+   )(
+     implicit session: RequestSession
+   ): Future[Response] = {
+    adminRouterClient.getSdkServicePlanStatus(service, apiVersion, plan)
+  }
+
+  def postCustomPackageInstall(
     service: AppId,
-    apiVersion: String,
-    plan: String
+    body: InstallRequest
   )(
     implicit session: RequestSession
   ): Future[Response] = {
-    adminRouterClient.getSdkServicePlanStatus(service, apiVersion, plan)
+    adminRouterClient.postCustomPackageInstall(service, body)
   }
+
+  def postCustomPackageUninstall(
+   service: AppId,
+   body: UninstallRequest
+ )(
+   implicit session: RequestSession
+ ): Future[Response] = {
+    adminRouterClient.postCustomPackageUninstall(service, body)
+  }
+
 
   def listDeployments()(implicit session: RequestSession): Future[List[Deployment]] = {
     marathon.listDeployments()

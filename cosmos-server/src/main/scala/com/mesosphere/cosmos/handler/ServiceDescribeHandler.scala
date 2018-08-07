@@ -16,9 +16,9 @@ import io.circe.JsonObject
 private[cosmos] final class ServiceDescribeHandler(
   adminRouter: AdminRouter,
   packageCollection: PackageCollection
-) extends EndpointHandler[rpc.v1.model.ServiceDescribeRequest, rpc.v1.model.ServiceDescribeResponse] {
+) extends EndpointHandler[rpc.v2.model.ServiceDescribeRequest, rpc.v1.model.ServiceDescribeResponse] {
   override def apply(
-    request: rpc.v1.model.ServiceDescribeRequest)(implicit
+    request: rpc.v2.model.ServiceDescribeRequest)(implicit
     session: RequestSession
   ): Future[rpc.v1.model.ServiceDescribeResponse] = {
     for {

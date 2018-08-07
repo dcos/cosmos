@@ -12,6 +12,7 @@ import com.twitter.util.Return
 import com.twitter.util.Throw
 import com.twitter.util.Try
 
+//noinspection ScalaStyle
 object Response {
   implicit val internalV2InstallResponseToV1InstallResponse:
     Conversion[rpc.v2.model.InstallResponse, Try[rpc.v1.model.InstallResponse]] = {
@@ -138,6 +139,26 @@ object Response {
           ),
         resourceDefinition = v2Resource(pkg)
       )
+      case pkg: universe.v5.model.V5Package =>
+        rpc.v1.model.InstalledPackageInformation(
+          packageDefinition = rpc.v1.model.InstalledPackageInformationPackageDetails(
+            packagingVersion = pkg.packagingVersion.as[universe.v2.model.PackagingVersion],
+            name = pkg.name,
+            version = pkg.version.as[universe.v2.model.PackageDetailsVersion],
+            maintainer = pkg.maintainer,
+            description = pkg.description,
+            tags = pkg.tags.as[List[String]],
+            selected = pkg.selected.orElse(Some(false)),
+            scm = pkg.scm,
+            website = pkg.website,
+            framework = pkg.framework.orElse(Some(false)),
+            preInstallNotes = pkg.preInstallNotes,
+            postInstallNotes = pkg.postInstallNotes,
+            postUninstallNotes = pkg.postUninstallNotes,
+            licenses = pkg.licenses.as[Option[List[universe.v2.model.License]]]
+          ),
+          resourceDefinition = v2Resource(pkg)
+        )
     }
   }
 
@@ -165,6 +186,13 @@ object Response {
       }
     case v4: universe.v4.model.V4Package =>
       v4.resource.map { resource =>
+        universe.v2.model.Resource(
+          resource.assets.as[Option[universe.v2.model.Assets]],
+          resource.images.as[Option[universe.v2.model.Images]]
+        )
+      }
+    case v5: universe.v5.model.V5Package =>
+      v5.resource.map { resource =>
         universe.v2.model.Resource(
           resource.assets.as[Option[universe.v2.model.Assets]],
           resource.images.as[Option[universe.v2.model.Images]]

@@ -1,27 +1,29 @@
 package com.mesosphere.cosmos.handler
 
+import com.mesosphere.cosmos.AdminRouter
 import com.mesosphere.cosmos.MarathonPackageRunner
-import com.mesosphere.cosmos.error.CosmosException
-import com.mesosphere.cosmos.error.PackageAlreadyInstalled
-import com.mesosphere.cosmos.error.ServiceAlreadyStarted
+import com.mesosphere.cosmos.error.{ _}
 import com.mesosphere.cosmos.finch.EndpointHandler
 import com.mesosphere.cosmos.http.RequestSession
 import com.mesosphere.cosmos.render.PackageDefinitionRenderer
 import com.mesosphere.cosmos.repository.PackageCollection
 import com.mesosphere.cosmos.repository.rewriteUrlWithProxyInfo
 import com.mesosphere.cosmos.rpc
+import com.mesosphere.cosmos.rpc.v1.model.InstallRequest
+import com.mesosphere.cosmos.thirdparty.marathon.model.AppId
 import com.mesosphere.universe
 import com.mesosphere.universe.bijection.UniverseConversions._
 import com.twitter.bijection.Conversion.asMethod
 import com.twitter.util.Future
 
 private[cosmos] final class PackageInstallHandler(
+  adminRouter: AdminRouter,
   packageCollection: PackageCollection,
   packageRunner: MarathonPackageRunner
-) extends EndpointHandler[rpc.v1.model.InstallRequest, rpc.v2.model.InstallResponse] {
+) extends EndpointHandler[rpc.v2.model.InstallRequest, rpc.v2.model.InstallResponse] {
 
   override def apply(
-    request: rpc.v1.model.InstallRequest
+      request: rpc.v2.model.InstallRequest
   )(
     implicit session: RequestSession
   ): Future[rpc.v2.model.InstallResponse] = {
@@ -30,7 +32,20 @@ private[cosmos] final class PackageInstallHandler(
         request.packageName,
         request.packageVersion.as[Option[universe.v3.model.Version]]
       )
-      .flatMap { case (pkg, sourceUri) =>
+      .flatMap {
+        case (pkg, sourceUri) =>
+        if (!request.managerId.isEmpty) {
+          if (pkg.pkgDef.manager.isEmpty) {
+            throw ManagerNotSpecified().exception
+          }
+          adminRouter.getApp(AppId(request.managerId.get));
+          val translatedRequest = new InstallRequest(
+            request.packageName,
+            request.packageVersion,
+            request.options,
+            request.appId)
+          adminRouter.postCustomPackageInstall(AppId(request.managerId.get), translatedRequest)
+      }
         PackageDefinitionRenderer.renderMarathonV2App(
           sourceUri,
           pkg,
@@ -66,4 +81,5 @@ private[cosmos] final class PackageInstallHandler(
       }
   }
 }
+
 
