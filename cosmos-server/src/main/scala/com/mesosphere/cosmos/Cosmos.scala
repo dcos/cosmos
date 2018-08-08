@@ -46,7 +46,6 @@ import com.twitter.finagle.http.Fields
 import com.twitter.finagle.http.Request
 import com.twitter.finagle.http.Response
 import com.twitter.finagle.http.Status
-import com.twitter.finagle.http.filter.LoggingFilter
 import com.twitter.finagle.param.Label
 import com.twitter.finagle.stats.StatsReceiver
 import com.twitter.server.Admin
@@ -62,13 +61,13 @@ import shapeless.CNil
 import shapeless.HNil
 
 trait CosmosApp
-extends App
-with AdminHttpServer
-with Admin
-with Lifecycle
-with Lifecycle.Warmup
-with Stats
-with Logging {
+  extends App
+    with AdminHttpServer
+    with Admin
+    with Lifecycle
+    with Lifecycle.Warmup
+    with Stats
+    with Logging {
 
   import CosmosApp._
 
@@ -164,7 +163,7 @@ with Logging {
     HttpProxySupport.configureProxySupport()
     implicit val sr = statsReceiver
 
-    val service = LoggingFilter.andThen(buildService(allEndpoints))
+    val service = CustomLoggingFilter.andThen(buildService(allEndpoints))
     val maybeHttpServer = startServer(service.map { request: Request =>
       request.headerMap.add(UrlSchemeHeader, "http")
       request

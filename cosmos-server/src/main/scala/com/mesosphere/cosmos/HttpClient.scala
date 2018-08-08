@@ -13,16 +13,13 @@ import com.twitter.finagle.http.Fields
 import com.twitter.finagle.http.filter.LogFormatter
 import com.twitter.finagle.stats.StatsReceiver
 import com.twitter.util.Future
-import com.twitter.util.Time
 import io.netty.handler.codec.http.HttpResponseStatus
 import java.io.IOException
 import java.io.InputStream
 import java.net.HttpURLConnection
 import java.net.MalformedURLException
 import java.net.URISyntaxException
-import java.util.TimeZone
 import java.util.zip.GZIPInputStream
-import org.apache.commons.lang.time.FastDateFormat
 import org.slf4j.Logger
 import scala.util.Failure
 import scala.util.Success
@@ -30,9 +27,6 @@ import scala.util.Success
 object HttpClient {
 
   val logger: Logger = org.slf4j.LoggerFactory.getLogger(getClass)
-  val DateFormat = FastDateFormat.getInstance("dd/MMM/yyyy:HH:mm:ss Z", TimeZone.getTimeZone("GMT"))
-
-  def formattedDate(): String = DateFormat.format(Time.now.toDate)
 
   def fetch[A](
     uri: Uri,
@@ -83,9 +77,8 @@ object HttpClient {
         conn.setRequestProperty(Fields.UserAgent, s"cosmos/${BuildProperties().cosmosVersion}")
         // UserAgent set above can be overridden below.
         headers.foreach { case (name, value) => conn.setRequestProperty(name, value) }
-        logger.debug(format(conn))
+        logger.info(format(conn))
         val responseData = extractResponseData(uri, conn)
-
         (responseData, conn)
       }
   }
@@ -158,24 +151,21 @@ object HttpClient {
 
   def format(conn: HttpURLConnection): String = {
     val contentLength = conn.getContentLength
-    val contentLengthStr = if (contentLength > 0) contentLength.toString else "-"
-    val userAgent: Option[String] = Option(conn.getHeaderField(Fields.UserAgent))
+    val contentLengthStr = if (contentLength > 0) s"${contentLength.toString}B" else "-"
+    val userAgent:Option[String] = Option(conn.getHeaderField(Fields.UserAgent))
 
     def escape(s: String) = LogFormatter.escape(s)
 
-    s"${conn.getURL.getHost} -- " +
-      s"[$formattedDate] " +
+    s"${conn.getURL.getHost} - " +
       s"${escape("\"")}${escape(conn.getRequestMethod)} " +
       s"${escape(conn.getURL.toURI.toString)} " +
       s"${escape(conn.getURL.getProtocol)}${escape("\"")} " +
       s"${conn.getResponseCode} " +
-      s"${contentLengthStr}" +
-      s"${
-        userAgent match {
-          case Some(uaStr) => s" ${escape("\"")}${escape(uaStr)}${escape("\"")}"
-          case None => " "
-        }
-      }"
+      s"$contentLengthStr" +
+      s"${userAgent match {
+        case Some(uaStr) => s" ${escape("\"")}${escape(uaStr)}${escape("\"")}"
+        case None => "-"
+      }}"
   }
 
   final case class ResponseData(
