@@ -77,9 +77,8 @@ object HttpClient {
         conn.setRequestProperty(Fields.UserAgent, s"cosmos/${BuildProperties().cosmosVersion}")
         // UserAgent set above can be overridden below.
         headers.foreach { case (name, value) => conn.setRequestProperty(name, value) }
-        logger.debug(format(conn))
+        logger.info(format(conn))
         val responseData = extractResponseData(uri, conn)
-
         (responseData, conn)
       }
   }

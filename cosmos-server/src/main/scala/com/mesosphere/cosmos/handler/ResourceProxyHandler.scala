@@ -59,6 +59,7 @@ final class ResourceProxyHandler private(
             Reader.fromStream(new ConnectionClosingInputStream(conn, responseData.contentStream))
           )
           response.contentType = responseData.contentType.show
+          response.headerMap.add(Fields.TransferEncoding, "chunked")
           for (filename <- getFileNameFromUrl(uri)) {
             response.headerMap.add(Fields.ContentDisposition,
               s"""attachment; filename="$filename"""")
