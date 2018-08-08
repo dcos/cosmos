@@ -46,8 +46,13 @@ class AdminRouterClient(
      body: InstallRequest
    )(implicit session: RequestSession): Future[Response] = {
     val uri = "service" / managerId.toUri / "package" / "install"
-    logger.info("posting custom request to " + uri + " with " + body.asJson)
-    client(post(uri, body.asJson))
+    logger.info("posting custom request to " + uri + " with " + body.asJson + "with token " + session)
+    val p = post(uri, body.asJson)
+    p.headerMap.add("Content-Type", "application/vnd.dcos.package.install-request+json;charset=utf-8;version=v1")
+    p.headerMap.add("Accept", "application/vnd.dcos.package.install-response+json;charset=utf-8;version=v2")
+    logger.info(s"${p.headerMap}")
+    logger.info(s"${p}")
+    client(p)
   }
 
   def postCustomPackageUninstallRequest(

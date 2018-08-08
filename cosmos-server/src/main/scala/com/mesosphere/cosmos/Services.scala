@@ -6,13 +6,7 @@ import com.mesosphere.cosmos.error.Forbidden
 import com.mesosphere.cosmos.error.ServiceUnavailable
 import com.mesosphere.cosmos.error.Unauthorized
 import com.netaporter.uri.Uri
-import com.twitter.finagle.ChannelException
-import com.twitter.finagle.Filter
-import com.twitter.finagle.Http
-import com.twitter.finagle.NoBrokersAvailableException
-import com.twitter.finagle.RequestException
-import com.twitter.finagle.Service
-import com.twitter.finagle.SimpleFilter
+import com.twitter.finagle._
 import com.twitter.finagle.http.Request
 import com.twitter.finagle.http.Response
 import com.twitter.finagle.http.Status
@@ -53,9 +47,11 @@ object Services {
     extractHostAndPort(uri) map { case ConnectionDetails(hostname, port, tls) =>
       val cBuilder = tls match {
         case false =>
-          Http.client
+//          Http.client.stack.remove(Stack.Role("Retries")).make.
+          Http.client.withStack(Http.client.stack.remove(Stack.Role("Retries")))
         case true =>
-          Http.client.withTls(hostname)
+          Http.client.withTls(hostname).withStack(Http.client.stack.remove(Stack.Role("Retries")))
+//          Http.client.stack.remove(Stack.Role("Retries")).make.withTls(hostname).withTracer(com.twitter.finagle.tracing.NullTracer)
       }
 
       LoggingFilter.andThen(
