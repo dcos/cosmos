@@ -2,7 +2,7 @@ package com.mesosphere.cosmos
 
 import _root_.io.circe.JsonObject
 import com.mesosphere.cosmos.http.RequestSession
-import com.mesosphere.cosmos.rpc.v1.model.{InstallRequest, UninstallRequest}
+import com.mesosphere.cosmos.rpc.v1.model.{InstallRequest, ServiceDescribeRequest, ServiceUpdateRequest, UninstallRequest}
 import com.mesosphere.cosmos.thirdparty.adminrouter.model.DcosVersion
 import com.mesosphere.cosmos.thirdparty.marathon.model.AppId
 import com.mesosphere.cosmos.thirdparty.marathon.model.Deployment
@@ -108,22 +108,42 @@ class AdminRouter(
   }
 
   def postCustomPackageInstall(
-    service: AppId,
+    managerId: AppId,
     body: InstallRequest
   )(
     implicit session: RequestSession
   ): Future[Response] = {
-    adminRouterClient.postCustomPackageInstall(service, body)
+    adminRouterClient.postCustomPackageInstallRequest(managerId, body)
   }
 
   def postCustomPackageUninstall(
    service: AppId,
    body: UninstallRequest
- )(
+  )(
    implicit session: RequestSession
  ): Future[Response] = {
-    adminRouterClient.postCustomPackageUninstall(service, body)
+    adminRouterClient.postCustomPackageUninstallRequest(service, body)
   }
+
+  def postCustomServiceDescribe(
+    service: AppId,
+    body: ServiceDescribeRequest
+  )(
+    implicit session: RequestSession
+  ): Future[Response] = {
+    adminRouterClient.postCustomServiceDescribeRequest(service, body)
+  }
+
+  def postCustomServiceUpdate(
+     service: AppId,
+     body: ServiceUpdateRequest
+   )(
+     implicit session: RequestSession
+   ): Future[Response] = {
+    adminRouterClient.postCustomServiceUpdateRequest(service, body)
+  }
+
+
 
 
   def listDeployments()(implicit session: RequestSession): Future[List[Deployment]] = {

@@ -14,7 +14,8 @@ import io.circe.generic.semiauto.deriveEncoder
 
 case class ServiceUpdateRequest(
    appId: AppId,
-   packageVersion: Option[universe.v3.model.Version],
+   packageName: Option[String],
+   packageVersion: Option[universe.v3.model.Version] = None,
    options: Option[JsonObject],
    replace: Boolean,
    managerId: Option[String]

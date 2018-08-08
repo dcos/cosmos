@@ -536,6 +536,9 @@ package v4.model {
 }
 
 package v5.model {
+
+  sealed trait PackageDefinition
+
   case class V5Package(
       packagingVersion: V5PackagingVersion.type = V5PackagingVersion,
       name: String,
@@ -558,7 +561,7 @@ package v5.model {
       config: Option[JsonObject] = None,
       upgradesFrom: Option[List[universe.v3.model.VersionSpecification]] = None,
       downgradesTo: Option[List[universe.v3.model.VersionSpecification]] = None,
-      manager: Option[universe.v5.model.Manager]
+      manager: Option[universe.v5.model.Manager] = None
     ) extends universe.v4.model.SupportedPackageDefinition
 
   object V5Package {

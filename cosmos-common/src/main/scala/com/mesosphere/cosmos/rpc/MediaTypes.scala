@@ -16,6 +16,7 @@ object MediaTypes {
 
   val ErrorResponse = dcosPackage("error", 1)
   val InstallRequest = dcosPackage("install-request", 1)
+  val V2InstallRequest = dcosPackage("install-request", 2)
   val RenderRequest = dcosPackage("render-request", 1)
   val RenderResponse = dcosPackage("render-response", 1)
   val SearchRequest = dcosPackage("search-request", 1)

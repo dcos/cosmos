@@ -22,5 +22,5 @@ object InstallRequest {
   implicit val encodeInstallRequest: Encoder[InstallRequest] = deriveEncoder[InstallRequest]
   implicit val decodeInstallRequest: Decoder[InstallRequest] = deriveDecoder[InstallRequest]
   implicit val packageInstallDecoder: MediaTypedRequestDecoder[InstallRequest] =
-    MediaTypedRequestDecoder(MediaTypedDecoder(MediaTypes.InstallRequest))
+    MediaTypedRequestDecoder(MediaTypedDecoder(MediaTypes.V2InstallRequest))
 }

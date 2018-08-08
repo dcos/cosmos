@@ -4,6 +4,7 @@ import com.mesosphere.cosmos.finch.MediaTypedDecoder
 import com.mesosphere.cosmos.finch.MediaTypedRequestDecoder
 import com.mesosphere.cosmos.rpc.MediaTypes
 import com.mesosphere.cosmos.thirdparty.marathon.model.AppId
+import com.mesosphere.universe.v2.model.PackageDetailsVersion
 import io.circe.Decoder
 import io.circe.Encoder
 import io.circe.generic.semiauto.deriveDecoder
@@ -13,6 +14,7 @@ case class UninstallRequest(
    packageName: String,
    appId: Option[AppId],
    all: Option[Boolean],
+   packageVersion: Option[PackageDetailsVersion] = None,
    managerId: Option[String]
  )
 

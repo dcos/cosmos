@@ -2,83 +2,101 @@ package com.mesosphere.cosmos.handler
 
 import com.mesosphere.cosmos.AdminRouter
 import com.mesosphere.cosmos.MarathonPackageRunner
-import com.mesosphere.cosmos.error.{ _}
+import com.mesosphere.cosmos.error._
 import com.mesosphere.cosmos.finch.EndpointHandler
 import com.mesosphere.cosmos.http.RequestSession
 import com.mesosphere.cosmos.render.PackageDefinitionRenderer
 import com.mesosphere.cosmos.repository.PackageCollection
 import com.mesosphere.cosmos.repository.rewriteUrlWithProxyInfo
 import com.mesosphere.cosmos.rpc
-import com.mesosphere.cosmos.rpc.v1.model.InstallRequest
-import com.mesosphere.cosmos.thirdparty.marathon.model.AppId
+import com.mesosphere.cosmos.rpc.v2.model.InstallResponse
+import com.mesosphere.cosmos.service.CustomPackageManagerUtils
 import com.mesosphere.universe
 import com.mesosphere.universe.bijection.UniverseConversions._
 import com.twitter.bijection.Conversion.asMethod
 import com.twitter.util.Future
+import com.mesosphere.cosmos.circe.Decoders.decode
+import com.mesosphere.error.ResultOps
+import org.slf4j.Logger
+
 
 private[cosmos] final class PackageInstallHandler(
   adminRouter: AdminRouter,
   packageCollection: PackageCollection,
   packageRunner: MarathonPackageRunner
 ) extends EndpointHandler[rpc.v2.model.InstallRequest, rpc.v2.model.InstallResponse] {
-
+  lazy val logger: Logger = org.slf4j.LoggerFactory.getLogger(getClass)
   override def apply(
       request: rpc.v2.model.InstallRequest
   )(
     implicit session: RequestSession
   ): Future[rpc.v2.model.InstallResponse] = {
-    packageCollection
-      .getPackageByPackageVersion(
-        request.packageName,
-        request.packageVersion.as[Option[universe.v3.model.Version]]
-      )
-      .flatMap {
-        case (pkg, sourceUri) =>
-        if (!request.managerId.isEmpty) {
-          if (pkg.pkgDef.manager.isEmpty) {
-            throw ManagerNotSpecified().exception
-          }
-          adminRouter.getApp(AppId(request.managerId.get));
-          val translatedRequest = new InstallRequest(
-            request.packageName,
-            request.packageVersion,
-            request.options,
-            request.appId)
-          adminRouter.postCustomPackageInstall(AppId(request.managerId.get), translatedRequest)
-      }
-        PackageDefinitionRenderer.renderMarathonV2App(
-          sourceUri,
-          pkg,
-          request.options,
-          request.appId
-        ) match {
-          case Some(renderedMarathonJson) =>
-            packageRunner.launch(renderedMarathonJson)
-              .map { runnerResponse =>
-                rpc.v2.model.InstallResponse(
-                  packageName = pkg.name,
-                  packageVersion = pkg.version,
-                  appId = Some(runnerResponse.id),
-                  postInstallNotes = pkg.postInstallNotes,
-                  cli = pkg.rewrite(rewriteUrlWithProxyInfo(session.originInfo), identity).cli
-                )
-              }
-              .handle {
-                case CosmosException(ServiceAlreadyStarted(_), _, _) =>
-                  throw PackageAlreadyInstalled().exception
-              }
-          case None =>
+    logger.info("received package install request")
+    CustomPackageManagerUtils.requiresCustomPackageManager(
+      adminRouter,
+      packageCollection,
+      request.managerId,
+      Option(request.packageName),
+      request.packageVersion.as[Option[universe.v3.model.Version]],
+      None
+    ).flatMap {
+      case true => {
+        logger.info("request requires custom manager")
+        CustomPackageManagerUtils.callCustomPackageInstall(
+          adminRouter,
+          packageCollection,
+          request
+        ).flatMap {
+          case response =>
             Future {
-              rpc.v2.model.InstallResponse(
-                packageName = pkg.name,
-                packageVersion = pkg.version,
-                appId = None,
-                postInstallNotes = pkg.postInstallNotes,
-                cli = pkg.rewrite(rewriteUrlWithProxyInfo(session.originInfo), identity).cli
-              )
+              decode[InstallResponse](response.contentString).getOrThrow
             }
         }
       }
+      case false => {
+        logger.info("request does not require custom manager")
+        packageCollection
+          .getPackageByPackageVersion(
+            request.packageName,
+            request.packageVersion.as[Option[universe.v3.model.Version]]
+          )
+          .flatMap {
+            case (pkg, sourceUri) =>
+              PackageDefinitionRenderer.renderMarathonV2App(
+                sourceUri,
+                pkg,
+                request.options,
+                request.appId
+              ) match {
+                case Some(renderedMarathonJson) =>
+                  packageRunner.launch(renderedMarathonJson)
+                    .map { runnerResponse =>
+                      rpc.v2.model.InstallResponse(
+                        packageName = pkg.name,
+                        packageVersion = pkg.version,
+                        appId = Some(runnerResponse.id),
+                        postInstallNotes = pkg.postInstallNotes,
+                        cli = pkg.rewrite(rewriteUrlWithProxyInfo(session.originInfo), identity).cli
+                      )
+                    }
+                    .handle {
+                      case CosmosException(ServiceAlreadyStarted(_), _, _) =>
+                        throw PackageAlreadyInstalled().exception
+                    }
+                case None =>
+                  Future {
+                    rpc.v2.model.InstallResponse(
+                      packageName = pkg.name,
+                      packageVersion = pkg.version,
+                      appId = None,
+                      postInstallNotes = pkg.postInstallNotes,
+                      cli = pkg.rewrite(rewriteUrlWithProxyInfo(session.originInfo), identity).cli
+                    )
+                  }
+              }
+          }
+      }
+    }
   }
 }
 
