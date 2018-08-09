@@ -22,7 +22,7 @@ object ServiceDescribeRequest {
   implicit val encode: Encoder[ServiceDescribeRequest] = deriveEncoder
   implicit val decode: Decoder[ServiceDescribeRequest] = deriveDecoder
   implicit val mediaTypedEncoder: MediaTypedEncoder[ServiceDescribeRequest] =
-    MediaTypedEncoder(MediaTypes.ServiceDescribeRequest)
+    MediaTypedEncoder(MediaTypes.V2ServiceDescribeRequest)
   implicit val mediaTypedRequestDecoder: MediaTypedRequestDecoder[ServiceDescribeRequest] =
-    MediaTypedRequestDecoder(MediaTypedDecoder(MediaTypes.ServiceDescribeRequest))
+    MediaTypedRequestDecoder(MediaTypedDecoder(MediaTypes.V2ServiceDescribeRequest))
 }

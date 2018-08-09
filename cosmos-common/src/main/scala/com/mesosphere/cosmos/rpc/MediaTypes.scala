@@ -9,6 +9,7 @@ object MediaTypes {
   val dcosService = MediaType.vndJson(List("dcos", "service")) _
 
   val UninstallRequest = dcosPackage("uninstall-request", 1)
+  val V2UninstallRequest = dcosPackage("uninstall-request", 2)
   val UninstallResponse = dcosPackage("uninstall-response", 1)
 
   val ListRequest = dcosPackage("list-request", 1)
@@ -41,8 +42,10 @@ object MediaTypes {
   val V2ListResponse = dcosPackage("list-response", 2)
 
   val ServiceDescribeRequest = dcosService("describe-request", 1)
+  val V2ServiceDescribeRequest = dcosService("describe-request", 2)
   val ServiceDescribeResponse = dcosService("describe-response", 1)
 
   val ServiceUpdateRequest = dcosService("update-request", 1)
+  val V2ServiceUpdateRequest = dcosService("update-request", 2)
   val ServiceUpdateResponse = dcosService("update-response", 1)
 }

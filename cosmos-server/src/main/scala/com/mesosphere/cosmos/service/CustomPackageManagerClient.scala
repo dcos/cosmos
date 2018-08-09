@@ -14,7 +14,7 @@ import com.mesosphere.error.ResultOps
 import org.slf4j.Logger
 
 
-object CustomPackageManagerUtils  {
+object CustomPackageManagerClient  {
   lazy val logger: Logger = org.slf4j.LoggerFactory.getLogger(getClass)
 
   def getCustomPackageManagerId(

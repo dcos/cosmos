@@ -1,6 +1,7 @@
 package com.mesosphere.cosmos
 
 import com.mesosphere.cosmos.http.RequestSession
+
 import com.mesosphere.cosmos.rpc.v1.model.{InstallRequest, ServiceDescribeRequest, ServiceUpdateRequest, UninstallRequest}
 import com.mesosphere.cosmos.thirdparty.adminrouter.model.DcosVersion
 import com.mesosphere.cosmos.thirdparty.marathon.model.AppId
@@ -18,6 +19,36 @@ class AdminRouterClient(
   client: Service[Request, Response]
 ) extends ServiceClient(adminRouterUri) {
   lazy val logger: Logger = org.slf4j.LoggerFactory.getLogger(getClass)
+
+  object Constants {
+    val V1 = "v1"
+    val V2 = "v2"
+
+    val InstallContentTypeHeaderBase = "application/vnd.dcos.package.install-request+json;charset=utf-8;version="
+    val UninstallContentTypeHeaderBase = "application/vnd.dcos.package.uninstall-request+json;charset=utf-8;version="
+    val ServiceUpdateContentTypeHeaderBase = "application/vnd.dcos.service.update-request+json;charset=utf-8;version="
+    val ServiceDescribeContentTypeBase = "application/vnd.dcos.service.describe-request+json;charset=utf-8;version="
+
+    val InstallAcceptHeaderBase = "application/vnd.dcos.package.install-response+json;charset=utf-8;version="
+    val UninstallAcceptHeaderBase = "application/vnd.dcos.package.uninstall-response+json;charset=utf-8;version="
+    val ServiceUpdateAcceptHeaderBase = "application/vnd.dcos.service.update-response+json;charset=utf-8;version="
+    val ServiceDescribeAcceptHeaderBase = "application/vnd.dcos.service.describe-response+json;charset=utf-8;version="
+
+    val InstallContentTypeHeaderV1 = InstallContentTypeHeaderBase + V1
+    val UninstallContentTypeHeaderV1 = UninstallContentTypeHeaderBase + V1
+    val ServiceUpdateContentTypeHeaderV1 = ServiceUpdateContentTypeHeaderBase + V1
+    val ServiceDescribeContentTypeV1 = ServiceDescribeContentTypeBase + V1
+
+    val InstallAcceptHeaderV2 = InstallAcceptHeaderBase + V2
+    val UninstallAcceptHeaderV1 = UninstallAcceptHeaderBase + V1
+    val ServiceUpdateAcceptHeaderV1 = ServiceUpdateAcceptHeaderBase + V1
+    val ServiceDescribeAcceptHeaderV1 = ServiceDescribeAcceptHeaderBase + V1
+
+
+
+    val ContentType = "Content-Type"
+    val Accept = "Accept"
+  }
 
   def getDcosVersion()(implicit session: RequestSession): Future[DcosVersion] = {
     val uri = "dcos-metadata" / "dcos-version.json"
@@ -46,12 +77,9 @@ class AdminRouterClient(
      body: InstallRequest
    )(implicit session: RequestSession): Future[Response] = {
     val uri = "service" / managerId.toUri / "package" / "install"
-    logger.info("posting custom request to " + uri + " with " + body.asJson + "with token " + session)
     val p = post(uri, body.asJson)
-    p.headerMap.add("Content-Type", "application/vnd.dcos.package.install-request+json;charset=utf-8;version=v1")
-    p.headerMap.add("Accept", "application/vnd.dcos.package.install-response+json;charset=utf-8;version=v2")
-    logger.info(s"${p.headerMap}")
-    logger.info(s"${p}")
+    p.headerMap.add(Constants.ContentType, Constants.InstallContentTypeHeaderV1)
+    p.headerMap.add(Constants.Accept, Constants.InstallAcceptHeaderV2)
     client(p)
   }
 
@@ -60,7 +88,10 @@ class AdminRouterClient(
       body: UninstallRequest
     )(implicit session: RequestSession): Future[Response] = {
     val uri = "service" / managerId.toUri / "package" / "uninstall"
-    client(post(uri, body.asJson))
+    val p = post(uri, body.asJson)
+    p.headerMap.add(Constants.ContentType, Constants.UninstallContentTypeHeaderV1)
+    p.headerMap.add(Constants.Accept, Constants.UninstallAcceptHeaderV1)
+    client(p)
   }
 
   def postCustomServiceDescribeRequest(
@@ -68,7 +99,10 @@ class AdminRouterClient(
     body: ServiceDescribeRequest
   )(implicit session: RequestSession): Future[Response] = {
     val uri = "service" / managerId.toUri / "service" / "describe"
-    client(post(uri, body.asJson))
+    val p = post(uri, body.asJson)
+    p.headerMap.add(Constants.ContentType, Constants.ServiceDescribeContentTypeV1)
+    p.headerMap.add(Constants.Accept, Constants.ServiceDescribeAcceptHeaderV1)
+    client(p)
   }
 
   def postCustomServiceUpdateRequest(
@@ -76,7 +110,10 @@ class AdminRouterClient(
     body: ServiceUpdateRequest
   )(implicit session: RequestSession): Future[Response] = {
     val uri = "service" / managerId.toUri / "service" / "update"
-    client(post(uri, body.asJson))
+    val p = post(uri, body.asJson)
+    p.headerMap.add(Constants.ContentType, Constants.ServiceUpdateContentTypeHeaderV1)
+    p.headerMap.add(Constants.Accept, Constants.ServiceUpdateAcceptHeaderV1)
+    client(p)
   }
 
 
