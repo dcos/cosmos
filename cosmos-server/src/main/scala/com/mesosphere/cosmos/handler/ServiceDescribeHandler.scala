@@ -27,7 +27,6 @@ private[cosmos] final class ServiceDescribeHandler(
     request: rpc.v2.model.ServiceDescribeRequest)(implicit
     session: RequestSession
   ): Future[rpc.v1.model.ServiceDescribeResponse] = {
-    logger.info("received service describe request")
     CustomPackageManagerClient.getCustomPackageManagerId(
       adminRouter,
       packageCollection,
@@ -37,7 +36,7 @@ private[cosmos] final class ServiceDescribeHandler(
       None
     ).flatMap {
       case managerId if !managerId.isEmpty => {
-        logger.info("request requires custom manager " + managerId)
+        logger.info("Request requires a custom manager: " + managerId)
         CustomPackageManagerClient.callCustomServiceDescribe(
           adminRouter,
           request,

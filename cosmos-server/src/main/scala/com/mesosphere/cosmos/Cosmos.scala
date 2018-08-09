@@ -90,7 +90,6 @@ trait CosmosApp
     onExit(sourcesStorage.close())
 
     val universeClient = UniverseClient(adminRouter)
-
     new Components(
       adminRouter,
       zkClient,

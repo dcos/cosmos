@@ -47,7 +47,7 @@ final class ServiceUpdateHandler(
       None
     ).flatMap {
       case managerId if !managerId.isEmpty => {
-        logger.info("request requires custom manager " + managerId)
+        logger.info("Request requires a custom manager: " + managerId)
         CustomPackageManagerClient.callCustomServiceUpdate(
           adminRouter,
           request,

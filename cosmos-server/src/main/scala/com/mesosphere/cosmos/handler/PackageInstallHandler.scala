@@ -28,7 +28,6 @@ private[cosmos] final class PackageInstallHandler(
   )(
     implicit session: RequestSession
   ): Future[rpc.v2.model.InstallResponse] = {
-    logger.info("received package install request")
     CustomPackageManagerClient.getCustomPackageManagerId(
       adminRouter,
       packageCollection,
@@ -38,7 +37,7 @@ private[cosmos] final class PackageInstallHandler(
       None
     ).flatMap {
       case managerId if !managerId.isEmpty => {
-        logger.info("request requires custom manager " + managerId)
+        logger.info("Request requires a custom manager: " + managerId)
         CustomPackageManagerClient.callCustomPackageInstall(
           adminRouter,
           request,
@@ -49,7 +48,6 @@ private[cosmos] final class PackageInstallHandler(
         }
       }
       case managerId if managerId.isEmpty => {
-        logger.info("request does not require custom manager")
         packageCollection
           .getPackageByPackageVersion(
             request.packageName,

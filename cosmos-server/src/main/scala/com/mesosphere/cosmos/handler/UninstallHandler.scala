@@ -46,7 +46,6 @@ private[cosmos] final class UninstallHandler(
   )(
     implicit session: RequestSession
   ): Future[rpc.v1.model.UninstallResponse] = {
-    logger.info("received package uninstall request")
     CustomPackageManagerClient.getCustomPackageManagerId(
       adminRouter,
       packageCollection,
@@ -56,7 +55,7 @@ private[cosmos] final class UninstallHandler(
       None
     ).flatMap {
       case managerId if !managerId.isEmpty => {
-        logger.info("requires custom manager + " + managerId)
+        logger.info("Request requires custom manager: " + managerId)
           CustomPackageManagerClient.callCustomPackageUninstall(
             adminRouter,
             req,
