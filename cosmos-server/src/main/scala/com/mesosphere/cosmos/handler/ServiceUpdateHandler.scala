@@ -10,7 +10,6 @@ import com.mesosphere.cosmos.http.RequestSession
 import com.mesosphere.cosmos.render.PackageDefinitionRenderer
 import com.mesosphere.cosmos.repository.PackageCollection
 import com.mesosphere.cosmos.rpc
-import com.mesosphere.cosmos.rpc.v1.model.ServiceUpdateResponse
 import com.mesosphere.cosmos.rpc.v2.model.ServiceUpdateRequest
 import com.mesosphere.cosmos.service.CustomPackageManagerUtils
 import com.mesosphere.cosmos.thirdparty.marathon.model.AppId
@@ -20,8 +19,7 @@ import com.netaporter.uri.Uri
 import io.circe.JsonObject
 import com.mesosphere.universe
 import com.twitter.util.Future
-import com.mesosphere.cosmos.circe.Decoders.decode
-import com.mesosphere.error.ResultOps
+import org.slf4j.Logger
 
 
 final class ServiceUpdateHandler(
@@ -37,7 +35,10 @@ final class ServiceUpdateHandler(
   )(
     implicit session: RequestSession
   ): Future[rpc.v1.model.ServiceUpdateResponse] = {
-    CustomPackageManagerUtils.requiresCustomPackageManager(
+
+    lazy val logger: Logger = org.slf4j.LoggerFactory.getLogger(getClass)
+
+    CustomPackageManagerUtils.getCustomPackageManagerId(
       adminRouter,
       packageCollection,
       request.managerId,
@@ -45,19 +46,18 @@ final class ServiceUpdateHandler(
       request.packageVersion,
       None
     ).flatMap {
-      case true => {
+      case managerId if !managerId.isEmpty => {
+        logger.info("request requires custom manager " + managerId)
         CustomPackageManagerUtils.callCustomServiceUpdate(
           adminRouter,
-          packageCollection,
-          request
+          request,
+          managerId
         ).flatMap {
           case response =>
-            Future {
-              decode[ServiceUpdateResponse](response.contentString).getOrThrow
-            }
+            Future {response}
         }
       }
-      case false => {
+      case managerId if !managerId.isEmpty => {
         adminRouter.getApp(request.appId).flatMap { marathonAppResponse =>
           getPackageWithSourceOrThrow(packageCollection, marathonAppResponse.app).flatMap {
             case (packageDefinition, packageSource) =>

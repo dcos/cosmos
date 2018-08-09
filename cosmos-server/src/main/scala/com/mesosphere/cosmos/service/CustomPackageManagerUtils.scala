@@ -1,209 +1,137 @@
 package com.mesosphere.cosmos.service
-import com.mesosphere.cosmos.thirdparty.marathon.model.{AppId}
 import com.mesosphere.universe.v5.model.Manager
-import com.twitter.finagle.http.Response
 import com.mesosphere.cosmos.AdminRouter
 import com.mesosphere.cosmos.http.RequestSession
 import com.mesosphere.cosmos.repository.PackageCollection
 import com.mesosphere.cosmos.rpc
+import com.mesosphere.cosmos.rpc.v2.model.{InstallResponse}
+import com.mesosphere.cosmos.thirdparty.marathon.model.AppId
 import com.mesosphere.universe
-import com.mesosphere.universe.bijection.UniverseConversions._
-import com.twitter.bijection.Conversion.asMethod
 import com.twitter.util.Future
+import com.mesosphere.cosmos.circe.Decoders.decode
+import com.mesosphere.cosmos.rpc.v1.model.{ServiceDescribeResponse, ServiceUpdateResponse, UninstallResponse}
+import com.mesosphere.error.ResultOps
 import org.slf4j.Logger
+
 
 object CustomPackageManagerUtils  {
   lazy val logger: Logger = org.slf4j.LoggerFactory.getLogger(getClass)
 
-  def requiresCustomPackageManager(
+  def getCustomPackageManagerId(
   adminRouter: AdminRouter,
   packageCollection: PackageCollection,
   managerId: Option[String],
   packageName: Option[String],
   packageVersion: Option[universe.v3.model.Version],
-  appId: Option[AppId])(implicit session: RequestSession): Future[Boolean] = {
+  appId: Option[AppId])(implicit session: RequestSession): Future[String] = {
     logger.info("checking if package requires custom manager")
     if (managerId.isDefined) {
       logger.info("managerId is present " + managerId.get)
-      return Future{true}
+      return Future{managerId.get}
     } else if (packageName.isDefined && packageVersion.isDefined) {
       getPackageManagerWithNameAndVersion(packageCollection, packageName.get, packageVersion)
-        .map {
-          case (manager) =>
-           return Future {manager.isDefined}
+        .flatMap {
+          case manager =>
+            return Future {manager.get.packageName}
         }
     } else if (appId.isDefined) {
       getPackageNameAndVersionFromMarathonApp(adminRouter, appId.get)
-        .map {
+        .flatMap {
           case (packageName, packageVersion) =>
             getPackageManagerWithNameAndVersion(packageCollection, packageName.get, packageVersion)
               .flatMap {
-                manager => return Future {manager.isDefined}
+                case manager =>
+                   Future {manager.get.packageName}
               }
           }
+      } else {
+        Future {""}
       }
-    logger.info("conditions not met")
-    Future {false}
   }
+
 
   def callCustomPackageInstall(
     adminRouter: AdminRouter,
-    packageCollection: PackageCollection,
-    request: rpc.v2.model.InstallRequest)
-    (implicit session: RequestSession): Future[Response] = {
-    if (request.managerId.isDefined) {
-       logger.info("sending request to " + request.managerId.get)
-      adminRouter.getApp(AppId(request.managerId.get));
-      val translatedRequest = new rpc.v1.model.InstallRequest(
+    request: rpc.v2.model.InstallRequest,
+    managerId: String
+  )(implicit session: RequestSession): Future[InstallResponse] = {
+    val translatedRequest = new rpc.v1.model.InstallRequest(
         request.packageName,
         request.packageVersion,
         request.options,
         request.appId)
-      logger.info("posting request to  " + request.managerId.get)
-      return adminRouter.postCustomPackageInstall(AppId(request.managerId.get), translatedRequest)
-    } else if (request.packageVersion.isDefined) {
-        getPackageManagerWithNameAndVersion(
-          packageCollection,
-          request.packageName,
-          request.packageVersion.as[Option[universe.v3.model.Version]])
-        .flatMap {
-        case manager =>
-          val translatedRequest = new rpc.v1.model.InstallRequest(
-            request.packageName,
-            request.packageVersion,
-            request.options,
-            request.appId)
-          return adminRouter.postCustomPackageInstall(AppId(manager.get.packageName), translatedRequest)
-        }
-     }
-    //empty response for safety
-    Future {Response()}
+      adminRouter.postCustomPackageInstall(
+        AppId(managerId),
+        translatedRequest
+      ).flatMap {
+        case response =>
+          Future {
+            decode[InstallResponse](response.contentString).getOrThrow
+          }
+      }
   }
 
   def callCustomPackageUninstall(
     adminRouter: AdminRouter,
-   packageCollection: PackageCollection,
-   request: rpc.v2.model.UninstallRequest) (implicit session: RequestSession): Future[Response] = {
-    if (request.managerId.isDefined) {
-      //first check for managerId and call
+    request: rpc.v2.model.UninstallRequest,
+    managerId: String
+  )(implicit session: RequestSession): Future[UninstallResponse] = {
       adminRouter.getApp(AppId(request.managerId.get));
       val translatedRequest = new rpc.v1.model.UninstallRequest(
         request.packageName,
         request.appId,
         request.all)
-      adminRouter.postCustomPackageUninstall(AppId(request.managerId.get), translatedRequest)
-    } else if (request.packageVersion.isDefined) {
-      //if manager Id is not specified but package name and package version are
-      //use package name and package version to pull manager from pkgDef
-      getPackageManagerWithNameAndVersion(
-          packageCollection,
-          request.packageName,
-          request.packageVersion.as[Option[universe.v3.model.Version]])
-        .flatMap {
-          case manager =>
-            val translatedRequest = new rpc.v1.model.UninstallRequest(
-              request.packageName,
-              request.appId,
-              request.all)
-            adminRouter.postCustomPackageUninstall(AppId(manager.get.packageName), translatedRequest)
-        }
-    } else if (request.appId.isDefined) {
-      //if package name and package def are not defined
-      //use marathon app id to query marathon app for pkg name/version
-      //use package name/version to query for pkg def
-      getPackageNameAndVersionFromMarathonApp(adminRouter, request.appId.get)
-        .map {
-          case (packageName, packageVersion) =>
-            getPackageManagerWithNameAndVersion(packageCollection, packageName.get, packageVersion)
-              .flatMap {
-                case manager =>
-                  val translatedRequest = new rpc.v1.model.UninstallRequest(
-                    request.packageName,
-                    request.appId,
-                    request.all)
-                  adminRouter.postCustomPackageUninstall(AppId(manager.get.packageName), translatedRequest)
-              }
-        }
-    }
-
-    //empty response
-    Future { Response()}
+      adminRouter.postCustomPackageUninstall(
+        AppId(managerId),
+        translatedRequest
+      ).flatMap {
+        case response =>
+          Future {
+            decode[UninstallResponse](response.contentString).getOrThrow
+          }
+      }
   }
 
-  def callCustomServiceDescribe(adminRouter: AdminRouter, packageCollection: PackageCollection,
-                                request: rpc.v2.model.ServiceDescribeRequest) (implicit session: RequestSession): Future[Response] = {
-    if (request.managerId.isDefined) {
+
+  def callCustomServiceDescribe(
+   adminRouter: AdminRouter,
+   request: rpc.v2.model.ServiceDescribeRequest,
+   managerId: String
+  )(implicit session: RequestSession): Future[ServiceDescribeResponse] = {
       adminRouter.getApp(AppId(request.managerId.get));
       val translatedRequest = new rpc.v1.model.ServiceDescribeRequest(request.appId)
-      adminRouter.postCustomServiceDescribe(AppId(request.managerId.get), translatedRequest)
-    } else if (request.packageVersion.isDefined && request.packageName.isDefined) {
-      getPackageManagerWithNameAndVersion(
-        packageCollection,
-        request.packageName.get,
-        request.packageVersion.as[Option[universe.v3.model.Version]])
-        .flatMap {
-          case manager =>
-            val translatedRequest = new rpc.v1.model.ServiceDescribeRequest(request.appId)
-            adminRouter.postCustomServiceDescribe(AppId(manager.get.packageName), translatedRequest)
-        }
-    } else {
-      //app Id always defined
-      getPackageNameAndVersionFromMarathonApp(adminRouter, request.appId)
-        .map {
-          case (packageName, packageVersion) =>
-            getPackageManagerWithNameAndVersion(packageCollection, packageName.get, packageVersion)
-              .flatMap {
-                case manager =>
-                  val translatedRequest = new rpc.v1.model.ServiceDescribeRequest(request.appId)
-                  adminRouter.postCustomServiceDescribe(AppId(manager.get.packageName), translatedRequest)
-              }
-        }
-    }
-    Future {Response()}
+      adminRouter.postCustomServiceDescribe(
+        AppId(managerId),
+        translatedRequest
+      ).flatMap {
+        case response =>
+          Future {
+            decode[ServiceDescribeResponse](response.contentString).getOrThrow
+          }
+      }
   }
 
-  def callCustomServiceUpdate(adminRouter: AdminRouter, packageCollection: PackageCollection,
-                              request: rpc.v2.model.ServiceUpdateRequest) (implicit session: RequestSession): Future[Response] = {
-    if (request.managerId.isDefined) {
+  def callCustomServiceUpdate(
+     adminRouter: AdminRouter,
+     request: rpc.v2.model.ServiceUpdateRequest,
+     managerId: String
+   )(implicit session: RequestSession): Future[ServiceUpdateResponse] = {
       adminRouter.getApp(AppId(request.managerId.get));
       val translatedRequest = new rpc.v1.model.ServiceUpdateRequest(
         request.appId,
         request.packageVersion,
         request.options,
         request.replace)
-      adminRouter.postCustomServiceUpdate(AppId(request.managerId.get), translatedRequest)
-    } else if (request.packageVersion.isDefined && request.packageName.isDefined) {
-      getPackageManagerWithNameAndVersion(
-        packageCollection,
-        request.packageName.get,
-        request.packageVersion)
-        .flatMap {
-          case manager =>
-            val translatedRequest = new rpc.v1.model.ServiceUpdateRequest(
-              request.appId,
-              request.packageVersion,
-              request.options,
-              request.replace)
-            adminRouter.postCustomServiceUpdate(AppId(manager.get.packageName), translatedRequest)
-        }
-    } else {
-      //app Id always defined
-      getPackageNameAndVersionFromMarathonApp(adminRouter, request.appId)
-        .map {
-          case (packageName, packageVersion) =>
-            getPackageManagerWithNameAndVersion(packageCollection, packageName.get, packageVersion)
-              .flatMap {
-                case manager =>
-                  val translatedRequest = new rpc.v1.model.ServiceUpdateRequest(
-                    request.appId,
-                    request.packageVersion,
-                    request.options,
-                    request.replace)
-                  adminRouter.postCustomServiceUpdate(AppId(manager.get.packageName), translatedRequest)
-              }
-        }
-    }
-    Future {Response()}
+      adminRouter.postCustomServiceUpdate(
+        AppId(managerId),
+        translatedRequest
+      ).flatMap {
+        case response =>
+          Future {
+            decode[ServiceUpdateResponse](response.contentString).getOrThrow
+          }
+      }
+
   }
 
   private def getPackageNameAndVersionFromMarathonApp(adminRouter: AdminRouter, appId: AppId) (implicit session: RequestSession):
