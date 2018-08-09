@@ -117,30 +117,30 @@ class AdminRouter(
   }
 
   def postCustomPackageUninstall(
-   service: AppId,
+   managerId: AppId,
    body: UninstallRequest
   )(
    implicit session: RequestSession
  ): Future[Response] = {
-    adminRouterClient.postCustomPackageUninstallRequest(service, body)
+    adminRouterClient.postCustomPackageUninstallRequest(managerId, body)
   }
 
   def postCustomServiceDescribe(
-    service: AppId,
+    managerId: AppId,
     body: ServiceDescribeRequest
   )(
     implicit session: RequestSession
   ): Future[Response] = {
-    adminRouterClient.postCustomServiceDescribeRequest(service, body)
+    adminRouterClient.postCustomServiceDescribeRequest(managerId, body)
   }
 
   def postCustomServiceUpdate(
-     service: AppId,
+     managerId: AppId,
      body: ServiceUpdateRequest
    )(
      implicit session: RequestSession
    ): Future[Response] = {
-    adminRouterClient.postCustomServiceUpdateRequest(service, body)
+    adminRouterClient.postCustomServiceUpdateRequest(managerId, body)
   }
 
   def listDeployments()(implicit session: RequestSession): Future[List[Deployment]] = {
