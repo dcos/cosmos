@@ -1,6 +1,5 @@
 package com.mesosphere.cosmos.handler
 
-import com.mesosphere.cosmos.rpc.v1.model.ServiceDescribeResponse
 import com.mesosphere.cosmos.thirdparty.marathon.model.MarathonApp
 import com.mesosphere.universe.v4.model.PackageDefinition
 import io.circe.JsonObject
@@ -16,18 +15,19 @@ import com.mesosphere.universe
 import com.mesosphere.universe.bijection.UniverseConversions._
 import com.twitter.bijection.Conversion.asMethod
 import com.twitter.util.Future
-import com.mesosphere.cosmos.circe.Decoders.decode
-import com.mesosphere.error.ResultOps
+import org.slf4j.Logger
 
 private[cosmos] final class ServiceDescribeHandler(
   adminRouter: AdminRouter,
   packageCollection: PackageCollection
 ) extends EndpointHandler[rpc.v2.model.ServiceDescribeRequest, rpc.v1.model.ServiceDescribeResponse] {
+  lazy val logger: Logger = org.slf4j.LoggerFactory.getLogger(getClass)
+
   override def apply(
     request: rpc.v2.model.ServiceDescribeRequest)(implicit
     session: RequestSession
   ): Future[rpc.v1.model.ServiceDescribeResponse] = {
-    CustomPackageManagerUtils.requiresCustomPackageManager(
+    CustomPackageManagerUtils.getCustomPackageManagerId(
       adminRouter,
       packageCollection,
       request.managerId,
@@ -35,20 +35,18 @@ private[cosmos] final class ServiceDescribeHandler(
       request.packageVersion.as[Option[universe.v3.model.Version]],
       None
     ).flatMap {
-      case true => {
+      case managerId if !managerId.isEmpty => {
+        logger.info("request requires custom manager " + managerId)
         CustomPackageManagerUtils.callCustomServiceDescribe(
           adminRouter,
-          packageCollection,
-          request
+          request,
+          managerId
         ).flatMap {
-          case response => {
-            Future {
-              decode[ServiceDescribeResponse](response.contentString).getOrThrow
-            }
-          }
+          case response =>
+            Future {response}
         }
       }
-      case false => {
+      case managerId if managerId.isEmpty => {
       for {
         marathonAppResponse <- adminRouter.getApp (request.appId)
         packageDefinition <- getPackageDefinition (marathonAppResponse.app)

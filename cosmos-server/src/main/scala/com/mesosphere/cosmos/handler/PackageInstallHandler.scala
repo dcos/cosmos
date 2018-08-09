@@ -9,14 +9,11 @@ import com.mesosphere.cosmos.render.PackageDefinitionRenderer
 import com.mesosphere.cosmos.repository.PackageCollection
 import com.mesosphere.cosmos.repository.rewriteUrlWithProxyInfo
 import com.mesosphere.cosmos.rpc
-import com.mesosphere.cosmos.rpc.v2.model.InstallResponse
 import com.mesosphere.cosmos.service.CustomPackageManagerUtils
 import com.mesosphere.universe
 import com.mesosphere.universe.bijection.UniverseConversions._
 import com.twitter.bijection.Conversion.asMethod
 import com.twitter.util.Future
-import com.mesosphere.cosmos.circe.Decoders.decode
-import com.mesosphere.error.ResultOps
 import org.slf4j.Logger
 
 
@@ -32,7 +29,7 @@ private[cosmos] final class PackageInstallHandler(
     implicit session: RequestSession
   ): Future[rpc.v2.model.InstallResponse] = {
     logger.info("received package install request")
-    CustomPackageManagerUtils.requiresCustomPackageManager(
+    CustomPackageManagerUtils.getCustomPackageManagerId(
       adminRouter,
       packageCollection,
       request.managerId,
@@ -40,20 +37,18 @@ private[cosmos] final class PackageInstallHandler(
       request.packageVersion.as[Option[universe.v3.model.Version]],
       None
     ).flatMap {
-      case true => {
-        logger.info("request requires custom manager")
+      case managerId if !managerId.isEmpty => {
+        logger.info("request requires custom manager " + managerId)
         CustomPackageManagerUtils.callCustomPackageInstall(
           adminRouter,
-          packageCollection,
-          request
+          request,
+          managerId
         ).flatMap {
           case response =>
-            Future {
-              decode[InstallResponse](response.contentString).getOrThrow
-            }
+            Future {response}
         }
       }
-      case false => {
+      case managerId if managerId.isEmpty => {
         logger.info("request does not require custom manager")
         packageCollection
           .getPackageByPackageVersion(

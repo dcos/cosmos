@@ -17,14 +17,12 @@ import com.mesosphere.cosmos.handler.UninstallHandler._
 import com.mesosphere.cosmos.http.RequestSession
 import com.mesosphere.cosmos.repository.PackageCollection
 import com.mesosphere.cosmos.rpc
-import com.mesosphere.cosmos.rpc.v1.model.UninstallResponse
 import com.mesosphere.cosmos.service.{CustomPackageManagerUtils, ServiceUninstaller}
 import com.mesosphere.cosmos.thirdparty.marathon.model.AppId
 import com.mesosphere.cosmos.thirdparty.marathon.model.MarathonApp
 import com.mesosphere.error.ResultOps
 import com.mesosphere.universe
 import com.mesosphere.universe.bijection.UniverseConversions._
-import com.mesosphere.cosmos.circe.Decoders.decode
 import com.twitter.bijection.Conversion.asMethod
 import com.twitter.finagle.http.Status
 import com.twitter.util.Future
@@ -49,7 +47,7 @@ private[cosmos] final class UninstallHandler(
     implicit session: RequestSession
   ): Future[rpc.v1.model.UninstallResponse] = {
     logger.info("received package uninstall request")
-    CustomPackageManagerUtils.requiresCustomPackageManager(
+    CustomPackageManagerUtils.getCustomPackageManagerId(
       adminRouter,
       packageCollection,
       req.managerId,
@@ -57,21 +55,19 @@ private[cosmos] final class UninstallHandler(
       req.packageVersion.as[Option[universe.v3.model.Version]],
       None
     ).flatMap {
-      case true => {
-        logger.info("requires custom manager")
+      case managerId if !managerId.isEmpty => {
+        logger.info("requires custom manager + " + managerId)
           CustomPackageManagerUtils.callCustomPackageUninstall(
             adminRouter,
-            packageCollection,
-            req
+            req,
+            managerId
           ).flatMap {
             case response => {
-              Future {
-                decode[UninstallResponse] (response.contentString).getOrThrow
-              }
+              Future {response}
             }
           }
       }
-      case false => {
+      case managerId if managerId.isEmpty => {
         getMarathonApps(req.packageName, req.appId)
           .map(apps => createUninstallOperations(req.packageName, apps))
           .map { uninstallOps =>
