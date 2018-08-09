@@ -10,14 +10,19 @@ import com.mesosphere.cosmos.http.RequestSession
 import com.mesosphere.cosmos.render.PackageDefinitionRenderer
 import com.mesosphere.cosmos.repository.PackageCollection
 import com.mesosphere.cosmos.rpc
+import com.mesosphere.cosmos.rpc.v1.model.ServiceUpdateResponse
 import com.mesosphere.cosmos.rpc.v2.model.ServiceUpdateRequest
+import com.mesosphere.cosmos.service.CustomPackageManagerUtils
 import com.mesosphere.cosmos.thirdparty.marathon.model.AppId
 import com.mesosphere.cosmos.thirdparty.marathon.model.MarathonAppResponse
-import com.mesosphere.universe
 import com.mesosphere.universe.common.JsonUtil
 import com.netaporter.uri.Uri
-import com.twitter.util.Future
 import io.circe.JsonObject
+import com.mesosphere.universe
+import com.twitter.util.Future
+import com.mesosphere.cosmos.circe.Decoders.decode
+import com.mesosphere.error.ResultOps
+
 
 final class ServiceUpdateHandler(
   adminRouter: AdminRouter,
@@ -32,25 +37,48 @@ final class ServiceUpdateHandler(
   )(
     implicit session: RequestSession
   ): Future[rpc.v1.model.ServiceUpdateResponse] = {
-    adminRouter.getApp(request.appId).flatMap { marathonAppResponse =>
-      getPackageWithSourceOrThrow(packageCollection, marathonAppResponse.app).flatMap {
-        case (packageDefinition, packageSource) =>
-          if (request.packageVersion.exists(_ != packageDefinition.version)) {
-            Future.exception(
-              VersionUpgradeNotSupportedInOpen(
-                request.packageVersion,
-                packageDefinition.version
-              ).exception
-            )
-          } else {
-            update(
-              serviceUpdater,
-              marathonAppResponse,
-              request,
-              packageDefinition,
-              packageSource
-            )
+    CustomPackageManagerUtils.requiresCustomPackageManager(
+      adminRouter,
+      packageCollection,
+      request.managerId,
+      request.packageName,
+      request.packageVersion,
+      None
+    ).flatMap {
+      case true => {
+        CustomPackageManagerUtils.callCustomServiceUpdate(
+          adminRouter,
+          packageCollection,
+          request
+        ).flatMap {
+          case response =>
+            Future {
+              decode[ServiceUpdateResponse](response.contentString).getOrThrow
+            }
+        }
+      }
+      case false => {
+        adminRouter.getApp(request.appId).flatMap { marathonAppResponse =>
+          getPackageWithSourceOrThrow(packageCollection, marathonAppResponse.app).flatMap {
+            case (packageDefinition, packageSource) =>
+              if (request.packageVersion.exists(_ != packageDefinition.version)) {
+                Future.exception(
+                  VersionUpgradeNotSupportedInOpen(
+                    request.packageVersion,
+                    packageDefinition.version
+                  ).exception
+                )
+              } else {
+                update(
+                  serviceUpdater,
+                  marathonAppResponse,
+                  request,
+                  packageDefinition,
+                  packageSource
+                )
+              }
           }
+        }
       }
     }
   }

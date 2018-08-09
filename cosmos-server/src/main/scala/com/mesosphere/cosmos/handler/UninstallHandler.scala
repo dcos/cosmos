@@ -17,12 +17,14 @@ import com.mesosphere.cosmos.handler.UninstallHandler._
 import com.mesosphere.cosmos.http.RequestSession
 import com.mesosphere.cosmos.repository.PackageCollection
 import com.mesosphere.cosmos.rpc
-import com.mesosphere.cosmos.service.ServiceUninstaller
+import com.mesosphere.cosmos.rpc.v1.model.UninstallResponse
+import com.mesosphere.cosmos.service.{CustomPackageManagerUtils, ServiceUninstaller}
 import com.mesosphere.cosmos.thirdparty.marathon.model.AppId
 import com.mesosphere.cosmos.thirdparty.marathon.model.MarathonApp
 import com.mesosphere.error.ResultOps
 import com.mesosphere.universe
 import com.mesosphere.universe.bijection.UniverseConversions._
+import com.mesosphere.cosmos.circe.Decoders.decode
 import com.twitter.bijection.Conversion.asMethod
 import com.twitter.finagle.http.Status
 import com.twitter.util.Future
@@ -31,6 +33,7 @@ import io.circe.JsonObject
 import io.circe.syntax._
 import org.slf4j.Logger
 
+//noinspection ScalaStyle
 private[cosmos] final class UninstallHandler(
   adminRouter: AdminRouter,
   packageCollection: PackageCollection,
@@ -45,49 +48,75 @@ private[cosmos] final class UninstallHandler(
   )(
     implicit session: RequestSession
   ): Future[rpc.v1.model.UninstallResponse] = {
-    getMarathonApps(req.packageName, req.appId)
-      .map(apps => createUninstallOperations(req.packageName, apps))
-      .map { uninstallOps =>
-        val all = req.all.contains(true)
-        if (all || uninstallOps.size <= 1) {
-          uninstallOps
-        } else {
-          throw AmbiguousAppId(req.packageName, uninstallOps.map(_._2.appId)).exception
-        }
-      }
-      .flatMap { uninstallOps =>
-        Future.collect(
-          uninstallOps
-            .map { case (app, uninstallOp) => (app, runUninstall(uninstallOp)) }
-            .map { case (app, f) => f.map(app -> _) }
-        )
-      }
-      .flatMap { uninstallDetails =>
-        Future.collect(
-          uninstallDetails.map { case (app, detail) =>
-            getPackageWithSource(packageCollection, app).map { res =>
-              (
-                detail,
-                res match {
-                  case Some((pkg, _)) => pkg.postUninstallNotes
-                  case None => None
-                }
-              )
+    logger.info("received package uninstall request")
+    CustomPackageManagerUtils.requiresCustomPackageManager(
+      adminRouter,
+      packageCollection,
+      req.managerId,
+      Option(req.packageName),
+      req.packageVersion.as[Option[universe.v3.model.Version]],
+      None
+    ).flatMap {
+      case true => {
+        logger.info("requires custom manager")
+          CustomPackageManagerUtils.callCustomPackageUninstall(
+            adminRouter,
+            packageCollection,
+            req
+          ).flatMap {
+            case response => {
+              Future {
+                decode[UninstallResponse] (response.contentString).getOrThrow
+              }
             }
           }
-        )
       }
-      .map { detailsAndNotes =>
-        val results = detailsAndNotes.map { case (detail, postUninstallNotes) =>
-          rpc.v1.model.UninstallResult(
-            detail.packageName,
-            detail.appId,
-            detail.packageVersion,
-            postUninstallNotes
-          )
-        }
-        rpc.v1.model.UninstallResponse(results.toList)
+      case false => {
+        getMarathonApps(req.packageName, req.appId)
+          .map(apps => createUninstallOperations(req.packageName, apps))
+          .map { uninstallOps =>
+            val all = req.all.contains(true)
+            if (all || uninstallOps.size <= 1) {
+              uninstallOps
+            } else {
+              throw AmbiguousAppId(req.packageName, uninstallOps.map(_._2.appId)).exception
+            }
+          }
+          .flatMap { uninstallOps =>
+            Future.collect(
+              uninstallOps
+                .map { case (app, uninstallOp) => (app, runUninstall(uninstallOp)) }
+                .map { case (app, f) => f.map(app -> _) }
+            )
+          }
+          .flatMap { uninstallDetails =>
+            Future.collect(
+              uninstallDetails.map { case (app, detail) =>
+                getPackageWithSource(packageCollection, app).map { res =>
+                  (
+                    detail,
+                    res match {
+                      case Some((pkg, _)) => pkg.postUninstallNotes
+                      case None => None
+                    }
+                  )
+                }
+              }
+            )
+          }
+          .map { detailsAndNotes =>
+            val results = detailsAndNotes.map { case (detail, postUninstallNotes) =>
+              rpc.v1.model.UninstallResult(
+                detail.packageName,
+                detail.appId,
+                detail.packageVersion,
+                postUninstallNotes
+              )
+            }
+            rpc.v1.model.UninstallResponse(results.toList)
+          }
       }
+    }
   }
 
   private def runUninstall(
