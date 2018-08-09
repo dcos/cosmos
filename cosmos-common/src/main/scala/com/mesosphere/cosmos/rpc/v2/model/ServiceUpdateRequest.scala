@@ -25,7 +25,7 @@ object ServiceUpdateRequest {
   implicit val encode: Encoder[ServiceUpdateRequest] = deriveEncoder
   implicit val decode: Decoder[ServiceUpdateRequest] = deriveDecoder
   implicit val mediaTypedEncoder: MediaTypedEncoder[ServiceUpdateRequest] =
-    MediaTypedEncoder(MediaTypes.ServiceUpdateRequest)
+    MediaTypedEncoder(MediaTypes.V2ServiceUpdateRequest)
   implicit val mediaTypedRequestDecoder: MediaTypedRequestDecoder[ServiceUpdateRequest] =
-    MediaTypedRequestDecoder(MediaTypedDecoder(MediaTypes.ServiceUpdateRequest))
+    MediaTypedRequestDecoder(MediaTypedDecoder(MediaTypes.V2ServiceUpdateRequest))
 }

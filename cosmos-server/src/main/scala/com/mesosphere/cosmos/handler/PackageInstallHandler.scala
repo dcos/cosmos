@@ -9,7 +9,7 @@ import com.mesosphere.cosmos.render.PackageDefinitionRenderer
 import com.mesosphere.cosmos.repository.PackageCollection
 import com.mesosphere.cosmos.repository.rewriteUrlWithProxyInfo
 import com.mesosphere.cosmos.rpc
-import com.mesosphere.cosmos.service.CustomPackageManagerUtils
+import com.mesosphere.cosmos.service.CustomPackageManagerClient
 import com.mesosphere.universe
 import com.mesosphere.universe.bijection.UniverseConversions._
 import com.twitter.bijection.Conversion.asMethod
@@ -28,8 +28,7 @@ private[cosmos] final class PackageInstallHandler(
   )(
     implicit session: RequestSession
   ): Future[rpc.v2.model.InstallResponse] = {
-    logger.info("received package install request")
-    CustomPackageManagerUtils.getCustomPackageManagerId(
+    CustomPackageManagerClient.getCustomPackageManagerId(
       adminRouter,
       packageCollection,
       request.managerId,
@@ -38,8 +37,8 @@ private[cosmos] final class PackageInstallHandler(
       None
     ).flatMap {
       case managerId if !managerId.isEmpty => {
-        logger.info("request requires custom manager " + managerId)
-        CustomPackageManagerUtils.callCustomPackageInstall(
+        logger.info("Request requires a custom manager: " + managerId)
+        CustomPackageManagerClient.callCustomPackageInstall(
           adminRouter,
           request,
           managerId
@@ -49,7 +48,6 @@ private[cosmos] final class PackageInstallHandler(
         }
       }
       case managerId if managerId.isEmpty => {
-        logger.info("request does not require custom manager")
         packageCollection
           .getPackageByPackageVersion(
             request.packageName,

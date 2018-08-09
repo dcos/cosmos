@@ -10,7 +10,7 @@ import com.mesosphere.cosmos.render.PackageDefinitionRenderer
 import com.mesosphere.cosmos.repository.PackageCollection
 import com.mesosphere.cosmos.repository.rewriteUrlWithProxyInfo
 import com.mesosphere.cosmos.rpc
-import com.mesosphere.cosmos.service.CustomPackageManagerUtils
+import com.mesosphere.cosmos.service.CustomPackageManagerClient
 import com.mesosphere.universe
 import com.mesosphere.universe.bijection.UniverseConversions._
 import com.twitter.bijection.Conversion.asMethod
@@ -27,7 +27,7 @@ private[cosmos] final class ServiceDescribeHandler(
     request: rpc.v2.model.ServiceDescribeRequest)(implicit
     session: RequestSession
   ): Future[rpc.v1.model.ServiceDescribeResponse] = {
-    CustomPackageManagerUtils.getCustomPackageManagerId(
+    CustomPackageManagerClient.getCustomPackageManagerId(
       adminRouter,
       packageCollection,
       request.managerId,
@@ -36,8 +36,8 @@ private[cosmos] final class ServiceDescribeHandler(
       None
     ).flatMap {
       case managerId if !managerId.isEmpty => {
-        logger.info("request requires custom manager " + managerId)
-        CustomPackageManagerUtils.callCustomServiceDescribe(
+        logger.info("Request requires a custom manager: " + managerId)
+        CustomPackageManagerClient.callCustomServiceDescribe(
           adminRouter,
           request,
           managerId

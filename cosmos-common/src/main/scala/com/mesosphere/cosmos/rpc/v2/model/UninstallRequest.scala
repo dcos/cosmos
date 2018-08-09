@@ -22,5 +22,5 @@ object UninstallRequest {
   implicit val encodeUninstallRequest: Encoder[UninstallRequest] = deriveEncoder[UninstallRequest]
   implicit val decodeUninstallRequest: Decoder[UninstallRequest] = deriveDecoder[UninstallRequest]
   implicit val packageUninstallDecoder: MediaTypedRequestDecoder[UninstallRequest] =
-    MediaTypedRequestDecoder(MediaTypedDecoder(MediaTypes.UninstallRequest))
+    MediaTypedRequestDecoder(MediaTypedDecoder(MediaTypes.V2UninstallRequest))
 }

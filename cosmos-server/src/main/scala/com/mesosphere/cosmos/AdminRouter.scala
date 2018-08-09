@@ -2,7 +2,7 @@ package com.mesosphere.cosmos
 
 import _root_.io.circe.JsonObject
 import com.mesosphere.cosmos.http.RequestSession
-import com.mesosphere.cosmos.rpc.v1.model.{InstallRequest, ServiceDescribeRequest, ServiceUpdateRequest, UninstallRequest}
+import com.mesosphere.cosmos.rpc.v1.model.{InstallRequest, ServiceUpdateRequest, ServiceDescribeRequest, UninstallRequest}
 import com.mesosphere.cosmos.thirdparty.adminrouter.model.DcosVersion
 import com.mesosphere.cosmos.thirdparty.marathon.model.AppId
 import com.mesosphere.cosmos.thirdparty.marathon.model.Deployment
@@ -142,9 +142,6 @@ class AdminRouter(
    ): Future[Response] = {
     adminRouterClient.postCustomServiceUpdateRequest(service, body)
   }
-
-
-
 
   def listDeployments()(implicit session: RequestSession): Future[List[Deployment]] = {
     marathon.listDeployments()

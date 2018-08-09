@@ -1,20 +1,21 @@
 package com.mesosphere.cosmos.service
 import com.mesosphere.universe.v5.model.Manager
-import com.mesosphere.cosmos.AdminRouter
+import com.mesosphere.cosmos.{AdminRouter, rpc, trimContentForPrinting}
 import com.mesosphere.cosmos.http.RequestSession
 import com.mesosphere.cosmos.repository.PackageCollection
-import com.mesosphere.cosmos.rpc
-import com.mesosphere.cosmos.rpc.v2.model.{InstallResponse}
+import com.mesosphere.cosmos.rpc.v2.model.InstallResponse
 import com.mesosphere.cosmos.thirdparty.marathon.model.AppId
 import com.mesosphere.universe
 import com.twitter.util.Future
 import com.mesosphere.cosmos.circe.Decoders.decode
+import com.mesosphere.cosmos.error.ServiceAlreadyStarted
 import com.mesosphere.cosmos.rpc.v1.model.{ServiceDescribeResponse, ServiceUpdateResponse, UninstallResponse}
 import com.mesosphere.error.ResultOps
+import com.twitter.finagle.http.{Response, Status}
 import org.slf4j.Logger
 
 
-object CustomPackageManagerUtils  {
+object CustomPackageManagerClient  {
   lazy val logger: Logger = org.slf4j.LoggerFactory.getLogger(getClass)
 
   def getCustomPackageManagerId(
@@ -24,9 +25,7 @@ object CustomPackageManagerUtils  {
   packageName: Option[String],
   packageVersion: Option[universe.v3.model.Version],
   appId: Option[AppId])(implicit session: RequestSession): Future[String] = {
-    logger.info("checking if package requires custom manager")
     if (managerId.isDefined) {
-      logger.info("managerId is present " + managerId.get)
       return Future{managerId.get}
     } else if (packageName.isDefined && packageVersion.isDefined) {
       getPackageManagerWithNameAndVersion(packageCollection, packageName.get, packageVersion)
@@ -66,6 +65,7 @@ object CustomPackageManagerUtils  {
       ).flatMap {
         case response =>
           Future {
+            validateResponse(response)
             decode[InstallResponse](response.contentString).getOrThrow
           }
       }
@@ -87,6 +87,7 @@ object CustomPackageManagerUtils  {
       ).flatMap {
         case response =>
           Future {
+            validateResponse(response)
             decode[UninstallResponse](response.contentString).getOrThrow
           }
       }
@@ -106,6 +107,7 @@ object CustomPackageManagerUtils  {
       ).flatMap {
         case response =>
           Future {
+            validateResponse(response)
             decode[ServiceDescribeResponse](response.contentString).getOrThrow
           }
       }
@@ -128,6 +130,7 @@ object CustomPackageManagerUtils  {
       ).flatMap {
         case response =>
           Future {
+            validateResponse(response)
             decode[ServiceUpdateResponse](response.contentString).getOrThrow
           }
       }
@@ -143,6 +146,19 @@ object CustomPackageManagerUtils  {
           val packageVersion = appResponse.app.packageVersion
           Future {(packageName, packageVersion)}
       }
+  }
+
+  private def validateResponse(response: Response): Unit = {
+    response.status match {
+      case Status.Conflict =>
+        throw ServiceAlreadyStarted().exception
+      case status if (400 until 500).contains(status.code) =>
+        logger.warn(s"Custom manager returned [${status.code}]: " +
+          s"${trimContentForPrinting(response.contentString)}")
+      case status if (500 until 600).contains(status.code) =>
+        logger.warn(s"Custom manager is unavailable [${status.code}]: " +
+          s"${trimContentForPrinting(response.contentString)}")
+    }
   }
 
   private def getPackageManagerWithNameAndVersion(
