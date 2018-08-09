@@ -71,17 +71,16 @@ abstract class ServiceClient(baseUri: Uri) {
       case Some(ct) =>
         MediaType.parse(ct).map { mediaType =>
           // Marathon and Mesos don't specify 'charset=utf-8' on it's json, so we are lax in our comparison here.
-          MediaType.compatibleIgnoringParameters(
+          if (MediaType.compatibleIgnoringParameters(
             MediaTypes.applicationJson,
             mediaType
-          ) match {
-            case false =>
-              throw UnsupportedContentType.forMediaType(
-                List(MediaTypes.applicationJson),
-                Some(mediaType)
-              ).exception
-            case true =>
-              decode[A](response.contentString).getOrThrow
+          )) {
+            decode[A](response.contentString).getOrThrow
+          } else {
+            throw UnsupportedContentType.forMediaType(
+              List(MediaTypes.applicationJson),
+              Some(mediaType)
+            ).exception
           }
         }.get
       case _ =>
@@ -108,7 +107,7 @@ abstract class ServiceClient(baseUri: Uri) {
       .setHeader(Fields.UserAgent, s"cosmos/$cosmosVersion")
 
     session.authorization match {
-      case Some(auth) => builder.setHeader("Authorization", auth.headerValue)
+      case Some(auth) => builder.setHeader(Fields.Authorization, auth.headerValue)
       case _ => builder
     }
   }

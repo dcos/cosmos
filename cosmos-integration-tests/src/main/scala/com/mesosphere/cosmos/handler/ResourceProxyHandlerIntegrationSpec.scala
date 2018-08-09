@@ -62,23 +62,31 @@ final class ResourceProxyHandlerIntegrationSpec extends FreeSpec
   }
 
   private def assertURLDownload(url : String) : Assertion = {
+    val parsedUrl = Uri.parse(url)
     val future = HttpClient.fetch(
-      Uri.parse(url),
+      parsedUrl,
       Fields.Authorization -> testContext.token.get.headerValue
     ) { responseData =>
       val contentLength = responseData.contentLength
-      contentLength shouldBe defined
-      val buffer = Array.ofDim[Byte](contentLength.get.toInt)
-      val numberOfBytesRead = ByteStreams.read(responseData.contentStream, buffer, 0, buffer.length)
-      val lastRead = ByteStreams.read(responseData.contentStream, Array.ofDim(1), 0, 1)
-      (contentLength.get, numberOfBytesRead, lastRead)
+      // Resource Proxy endpoint response is chunked.
+      contentLength shouldBe empty
+      val contentBytes = ByteStreams.toByteArray(responseData.contentStream)
+      contentBytes.length
     }
-
-    val (contentLength, numberOfBytesRead, lastRead) = Await.result(future)
-
-    contentLength.toInt should be > 0
-    contentLength shouldEqual numberOfBytesRead
-    lastRead shouldEqual 0
+    val numberOfBytesRead = Await.result(future)
+    numberOfBytesRead should be > 0
+    val rawUrl = parsedUrl
+      .query
+      .params
+      .find(x => x._1.equals("url"))
+      .flatMap(_._2)
+    rawUrl shouldBe defined
+    val rawContentBytesLength = rawUrl.flatMap { rawUrl =>
+      Await.result { HttpClient.fetch(Uri.parse(rawUrl))(_.contentLength) }
+    }
+    // All the resource urls in the universe repo should define a Content-Length header.
+    rawContentBytesLength shouldBe defined
+    rawContentBytesLength.get.toInt shouldEqual numberOfBytesRead
   }
 }
 
