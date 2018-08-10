@@ -19,12 +19,12 @@ object CustomPackageManagerClient  {
   lazy val logger: Logger = org.slf4j.LoggerFactory.getLogger(getClass)
 
   def getCustomPackageManagerId(
-  adminRouter: AdminRouter,
-  packageCollection: PackageCollection,
-  managerId: Option[String],
-  packageName: Option[String],
-  packageVersion: Option[universe.v3.model.Version],
-  appId: Option[AppId])(implicit session: RequestSession): Future[String] = {
+    adminRouter: AdminRouter,
+    packageCollection: PackageCollection,
+    managerId: Option[String],
+    packageName: Option[String],
+    packageVersion: Option[universe.v3.model.Version],
+    appId: Option[AppId])(implicit session: RequestSession): Future[String] = {
     if (managerId.isDefined) {
        Future{managerId.get}
     } else if (packageName.isDefined && packageVersion.isDefined) {
@@ -51,7 +51,7 @@ object CustomPackageManagerClient  {
 
   def callCustomPackageInstall(
     adminRouter: AdminRouter,
-    request: rpc.v2.model.InstallRequest,
+    request: rpc.v1.model.InstallRequest,
     managerId: String
   )(implicit session: RequestSession): Future[InstallResponse] = {
     val translatedRequest = new rpc.v1.model.InstallRequest(
@@ -73,7 +73,7 @@ object CustomPackageManagerClient  {
 
   def callCustomPackageUninstall(
     adminRouter: AdminRouter,
-    request: rpc.v2.model.UninstallRequest,
+    request: rpc.v1.model.UninstallRequest,
     managerId: String
   )(implicit session: RequestSession): Future[UninstallResponse] = {
       adminRouter.getApp(AppId(request.managerId.get));
@@ -96,7 +96,7 @@ object CustomPackageManagerClient  {
 
   def callCustomServiceDescribe(
    adminRouter: AdminRouter,
-   request: rpc.v2.model.ServiceDescribeRequest,
+   request: rpc.v1.model.ServiceDescribeRequest,
    managerId: String
   )(implicit session: RequestSession): Future[ServiceDescribeResponse] = {
       adminRouter.getApp(AppId(request.managerId.get));
@@ -115,7 +115,7 @@ object CustomPackageManagerClient  {
 
   def callCustomServiceUpdate(
      adminRouter: AdminRouter,
-     request: rpc.v2.model.ServiceUpdateRequest,
+     request: rpc.v1.model.ServiceUpdateRequest,
      managerId: String
    )(implicit session: RequestSession): Future[ServiceUpdateResponse] = {
       adminRouter.getApp(AppId(request.managerId.get));
@@ -159,6 +159,9 @@ object CustomPackageManagerClient  {
           s"${trimContentForPrinting(response.contentString)}")
       case status if (500 until 600).contains(status.code) =>
         logger.warn(s"Custom manager is unavailable [${status.code}]: " +
+          s"${trimContentForPrinting(response.contentString)}")
+      case status =>
+        logger.warn(s"Custom manager responded with [${status.code}]: " +
           s"${trimContentForPrinting(response.contentString)}")
     }
   }

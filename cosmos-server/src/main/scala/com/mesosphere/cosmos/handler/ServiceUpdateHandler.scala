@@ -10,7 +10,7 @@ import com.mesosphere.cosmos.http.RequestSession
 import com.mesosphere.cosmos.render.PackageDefinitionRenderer
 import com.mesosphere.cosmos.repository.PackageCollection
 import com.mesosphere.cosmos.rpc
-import com.mesosphere.cosmos.rpc.v2.model.ServiceUpdateRequest
+import com.mesosphere.cosmos.rpc.v1.model.ServiceUpdateRequest
 import com.mesosphere.cosmos.service.CustomPackageManagerClient
 import com.mesosphere.cosmos.thirdparty.marathon.model.AppId
 import com.mesosphere.cosmos.thirdparty.marathon.model.MarathonAppResponse
@@ -26,12 +26,12 @@ final class ServiceUpdateHandler(
   adminRouter: AdminRouter,
   packageCollection: PackageCollection,
   serviceUpdater: ServiceUpdater
-) extends EndpointHandler[rpc.v2.model.ServiceUpdateRequest, rpc.v1.model.ServiceUpdateResponse] {
+) extends EndpointHandler[rpc.v1.model.ServiceUpdateRequest, rpc.v1.model.ServiceUpdateResponse] {
 
   import ServiceUpdateHandler._
 
   override def apply(
-    request: rpc.v2.model.ServiceUpdateRequest
+    request: rpc.v1.model.ServiceUpdateRequest
   )(
     implicit session: RequestSession
   ): Future[rpc.v1.model.ServiceUpdateResponse] = {

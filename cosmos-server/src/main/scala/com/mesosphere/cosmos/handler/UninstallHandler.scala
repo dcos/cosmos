@@ -36,13 +36,13 @@ private[cosmos] final class UninstallHandler(
   adminRouter: AdminRouter,
   packageCollection: PackageCollection,
   uninstaller: ServiceUninstaller
-) extends EndpointHandler[rpc.v2.model.UninstallRequest, rpc.v1.model.UninstallResponse] {
+) extends EndpointHandler[rpc.v1.model.UninstallRequest, rpc.v1.model.UninstallResponse] {
   lazy val logger: Logger = org.slf4j.LoggerFactory.getLogger(getClass)
 
   private type FwIds = List[String]
   // scalastyle:off cyclomatic.complexity
   override def apply(
-    req: rpc.v2.model.UninstallRequest
+    req: rpc.v1.model.UninstallRequest
   )(
     implicit session: RequestSession
   ): Future[rpc.v1.model.UninstallResponse] = {

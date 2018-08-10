@@ -12,19 +12,20 @@ import com.mesosphere.cosmos.repository.rewriteUrlWithProxyInfo
 import com.mesosphere.cosmos.rpc
 import com.mesosphere.cosmos.service.CustomPackageManagerClient
 import com.mesosphere.universe
-import com.mesosphere.universe.bijection.UniverseConversions._
-import com.twitter.bijection.Conversion.asMethod
 import com.twitter.util.Future
+import com.mesosphere.universe.bijection.UniverseConversions._
 import org.slf4j.Logger
+import com.twitter.bijection.Conversion.asMethod
+
 
 private[cosmos] final class ServiceDescribeHandler(
   adminRouter: AdminRouter,
   packageCollection: PackageCollection
-) extends EndpointHandler[rpc.v2.model.ServiceDescribeRequest, rpc.v1.model.ServiceDescribeResponse] {
+) extends EndpointHandler[rpc.v1.model.ServiceDescribeRequest, rpc.v1.model.ServiceDescribeResponse] {
   lazy val logger: Logger = org.slf4j.LoggerFactory.getLogger(getClass)
 
   override def apply(
-    request: rpc.v2.model.ServiceDescribeRequest)(implicit
+    request: rpc.v1.model.ServiceDescribeRequest)(implicit
     session: RequestSession
   ): Future[rpc.v1.model.ServiceDescribeResponse] = {
     CustomPackageManagerClient.getCustomPackageManagerId(

@@ -16,8 +16,9 @@ case class ServiceUpdateRequest(
   appId: AppId,
   packageVersion: Option[universe.v3.model.Version],
   options: Option[JsonObject],
-  replace: Boolean
-)
+  replace: Boolean,
+  managerId: Option[String] = None,
+  packageName: Option[String] = None)
 
 object ServiceUpdateRequest {
   implicit val encode: Encoder[ServiceUpdateRequest] = deriveEncoder

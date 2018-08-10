@@ -308,7 +308,7 @@ object CosmosApp {
     // Keep alphabetized
     val capabilities: EndpointHandler[Unit, rpc.v1.model.CapabilitiesResponse],
     val packageDescribe: EndpointHandler[rpc.v1.model.DescribeRequest, universe.v4.model.PackageDefinition],
-    val packageInstall: EndpointHandler[rpc.v2.model.InstallRequest, rpc.v2.model.InstallResponse],
+    val packageInstall: EndpointHandler[rpc.v1.model.InstallRequest, rpc.v2.model.InstallResponse],
     val packageList: EndpointHandler[rpc.v1.model.ListRequest, rpc.v1.model.ListResponse],
     val packageListVersions: EndpointHandler[rpc.v1.model.ListVersionsRequest, rpc.v1.model.ListVersionsResponse],
     val packageRender: EndpointHandler[rpc.v1.model.RenderRequest, rpc.v1.model.RenderResponse],
@@ -317,9 +317,9 @@ object CosmosApp {
     val packageRepositoryList: EndpointHandler[rpc.v1.model.PackageRepositoryListRequest, rpc.v1.model.PackageRepositoryListResponse],
     val packageResource: ResourceProxyHandler,
     val packageSearch: EndpointHandler[rpc.v1.model.SearchRequest, rpc.v1.model.SearchResponse],
-    val packageUninstall: EndpointHandler[rpc.v2.model.UninstallRequest, rpc.v1.model.UninstallResponse],
-    val serviceDescribe: EndpointHandler[rpc.v2.model.ServiceDescribeRequest, rpc.v1.model.ServiceDescribeResponse],
-    val serviceUpdate: EndpointHandler[rpc.v2.model.ServiceUpdateRequest, rpc.v1.model.ServiceUpdateResponse]
+    val packageUninstall: EndpointHandler[rpc.v1.model.UninstallRequest, rpc.v1.model.UninstallResponse],
+    val serviceDescribe: EndpointHandler[rpc.v1.model.ServiceDescribeRequest, rpc.v1.model.ServiceDescribeResponse],
+    val serviceUpdate: EndpointHandler[rpc.v1.model.ServiceUpdateRequest, rpc.v1.model.ServiceUpdateResponse]
   )
 
   final case class Endpoints(

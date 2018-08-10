@@ -15,7 +15,8 @@ case class InstallRequest(
   packageName: String,
   packageVersion: Option[PackageDetailsVersion] = None,
   options: Option[JsonObject] = None,
-  appId: Option[AppId] = None
+  appId: Option[AppId] = None,
+  managerId: Option[String] = None
 )
 
 object InstallRequest {
