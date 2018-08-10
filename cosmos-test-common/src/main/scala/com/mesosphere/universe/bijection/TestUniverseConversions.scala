@@ -64,6 +64,37 @@ object TestUniverseConversions {
     }
   }
 
+  private implicit val v5PackageToV5Metadata:
+    Conversion[universe.v5.model.V5Package,
+      (universe.v5.model.V5Metadata, universe.v3.model.ReleaseVersion)] = {
+    Conversion.fromFunction { v5Package =>
+      val metadata = universe.v5.model.V5Metadata(
+        packagingVersion = v5Package.packagingVersion,
+        name = v5Package.name,
+        version = v5Package.version,
+        maintainer = v5Package.maintainer,
+        description = v5Package.description,
+        tags = v5Package.tags,
+        scm = v5Package.scm,
+        website = v5Package.website,
+        framework = v5Package.framework,
+        preInstallNotes = v5Package.preInstallNotes,
+        postInstallNotes = v5Package.postInstallNotes,
+        postUninstallNotes = v5Package.postUninstallNotes,
+        licenses = v5Package.licenses,
+        minDcosReleaseVersion = v5Package.minDcosReleaseVersion,
+        marathon = v5Package.marathon,
+        resource = v5Package.resource,
+        config = v5Package.config,
+        upgradesFrom = v5Package.upgradesFrom,
+        downgradesTo = v5Package.downgradesTo,
+        manager =  v5Package.manager
+      )
+
+      (metadata, v5Package.releaseVersion)
+    }
+  }
+
   implicit val supportedPackageToMetadata:
     Conversion[universe.v4.model.SupportedPackageDefinition,
       (universe.v4.model.Metadata, universe.v3.model.ReleaseVersion)] = {
