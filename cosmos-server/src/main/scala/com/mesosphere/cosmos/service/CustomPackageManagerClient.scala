@@ -26,12 +26,12 @@ object CustomPackageManagerClient  {
   packageVersion: Option[universe.v3.model.Version],
   appId: Option[AppId])(implicit session: RequestSession): Future[String] = {
     if (managerId.isDefined) {
-      return Future{managerId.get}
+       Future{managerId.get}
     } else if (packageName.isDefined && packageVersion.isDefined) {
       getPackageManagerWithNameAndVersion(packageCollection, packageName.get, packageVersion)
         .flatMap {
           case manager =>
-            return Future {manager.get.packageName}
+            Future {manager.get.packageName}
         }
     } else if (appId.isDefined) {
       getPackageNameAndVersionFromMarathonApp(adminRouter, appId.get)
@@ -137,8 +137,10 @@ object CustomPackageManagerClient  {
 
   }
 
-  private def getPackageNameAndVersionFromMarathonApp(adminRouter: AdminRouter, appId: AppId) (implicit session: RequestSession):
-  Future[(Option[String], Option[universe.v3.model.Version])] = {
+  private def getPackageNameAndVersionFromMarathonApp(
+   adminRouter: AdminRouter,
+   appId: AppId
+ )(implicit session: RequestSession): Future[(Option[String], Option[universe.v3.model.Version])] = {
     adminRouter.getApp(appId)
       .flatMap {
         case (appResponse) =>
@@ -164,8 +166,8 @@ object CustomPackageManagerClient  {
   private def getPackageManagerWithNameAndVersion(
     packageCollection: PackageCollection,
     packageName: String,
-    packageVersion: Option[com.mesosphere.universe.v3.model.Version],
-     ) (implicit session: RequestSession) : Future[Option[Manager]] = {
+    packageVersion: Option[com.mesosphere.universe.v3.model.Version]
+ )(implicit session: RequestSession) : Future[Option[Manager]] = {
     packageCollection.getPackageByPackageVersion(
       packageName,
       packageVersion

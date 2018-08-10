@@ -40,7 +40,7 @@ private[cosmos] final class UninstallHandler(
   lazy val logger: Logger = org.slf4j.LoggerFactory.getLogger(getClass)
 
   private type FwIds = List[String]
-
+  // scalastyle:off cyclomatic.complexity
   override def apply(
     req: rpc.v2.model.UninstallRequest
   )(
@@ -113,6 +113,9 @@ private[cosmos] final class UninstallHandler(
       }
     }
   }
+
+  // scalastyle:on cyclomatic.complexity
+
 
   private def runUninstall(
     uninstallOp: UninstallOperation

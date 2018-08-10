@@ -7,7 +7,7 @@ import io.circe.generic.semiauto.deriveEncoder
 
 case class Manager(
   packageName: String,
-  minPackageVersion: Option[String],
+  minPackageVersion: Option[String]
 )
 
 object Manager {
