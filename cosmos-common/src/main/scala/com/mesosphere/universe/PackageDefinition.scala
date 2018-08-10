@@ -401,10 +401,10 @@ package v4.model {
 
     // scalastyle:off cyclomatic.complexity
     def rewrite[T <: PackageDefinition](
-                                         pkg: T,
+      pkg: T,
       urlRewrite: (String) => String,
       dockerIdRewrite: (String) => String
-                                       ): T = {
+     ): T = {
       // TODO We should not have to do `.asInstanceOf[T]` find if this is a scala bug and report/fix.
       pkg match {
         case v2: universe.v3.model.V2Package => v2.resource match {
