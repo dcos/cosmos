@@ -33,7 +33,7 @@ private[cosmos] final class ServiceDescribeHandler(
       request.managerId,
       request.packageName,
       request.packageVersion.as[Option[universe.v3.model.Version]],
-      None
+      Option(request.appId)
     ).flatMap {
       case managerId if !managerId.isEmpty => {
         logger.info("Request requires a custom manager: " + managerId)

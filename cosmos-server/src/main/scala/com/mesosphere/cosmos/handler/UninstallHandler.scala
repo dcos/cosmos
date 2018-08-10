@@ -52,7 +52,7 @@ private[cosmos] final class UninstallHandler(
       req.managerId,
       Option(req.packageName),
       req.packageVersion.as[Option[universe.v3.model.Version]],
-      None
+      req.appId
     ).flatMap {
       case managerId if !managerId.isEmpty => {
         logger.info("Request requires custom manager: " + managerId)

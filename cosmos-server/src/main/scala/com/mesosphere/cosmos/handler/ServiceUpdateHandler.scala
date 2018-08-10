@@ -44,7 +44,7 @@ final class ServiceUpdateHandler(
       request.managerId,
       request.packageName,
       request.packageVersion,
-      None
+      Option(request.appId)
     ).flatMap {
       case managerId if !managerId.isEmpty => {
         logger.info("Request requires a custom manager: " + managerId)
