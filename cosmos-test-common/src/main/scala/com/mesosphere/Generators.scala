@@ -202,6 +202,7 @@ object Generators {
       case _: universe.v3.model.V2Package => ???
       case _: universe.v3.model.V3Package => ???
       case _: universe.v4.model.V4Package => ???
+      case _: universe.v5.model.V5Package => ???
     }
   }
 
@@ -221,6 +222,7 @@ object Generators {
     supportedPackage match {
       case _: universe.v3.model.V3Package => ???
       case _: universe.v4.model.V4Package => ???
+      case _: universe.v5.model.V5Package => ???
     }
   }
 
