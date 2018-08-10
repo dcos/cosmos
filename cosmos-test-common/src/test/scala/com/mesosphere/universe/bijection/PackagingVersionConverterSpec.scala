@@ -150,7 +150,7 @@ final class PackagingVersionConverterSpec extends FreeSpec with Matchers with Ta
 
     """succeed in the reverse direction if the string is "5.0"""" in {
       assertResult(Success(universe.v5.model.V5PackagingVersion)) {
-        "4.0".as[A].as[Try[universe.v5.model.V5PackagingVersion.type]]
+        "5.0".as[A].as[Try[universe.v5.model.V5PackagingVersion.type]]
       }
     }
 

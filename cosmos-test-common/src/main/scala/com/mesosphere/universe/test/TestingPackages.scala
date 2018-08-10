@@ -343,7 +343,8 @@ object TestingPackages {
       "PackagingVersion" -> "String",
       universe.v3.model.V2PackagingVersion -> "2.0",
       universe.v3.model.V3PackagingVersion -> "3.0",
-      universe.v4.model.V4PackagingVersion -> "4.0"
+      universe.v4.model.V4PackagingVersion -> "4.0",
+      universe.v5.model.V5PackagingVersion -> "5.0"
     )
   }
 
