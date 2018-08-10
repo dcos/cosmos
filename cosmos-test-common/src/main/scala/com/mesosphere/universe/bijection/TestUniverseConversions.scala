@@ -72,6 +72,8 @@ object TestUniverseConversions {
         v3Package.as[(universe.v3.model.V3Metadata, universe.v3.model.ReleaseVersion)]
       case v4Package: universe.v4.model.V4Package =>
         v4Package.as[(universe.v4.model.V4Metadata, universe.v3.model.ReleaseVersion)]
+      case v5Package: universe.v5.model.V5Package =>
+        v5Package.as[(universe.v5.model.V5Metadata, universe.v3.model.ReleaseVersion)]
     }
   }
 
