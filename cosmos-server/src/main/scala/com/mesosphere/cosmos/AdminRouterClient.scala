@@ -27,10 +27,10 @@ class AdminRouterClient(
           cachedDcosVersion.getOrElse {
             val uri = "dcos-metadata" / "dcos-version.json"
             Await.result {
-              /**
+              /*
                * We should NEVER use Await.result when composing futures; this is an exception:
-               *  - Intentional blocking across multiple Futures
-               *  - Storing the result to a mutable var on first success of calling IO.
+               *  - Intentionally blocking across multiple Futures
+               *  - Storing the result to a volatile var on first success of calling IO.
                */
               client(get(uri))
                 .flatMap(decodeTo[DcosVersion](HttpMethod.GET, uri, _))

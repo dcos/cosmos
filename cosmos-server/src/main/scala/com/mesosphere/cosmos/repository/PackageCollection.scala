@@ -10,6 +10,7 @@ import com.mesosphere.universe
 import com.netaporter.uri.Uri
 import com.twitter.cache.caffeine.LoadingFutureCache
 import com.twitter.util.Future
+import com.twitter.util.Throw
 import java.util.concurrent.TimeUnit
 import java.util.regex.Pattern
 import scala.math.Ordering.Implicits.infixOrderingOps
@@ -20,18 +21,26 @@ final class PackageCollection(
   universeClient: UniverseClient
 ) {
 
-  lazy val repositoryCache: LoadingFutureCache[(rpc.v1.model.PackageRepository,
-    RequestSession), (universe.v4.model.Repository, Uri)] =
+  lazy val repositoryCache: LoadingFutureCache[(rpc.v1.model.PackageRepository, RequestSession),
+    (universe.v4.model.Repository, Uri)] = {
     new LoadingFutureCache(
       Caffeine
         .newBuilder()
         .expireAfterWrite(1, TimeUnit.MINUTES)
         .build { case (
           packageRepository: rpc.v1.model.PackageRepository,
-          session: RequestSession
-          ) => universeClient(packageRepository)(session).map((_,packageRepository.uri))
+          session: RequestSession) =>
+          val result = universeClient(packageRepository)(session).map((_, packageRepository.uri))
+          result.respond {
+            case Throw(_) =>
+              repositoryCache.evict((packageRepository, session), result)
+              ()
+            case _ => ()
+          }
+          result
         }
     )
+  }
 
   def getPackagesByPackageName(
     packageName: String
@@ -97,13 +106,15 @@ final class PackageCollection(
 
   private[this] def all()(
     implicit session: RequestSession
-  ): Future[List[(universe.v4.model.Repository, Uri)]] = packageRepositoryStorage
-    .readCache()
-    .flatMap(
-      Future.traverseSequentially(_)(
-        pkgRepo => repositoryCache((pkgRepo, session))
-      ).map(_.toList)
-    )
+  ): Future[List[(universe.v4.model.Repository, Uri)]] = {
+    packageRepositoryStorage
+      .readCache()
+      .flatMap(
+        Future.traverseSequentially(_)(
+          pkgRepo => repositoryCache((pkgRepo, session))
+        ).map(_.toList)
+      )
+  }
 }
 
 object PackageCollection {
