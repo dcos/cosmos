@@ -42,7 +42,6 @@ class AdminRouterClient(
     }
   }
 
-
   def getSdkServiceFrameworkIds(
     service: AppId,
     apiVersion: String

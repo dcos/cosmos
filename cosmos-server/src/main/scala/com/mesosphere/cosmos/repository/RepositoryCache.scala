@@ -15,7 +15,7 @@ final class RepositoryCache(
 ) {
 
   lazy val futureCache: LoadingFutureCache[(rpc.v1.model.PackageRepository,
-    RequestSession), universe.v4.model.Repository] =
+    RequestSession), (universe.v4.model.Repository, Uri)] =
     new LoadingFutureCache(
       Caffeine
         .newBuilder()
@@ -23,18 +23,17 @@ final class RepositoryCache(
         .build { case (
           packageRepository: rpc.v1.model.PackageRepository,
           session: RequestSession
-          ) => universeClient(packageRepository)(session)
+          ) => universeClient(packageRepository)(session).map((_,packageRepository.uri))
         }
     )
 
   def all()(
     implicit session: RequestSession
-  ): Future[List[(universe.v4.model.Repository, Uri)]] = {
-    packageRepositoryStorage.readCache().flatMap {
+  ): Future[List[(universe.v4.model.Repository, Uri)]] = packageRepositoryStorage
+    .readCache()
+    .flatMap(
       Future.traverseSequentially(_)(
-        packageRepository =>
-          futureCache.get((packageRepository, session)).get.map((_, packageRepository.uri))
+        pkgRepo => futureCache((pkgRepo, session))
       ).map(_.toList)
-    }
-  }
+    )
 }
