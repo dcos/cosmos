@@ -120,7 +120,7 @@ package v5.model {
 
   object V5Metadata {
     implicit val decodeV5Metadata: Decoder[universe.v5.model.V5Metadata] = deriveDecoder[universe.v5.model.V5Metadata]
-    implicit val encodeV3Metadata: Encoder[universe.v5.model.V5Metadata] = deriveEncoder[universe.v5.model.V5Metadata]
+    implicit val encodeV5Metadata: Encoder[universe.v5.model.V5Metadata] = deriveEncoder[universe.v5.model.V5Metadata]
   }
 
 }
