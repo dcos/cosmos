@@ -44,8 +44,6 @@ class AdminRouterClient(
     val ServiceUpdateAcceptHeaderV1 = ServiceUpdateAcceptHeaderBase + V1
     val ServiceDescribeAcceptHeaderV1 = ServiceDescribeAcceptHeaderBase + V1
 
-
-
     val ContentType = "Content-Type"
     val Accept = "Accept"
   }
@@ -78,8 +76,8 @@ class AdminRouterClient(
    )(implicit session: RequestSession): Future[Response] = {
     val uri = "service" / managerId.toUri / "package" / "install"
     val p = post(uri, body.asJson)
-    p.headerMap.add(Constants.ContentType, Constants.InstallContentTypeHeaderV1)
-    p.headerMap.add(Constants.Accept, Constants.InstallAcceptHeaderV2)
+    p.headerMap.set(Constants.ContentType, Constants.InstallContentTypeHeaderV1)
+    p.headerMap.set(Constants.Accept, Constants.InstallAcceptHeaderV2)
     client(p)
   }
 
@@ -89,8 +87,8 @@ class AdminRouterClient(
     )(implicit session: RequestSession): Future[Response] = {
     val uri = "service" / managerId.toUri / "package" / "uninstall"
     val p = post(uri, body.asJson)
-    p.headerMap.add(Constants.ContentType, Constants.UninstallContentTypeHeaderV1)
-    p.headerMap.add(Constants.Accept, Constants.UninstallAcceptHeaderV1)
+    p.headerMap.set(Constants.ContentType, Constants.UninstallContentTypeHeaderV1)
+    p.headerMap.set(Constants.Accept, Constants.UninstallAcceptHeaderV1)
     client(p)
   }
 
@@ -100,8 +98,8 @@ class AdminRouterClient(
   )(implicit session: RequestSession): Future[Response] = {
     val uri = "service" / managerId.toUri / "service" / "describe"
     val p = post(uri, body.asJson)
-    p.headerMap.add(Constants.ContentType, Constants.ServiceDescribeContentTypeV1)
-    p.headerMap.add(Constants.Accept, Constants.ServiceDescribeAcceptHeaderV1)
+    p.headerMap.set(Constants.ContentType, Constants.ServiceDescribeContentTypeV1)
+    p.headerMap.set(Constants.Accept, Constants.ServiceDescribeAcceptHeaderV1)
     client(p)
   }
 
@@ -111,8 +109,8 @@ class AdminRouterClient(
   )(implicit session: RequestSession): Future[Response] = {
     val uri = "service" / managerId.toUri / "service" / "update"
     val p = post(uri, body.asJson)
-    p.headerMap.add(Constants.ContentType, Constants.ServiceUpdateContentTypeHeaderV1)
-    p.headerMap.add(Constants.Accept, Constants.ServiceUpdateAcceptHeaderV1)
+    p.headerMap.set(Constants.ContentType, Constants.ServiceUpdateContentTypeHeaderV1)
+    p.headerMap.set(Constants.Accept, Constants.ServiceUpdateAcceptHeaderV1)
     client(p)
   }
 

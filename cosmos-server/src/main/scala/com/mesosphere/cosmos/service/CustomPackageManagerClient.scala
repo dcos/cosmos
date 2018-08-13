@@ -15,8 +15,11 @@ import com.twitter.finagle.http.{Response, Status}
 import org.slf4j.Logger
 
 
+//noinspection ScalaStyle
 object CustomPackageManagerClient  {
   lazy val logger: Logger = org.slf4j.LoggerFactory.getLogger(getClass)
+
+  // scalastyle:off cyclomatic.complexity
 
   def getCustomPackageManagerId(
     adminRouter: AdminRouter,
@@ -30,8 +33,10 @@ object CustomPackageManagerClient  {
     } else if (packageName.isDefined && packageVersion.isDefined) {
       getPackageManagerWithNameAndVersion(packageCollection, packageName.get, packageVersion)
         .flatMap {
-          case manager =>
-            Future {manager.get.packageName}
+          case manager if manager.isDefined =>
+              Future {manager.get.packageName}
+          case manager if !manager.isDefined  =>
+              Future {""}
         }
     } else if (appId.isDefined) {
       getPackageNameAndVersionFromMarathonApp(adminRouter, appId.get)
@@ -39,14 +44,18 @@ object CustomPackageManagerClient  {
           case (packageName, packageVersion) =>
             getPackageManagerWithNameAndVersion(packageCollection, packageName.get, packageVersion)
               .flatMap {
-                case manager =>
-                   Future {manager.get.packageName}
+                case manager if manager.isDefined =>
+                  Future {manager.get.packageName}
+                case manager if !manager.isDefined  =>
+                  Future {""}
               }
           }
       } else {
         Future {""}
       }
   }
+
+  // scalastyle:on cyclomatic.complexity
 
 
   def callCustomPackageInstall(

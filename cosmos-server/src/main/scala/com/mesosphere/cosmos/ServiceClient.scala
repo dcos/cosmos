@@ -34,6 +34,8 @@ abstract class ServiceClient(baseUri: Uri) {
 
   protected def post(uri: Uri, jsonBody: Json)(implicit session: RequestSession): Request = {
     baseRequestBuilder(uri)
+      .setHeader(Fields.Accept, MediaTypes.applicationJson.show)
+      .setHeader(Fields.ContentType, MediaTypes.applicationJson.show)
       .buildPost(Buf.Utf8(jsonBody.noSpaces))
   }
 

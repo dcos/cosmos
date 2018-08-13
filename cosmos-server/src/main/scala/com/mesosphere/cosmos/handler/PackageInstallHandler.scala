@@ -24,7 +24,7 @@ private[cosmos] final class PackageInstallHandler(
 ) extends EndpointHandler[rpc.v1.model.InstallRequest, rpc.v2.model.InstallResponse] {
   lazy val logger: Logger = org.slf4j.LoggerFactory.getLogger(getClass)
   override def apply(
-      request: rpc.v1.model.InstallRequest
+    request: rpc.v1.model.InstallRequest
   )(
     implicit session: RequestSession
   ): Future[rpc.v2.model.InstallResponse] = {

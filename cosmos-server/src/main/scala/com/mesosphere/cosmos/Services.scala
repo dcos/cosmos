@@ -46,11 +46,11 @@ object Services {
     extractHostAndPort(uri) map { case ConnectionDetails(hostname, port, tls) =>
       val cBuilder = tls match {
         case false =>
-//          Http.client.stack.remove(Stack.Role("Retries")).make.
+          //Http.client.stack.remove(Stack.Role("Retries")).make.
           Http.client.withStack(Http.client.stack.remove(Stack.Role("Retries")))
         case true =>
           Http.client.withTls(hostname).withStack(Http.client.stack.remove(Stack.Role("Retries")))
-//          Http.client.stack.remove(Stack.Role("Retries")).make.withTls(hostname).withTracer(com.twitter.finagle.tracing.NullTracer)
+          //Http.client.stack.remove(Stack.Role("Retries")).make.withTls(hostname).withTracer(com.twitter.finagle.tracing.NullTracer)
       }
 
       CustomLoggingFilter.andThen(
