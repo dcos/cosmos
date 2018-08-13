@@ -104,7 +104,6 @@ final class DefaultUniverseClient(
     fetchScope.counter("requestCount").incr()
     Stat.timeFuture(fetchScope.stat("histogram")) {
       val acceptedMediaTypes = CompoundMediaType(
-        MediaTypes.UniverseV5Repository,
         MediaTypes.UniverseV4Repository,
         MediaTypes.UniverseV3Repository
       )
