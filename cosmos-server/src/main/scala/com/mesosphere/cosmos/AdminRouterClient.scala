@@ -21,7 +21,6 @@ class AdminRouterClient(
   client: Service[Request, Response]
 ) extends ServiceClient(adminRouterUri) {
   lazy val logger: Logger = org.slf4j.LoggerFactory.getLogger(getClass)
-  
   def getDcosVersion()(implicit session: RequestSession): Future[DcosVersion] = {
     val uri = "dcos-metadata" / "dcos-version.json"
     client(get(uri)).flatMap(decodeTo[DcosVersion](HttpMethod.GET, uri, _))
@@ -87,6 +86,4 @@ class AdminRouterClient(
     p.headerMap.set(Fields.Accept, MediaTypes.ServiceDescribeResponse.show)
     client(p)
   }
-
-
 }
