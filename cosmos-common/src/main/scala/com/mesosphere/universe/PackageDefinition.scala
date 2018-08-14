@@ -156,7 +156,6 @@ package v4.model {
       universe.v3.model.V3Package.mediaTypedEncoder.mediaTypes.toList ++
       universe.v4.model.V4Package.mediaTypedEncoder.mediaTypes.toList ++
       universe.v5.model.V5Package.mediaTypedEncoder.mediaTypes.toList
-
     )
 
     implicit val mediaTypedDecoder: MediaTypedDecoder[PackageDefinition] = MediaTypedDecoder(
@@ -312,8 +311,8 @@ package v4.model {
       def command: Option[universe.v3.model.Command] = pkgDef match {
         case v2: universe.v3.model.V2Package => v2.command
         case v3: universe.v3.model.V3Package => v3.command
-        case _: universe.v4.model.V4Package => None // v4 does not have command
-        case _: universe.v5.model.V5Package => None //v5 does not have command
+        case _: universe.v4.model.V4Package => None // command is removed v4 and above
+        case _: universe.v5.model.V5Package => None
       }
 
       def minDcosReleaseVersion: Option[universe.v3.model.DcosReleaseVersion] = pkgDef match {
@@ -404,7 +403,7 @@ package v4.model {
       pkg: T,
       urlRewrite: (String) => String,
       dockerIdRewrite: (String) => String
-     ): T = {
+    ): T = {
       // TODO We should not have to do `.asInstanceOf[T]` find if this is a scala bug and report/fix.
       pkg match {
         case v2: universe.v3.model.V2Package => v2.resource match {
@@ -470,8 +469,8 @@ package v4.model {
     implicit val decoder: Decoder[SupportedPackageDefinition] = {
       Decoder.instance[SupportedPackageDefinition] { (hc: HCursor) =>
         hc.downField("packagingVersion").as[universe.v4.model.PackagingVersion].flatMap {
-          case universe.v4.model.V4PackagingVersion => hc.as[universe.v4.model.V4Package]
           case universe.v5.model.V5PackagingVersion => hc.as[universe.v5.model.V5Package]
+          case universe.v4.model.V4PackagingVersion => hc.as[universe.v4.model.V4Package]
           case universe.v3.model.V3PackagingVersion => hc.as[universe.v3.model.V3Package]
           case universe.v3.model.V2PackagingVersion =>
             Left(

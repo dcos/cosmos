@@ -54,9 +54,7 @@ object CustomPackageManagerClient  {
         Future {""}
       }
   }
-
   // scalastyle:on cyclomatic.complexity
-
 
   def callCustomPackageInstall(
     adminRouter: AdminRouter,
@@ -101,7 +99,6 @@ object CustomPackageManagerClient  {
           }
       }
   }
-
 
   def callCustomServiceDescribe(
    adminRouter: AdminRouter,

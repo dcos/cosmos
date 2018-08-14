@@ -13,6 +13,8 @@ import com.twitter.util.Future
 import org.jboss.netty.handler.codec.http.HttpMethod
 import io.circe.syntax._
 import org.slf4j.Logger
+import com.mesosphere.cosmos.rpc.MediaTypes
+
 
 class AdminRouterClient(
   adminRouterUri: Uri,
@@ -21,29 +23,6 @@ class AdminRouterClient(
   lazy val logger: Logger = org.slf4j.LoggerFactory.getLogger(getClass)
 
   object Constants {
-    val V1 = "v1"
-    val V2 = "v2"
-
-    val InstallContentTypeHeaderBase = "application/vnd.dcos.package.install-request+json;charset=utf-8;version="
-    val UninstallContentTypeHeaderBase = "application/vnd.dcos.package.uninstall-request+json;charset=utf-8;version="
-    val ServiceUpdateContentTypeHeaderBase = "application/vnd.dcos.service.update-request+json;charset=utf-8;version="
-    val ServiceDescribeContentTypeBase = "application/vnd.dcos.service.describe-request+json;charset=utf-8;version="
-
-    val InstallAcceptHeaderBase = "application/vnd.dcos.package.install-response+json;charset=utf-8;version="
-    val UninstallAcceptHeaderBase = "application/vnd.dcos.package.uninstall-response+json;charset=utf-8;version="
-    val ServiceUpdateAcceptHeaderBase = "application/vnd.dcos.service.update-response+json;charset=utf-8;version="
-    val ServiceDescribeAcceptHeaderBase = "application/vnd.dcos.service.describe-response+json;charset=utf-8;version="
-
-    val InstallContentTypeHeaderV1 = InstallContentTypeHeaderBase + V1
-    val UninstallContentTypeHeaderV1 = UninstallContentTypeHeaderBase + V1
-    val ServiceUpdateContentTypeHeaderV1 = ServiceUpdateContentTypeHeaderBase + V1
-    val ServiceDescribeContentTypeV1 = ServiceDescribeContentTypeBase + V1
-
-    val InstallAcceptHeaderV2 = InstallAcceptHeaderBase + V2
-    val UninstallAcceptHeaderV1 = UninstallAcceptHeaderBase + V1
-    val ServiceUpdateAcceptHeaderV1 = ServiceUpdateAcceptHeaderBase + V1
-    val ServiceDescribeAcceptHeaderV1 = ServiceDescribeAcceptHeaderBase + V1
-
     val ContentType = "Content-Type"
     val Accept = "Accept"
   }
@@ -76,8 +55,8 @@ class AdminRouterClient(
    )(implicit session: RequestSession): Future[Response] = {
     val uri = "service" / managerId.toUri / "package" / "install"
     val p = post(uri, body.asJson)
-    p.headerMap.set(Constants.ContentType, Constants.InstallContentTypeHeaderV1)
-    p.headerMap.set(Constants.Accept, Constants.InstallAcceptHeaderV2)
+    p.headerMap.set(Constants.ContentType, MediaTypes.InstallRequest.show)
+    p.headerMap.set(Constants.Accept, MediaTypes.V2InstallResponse.show)
     client(p)
   }
 
@@ -87,8 +66,8 @@ class AdminRouterClient(
     )(implicit session: RequestSession): Future[Response] = {
     val uri = "service" / managerId.toUri / "package" / "uninstall"
     val p = post(uri, body.asJson)
-    p.headerMap.set(Constants.ContentType, Constants.UninstallContentTypeHeaderV1)
-    p.headerMap.set(Constants.Accept, Constants.UninstallAcceptHeaderV1)
+    p.headerMap.set(Constants.ContentType, MediaTypes.UninstallRequest.show)
+    p.headerMap.set(Constants.Accept, MediaTypes.UninstallResponse.show)
     client(p)
   }
 
@@ -98,8 +77,8 @@ class AdminRouterClient(
   )(implicit session: RequestSession): Future[Response] = {
     val uri = "service" / managerId.toUri / "service" / "describe"
     val p = post(uri, body.asJson)
-    p.headerMap.set(Constants.ContentType, Constants.ServiceDescribeContentTypeV1)
-    p.headerMap.set(Constants.Accept, Constants.ServiceDescribeAcceptHeaderV1)
+    p.headerMap.set(Constants.ContentType, MediaTypes.ServiceDescribeRequest.show)
+    p.headerMap.set(Constants.Accept, MediaTypes.ServiceDescribeResponse.show)
     client(p)
   }
 
@@ -109,8 +88,8 @@ class AdminRouterClient(
   )(implicit session: RequestSession): Future[Response] = {
     val uri = "service" / managerId.toUri / "service" / "update"
     val p = post(uri, body.asJson)
-    p.headerMap.set(Constants.ContentType, Constants.ServiceUpdateContentTypeHeaderV1)
-    p.headerMap.set(Constants.Accept, Constants.ServiceUpdateAcceptHeaderV1)
+    p.headerMap.set(Constants.ContentType, MediaTypes.ServiceUpdateRequest.show)
+    p.headerMap.set(Constants.Accept, MediaTypes.ServiceDescribeResponse.show)
     client(p)
   }
 
