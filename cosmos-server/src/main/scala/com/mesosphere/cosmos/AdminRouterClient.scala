@@ -21,12 +21,7 @@ class AdminRouterClient(
   client: Service[Request, Response]
 ) extends ServiceClient(adminRouterUri) {
   lazy val logger: Logger = org.slf4j.LoggerFactory.getLogger(getClass)
-
-  object Constants {
-    val ContentType = "Content-Type"
-    val Accept = "Accept"
-  }
-
+  
   def getDcosVersion()(implicit session: RequestSession): Future[DcosVersion] = {
     val uri = "dcos-metadata" / "dcos-version.json"
     client(get(uri)).flatMap(decodeTo[DcosVersion](HttpMethod.GET, uri, _))
@@ -55,8 +50,8 @@ class AdminRouterClient(
    )(implicit session: RequestSession): Future[Response] = {
     val uri = "service" / managerId.toUri / "package" / "install"
     val p = post(uri, body.asJson)
-    p.headerMap.set(Constants.ContentType, MediaTypes.InstallRequest.show)
-    p.headerMap.set(Constants.Accept, MediaTypes.V2InstallResponse.show)
+    p.headerMap.set(Fields.ContentType, MediaTypes.InstallRequest.show)
+    p.headerMap.set(Fields.Accept, MediaTypes.V2InstallResponse.show)
     client(p)
   }
 
@@ -66,8 +61,8 @@ class AdminRouterClient(
     )(implicit session: RequestSession): Future[Response] = {
     val uri = "service" / managerId.toUri / "package" / "uninstall"
     val p = post(uri, body.asJson)
-    p.headerMap.set(Constants.ContentType, MediaTypes.UninstallRequest.show)
-    p.headerMap.set(Constants.Accept, MediaTypes.UninstallResponse.show)
+    p.headerMap.set(Fields.ContentType, MediaTypes.UninstallRequest.show)
+    p.headerMap.set(Fields.Accept, MediaTypes.UninstallResponse.show)
     client(p)
   }
 
@@ -77,8 +72,8 @@ class AdminRouterClient(
   )(implicit session: RequestSession): Future[Response] = {
     val uri = "service" / managerId.toUri / "service" / "describe"
     val p = post(uri, body.asJson)
-    p.headerMap.set(Constants.ContentType, MediaTypes.ServiceDescribeRequest.show)
-    p.headerMap.set(Constants.Accept, MediaTypes.ServiceDescribeResponse.show)
+    p.headerMap.set(Fields.ContentType, MediaTypes.ServiceDescribeRequest.show)
+    p.headerMap.set(Fields.Accept, MediaTypes.ServiceDescribeResponse.show)
     client(p)
   }
 
@@ -88,8 +83,8 @@ class AdminRouterClient(
   )(implicit session: RequestSession): Future[Response] = {
     val uri = "service" / managerId.toUri / "service" / "update"
     val p = post(uri, body.asJson)
-    p.headerMap.set(Constants.ContentType, MediaTypes.ServiceUpdateRequest.show)
-    p.headerMap.set(Constants.Accept, MediaTypes.ServiceDescribeResponse.show)
+    p.headerMap.set(Fields.ContentType, MediaTypes.ServiceUpdateRequest.show)
+    p.headerMap.set(Fields.Accept, MediaTypes.ServiceDescribeResponse.show)
     client(p)
   }
 
