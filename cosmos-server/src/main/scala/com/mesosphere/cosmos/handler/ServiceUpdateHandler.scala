@@ -57,7 +57,7 @@ final class ServiceUpdateHandler(
             Future {response}
         }
       }
-      case managerId if !managerId.isEmpty => {
+      case managerId if managerId.isEmpty => {
         adminRouter.getApp(request.appId).flatMap { marathonAppResponse =>
           getPackageWithSourceOrThrow(packageCollection, marathonAppResponse.app).flatMap {
             case (packageDefinition, packageSource) =>
