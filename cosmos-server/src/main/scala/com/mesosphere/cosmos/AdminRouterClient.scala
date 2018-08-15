@@ -7,6 +7,7 @@ import com.netaporter.uri.Uri
 import com.netaporter.uri.dsl._
 import com.twitter.finagle.Service
 import com.twitter.finagle.http._
+import com.twitter.util.Await
 import com.twitter.util.Future
 import org.jboss.netty.handler.codec.http.HttpMethod
 
@@ -15,9 +16,30 @@ class AdminRouterClient(
   client: Service[Request, Response]
 ) extends ServiceClient(adminRouterUri) {
 
-  def getDcosVersion()(implicit session: RequestSession): Future[DcosVersion] = {
-    val uri = "dcos-metadata" / "dcos-version.json"
-    client(get(uri)).flatMap(decodeTo[DcosVersion](HttpMethod.GET, uri, _))
+  import AdminRouterClient._
+
+  def getDcosVersion()(
+    implicit session: RequestSession
+  ): Future[DcosVersion] = {
+    Future {
+      cachedDcosVersion.getOrElse {
+        synchronized {
+          cachedDcosVersion.getOrElse {
+            val uri = "dcos-metadata" / "dcos-version.json"
+            Await.result {
+              /*
+               * We should NEVER use Await.result when composing futures; this is an exception:
+               *  - Intentionally blocking across multiple Futures
+               *  - Storing the result to a volatile var on first success of calling IO.
+               */
+              client(get(uri))
+                .flatMap(decodeTo[DcosVersion](HttpMethod.GET, uri, _))
+                .foreach(dcosVersion => cachedDcosVersion = Some(dcosVersion))
+            }
+          }
+        }
+      }
+    }
   }
 
   def getSdkServiceFrameworkIds(
@@ -36,4 +58,8 @@ class AdminRouterClient(
     val uri = "service" / service.toUri / apiVersion / "plans" / plan
     client(get(uri))
   }
+}
+
+object AdminRouterClient {
+  @volatile private var cachedDcosVersion: Option[DcosVersion] = None
 }

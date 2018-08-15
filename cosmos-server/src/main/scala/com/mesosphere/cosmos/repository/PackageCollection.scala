@@ -1,5 +1,6 @@
 package com.mesosphere.cosmos.repository
 
+import com.github.benmanes.caffeine.cache.Caffeine
 import com.mesosphere.cosmos.error.PackageNotFound
 import com.mesosphere.cosmos.error.VersionNotFound
 import com.mesosphere.cosmos.http.RequestSession
@@ -7,17 +8,42 @@ import com.mesosphere.cosmos.rpc
 import com.mesosphere.http.OriginHostScheme
 import com.mesosphere.universe
 import com.netaporter.uri.Uri
+import com.twitter.cache.caffeine.LoadingFutureCache
 import com.twitter.util.Future
+import com.twitter.util.Throw
+import java.util.concurrent.TimeUnit
 import java.util.regex.Pattern
 import scala.math.Ordering.Implicits.infixOrderingOps
 import scala.util.matching.Regex
 
-final class PackageCollection(repositoryCache: RepositoryCache) {
+final class PackageCollection(
+  packageRepositoryStorage: PackageSourcesStorage,
+  universeClient: UniverseClient
+) {
+
+  private[this] lazy val repositoryCache: LoadingFutureCache[(rpc.v1.model.PackageRepository,
+    RequestSession), (universe.v4.model.Repository, Uri)] = new LoadingFutureCache(
+    Caffeine
+      .newBuilder()
+      .expireAfterWrite(1, TimeUnit.MINUTES)
+      .build { case (
+        packageRepository: rpc.v1.model.PackageRepository,
+        session: RequestSession) =>
+        val result = universeClient(packageRepository)(session).map((_, packageRepository.uri))
+        result.respond {
+          case Throw(_) =>
+            repositoryCache.evict((packageRepository, session), result)
+            ()
+          case _ => ()
+        }
+        result
+      }
+  )
 
   def getPackagesByPackageName(
     packageName: String
   )(implicit session: RequestSession): Future[List[universe.v4.model.PackageDefinition]] = {
-    repositoryCache.all().map { repositories =>
+    all().map { repositories =>
       PackageCollection.getPackagesByPackageName(
         PackageCollection.merge(repositories),
         packageName
@@ -29,7 +55,7 @@ final class PackageCollection(repositoryCache: RepositoryCache) {
     packageName: String,
     packageVersion: Option[universe.v3.model.Version]
   )(implicit session: RequestSession): Future[(universe.v4.model.PackageDefinition, Uri)] = {
-    repositoryCache.all().map { repositories =>
+    all().map { repositories =>
       PackageCollection.getPackagesByPackageVersion(
         PackageCollection.mergeWithURI(repositories),
         packageName,
@@ -41,7 +67,7 @@ final class PackageCollection(repositoryCache: RepositoryCache) {
   def search(
     query: Option[String]
   )(implicit session: RequestSession): Future[List[rpc.v1.model.SearchResult]] = {
-    repositoryCache.all().map { repositories =>
+    all().map { repositories =>
       implicit val originInfo = session.originInfo
       PackageCollection.search(PackageCollection.merge(repositories), query)
     }
@@ -55,7 +81,7 @@ final class PackageCollection(repositoryCache: RepositoryCache) {
     name: String,
     version: universe.v3.model.Version
   )(implicit session: RequestSession): Future[List[universe.v3.model.Version]] = {
-    repositoryCache.all().map { repositories =>
+    all().map { repositories =>
       PackageCollection.upgradesTo(PackageCollection.merge(repositories), name, version)
     }
   }
@@ -67,13 +93,25 @@ final class PackageCollection(repositoryCache: RepositoryCache) {
   def downgradesTo(
     packageDefinition: universe.v4.model.PackageDefinition
   )(implicit session: RequestSession): Future[List[universe.v3.model.Version]] = {
-    repositoryCache.all().map { repositories =>
+    all().map { repositories =>
       PackageCollection.downgradesTo(PackageCollection.merge(repositories), packageDefinition)
     }
   }
 
   def allUrls()(implicit session: RequestSession): Future[Set[String]] = {
-    repositoryCache.all().map(PackageCollection.allUrls)
+    all().map(PackageCollection.allUrls)
+  }
+
+  private[this] def all()(
+    implicit session: RequestSession
+  ): Future[List[(universe.v4.model.Repository, Uri)]] = {
+    packageRepositoryStorage
+      .readCache()
+      .flatMap(
+        Future.traverseSequentially(_)(
+          pkgRepo => repositoryCache((pkgRepo, session))
+        ).map(_.toList)
+      )
   }
 }
 

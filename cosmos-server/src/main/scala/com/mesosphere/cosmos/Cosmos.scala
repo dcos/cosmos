@@ -29,7 +29,6 @@ import com.mesosphere.cosmos.handler.ServiceUpdateHandler
 import com.mesosphere.cosmos.handler.UninstallHandler
 import com.mesosphere.cosmos.repository.PackageCollection
 import com.mesosphere.cosmos.repository.PackageSourcesStorage
-import com.mesosphere.cosmos.repository.RepositoryCache
 import com.mesosphere.cosmos.repository.UniverseClient
 import com.mesosphere.cosmos.repository.ZkRepositoryList
 import com.mesosphere.cosmos.rpc.MediaTypes
@@ -97,10 +96,8 @@ trait CosmosApp
       sourcesStorage,
       universeClient,
       new PackageCollection(
-        new RepositoryCache(
-          sourcesStorage,
-          universeClient
-        )
+        sourcesStorage,
+        universeClient
       ),
       new MarathonPackageRunner(adminRouter),
       ServiceUninstaller(adminRouter),
@@ -249,7 +246,7 @@ trait CosmosApp
 
     val api = endpoints.handle {
       case ce: CosmosException =>
-        logger.info(s"Cosmos Exception : ${ce.getMessage}", ce)
+        logger.info(s"Cosmos Exception : ${ce.getMessage}")
         stats.counter(s"definedError/${sanitizeClassName(ce.error.getClass)}").incr()
         val output = Output.failure(
           ce,
