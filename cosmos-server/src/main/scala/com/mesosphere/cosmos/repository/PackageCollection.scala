@@ -21,26 +21,24 @@ final class PackageCollection(
   universeClient: UniverseClient
 ) {
 
-  lazy val repositoryCache: LoadingFutureCache[(rpc.v1.model.PackageRepository, RequestSession),
-    (universe.v4.model.Repository, Uri)] = {
-    new LoadingFutureCache(
-      Caffeine
-        .newBuilder()
-        .expireAfterWrite(1, TimeUnit.MINUTES)
-        .build { case (
-          packageRepository: rpc.v1.model.PackageRepository,
-          session: RequestSession) =>
-          val result = universeClient(packageRepository)(session).map((_, packageRepository.uri))
-          result.respond {
-            case Throw(_) =>
-              repositoryCache.evict((packageRepository, session), result)
-              ()
-            case _ => ()
-          }
-          result
+  private[this] lazy val repositoryCache: LoadingFutureCache[(rpc.v1.model.PackageRepository,
+    RequestSession), (universe.v4.model.Repository, Uri)] = new LoadingFutureCache(
+    Caffeine
+      .newBuilder()
+      .expireAfterWrite(1, TimeUnit.MINUTES)
+      .build { case (
+        packageRepository: rpc.v1.model.PackageRepository,
+        session: RequestSession) =>
+        val result = universeClient(packageRepository)(session).map((_, packageRepository.uri))
+        result.respond {
+          case Throw(_) =>
+            repositoryCache.evict((packageRepository, session), result)
+            ()
+          case _ => ()
         }
-    )
-  }
+        result
+      }
+  )
 
   def getPackagesByPackageName(
     packageName: String
