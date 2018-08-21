@@ -28,11 +28,11 @@ object RoundTrips {
    options: Option[JsonObject] = None,
    appId: Option[AppId] = None,
    managerId: Option[String] = None
- ): RoundTrip[rpc.v1.model.InstallResponse] = {
+ ): RoundTrip[rpc.v2.model.InstallResponse] = {
     RoundTrip(
       Requests.installV2(name, version, options, appId, managerId)
     ) { ir =>
-      Requests.uninstall(ir.packageName, Some(ir.appId), managerId)
+      Requests.uninstall(ir.packageName, ir.appId, None, managerId)
       Requests.waitForDeployments()
     }
   }

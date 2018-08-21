@@ -5,9 +5,7 @@ import com.mesosphere.cosmos.ItOps._
 import com.mesosphere.cosmos.ItUtil
 import com.mesosphere.cosmos.Requests
 import com.mesosphere.cosmos.RoundTrips
-import com.mesosphere.cosmos.http.HttpRequest
-import com.mesosphere.cosmos.http.ServiceRpcPath
-import com.mesosphere.cosmos.http.TestContext
+import com.mesosphere.cosmos.http.{HttpRequest, ServiceRpcPath, TestContext}
 import com.mesosphere.cosmos.rpc
 import com.mesosphere.cosmos.rpc.MediaTypes
 import com.mesosphere.cosmos.test.CosmosIntegrationTestClient
@@ -102,7 +100,7 @@ class ServiceUpdateSpec extends FeatureSpec with Matchers {
       val error = intercept[HttpErrorResponse](serviceUpdate(appId, None, Some(options), false))
 
       error.status shouldBe Status.BadRequest
-      error.errorResponse  shouldBe rpc.v1.model.ErrorResponse(
+      error.errorResponse shouldBe rpc.v1.model.ErrorResponse(
         "MarathonAppNotFound",
         "Unable to locate service with marathon appId: '/does-not-exist'",
         Some(JsonObject.singleton("appId", "/does-not-exist".asJson))
@@ -132,42 +130,8 @@ class ServiceUpdateSpec extends FeatureSpec with Matchers {
         error.errorResponse.message shouldBe "Options JSON failed validation"
       }
     }
-
-    scenario(
-      "The user must be able to update the configuration" +
-        " with a custom managerId"
-    ) {
-      val name = "hello-world"
-      val disk = 42.asJson
-      val options = JsonObject.singleton(
-        "hello",
-        Json.obj("cpus" -> 0.111.asJson, "disk" -> disk)
-      )
-      RoundTrips.withInstallV2(name, options = Some(options), managerId = Some("cosmos-package")).runWith { ir =>
-        waitForDeployment()
-        val cpus = 0.222.asJson
-        val newOptions = JsonObject.singleton("hello", Json.obj("cpus" -> cpus))
-
-        val response = serviceUpdate(
-          ir.appId,
-          None,
-          Some(newOptions),
-          false,
-          Some("cosmos-package")
-        )
-
-        val hello = response.resolvedOptions("hello").get.hcursor
-
-        val Right(actualCpus) = hello.downField("cpus").as[Json]
-        val Right(actualDisk) = hello.downField("disk").as[Json]
-
-        assertResult(cpus)(actualCpus)
-        assertResult(disk)(actualDisk)
-      }
-    }
+    // scalastyle:on multiple.string.literals
   }
-
-  // scalastyle:on multiple.string.literals
 }
 
 object ServiceUpdateSpec {

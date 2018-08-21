@@ -145,6 +145,7 @@ final class PackageInstallIntegrationSpec extends FeatureSpec with Matchers {
       val response = Requests.installV2(name, None, managerId = Some("cosmos-package"))
       response.packageName shouldBe name
       response.appId shouldBe Some(AppId(name))
+      Requests.uninstall(name, Some(AppId(name)))
     }
   }
 }
