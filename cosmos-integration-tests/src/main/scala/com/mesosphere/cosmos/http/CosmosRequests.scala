@@ -83,7 +83,7 @@ object CosmosRequests {
       accept = rpc.MediaTypes.PackageRepositoryAddResponse
     )
   }
-  
+
   def packageRepositoryDelete(
     repositoryDeleteRequest: rpc.v1.model.PackageRepositoryDeleteRequest
   ): HttpRequest = {

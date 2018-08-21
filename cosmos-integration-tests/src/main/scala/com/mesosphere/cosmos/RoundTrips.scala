@@ -32,7 +32,7 @@ object RoundTrips {
     RoundTrip(
       Requests.installV2(name, version, options, appId, managerId)
     ) { ir =>
-      Requests.uninstall(ir.packageName, Some(ir.appId))
+      Requests.uninstall(ir.packageName, Some(ir.appId), managerId)
       Requests.waitForDeployments()
     }
   }
