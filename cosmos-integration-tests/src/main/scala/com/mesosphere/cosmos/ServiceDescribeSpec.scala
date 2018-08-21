@@ -2,11 +2,12 @@ package com.mesosphere.cosmos
 
 import com.mesosphere.cosmos.ItOps._
 import com.mesosphere.cosmos.error.MarathonAppNotFound
-import com.mesosphere.cosmos.http.TestContext
-import com.mesosphere.cosmos.rpc.v1.model.ErrorResponse
+import com.mesosphere.cosmos.http.{CosmosRequests, TestContext}
+import com.mesosphere.cosmos.rpc.v1.model.{ErrorResponse, ServiceDescribeRequest}
+import com.mesosphere.cosmos.test.CosmosIntegrationTestClient.CosmosClient
 import com.mesosphere.cosmos.thirdparty.marathon.model.AppId
 import com.twitter.bijection.Conversion.asMethod
-import com.twitter.finagle.http.Status
+import com.twitter.finagle.http.{Response, Status}
 import org.scalatest.FeatureSpec
 import org.scalatest.Matchers
 
@@ -47,5 +48,24 @@ final class ServiceDescribeSpec extends FeatureSpec with Matchers {
         Requests.describeService(ir.appId).resolvedOptions.shouldBe(options)
       }
     }
+    scenario("The user would like to descibe a service via a custom manager") {
+      val appId = AppId("cassandra")
+      Requests.installV2("cassandra", appId = Some(appId), managerId = Some("cosmos-package"))
+
+      val serviceDescribeRequest = ServiceDescribeRequest(appId,  managerId = Some("cosmos-package"))
+      val serviceDescribeResponse = submitServiceDescribeRequest(serviceDescribeRequest)
+      assertResult(Status.Ok)(serviceDescribeResponse.status)
+
+      Requests.uninstall("cassandra",  managerId = Some("cosmos-package"))
+    }
+  }
+
+  def submitServiceDescribeRequest(
+    request: ServiceDescribeRequest
+  )(
+    implicit testContext: TestContext
+  ): Response = {
+    CosmosClient.submit(CosmosRequests.serviceDescribe(request))
   }
 }
+

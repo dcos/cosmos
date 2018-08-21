@@ -89,5 +89,4 @@ object ServiceUpdateHandlerSpec {
     ).asJson.asObject
 
   // scalastyle:on multiple.string.literals
-
 }

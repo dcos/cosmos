@@ -54,8 +54,9 @@ final class UninstallHandlerSpec extends FreeSpec with Eventually with SpanSugar
       assert(body.results.flatMap(_.postUninstallNotes).nonEmpty)
     }
 
-    "be able to uninstall a service with a custom manager" in {
+    "be able to install and uninstall a service with a custom manager" in {
       val appId = AppId("cassandra" / "uninstall-test")
+      //custom install tested here
       val installRequest = InstallRequest("cassandra", appId = Some(appId), managerId = Some("cosmos-package"))
       val installResponse = submitInstallRequest(installRequest)
       assertResult(Status.Ok)(installResponse.status)

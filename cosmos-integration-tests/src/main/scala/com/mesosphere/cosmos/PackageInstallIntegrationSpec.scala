@@ -140,12 +140,5 @@ final class PackageInstallIntegrationSpec extends FeatureSpec with Matchers {
       response.appId shouldBe None
       response.cli shouldBe pkg.`package`.cli
     }
-    scenario("The user should be able to install a package with custom manager ") {
-      val name = "jenkins"
-      val response = Requests.installV2(name, None, managerId = Some("cosmos-package"))
-      response.packageName shouldBe name
-      response.appId shouldBe Some(AppId(name))
-      Requests.uninstall(name, Some(AppId(name)))
-    }
   }
 }
