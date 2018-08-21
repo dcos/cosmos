@@ -2,7 +2,9 @@ package com.mesosphere.cosmos.handler
 
 import com.mesosphere.cosmos.AdminRouter
 import com.mesosphere.cosmos.MarathonPackageRunner
-import com.mesosphere.cosmos.error._
+import com.mesosphere.cosmos.error.CosmosException
+import com.mesosphere.cosmos.error.PackageAlreadyInstalled
+import com.mesosphere.cosmos.error.ServiceAlreadyStarted
 import com.mesosphere.cosmos.finch.EndpointHandler
 import com.mesosphere.cosmos.http.RequestSession
 import com.mesosphere.cosmos.render.PackageDefinitionRenderer
@@ -37,7 +39,7 @@ private[cosmos] final class PackageInstallHandler(
       None
     ).flatMap {
       case managerId if !managerId.isEmpty => {
-        logger.info("Request requires a custom manager: " + managerId)
+        logger.debug("Request requires a custom manager: " + managerId)
         CustomPackageManagerClient.callCustomPackageInstall(
           adminRouter,
           request,

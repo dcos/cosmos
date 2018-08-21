@@ -12,7 +12,6 @@ import com.twitter.util.Return
 import com.twitter.util.Throw
 import com.twitter.util.Try
 
-//noinspection ScalaStyle
 object Response {
   implicit val internalV2InstallResponseToV1InstallResponse:
     Conversion[rpc.v2.model.InstallResponse, Try[rpc.v1.model.InstallResponse]] = {

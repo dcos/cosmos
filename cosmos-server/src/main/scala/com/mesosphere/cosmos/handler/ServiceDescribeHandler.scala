@@ -37,7 +37,7 @@ private[cosmos] final class ServiceDescribeHandler(
       Option(request.appId)
     ).flatMap {
       case managerId if !managerId.isEmpty => {
-        logger.info("Request requires a custom manager: " + managerId)
+        logger.debug("Request requires a custom manager: " + managerId)
         CustomPackageManagerClient.callCustomServiceDescribe(
           adminRouter,
           request,

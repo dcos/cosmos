@@ -51,11 +51,11 @@ private[cosmos] final class UninstallHandler(
       packageCollection,
       req.managerId,
       Option(req.packageName),
-      req.packageVersion.as[Option[universe.v3.model.Version]],
+      req.packageVersion,
       req.appId
     ).flatMap {
       case managerId if !managerId.isEmpty => {
-        logger.info("Request requires custom manager: " + managerId)
+        logger.debug("Request requires custom manager: " + managerId)
           CustomPackageManagerClient.callCustomPackageUninstall(
             adminRouter,
             req,

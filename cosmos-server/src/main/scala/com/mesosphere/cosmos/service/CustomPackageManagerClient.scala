@@ -1,4 +1,5 @@
 package com.mesosphere.cosmos.service
+
 import com.mesosphere.universe.v5.model.Manager
 import com.mesosphere.cosmos.{AdminRouter, rpc, trimContentForPrinting}
 import com.mesosphere.cosmos.http.RequestSession
@@ -15,7 +16,6 @@ import com.twitter.finagle.http.{Response, Status}
 import org.slf4j.Logger
 
 
-//noinspection ScalaStyle
 object CustomPackageManagerClient  {
   lazy val logger: Logger = org.slf4j.LoggerFactory.getLogger(getClass)
 
@@ -27,7 +27,8 @@ object CustomPackageManagerClient  {
     managerId: Option[String],
     packageName: Option[String],
     packageVersion: Option[universe.v3.model.Version],
-    appId: Option[AppId])(implicit session: RequestSession): Future[String] = {
+    appId: Option[AppId]
+  )(implicit session: RequestSession): Future[String] = {
     if (managerId.isDefined) {
        Future{managerId.get}
     } else if (packageName.isDefined && packageVersion.isDefined) {
@@ -146,7 +147,7 @@ object CustomPackageManagerClient  {
   private def getPackageNameAndVersionFromMarathonApp(
    adminRouter: AdminRouter,
    appId: AppId
- )(implicit session: RequestSession): Future[(Option[String], Option[universe.v3.model.Version])] = {
+  )(implicit session: RequestSession): Future[(Option[String], Option[universe.v3.model.Version])] = {
     adminRouter.getApp(appId)
       .flatMap {
         case (appResponse) =>
