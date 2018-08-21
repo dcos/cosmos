@@ -79,3 +79,4 @@ project/boot/
 dcos-image/target/
 tmp/
 .DS_Store
+cosmos-common/src/main/scala/com/mesosphere/cosmos/rpc/v1/.DS_Store
