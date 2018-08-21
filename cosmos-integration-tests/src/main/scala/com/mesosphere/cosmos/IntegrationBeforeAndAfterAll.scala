@@ -104,6 +104,7 @@ trait IntegrationBeforeAndAfterAll extends BeforeAndAfterAll with Eventually { t
   }
 
   override def afterAll(): Unit = {
+    Requests.deleteRepository(Some("V4TestUniverse"))
     Requests.deleteMarathonApp(AppId("cosmos-package"))
     Requests.deleteRepository(None, Some(universeConverterUri))
     val _ = Requests.addRepository("Universe", "https://universe.mesosphere.com/repo")

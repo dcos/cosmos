@@ -63,8 +63,6 @@ final class UninstallHandlerSpec extends FreeSpec with Eventually with SpanSugar
       val marathonApp = Await.result(adminRouter.getApp(appId))
       assertResult(appId)(marathonApp.app.id)
 
-      //TODO: Assert framework starts up
-
       val uninstallRequest = UninstallRequest("cassandra", appId = None, all = None, managerId = Some("cosmos-package"))
       val uninstallResponse = submitUninstallRequest(uninstallRequest)
       val uninstallResponseBody = uninstallResponse.contentString
