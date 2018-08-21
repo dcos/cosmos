@@ -35,17 +35,17 @@ private[cosmos] final class ServiceDescribeHandler(
       request.packageVersion.as[Option[universe.v3.model.Version]],
       Option(request.appId)
     ).flatMap {
-      case managerId if !managerId.isEmpty => {
+      case managerId if !managerId.get.isEmpty => {
         logger.debug("Request requires a custom manager: " + managerId)
         customPackageManagerRouter.callCustomServiceDescribe(
           request,
-          managerId
+          managerId.get
         ).flatMap {
           case response =>
             Future {response}
         }
       }
-      case managerId if managerId.isEmpty => {
+      case managerId if managerId.get.isEmpty => {
       for {
         marathonAppResponse <- adminRouter.getApp (request.appId)
         packageDefinition <- getPackageDefinition (marathonAppResponse.app)

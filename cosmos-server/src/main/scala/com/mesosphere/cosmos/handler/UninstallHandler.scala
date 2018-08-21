@@ -53,18 +53,18 @@ private[cosmos] final class UninstallHandler(
       req.packageVersion,
       req.appId
     ).flatMap {
-      case managerId if !managerId.isEmpty => {
+      case managerId if !managerId.get.isEmpty => {
         logger.debug("Request requires custom manager: " + managerId)
           customPackageManagerRouter.callCustomPackageUninstall(
             req,
-            managerId
+            managerId.get
           ).flatMap {
             case response => {
               Future {response}
             }
           }
       }
-      case managerId if managerId.isEmpty => {
+      case managerId if managerId.get.isEmpty => {
         getMarathonApps(req.packageName, req.appId)
           .map(apps => createUninstallOperations(req.packageName, apps))
           .map { uninstallOps =>

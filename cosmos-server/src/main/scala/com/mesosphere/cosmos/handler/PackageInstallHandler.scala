@@ -35,17 +35,17 @@ private[cosmos] final class PackageInstallHandler(
       request.packageVersion.as[Option[universe.v3.model.Version]],
       None
     ).flatMap {
-      case managerId if !managerId.isEmpty => {
+      case managerId if !managerId.get.isEmpty => {
         logger.debug("Request requires a custom manager: " + managerId)
         customPackageManagerRouter.callCustomPackageInstall(
           request,
-          managerId
+          managerId.get
         ).flatMap {
           case response =>
             Future {response}
         }
       }
-      case managerId if managerId.isEmpty => {
+      case managerId if managerId.get.isEmpty => {
         packageCollection
           .getPackageByPackageVersion(
             request.packageName,
