@@ -16,7 +16,7 @@ import com.twitter.finagle.http.{Response, Status}
 import org.slf4j.Logger
 
 
-object CustomPackageManagerClient  {
+object CustomPackageManagerRouter  {
   lazy val logger: Logger = org.slf4j.LoggerFactory.getLogger(getClass)
 
   def getCustomPackageManagerId(

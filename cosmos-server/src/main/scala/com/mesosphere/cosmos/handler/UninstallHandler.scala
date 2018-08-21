@@ -17,7 +17,7 @@ import com.mesosphere.cosmos.handler.UninstallHandler._
 import com.mesosphere.cosmos.http.RequestSession
 import com.mesosphere.cosmos.repository.PackageCollection
 import com.mesosphere.cosmos.rpc
-import com.mesosphere.cosmos.service.{CustomPackageManagerClient, ServiceUninstaller}
+import com.mesosphere.cosmos.service.{CustomPackageManagerRouter, ServiceUninstaller}
 import com.mesosphere.cosmos.thirdparty.marathon.model.AppId
 import com.mesosphere.cosmos.thirdparty.marathon.model.MarathonApp
 import com.mesosphere.error.ResultOps
@@ -46,7 +46,7 @@ private[cosmos] final class UninstallHandler(
   )(
     implicit session: RequestSession
   ): Future[rpc.v1.model.UninstallResponse] = {
-    CustomPackageManagerClient.getCustomPackageManagerId(
+    CustomPackageManagerRouter.getCustomPackageManagerId(
       adminRouter,
       packageCollection,
       req.managerId,
@@ -56,7 +56,7 @@ private[cosmos] final class UninstallHandler(
     ).flatMap {
       case managerId if !managerId.isEmpty => {
         logger.debug("Request requires custom manager: " + managerId)
-          CustomPackageManagerClient.callCustomPackageUninstall(
+          CustomPackageManagerRouter.callCustomPackageUninstall(
             adminRouter,
             req,
             managerId

@@ -11,7 +11,7 @@ import com.mesosphere.cosmos.render.PackageDefinitionRenderer
 import com.mesosphere.cosmos.repository.PackageCollection
 import com.mesosphere.cosmos.rpc
 import com.mesosphere.cosmos.rpc.v1.model.ServiceUpdateRequest
-import com.mesosphere.cosmos.service.CustomPackageManagerClient
+import com.mesosphere.cosmos.service.CustomPackageManagerRouter
 import com.mesosphere.cosmos.thirdparty.marathon.model.AppId
 import com.mesosphere.cosmos.thirdparty.marathon.model.MarathonAppResponse
 import com.mesosphere.universe.common.JsonUtil
@@ -38,7 +38,7 @@ final class ServiceUpdateHandler(
 
     lazy val logger: Logger = org.slf4j.LoggerFactory.getLogger(getClass)
 
-    CustomPackageManagerClient.getCustomPackageManagerId(
+    CustomPackageManagerRouter.getCustomPackageManagerId(
       adminRouter,
       packageCollection,
       request.managerId,
@@ -48,7 +48,7 @@ final class ServiceUpdateHandler(
     ).flatMap {
       case managerId if !managerId.isEmpty => {
         logger.debug("Request requires a custom manager: " + managerId)
-        CustomPackageManagerClient.callCustomServiceUpdate(
+        CustomPackageManagerRouter.callCustomServiceUpdate(
           adminRouter,
           request,
           managerId
