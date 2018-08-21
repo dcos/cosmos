@@ -13,7 +13,7 @@ import com.mesosphere.cosmos.error.ServiceAlreadyStarted
 import com.mesosphere.cosmos.rpc.v1.model.{ServiceDescribeResponse, ServiceUpdateResponse, UninstallResponse}
 import com.mesosphere.error.ResultOps
 import com.twitter.finagle.http.{Response, Status}
-import org.slf4j.Logger
+import org.slf4j.Logge8
 
 
 object CustomPackageManagerClient  {

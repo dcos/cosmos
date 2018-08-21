@@ -1,7 +1,6 @@
 package com.mesosphere.cosmos
 
 import com.mesosphere.cosmos.http.RequestSession
-
 import com.mesosphere.cosmos.thirdparty.adminrouter.model.DcosVersion
 import com.mesosphere.cosmos.thirdparty.marathon.model.AppId
 import com.netaporter.uri.Uri
@@ -13,7 +12,6 @@ import com.twitter.util.Future
 import org.jboss.netty.handler.codec.http.HttpMethod
 import io.circe.syntax._
 import com.mesosphere.cosmos.rpc.MediaTypes
-
 
 class AdminRouterClient(
   adminRouterUri: Uri,

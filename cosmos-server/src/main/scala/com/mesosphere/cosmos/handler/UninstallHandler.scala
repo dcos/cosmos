@@ -284,10 +284,7 @@ private[cosmos] final class UninstallHandler(
   }
 }
 
-object
-
-
-UninstallHandler {
+object UninstallHandler {
   val SdkServiceLabel: String = "DCOS_COMMONS_UNINSTALL"
   val SdkVersionLabel: String = "DCOS_COMMONS_API_VERSION"
   val SdkUninstallEnvvar: String = "SDK_UNINSTALL"
