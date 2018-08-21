@@ -1,6 +1,5 @@
 package com.mesosphere.cosmos.handler
 
-import com.mesosphere.cosmos.AdminRouter
 import com.mesosphere.cosmos.MarathonPackageRunner
 import com.mesosphere.cosmos.error.CosmosException
 import com.mesosphere.cosmos.error.PackageAlreadyInstalled
@@ -20,9 +19,9 @@ import org.slf4j.Logger
 
 
 private[cosmos] final class PackageInstallHandler(
-  adminRouter: AdminRouter,
   packageCollection: PackageCollection,
-  packageRunner: MarathonPackageRunner
+  packageRunner: MarathonPackageRunner,
+  customPackageManagerRouter: CustomPackageManagerRouter
 ) extends EndpointHandler[rpc.v1.model.InstallRequest, rpc.v2.model.InstallResponse] {
   lazy val logger: Logger = org.slf4j.LoggerFactory.getLogger(getClass)
   override def apply(
@@ -30,9 +29,7 @@ private[cosmos] final class PackageInstallHandler(
   )(
     implicit session: RequestSession
   ): Future[rpc.v2.model.InstallResponse] = {
-    CustomPackageManagerRouter.getCustomPackageManagerId(
-      adminRouter,
-      packageCollection,
+    customPackageManagerRouter.getCustomPackageManagerId(
       request.managerId,
       Option(request.packageName),
       request.packageVersion.as[Option[universe.v3.model.Version]],
@@ -40,8 +37,7 @@ private[cosmos] final class PackageInstallHandler(
     ).flatMap {
       case managerId if !managerId.isEmpty => {
         logger.debug("Request requires a custom manager: " + managerId)
-        CustomPackageManagerRouter.callCustomPackageInstall(
-          adminRouter,
+        customPackageManagerRouter.callCustomPackageInstall(
           request,
           managerId
         ).flatMap {

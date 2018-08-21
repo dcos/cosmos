@@ -16,12 +16,10 @@ import com.twitter.finagle.http.{Response, Status}
 import org.slf4j.Logger
 
 
-object CustomPackageManagerRouter  {
+class CustomPackageManagerRouter(adminRouter: AdminRouter, packageCollection: PackageCollection)  {
   lazy val logger: Logger = org.slf4j.LoggerFactory.getLogger(getClass)
 
   def getCustomPackageManagerId(
-    adminRouter: AdminRouter,
-    packageCollection: PackageCollection,
     managerId: Option[String],
     packageName: Option[String],
     packageVersion: Option[universe.v3.model.Version],
@@ -31,7 +29,7 @@ object CustomPackageManagerRouter  {
       case (Some(id), _, _, _) =>
         Future(id)
       case (None, Some(name), Some(version), _) =>
-        getPackageManagerWithNameAndVersion(packageCollection, name, version)
+        getPackageManagerWithNameAndVersion(name, version)
           .flatMap {
             case Some(manager) =>
               Future (manager.packageName)
@@ -39,10 +37,10 @@ object CustomPackageManagerRouter  {
               Future ("")
           }
       case (None, None, None, Some(id)) =>
-        getPackageNameAndVersionFromMarathonApp(adminRouter, id)
+        getPackageNameAndVersionFromMarathonApp(id)
           .flatMap {
             case (packageName, packageVersion) =>
-              getPackageManagerWithNameAndVersion(packageCollection, packageName.get, packageVersion.get)
+              getPackageManagerWithNameAndVersion(packageName.get, packageVersion.get)
                 .flatMap {
                   case Some(manager) =>
                     Future (manager.packageName)
@@ -56,7 +54,6 @@ object CustomPackageManagerRouter  {
   }
 
   def callCustomPackageInstall(
-    adminRouter: AdminRouter,
     request: rpc.v1.model.InstallRequest,
     managerId: String
   )(implicit session: RequestSession): Future[InstallResponse] = {
@@ -78,7 +75,6 @@ object CustomPackageManagerRouter  {
   }
 
   def callCustomPackageUninstall(
-    adminRouter: AdminRouter,
     request: rpc.v1.model.UninstallRequest,
     managerId: String
   )(implicit session: RequestSession): Future[UninstallResponse] = {
@@ -100,7 +96,6 @@ object CustomPackageManagerRouter  {
   }
 
   def callCustomServiceDescribe(
-   adminRouter: AdminRouter,
    request: rpc.v1.model.ServiceDescribeRequest,
    managerId: String
   )(implicit session: RequestSession): Future[ServiceDescribeResponse] = {
@@ -119,7 +114,6 @@ object CustomPackageManagerRouter  {
   }
 
   def callCustomServiceUpdate(
-     adminRouter: AdminRouter,
      request: rpc.v1.model.ServiceUpdateRequest,
      managerId: String
    )(implicit session: RequestSession): Future[ServiceUpdateResponse] = {
@@ -142,7 +136,6 @@ object CustomPackageManagerRouter  {
   }
 
   private def getPackageNameAndVersionFromMarathonApp(
-   adminRouter: AdminRouter,
    appId: AppId
   )(implicit session: RequestSession): Future[(Option[String], Option[universe.v3.model.Version])] = {
     adminRouter.getApp(appId)
@@ -171,7 +164,6 @@ object CustomPackageManagerRouter  {
   }
 
   private def getPackageManagerWithNameAndVersion(
-    packageCollection: PackageCollection,
     packageName: String,
     packageVersion: com.mesosphere.universe.v3.model.Version
  )(implicit session: RequestSession) : Future[Option[Manager]] = {

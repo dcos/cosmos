@@ -99,7 +99,7 @@ object CosmosConversions {
       )
     }
   }
-  
+
   implicit val packageDefinitionToLabelV1PackageMetadata
   : Conversion[universe.v4.model.PackageDefinition, label.v1.model.PackageMetadata] = {
     Conversion.fromFunction {

@@ -33,7 +33,7 @@ import com.mesosphere.cosmos.repository.UniverseClient
 import com.mesosphere.cosmos.repository.ZkRepositoryList
 import com.mesosphere.cosmos.rpc.MediaTypes
 import com.mesosphere.cosmos.rpc.v2.circe.MediaTypedEncoders._
-import com.mesosphere.cosmos.service.ServiceUninstaller
+import com.mesosphere.cosmos.service.{CustomPackageManagerRouter, ServiceUninstaller}
 import com.mesosphere.universe
 import com.mesosphere.util.UrlSchemeHeader
 import com.netaporter.uri.Uri
@@ -89,18 +89,17 @@ trait CosmosApp
     onExit(sourcesStorage.close())
 
     val universeClient = UniverseClient(adminRouter)
+    val packageCollection = new PackageCollection(sourcesStorage, universeClient)
     new Components(
       adminRouter,
       zkClient,
       sourcesStorage,
       universeClient,
-      new PackageCollection(
-        sourcesStorage,
-        universeClient
-      ),
+      packageCollection,
       new MarathonPackageRunner(adminRouter),
       ServiceUninstaller(adminRouter),
-      ServiceUpdater(adminRouter)
+      ServiceUpdater(adminRouter),
+      new CustomPackageManagerRouter(adminRouter, packageCollection)
     )
   }
 
@@ -113,7 +112,7 @@ trait CosmosApp
       // Keep alphabetized
       capabilities = new CapabilitiesHandler,
       packageDescribe = new PackageDescribeHandler(repositories),
-      packageInstall = new PackageInstallHandler(adminRouter, repositories, packageRunner),
+      packageInstall = new PackageInstallHandler(repositories, packageRunner, customPackageManagerRouter),
       packageList = new ListHandler(adminRouter),
       packageListVersions = new ListVersionsHandler(repositories),
       packageRender = new PackageRenderHandler(repositories),
@@ -122,9 +121,9 @@ trait CosmosApp
       packageRepositoryList = new PackageRepositoryListHandler(sourcesStorage),
       packageResource = ResourceProxyHandler(repositories, proxyContentLimit()),
       packageSearch = new PackageSearchHandler(repositories),
-      packageUninstall = new UninstallHandler(adminRouter, repositories, marathonSdkJanitor),
-      serviceDescribe = new ServiceDescribeHandler(adminRouter, repositories),
-      serviceUpdate = new ServiceUpdateHandler(adminRouter, repositories, serviceUpdater)
+      packageUninstall = new UninstallHandler(adminRouter, repositories, marathonSdkJanitor, customPackageManagerRouter),
+      serviceDescribe = new ServiceDescribeHandler(adminRouter, repositories, customPackageManagerRouter),
+      serviceUpdate = new ServiceUpdateHandler(adminRouter, repositories, serviceUpdater, customPackageManagerRouter)
     )
   }
 
@@ -298,7 +297,8 @@ object CosmosApp {
     val repositories: PackageCollection,
     val packageRunner: MarathonPackageRunner,
     val marathonSdkJanitor: ServiceUninstaller,
-    val serviceUpdater: ServiceUpdater
+    val serviceUpdater: ServiceUpdater,
+    val customPackageManagerRouter: CustomPackageManagerRouter
   )
 
   final class Handlers(

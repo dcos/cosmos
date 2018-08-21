@@ -35,7 +35,8 @@ import org.slf4j.Logger
 private[cosmos] final class UninstallHandler(
   adminRouter: AdminRouter,
   packageCollection: PackageCollection,
-  uninstaller: ServiceUninstaller
+  uninstaller: ServiceUninstaller,
+  customPackageManagerRouter: CustomPackageManagerRouter
 ) extends EndpointHandler[rpc.v1.model.UninstallRequest, rpc.v1.model.UninstallResponse] {
   lazy val logger: Logger = org.slf4j.LoggerFactory.getLogger(getClass)
 
@@ -46,9 +47,7 @@ private[cosmos] final class UninstallHandler(
   )(
     implicit session: RequestSession
   ): Future[rpc.v1.model.UninstallResponse] = {
-    CustomPackageManagerRouter.getCustomPackageManagerId(
-      adminRouter,
-      packageCollection,
+    customPackageManagerRouter.getCustomPackageManagerId(
       req.managerId,
       Option(req.packageName),
       req.packageVersion,
@@ -56,8 +55,7 @@ private[cosmos] final class UninstallHandler(
     ).flatMap {
       case managerId if !managerId.isEmpty => {
         logger.debug("Request requires custom manager: " + managerId)
-          CustomPackageManagerRouter.callCustomPackageUninstall(
-            adminRouter,
+          customPackageManagerRouter.callCustomPackageUninstall(
             req,
             managerId
           ).flatMap {

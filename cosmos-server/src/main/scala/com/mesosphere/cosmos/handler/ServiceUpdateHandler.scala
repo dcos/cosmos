@@ -25,7 +25,8 @@ import org.slf4j.Logger
 final class ServiceUpdateHandler(
   adminRouter: AdminRouter,
   packageCollection: PackageCollection,
-  serviceUpdater: ServiceUpdater
+  serviceUpdater: ServiceUpdater,
+  customPackageManagerRouter: CustomPackageManagerRouter
 ) extends EndpointHandler[rpc.v1.model.ServiceUpdateRequest, rpc.v1.model.ServiceUpdateResponse] {
 
   import ServiceUpdateHandler._
@@ -38,9 +39,7 @@ final class ServiceUpdateHandler(
 
     lazy val logger: Logger = org.slf4j.LoggerFactory.getLogger(getClass)
 
-    CustomPackageManagerRouter.getCustomPackageManagerId(
-      adminRouter,
-      packageCollection,
+    customPackageManagerRouter.getCustomPackageManagerId(
       request.managerId,
       request.packageName,
       request.packageVersion,
@@ -48,8 +47,7 @@ final class ServiceUpdateHandler(
     ).flatMap {
       case managerId if !managerId.isEmpty => {
         logger.debug("Request requires a custom manager: " + managerId)
-        CustomPackageManagerRouter.callCustomServiceUpdate(
-          adminRouter,
+        customPackageManagerRouter.callCustomServiceUpdate(
           request,
           managerId
         ).flatMap {

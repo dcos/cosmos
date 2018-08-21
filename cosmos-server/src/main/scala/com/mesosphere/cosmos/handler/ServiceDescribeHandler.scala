@@ -20,7 +20,8 @@ import com.twitter.bijection.Conversion.asMethod
 
 private[cosmos] final class ServiceDescribeHandler(
   adminRouter: AdminRouter,
-  packageCollection: PackageCollection
+  packageCollection: PackageCollection,
+  customPackageManagerRouter: CustomPackageManagerRouter
 ) extends EndpointHandler[rpc.v1.model.ServiceDescribeRequest, rpc.v1.model.ServiceDescribeResponse] {
   lazy val logger: Logger = org.slf4j.LoggerFactory.getLogger(getClass)
 
@@ -28,9 +29,7 @@ private[cosmos] final class ServiceDescribeHandler(
     request: rpc.v1.model.ServiceDescribeRequest)(implicit
     session: RequestSession
   ): Future[rpc.v1.model.ServiceDescribeResponse] = {
-    CustomPackageManagerRouter.getCustomPackageManagerId(
-      adminRouter,
-      packageCollection,
+    customPackageManagerRouter.getCustomPackageManagerId(
       request.managerId,
       request.packageName,
       request.packageVersion.as[Option[universe.v3.model.Version]],
@@ -38,8 +37,7 @@ private[cosmos] final class ServiceDescribeHandler(
     ).flatMap {
       case managerId if !managerId.isEmpty => {
         logger.debug("Request requires a custom manager: " + managerId)
-        CustomPackageManagerRouter.callCustomServiceDescribe(
-          adminRouter,
+        customPackageManagerRouter.callCustomServiceDescribe(
           request,
           managerId
         ).flatMap {
