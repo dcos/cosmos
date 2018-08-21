@@ -13,7 +13,7 @@ import com.mesosphere.cosmos.error.ServiceAlreadyStarted
 import com.mesosphere.cosmos.rpc.v1.model.{ServiceDescribeResponse, ServiceUpdateResponse, UninstallResponse}
 import com.mesosphere.error.ResultOps
 import com.twitter.finagle.http.{Response, Status}
-import org.slf4j.Logge8
+import org.slf4j.Logger
 
 
 object CustomPackageManagerClient  {
@@ -27,7 +27,6 @@ object CustomPackageManagerClient  {
     packageVersion: Option[universe.v3.model.Version],
     appId: Option[AppId]
   )(implicit session: RequestSession): Future[String] = {
-
     (managerId, packageName, packageVersion, appId) match {
       case (Some(id), _, _, _) =>
         Future(id)
@@ -83,21 +82,21 @@ object CustomPackageManagerClient  {
     request: rpc.v1.model.UninstallRequest,
     managerId: String
   )(implicit session: RequestSession): Future[UninstallResponse] = {
-      adminRouter.getApp(AppId(request.managerId.get))
-      val translatedRequest = new rpc.v1.model.UninstallRequest(
-        request.packageName,
-        request.appId,
-        request.all)
-      adminRouter.postCustomPackageUninstall(
-        AppId(managerId),
-        translatedRequest
-      ).flatMap {
-        response =>
-          Future {
-            validateResponse(response)
-            decode[UninstallResponse](response.contentString).getOrThrow
-          }
-      }
+    adminRouter.getApp(AppId(request.managerId.get))
+    val translatedRequest = new rpc.v1.model.UninstallRequest(
+      request.packageName,
+      request.appId,
+      request.all)
+    adminRouter.postCustomPackageUninstall(
+      AppId(managerId),
+      translatedRequest
+    ).flatMap {
+      response =>
+        Future {
+          validateResponse(response)
+          decode[UninstallResponse](response.contentString).getOrThrow
+        }
+    }
   }
 
   def callCustomServiceDescribe(
@@ -105,18 +104,18 @@ object CustomPackageManagerClient  {
    request: rpc.v1.model.ServiceDescribeRequest,
    managerId: String
   )(implicit session: RequestSession): Future[ServiceDescribeResponse] = {
-      adminRouter.getApp(AppId(request.managerId.get))
-      val translatedRequest = new rpc.v1.model.ServiceDescribeRequest(request.appId)
-      adminRouter.postCustomServiceDescribe(
-        AppId(managerId),
-        translatedRequest
-      ).flatMap {
-        response =>
-          Future {
-            validateResponse(response)
-            decode[ServiceDescribeResponse](response.contentString).getOrThrow
-          }
-      }
+    adminRouter.getApp(AppId(request.managerId.get))
+    val translatedRequest = new rpc.v1.model.ServiceDescribeRequest(request.appId)
+    adminRouter.postCustomServiceDescribe(
+      AppId(managerId),
+      translatedRequest
+    ).flatMap {
+      response =>
+        Future {
+          validateResponse(response)
+          decode[ServiceDescribeResponse](response.contentString).getOrThrow
+        }
+    }
   }
 
   def callCustomServiceUpdate(
@@ -140,7 +139,6 @@ object CustomPackageManagerClient  {
             decode[ServiceUpdateResponse](response.contentString).getOrThrow
           }
       }
-
   }
 
   private def getPackageNameAndVersionFromMarathonApp(
