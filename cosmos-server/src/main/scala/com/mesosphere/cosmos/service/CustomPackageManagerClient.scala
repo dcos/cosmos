@@ -71,7 +71,7 @@ object CustomPackageManagerClient  {
         AppId(managerId),
         translatedRequest
       ).flatMap {
-        case response =>
+        response =>
           Future {
             validateResponse(response)
             decode[InstallResponse](response.contentString).getOrThrow
@@ -84,7 +84,7 @@ object CustomPackageManagerClient  {
     request: rpc.v1.model.UninstallRequest,
     managerId: String
   )(implicit session: RequestSession): Future[UninstallResponse] = {
-      adminRouter.getApp(AppId(request.managerId.get));
+      adminRouter.getApp(AppId(request.managerId.get))
       val translatedRequest = new rpc.v1.model.UninstallRequest(
         request.packageName,
         request.appId,
@@ -93,7 +93,7 @@ object CustomPackageManagerClient  {
         AppId(managerId),
         translatedRequest
       ).flatMap {
-        case response =>
+        response =>
           Future {
             validateResponse(response)
             decode[UninstallResponse](response.contentString).getOrThrow
@@ -106,13 +106,13 @@ object CustomPackageManagerClient  {
    request: rpc.v1.model.ServiceDescribeRequest,
    managerId: String
   )(implicit session: RequestSession): Future[ServiceDescribeResponse] = {
-      adminRouter.getApp(AppId(request.managerId.get));
+      adminRouter.getApp(AppId(request.managerId.get))
       val translatedRequest = new rpc.v1.model.ServiceDescribeRequest(request.appId)
       adminRouter.postCustomServiceDescribe(
         AppId(managerId),
         translatedRequest
       ).flatMap {
-        case response =>
+        response =>
           Future {
             validateResponse(response)
             decode[ServiceDescribeResponse](response.contentString).getOrThrow
@@ -125,7 +125,7 @@ object CustomPackageManagerClient  {
      request: rpc.v1.model.ServiceUpdateRequest,
      managerId: String
    )(implicit session: RequestSession): Future[ServiceUpdateResponse] = {
-      adminRouter.getApp(AppId(request.managerId.get));
+      adminRouter.getApp(AppId(request.managerId.get))
       val translatedRequest = new rpc.v1.model.ServiceUpdateRequest(
         request.appId,
         request.packageVersion,
@@ -135,7 +135,7 @@ object CustomPackageManagerClient  {
         AppId(managerId),
         translatedRequest
       ).flatMap {
-        case response =>
+        response =>
           Future {
             validateResponse(response)
             decode[ServiceUpdateResponse](response.contentString).getOrThrow
@@ -150,7 +150,7 @@ object CustomPackageManagerClient  {
   )(implicit session: RequestSession): Future[(Option[String], Option[universe.v3.model.Version])] = {
     adminRouter.getApp(appId)
       .flatMap {
-        case (appResponse) =>
+        appResponse =>
           val packageName = appResponse.app.packageName
           val packageVersion = appResponse.app.packageVersion
           Future {(packageName, packageVersion)}

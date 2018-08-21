@@ -4,7 +4,7 @@ import com.mesosphere.cosmos.finch.MediaTypedDecoder
 import com.mesosphere.cosmos.finch.MediaTypedRequestDecoder
 import com.mesosphere.cosmos.rpc.MediaTypes
 import com.mesosphere.cosmos.thirdparty.marathon.model.AppId
-import com.mesosphere.universe.v2.model.PackageDetailsVersion
+import com.mesosphere.universe
 import io.circe.Decoder
 import io.circe.Encoder
 import io.circe.generic.semiauto.deriveDecoder
@@ -15,7 +15,7 @@ case class UninstallRequest(
   appId: Option[AppId],
   all: Option[Boolean],
   managerId: Option[String] = None,
-  packageVersion: Option[PackageDetailsVersion] = None)
+  packageVersion: Option[universe.v3.model.Version] = None)
 
 object UninstallRequest {
   implicit val encodeUninstallRequest: Encoder[UninstallRequest] = deriveEncoder[UninstallRequest]

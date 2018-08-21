@@ -536,8 +536,6 @@ package v4.model {
 
 package v5.model {
 
-  sealed trait PackageDefinition
-
   case class V5Package(
       packagingVersion: V5PackagingVersion.type = V5PackagingVersion,
       name: String,
