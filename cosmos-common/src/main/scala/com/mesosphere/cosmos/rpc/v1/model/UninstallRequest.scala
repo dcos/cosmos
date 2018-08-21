@@ -15,7 +15,8 @@ case class UninstallRequest(
   appId: Option[AppId],
   all: Option[Boolean],
   managerId: Option[String] = None,
-  packageVersion: Option[universe.v3.model.Version] = None)
+  packageVersion: Option[universe.v3.model.Version] = None
+)
 
 object UninstallRequest {
   implicit val encodeUninstallRequest: Encoder[UninstallRequest] = deriveEncoder[UninstallRequest]

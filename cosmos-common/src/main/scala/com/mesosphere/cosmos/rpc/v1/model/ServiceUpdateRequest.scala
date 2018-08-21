@@ -18,7 +18,8 @@ case class ServiceUpdateRequest(
   options: Option[JsonObject],
   replace: Boolean,
   managerId: Option[String] = None,
-  packageName: Option[String] = None)
+  packageName: Option[String] = None
+)
 
 object ServiceUpdateRequest {
   implicit val encode: Encoder[ServiceUpdateRequest] = deriveEncoder

@@ -15,7 +15,8 @@ case class ServiceDescribeRequest(
  appId: AppId,
  managerId: Option[String] = None,
  packageVersion: Option[PackageDetailsVersion] = None,
- packageName: Option[String] = None)
+ packageName: Option[String] = None
+)
 
 object ServiceDescribeRequest {
   implicit val encode: Encoder[ServiceDescribeRequest] = deriveEncoder
