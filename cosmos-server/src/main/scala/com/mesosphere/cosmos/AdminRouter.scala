@@ -2,7 +2,6 @@ package com.mesosphere.cosmos
 
 import _root_.io.circe.JsonObject
 import com.mesosphere.cosmos.http.RequestSession
-import com.mesosphere.cosmos.rpc.v1.model.{InstallRequest, ServiceUpdateRequest, ServiceDescribeRequest, UninstallRequest}
 import com.mesosphere.cosmos.thirdparty.adminrouter.model.DcosVersion
 import com.mesosphere.cosmos.thirdparty.marathon.model.AppId
 import com.mesosphere.cosmos.thirdparty.marathon.model.Deployment
@@ -109,7 +108,7 @@ class AdminRouter(
 
   def postCustomPackageInstall(
     managerId: AppId,
-    body: InstallRequest
+    body: rpc.v1.model.InstallRequest
   )(
     implicit session: RequestSession
   ): Future[Response] = {
@@ -118,7 +117,7 @@ class AdminRouter(
 
   def postCustomPackageUninstall(
    managerId: AppId,
-   body: UninstallRequest
+   body: rpc.v1.model.UninstallRequest
   )(
    implicit session: RequestSession
  ): Future[Response] = {
@@ -127,7 +126,7 @@ class AdminRouter(
 
   def postCustomServiceDescribe(
     managerId: AppId,
-    body: ServiceDescribeRequest
+    body: rpc.v1.model.ServiceDescribeRequest
   )(
     implicit session: RequestSession
   ): Future[Response] = {
@@ -136,7 +135,7 @@ class AdminRouter(
 
   def postCustomServiceUpdate(
      managerId: AppId,
-     body: ServiceUpdateRequest
+     body: rpc.v1.model.ServiceUpdateRequest
    )(
      implicit session: RequestSession
    ): Future[Response] = {

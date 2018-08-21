@@ -36,7 +36,6 @@ object MediaTypes {
   val universeV5Package: MediaType = universePackage("v5")
   val UniverseV5Repository: MediaType = universeRepository("v5")
 
-
   val PackageZip: MediaType = MediaType(
     "application",
     MediaTypeSubType("vnd.dcos.universe.package", Some("zip")),

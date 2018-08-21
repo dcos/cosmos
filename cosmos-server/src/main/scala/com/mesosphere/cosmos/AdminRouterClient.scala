@@ -2,7 +2,6 @@ package com.mesosphere.cosmos
 
 import com.mesosphere.cosmos.http.RequestSession
 
-import com.mesosphere.cosmos.rpc.v1.model.{InstallRequest, ServiceDescribeRequest, ServiceUpdateRequest, UninstallRequest}
 import com.mesosphere.cosmos.thirdparty.adminrouter.model.DcosVersion
 import com.mesosphere.cosmos.thirdparty.marathon.model.AppId
 import com.netaporter.uri.Uri
@@ -66,7 +65,7 @@ class AdminRouterClient(
 
   def postCustomPackageInstallRequest(
      managerId: AppId,
-     body: InstallRequest
+     body: rpc.v1.model.InstallRequest
    )(implicit session: RequestSession): Future[Response] = {
     val uri = "service" / managerId.toUri / "package" / "install"
     val p = post(uri, body.asJson)
@@ -77,7 +76,7 @@ class AdminRouterClient(
 
   def postCustomPackageUninstallRequest(
       managerId: AppId,
-      body: UninstallRequest
+      body: rpc.v1.model.UninstallRequest
     )(implicit session: RequestSession): Future[Response] = {
     val uri = "service" / managerId.toUri / "package" / "uninstall"
     val p = post(uri, body.asJson)
@@ -88,7 +87,7 @@ class AdminRouterClient(
 
   def postCustomServiceDescribeRequest(
     managerId: AppId,
-    body: ServiceDescribeRequest
+    body: rpc.v1.model.ServiceDescribeRequest
   )(implicit session: RequestSession): Future[Response] = {
     val uri = "service" / managerId.toUri / "service" / "describe"
     val p = post(uri, body.asJson)
@@ -99,7 +98,7 @@ class AdminRouterClient(
 
   def postCustomServiceUpdateRequest(
     managerId: AppId,
-    body: ServiceUpdateRequest
+    body: rpc.v1.model.ServiceUpdateRequest
   )(implicit session: RequestSession): Future[Response] = {
     val uri = "service" / managerId.toUri / "service" / "update"
     val p = post(uri, body.asJson)

@@ -104,6 +104,7 @@ package v3.model {
 }
 
 package v4.model {
+
   sealed trait PackageDefinition
 
   object PackageDefinition {
@@ -199,7 +200,6 @@ package v4.model {
         case v3: universe.v3.model.V3Package => v3.name
         case v4: universe.v4.model.V4Package => v4.name
         case v5: universe.v5.model.V5Package => v5.name
-
       }
 
       def version: universe.v3.model.Version = pkgDef match {
