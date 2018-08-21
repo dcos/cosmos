@@ -25,6 +25,7 @@ class CustomPackageManagerRouter(adminRouter: AdminRouter, packageCollection: Pa
     packageVersion: Option[universe.v3.model.Version],
     appId: Option[AppId]
   )(implicit session: RequestSession): Future[String] = {
+    val defaultId = ""
     (managerId, packageName, packageVersion, appId) match {
       case (Some(id), _, _, _) =>
         Future(id)
@@ -34,7 +35,7 @@ class CustomPackageManagerRouter(adminRouter: AdminRouter, packageCollection: Pa
             case Some(manager) =>
               Future (manager.packageName)
             case None  =>
-              Future ("")
+              Future (defaultId)
           }
       case (None, None, None, Some(id)) =>
         getPackageNameAndVersionFromMarathonApp(id)
@@ -45,11 +46,11 @@ class CustomPackageManagerRouter(adminRouter: AdminRouter, packageCollection: Pa
                   case Some(manager) =>
                     Future (manager.packageName)
                   case None =>
-                    Future ("")
+                    Future (defaultId)
                 }
             }
       case _ =>
-        Future("")
+        Future(defaultId)
     }
   }
 
@@ -57,14 +58,19 @@ class CustomPackageManagerRouter(adminRouter: AdminRouter, packageCollection: Pa
     request: rpc.v1.model.InstallRequest,
     managerId: String
   )(implicit session: RequestSession): Future[InstallResponse] = {
-    val translatedRequest = new rpc.v1.model.InstallRequest(
+    new rpc.v1.model.InstallRequest(
         request.packageName,
         request.packageVersion,
         request.options,
         request.appId)
       adminRouter.postCustomPackageInstall(
         AppId(managerId),
-        translatedRequest
+        new rpc.v1.model.InstallRequest(
+          request.packageName,
+          request.packageVersion,
+          request.options,
+          request.appId
+        )
       ).flatMap {
         response =>
           Future {
@@ -79,13 +85,13 @@ class CustomPackageManagerRouter(adminRouter: AdminRouter, packageCollection: Pa
     managerId: String
   )(implicit session: RequestSession): Future[UninstallResponse] = {
     adminRouter.getApp(AppId(request.managerId.get))
-    val translatedRequest = new rpc.v1.model.UninstallRequest(
-      request.packageName,
-      request.appId,
-      request.all)
     adminRouter.postCustomPackageUninstall(
       AppId(managerId),
-      translatedRequest
+      new rpc.v1.model.UninstallRequest(
+        request.packageName,
+        request.appId,
+        request.all
+      )
     ).flatMap {
       response =>
         Future {
@@ -100,10 +106,9 @@ class CustomPackageManagerRouter(adminRouter: AdminRouter, packageCollection: Pa
    managerId: String
   )(implicit session: RequestSession): Future[ServiceDescribeResponse] = {
     adminRouter.getApp(AppId(request.managerId.get))
-    val translatedRequest = new rpc.v1.model.ServiceDescribeRequest(request.appId)
     adminRouter.postCustomServiceDescribe(
       AppId(managerId),
-      translatedRequest
+      new rpc.v1.model.ServiceDescribeRequest(request.appId)
     ).flatMap {
       response =>
         Future {
@@ -118,14 +123,14 @@ class CustomPackageManagerRouter(adminRouter: AdminRouter, packageCollection: Pa
      managerId: String
    )(implicit session: RequestSession): Future[ServiceUpdateResponse] = {
       adminRouter.getApp(AppId(request.managerId.get))
-      val translatedRequest = new rpc.v1.model.ServiceUpdateRequest(
+      adminRouter.postCustomServiceUpdate(
+        AppId(managerId),
+        new rpc.v1.model.ServiceUpdateRequest(
         request.appId,
         request.packageVersion,
         request.options,
-        request.replace)
-      adminRouter.postCustomServiceUpdate(
-        AppId(managerId),
-        translatedRequest
+        request.replace
+        )
       ).flatMap {
         response =>
           Future {
