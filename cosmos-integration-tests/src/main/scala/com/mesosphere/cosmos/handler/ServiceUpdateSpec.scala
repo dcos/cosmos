@@ -132,6 +132,39 @@ class ServiceUpdateSpec extends FeatureSpec with Matchers {
         error.errorResponse.message shouldBe "Options JSON failed validation"
       }
     }
+
+    scenario(
+      "The user must be able to update the configuration" +
+        " with a custom managerId"
+    ) {
+      val name = "hello-world"
+      val disk = 42.asJson
+      val options = JsonObject.singleton(
+        "hello",
+        Json.obj("cpus" -> 0.111.asJson, "disk" -> disk)
+      )
+      RoundTrips.withInstallV2(name, options = Some(options), managerId = Some("cosmos-package")).runWith { ir =>
+        waitForDeployment()
+        val cpus = 0.222.asJson
+        val newOptions = JsonObject.singleton("hello", Json.obj("cpus" -> cpus))
+
+        val response = serviceUpdate(
+          ir.appId,
+          None,
+          Some(newOptions),
+          false,
+          Some("cosmos-package")
+        )
+
+        val hello = response.resolvedOptions("hello").get.hcursor
+
+        val Right(actualCpus) = hello.downField("cpus").as[Json]
+        val Right(actualDisk) = hello.downField("disk").as[Json]
+
+        assertResult(cpus)(actualCpus)
+        assertResult(disk)(actualDisk)
+      }
+    }
   }
 
   // scalastyle:on multiple.string.literals
@@ -150,7 +183,8 @@ object ServiceUpdateSpec {
     appId: AppId,
     packageVersion: Option[universe.v3.model.Version],
     options: Option[JsonObject],
-    replace: Boolean
+    replace: Boolean,
+    managerId: Option[String] = None
   )(
     implicit testContext: TestContext
   ): rpc.v1.model.ServiceUpdateResponse = {
@@ -161,7 +195,8 @@ object ServiceUpdateSpec {
           appId,
           packageVersion,
           options,
-          replace
+          replace,
+          managerId
         ),
         MediaTypes.ServiceUpdateRequest,
         MediaTypes.ServiceUpdateResponse

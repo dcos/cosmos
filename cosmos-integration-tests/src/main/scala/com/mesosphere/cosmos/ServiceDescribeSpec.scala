@@ -47,10 +47,10 @@ final class ServiceDescribeSpec extends FeatureSpec with Matchers {
         Requests.describeService(ir.appId).resolvedOptions.shouldBe(options)
       }
     }
-    scenario("The user would like to know the options he provided to run a service") {
-      val options = s"""{ "port": $port }""".json.asObject
-      RoundTrips.withInstallV1(name, Some("0.1.0".detailsVersion), options).runWith { ir =>
-        Requests.describeService(ir.appId).userProvidedOptions.shouldBe(options)
+    scenario("The user would like to describe the service with a custom manager") {
+      val options = s"""{ "port": $port, "name": "$name" }""".json.asObject
+      RoundTrips.withInstallV2(name, Some("0.1.0".detailsVersion), options, managerId = Some("cosmose-package")).runWith { ir =>
+        Requests.describeService(ir.appId, Some("cosmose-package")).resolvedOptions.shouldBe(options)
       }
     }
   }

@@ -18,6 +18,7 @@ import io.circe.JsonObject
 import org.scalatest.Matchers._
 import org.scalatest.concurrent.Eventually._
 import org.scalatest.time.SpanSugar._
+import com.twitter.finagle.http.Response
 
 object Requests {
 
@@ -43,7 +44,8 @@ object Requests {
     name: String,
     version: Option[universe.v2.model.PackageDetailsVersion] = None,
     options: Option[JsonObject] = None,
-    appId: Option[AppId] = None
+    appId: Option[AppId] = None,
+    managerId: Option[String] = None
   ): rpc.v2.model.InstallResponse = {
     callEndpoint[rpc.v2.model.InstallResponse](
       CosmosRequests.packageInstallV2(
@@ -51,7 +53,8 @@ object Requests {
           name,
           version,
           options,
-          appId
+          appId,
+          managerId
         )
       )
     )
@@ -60,14 +63,16 @@ object Requests {
   def uninstall(
     name: String,
     appId: Option[AppId] = None,
-    all: Option[Boolean] = None
+    all: Option[Boolean] = None,
+    managerId: Option[String] = None
   ): rpc.v1.model.UninstallResponse = {
     callEndpoint[rpc.v1.model.UninstallResponse](
       CosmosRequests.packageUninstall(
         rpc.v1.model.UninstallRequest(
           packageName = name,
           appId = appId,
-          all = all
+          all = all,
+          managerId = managerId
         )
       )
     )
@@ -146,14 +151,16 @@ object Requests {
   }
 
   def describeService(
-    appId: AppId
+    appId: AppId,
+    managerId: Option[String] = None
   )(
     implicit testContext: TestContext
   ): rpc.v1.model.ServiceDescribeResponse = {
     callEndpoint[rpc.v1.model.ServiceDescribeResponse](
       CosmosRequests.serviceDescribe(
         rpc.v1.model.ServiceDescribeRequest(
-          appId
+          appId,
+          managerId
         )
       )
     )
@@ -185,6 +192,22 @@ object Requests {
     Await.result {
       CosmosIntegrationTestClient.adminRouter.getApp(appId)
     }.app
+  }
+
+  def postMarathonApp(
+    app: JsonObject
+  ): Response = {
+    Await.result {
+      CosmosIntegrationTestClient.adminRouter.createApp(app)
+    }
+  }
+
+  def deleteMarathonApp(
+   appId: AppId
+ ): Response = {
+    Await.result {
+      CosmosIntegrationTestClient.adminRouter.deleteApp(appId)
+    }
   }
 
   def isMarathonAppInstalled(appId: AppId): Boolean = {

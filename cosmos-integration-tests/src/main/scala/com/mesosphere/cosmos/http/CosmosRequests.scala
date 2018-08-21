@@ -84,6 +84,17 @@ object CosmosRequests {
     )
   }
 
+  def packageRepositoryAddToCustomCosmos(
+    repositoryAddRequest: rpc.v1.model.PackageRepositoryAddRequest
+  ): HttpRequest = {
+    HttpRequest.post(
+      path = PackageRpcPath("service/cosmos-package/repository/add"),
+      body = repositoryAddRequest,
+      contentType = rpc.MediaTypes.PackageRepositoryAddRequest,
+      accept = rpc.MediaTypes.PackageRepositoryAddResponse
+    )
+  }
+
   def packageRepositoryDelete(
     repositoryDeleteRequest: rpc.v1.model.PackageRepositoryDeleteRequest
   ): HttpRequest = {

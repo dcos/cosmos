@@ -11,6 +11,7 @@ import com.mesosphere.cosmos.thirdparty.marathon.model._
 import com.mesosphere.universe
 import com.twitter.bijection.Conversion.asMethod
 import com.twitter.finagle.http._
+import com.mesosphere.cosmos.thirdparty.marathon.model.AppId
 import org.scalatest.FeatureSpec
 import org.scalatest.Matchers
 
@@ -138,6 +139,12 @@ final class PackageInstallIntegrationSpec extends FeatureSpec with Matchers {
       response.packageVersion shouldBe version.version
       response.appId shouldBe None
       response.cli shouldBe pkg.`package`.cli
+    }
+    scenario("The user should be able to install a package with custom manager ") {
+      val name = "jenkins"
+      val response = Requests.installV2(name, None, managerId = Some("cosmos-package"))
+      response.packageName shouldBe name
+      response.appId shouldBe Some(AppId(name))
     }
   }
 }

@@ -22,6 +22,21 @@ object RoundTrips {
     }
   }
 
+  def withInstallV2(
+   name: String,
+   version: Option[universe.v2.model.PackageDetailsVersion] = None,
+   options: Option[JsonObject] = None,
+   appId: Option[AppId] = None,
+   managerId: Option[String] = None
+ ): RoundTrip[rpc.v1.model.InstallResponse] = {
+    RoundTrip(
+      Requests.installV2(name, version, options, appId, managerId)
+    ) { ir =>
+      Requests.uninstall(ir.packageName, Some(ir.appId))
+      Requests.waitForDeployments()
+    }
+  }
+
   def withDeletedRepository(
     name: Option[String] = None,
     uri: Option[Uri] = None
