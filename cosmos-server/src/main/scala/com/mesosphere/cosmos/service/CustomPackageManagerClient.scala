@@ -19,8 +19,6 @@ import org.slf4j.Logger
 object CustomPackageManagerClient  {
   lazy val logger: Logger = org.slf4j.LoggerFactory.getLogger(getClass)
 
-  // scalastyle:off cyclomatic.complexity
-
   def getCustomPackageManagerId(
     adminRouter: AdminRouter,
     packageCollection: PackageCollection,
@@ -29,33 +27,34 @@ object CustomPackageManagerClient  {
     packageVersion: Option[universe.v3.model.Version],
     appId: Option[AppId]
   )(implicit session: RequestSession): Future[String] = {
-    if (managerId.isDefined) {
-       Future{managerId.get}
-    } else if (packageName.isDefined && packageVersion.isDefined) {
-      getPackageManagerWithNameAndVersion(packageCollection, packageName.get, packageVersion)
-        .flatMap {
-          case manager if manager.isDefined =>
-              Future {manager.get.packageName}
-          case manager if !manager.isDefined  =>
-              Future {""}
-        }
-    } else if (appId.isDefined) {
-      getPackageNameAndVersionFromMarathonApp(adminRouter, appId.get)
-        .flatMap {
-          case (packageName, packageVersion) =>
-            getPackageManagerWithNameAndVersion(packageCollection, packageName.get, packageVersion)
-              .flatMap {
-                case manager if manager.isDefined =>
-                  Future {manager.get.packageName}
-                case manager if !manager.isDefined  =>
-                  Future {""}
-              }
+
+    (managerId, packageName, packageVersion, appId) match {
+      case (Some(id), _, _, _) =>
+        Future(id)
+      case (None, Some(name), Some(version), _) =>
+        getPackageManagerWithNameAndVersion(packageCollection, name, version)
+          .flatMap {
+            case Some(manager) =>
+              Future (manager.packageName)
+            case None  =>
+              Future ("")
           }
-      } else {
-        Future {""}
-      }
+      case (None, None, None, Some(id)) =>
+        getPackageNameAndVersionFromMarathonApp(adminRouter, id)
+          .flatMap {
+            case (packageName, packageVersion) =>
+              getPackageManagerWithNameAndVersion(packageCollection, packageName.get, packageVersion.get)
+                .flatMap {
+                  case Some(manager) =>
+                    Future (manager.packageName)
+                  case None =>
+                    Future ("")
+                }
+            }
+      case _ =>
+        Future("")
+    }
   }
-  // scalastyle:on cyclomatic.complexity
 
   def callCustomPackageInstall(
     adminRouter: AdminRouter,
@@ -176,11 +175,11 @@ object CustomPackageManagerClient  {
   private def getPackageManagerWithNameAndVersion(
     packageCollection: PackageCollection,
     packageName: String,
-    packageVersion: Option[com.mesosphere.universe.v3.model.Version]
+    packageVersion: com.mesosphere.universe.v3.model.Version
  )(implicit session: RequestSession) : Future[Option[Manager]] = {
     packageCollection.getPackageByPackageVersion(
       packageName,
-      packageVersion
+      Option(packageVersion)
     ).map {
       case (pkg, _) =>
         pkg.pkgDef.manager
