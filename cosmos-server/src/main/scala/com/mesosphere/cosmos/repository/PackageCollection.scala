@@ -21,8 +21,6 @@ final class PackageCollection(
   universeClient: UniverseClient
 ) {
 
-  private[this] val logger = org.slf4j.LoggerFactory.getLogger(getClass)
-
   val repositoryCache: LoadingCache[RequestSession, Future[List[(universe.v4.model.Repository, Uri)]]] = {
     Caffeine
       .newBuilder()
