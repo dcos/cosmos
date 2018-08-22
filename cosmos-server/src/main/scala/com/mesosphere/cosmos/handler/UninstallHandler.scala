@@ -112,9 +112,7 @@ private[cosmos] final class UninstallHandler(
       }
     }
   }
-
   // scalastyle:on cyclomatic.complexity
-
 
   private def runUninstall(
     uninstallOp: UninstallOperation
