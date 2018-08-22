@@ -164,7 +164,7 @@ object HttpClient {
       s"$contentLengthStr" +
       s"${userAgent match {
         case Some(uaStr) => s" ${escape("\"")}${escape(uaStr)}${escape("\"")}"
-        case None => "-"
+        case None => " -"
       }}"
   }
 
