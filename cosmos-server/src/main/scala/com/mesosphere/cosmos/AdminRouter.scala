@@ -101,7 +101,7 @@ class AdminRouter(
     apiVersion: String,
     plan: String
   )(
-     implicit session: RequestSession
+    implicit session: RequestSession
   ): Future[Response] = {
     adminRouterClient.getSdkServicePlanStatus(service, apiVersion, plan)
   }
