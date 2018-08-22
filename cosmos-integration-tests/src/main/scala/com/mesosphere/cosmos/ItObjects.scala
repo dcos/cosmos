@@ -107,7 +107,6 @@ object ItObjects {
     """.stripMargin
   }
 
-
   // scalastyle:off line.size.limit
   val helloWorldPackageDefinition0: String = {
     """
