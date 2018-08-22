@@ -24,7 +24,7 @@ object ItObjects {
   // scalastyle:off line.size.limit
   // scalastyle:off file.size.limit
   // scalastyle:off line.contains.tab
-  val customManagerMarathonAppJsonString = {
+  val customManagerMarathonAppJsonString : String = {
     """
       |{
       |	"labels": {
