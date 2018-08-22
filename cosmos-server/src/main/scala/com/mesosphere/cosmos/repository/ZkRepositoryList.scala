@@ -272,10 +272,10 @@ private final class WriteHandler(
 private final class CreateHandler(
   promise: Promise[List[PackageRepository]],
   repositories: List[PackageRepository]
-) extends  BackgroundCallback {
+) extends BackgroundCallback {
   private[this] val logger = org.slf4j.LoggerFactory.getLogger(getClass)
 
-  override def processResult(client: CuratorFramework, event: CuratorEvent): Unit ={
+  override def processResult(client: CuratorFramework, event: CuratorEvent): Unit = {
     if (event.getType == CuratorEventType.CREATE) {
       val code = KeeperException.Code.get(event.getResultCode)
       if (code == KeeperException.Code.OK) {

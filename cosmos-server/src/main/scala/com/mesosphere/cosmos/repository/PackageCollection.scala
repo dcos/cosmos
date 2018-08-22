@@ -1,6 +1,7 @@
 package com.mesosphere.cosmos.repository
 
 import com.github.benmanes.caffeine.cache.Caffeine
+import com.github.benmanes.caffeine.cache.LoadingCache
 import com.mesosphere.cosmos.error.PackageNotFound
 import com.mesosphere.cosmos.error.VersionNotFound
 import com.mesosphere.cosmos.http.RequestSession
@@ -8,7 +9,6 @@ import com.mesosphere.cosmos.rpc
 import com.mesosphere.http.OriginHostScheme
 import com.mesosphere.universe
 import com.netaporter.uri.Uri
-import com.twitter.cache.caffeine.LoadingFutureCache
 import com.twitter.util.Future
 import com.twitter.util.Throw
 import java.util.concurrent.TimeUnit
@@ -21,24 +21,27 @@ final class PackageCollection(
   universeClient: UniverseClient
 ) {
 
-  private[this] lazy val repositoryCache: LoadingFutureCache[(rpc.v1.model.PackageRepository,
-    RequestSession), (universe.v4.model.Repository, Uri)] = new LoadingFutureCache(
+  private[this] lazy val repositoryCache: LoadingCache[RequestSession, Future[List[(universe.v4.model.Repository, Uri)]]] = {
     Caffeine
       .newBuilder()
       .expireAfterWrite(1, TimeUnit.MINUTES)
-      .build { case (
-        packageRepository: rpc.v1.model.PackageRepository,
-        session: RequestSession) =>
-        val result = universeClient(packageRepository)(session).map((_, packageRepository.uri))
-        result.respond {
-          case Throw(_) =>
-            repositoryCache.evict((packageRepository, session), result)
-            ()
-          case _ => ()
-        }
-        result
+      .build { case session: RequestSession =>
+        packageRepositoryStorage
+          .readCache()
+          .flatMap { packageRepositories =>
+            Future.traverseSequentially(packageRepositories){ packageRepository =>
+              universeClient(packageRepository)(session)
+                .map((_, packageRepository.uri))
+                .respond {
+                  case Throw(_) =>
+                    repositoryCache.invalidate(session)
+                    ()
+                  case _ => ()
+                }
+            }.map(_.toList)
+          }
       }
-  )
+  }
 
   def getPackagesByPackageName(
     packageName: String
@@ -104,15 +107,7 @@ final class PackageCollection(
 
   private[this] def all()(
     implicit session: RequestSession
-  ): Future[List[(universe.v4.model.Repository, Uri)]] = {
-    packageRepositoryStorage
-      .readCache()
-      .flatMap(
-        Future.traverseSequentially(_)(
-          pkgRepo => repositoryCache((pkgRepo, session))
-        ).map(_.toList)
-      )
-  }
+  ): Future[List[(universe.v4.model.Repository, Uri)]] = repositoryCache.get(session)
 }
 
 object PackageCollection {
