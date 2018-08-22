@@ -1,7 +1,9 @@
 package com.mesosphere.cosmos.service
 
 import com.mesosphere.universe.v5.model.Manager
-import com.mesosphere.cosmos.{AdminRouter, rpc, trimContentForPrinting}
+import com.mesosphere.cosmos.AdminRouter
+import com.mesosphere.cosmos.rpc
+import com.mesosphere.cosmos.trimContentForPrinting
 import com.mesosphere.cosmos.http.RequestSession
 import com.mesosphere.cosmos.repository.PackageCollection
 import com.mesosphere.cosmos.rpc.v2.model.InstallResponse
@@ -14,9 +16,9 @@ import com.mesosphere.cosmos.rpc.v1.model.ServiceDescribeResponse
 import com.mesosphere.cosmos.rpc.v1.model.UninstallResponse
 import com.mesosphere.cosmos.rpc.v1.model.ServiceUpdateResponse
 import com.mesosphere.error.ResultOps
-import com.twitter.finagle.http.{Response, Status}
+import com.twitter.finagle.http.Response
+import com.twitter.finagle.http.Status
 import org.slf4j.Logger
-
 
 class CustomPackageManagerRouter(adminRouter: AdminRouter, packageCollection: PackageCollection)  {
   lazy val logger: Logger = org.slf4j.LoggerFactory.getLogger(getClass)

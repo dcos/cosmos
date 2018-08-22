@@ -21,7 +21,6 @@ import com.mesosphere.universe
 import com.twitter.util.Future
 import org.slf4j.Logger
 
-
 final class ServiceUpdateHandler(
   adminRouter: AdminRouter,
   packageCollection: PackageCollection,
