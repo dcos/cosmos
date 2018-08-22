@@ -28,11 +28,8 @@ import java.io.StringWriter
 import java.io.Writer
 import java.nio.charset.StandardCharsets
 import java.util.Base64
-import org.slf4j.Logger
-import org.slf4j.LoggerFactory
 
 object PackageDefinitionRenderer {
-  lazy val logger: Logger = LoggerFactory.getLogger(getClass)
 
   private[this] final val MustacheFactory = new DefaultMustacheFactory {
     /* The encode method for DefaultMustacheFactory does HTML based encoding.
@@ -95,7 +92,7 @@ object PackageDefinitionRenderer {
   ): JsonObject = {
     val renderedJsonString = {
       val mustache = MustacheFactory.compile(new StringReader(template), ".marathon.v2AppMustacheTemplate")
-      val params = jsonToJava(Json.fromJsonObject(context), false)
+      val params = jsonToJava(Json.fromJsonObject(context), isParentArray = false)
       val output = new StringWriter()
       mustache.execute(output, params).flush()
       output.toString

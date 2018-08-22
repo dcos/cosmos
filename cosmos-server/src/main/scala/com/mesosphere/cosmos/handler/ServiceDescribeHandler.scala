@@ -7,34 +7,53 @@ import com.mesosphere.cosmos.render.PackageDefinitionRenderer
 import com.mesosphere.cosmos.repository.PackageCollection
 import com.mesosphere.cosmos.repository.rewriteUrlWithProxyInfo
 import com.mesosphere.cosmos.rpc
+import com.mesosphere.cosmos.service.CustomPackageManagerRouter
 import com.mesosphere.cosmos.thirdparty.marathon.model.MarathonApp
 import com.mesosphere.universe
+import com.mesosphere.universe.bijection.UniverseConversions._
 import com.mesosphere.universe.v4.model.PackageDefinition
+import com.twitter.bijection.Conversion.asMethod
 import com.twitter.util.Future
 import io.circe.JsonObject
 
 private[cosmos] final class ServiceDescribeHandler(
   adminRouter: AdminRouter,
-  packageCollection: PackageCollection
+  packageCollection: PackageCollection,
+  customPackageManagerRouter: CustomPackageManagerRouter
 ) extends EndpointHandler[rpc.v1.model.ServiceDescribeRequest, rpc.v1.model.ServiceDescribeResponse] {
+
+  private[this] lazy val logger = org.slf4j.LoggerFactory.getLogger(getClass)
+
   override def apply(
-    request: rpc.v1.model.ServiceDescribeRequest)(implicit
-    session: RequestSession
+    request: rpc.v1.model.ServiceDescribeRequest
+  )(
+    implicit session: RequestSession
   ): Future[rpc.v1.model.ServiceDescribeResponse] = {
-    for {
-      marathonAppResponse <- adminRouter.getApp(request.appId)
-      packageDefinition <- getPackageDefinition(marathonAppResponse.app)
-      upgradesTo <- packageCollection.upgradesTo(packageDefinition.name, packageDefinition.version)
-      downgradesTo <- packageCollection.downgradesTo(packageDefinition)
-    } yield {
-      val userProvidedOptions = marathonAppResponse.app.serviceOptions
-      rpc.v1.model.ServiceDescribeResponse(
-        `package` = packageDefinition,
-        upgradesTo = upgradesTo,
-        downgradesTo = downgradesTo,
-        resolvedOptions = getResolvedOptions(packageDefinition, userProvidedOptions),
-        userProvidedOptions = userProvidedOptions
-      )
+    customPackageManagerRouter.getCustomPackageManagerId(
+      request.managerId,
+      request.packageName,
+      request.packageVersion.as[Option[universe.v3.model.Version]],
+      Some(request.appId)
+    ).flatMap {
+      case Some(managerId) if !managerId.isEmpty =>
+        logger.debug(s"Request [$request] requires a custom manager: [$managerId]")
+        customPackageManagerRouter.callCustomServiceDescribe(request, managerId)
+      case _ =>
+        for {
+          marathonAppResponse <- adminRouter.getApp(request.appId)
+          packageDefinition <- getPackageDefinition(marathonAppResponse.app)
+          upgradesTo <- packageCollection.upgradesTo(packageDefinition.name, packageDefinition.version)
+          downgradesTo <- packageCollection.downgradesTo(packageDefinition)
+        } yield {
+          val userProvidedOptions = marathonAppResponse.app.serviceOptions
+          rpc.v1.model.ServiceDescribeResponse(
+            `package` = packageDefinition,
+            upgradesTo = upgradesTo,
+            downgradesTo = downgradesTo,
+            resolvedOptions = getResolvedOptions(packageDefinition, userProvidedOptions),
+            userProvidedOptions = userProvidedOptions
+          )
+        }
     }
   }
 

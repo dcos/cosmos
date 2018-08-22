@@ -67,6 +67,8 @@ final class UniverseConversionsSpec extends FreeSpec with Matchers with TableDri
             v3.copy(selected = original.selected, command = original.command)
           case v4: universe.v4.model.V4Package =>
             v4.copy(selected = original.selected)
+          case v5: universe.v5.model.V5Package =>
+            v5.copy(selected = original.selected)
         }
         roundtrip should be(original)
       }

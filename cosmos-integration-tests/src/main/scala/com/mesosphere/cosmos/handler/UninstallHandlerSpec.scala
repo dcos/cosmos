@@ -1,14 +1,15 @@
 package com.mesosphere.cosmos.handler
 
+import com.mesosphere.cosmos.ItObjects
 import com.mesosphere.cosmos.error.CosmosException
 import com.mesosphere.cosmos.error.MarathonAppNotFound
 import com.mesosphere.cosmos.http.CosmosRequests
 import com.mesosphere.cosmos.rpc.MediaTypes
-import com.mesosphere.cosmos.service.ServiceUninstaller
 import com.mesosphere.cosmos.rpc.v1.model.ErrorResponse
 import com.mesosphere.cosmos.rpc.v1.model.InstallRequest
 import com.mesosphere.cosmos.rpc.v1.model.UninstallRequest
 import com.mesosphere.cosmos.rpc.v1.model.UninstallResponse
+import com.mesosphere.cosmos.service.ServiceUninstaller
 import com.mesosphere.cosmos.test.CosmosIntegrationTestClient
 import com.mesosphere.cosmos.test.CosmosIntegrationTestClient.CosmosClient
 import com.mesosphere.cosmos.thirdparty.marathon.model.AppId
@@ -36,7 +37,7 @@ final class UninstallHandlerSpec extends FreeSpec with Eventually with SpanSugar
   "The uninstall handler should" - {
     "be able to uninstall a service" in {
       val appId = AppId("cassandra" / "uninstall-test")
-      val installRequest = InstallRequest("cassandra", appId = Some(appId))
+      val installRequest = InstallRequest("cassandra", None, None, Some(appId), None)
       val installResponse = submitInstallRequest(installRequest)
       assertResult(Status.Ok)(installResponse.status)
 
@@ -45,7 +46,26 @@ final class UninstallHandlerSpec extends FreeSpec with Eventually with SpanSugar
 
       //TODO: Assert framework starts up
 
-      val uninstallRequest = UninstallRequest("cassandra", appId = None, all = None)
+      val uninstallRequest = UninstallRequest("cassandra", None, None, None, None)
+      val uninstallResponse = submitUninstallRequest(uninstallRequest)
+      val uninstallResponseBody = uninstallResponse.contentString
+      assertResult(Status.Ok)(uninstallResponse.status)
+      assertResult(MediaTypes.UninstallResponse.show)(uninstallResponse.headerMap(Fields.ContentType))
+      val Right(body) = decode[UninstallResponse](uninstallResponseBody)
+      assert(body.results.flatMap(_.postUninstallNotes).nonEmpty)
+    }
+
+    "be able to install and uninstall a service with a custom manager" in {
+      val appId = AppId("cassandra" / "uninstall-test")
+      //custom install tested here
+      val installRequest = InstallRequest("cassandra", None, None, Some(appId), Some(ItObjects.customManagerAppName))
+      val installResponse = submitInstallRequest(installRequest)
+      assertResult(Status.Ok)(installResponse.status)
+
+      val marathonApp = Await.result(adminRouter.getApp(appId))
+      assertResult(appId)(marathonApp.app.id)
+
+      val uninstallRequest = UninstallRequest("cassandra", None, None, Some(ItObjects.customManagerAppName), None)
       val uninstallResponse = submitUninstallRequest(uninstallRequest)
       val uninstallResponseBody = uninstallResponse.contentString
       assertResult(Status.Ok)(uninstallResponse.status)
@@ -57,20 +77,22 @@ final class UninstallHandlerSpec extends FreeSpec with Eventually with SpanSugar
     "be able to uninstall multiple packages when 'all' is specified" in {
       // install 'helloworld' twice
       val appId1 = AppId(UUID.randomUUID().toString)
-      val installRequest1 = InstallRequest("helloworld", appId = Some(appId1))
+      val installRequest1 = InstallRequest("helloworld", None, None, Some(appId1), None)
       val installResponse1 = submitInstallRequest(installRequest1)
       assertResult(Status.Ok, s"install failed: $installRequest1")(installResponse1.status)
 
       val appId2 = AppId(UUID.randomUUID().toString)
       val installRequest2 = InstallRequest(
         "helloworld",
-        packageVersion = Some(PackageDetailsVersion("0.4.1")),
-        appId = Some(appId2)
+        Some(PackageDetailsVersion("0.4.1")),
+        None,
+        Some(appId2),
+        None
       )
       val installResponse2 = submitInstallRequest(installRequest2)
       assertResult(Status.Ok, s"install failed: $installRequest2")(installResponse2.status)
 
-      val uninstallRequest = UninstallRequest("helloworld", appId = None, all = Some(true))
+      val uninstallRequest = UninstallRequest("helloworld", appId = None, all = Some(true), None, None)
       val uninstallResponse = submitUninstallRequest(uninstallRequest)
       assertResult(Status.Ok)(uninstallResponse.status)
       assertResult(MediaTypes.UninstallResponse.show)(uninstallResponse.headerMap(Fields.ContentType))
@@ -79,16 +101,16 @@ final class UninstallHandlerSpec extends FreeSpec with Eventually with SpanSugar
     "error when multiple packages are installed and no appId is specified and all isn't set" in {
       // install 'helloworld' twice
       val appId1 = AppId(UUID.randomUUID().toString)
-      val installRequest1 = InstallRequest("helloworld", appId = Some(appId1))
+      val installRequest1 = InstallRequest("helloworld", None, None, Some(appId1), None)
       val installResponse1 = submitInstallRequest(installRequest1)
       assertResult(Status.Ok, s"install failed: $installRequest1")(installResponse1.status)
 
       val appId2 = AppId(UUID.randomUUID().toString)
-      val installRequest2 = InstallRequest("helloworld", appId = Some(appId2))
+      val installRequest2 = InstallRequest("helloworld", None, None, Some(appId2), None)
       val installResponse2 = submitInstallRequest(installRequest2)
       assertResult(Status.Ok, s"install failed: $installRequest2")(installResponse2.status)
 
-      val uninstallRequest = UninstallRequest("helloworld", appId = None, all = None)
+      val uninstallRequest = UninstallRequest("helloworld", None, None, None, None)
       val uninstallResponse = submitUninstallRequest(uninstallRequest)
       val uninstallResponseBody = uninstallResponse.contentString
       assertResult(Status.BadRequest)(uninstallResponse.status)
@@ -97,7 +119,7 @@ final class UninstallHandlerSpec extends FreeSpec with Eventually with SpanSugar
       val Some(data) = err.data
       val Right(appIds) = Json.fromJsonObject(data).hcursor.get[Set[AppId]]("appIds")
       assertResult(Set(appId1, appId2))(appIds)
-      val cleanupRequest = UninstallRequest("helloworld", appId = None, all = Some(true))
+      val cleanupRequest = UninstallRequest("helloworld", None, Some(true), None, None)
       val cleanupResponse = submitUninstallRequest(cleanupRequest)
       assertResult(Status.Ok)(cleanupResponse.status)
     }
@@ -187,7 +209,7 @@ final class UninstallHandlerSpec extends FreeSpec with Eventually with SpanSugar
   }
 
   def assertUninstallRequest(packageName: String, appId: Option[AppId], clue: Any): Assertion = {
-    val uninstallRequest = UninstallRequest(packageName, appId, Some(false))
+    val uninstallRequest = UninstallRequest(packageName, appId, Some(false), None, None)
     val uninstallResponse = submitUninstallRequest(uninstallRequest)
     assertResult(Status.Ok, clue)(uninstallResponse.status)
 
@@ -221,7 +243,7 @@ object UninstallHandlerSpec {
 
   def installHelloWorld(): Response = {
     // Always use the custom options to avoid a stuck install
-    val request = InstallRequest(HelloWorldPackageName, options = Some(HelloWorldOptions))
+    val request = InstallRequest(HelloWorldPackageName, None, Some(HelloWorldOptions), None, None)
     submitInstallRequest(request)
   }
 

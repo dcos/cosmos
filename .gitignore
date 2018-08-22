@@ -78,3 +78,4 @@ project/boot/
 
 dcos-image/target/
 tmp/
+.DS_Store

@@ -1,7 +1,7 @@
 package com.mesosphere.universe
 
-import com.mesosphere.universe
 import com.mesosphere.cosmos.circe.Decoders._
+import com.mesosphere.universe
 import com.twitter.util.Return
 import com.twitter.util.Throw
 import com.twitter.util.Try
@@ -137,7 +137,8 @@ package v4.model {
       Seq(
         universe.v3.model.V2PackagingVersion,
         universe.v3.model.V3PackagingVersion,
-        universe.v4.model.V4PackagingVersion
+        universe.v4.model.V4PackagingVersion,
+        universe.v5.model.V5PackagingVersion
       )
 
     private[this] val allVersionsString: String =
@@ -174,17 +175,18 @@ package v4.model {
             universe.v3.model.V3PackagingVersion.asJson
           case universe.v4.model.V4PackagingVersion =>
             universe.v4.model.V4PackagingVersion.asJson
+          case universe.v5.model.V5PackagingVersion =>
+            universe.v5.model.V5PackagingVersion.asJson
         }
       }
     }
   }
 
-
   case object V4PackagingVersion extends universe.v4.model.PackagingVersion {
 
     val show: String = "4.0"
 
-    implicit val decodeV4V4PackagingVersion: Decoder[V4PackagingVersion.type] = {
+    implicit val decodeV4PackagingVersion: Decoder[V4PackagingVersion.type] = {
       Decoder.instance { c: HCursor =>
         c.as[String].flatMap { string =>
           if (string == show) {
@@ -201,11 +203,43 @@ package v4.model {
       }
     }
 
-    implicit val encodeV4V4PackagingVersion: Encoder[V4PackagingVersion.type] = {
+    implicit val encodeV4PackagingVersion: Encoder[V4PackagingVersion.type] = {
       Encoder.instance { _: V4PackagingVersion.type =>
         show.asJson
       }
     }
   }
 
+}
+
+
+package v5.model {
+
+  case object V5PackagingVersion extends universe.v4.model.PackagingVersion {
+
+    val show: String = "5.0"
+
+    implicit val decodeV5packagingVersion: Decoder[V5PackagingVersion.type] = {
+      Decoder.instance { c: HCursor =>
+        c.as[String].flatMap { string =>
+          if (string == show) {
+            Right(this)
+          } else {
+            Left(
+              DecodingFailure(
+                s"Expected value [$show] for packaging version, but found [$string]",
+                c.history
+              )
+            )
+          }
+        }
+      }
+    }
+
+    implicit val encodeV5PackagingVersion: Encoder[V5PackagingVersion.type] = {
+      Encoder.instance { _: V5PackagingVersion.type =>
+        show.asJson
+      }
+    }
+  }
 }

@@ -11,6 +11,7 @@ import com.mesosphere.cosmos.render.PackageDefinitionRenderer
 import com.mesosphere.cosmos.repository.PackageCollection
 import com.mesosphere.cosmos.rpc
 import com.mesosphere.cosmos.rpc.v1.model.ServiceUpdateRequest
+import com.mesosphere.cosmos.service.CustomPackageManagerRouter
 import com.mesosphere.cosmos.thirdparty.marathon.model.AppId
 import com.mesosphere.cosmos.thirdparty.marathon.model.MarathonAppResponse
 import com.mesosphere.universe
@@ -22,36 +23,50 @@ import io.circe.JsonObject
 final class ServiceUpdateHandler(
   adminRouter: AdminRouter,
   packageCollection: PackageCollection,
-  serviceUpdater: ServiceUpdater
+  serviceUpdater: ServiceUpdater,
+  customPackageManagerRouter: CustomPackageManagerRouter
 ) extends EndpointHandler[rpc.v1.model.ServiceUpdateRequest, rpc.v1.model.ServiceUpdateResponse] {
 
   import ServiceUpdateHandler._
+
+  private[this] lazy val logger = org.slf4j.LoggerFactory.getLogger(getClass)
 
   override def apply(
     request: rpc.v1.model.ServiceUpdateRequest
   )(
     implicit session: RequestSession
   ): Future[rpc.v1.model.ServiceUpdateResponse] = {
-    adminRouter.getApp(request.appId).flatMap { marathonAppResponse =>
-      getPackageWithSourceOrThrow(packageCollection, marathonAppResponse.app).flatMap {
-        case (packageDefinition, packageSource) =>
-          if (request.packageVersion.exists(_ != packageDefinition.version)) {
-            Future.exception(
-              VersionUpgradeNotSupportedInOpen(
-                request.packageVersion,
-                packageDefinition.version
-              ).exception
-            )
-          } else {
-            update(
-              serviceUpdater,
-              marathonAppResponse,
-              request,
-              packageDefinition,
-              packageSource
-            )
+    customPackageManagerRouter.getCustomPackageManagerId(
+      request.managerId,
+      request.packageName,
+      request.packageVersion,
+      Option(request.appId)
+    ).flatMap {
+      case Some(managerId) if !managerId.isEmpty =>
+        logger.debug(s"Request [$request] requires a custom manager: [$managerId]")
+        customPackageManagerRouter.callCustomServiceUpdate(request, managerId)
+      case _ =>
+        adminRouter.getApp(request.appId).flatMap { marathonAppResponse =>
+          getPackageWithSourceOrThrow(packageCollection, marathonAppResponse.app).flatMap {
+            case (packageDefinition, packageSource) =>
+              if (request.packageVersion.exists(_ != packageDefinition.version)) {
+                Future.exception(
+                  VersionUpgradeNotSupportedInOpen(
+                    request.packageVersion,
+                    packageDefinition.version
+                  ).exception
+                )
+              } else {
+                update(
+                  serviceUpdater,
+                  marathonAppResponse,
+                  request,
+                  packageDefinition,
+                  packageSource
+                )
+              }
           }
-      }
+        }
     }
   }
 

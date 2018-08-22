@@ -4,9 +4,9 @@ import com.mesosphere.http.MediaType
 
 object MediaTypes {
 
-  val dcos = MediaType.vndJson(List("dcos")) _
-  val dcosPackage = MediaType.vndJson(List("dcos", "package")) _
-  val dcosService = MediaType.vndJson(List("dcos", "service")) _
+  private[this] val dcos = MediaType.vndJson(List("dcos")) _
+  private[this] val dcosPackage = MediaType.vndJson(List("dcos", "package")) _
+  private[this] val dcosService = MediaType.vndJson(List("dcos", "service")) _
 
   val UninstallRequest = dcosPackage("uninstall-request", 1)
   val UninstallResponse = dcosPackage("uninstall-response", 1)

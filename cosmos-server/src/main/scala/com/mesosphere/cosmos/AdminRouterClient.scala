@@ -1,6 +1,7 @@
 package com.mesosphere.cosmos
 
 import com.mesosphere.cosmos.http.RequestSession
+import com.mesosphere.cosmos.rpc.MediaTypes
 import com.mesosphere.cosmos.thirdparty.adminrouter.model.DcosVersion
 import com.mesosphere.cosmos.thirdparty.marathon.model.AppId
 import com.netaporter.uri.Uri
@@ -9,6 +10,7 @@ import com.twitter.finagle.Service
 import com.twitter.finagle.http._
 import com.twitter.util.Await
 import com.twitter.util.Future
+import io.circe.syntax._
 import org.jboss.netty.handler.codec.http.HttpMethod
 
 class AdminRouterClient(
@@ -57,6 +59,50 @@ class AdminRouterClient(
   )(implicit session: RequestSession): Future[Response] = {
     val uri = "service" / service.toUri / apiVersion / "plans" / plan
     client(get(uri))
+  }
+
+  def postCustomPackageInstall(
+     managerId: AppId,
+     body: rpc.v1.model.InstallRequest
+   )(implicit session: RequestSession): Future[Response] = {
+    val uri = "service" / managerId.toUri / "package" / "install"
+    val p = post(uri, body.asJson)
+    p.headerMap.set(Fields.ContentType, MediaTypes.InstallRequest.show)
+    p.headerMap.set(Fields.Accept, MediaTypes.V2InstallResponse.show)
+    client(p)
+  }
+
+  def postCustomPackageUninstall(
+      managerId: AppId,
+      body: rpc.v1.model.UninstallRequest
+    )(implicit session: RequestSession): Future[Response] = {
+    val uri = "service" / managerId.toUri / "package" / "uninstall"
+    val p = post(uri, body.asJson)
+    p.headerMap.set(Fields.ContentType, MediaTypes.UninstallRequest.show)
+    p.headerMap.set(Fields.Accept, MediaTypes.UninstallResponse.show)
+    client(p)
+  }
+
+  def postCustomServiceDescribe(
+    managerId: AppId,
+    body: rpc.v1.model.ServiceDescribeRequest
+  )(implicit session: RequestSession): Future[Response] = {
+    val uri = "service" / managerId.toUri / "service" / "describe"
+    val p = post(uri, body.asJson)
+    p.headerMap.set(Fields.ContentType, MediaTypes.ServiceDescribeRequest.show)
+    p.headerMap.set(Fields.Accept, MediaTypes.ServiceDescribeResponse.show)
+    client(p)
+  }
+
+  def postCustomServiceUpdate(
+    managerId: AppId,
+    body: rpc.v1.model.ServiceUpdateRequest
+  )(implicit session: RequestSession): Future[Response] = {
+    val uri = "service" / managerId.toUri / "service" / "update"
+    val p = post(uri, body.asJson)
+    p.headerMap.set(Fields.ContentType, MediaTypes.ServiceUpdateRequest.show)
+    p.headerMap.set(Fields.Accept, MediaTypes.ServiceDescribeResponse.show)
+    client(p)
   }
 }
 

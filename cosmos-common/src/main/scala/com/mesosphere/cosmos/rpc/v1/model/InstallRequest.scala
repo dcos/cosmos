@@ -13,9 +13,10 @@ import io.circe.generic.semiauto.deriveEncoder
 
 case class InstallRequest(
   packageName: String,
-  packageVersion: Option[PackageDetailsVersion] = None,
-  options: Option[JsonObject] = None,
-  appId: Option[AppId] = None
+  packageVersion: Option[PackageDetailsVersion],
+  options: Option[JsonObject],
+  appId: Option[AppId],
+  managerId: Option[String]
 )
 
 object InstallRequest {

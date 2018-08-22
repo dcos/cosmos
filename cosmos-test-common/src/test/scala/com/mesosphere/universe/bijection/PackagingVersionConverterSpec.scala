@@ -53,6 +53,14 @@ final class PackagingVersionConverterSpec extends FreeSpec with Matchers with Ta
     behave like v4V4PackagingVersionConversions[universe.v2.model.PackagingVersion]
   }
 
+  "v5V5PackagingVersionToV2PackagingVersion should" - {
+    behave like v5V5PackagingVersionConversions[universe.v2.model.PackagingVersion]
+  }
+
+  "v5V5PackagingVersionToString should" - {
+    behave like v5V5PackagingVersionConversions[String]
+  }
+
   "v3PackagingVersionToString should" - {
     behave like v3PackagingVersionConversions[String]
   }
@@ -60,6 +68,7 @@ final class PackagingVersionConverterSpec extends FreeSpec with Matchers with Ta
   "v3PackagingVersionToV2PackagingVersion should" - {
     behave like v3PackagingVersionConversions[universe.v2.model.PackagingVersion]
   }
+
 
   private[this] def v3V2PackagingVersionConversions[A](implicit
     v2ToA: Injection[universe.v3.model.V2PackagingVersion.type, A],
@@ -125,6 +134,29 @@ final class PackagingVersionConverterSpec extends FreeSpec with Matchers with Ta
     "fail in the reverse direction if the string is anything else" in {
       val Failure(iae) = "2.0".as[A].as[Try[universe.v4.model.V4PackagingVersion.type]]
       val message = "Expected value [4.0] for packaging version, but found [2.0]"
+      assertResult(message)(iae.getMessage)
+    }
+
+  }
+
+  private[this] def v5V5PackagingVersionConversions[A](implicit
+   packagingVersionConverter: Injection[universe.v5.model.V5PackagingVersion.type, A],
+   aToString: Bijection[A, String]
+  ): Unit = {
+
+    "succeed in the forward direction" in {
+      assertResult("5.0")(universe.v5.model.V5PackagingVersion.as[A].as[String])
+    }
+
+    """succeed in the reverse direction if the string is "5.0"""" in {
+      assertResult(Success(universe.v5.model.V5PackagingVersion)) {
+        "5.0".as[A].as[Try[universe.v5.model.V5PackagingVersion.type]]
+      }
+    }
+
+    "fail in the reverse direction if the string is anything else" in {
+      val Failure(iae) = "2.0".as[A].as[Try[universe.v5.model.V5PackagingVersion.type]]
+      val message = "Expected value [5.0] for packaging version, but found [2.0]"
       assertResult(message)(iae.getMessage)
     }
 

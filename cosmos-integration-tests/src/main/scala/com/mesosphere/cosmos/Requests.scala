@@ -12,6 +12,7 @@ import com.mesosphere.cosmos.thirdparty.marathon.model.Deployment
 import com.mesosphere.cosmos.thirdparty.marathon.model.MarathonApp
 import com.mesosphere.universe
 import com.netaporter.uri.Uri
+import com.twitter.finagle.http.Response
 import com.twitter.util.Await
 import io.circe.Decoder
 import io.circe.JsonObject
@@ -33,7 +34,8 @@ object Requests {
           name,
           version,
           options,
-          appId
+          appId,
+          None
         )
       )
     )
@@ -43,7 +45,8 @@ object Requests {
     name: String,
     version: Option[universe.v2.model.PackageDetailsVersion] = None,
     options: Option[JsonObject] = None,
-    appId: Option[AppId] = None
+    appId: Option[AppId] = None,
+    managerId: Option[String] = None
   ): rpc.v2.model.InstallResponse = {
     callEndpoint[rpc.v2.model.InstallResponse](
       CosmosRequests.packageInstallV2(
@@ -51,7 +54,8 @@ object Requests {
           name,
           version,
           options,
-          appId
+          appId,
+          managerId
         )
       )
     )
@@ -60,14 +64,17 @@ object Requests {
   def uninstall(
     name: String,
     appId: Option[AppId] = None,
-    all: Option[Boolean] = None
+    all: Option[Boolean] = None,
+    managerId: Option[String] = None
   ): rpc.v1.model.UninstallResponse = {
     callEndpoint[rpc.v1.model.UninstallResponse](
       CosmosRequests.packageUninstall(
         rpc.v1.model.UninstallRequest(
           packageName = name,
           appId = appId,
-          all = all
+          all = all,
+          managerId = managerId,
+          packageVersion = None
         )
       )
     )
@@ -146,15 +153,14 @@ object Requests {
   }
 
   def describeService(
-    appId: AppId
+    appId: AppId,
+    managerId: Option[String] = None
   )(
     implicit testContext: TestContext
   ): rpc.v1.model.ServiceDescribeResponse = {
     callEndpoint[rpc.v1.model.ServiceDescribeResponse](
       CosmosRequests.serviceDescribe(
-        rpc.v1.model.ServiceDescribeRequest(
-          appId
-        )
+        rpc.v1.model.ServiceDescribeRequest(appId, managerId, None, None)
       )
     )
   }
@@ -186,6 +192,14 @@ object Requests {
       CosmosIntegrationTestClient.adminRouter.getApp(appId)
     }.app
   }
+
+  def postMarathonApp(
+    app: JsonObject
+  ): Response = Await.result(CosmosIntegrationTestClient.adminRouter.createApp(app))
+
+  def deleteMarathonApp(
+   appId: AppId
+ ): Response = Await.result(CosmosIntegrationTestClient.adminRouter.deleteApp(appId))
 
   def isMarathonAppInstalled(appId: AppId): Boolean = {
     Await.result {

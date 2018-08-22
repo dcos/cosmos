@@ -727,6 +727,8 @@ class PackageDefinitionRendererSpec extends FreeSpec with Matchers with TableDri
         v3.copy(marathon = Some(marathon))
       case v4: universe.v4.model.V4Package =>
         v4.copy(marathon = Some(marathon))
+      case v5: universe.v5.model.V5Package =>
+        v5.copy(marathon = Some(marathon))
     }
   }
 

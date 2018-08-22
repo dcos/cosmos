@@ -106,6 +106,42 @@ class AdminRouter(
     adminRouterClient.getSdkServicePlanStatus(service, apiVersion, plan)
   }
 
+  def postCustomPackageInstall(
+    managerId: AppId,
+    body: rpc.v1.model.InstallRequest
+  )(
+    implicit session: RequestSession
+  ): Future[Response] = {
+    adminRouterClient.postCustomPackageInstall(managerId, body)
+  }
+
+  def postCustomPackageUninstall(
+    managerId: AppId,
+    body: rpc.v1.model.UninstallRequest
+  )(
+   implicit session: RequestSession
+  ): Future[Response] = {
+    adminRouterClient.postCustomPackageUninstall(managerId, body)
+  }
+
+  def postCustomServiceDescribe(
+    managerId: AppId,
+    body: rpc.v1.model.ServiceDescribeRequest
+  )(
+    implicit session: RequestSession
+  ): Future[Response] = {
+    adminRouterClient.postCustomServiceDescribe(managerId, body)
+  }
+
+  def postCustomServiceUpdate(
+    managerId: AppId,
+    body: rpc.v1.model.ServiceUpdateRequest
+   )(
+     implicit session: RequestSession
+   ): Future[Response] = {
+    adminRouterClient.postCustomServiceUpdate(managerId, body)
+  }
+
   def listDeployments()(implicit session: RequestSession): Future[List[Deployment]] = {
     marathon.listDeployments()
   }
