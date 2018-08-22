@@ -41,29 +41,6 @@ final class PackageDescribeSpec
       }
     }
 
-    "when requesting a v5 response" - {
-      "can successfully describe helloworld with a custom manager" - {
-
-        val response = describeRequest(
-          rpc.v1.model.DescribeRequest(
-            "hello-world",
-            // TODO: Use a static version here as "stub-universe" may change (although this is from the stub we own)
-            Some(universe.v2.model.PackageDetailsVersion("stub-universe"))
-          )
-        )
-
-        response.status shouldBe Status.Ok
-
-        val description = decode[rpc.v3.model.DescribeResponse](
-          response.contentString
-        ).getOrThrow
-
-        description.`package`.pkgDef.manager.isDefined shouldBe true
-        description.`package`.pkgDef.manager.get.packageName shouldBe ItObjects.customManagerAppName
-        ()
-      }
-    }
-
     "when requesting a v3 response" - {
       "can successfully describe helloworld" - {
         "without version" in {
