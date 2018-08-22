@@ -13,15 +13,14 @@ import com.twitter.finagle.NoBrokersAvailableException
 import com.twitter.finagle.RequestException
 import com.twitter.finagle.Service
 import com.twitter.finagle.SimpleFilter
+import com.twitter.finagle.Stack
 import com.twitter.finagle.http.Request
 import com.twitter.finagle.http.Response
 import com.twitter.finagle.http.Status
-import com.twitter.finagle.Stack
 import com.twitter.finagle.http.param.MaxResponseSize
 import com.twitter.util.Future
 import com.twitter.util.StorageUnit
 import com.twitter.util.Try
-
 
 object Services {
   def adminRouterClient(
@@ -52,11 +51,10 @@ object Services {
     postAuthFilter: SimpleFilter[Request, Response] = Filter.identity
   ): Try[Service[Request, Response]] = {
     extractHostAndPort(uri) map { case ConnectionDetails(hostname, port, tls) =>
-      val cBuilder = tls match {
-        case false =>
-          Http.client.withStack(Http.client.stack.remove(Stack.Role("Retries")))
-        case true =>
-          Http.client.withTls(hostname).withStack(Http.client.stack.remove(Stack.Role("Retries")))
+      val cBuilder = if (tls) {
+        Http.client.withTls(hostname).withStack(Http.client.stack.remove(Stack.Role("Retries")))
+      } else {
+        Http.client.withStack(Http.client.stack.remove(Stack.Role("Retries")))
       }
 
       CustomLoggingFilter.andThen(

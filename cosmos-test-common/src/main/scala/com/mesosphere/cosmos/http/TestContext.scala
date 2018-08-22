@@ -12,7 +12,7 @@ final case class TestContext(
 
 object TestContext {
 
-  private lazy val logger = LoggerFactory.getLogger(getClass())
+  private[this] lazy val logger = LoggerFactory.getLogger(getClass)
 
   def fromSystemProperties(): TestContext = {
     val directProperty = "com.mesosphere.cosmos.test.CosmosIntegrationTestClient.CosmosClient.direct"

@@ -14,12 +14,11 @@ import com.mesosphere.cosmos.rpc.v1.model.ServiceUpdateRequest
 import com.mesosphere.cosmos.service.CustomPackageManagerRouter
 import com.mesosphere.cosmos.thirdparty.marathon.model.AppId
 import com.mesosphere.cosmos.thirdparty.marathon.model.MarathonAppResponse
+import com.mesosphere.universe
 import com.mesosphere.universe.common.JsonUtil
 import com.netaporter.uri.Uri
-import io.circe.JsonObject
-import com.mesosphere.universe
 import com.twitter.util.Future
-import org.slf4j.Logger
+import io.circe.JsonObject
 
 final class ServiceUpdateHandler(
   adminRouter: AdminRouter,
@@ -30,31 +29,23 @@ final class ServiceUpdateHandler(
 
   import ServiceUpdateHandler._
 
+  private[this] lazy val logger = org.slf4j.LoggerFactory.getLogger(getClass)
+
   override def apply(
     request: rpc.v1.model.ServiceUpdateRequest
   )(
     implicit session: RequestSession
   ): Future[rpc.v1.model.ServiceUpdateResponse] = {
-
-    lazy val logger: Logger = org.slf4j.LoggerFactory.getLogger(getClass)
-
     customPackageManagerRouter.getCustomPackageManagerId(
       request.managerId,
       request.packageName,
       request.packageVersion,
       Option(request.appId)
     ).flatMap {
-      case managerId if !managerId.get.isEmpty => {
-        logger.debug("Request requires a custom manager: " + managerId)
-        customPackageManagerRouter.callCustomServiceUpdate(
-          request,
-          managerId.get
-        ).map {
-          case response =>
-            response
-        }
-      }
-      case managerId if managerId.get.isEmpty => {
+      case managerId if !managerId.get.isEmpty =>
+        logger.debug(s"Request [$request] requires a custom manager: [$managerId]")
+        customPackageManagerRouter.callCustomServiceUpdate(request, managerId.get)
+      case managerId if managerId.get.isEmpty =>
         adminRouter.getApp(request.appId).flatMap { marathonAppResponse =>
           getPackageWithSourceOrThrow(packageCollection, marathonAppResponse.app).flatMap {
             case (packageDefinition, packageSource) =>
@@ -76,7 +67,6 @@ final class ServiceUpdateHandler(
               }
           }
         }
-      }
     }
   }
 

@@ -26,15 +26,14 @@ object MediaTypes {
   val UniverseV2Repository: MediaType = applicationZip
   val universeV2Package: MediaType = universePackage("v2")
 
-
   val UniverseV3Repository: MediaType = universeRepository("v3")
   val universeV3Package: MediaType = universePackage("v3")
 
   val UniverseV4Repository: MediaType = universeRepository("v4")
   val universeV4Package: MediaType = universePackage("v4")
 
-  val universeV5Package: MediaType = universePackage("v5")
   val UniverseV5Repository: MediaType = universeRepository("v5")
+  val universeV5Package: MediaType = universePackage("v5")
 
   val PackageZip: MediaType = MediaType(
     "application",

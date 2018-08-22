@@ -30,19 +30,20 @@ import com.twitter.util.Future
 import io.circe.Json
 import io.circe.JsonObject
 import io.circe.syntax._
-import org.slf4j.Logger
 
-//noinspection ScalaStyle
 private[cosmos] final class UninstallHandler(
   adminRouter: AdminRouter,
   packageCollection: PackageCollection,
   uninstaller: ServiceUninstaller,
   customPackageManagerRouter: CustomPackageManagerRouter
 ) extends EndpointHandler[rpc.v1.model.UninstallRequest, rpc.v1.model.UninstallResponse] {
-  lazy val logger: Logger = org.slf4j.LoggerFactory.getLogger(getClass)
+
+  private[this] lazy val logger = org.slf4j.LoggerFactory.getLogger(getClass)
 
   private type FwIds = List[String]
+
   // scalastyle:off cyclomatic.complexity
+  // scalastyle:off method.length
   override def apply(
     req: rpc.v1.model.UninstallRequest
   )(
@@ -54,17 +55,9 @@ private[cosmos] final class UninstallHandler(
       req.packageVersion,
       req.appId
     ).flatMap {
-      case managerId if !managerId.get.isEmpty => {
-        logger.debug("Request requires custom manager: " + managerId)
-          customPackageManagerRouter.callCustomPackageUninstall(
-            req,
-            managerId.get
-          ).flatMap {
-            case response => {
-              Future {response}
-            }
-          }
-      }
+      case managerId if !managerId.get.isEmpty =>
+        logger.debug(s"Request [$req] requires custom manager: [$managerId]")
+        customPackageManagerRouter.callCustomPackageUninstall(req, managerId.get)
       case managerId if managerId.get.isEmpty => {
         getMarathonApps(req.packageName, req.appId)
           .map(apps => createUninstallOperations(req.packageName, apps))
@@ -112,6 +105,7 @@ private[cosmos] final class UninstallHandler(
       }
     }
   }
+  // scalastyle:on method.length
   // scalastyle:on cyclomatic.complexity
 
   private def runUninstall(
@@ -144,7 +138,7 @@ private[cosmos] final class UninstallHandler(
             case all =>
               throw MultipleFrameworkIds(op.packageName, op.packageVersion, fwName, all).exception
           } handle {
-            case su @ CosmosException(ServiceUnavailable(_, _), _, _) =>
+            case su@CosmosException(ServiceUnavailable(_, _), _, _) =>
               throw CosmosException(IncompleteUninstall(op.packageName), su)
           }
         case None =>
@@ -305,6 +299,7 @@ object UninstallHandler {
     frameworkName: Option[String] = None,
     frameworkId: Option[String] = None
   )
+
   private case object UninstallDetails {
     def from(uninstallOperation: UninstallOperation): UninstallDetails = {
       UninstallDetails(
@@ -317,6 +312,9 @@ object UninstallHandler {
   }
 
   private[handler] sealed trait UninstallType
+
   private[handler] case object MarathonUninstall extends UninstallType
+
   private[handler] case object SdkUninstall extends UninstallType
+
 }

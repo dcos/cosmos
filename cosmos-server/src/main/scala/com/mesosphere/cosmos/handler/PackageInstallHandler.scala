@@ -15,8 +15,6 @@ import com.mesosphere.universe
 import com.mesosphere.universe.bijection.UniverseConversions._
 import com.twitter.bijection.Conversion.asMethod
 import com.twitter.util.Future
-import org.slf4j.Logger
-
 
 private[cosmos] final class PackageInstallHandler(
   packageCollection: PackageCollection,
@@ -24,8 +22,9 @@ private[cosmos] final class PackageInstallHandler(
   customPackageManagerRouter: CustomPackageManagerRouter
 ) extends EndpointHandler[rpc.v1.model.InstallRequest, rpc.v2.model.InstallResponse] {
 
-  lazy val logger: Logger = org.slf4j.LoggerFactory.getLogger(getClass)
+  private[this] lazy val logger = org.slf4j.LoggerFactory.getLogger(getClass)
 
+  // scalastyle:off method.length
   override def apply(
     request: rpc.v1.model.InstallRequest
   )(
@@ -37,17 +36,10 @@ private[cosmos] final class PackageInstallHandler(
       request.packageVersion.as[Option[universe.v3.model.Version]],
       None
     ).flatMap {
-      case managerId if !managerId.get.isEmpty => {
-        logger.debug("Request requires a custom manager: " + managerId)
-        customPackageManagerRouter.callCustomPackageInstall(
-          request,
-          managerId.get
-        ).map {
-          case response =>
-            response
-        }
-      }
-      case managerId if managerId.get.isEmpty => {
+      case Some(managerId) if !managerId.isEmpty =>
+        logger.debug(s"Request [$request] requires a custom manager: [$managerId]")
+        customPackageManagerRouter.callCustomPackageInstall(request, managerId)
+      case managerId if managerId.get.isEmpty =>
         packageCollection
           .getPackageByPackageVersion(
             request.packageName,
@@ -88,7 +80,7 @@ private[cosmos] final class PackageInstallHandler(
                   }
               }
           }
-      }
     }
   }
+  // scalastyle:on method.length
 }

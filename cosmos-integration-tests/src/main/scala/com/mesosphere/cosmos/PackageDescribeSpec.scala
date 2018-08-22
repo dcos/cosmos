@@ -47,6 +47,7 @@ final class PackageDescribeSpec
         val response = describeRequest(
           rpc.v1.model.DescribeRequest(
             "hello-world",
+            // TODO: Use a static version here as "stub-universe" may change (although this is from the stub we own)
             Some(universe.v2.model.PackageDetailsVersion("stub-universe"))
           )
         )
@@ -58,7 +59,7 @@ final class PackageDescribeSpec
         ).getOrThrow
 
         description.`package`.pkgDef.manager.isDefined shouldBe true
-        description.`package`.pkgDef.manager.get.packageName shouldBe "cosmos-package"
+        description.`package`.pkgDef.manager.get.packageName shouldBe ItObjects.customManagerAppName
         ()
       }
     }

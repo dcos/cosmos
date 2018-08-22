@@ -17,8 +17,8 @@ case class ServiceUpdateRequest(
   packageVersion: Option[universe.v3.model.Version],
   options: Option[JsonObject],
   replace: Boolean,
-  managerId: Option[String] = None,
-  packageName: Option[String] = None
+  managerId: Option[String],
+  packageName: Option[String]
 )
 
 object ServiceUpdateRequest {

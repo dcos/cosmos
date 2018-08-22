@@ -161,7 +161,9 @@ object ServiceUpdateSpec {
           appId,
           packageVersion,
           options,
-          replace
+          replace,
+          None,
+          None
         ),
         MediaTypes.ServiceUpdateRequest,
         MediaTypes.ServiceUpdateResponse
