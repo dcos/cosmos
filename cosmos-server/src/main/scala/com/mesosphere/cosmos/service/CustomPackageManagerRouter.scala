@@ -26,7 +26,7 @@ class CustomPackageManagerRouter(adminRouter: AdminRouter, packageCollection: Pa
     packageName: Option[String],
     packageVersion: Option[universe.v3.model.Version],
     appId: Option[AppId]
-  )(implicit session: RequestSession): Future[Option[String]] = {
+ )(implicit session: RequestSession): Future[Option[String]] = {
     val defaultId = Some("")
     (managerId, packageName, packageVersion, appId) match {
       case (Some(id), _, _, _) =>
@@ -73,12 +73,10 @@ class CustomPackageManagerRouter(adminRouter: AdminRouter, packageCollection: Pa
           request.options,
           request.appId
         )
-      ).flatMap {
+      ).map {
         response =>
-          Future {
-            validateResponse(response)
-            decode[InstallResponse](response.contentString).getOrThrow
-          }
+          validateResponse(response)
+          decode[InstallResponse](response.contentString).getOrThrow
       }
   }
 

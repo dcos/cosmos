@@ -22,10 +22,13 @@ import io.circe.Json
 import io.circe.JsonObject
 import io.circe.jawn._
 import java.util.UUID
+
+import com.mesosphere.cosmos.ItObjects
 import org.scalatest.Assertion
 import org.scalatest.FreeSpec
 import org.scalatest.concurrent.Eventually
 import org.scalatest.time.SpanSugar
+
 import scala.util.Right
 
 final class UninstallHandlerSpec extends FreeSpec with Eventually with SpanSugar {
@@ -57,7 +60,7 @@ final class UninstallHandlerSpec extends FreeSpec with Eventually with SpanSugar
     "be able to install and uninstall a service with a custom manager" in {
       val appId = AppId("cassandra" / "uninstall-test")
       //custom install tested here
-      val installRequest = InstallRequest("cassandra", appId = Some(appId), managerId = Some("cosmos-package"))
+      val installRequest = InstallRequest("cassandra", appId = Some(appId), managerId = Some(ItObjects.customManagerAppName))
       val installResponse = submitInstallRequest(installRequest)
       assertResult(Status.Ok)(installResponse.status)
 

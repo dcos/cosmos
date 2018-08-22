@@ -52,13 +52,13 @@ final class ServiceDescribeSpec extends FeatureSpec with Matchers {
     }
     scenario("The user would like to descibe a service via a custom manager") {
       val appId = AppId("cassandra")
-      Requests.installV2("cassandra", appId = Some(appId), managerId = Some("cosmos-package"))
+      Requests.installV2("cassandra", appId = Some(appId), managerId = Some(ItObjects.customManagerAppName))
 
-      val serviceDescribeRequest = ServiceDescribeRequest(appId,  managerId = Some("cosmos-package"))
+      val serviceDescribeRequest = ServiceDescribeRequest(appId,  managerId = Some(ItObjects.customManagerAppName))
       val serviceDescribeResponse = submitServiceDescribeRequest(serviceDescribeRequest)
       assertResult(Status.Ok)(serviceDescribeResponse.status)
 
-      Requests.uninstall("cassandra",  managerId = Some("cosmos-package"))
+      Requests.uninstall("cassandra",  managerId = Some(ItObjects.customManagerAppName))
     }
   }
 
