@@ -9,7 +9,8 @@ import com.mesosphere.cosmos.rpc.v1.model.ErrorResponse
 import com.mesosphere.cosmos.test.CosmosIntegrationTestClient.CosmosClient
 import com.mesosphere.cosmos.thirdparty.marathon.model.AppId
 import com.twitter.bijection.Conversion.asMethod
-import com.twitter.finagle.http.{Response, Status}
+import com.twitter.finagle.http.Response
+import com.twitter.finagle.http.Status
 import org.scalatest.FeatureSpec
 import org.scalatest.Matchers
 

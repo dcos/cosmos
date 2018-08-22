@@ -5,7 +5,9 @@ import com.mesosphere.cosmos.ItOps._
 import com.mesosphere.cosmos.ItUtil
 import com.mesosphere.cosmos.Requests
 import com.mesosphere.cosmos.RoundTrips
-import com.mesosphere.cosmos.http.{HttpRequest, ServiceRpcPath, TestContext}
+import com.mesosphere.cosmos.http.HttpRequest
+import com.mesosphere.cosmos.http.ServiceRpcPath
+import com.mesosphere.cosmos.http.TestContext
 import com.mesosphere.cosmos.rpc
 import com.mesosphere.cosmos.rpc.MediaTypes
 import com.mesosphere.cosmos.test.CosmosIntegrationTestClient
@@ -100,7 +102,7 @@ class ServiceUpdateSpec extends FeatureSpec with Matchers {
       val error = intercept[HttpErrorResponse](serviceUpdate(appId, None, Some(options), false))
 
       error.status shouldBe Status.BadRequest
-      error.errorResponse shouldBe rpc.v1.model.ErrorResponse(
+      error.errorResponse  shouldBe rpc.v1.model.ErrorResponse(
         "MarathonAppNotFound",
         "Unable to locate service with marathon appId: '/does-not-exist'",
         Some(JsonObject.singleton("appId", "/does-not-exist".asJson))
@@ -130,8 +132,9 @@ class ServiceUpdateSpec extends FeatureSpec with Matchers {
         error.errorResponse.message shouldBe "Options JSON failed validation"
       }
     }
-    // scalastyle:on multiple.string.literals
   }
+
+  // scalastyle:on multiple.string.literals
 }
 
 object ServiceUpdateSpec {
@@ -147,8 +150,7 @@ object ServiceUpdateSpec {
     appId: AppId,
     packageVersion: Option[universe.v3.model.Version],
     options: Option[JsonObject],
-    replace: Boolean,
-    managerId: Option[String] = None
+    replace: Boolean
   )(
     implicit testContext: TestContext
   ): rpc.v1.model.ServiceUpdateResponse = {
@@ -159,8 +161,7 @@ object ServiceUpdateSpec {
           appId,
           packageVersion,
           options,
-          replace,
-          managerId
+          replace
         ),
         MediaTypes.ServiceUpdateRequest,
         MediaTypes.ServiceUpdateResponse
