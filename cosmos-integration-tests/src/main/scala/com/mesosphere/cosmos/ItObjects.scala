@@ -84,7 +84,6 @@ object ItObjects {
     """
       .stripMargin
       .replaceAllLiterally("@", "$")
-  
   // scalastyle:on line.size.limit
   // scalastyle:on file.size.limit
   // scalastyle:on line.contains.tab
