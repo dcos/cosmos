@@ -144,5 +144,5 @@ object ServiceUninstaller {
 
   val RetryInterval: Duration = 10.seconds
 
-  private val DefaultRetries: Int = 50
+  private val DefaultRetries: Int = 10000
 }
