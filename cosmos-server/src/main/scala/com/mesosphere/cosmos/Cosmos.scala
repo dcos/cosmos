@@ -246,8 +246,8 @@ trait CosmosApp
 
     val api = endpoints.handle {
       case ce: CosmosException =>
-        logger.info(s"Cosmos Exception : ${ce.getMessage}")
-        logger.debug(s"${ce.getMessage} : ", ce)
+        if (logger.isDebugEnabled) logger.debug(s"Cosmos Exception : ${ce.getMessage}", ce)
+        else logger.info(s"Cosmos Exception : ${ce.getMessage}")
         stats.counter(s"definedError/${sanitizeClassName(ce.error.getClass)}").incr()
         val output = Output.failure(
           ce,
@@ -258,7 +258,6 @@ trait CosmosApp
         ce.headers.foldLeft(output) { case (out, kv) => out.withHeader(kv) }
       case fe @ (_: _root_.io.finch.Error | _: _root_.io.finch.Errors) =>
         logger.warn(s"Finch Exception : ${fe.getMessage}", fe)
-        logger.info(s"${fe.getMessage} : ", fe)
         stats.counter(s"finchError/${sanitizeClassName(fe.getClass)}").incr()
         Output.failure(
           fe.asInstanceOf[Exception], // Must be an Exception based on the types

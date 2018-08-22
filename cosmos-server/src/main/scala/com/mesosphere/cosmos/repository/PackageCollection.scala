@@ -21,7 +21,7 @@ final class PackageCollection(
   universeClient: UniverseClient
 ) {
 
-  val repositoryCache: LoadingCache[RequestSession, Future[List[(universe.v4.model.Repository, Uri)]]] = {
+  private[this] lazy val repositoryCache: LoadingCache[RequestSession, Future[List[(universe.v4.model.Repository, Uri)]]] = {
     Caffeine
       .newBuilder()
       .expireAfterWrite(1, TimeUnit.MINUTES)
