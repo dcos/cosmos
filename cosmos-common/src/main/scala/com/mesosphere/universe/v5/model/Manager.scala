@@ -11,6 +11,6 @@ case class Manager(
 )
 
 object Manager {
-  implicit val decodePlatforms: Decoder[Manager] = deriveDecoder[Manager]
-  implicit val encodePlatforms: Encoder[Manager] = deriveEncoder[Manager]
+  implicit val decodeManager: Decoder[Manager] = deriveDecoder[Manager]
+  implicit val encodeManager: Encoder[Manager] = deriveEncoder[Manager]
 }

@@ -2,8 +2,10 @@ package com.mesosphere.cosmos
 
 import com.mesosphere.cosmos.ItOps._
 import com.mesosphere.cosmos.error.MarathonAppNotFound
-import com.mesosphere.cosmos.http.{CosmosRequests, TestContext}
-import com.mesosphere.cosmos.rpc.v1.model.{ErrorResponse, ServiceDescribeRequest}
+import com.mesosphere.cosmos.http.TestContext
+import com.mesosphere.cosmos.http.CosmosRequests
+import com.mesosphere.cosmos.rpc.v1.model.ServiceDescribeRequest
+import com.mesosphere.cosmos.rpc.v1.model.ErrorResponse
 import com.mesosphere.cosmos.test.CosmosIntegrationTestClient.CosmosClient
 import com.mesosphere.cosmos.thirdparty.marathon.model.AppId
 import com.twitter.bijection.Conversion.asMethod

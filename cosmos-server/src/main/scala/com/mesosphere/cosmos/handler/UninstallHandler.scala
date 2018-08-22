@@ -17,7 +17,8 @@ import com.mesosphere.cosmos.handler.UninstallHandler._
 import com.mesosphere.cosmos.http.RequestSession
 import com.mesosphere.cosmos.repository.PackageCollection
 import com.mesosphere.cosmos.rpc
-import com.mesosphere.cosmos.service.{CustomPackageManagerRouter, ServiceUninstaller}
+import com.mesosphere.cosmos.service.CustomPackageManagerRouter
+import com.mesosphere.cosmos.service.ServiceUninstaller
 import com.mesosphere.cosmos.thirdparty.marathon.model.AppId
 import com.mesosphere.cosmos.thirdparty.marathon.model.MarathonApp
 import com.mesosphere.error.ResultOps

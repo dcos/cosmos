@@ -11,7 +11,6 @@ import org.scalatest.Suite
 import org.scalatest.concurrent.Eventually
 import com.mesosphere.cosmos.circe.Decoders.parse
 import com.mesosphere.cosmos.thirdparty.marathon.model.AppId
-
 import scala.concurrent.duration._
 
 trait IntegrationBeforeAndAfterAll extends BeforeAndAfterAll with Eventually { this: Suite =>

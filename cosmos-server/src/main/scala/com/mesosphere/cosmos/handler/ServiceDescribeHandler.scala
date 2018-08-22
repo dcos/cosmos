@@ -40,27 +40,27 @@ private[cosmos] final class ServiceDescribeHandler(
         customPackageManagerRouter.callCustomServiceDescribe(
           request,
           managerId.get
-        ).flatMap {
+        ).map {
           case response =>
-            Future {response}
+            response
         }
       }
       case managerId if managerId.get.isEmpty => {
-      for {
-        marathonAppResponse <- adminRouter.getApp (request.appId)
-        packageDefinition <- getPackageDefinition (marathonAppResponse.app)
-        upgradesTo <- packageCollection.upgradesTo (packageDefinition.name, packageDefinition.version)
-        downgradesTo <- packageCollection.downgradesTo (packageDefinition)
-      } yield {
-          val userProvidedOptions = marathonAppResponse.app.serviceOptions
-          rpc.v1.model.ServiceDescribeResponse (
-          `package` = packageDefinition,
-          upgradesTo = upgradesTo,
-          downgradesTo = downgradesTo,
-          resolvedOptions = getResolvedOptions (packageDefinition, userProvidedOptions),
-          userProvidedOptions = userProvidedOptions
-      )
-    }
+        for {
+          marathonAppResponse <- adminRouter.getApp (request.appId)
+          packageDefinition <- getPackageDefinition (marathonAppResponse.app)
+          upgradesTo <- packageCollection.upgradesTo (packageDefinition.name, packageDefinition.version)
+          downgradesTo <- packageCollection.downgradesTo (packageDefinition)
+        } yield {
+            val userProvidedOptions = marathonAppResponse.app.serviceOptions
+            rpc.v1.model.ServiceDescribeResponse (
+            `package` = packageDefinition,
+            upgradesTo = upgradesTo,
+            downgradesTo = downgradesTo,
+            resolvedOptions = getResolvedOptions (packageDefinition, userProvidedOptions),
+            userProvidedOptions = userProvidedOptions
+        )
+      }
     }
     }
   }

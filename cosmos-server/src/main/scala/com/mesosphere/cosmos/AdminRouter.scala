@@ -97,12 +97,12 @@ class AdminRouter(
   }
 
   def getSdkServicePlanStatus(
-     service: AppId,
-     apiVersion: String,
-     plan: String
-   )(
+    service: AppId,
+    apiVersion: String,
+    plan: String
+  )(
      implicit session: RequestSession
-   ): Future[Response] = {
+  ): Future[Response] = {
     adminRouterClient.getSdkServicePlanStatus(service, apiVersion, plan)
   }
 
@@ -116,11 +116,11 @@ class AdminRouter(
   }
 
   def postCustomPackageUninstall(
-   managerId: AppId,
-   body: rpc.v1.model.UninstallRequest
+    managerId: AppId,
+    body: rpc.v1.model.UninstallRequest
   )(
    implicit session: RequestSession
- ): Future[Response] = {
+  ): Future[Response] = {
     adminRouterClient.postCustomPackageUninstallRequest(managerId, body)
   }
 
@@ -134,8 +134,8 @@ class AdminRouter(
   }
 
   def postCustomServiceUpdate(
-     managerId: AppId,
-     body: rpc.v1.model.ServiceUpdateRequest
+    managerId: AppId,
+    body: rpc.v1.model.ServiceUpdateRequest
    )(
      implicit session: RequestSession
    ): Future[Response] = {

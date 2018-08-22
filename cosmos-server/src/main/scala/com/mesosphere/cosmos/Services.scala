@@ -6,14 +6,22 @@ import com.mesosphere.cosmos.error.Forbidden
 import com.mesosphere.cosmos.error.ServiceUnavailable
 import com.mesosphere.cosmos.error.Unauthorized
 import com.netaporter.uri.Uri
-import com.twitter.finagle._
+import com.twitter.finagle.ChannelException
+import com.twitter.finagle.Filter
+import com.twitter.finagle.Http
+import com.twitter.finagle.NoBrokersAvailableException
+import com.twitter.finagle.RequestException
+import com.twitter.finagle.Service
+import com.twitter.finagle.SimpleFilter
 import com.twitter.finagle.http.Request
 import com.twitter.finagle.http.Response
 import com.twitter.finagle.http.Status
+import com.twitter.finagle.Stack
 import com.twitter.finagle.http.param.MaxResponseSize
 import com.twitter.util.Future
 import com.twitter.util.StorageUnit
 import com.twitter.util.Try
+
 
 object Services {
   def adminRouterClient(

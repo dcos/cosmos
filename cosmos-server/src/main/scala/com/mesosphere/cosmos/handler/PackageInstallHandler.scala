@@ -23,7 +23,9 @@ private[cosmos] final class PackageInstallHandler(
   packageRunner: MarathonPackageRunner,
   customPackageManagerRouter: CustomPackageManagerRouter
 ) extends EndpointHandler[rpc.v1.model.InstallRequest, rpc.v2.model.InstallResponse] {
+
   lazy val logger: Logger = org.slf4j.LoggerFactory.getLogger(getClass)
+
   override def apply(
     request: rpc.v1.model.InstallRequest
   )(
@@ -40,9 +42,9 @@ private[cosmos] final class PackageInstallHandler(
         customPackageManagerRouter.callCustomPackageInstall(
           request,
           managerId.get
-        ).flatMap {
+        ).map {
           case response =>
-            Future {response}
+            response
         }
       }
       case managerId if managerId.get.isEmpty => {
@@ -90,5 +92,3 @@ private[cosmos] final class PackageInstallHandler(
     }
   }
 }
-
-

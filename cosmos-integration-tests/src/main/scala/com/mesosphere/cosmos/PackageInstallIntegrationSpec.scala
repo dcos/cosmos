@@ -7,7 +7,6 @@ import com.mesosphere.cosmos.error.PackageNotFound
 import com.mesosphere.cosmos.error.ServiceMarathonTemplateNotFound
 import com.mesosphere.cosmos.error.VersionNotFound
 import com.mesosphere.cosmos.rpc.v1.model.ErrorResponse
-import com.mesosphere.cosmos.thirdparty.marathon.model._
 import com.mesosphere.universe
 import com.twitter.bijection.Conversion.asMethod
 import com.twitter.finagle.http._

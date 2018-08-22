@@ -50,9 +50,9 @@ final class ServiceUpdateHandler(
         customPackageManagerRouter.callCustomServiceUpdate(
           request,
           managerId.get
-        ).flatMap {
+        ).map {
           case response =>
-            Future {response}
+            response
         }
       }
       case managerId if managerId.get.isEmpty => {

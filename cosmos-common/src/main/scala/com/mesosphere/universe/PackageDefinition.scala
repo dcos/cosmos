@@ -311,8 +311,7 @@ package v4.model {
       def command: Option[universe.v3.model.Command] = pkgDef match {
         case v2: universe.v3.model.V2Package => v2.command
         case v3: universe.v3.model.V3Package => v3.command
-        case _: universe.v4.model.V4Package => None // command is removed v4 and above
-        case _: universe.v5.model.V5Package => None
+        case _ => None // command is removed v4 and above
       }
 
       def minDcosReleaseVersion: Option[universe.v3.model.DcosReleaseVersion] = pkgDef match {

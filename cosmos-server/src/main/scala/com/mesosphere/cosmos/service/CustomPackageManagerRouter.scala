@@ -10,7 +10,9 @@ import com.mesosphere.universe
 import com.twitter.util.Future
 import com.mesosphere.cosmos.circe.Decoders.decode
 import com.mesosphere.cosmos.error.ServiceAlreadyStarted
-import com.mesosphere.cosmos.rpc.v1.model.{ServiceDescribeResponse, ServiceUpdateResponse, UninstallResponse}
+import com.mesosphere.cosmos.rpc.v1.model.ServiceDescribeResponse
+import com.mesosphere.cosmos.rpc.v1.model.UninstallResponse
+import com.mesosphere.cosmos.rpc.v1.model.ServiceUpdateResponse
 import com.mesosphere.error.ResultOps
 import com.twitter.finagle.http.{Response, Status}
 import org.slf4j.Logger
@@ -92,12 +94,10 @@ class CustomPackageManagerRouter(adminRouter: AdminRouter, packageCollection: Pa
         request.appId,
         request.all
       )
-    ).flatMap {
+    ).map {
       response =>
-        Future {
-          validateResponse(response)
-          decode[UninstallResponse](response.contentString).getOrThrow
-        }
+        validateResponse(response)
+        decode[UninstallResponse](response.contentString).getOrThrow
     }
   }
 
@@ -109,12 +109,10 @@ class CustomPackageManagerRouter(adminRouter: AdminRouter, packageCollection: Pa
     adminRouter.postCustomServiceDescribe(
       AppId(managerId),
       new rpc.v1.model.ServiceDescribeRequest(request.appId)
-    ).flatMap {
+    ).map {
       response =>
-        Future {
-          validateResponse(response)
-          decode[ServiceDescribeResponse](response.contentString).getOrThrow
-        }
+        validateResponse(response)
+        decode[ServiceDescribeResponse](response.contentString).getOrThrow
     }
   }
 
@@ -131,12 +129,10 @@ class CustomPackageManagerRouter(adminRouter: AdminRouter, packageCollection: Pa
         request.options,
         request.replace
         )
-      ).flatMap {
+      ).map {
         response =>
-          Future {
-            validateResponse(response)
-            decode[ServiceUpdateResponse](response.contentString).getOrThrow
-          }
+          validateResponse(response)
+          decode[ServiceUpdateResponse](response.contentString).getOrThrow
       }
   }
 
@@ -144,11 +140,11 @@ class CustomPackageManagerRouter(adminRouter: AdminRouter, packageCollection: Pa
    appId: AppId
   )(implicit session: RequestSession): Future[(Option[String], Option[universe.v3.model.Version])] = {
     adminRouter.getApp(appId)
-      .flatMap {
+      .map {
         appResponse =>
           val packageName = appResponse.app.packageName
           val packageVersion = appResponse.app.packageVersion
-          Future {(packageName, packageVersion)}
+          (packageName, packageVersion)
       }
   }
 
