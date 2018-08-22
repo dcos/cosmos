@@ -28,33 +28,24 @@ class CustomPackageManagerRouter(adminRouter: AdminRouter, packageCollection: Pa
     packageName: Option[String],
     packageVersion: Option[universe.v3.model.Version],
     appId: Option[AppId]
-  )(implicit session: RequestSession): Future[Option[String]] = {
-    val defaultId = Some("")
-    (managerId, packageName, packageVersion, appId) match {
-      case (Some(id), _, _, _) =>
-        Future(Some(id))
-      case (None, Some(name), Some(version), _) =>
-        getPackageManagerWithNameAndVersion(name, version)
-          .map {
-            case Some(manager) =>
-              Some(manager.packageName)
-            case None =>
-              defaultId
-          }
-      case (None, None, None, Some(id)) =>
-        getPackageNameAndVersionFromMarathonApp(id)
-          .flatMap {
-            case (packageName, packageVersion) =>
-              getPackageManagerWithNameAndVersion(packageName.get, packageVersion.get)
-                .map {
-                  case Some(manager) =>
-                    Some(manager.packageName)
-                  case None =>
-                    defaultId
-                }
-          }
-      case _ =>
-        Future(defaultId)
+  )(
+    implicit session: RequestSession
+  ): Future[Option[String]] = {
+    managerId match {
+      case Some(_) => Future(managerId)
+      case None =>
+        (packageName, packageVersion, appId) match {
+          case (Some(name), Some(version), _) =>
+            getPackageManagerWithNameAndVersion(name, version).map(_.map(_.packageName))
+          case (None, None, Some(id)) =>
+            getPackageNameAndVersionFromMarathonApp(id)
+              .flatMap {
+                case (Some(pkgName), Some(pkgVersion)) =>
+                  getPackageManagerWithNameAndVersion(pkgName, pkgVersion).map(_.map(_.packageName))
+                case _ => Future(None)
+              }
+          case _ => Future(None)
+        }
     }
   }
 

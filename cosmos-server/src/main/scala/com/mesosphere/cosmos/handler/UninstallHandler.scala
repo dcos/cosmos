@@ -55,10 +55,10 @@ private[cosmos] final class UninstallHandler(
       req.packageVersion,
       req.appId
     ).flatMap {
-      case managerId if !managerId.get.isEmpty =>
+      case Some(managerId) if !managerId.isEmpty =>
         logger.debug(s"Request [$req] requires custom manager: [$managerId]")
-        customPackageManagerRouter.callCustomPackageUninstall(req, managerId.get)
-      case managerId if managerId.get.isEmpty => {
+        customPackageManagerRouter.callCustomPackageUninstall(req, managerId)
+      case _ =>
         getMarathonApps(req.packageName, req.appId)
           .map(apps => createUninstallOperations(req.packageName, apps))
           .map { uninstallOps =>
@@ -102,7 +102,6 @@ private[cosmos] final class UninstallHandler(
             }
             rpc.v1.model.UninstallResponse(results.toList)
           }
-      }
     }
   }
   // scalastyle:on method.length

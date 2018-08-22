@@ -67,8 +67,8 @@ class AdminRouterClient(
    )(implicit session: RequestSession): Future[Response] = {
     val uri = "service" / managerId.toUri / "package" / "install"
     val p = post(uri, body.asJson)
-    p.headerMap.add(Fields.ContentType, MediaTypes.InstallRequest.show)
-    p.headerMap.add(Fields.Accept, MediaTypes.V2InstallResponse.show)
+    p.headerMap.set(Fields.ContentType, MediaTypes.InstallRequest.show)
+    p.headerMap.set(Fields.Accept, MediaTypes.V2InstallResponse.show)
     client(p)
   }
 
@@ -78,8 +78,8 @@ class AdminRouterClient(
     )(implicit session: RequestSession): Future[Response] = {
     val uri = "service" / managerId.toUri / "package" / "uninstall"
     val p = post(uri, body.asJson)
-    p.headerMap.add(Fields.ContentType, MediaTypes.UninstallRequest.show)
-    p.headerMap.add(Fields.Accept, MediaTypes.UninstallResponse.show)
+    p.headerMap.set(Fields.ContentType, MediaTypes.UninstallRequest.show)
+    p.headerMap.set(Fields.Accept, MediaTypes.UninstallResponse.show)
     client(p)
   }
 
@@ -89,8 +89,8 @@ class AdminRouterClient(
   )(implicit session: RequestSession): Future[Response] = {
     val uri = "service" / managerId.toUri / "service" / "describe"
     val p = post(uri, body.asJson)
-    p.headerMap.add(Fields.ContentType, MediaTypes.ServiceDescribeRequest.show)
-    p.headerMap.add(Fields.Accept, MediaTypes.ServiceDescribeResponse.show)
+    p.headerMap.set(Fields.ContentType, MediaTypes.ServiceDescribeRequest.show)
+    p.headerMap.set(Fields.Accept, MediaTypes.ServiceDescribeResponse.show)
     client(p)
   }
 
@@ -100,8 +100,8 @@ class AdminRouterClient(
   )(implicit session: RequestSession): Future[Response] = {
     val uri = "service" / managerId.toUri / "service" / "update"
     val p = post(uri, body.asJson)
-    p.headerMap.add(Fields.ContentType, MediaTypes.ServiceUpdateRequest.show)
-    p.headerMap.add(Fields.Accept, MediaTypes.ServiceDescribeResponse.show)
+    p.headerMap.set(Fields.ContentType, MediaTypes.ServiceUpdateRequest.show)
+    p.headerMap.set(Fields.Accept, MediaTypes.ServiceDescribeResponse.show)
     client(p)
   }
 }

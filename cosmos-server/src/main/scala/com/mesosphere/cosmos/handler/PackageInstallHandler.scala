@@ -39,7 +39,7 @@ private[cosmos] final class PackageInstallHandler(
       case Some(managerId) if !managerId.isEmpty =>
         logger.debug(s"Request [$request] requires a custom manager: [$managerId]")
         customPackageManagerRouter.callCustomPackageInstall(request, managerId)
-      case managerId if managerId.get.isEmpty =>
+      case _ =>
         packageCollection
           .getPackageByPackageVersion(
             request.packageName,
