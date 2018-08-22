@@ -12,13 +12,13 @@ import com.mesosphere.cosmos.thirdparty.marathon.model.Deployment
 import com.mesosphere.cosmos.thirdparty.marathon.model.MarathonApp
 import com.mesosphere.universe
 import com.netaporter.uri.Uri
+import com.twitter.finagle.http.Response
 import com.twitter.util.Await
 import io.circe.Decoder
 import io.circe.JsonObject
 import org.scalatest.Matchers._
 import org.scalatest.concurrent.Eventually._
 import org.scalatest.time.SpanSugar._
-import com.twitter.finagle.http.Response
 
 object Requests {
 
@@ -34,7 +34,8 @@ object Requests {
           name,
           version,
           options,
-          appId
+          appId,
+          None
         )
       )
     )
@@ -72,7 +73,8 @@ object Requests {
           packageName = name,
           appId = appId,
           all = all,
-          managerId = managerId
+          managerId = managerId,
+          packageVersion = None
         )
       )
     )
@@ -158,10 +160,7 @@ object Requests {
   ): rpc.v1.model.ServiceDescribeResponse = {
     callEndpoint[rpc.v1.model.ServiceDescribeResponse](
       CosmosRequests.serviceDescribe(
-        rpc.v1.model.ServiceDescribeRequest(
-          appId,
-          managerId
-        )
+        rpc.v1.model.ServiceDescribeRequest(appId, managerId, None, None)
       )
     )
   }
@@ -196,19 +195,11 @@ object Requests {
 
   def postMarathonApp(
     app: JsonObject
-  ): Response = {
-    Await.result {
-      CosmosIntegrationTestClient.adminRouter.createApp(app)
-    }
-  }
+  ): Response = Await.result(CosmosIntegrationTestClient.adminRouter.createApp(app))
 
   def deleteMarathonApp(
    appId: AppId
- ): Response = {
-    Await.result {
-      CosmosIntegrationTestClient.adminRouter.deleteApp(appId)
-    }
-  }
+ ): Response = Await.result(CosmosIntegrationTestClient.adminRouter.deleteApp(appId))
 
   def isMarathonAppInstalled(appId: AppId): Boolean = {
     Await.result {

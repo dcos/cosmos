@@ -1,7 +1,7 @@
 package com.mesosphere.universe
 
-import com.mesosphere.universe
 import com.mesosphere.cosmos.circe.Decoders._
+import com.mesosphere.universe
 import com.twitter.util.Return
 import com.twitter.util.Throw
 import com.twitter.util.Try
@@ -182,7 +182,6 @@ package v4.model {
     }
   }
 
-
   case object V4PackagingVersion extends universe.v4.model.PackagingVersion {
 
     val show: String = "4.0"
@@ -215,6 +214,7 @@ package v4.model {
 
 
 package v5.model {
+
   case object V5PackagingVersion extends universe.v4.model.PackagingVersion {
 
     val show: String = "5.0"

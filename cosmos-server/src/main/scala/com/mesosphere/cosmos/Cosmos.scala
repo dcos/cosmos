@@ -55,7 +55,6 @@ import com.twitter.server.Stats
 import com.twitter.util.Await
 import com.twitter.util.Try
 import org.apache.curator.framework.CuratorFramework
-import org.slf4j.Logger
 import shapeless.:+:
 import shapeless.CNil
 import shapeless.HNil
@@ -73,7 +72,7 @@ trait CosmosApp
 
   def main(): Unit
 
-  lazy val logger: Logger = org.slf4j.LoggerFactory.getLogger(getClass)
+  private[this] lazy val logger = org.slf4j.LoggerFactory.getLogger(getClass)
 
   protected final def buildComponents(): Components = {
     implicit val sr = statsReceiver

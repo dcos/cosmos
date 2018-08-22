@@ -182,6 +182,7 @@ package v4.model {
       }
     }
 
+    // scalastyle:off number.of.methods
     implicit final class PackageDefinitionOps(val pkgDef: universe.v4.model.PackageDefinition) extends AnyVal {
 
       def packageCoordinate: universe.v1.model.PackageCoordinate =  {
@@ -398,6 +399,7 @@ package v4.model {
     }
 
     // scalastyle:off cyclomatic.complexity
+    // scalastyle:off method.length
     def rewrite[T <: PackageDefinition](
       pkg: T,
       urlRewrite: (String) => String,
@@ -454,8 +456,10 @@ package v4.model {
         }
       }
     }
+    // scalastyle:on method.length
     // scalastyle:on cyclomatic.complexity
   }
+  // scalastyle:on number.of.methods
 
   sealed trait SupportedPackageDefinition
     extends universe.v4.model.PackageDefinition

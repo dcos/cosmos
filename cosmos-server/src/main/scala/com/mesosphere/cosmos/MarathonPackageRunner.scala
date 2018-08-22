@@ -13,14 +13,13 @@ import com.mesosphere.error.ResultOps
 import com.twitter.finagle.http.Status
 import com.twitter.util.Future
 import io.netty.handler.codec.http.HttpResponseStatus
-import org.slf4j.Logger
 import scala.util.Failure
 import scala.util.Success
 import scala.util.Try
 
 final class MarathonPackageRunner(adminRouter: AdminRouter) {
 
-  lazy val logger: Logger = org.slf4j.LoggerFactory.getLogger(getClass)
+  private[this] lazy val logger = org.slf4j.LoggerFactory.getLogger(getClass)
 
   /** Execute the package described by the given JSON configuration.
    *

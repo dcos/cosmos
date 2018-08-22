@@ -63,7 +63,7 @@ object CosmosIntegrationTestClient extends Matchers {
   }
 
   object CosmosClient {
-    lazy val logger = LoggerFactory.getLogger(getClass())
+    lazy val logger = LoggerFactory.getLogger(getClass)
 
     /** Ensures that we create Finagle requests correctly.
       *

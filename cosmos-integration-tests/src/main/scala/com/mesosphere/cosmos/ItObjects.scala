@@ -437,7 +437,6 @@ object ItObjects {
     ).map(stringToPackageDefinition)
   }
 
-
   def stringToPackageDefinition(
     packageDefinition: String
   ): universe.v4.model.PackageDefinition = {

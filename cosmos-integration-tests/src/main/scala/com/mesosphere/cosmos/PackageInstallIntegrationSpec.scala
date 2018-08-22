@@ -10,7 +10,6 @@ import com.mesosphere.cosmos.rpc.v1.model.ErrorResponse
 import com.mesosphere.universe
 import com.twitter.bijection.Conversion.asMethod
 import com.twitter.finagle.http._
-import com.mesosphere.cosmos.thirdparty.marathon.model.AppId
 import org.scalatest.FeatureSpec
 import org.scalatest.Matchers
 
@@ -68,7 +67,7 @@ final class PackageInstallIntegrationSpec extends FeatureSpec with Matchers {
     scenario("The user should be able to specify the app ID during an install") {
       val name = "helloworld"
       val version = "0.1.0"
-      val appId = AppId("utnhaoesntuahs")
+      val appId = thirdparty.marathon.model.AppId("utnhaoesntuahs")
       RoundTrips.withInstallV1(name, Some(version.detailsVersion), appId = Some(appId)).runWith { ir =>
         ir.appId shouldBe appId
         assert(Requests.isMarathonAppInstalled(appId))
