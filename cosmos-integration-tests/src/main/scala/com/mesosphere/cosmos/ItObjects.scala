@@ -21,73 +21,6 @@ object ItObjects {
 
   val customManagerAppName = "cosmos-package"
 
-  // scalastyle:off line.size.limit
-  // scalastyle:off file.size.limit
-  // scalastyle:off line.contains.tab
-  val customManagerMarathonAppJsonString : String =
-    """
-      |{
-      |	"labels": {
-      |		"DCOS_SERVICE_NAME": "cosmos-package",
-      |		"DCOS_SERVICE_PORT_INDEX": "0",
-      |		"DCOS_SERVICE_SCHEME": "http"
-      |	},
-      |	"id": "/cosmos-package",
-      |	"backoffFactor": 1.15,
-      |	"backoffSeconds": 1,
-      |	"cmd": "export JAVA_HOME=@(ls -d @MESOS_SANDBOX/jdk*/jre/); export JAVA_HOME=@{JAVA_HOME/}; export PATH=@(ls -d @JAVA_HOME/bin):@PATH\n\njava -classpath cosmos-server-0.6.0-SNAPSHOT-342-master-e8b383785a-one-jar.jar  com.simontuffs.onejar.Boot -admin.port=127.0.0.1:9990 -com.mesosphere.cosmos.httpInterface=0.0.0.0:7070  -com.mesosphere.cosmos.zookeeperUri=zk://leader.mesos:2181/cosmos-package",
-      |	"container": {
-      |		"portMappings": [{
-      |			"containerPort": 7070,
-      |			"hostPort": 0,
-      |			"protocol": "tcp",
-      |			"servicePort": 10000
-      |		}],
-      |		"type": "MESOS",
-      |		"volumes": []
-      |	},
-      |	"cpus": 1,
-      |	"disk": 0,
-      |	"fetch": [{
-      |			"uri": "https://downloads.mesosphere.com/java/server-jre-8u162-linux-x64.tar.gz",
-      |			"extract": true,
-      |			"executable": false,
-      |			"cache": false
-      |		},xo
-      |		{
-      |			"uri": "https://downloads.dcos.io/cosmos/0.6.0-SNAPSHOT-342-master-e8b383785a/cosmos-server-0.6.0-SNAPSHOT-342-master-e8b383785a-one-jar.jar",
-      |			"extract": true,
-      |			"executable": false,
-      |			"cache": false
-      |		}
-      |	],
-      |	"instances": 1,
-      |	"maxLaunchDelaySeconds": 3600,
-      |	"mem": 4000,
-      |	"gpus": 0,
-      |	"networks": [{
-      |		"mode": "container/bridge"
-      |	}],
-      |	"requirePorts": false,
-      |	"upgradeStrategy": {
-      |		"maximumOverCapacity": 1,
-      |		"minimumHealthCapacity": 1
-      |	},
-      |	"killSelection": "YOUNGEST_FIRST",
-      |	"unreachableStrategy": {
-      |		"inactiveAfterSeconds": 0,
-      |		"expungeAfterSeconds": 0
-      |	},
-      |	"healthChecks": [],
-      |	"constraints": []
-      |}
-    """
-      .stripMargin
-      .replaceAllLiterally("@", "$")
-  // scalastyle:on line.size.limit
-  // scalastyle:on file.size.limit
-  // scalastyle:on line.contains.tab
-
   val helloWorldMarathonMustache: String = {
     """{
       |  "id": "{{name}}",
@@ -503,6 +436,7 @@ object ItObjects {
       helloWorldPackageDefinition4
     ).map(stringToPackageDefinition)
   }
+
 
   def stringToPackageDefinition(
     packageDefinition: String
