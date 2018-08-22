@@ -42,14 +42,24 @@ final class PackageDescribeSpec
     }
 
     "when requesting a v5 response" - {
-      "can successfully describe helloworld with a manager" - {
-        val response = Requests.describePackage(
-          "hello-world",
-           Some(universe.v2.model.PackageDetailsVersion("stub-universe"))
+      "can successfully describe helloworld with a custom manager" - {
+
+        val response = describeRequest(
+          rpc.v1.model.DescribeRequest(
+            "hello-world",
+            Some(universe.v2.model.PackageDetailsVersion("stub-universe"))
+          )
         )
 
-        assertResult(response.`package`.pkgDef.manager.isDefined)(true)
-        assertResult(response.`package`.pkgDef.manager.get.packageName)(ItObjects.customManagerAppName)
+        response.status shouldBe Status.Ok
+
+        val description = decode[rpc.v3.model.DescribeResponse](
+          response.contentString
+        ).getOrThrow
+
+        description.`package`.pkgDef.manager.isDefined shouldBe true
+        description.`package`.pkgDef.manager.get.packageName shouldBe "cosmos-package"
+        ()
       }
     }
 
