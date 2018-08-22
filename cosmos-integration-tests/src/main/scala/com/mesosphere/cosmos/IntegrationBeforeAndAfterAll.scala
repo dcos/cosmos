@@ -18,6 +18,8 @@ trait IntegrationBeforeAndAfterAll extends BeforeAndAfterAll with Eventually { t
   private[this] val universeUri = "https://downloads.mesosphere.com/universe/02493e40f8564a39446d06c002f8dcc8e7f6d61f/repo-up-to-1.8.json"
   private[this] val universeConverterUri = "https://universe-converter.mesosphere.com/transform?url=" + universeUri
 
+  val v5TestPackage = "https://infinity-artifacts.s3.amazonaws.com/cosmos-integration-test/package-with-manager/stub-universe-hello-world.json"
+
   // scalastyle:off method.length
   override def beforeAll(): Unit = {
     Requests.deleteRepository(Some("Universe"))
@@ -90,7 +92,7 @@ trait IntegrationBeforeAndAfterAll extends BeforeAndAfterAll with Eventually { t
     // scalastyle:on file.size.limit
     // scalastyle:on line.contains.tab
 
-    Requests.postMarathonApp(parse(ItObjects.customManagerMarathonAppJsonString).toOption.get.asObject.get)
+    Requests.postMarathonApp(parse(customManagerMarathonAppJsonString).toOption.get.asObject.get)
     Requests.waitForDeployments()
 
     //scalastyle:off magic.number
@@ -101,6 +103,13 @@ trait IntegrationBeforeAndAfterAll extends BeforeAndAfterAll with Eventually { t
     Requests.addRepository(
       "Universe",
       universeConverterUri,
+      Some(0)
+    )
+
+    //verifies v5 package can be added
+    Requests.addRepository(
+      "V5TestPackage",
+      v5TestPackage,
       Some(0)
     )
 
@@ -117,6 +126,7 @@ trait IntegrationBeforeAndAfterAll extends BeforeAndAfterAll with Eventually { t
   // scalastyle:on method.length
   override def afterAll(): Unit = {
     Requests.deleteRepository(Some("V4TestUniverse"))
+    Requests.deleteRepository(Some("hello-world-aws"))
     Requests.deleteMarathonApp(AppId(ItObjects.customManagerAppName))
     Requests.deleteRepository(None, Some(universeConverterUri))
     val _ = Requests.addRepository("Universe", "https://universe.mesosphere.com/repo")
