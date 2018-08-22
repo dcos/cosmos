@@ -45,8 +45,8 @@ final class PackageDescribeSpec
       "can successfully describe helloworld with a manager" - {
         val response = Requests.describePackage(
           "hello-world",
-                  Some(universe.v2.model.PackageDetailsVersion("stub-universe"))
-                )
+           Some(universe.v2.model.PackageDetailsVersion("stub-universe"))
+        )
 
         assertResult(response.`package`.pkgDef.manager.isDefined)(true)
         assertResult(response.`package`.pkgDef.manager.get.packageName)(ItObjects.customManagerAppName)
