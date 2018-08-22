@@ -18,13 +18,16 @@ trait IntegrationBeforeAndAfterAll extends BeforeAndAfterAll with Eventually { t
   private[this] val universeUri = "https://downloads.mesosphere.com/universe/02493e40f8564a39446d06c002f8dcc8e7f6d61f/repo-up-to-1.8.json"
   private[this] val universeConverterUri = "https://universe-converter.mesosphere.com/transform?url=" + universeUri
 
-  // scalastyle:off
   override def beforeAll(): Unit = {
     Requests.deleteRepository(Some("Universe"))
     Requests.postMarathonApp(parse(ItObjects.customManagerMarathonAppJsonString).toOption.get.asObject.get)
     Requests.waitForDeployments()
+
+    //scalastyle:off magic.number
+    // TODO: add a healthcheck to test marathon app and remove this
     Thread.sleep(10000) //required that custom cosmos server is started before proceeding
-    // scalastyle:on
+    //scalastyle:on magic.number
+
     Requests.addRepository(
       "Universe",
       universeConverterUri,
@@ -41,8 +44,6 @@ trait IntegrationBeforeAndAfterAll extends BeforeAndAfterAll with Eventually { t
     // package collection cache is cleared before starting the integration tests
     val _ = waitUntilCacheReloads()
   }
-  // scalastyle:on
-
 
   override def afterAll(): Unit = {
     Requests.deleteRepository(Some("V4TestUniverse"))

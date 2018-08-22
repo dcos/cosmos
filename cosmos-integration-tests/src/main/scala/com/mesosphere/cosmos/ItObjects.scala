@@ -21,6 +21,9 @@ object ItObjects {
 
   val customManagerAppName = "cosmos-package"
 
+  // scalastyle:off line.size.limit
+  // scalastyle:off file.size.limit
+  // scalastyle:off line.contains.tab
   val customManagerMarathonAppJsonString = {
     """
       |{
@@ -82,6 +85,9 @@ object ItObjects {
       .stripMargin
       .replaceAllLiterally("@", "$")
   }
+  // scalastyle:on line.size.limit
+  // scalastyle:on file.size.limit
+  // scalastyle:on line.contains.tab
 
   val helloWorldMarathonMustache: String = {
     """{
@@ -100,6 +106,7 @@ object ItObjects {
       |}
     """.stripMargin
   }
+
 
   // scalastyle:off line.size.limit
   val helloWorldPackageDefinition0: String = {
