@@ -104,6 +104,7 @@ final class DefaultUniverseClient(
     fetchScope.counter("requestCount").incr()
     Stat.timeFuture(fetchScope.stat("histogram")) {
       val acceptedMediaTypes = CompoundMediaType(
+        MediaTypes.UniverseV5Repository,
         MediaTypes.UniverseV4Repository,
         MediaTypes.UniverseV3Repository
       )
@@ -149,27 +150,26 @@ final class DefaultUniverseClient(
     bodyInputStream: InputStream,
     repositoryUri: Uri
   ): universe.v4.model.Repository = {
-    val decodeScope = fetchScope.scope("decode")
+
+    def processAsV4Repository(version : String) : universe.v4.model.Repository = {
+      val scope = fetchScope.scope("decode").scope(version)
+      scope.counter("count").incr()
+      Stat.time(scope.stat("histogram")) {
+        decode[universe.v4.model.Repository](
+          Source.fromInputStream(bodyInputStream).mkString
+        ).getOrThrow
+      }
+    }
 
     // Decode the packages
-    val repo = if (contentType.isCompatibleWith(MediaTypes.UniverseV4Repository)) {
-      val scope = decodeScope.scope("v4")
-      scope.counter("count").incr()
-      Stat.time(scope.stat("histogram")) {
-        decode[universe.v4.model.Repository](
-          Source.fromInputStream(bodyInputStream).mkString
-        ).getOrThrow
-      }
+    val repo = if (contentType.isCompatibleWith(MediaTypes.UniverseV5Repository)) {
+      processAsV4Repository("v5")
+    } else if (contentType.isCompatibleWith(MediaTypes.UniverseV4Repository)) {
+      processAsV4Repository("v4")
     } else if (contentType.isCompatibleWith(MediaTypes.UniverseV3Repository)) {
-      val scope = decodeScope.scope("v3")
-      scope.counter("count").incr()
-      Stat.time(scope.stat("histogram")) {
-        decode[universe.v4.model.Repository](
-          Source.fromInputStream(bodyInputStream).mkString
-        ).getOrThrow
-      }
+      processAsV4Repository("v3")
     } else if (contentType.isCompatibleWith(MediaTypes.UniverseV2Repository)) {
-      val v2Scope = decodeScope.scope("v2")
+      val v2Scope = fetchScope.scope("decode").scope("v2")
       v2Scope.counter("count").incr()
       Stat.time(v2Scope.stat("histogram")) {
         processUniverseV2(repositoryUri, bodyInputStream)
@@ -182,7 +182,6 @@ final class DefaultUniverseClient(
     universe.v4.model.Repository(repo.packages.sorted.reverse)
 
   }
-
 
 
   private[this] case class V2PackageInformation(
