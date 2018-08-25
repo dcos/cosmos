@@ -55,6 +55,12 @@ trait IntegrationBeforeAndAfterAll extends BeforeAndAfterAll with Eventually { t
       ItObjects.V4TestUniverseConverterURI,
       Some(0)
     )
+
+    Requests.addRepository(
+      "V5Testpackage",
+      v5TestPackage,
+      Some(0)
+    )
     // This package is present only in V4TestUniverse and this method ensures that the
     // package collection cache is cleared before starting the integration tests
     val _ = waitUntilCacheReloads()
@@ -62,6 +68,7 @@ trait IntegrationBeforeAndAfterAll extends BeforeAndAfterAll with Eventually { t
 
   override def afterAll(): Unit = {
     Requests.deleteRepository(Some("V4TestUniverse"))
+    Requests.deleteRepository(Some("V5Testpackage"))
     Requests.deleteMarathonApp(AppId(ItObjects.customManagerAppName))
     Requests.deleteRepository(None, Some(universeConverterUri))
     val _ = Requests.addRepository("Universe", "https://universe.mesosphere.com/repo")
