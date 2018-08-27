@@ -101,7 +101,7 @@ class AdminRouterClient(
     val uri = "service" / managerId.toUri / "service" / "update"
     val p = post(uri, body.asJson)
     p.headerMap.set(Fields.ContentType, MediaTypes.ServiceUpdateRequest.show)
-    p.headerMap.set(Fields.Accept, MediaTypes.ServiceDescribeResponse.show)
+    p.headerMap.set(Fields.Accept, MediaTypes.ServiceUpdateResponse.show)
     client(p)
   }
 }

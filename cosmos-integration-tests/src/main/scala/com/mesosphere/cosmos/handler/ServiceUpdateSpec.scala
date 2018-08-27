@@ -1,23 +1,20 @@
 package com.mesosphere.cosmos.handler
 
-import com.mesosphere.cosmos.HttpErrorResponse
+import com.mesosphere.cosmos.{HttpErrorResponse, ItObjects, ItUtil, Requests, RoundTrips, rpc}
 import com.mesosphere.cosmos.ItOps._
-import com.mesosphere.cosmos.ItUtil
-import com.mesosphere.cosmos.Requests
-import com.mesosphere.cosmos.RoundTrips
-import com.mesosphere.cosmos.http.HttpRequest
-import com.mesosphere.cosmos.http.ServiceRpcPath
-import com.mesosphere.cosmos.http.TestContext
-import com.mesosphere.cosmos.rpc
+import com.mesosphere.cosmos.http.{CosmosRequests, HttpRequest, ServiceRpcPath, TestContext}
 import com.mesosphere.cosmos.rpc.MediaTypes
 import com.mesosphere.cosmos.test.CosmosIntegrationTestClient
 import com.mesosphere.cosmos.thirdparty.marathon.model.AppId
 import com.mesosphere.universe
-import com.twitter.finagle.http.Status
+import com.twitter.finagle.http.{Response, Status}
 import io.circe.Json
 import io.circe.JsonObject
 import io.circe.syntax._
 import java.util.UUID
+
+import com.mesosphere.cosmos.rpc.v1.model.ServiceUpdateRequest
+import com.mesosphere.cosmos.test.CosmosIntegrationTestClient.CosmosClient
 import org.scalatest.FeatureSpec
 import org.scalatest.Matchers
 
@@ -132,6 +129,25 @@ class ServiceUpdateSpec extends FeatureSpec with Matchers {
         error.errorResponse.message shouldBe "Options JSON failed validation"
       }
     }
+
+    scenario("user should be able to update a service via custom manager") {
+      val appId = AppId("cassandra")
+      Requests.installV2("cassandra", appId = Some(appId), managerId = Some(ItObjects.customManagerAppName))
+
+      val serviceUpdateRequest = ServiceUpdateRequest(
+        appId,
+        None,
+        None,
+        replace = true,
+        managerId = Some(ItObjects.customManagerAppName),
+        Some("cassandra")
+      )
+
+      val serviceUpdateResponse = submitServiceUpdateRequest(serviceUpdateRequest)
+      assertResult(Status.Ok)(serviceUpdateResponse.status)
+
+      Requests.uninstall("cassandra", managerId = Some(ItObjects.customManagerAppName))
+    }
   }
 
   // scalastyle:on multiple.string.literals
@@ -144,6 +160,14 @@ object ServiceUpdateSpec {
     ItUtil.waitForDeployment(
       CosmosIntegrationTestClient.adminRouter
     )(timeout)
+  }
+
+  def submitServiceUpdateRequest(
+    request: ServiceUpdateRequest
+  )(
+    implicit testContext: TestContext
+  ): Response = {
+    CosmosClient.submit(CosmosRequests.serviceUpdate(request))
   }
 
   def serviceUpdate(

@@ -48,16 +48,17 @@ trait IntegrationBeforeAndAfterAll extends BeforeAndAfterAll with Eventually { t
     )
 
     Requests.addRepository(
+      "V5Testpackage",
+      ItObjects.V5TestPackage,
+      Some(0)
+    )
+
+    Requests.addRepository(
       "V4TestUniverse",
       ItObjects.V4TestUniverseConverterURI,
       Some(0)
     )
 
-    Requests.addRepository(
-      "V5Testpackage",
-      ItObjects.V5TestPackage,
-      Some(0)
-    )
     // This package is present only in V4TestUniverse and this method ensures that the
     // package collection cache is cleared before starting the integration tests
     val _ = waitUntilCacheReloads()
