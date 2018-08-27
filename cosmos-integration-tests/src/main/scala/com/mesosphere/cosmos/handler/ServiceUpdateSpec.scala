@@ -1,13 +1,22 @@
 package com.mesosphere.cosmos.handler
 
-import com.mesosphere.cosmos.{HttpErrorResponse, ItObjects, ItUtil, Requests, RoundTrips, rpc}
+import com.mesosphere.cosmos.HttpErrorResponse
+import com.mesosphere.cosmos.ItObjects
+import com.mesosphere.cosmos.ItUtil
+import com.mesosphere.cosmos.Requests
+import com.mesosphere.cosmos.RoundTrips
+import com.mesosphere.cosmos.rpc
 import com.mesosphere.cosmos.ItOps._
-import com.mesosphere.cosmos.http.{CosmosRequests, HttpRequest, ServiceRpcPath, TestContext}
+import com.mesosphere.cosmos.http.CosmosRequests
+import com.mesosphere.cosmos.http.HttpRequest
+import com.mesosphere.cosmos.http.ServiceRpcPath
+import com.mesosphere.cosmos.http.TestContext
 import com.mesosphere.cosmos.rpc.MediaTypes
 import com.mesosphere.cosmos.test.CosmosIntegrationTestClient
 import com.mesosphere.cosmos.thirdparty.marathon.model.AppId
 import com.mesosphere.universe
-import com.twitter.finagle.http.{Response, Status}
+import com.twitter.finagle.http.Status
+import com.twitter.finagle.http.Response
 import io.circe.Json
 import io.circe.JsonObject
 import io.circe.syntax._
