@@ -28,7 +28,7 @@
     "cache": false
   },
     {
-      "uri": "https://downloads.dcos.io/cosmos/0.6.0-SNAPSHOT-342-master-e8b383785a/cosmos-server-0.6.0-SNAPSHOT-342-master-e8b383785a-one-jar.jar",
+      "uri": "https://downloads.dcos.io/cosmos/0.6.0-28/cosmos-server-0.6.0-28-one-jar.jar",
       "extract": true,
       "executable": false,
       "cache": false

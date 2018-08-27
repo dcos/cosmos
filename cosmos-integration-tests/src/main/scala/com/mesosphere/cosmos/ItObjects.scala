@@ -19,6 +19,8 @@ object ItObjects {
     "ae6a07ac0b53924154add2cd61403c5233272d93/repo/repo-up-to-1.10.json"
   val V4TestUniverseConverterURI = "https://universe-converter.mesosphere.com/transform?url=" + V4TestUniverse
 
+  val V5TestPackage = "http://downloads.mesosphere.io/dcos-enterprise/cosmos/v0.5/stub-universe-hello-world.json"
+
   val customManagerAppName = "cosmos-package"
 
   val helloWorldMarathonMustache: String = {
