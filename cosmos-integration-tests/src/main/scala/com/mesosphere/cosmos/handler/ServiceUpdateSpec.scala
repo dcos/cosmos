@@ -14,7 +14,7 @@ import com.mesosphere.cosmos.http.TestContext
 import com.mesosphere.cosmos.rpc.MediaTypes
 import com.mesosphere.cosmos.test.CosmosIntegrationTestClient
 import com.mesosphere.cosmos.thirdparty.marathon.model.AppId
-import com.mesosphere.cosmos.rpc.v1.model.ServiceUpdateRequest
+import com.mesosphere.cosmos.rpc.v1
 import com.mesosphere.cosmos.test.CosmosIntegrationTestClient.CosmosClient
 import com.mesosphere.universe
 import com.twitter.finagle.http.Status
@@ -142,7 +142,7 @@ class ServiceUpdateSpec extends FeatureSpec with Matchers {
       val appId = AppId("cassandra")
       Requests.installV2("cassandra", appId = Some(appId), managerId = Some(ItObjects.customManagerAppName))
 
-      val serviceUpdateRequest = ServiceUpdateRequest(
+      val serviceUpdateRequest = v1.model.ServiceUpdateRequest(
         appId,
         None,
         None,
@@ -151,7 +151,7 @@ class ServiceUpdateSpec extends FeatureSpec with Matchers {
         Some("cassandra")
       )
 
-      val serviceUpdateResponse = submitServiceUpdateRequest(serviceUpdateRequest)
+      val serviceUpdateResponse = CosmosClient.submit(CosmosRequests.serviceUpdate(serviceUpdateRequest))
       assertResult(Status.Ok)(serviceUpdateResponse.status)
 
       Requests.uninstall("cassandra", managerId = Some(ItObjects.customManagerAppName))
@@ -168,14 +168,6 @@ object ServiceUpdateSpec {
     ItUtil.waitForDeployment(
       CosmosIntegrationTestClient.adminRouter
     )(timeout)
-  }
-
-  def submitServiceUpdateRequest(
-    request: ServiceUpdateRequest
-  )(
-    implicit testContext: TestContext
-  ): Response = {
-    CosmosClient.submit(CosmosRequests.serviceUpdate(request))
   }
 
   def serviceUpdate(

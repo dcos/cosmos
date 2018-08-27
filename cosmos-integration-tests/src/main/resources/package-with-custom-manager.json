@@ -1,5 +1,4 @@
-// NOTE:This file is a reflection of http://downloads.mesosphere.io/dcos-enterprise/cosmos/v5.0/stub-universe-hello-world.json.
-// If you make any changes to this file contact #tools-infra to upload the modified file to s3.
+
 {
   "packages": [
     {
