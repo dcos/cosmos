@@ -13,7 +13,7 @@
       "downgradesTo": [
         "*"
       ],
-      "minDcosReleaseVersion": "1.10",
+      "minDcosReleaseVersion": "1.12",
       "name": "hello-world",
       "version": "stub-universe",
       "maintainer": "support@mesosphere.io",
