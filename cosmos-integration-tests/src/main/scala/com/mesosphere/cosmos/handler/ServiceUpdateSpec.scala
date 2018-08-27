@@ -14,6 +14,8 @@ import com.mesosphere.cosmos.http.TestContext
 import com.mesosphere.cosmos.rpc.MediaTypes
 import com.mesosphere.cosmos.test.CosmosIntegrationTestClient
 import com.mesosphere.cosmos.thirdparty.marathon.model.AppId
+import com.mesosphere.cosmos.rpc.v1.model.ServiceUpdateRequest
+import com.mesosphere.cosmos.test.CosmosIntegrationTestClient.CosmosClient
 import com.mesosphere.universe
 import com.twitter.finagle.http.Status
 import com.twitter.finagle.http.Response
@@ -21,9 +23,6 @@ import io.circe.Json
 import io.circe.JsonObject
 import io.circe.syntax._
 import java.util.UUID
-
-import com.mesosphere.cosmos.rpc.v1.model.ServiceUpdateRequest
-import com.mesosphere.cosmos.test.CosmosIntegrationTestClient.CosmosClient
 import org.scalatest.FeatureSpec
 import org.scalatest.Matchers
 
