@@ -18,7 +18,6 @@ import com.mesosphere.cosmos.rpc.v1
 import com.mesosphere.cosmos.test.CosmosIntegrationTestClient.CosmosClient
 import com.mesosphere.universe
 import com.twitter.finagle.http.Status
-import com.twitter.finagle.http.Response
 import io.circe.Json
 import io.circe.JsonObject
 import io.circe.syntax._
