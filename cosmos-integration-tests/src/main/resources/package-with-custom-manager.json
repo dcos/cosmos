@@ -1,0 +1,353 @@
+
+{
+  "packages": [
+    {
+      "manager": {
+        "packageName": "cosmos-package"
+      },
+      "packagingVersion": "5.0",
+      "upgradesFrom": [
+        "*"
+      ],
+      "downgradesTo": [
+        "*"
+      ],
+      "minDcosReleaseVersion": "1.12",
+      "name": "hello-world",
+      "version": "stub-universe",
+      "maintainer": "support@mesosphere.io",
+      "description": "An example implementation of a stateful service using the DC/OS SDK",
+      "selected": false,
+      "framework": true,
+      "tags": [
+        "example",
+        "reference",
+        "hello-world"
+      ],
+      "preInstallNotes": "This DC/OS Service is currently in preview.",
+      "postInstallNotes": "The DC/OS hello-world service is being installed!\n\n\tDocumentation: https://github.com/mesosphere/dcos-commons/blob/master/frameworks/helloworld/README.md\n\tIssues: https://docs.mesosphere.com/support/",
+      "postUninstallNotes": "The DC/OS hello-world service is being uninstalled.\n\nFor DC/OS versions from 1.10 no further action is required. For older DC/OS versions follow the instructions at https://docs.mesosphere.com/1.9/deploying-services/uninstall/#framework-cleaner to remove any persistent state if required.",
+      "releaseVersion": 0,
+      "config": {
+        "type": "object",
+        "properties": {
+          "service": {
+            "type": "object",
+            "description": "DC/OS service configuration properties",
+            "properties": {
+              "name": {
+                "description": "The name of the service instance",
+                "type": "string",
+                "default": "hello-world"
+              },
+              "user": {
+                "description": "The user that the service will run as.",
+                "type": "string",
+                "default": "nobody"
+              },
+              "service_account": {
+                "description": "The service account for DC/OS service authentication. This is typically left empty to use the default unless service authentication is needed. The value given here is passed as the principal of the Mesos framework.",
+                "type": "string",
+                "default": ""
+              },
+              "service_account_secret": {
+                "description": "Name of the Secret Store credentials to use for DC/OS service authentication. This should be left empty unless service authentication is needed.",
+                "type": "string",
+                "default": ""
+              },
+              "log_level": {
+                "description": "The log level for the DC/OS service.",
+                "type": "string",
+                "enum": [
+                  "OFF",
+                  "FATAL",
+                  "ERROR",
+                  "WARN",
+                  "INFO",
+                  "DEBUG",
+                  "TRACE",
+                  "ALL"
+                ],
+                "default": "INFO"
+              },
+              "region": {
+                "description": "The region that the service's tasks should run in.",
+                "type": "string",
+                "default": "",
+                "media": {
+                  "type": "application/x-region+string"
+                }
+              },
+              "sleep": {
+                "description": "The sleep duration in seconds before tasks exit.",
+                "type": "number",
+                "default": 1000
+              },
+              "test_boolean": {
+                "description": "A boolean value for testing purposes",
+                "type": "boolean",
+                "default": true
+              },
+              "scenario": {
+                "description": "A comma-separated list of SDK customization scenarios to perform on the service(s)",
+                "type": "string",
+                "default": "YAML"
+              },
+              "yaml": {
+                "description": "A single example YAML file to deploy, or an empty string to launch an empty multi-scheduler",
+                "type": "string",
+                "enum": [
+                  "canary",
+                  "custom_tld",
+                  "discovery",
+                  "enable-disable",
+                  "executor_volume",
+                  "finish_state",
+                  "foobar_service_name",
+                  "gpu_resource",
+                  "graceful-shutdown",
+                  "marathon_constraint",
+                  "multistep_plan",
+                  "nonessential_tasks",
+                  "overlay",
+                  "pause",
+                  "plan",
+                  "pod-mount-volume",
+                  "pre-reserved",
+                  "pre-reserved-sidecar",
+                  "secrets",
+                  "share_pid_namespace",
+                  "sidecar",
+                  "simple",
+                  "taskcfg",
+                  "svc",
+                  "tls",
+                  "uri",
+                  "web-url",
+                  ""
+                ],
+                "default": "svc"
+              },
+              "yamls": {
+                "description": "A comma-separated list of example YAML files to deploy in a multi-scheduler, in addition to any listed in 'yaml'",
+                "type": "string",
+                "default": ""
+              },
+              "allow_region_awareness": {
+                "description": "Allow region awareness",
+                "type": "boolean",
+                "default": true
+              },
+              "custom_service_tld": {
+                "description": "Specifies a custom TLD to use for endpoints",
+                "type": "string",
+                "default": ""
+              }
+            }
+          },
+          "hello": {
+            "description": "Hello pod configuration properties",
+            "type": "object",
+            "properties": {
+              "cpus": {
+                "description": "Hello pod CPU requirements",
+                "type": "number",
+                "default": 0.1
+              },
+              "gpus": {
+                "description": "Hello pod GPU requirements",
+                "type": "number",
+                "default": 1.0
+              },
+              "mem": {
+                "description": "Hello pod mem requirements (in MB)",
+                "type": "integer",
+                "default": 252
+              },
+              "disk": {
+                "description": "Hello pod persistent disk requirements (in MB)",
+                "type": "integer",
+                "default": 25
+              },
+              "count": {
+                "description": "Number of Hello pods to run",
+                "type": "integer",
+                "default": 1
+              },
+              "placement": {
+                "description": "Placement constraints for Hello pods",
+                "type": "string",
+                "default": "[[\"hostname\", \"UNIQUE\"]]",
+                "media": {
+                  "type": "application/x-zone-constraints+json"
+                }
+              },
+              "secret1": {
+                "description": "secret1",
+                "type": "string",
+                "default": ""
+              },
+              "secret2": {
+                "description": "secret2",
+                "type": "string",
+                "default": ""
+              },
+              "kill_grace_period": {
+                "description": "The number of seconds of grace to await a clean shutdown following SIGTERM before sending SIGKILL, default: `0`",
+                "type": "integer",
+                "default": 0
+              }
+            },
+            "required": [
+              "cpus",
+              "gpus",
+              "mem",
+              "disk",
+              "count"
+            ]
+          },
+          "world": {
+            "description": "World pod configuration properties",
+            "type": "object",
+            "properties": {
+              "cpus": {
+                "description": "World pod CPU requirements",
+                "type": "number",
+                "default": 0.2
+              },
+              "mem": {
+                "description": "World pod mem requirements (in MB)",
+                "type": "integer",
+                "default": 512
+              },
+              "disk": {
+                "description": "World pod persistent disk requirements (in MB)",
+                "type": "integer",
+                "default": 25
+              },
+              "count": {
+                "description": "Number of World pods to run",
+                "type": "integer",
+                "default": 2
+              },
+              "placement": {
+                "description": "Placement constraints for World pods",
+                "type": "string",
+                "default": "[[\"hostname\", \"UNIQUE\"]]",
+                "media": {
+                  "type": "application/x-zone-constraints+json"
+                }
+              },
+              "secret1": {
+                "description": "secret1",
+                "type": "string",
+                "default": ""
+              },
+              "secret2": {
+                "description": "secret2",
+                "type": "string",
+                "default": ""
+              },
+              "secret3": {
+                "description": "secret3",
+                "type": "string",
+                "default": ""
+              },
+              "kill_grace_period": {
+                "description": "The number of seconds of grace to await a clean shutdown following SIGTERM before sending SIGKILL, default: `0`",
+                "type": "integer",
+                "default": 0
+              }
+            },
+            "required": [
+              "cpus",
+              "mem",
+              "disk",
+              "count"
+            ]
+          },
+          "tls": {
+            "description": "TLS pod configuration properties",
+            "type": "object",
+            "properties": {
+              "keystore_app_version": {
+                "description": "Keystore app version",
+                "type": "string",
+                "default": "0.1-SNAPSHOT"
+              },
+              "nginx_container_version": {
+                "description": "NGINX TLS container version",
+                "type": "string",
+                "default": "0.1"
+              },
+              "discovery_task_prefix": {
+                "description": "Service discovery prefix name for discovery task",
+                "type": "string",
+                "default": "discovered"
+              }
+            }
+          }
+        }
+      },
+      "marathon": {
+        "v2AppMustacheTemplate": "ewogICJpZCI6ICJ7e3NlcnZpY2UubmFtZX19IiwKICAiY3B1cyI6IDAuNSwKICAibWVtIjogMTAyNCwKICAiaW5zdGFuY2VzIjogMSwKICAidXNlciI6ICJ7e3NlcnZpY2UudXNlcn19IiwKICAiY21kIjogImV4cG9ydCBMRF9MSUJSQVJZX1BBVEg9JE1FU09TX1NBTkRCT1gvbGlibWVzb3MtYnVuZGxlL2xpYjokTERfTElCUkFSWV9QQVRIOyBleHBvcnQgTUVTT1NfTkFUSVZFX0pBVkFfTElCUkFSWT0kKGxzICRNRVNPU19TQU5EQk9YL2xpYm1lc29zLWJ1bmRsZS9saWIvbGlibWVzb3MtKi5zbyk7IGV4cG9ydCBKQVZBX0hPTUU9JChscyAtZCAkTUVTT1NfU0FOREJPWC9qZGsqL2pyZS8pOyBleHBvcnQgSkFWQV9IT01FPSR7SkFWQV9IT01FJS99OyBleHBvcnQgUEFUSD0kKGxzIC1kICRKQVZBX0hPTUUvYmluKTokUEFUSCAmJiBleHBvcnQgSkFWQV9PUFRTPVwiLVhtczI1Nk0gLVhteDUxMk0gLVhYOi1IZWFwRHVtcE9uT3V0T2ZNZW1vcnlFcnJvclwiICYmIC4vYm9vdHN0cmFwIC1yZXNvbHZlPWZhbHNlIC10ZW1wbGF0ZT1mYWxzZSAmJiAuL2hlbGxvLXdvcmxkLXNjaGVkdWxlci9iaW4vaGVsbG93b3JsZCB7e3NlcnZpY2UueWFtbH19IHt7c2VydmljZS55YW1sc319IiwKICAibGFiZWxzIjogewogICAgIkRDT1NfQ09NTU9OU19BUElfVkVSU0lPTiI6ICJ2MSIsCiAgICAiRENPU19DT01NT05TX1VOSU5TVEFMTCI6ICJ0cnVlIiwKICAgICJEQ09TX1BBQ0tBR0VfRlJBTUVXT1JLX05BTUUiOiAie3tzZXJ2aWNlLm5hbWV9fSIsCiAgICAiTUFSQVRIT05fU0lOR0xFX0lOU1RBTkNFX0FQUCI6ICJ0cnVlIiwKICAgICJEQ09TX1NFUlZJQ0VfTkFNRSI6ICJ7e3NlcnZpY2UubmFtZX19IiwKICAgICJEQ09TX1NFUlZJQ0VfUE9SVF9JTkRFWCI6ICIwIiwKICAgICJEQ09TX1NFUlZJQ0VfU0NIRU1FIjogImh0dHAiCiAgfSwKICB7eyNzZXJ2aWNlLnNlcnZpY2VfYWNjb3VudF9zZWNyZXR9fQogICJzZWNyZXRzIjogewogICAgInNlcnZpY2VDcmVkZW50aWFsIjogewogICAgICAic291cmNlIjogInt7c2VydmljZS5zZXJ2aWNlX2FjY291bnRfc2VjcmV0fX0iCiAgICB9CiAgfSwKICB7ey9zZXJ2aWNlLnNlcnZpY2VfYWNjb3VudF9zZWNyZXR9fQogICJlbnYiOiB7CiAgICAiUEFDS0FHRV9OQU1FIjogImhlbGxvLXdvcmxkIiwKICAgICJQQUNLQUdFX1ZFUlNJT04iOiAic3R1Yi11bml2ZXJzZSIsCiAgICAiUEFDS0FHRV9CVUlMRF9USU1FX0VQT0NIX01TIjogIjE1MzQ4MDAwMDI3NDAiLAogICAgIlBBQ0tBR0VfQlVJTERfVElNRV9TVFIiOiAiTW9uIEF1ZyAyMCAyMDE4IDIxOjIwOjAyICswMDAwIiwKICAgICJGUkFNRVdPUktfTkFNRSI6ICJ7e3NlcnZpY2UubmFtZX19IiwKICAgICJGUkFNRVdPUktfTE9HX0xFVkVMIjogInt7c2VydmljZS5sb2dfbGV2ZWx9fSIsCiAgICAiRlJBTUVXT1JLX1BSSU5DSVBBTCI6ICJ7e3NlcnZpY2Uuc2VydmljZV9hY2NvdW50fX0iLAogICAgIkZSQU1FV09SS19VU0VSIjogInt7c2VydmljZS51c2VyfX0iLAogICAgIkhFTExPX0NPVU5UIjogInt7aGVsbG8uY291bnR9fSIsCiAgICAiSEVMTE9fQ1BVUyI6ICJ7e2hlbGxvLmNwdXN9fSIsCiAgICAiSEVMTE9fR1BVUyI6ICJ7e2hlbGxvLmdwdXN9fSIsCiAgICAiSEVMTE9fTUVNIjogInt7aGVsbG8ubWVtfX0iLAogICAgIkhFTExPX0RJU0siOiAie3toZWxsby5kaXNrfX0iLAogICAgIkhFTExPX1BMQUNFTUVOVCI6ICJ7e3toZWxsby5wbGFjZW1lbnR9fX0iLAogICAge3sjaGVsbG8ua2lsbF9ncmFjZV9wZXJpb2R9fQogICAgIkhFTExPX0tJTExfR1JBQ0VfUEVSSU9EIjogInt7aGVsbG8ua2lsbF9ncmFjZV9wZXJpb2R9fSIsCiAgICB7ey9oZWxsby5raWxsX2dyYWNlX3BlcmlvZH19CiAgICAiV09STERfQ09VTlQiOiAie3t3b3JsZC5jb3VudH19IiwKICAgICJXT1JMRF9DUFVTIjogInt7d29ybGQuY3B1c319IiwKICAgICJXT1JMRF9NRU0iOiAie3t3b3JsZC5tZW19fSIsCiAgICAiV09STERfRElTSyI6ICJ7e3dvcmxkLmRpc2t9fSIsCiAgICAiV09STERfUExBQ0VNRU5UIjogInt7e3dvcmxkLnBsYWNlbWVudH19fSIsCiAgICB7eyN3b3JsZC5raWxsX2dyYWNlX3BlcmlvZH19CiAgICAiV09STERfS0lMTF9HUkFDRV9QRVJJT0QiOiAie3t3b3JsZC5raWxsX2dyYWNlX3BlcmlvZH19IiwKICAgIHt7L3dvcmxkLmtpbGxfZ3JhY2VfcGVyaW9kfX0KICAgIHt7I3NlcnZpY2UucmVnaW9ufX0KICAgICJTRVJWSUNFX1JFR0lPTiI6ICJ7e3NlcnZpY2UucmVnaW9ufX0iLAogICAge3svc2VydmljZS5yZWdpb259fQogICAgIlNMRUVQX0RVUkFUSU9OIjogInt7c2VydmljZS5zbGVlcH19IiwKICAgICJKQVZBX1VSSSI6ICJ7e3Jlc291cmNlLmFzc2V0cy51cmlzLmpyZS10YXItZ3p9fSIsCiAgICAiS0VZU1RPUkVfQVBQX1VSSSI6ICJ7e3Jlc291cmNlLmFzc2V0cy51cmlzLmtleXN0b3JlLWFwcC16aXB9fSIsCiAgICAiQk9PVFNUUkFQX1VSSSI6ICJ7e3Jlc291cmNlLmFzc2V0cy51cmlzLmJvb3RzdHJhcC16aXB9fSIsCiAgICAiTElCTUVTT1NfVVJJIjogInt7cmVzb3VyY2UuYXNzZXRzLnVyaXMubGlibWVzb3MtYnVuZGxlLXRhci1nen19IiwKICAgIHt7I3NlcnZpY2Uuc2VydmljZV9hY2NvdW50X3NlY3JldH19CiAgICAiRENPU19TRVJWSUNFX0FDQ09VTlRfQ1JFREVOVElBTCI6IHsgInNlY3JldCI6ICJzZXJ2aWNlQ3JlZGVudGlhbCIgfSwKICAgICJNRVNPU19NT0RVTEVTIjogIntcImxpYnJhcmllc1wiOlt7XCJmaWxlXCI6XCJsaWJtZXNvcy1idW5kbGVcL2xpYlwvbWVzb3NcL2xpYmRjb3Nfc2VjdXJpdHkuc29cIixcIm1vZHVsZXNcIjpbe1wibmFtZVwiOiBcImNvbV9tZXNvc3BoZXJlX2Rjb3NfQ2xhc3NpY1JQQ0F1dGhlbnRpY2F0ZWVcIn0se1wibmFtZVwiOlwiY29tX21lc29zcGhlcmVfZGNvc19odHRwX0F1dGhlbnRpY2F0ZWVcIixcInBhcmFtZXRlcnNcIjpbe1wia2V5XCI6XCJqd3RfZXhwX3RpbWVvdXRcIixcInZhbHVlXCI6XCI1bWluc1wifSx7XCJrZXlcIjpcInByZWVtcHRpdmVfcmVmcmVzaF9kdXJhdGlvblwiLFwidmFsdWVcIjpcIjMwbWluc1wifV19XX1dfSIsCiAgICAiTUVTT1NfQVVUSEVOVElDQVRFRSI6ICJjb21fbWVzb3NwaGVyZV9kY29zX0NsYXNzaWNSUENBdXRoZW50aWNhdGVlIiwKICAgICJNRVNPU19IVFRQX0FVVEhFTlRJQ0FURUUiOiAiY29tX21lc29zcGhlcmVfZGNvc19odHRwX0F1dGhlbnRpY2F0ZWUiLAogICAge3svc2VydmljZS5zZXJ2aWNlX2FjY291bnRfc2VjcmV0fX0KICAgIHt7I2hlbGxvLnNlY3JldDF9fQogICAgIkhFTExPX1NFQ1JFVDEiIDogInt7aGVsbG8uc2VjcmV0MX19IiwKICAgIHt7L2hlbGxvLnNlY3JldDF9fQogICAge3sjaGVsbG8uc2VjcmV0Mn19CiAgICAiSEVMTE9fU0VDUkVUMiIgOiAie3toZWxsby5zZWNyZXQyfX0iLAogICAge3svaGVsbG8uc2VjcmV0Mn19CiAgICB7eyN3b3JsZC5zZWNyZXQxfX0KICAgICJXT1JMRF9TRUNSRVQxIiA6ICJ7e3dvcmxkLnNlY3JldDF9fSIsCiAgICB7ey93b3JsZC5zZWNyZXQxfX0KICAgIHt7I3dvcmxkLnNlY3JldDJ9fQogICAgIldPUkxEX1NFQ1JFVDIiIDogInt7d29ybGQuc2VjcmV0Mn19IiwKICAgIHt7L3dvcmxkLnNlY3JldDJ9fQogICAge3sjd29ybGQuc2VjcmV0M319CiAgICAiV09STERfU0VDUkVUMyIgOiAie3t3b3JsZC5zZWNyZXQzfX0iLAogICAge3svd29ybGQuc2VjcmV0M319CgogICAge3sjdGxzLmRpc2NvdmVyeV90YXNrX3ByZWZpeH19CiAgICAiRElTQ09WRVJZX1RBU0tfUFJFRklYIjogInt7dGxzLmRpc2NvdmVyeV90YXNrX3ByZWZpeH19IiwKICAgIHt7L3Rscy5kaXNjb3ZlcnlfdGFza19wcmVmaXh9fQoKICAgIHt7I3NlcnZpY2UuY3VzdG9tX3NlcnZpY2VfdGxkfX0KICAgICJTRVJWSUNFX1RMRCI6ICJ7e3NlcnZpY2UuY3VzdG9tX3NlcnZpY2VfdGxkfX0iLAogICAge3svc2VydmljZS5jdXN0b21fc2VydmljZV90bGR9fQoKICAgICJLRVlTVE9SRV9BUFBfVkVSU0lPTiI6ICJ7e3Rscy5rZXlzdG9yZV9hcHBfdmVyc2lvbn19IiwKICAgICJOR0lOWF9DT05UQUlORVJfVkVSU0lPTiI6ICJ7e3Rscy5uZ2lueF9jb250YWluZXJfdmVyc2lvbn19IiwKICAgICJURVNUX0JPT0xFQU4iOiAie3tzZXJ2aWNlLnRlc3RfYm9vbGVhbn19IiwKICAgICJTQ0VOQVJJT1MiOiAie3tzZXJ2aWNlLnNjZW5hcmlvfX0iLAogICAgIkFMTE9XX1JFR0lPTl9BV0FSRU5FU1MiOiAie3tzZXJ2aWNlLmFsbG93X3JlZ2lvbl9hd2FyZW5lc3N9fSIKICB9LAogICJmZXRjaCI6IFsKICAgIHsgInVyaSI6ICJ7e3Jlc291cmNlLmFzc2V0cy51cmlzLmJvb3RzdHJhcC16aXB9fSIsICJjYWNoZSI6IHRydWUgfSwKICAgIHsgInVyaSI6ICJ7e3Jlc291cmNlLmFzc2V0cy51cmlzLmpyZS10YXItZ3p9fSIsICJjYWNoZSI6IHRydWUgfSwKICAgIHsgInVyaSI6ICJ7e3Jlc291cmNlLmFzc2V0cy51cmlzLnNjaGVkdWxlci16aXB9fSIsICJjYWNoZSI6IHRydWUgfSwKICAgIHsgInVyaSI6ICJ7e3Jlc291cmNlLmFzc2V0cy51cmlzLmxpYm1lc29zLWJ1bmRsZS10YXItZ3p9fSIsICJjYWNoZSI6IHRydWUgfQogIF0sCiAgInVwZ3JhZGVTdHJhdGVneSI6ewogICAgIm1pbmltdW1IZWFsdGhDYXBhY2l0eSI6IDAsCiAgICAibWF4aW11bU92ZXJDYXBhY2l0eSI6IDAKICB9LAogICJoZWFsdGhDaGVja3MiOiBbCiAgICB7CiAgICAgICJwcm90b2NvbCI6ICJNRVNPU19IVFRQIiwKICAgICAgInBhdGgiOiAiL3YxL2hlYWx0aCIsCiAgICAgICJncmFjZVBlcmlvZFNlY29uZHMiOiA5MDAsCiAgICAgICJpbnRlcnZhbFNlY29uZHMiOiAzMCwKICAgICAgInBvcnRJbmRleCI6IDAsCiAgICAgICJ0aW1lb3V0U2Vjb25kcyI6IDMwLAogICAgICAibWF4Q29uc2VjdXRpdmVGYWlsdXJlcyI6IDAKICAgIH0KICBdLAogICJwb3J0RGVmaW5pdGlvbnMiOiBbCiAgICB7CiAgICAgICJwb3J0IjogMCwKICAgICAgInByb3RvY29sIjogInRjcCIsCiAgICAgICJuYW1lIjogImFwaSIKICAgIH0KICBdCn0K"
+      },
+      "resource": {
+        "assets": {
+          "uris": {
+            "jre-tar-gz": "https://downloads.mesosphere.com/java/server-jre-8u172-linux-x64.tar.gz",
+            "libmesos-bundle-tar-gz": "https://downloads.mesosphere.com/libmesos-bundle/libmesos-bundle-1.11.0.tar.gz",
+            "bootstrap-zip": "https://infinity-artifacts.s3.amazonaws.com/cosmos-integration-test/package-with-manager/bootstrap.zip",
+            "scheduler-zip": "https://infinity-artifacts.s3.amazonaws.com/cosmos-integration-test/package-with-manager/hello-world-scheduler.zip",
+            "keystore-app-zip": "https://infinity-artifacts.s3.amazonaws.com/cosmos-integration-test/package-with-manager/keystore-app.zip"
+          }
+        },
+        "images": {
+          "icon-small": "https://downloads.mesosphere.com/assets/universe/000/hello-world-icon-small.png",
+          "icon-medium": "https://downloads.mesosphere.com/assets/universe/000/hello-world-icon-medium.png",
+          "icon-large": "https://downloads.mesosphere.com/assets/universe/000/hello-world-icon-large.png"
+        },
+        "cli": {
+          "binaries": {
+            "darwin": {
+              "x86-64": {
+                "contentHash": [
+                  {
+                    "algo": "sha256",
+                    "value": "509f1b7040e7e1b67d803390336d17cbd7bb32e38ce4c6cd83da32508b9e74cb"
+                  }
+                ],
+                "kind": "executable",
+                "url": "https://infinity-artifacts.s3.amazonaws.com/autodelete7d/hello-world/20180820-142001-87bMED0MNI9gwoVv/dcos-service-cli-darwin"
+              }
+            },
+            "linux": {
+              "x86-64": {
+                "contentHash": [
+                  {
+                    "algo": "sha256",
+                    "value": "eccf0227846bdeae32f1d697179d9f611d122fc856bef6ec75668d7aefd85b76"
+                  }
+                ],
+                "kind": "executable",
+                "url": "https://infinity-artifacts.s3.amazonaws.com/autodelete7d/hello-world/20180820-142001-87bMED0MNI9gwoVv/dcos-service-cli-linux"
+              }
+            },
+            "windows": {
+              "x86-64": {
+                "contentHash": [
+                  {
+                    "algo": "sha256",
+                    "value": "75c066869ec3d06c49bdf7faf0e02cdab9d431bfeaa478d84e76641628b22c2c"
+                  }
+                ],
+                "kind": "executable",
+                "url": "https://infinity-artifacts.s3.amazonaws.com/autodelete7d/hello-world/20180820-142001-87bMED0MNI9gwoVv/dcos-service-cli.exe"
+              }
+            }
+          }
+        }
+      }
+    }
+  ]
+}

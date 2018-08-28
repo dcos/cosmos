@@ -126,6 +126,19 @@ object CosmosRequests {
     )
   }
 
+  def serviceUpdate(
+     updateRequest: rpc.v1.model.ServiceUpdateRequest
+   )(
+     implicit testContext: TestContext
+   ): HttpRequest = {
+    HttpRequest.post(
+      path = ServiceRpcPath("update"),
+      body = updateRequest,
+      contentType =  rpc.MediaTypes.ServiceUpdateRequest,
+      accept = rpc.MediaTypes.ServiceUpdateResponse
+    )
+  }
+
   def packageResource(resourceUri: Uri): HttpRequest = {
     HttpRequest(
       path = PackageRpcPath("resource"),

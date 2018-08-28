@@ -20,9 +20,6 @@ trait IntegrationBeforeAndAfterAll extends BeforeAndAfterAll with Eventually { t
   private[this] val universeUri = "https://downloads.mesosphere.com/universe/02493e40f8564a39446d06c002f8dcc8e7f6d61f/repo-up-to-1.8.json"
   private[this] val universeConverterUri = "https://universe-converter.mesosphere.com/transform?url=" + universeUri
 
-  // TODO: Move this to downloads.mesosphere.com
-  val v5TestPackage = "https://infinity-artifacts.s3.amazonaws.com/cosmos-integration-test/package-with-manager/stub-universe-hello-world.json"
-
   override def beforeAll(): Unit = {
     Requests.deleteRepository(Some("Universe"))
 
@@ -51,10 +48,17 @@ trait IntegrationBeforeAndAfterAll extends BeforeAndAfterAll with Eventually { t
     )
 
     Requests.addRepository(
+      "V5Testpackage",
+      ItObjects.V5TestPackage,
+      Some(0)
+    )
+
+    Requests.addRepository(
       "V4TestUniverse",
       ItObjects.V4TestUniverseConverterURI,
       Some(0)
     )
+
     // This package is present only in V4TestUniverse and this method ensures that the
     // package collection cache is cleared before starting the integration tests
     val _ = waitUntilCacheReloads()
@@ -62,6 +66,7 @@ trait IntegrationBeforeAndAfterAll extends BeforeAndAfterAll with Eventually { t
 
   override def afterAll(): Unit = {
     Requests.deleteRepository(Some("V4TestUniverse"))
+    Requests.deleteRepository(Some("V5Testpackage"))
     Requests.deleteMarathonApp(AppId(ItObjects.customManagerAppName))
     Requests.deleteRepository(None, Some(universeConverterUri))
     val _ = Requests.addRepository("Universe", "https://universe.mesosphere.com/repo")
