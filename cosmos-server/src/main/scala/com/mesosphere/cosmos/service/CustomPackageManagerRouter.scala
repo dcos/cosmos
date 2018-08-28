@@ -137,7 +137,7 @@ class CustomPackageManagerRouter(adminRouter: AdminRouter, packageCollection: Pa
           request.packageVersion,
           request.options,
           request.replace,
-          packageName = request.packageVersion,
+          packageName = request.packageName,
           managerId = None
         )
       )
