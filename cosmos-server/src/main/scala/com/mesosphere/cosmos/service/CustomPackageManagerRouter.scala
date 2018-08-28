@@ -81,7 +81,7 @@ class CustomPackageManagerRouter(adminRouter: AdminRouter, packageCollection: Pa
     request: rpc.v1.model.UninstallRequest,
     managerId: String
   )(implicit session: RequestSession): Future[UninstallResponse] = {
-    adminRouter.getApp(AppId(request.managerId.get))
+    adminRouter.getApp(AppId(managerId))
     adminRouter
       .postCustomPackageUninstall(
         AppId(managerId),
@@ -89,8 +89,8 @@ class CustomPackageManagerRouter(adminRouter: AdminRouter, packageCollection: Pa
           request.packageName,
           request.appId,
           request.all,
-          managerId = None,
-          packageVersion = None
+          packageVersion = request.packageVersion,
+          managerId = None
         )
       )
       .map { response =>
@@ -105,15 +105,15 @@ class CustomPackageManagerRouter(adminRouter: AdminRouter, packageCollection: Pa
   )(
     implicit session: RequestSession
   ): Future[ServiceDescribeResponse] = {
-    adminRouter.getApp(AppId(request.managerId.get))
+    adminRouter.getApp(AppId(managerId))
     adminRouter
       .postCustomServiceDescribe(
         AppId(managerId),
         new rpc.v1.model.ServiceDescribeRequest(
           request.appId,
-          managerId = None,
-          packageName = None,
-          packageVersion = None
+          packageName = request.packageName,
+          packageVersion = request.packageVersion,
+          managerId = None
         )
       )
       .map { response =>
@@ -128,7 +128,7 @@ class CustomPackageManagerRouter(adminRouter: AdminRouter, packageCollection: Pa
   )(
     implicit session: RequestSession
   ): Future[ServiceUpdateResponse] = {
-    adminRouter.getApp(AppId(request.managerId.get))
+    adminRouter.getApp(AppId(managerId))
     adminRouter
       .postCustomServiceUpdate(
         AppId(managerId),
@@ -137,8 +137,8 @@ class CustomPackageManagerRouter(adminRouter: AdminRouter, packageCollection: Pa
           request.packageVersion,
           request.options,
           request.replace,
-          managerId = None,
-          packageName = None
+          packageName = request.packageName,
+          managerId = None
         )
       )
       .map { response =>
