@@ -46,7 +46,7 @@ class CustomPackageManagerRouter(adminRouter: AdminRouter, packageCollection: Pa
                 case _ => Future(None)
               }
           case (Some(name), _, _) if isInstallRequest =>
-            getPackageNameAndVersionFromMarathonApp(appId(name))
+            getPackageNameAndVersionFromMarathonApp(AppId(name))
               .flatMap {
                 case (Some(pkgName), Some(pkgVersion)) =>
                   getPackageManagerWithNameAndVersion(pkgName, pkgVersion).map(_.map(_.packageName))
