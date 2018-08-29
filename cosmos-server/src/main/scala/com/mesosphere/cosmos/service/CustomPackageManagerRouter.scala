@@ -27,7 +27,8 @@ class CustomPackageManagerRouter(adminRouter: AdminRouter, packageCollection: Pa
     managerId: Option[String],
     packageName: Option[String],
     packageVersion: Option[universe.v3.model.Version],
-    appId: Option[AppId]
+    appId: Option[AppId],
+    isInstallRequest: Boolean = false
   )(
     implicit session: RequestSession
   ): Future[Option[String]] = {
@@ -39,6 +40,13 @@ class CustomPackageManagerRouter(adminRouter: AdminRouter, packageCollection: Pa
             getPackageManagerWithNameAndVersion(name, version).map(_.map(_.packageName))
           case (_, _, Some(id)) =>
             getPackageNameAndVersionFromMarathonApp(id)
+              .flatMap {
+                case (Some(pkgName), Some(pkgVersion)) =>
+                  getPackageManagerWithNameAndVersion(pkgName, pkgVersion).map(_.map(_.packageName))
+                case _ => Future(None)
+              }
+          case (Some(name), _, _) if isInstallRequest =>
+            getPackageNameAndVersionFromMarathonApp(appId(name))
               .flatMap {
                 case (Some(pkgName), Some(pkgVersion)) =>
                   getPackageManagerWithNameAndVersion(pkgName, pkgVersion).map(_.map(_.packageName))
