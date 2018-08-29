@@ -28,7 +28,6 @@ class CustomPackageManagerRouter(adminRouter: AdminRouter, packageCollection: Pa
     packageName: Option[String],
     packageVersion: Option[universe.v3.model.Version],
     appId: Option[AppId],
-    isInstallRequest: Boolean = false
   )(
     implicit session: RequestSession
   ): Future[Option[String]] = {
@@ -37,21 +36,16 @@ class CustomPackageManagerRouter(adminRouter: AdminRouter, packageCollection: Pa
       case None =>
         (packageName, packageVersion, appId) match {
           case (Some(name), Some(version), _) =>
-            getPackageManagerWithNameAndVersion(name, version).map(_.map(_.packageName))
+            getPackageManagerWithNameAndVersion(name, Some(version)).map(_.map(_.packageName))
           case (_, _, Some(id)) =>
             getPackageNameAndVersionFromMarathonApp(id)
               .flatMap {
                 case (Some(pkgName), Some(pkgVersion)) =>
-                  getPackageManagerWithNameAndVersion(pkgName, pkgVersion).map(_.map(_.packageName))
+                  getPackageManagerWithNameAndVersion(pkgName, Some(pkgVersion)).map(_.map(_.packageName))
                 case _ => Future(None)
               }
-          case (Some(name), _, _) if isInstallRequest =>
-            getPackageNameAndVersionFromMarathonApp(AppId(name))
-              .flatMap {
-                case (Some(pkgName), Some(pkgVersion)) =>
-                  getPackageManagerWithNameAndVersion(pkgName, pkgVersion).map(_.map(_.packageName))
-                case _ => Future(None)
-              }
+          case (Some(name), _, _)  =>
+            getPackageManagerWithNameAndVersion(name).map(_.map(_.packageName))
           case _ => Future(None)
         }
     }
@@ -187,12 +181,12 @@ class CustomPackageManagerRouter(adminRouter: AdminRouter, packageCollection: Pa
 
   private def getPackageManagerWithNameAndVersion(
     packageName: String,
-    packageVersion: com.mesosphere.universe.v3.model.Version
+    packageVersion: Option[com.mesosphere.universe.v3.model.Version] = None
   )(
     implicit session: RequestSession
   ): Future[Option[Manager]] = {
     packageCollection
-      .getPackageByPackageVersion(packageName, Option(packageVersion))
+      .getPackageByPackageVersion(packageName, packageVersion)
       .map { case (pkg, _) => pkg.pkgDef.manager }
   }
 }
