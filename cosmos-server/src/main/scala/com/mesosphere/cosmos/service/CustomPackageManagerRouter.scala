@@ -36,12 +36,14 @@ class CustomPackageManagerRouter(adminRouter: AdminRouter, packageCollection: Pa
       case None =>
         (packageName, packageVersion, appId) match {
           case (Some(name), Some(version), _) =>
-            getPackageManagerWithNameAndVersion(name, version).map(_.map(_.packageName))
+            getPackageManagerWithNameAndVersion(name, Option(version)).map(_.map(_.packageName))
+          case (Some(name), None, _) =>
+            getPackageManagerWithNameAndVersion(name, None).map(_.map(_.packageName))
           case (None, None, Some(id)) =>
             getPackageNameAndVersionFromMarathonApp(id)
               .flatMap {
                 case (Some(pkgName), Some(pkgVersion)) =>
-                  getPackageManagerWithNameAndVersion(pkgName, pkgVersion).map(_.map(_.packageName))
+                  getPackageManagerWithNameAndVersion(pkgName, Option(pkgVersion)).map(_.map(_.packageName))
                 case _ => Future(None)
               }
           case _ => Future(None)
@@ -179,12 +181,12 @@ class CustomPackageManagerRouter(adminRouter: AdminRouter, packageCollection: Pa
 
   private def getPackageManagerWithNameAndVersion(
     packageName: String,
-    packageVersion: com.mesosphere.universe.v3.model.Version
+    packageVersion: Option[com.mesosphere.universe.v3.model.Version]
   )(
     implicit session: RequestSession
   ): Future[Option[Manager]] = {
     packageCollection
-      .getPackageByPackageVersion(packageName, Option(packageVersion))
+      .getPackageByPackageVersion(packageName, packageVersion)
       .map { case (pkg, _) => pkg.pkgDef.manager }
   }
 }
