@@ -35,15 +35,21 @@ class CustomPackageManagerRouter(adminRouter: AdminRouter, packageCollection: Pa
       case Some(_) => Future(Some((managerId,None , None)))
       case None =>
         (packageName, packageVersion, appId) match {
-          case (Some(name), Some(version), _) =>
-            getPackageManagerWithNameAndVersion(name, version).map( manager =>
-              Option((Option(manager.get.packageName), Option(name), Option(version))))
+          case (Some(pkgName), Some(pkgVersion), _) =>
+            getPackageManagerWithNameAndVersion(pkgName, pkgVersion).flatMap {
+              case Some(manager) =>
+                Future(Option((Option(manager.packageName), Option(pkgName), Option(pkgVersion))))
+              case _ => Future(Some((None, None, None)))
+            }
           case (_, _, Some(id)) =>
             getPackageNameAndVersionFromMarathonApp(id)
               .flatMap {
                 case (Some(pkgName), Some(pkgVersion)) =>
-                  getPackageManagerWithNameAndVersion(pkgName, pkgVersion).map(manager =>
-                  Option((Option(manager.get.packageName), Option(pkgName), Option(pkgVersion))))
+                  getPackageManagerWithNameAndVersion(pkgName, pkgVersion).flatMap {
+                    case Some(manager) =>
+                      Future(Option((Option(manager.packageName), Option(pkgName), Option(pkgVersion))))
+                    case _ => Future(Some((None, None, None)))
+                  }
                 case _ => Future(Some((None, None, None)))
               }
           case _ => Future(Some((None, None, None)))
