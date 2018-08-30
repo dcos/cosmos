@@ -17,6 +17,7 @@ import com.mesosphere.cosmos.handler.UninstallHandler._
 import com.mesosphere.cosmos.http.RequestSession
 import com.mesosphere.cosmos.repository.PackageCollection
 import com.mesosphere.cosmos.rpc
+import com.mesosphere.cosmos.rpc.v1.model.UninstallRequest
 import com.mesosphere.cosmos.service.CustomPackageManagerRouter
 import com.mesosphere.cosmos.service.ServiceUninstaller
 import com.mesosphere.cosmos.thirdparty.marathon.model.AppId
@@ -71,8 +72,9 @@ private[cosmos] final class UninstallHandler(
                   Some(req.appId.getOrElse(uninstallOp.appId))
                 ).flatMap {
                   case Some(managerId) if !managerId.isEmpty =>
-                    logger.debug(s"Request [$req] requires custom manager: [$managerId]")
-                    return customPackageManagerRouter.callCustomPackageUninstall(req, managerId) //scalastyle:ignore return
+                    val uninstallRequest = UninstallRequest(uninstallOp.packageName, Option(uninstallOp.appId), req.all, Option(managerId), uninstallOp.packageVersion.as[Option[com.mesosphere.universe.v3.model.Version]])
+                    logger.info(s"Request [$uninstallRequest] requires custom manager: [$managerId]")
+                    return customPackageManagerRouter.callCustomPackageUninstall(uninstallRequest, managerId) //scalastyle:ignore return
                 }
                 (app, runUninstall(uninstallOp))
             }
