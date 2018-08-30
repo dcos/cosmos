@@ -30,41 +30,37 @@ class CustomPackageManagerRouter(adminRouter: AdminRouter, packageCollection: Pa
     appId: Option[AppId]
   )(
     implicit session: RequestSession
-  ): Future[Option[String]] = {
+  ): Future[Option[(Option[String], Option[String], Option[universe.v3.model.Version])]] = {
     managerId match {
-      case Some(_) => Future(managerId)
+      case Some(_) => Future(Some((managerId,None , None)))
       case None =>
         (packageName, packageVersion, appId) match {
           case (Some(name), Some(version), _) =>
-            getPackageManagerWithNameAndVersion(name, version).map(_.map(_.packageName))
+            getPackageManagerWithNameAndVersion(name, version).map( manager =>
+              Option((Option(manager.get.packageName), Option(name), Option(version))))
           case (_, _, Some(id)) =>
             getPackageNameAndVersionFromMarathonApp(id)
               .flatMap {
                 case (Some(pkgName), Some(pkgVersion)) =>
-                  getPackageManagerWithNameAndVersion(pkgName, pkgVersion).map(_.map(_.packageName))
-                case _ => Future(None)
+                  getPackageManagerWithNameAndVersion(pkgName, pkgVersion).map(manager =>
+                  Option((Option(manager.get.packageName), Option(pkgName), Option(pkgVersion))))
+                case _ => Future(Some((None, None, None)))
               }
-          case _ => Future(None)
+          case _ => Future(Some((None, None, None)))
         }
     }
   }
 
   def callCustomPackageInstall(
     request: rpc.v1.model.InstallRequest,
-    managerId: String
+    managerId: String,
+    packageName: String,
   )(implicit session: RequestSession): Future[InstallResponse] = {
-    new rpc.v1.model.InstallRequest(
-      request.packageName,
-      request.packageVersion,
-      request.options,
-      request.appId,
-      managerId = None
-    )
     adminRouter
       .postCustomPackageInstall(
         AppId(managerId),
         new rpc.v1.model.InstallRequest(
-          request.packageName,
+          packageName,
           request.packageVersion,
           request.options,
           request.appId,
@@ -79,17 +75,19 @@ class CustomPackageManagerRouter(adminRouter: AdminRouter, packageCollection: Pa
 
   def callCustomPackageUninstall(
     request: rpc.v1.model.UninstallRequest,
-    managerId: String
+    managerId: String,
+    packageName: String,
+    packageVersion: universe.v3.model.Version
   )(implicit session: RequestSession): Future[UninstallResponse] = {
     adminRouter.getApp(AppId(managerId))
     adminRouter
       .postCustomPackageUninstall(
         AppId(managerId),
         new rpc.v1.model.UninstallRequest(
-          request.packageName,
+          packageName,
           request.appId,
           request.all,
-          packageVersion = request.packageVersion,
+          packageVersion = Option(packageVersion),
           managerId = None
         )
       )
@@ -101,7 +99,9 @@ class CustomPackageManagerRouter(adminRouter: AdminRouter, packageCollection: Pa
 
   def callCustomServiceDescribe(
     request: rpc.v1.model.ServiceDescribeRequest,
-    managerId: String
+    managerId: String,
+    packageName: String,
+    packageVersion: universe.v3.model.Version
   )(
     implicit session: RequestSession
   ): Future[ServiceDescribeResponse] = {
@@ -111,8 +111,8 @@ class CustomPackageManagerRouter(adminRouter: AdminRouter, packageCollection: Pa
         AppId(managerId),
         new rpc.v1.model.ServiceDescribeRequest(
           request.appId,
-          packageName = request.packageName,
-          packageVersion = request.packageVersion,
+          packageName = Option(packageName),
+          packageVersion = Option(packageVersion),
           managerId = None
         )
       )
@@ -124,7 +124,9 @@ class CustomPackageManagerRouter(adminRouter: AdminRouter, packageCollection: Pa
 
   def callCustomServiceUpdate(
     request: rpc.v1.model.ServiceUpdateRequest,
-    managerId: String
+    managerId: String,
+    packageName: String,
+    packageVersion: universe.v3.model.Version
   )(
     implicit session: RequestSession
   ): Future[ServiceUpdateResponse] = {
@@ -137,8 +139,9 @@ class CustomPackageManagerRouter(adminRouter: AdminRouter, packageCollection: Pa
           request.packageVersion,
           request.options,
           request.replace,
-          packageName = request.packageName,
-          managerId = None
+          packageName = Option(packageName),
+          managerId = None,
+          currentPackageVersion = Option(packageVersion)
         )
       )
       .map { response =>
