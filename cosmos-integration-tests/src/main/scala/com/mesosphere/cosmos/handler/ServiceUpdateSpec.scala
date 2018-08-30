@@ -187,6 +187,7 @@ object ServiceUpdateSpec {
           options,
           replace,
           None,
+          None,
           None
         ),
         MediaTypes.ServiceUpdateRequest,
