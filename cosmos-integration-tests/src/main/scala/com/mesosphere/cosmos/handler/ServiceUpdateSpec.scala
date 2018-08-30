@@ -147,7 +147,8 @@ class ServiceUpdateSpec extends FeatureSpec with Matchers {
         None,
         replace = true,
         managerId = Some(ItObjects.customManagerAppName),
-        Some("cassandra")
+        Some("cassandra"),
+        None
       )
 
       val serviceUpdateResponse = CosmosClient.submit(CosmosRequests.serviceUpdate(serviceUpdateRequest))
