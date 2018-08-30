@@ -22,6 +22,7 @@ import com.twitter.util.Future
 class CustomPackageManagerRouter(adminRouter: AdminRouter, packageCollection: PackageCollection) {
 
   private[this] lazy val logger = org.slf4j.LoggerFactory.getLogger(getClass)
+  // scalastyle:off cyclomatic.complexity
 
   def getCustomPackageManagerId(
     managerId: Option[String],
@@ -56,6 +57,8 @@ class CustomPackageManagerRouter(adminRouter: AdminRouter, packageCollection: Pa
         }
     }
   }
+  // scalastyle:on cyclomatic.complexity
+
 
   def callCustomPackageInstall(
     request: rpc.v1.model.InstallRequest,
