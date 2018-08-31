@@ -15,7 +15,7 @@ case class ServiceDescribeRequest(
   appId: AppId,
   managerId: Option[String],
   packageName: Option[String],
-  packageVersion: Option[universe.v2.model.PackageDetailsVersion]
+  packageVersion: Option[universe.v3.model.Version]
 )
 
 object ServiceDescribeRequest {

@@ -42,9 +42,9 @@ final class ServiceUpdateHandler(
       request.packageVersion,
       Option(request.appId)
     ).flatMap {
-      case Some(managerId) if !managerId.isEmpty =>
+      case Some((Some(managerId), Some(pkgName), Some(pkgVersion))) if !managerId.isEmpty =>
         logger.debug(s"Request [$request] requires a custom manager: [$managerId]")
-        customPackageManagerRouter.callCustomServiceUpdate(request, managerId)
+        customPackageManagerRouter.callCustomServiceUpdate(request, managerId, pkgName, pkgVersion)
       case _ =>
         adminRouter.getApp(request.appId).flatMap { marathonAppResponse =>
           getPackageWithSourceOrThrow(packageCollection, marathonAppResponse.app).flatMap {

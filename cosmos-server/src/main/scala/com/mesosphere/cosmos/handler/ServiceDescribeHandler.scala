@@ -10,9 +10,7 @@ import com.mesosphere.cosmos.rpc
 import com.mesosphere.cosmos.service.CustomPackageManagerRouter
 import com.mesosphere.cosmos.thirdparty.marathon.model.MarathonApp
 import com.mesosphere.universe
-import com.mesosphere.universe.bijection.UniverseConversions._
 import com.mesosphere.universe.v4.model.PackageDefinition
-import com.twitter.bijection.Conversion.asMethod
 import com.twitter.util.Future
 import io.circe.JsonObject
 
@@ -32,12 +30,12 @@ private[cosmos] final class ServiceDescribeHandler(
     customPackageManagerRouter.getCustomPackageManagerId(
       request.managerId,
       request.packageName,
-      request.packageVersion.as[Option[universe.v3.model.Version]],
+      request.packageVersion,
       Some(request.appId)
     ).flatMap {
-      case Some(managerId) if !managerId.isEmpty =>
+      case Some((Some(managerId), Some(pkgName), Some(pkgVersion))) if !managerId.isEmpty =>
         logger.debug(s"Request [$request] requires a custom manager: [$managerId]")
-        customPackageManagerRouter.callCustomServiceDescribe(request, managerId)
+        customPackageManagerRouter.callCustomServiceDescribe(request, managerId, pkgName, pkgVersion)
       case _ =>
         for {
           marathonAppResponse <- adminRouter.getApp(request.appId)
