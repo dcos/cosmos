@@ -86,7 +86,8 @@ class CustomPackageManagerRouter(adminRouter: AdminRouter, packageCollection: Pa
     request: rpc.v1.model.UninstallRequest,
     managerId: String,
     packageName: String,
-    packageVersion: universe.v3.model.Version
+    packageVersion: universe.v3.model.Version,
+    appId: AppId
   )(implicit session: RequestSession): Future[UninstallResponse] = {
     adminRouter.getApp(AppId(managerId))
     adminRouter
@@ -94,7 +95,7 @@ class CustomPackageManagerRouter(adminRouter: AdminRouter, packageCollection: Pa
         AppId(managerId),
         new rpc.v1.model.UninstallRequest(
           packageName,
-          request.appId,
+          Option(appId),
           request.all,
           packageVersion = Option(packageVersion),
           managerId = None

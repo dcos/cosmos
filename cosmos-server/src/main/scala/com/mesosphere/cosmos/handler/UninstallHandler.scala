@@ -72,7 +72,13 @@ private[cosmos] final class UninstallHandler(
                 ).flatMap {
                   case Some((Some(managerId), Some(pkgName), Some(pkgVersion))) if !managerId.isEmpty =>
                     logger.debug(s"Request [$req] requires custom manager: [$managerId]")
-                    return customPackageManagerRouter.callCustomPackageUninstall(req, managerId, pkgName, pkgVersion) //scalastyle:ignore return
+                    return customPackageManagerRouter.callCustomPackageUninstall(
+                      req,
+                      managerId,
+                      pkgName,
+                      pkgVersion,
+                      req.appId.getOrElse(uninstallOp.appId)
+                    ) //scalastyle:ignore return
                 }
                 (app, runUninstall(uninstallOp))
             }
