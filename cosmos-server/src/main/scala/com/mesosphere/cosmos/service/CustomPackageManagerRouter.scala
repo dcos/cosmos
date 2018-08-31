@@ -63,13 +63,12 @@ class CustomPackageManagerRouter(adminRouter: AdminRouter, packageCollection: Pa
   def callCustomPackageInstall(
     request: rpc.v1.model.InstallRequest,
     managerId: String,
-    packageName: String
   )(implicit session: RequestSession): Future[InstallResponse] = {
     adminRouter
       .postCustomPackageInstall(
         AppId(managerId),
         new rpc.v1.model.InstallRequest(
-          packageName,
+          request.packageName,
           request.packageVersion,
           request.options,
           request.appId,

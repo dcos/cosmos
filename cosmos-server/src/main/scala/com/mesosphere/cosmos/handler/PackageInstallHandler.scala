@@ -36,9 +36,9 @@ private[cosmos] final class PackageInstallHandler(
       request.packageVersion.as[Option[universe.v3.model.Version]],
       None
     ).flatMap {
-      case Some((Some(managerId), Some(pkgName), _)) if !managerId.isEmpty =>
+      case Some((Some(managerId), _, _)) if !managerId.isEmpty =>
         logger.debug(s"Request [$request] requires a custom manager: [$managerId]")
-        customPackageManagerRouter.callCustomPackageInstall(request, managerId, pkgName)
+        customPackageManagerRouter.callCustomPackageInstall(request, managerId)
       case _ =>
         packageCollection
           .getPackageByPackageVersion(
