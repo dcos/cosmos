@@ -105,6 +105,8 @@ final class PackageCollection(
     all().map(PackageCollection.allUrls)
   }
 
+  def invalidateAll() : Unit = repositoryCache.invalidateAll()
+
   private[this] def all()(
     implicit session: RequestSession
   ): Future[List[(universe.v4.model.Repository, Uri)]] = repositoryCache.get(session)

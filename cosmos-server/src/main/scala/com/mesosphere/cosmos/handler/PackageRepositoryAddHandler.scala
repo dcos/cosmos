@@ -5,6 +5,7 @@ import com.mesosphere.cosmos.error.UniverseClientHttpError
 import com.mesosphere.cosmos.error.UnsupportedRepositoryUri
 import com.mesosphere.cosmos.finch.EndpointHandler
 import com.mesosphere.cosmos.http.RequestSession
+import com.mesosphere.cosmos.repository.PackageCollection
 import com.mesosphere.cosmos.repository.PackageSourcesStorage
 import com.mesosphere.cosmos.repository.UniverseClient
 import com.mesosphere.cosmos.rpc
@@ -13,9 +14,9 @@ import io.netty.handler.codec.http.HttpResponseStatus
 
 private[cosmos] final class PackageRepositoryAddHandler(
   sourcesStorage: PackageSourcesStorage,
-  universeClient: UniverseClient
-) extends EndpointHandler[rpc.v1.model.PackageRepositoryAddRequest,
-                          rpc.v1.model.PackageRepositoryAddResponse] {
+  universeClient: UniverseClient,
+  repositories: PackageCollection
+) extends EndpointHandler[rpc.v1.model.PackageRepositoryAddRequest, rpc.v1.model.PackageRepositoryAddResponse] {
 
   override def apply(
     request: rpc.v1.model.PackageRepositoryAddRequest
@@ -25,14 +26,13 @@ private[cosmos] final class PackageRepositoryAddHandler(
     val repository = rpc.v1.model.PackageRepository(request.name, request.uri)
     request.uri.scheme match {
       case Some("http") | Some("https") =>
-        checkThatRepoWorks(repository).flatMap { _ =>
-          sourcesStorage.add(
-            request.index,
-            repository
-          ) map { sources =>
-            rpc.v1.model.PackageRepositoryAddResponse(sources)
+        checkThatRepoWorks(repository)
+          .flatMap { _ =>
+            sourcesStorage
+              .add(request.index, repository)
+              .map(rpc.v1.model.PackageRepositoryAddResponse(_))
+              .foreach(_ => repositories.invalidateAll())
           }
-        }
       case _ => throw UnsupportedRepositoryUri(request.uri).exception
     }
   }
