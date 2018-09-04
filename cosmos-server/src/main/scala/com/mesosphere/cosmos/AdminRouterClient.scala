@@ -113,12 +113,12 @@ object AdminRouterClient {
   def addOriginHeaders(request: Request)(implicit session: RequestSession): Request = {
     session.originInfo.port match {
       case Some(port) =>
-        request.headerMap.add (util.ForwardedProtoHeader, session.originInfo.urlScheme.toString)
-        request.headerMap.add (util.ForwardedHostHeader, session.originInfo.host)
-        request.headerMap.add (util.ForwardedPortHeader, port)
+        request.headerMap.add(util.ForwardedProtoHeader, session.originInfo.urlScheme.toString)
+        request.headerMap.add(util.ForwardedHostHeader, session.originInfo.host)
+        request.headerMap.add(util.ForwardedPortHeader, port)
       case None =>
-        request.headerMap.add (util.ForwardedProtoHeader, session.originInfo.urlScheme.toString)
-        request.headerMap.add (util.ForwardedHostHeader, session.originInfo.host)
+        request.headerMap.add(util.ForwardedProtoHeader, session.originInfo.urlScheme.toString)
+        request.headerMap.add(util.ForwardedHostHeader, session.originInfo.host)
     }
     request
   }
