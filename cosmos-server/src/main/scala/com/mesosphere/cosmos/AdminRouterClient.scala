@@ -109,8 +109,6 @@ class AdminRouterClient(
   }
 }
 
-
-
 object AdminRouterClient {
   @volatile private var cachedDcosVersion: Option[DcosVersion] = None
 }
