@@ -4,6 +4,7 @@ import com.mesosphere.cosmos.http.RequestSession
 import com.mesosphere.cosmos.rpc.MediaTypes
 import com.mesosphere.cosmos.thirdparty.adminrouter.model.DcosVersion
 import com.mesosphere.cosmos.thirdparty.marathon.model.AppId
+import com.mesosphere.util
 import com.netaporter.uri.Uri
 import com.netaporter.uri.dsl._
 import com.twitter.finagle.Service
@@ -66,7 +67,7 @@ class AdminRouterClient(
      body: rpc.v1.model.InstallRequest
    )(implicit session: RequestSession): Future[Response] = {
     val uri = "service" / managerId.toUri / "package" / "install"
-    val p = post(uri, body.asJson)
+    val p = addOriginHeaders(post(uri, body.asJson))
     p.headerMap.set(Fields.ContentType, MediaTypes.InstallRequest.show)
     p.headerMap.set(Fields.Accept, MediaTypes.V2InstallResponse.show)
     client(p)
@@ -77,7 +78,7 @@ class AdminRouterClient(
       body: rpc.v1.model.UninstallRequest
     )(implicit session: RequestSession): Future[Response] = {
     val uri = "service" / managerId.toUri / "package" / "uninstall"
-    val p = post(uri, body.asJson)
+    val p = addOriginHeaders(post(uri, body.asJson))
     p.headerMap.set(Fields.ContentType, MediaTypes.UninstallRequest.show)
     p.headerMap.set(Fields.Accept, MediaTypes.UninstallResponse.show)
     client(p)
@@ -88,7 +89,7 @@ class AdminRouterClient(
     body: rpc.v1.model.ServiceDescribeRequest
   )(implicit session: RequestSession): Future[Response] = {
     val uri = "service" / managerId.toUri / "service" / "describe"
-    val p = post(uri, body.asJson)
+    val p = addOriginHeaders(post(uri, body.asJson))
     p.headerMap.set(Fields.ContentType, MediaTypes.ServiceDescribeRequest.show)
     p.headerMap.set(Fields.Accept, MediaTypes.ServiceDescribeResponse.show)
     client(p)
@@ -99,7 +100,7 @@ class AdminRouterClient(
     body: rpc.v1.model.ServiceUpdateRequest
   )(implicit session: RequestSession): Future[Response] = {
     val uri = "service" / managerId.toUri / "service" / "update"
-    val p = post(uri, body.asJson)
+    val p = addOriginHeaders(post(uri, body.asJson))
     p.headerMap.set(Fields.ContentType, MediaTypes.ServiceUpdateRequest.show)
     p.headerMap.set(Fields.Accept, MediaTypes.ServiceUpdateResponse.show)
     client(p)
@@ -108,4 +109,17 @@ class AdminRouterClient(
 
 object AdminRouterClient {
   @volatile private var cachedDcosVersion: Option[DcosVersion] = None
+
+  def addOriginHeaders(request: Request)(implicit session: RequestSession): Request = {
+    request.headerMap.add(util.ForwardedProtoHeader, session.originInfo.urlScheme.toString)
+    request.headerMap.add(util.ForwardedHostHeader, session.originInfo.host)
+
+    session.originInfo.port match {
+      case Some(port) =>
+        request.headerMap.add(util.ForwardedPortHeader, port)
+      case None =>
+        request.headerMap.add(util.ForwardedProtoHeader, session.originInfo.urlScheme.toString)
+    }
+    request
+  }
 }
