@@ -67,7 +67,7 @@ class AdminRouterClient(
      body: rpc.v1.model.InstallRequest
    )(implicit session: RequestSession): Future[Response] = {
     val uri = "service" / managerId.toUri / "package" / "install"
-    val p = post(uri, body.asJson)
+    val p = addOriginHeaders(post(uri, body.asJson))
     p.headerMap.set(Fields.ContentType, MediaTypes.InstallRequest.show)
     p.headerMap.set(Fields.Accept, MediaTypes.V2InstallResponse.show)
     client(p)
@@ -89,10 +89,7 @@ class AdminRouterClient(
     body: rpc.v1.model.ServiceDescribeRequest
   )(implicit session: RequestSession): Future[Response] = {
     val uri = "service" / managerId.toUri / "service" / "describe"
-    val p = post(uri, body.asJson)
-    p.headerMap.set("X-Forwarded-Proto", session.originInfo.urlScheme.toString)
-    p.headerMap.set("X-Forwarded-Host", session.originInfo.host)
-    p.headerMap.set("X-Forwarded-Port", session.originInfo.port.getOrElse(""))
+    val p = addOriginHeaders(post(uri, body.asJson))
     p.headerMap.set(Fields.ContentType, MediaTypes.ServiceDescribeRequest.show)
     p.headerMap.set(Fields.Accept, MediaTypes.ServiceDescribeResponse.show)
     client(p)
