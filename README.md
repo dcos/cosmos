@@ -234,6 +234,8 @@ The below table is a compatibility matrix between Cosmos and Universe packaging 
 
 ### [Cosmos Version 0.4.x Docs](https://docs.mesosphere.com/1.11/deploying-services/package-api/)
 
+The tooling for packaging docs is at [mesosphere/packaging-docs](https://github.com/mesosphere/packaging-docs)
+
 ## Reporting Problems
 
 If you encounter a problem that seems to be related to a Cosmos bug, please create an issue at
