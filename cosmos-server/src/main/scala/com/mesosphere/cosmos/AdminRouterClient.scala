@@ -78,7 +78,7 @@ class AdminRouterClient(
       body: rpc.v1.model.UninstallRequest
     )(implicit session: RequestSession): Future[Response] = {
     val uri = "service" / managerId.toUri / "package" / "uninstall"
-    val p = post(uri, body.asJson)
+    val p = addOriginHeaders(post(uri, body.asJson))
     p.headerMap.set(Fields.ContentType, MediaTypes.UninstallRequest.show)
     p.headerMap.set(Fields.Accept, MediaTypes.UninstallResponse.show)
     client(p)
@@ -100,7 +100,7 @@ class AdminRouterClient(
     body: rpc.v1.model.ServiceUpdateRequest
   )(implicit session: RequestSession): Future[Response] = {
     val uri = "service" / managerId.toUri / "service" / "update"
-    val p = post(uri, body.asJson)
+    val p = addOriginHeaders(post(uri, body.asJson))
     p.headerMap.set(Fields.ContentType, MediaTypes.ServiceUpdateRequest.show)
     p.headerMap.set(Fields.Accept, MediaTypes.ServiceUpdateResponse.show)
     client(p)
