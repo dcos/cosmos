@@ -4,6 +4,7 @@ import com.mesosphere.cosmos.http.RequestSession
 import com.mesosphere.cosmos.rpc.MediaTypes
 import com.mesosphere.cosmos.thirdparty.adminrouter.model.DcosVersion
 import com.mesosphere.cosmos.thirdparty.marathon.model.AppId
+import com.mesosphere.util
 import com.netaporter.uri.Uri
 import com.netaporter.uri.dsl._
 import com.twitter.finagle.Service
@@ -111,4 +112,12 @@ class AdminRouterClient(
 
 object AdminRouterClient {
   @volatile private var cachedDcosVersion: Option[DcosVersion] = None
+
+  def addOriginHeaders(request: Request)(implicit session: RequestSession): Request = {
+    request.headerMap.add(util.ForwardedProtoHeader, session.originInfo.urlScheme.toString)
+    request.headerMap.add(util.ForwardedHostHeader, session.originInfo.host)
+    request.headerMap.add(util.ForwardedPortHeader, session.originInfo.port.getOrElse(""))
+    request
+  }
+
 }
