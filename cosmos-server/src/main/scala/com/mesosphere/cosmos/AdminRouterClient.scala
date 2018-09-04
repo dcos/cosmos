@@ -111,10 +111,15 @@ object AdminRouterClient {
   @volatile private var cachedDcosVersion: Option[DcosVersion] = None
 
   def addOriginHeaders(request: Request)(implicit session: RequestSession): Request = {
-    request.headerMap.add(util.ForwardedProtoHeader, session.originInfo.urlScheme.toString)
-    request.headerMap.add(util.ForwardedHostHeader, session.originInfo.host)
-    request.headerMap.add(util.ForwardedPortHeader, session.originInfo.port.getOrElse(""))
+    session.originInfo.port match {
+      case Some(port) =>
+        request.headerMap.add (util.ForwardedProtoHeader, session.originInfo.urlScheme.toString)
+        request.headerMap.add (util.ForwardedHostHeader, session.originInfo.host)
+        request.headerMap.add (util.ForwardedPortHeader, port)
+      case None =>
+        request.headerMap.add (util.ForwardedProtoHeader, session.originInfo.urlScheme.toString)
+        request.headerMap.add (util.ForwardedHostHeader, session.originInfo.host)
+    }
     request
   }
-
 }
