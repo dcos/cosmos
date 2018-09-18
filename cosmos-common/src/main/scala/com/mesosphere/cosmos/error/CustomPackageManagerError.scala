@@ -10,7 +10,7 @@ final case class CustomPackageManagerError(
   responseContent: String
 ) extends CosmosError {
   override def data: Option[JsonObject] = CosmosError.deriveData(this)
-  override def message: String = s"Custom manager '$managerId' returned error: '$statusCode' '$responseContent'"
+  override def message: String = s"Custom manager [$managerId] returned error code [$statusCode] and response [$responseContent]"
 }
 
 object CustomPackageManagerError {
