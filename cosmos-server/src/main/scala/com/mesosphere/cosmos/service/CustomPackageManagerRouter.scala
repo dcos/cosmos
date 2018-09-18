@@ -2,6 +2,8 @@ package com.mesosphere.cosmos.service
 
 import com.mesosphere.cosmos.AdminRouter
 import com.mesosphere.cosmos.circe.Decoders.decode
+import com.mesosphere.cosmos.error.CustomPackageManagerNotFound
+import com.mesosphere.cosmos.error.CustomPackageManagerError
 import com.mesosphere.cosmos.error.ServiceAlreadyStarted
 import com.mesosphere.cosmos.http.RequestSession
 import com.mesosphere.cosmos.repository.PackageCollection
@@ -64,6 +66,7 @@ class CustomPackageManagerRouter(adminRouter: AdminRouter, packageCollection: Pa
     request: rpc.v1.model.InstallRequest,
     managerId: String
   )(implicit session: RequestSession): Future[InstallResponse] = {
+    checkCustomManagerInstalled((AppId(managerId)))
     adminRouter
       .postCustomPackageInstall(
         AppId(managerId),
@@ -76,7 +79,7 @@ class CustomPackageManagerRouter(adminRouter: AdminRouter, packageCollection: Pa
         )
       )
       .map { response =>
-        validateResponse(response)
+        validateResponse(response, managerId)
         decode[InstallResponse](response.contentString).getOrThrow
       }
   }
@@ -88,7 +91,7 @@ class CustomPackageManagerRouter(adminRouter: AdminRouter, packageCollection: Pa
     packageVersion: universe.v3.model.Version,
     appId: AppId
   )(implicit session: RequestSession): Future[UninstallResponse] = {
-    adminRouter.getApp(AppId(managerId))
+    checkCustomManagerInstalled((AppId(managerId)))
     adminRouter
       .postCustomPackageUninstall(
         AppId(managerId),
@@ -101,7 +104,7 @@ class CustomPackageManagerRouter(adminRouter: AdminRouter, packageCollection: Pa
         )
       )
       .map { response =>
-        validateResponse(response)
+        validateResponse(response, managerId)
         decode[UninstallResponse](response.contentString).getOrThrow
       }
   }
@@ -114,7 +117,7 @@ class CustomPackageManagerRouter(adminRouter: AdminRouter, packageCollection: Pa
   )(
     implicit session: RequestSession
   ): Future[ServiceDescribeResponse] = {
-    adminRouter.getApp(AppId(managerId))
+    checkCustomManagerInstalled((AppId(managerId)))
     adminRouter
       .postCustomServiceDescribe(
         AppId(managerId),
@@ -126,7 +129,7 @@ class CustomPackageManagerRouter(adminRouter: AdminRouter, packageCollection: Pa
         )
       )
       .map { response =>
-        validateResponse(response)
+        validateResponse(response, managerId)
         decode[ServiceDescribeResponse](response.contentString).getOrThrow
       }
   }
@@ -139,7 +142,7 @@ class CustomPackageManagerRouter(adminRouter: AdminRouter, packageCollection: Pa
   )(
     implicit session: RequestSession
   ): Future[ServiceUpdateResponse] = {
-    adminRouter.getApp(AppId(managerId))
+    checkCustomManagerInstalled((AppId(managerId)))
     adminRouter
       .postCustomServiceUpdate(
         AppId(managerId),
@@ -154,7 +157,7 @@ class CustomPackageManagerRouter(adminRouter: AdminRouter, packageCollection: Pa
         )
       )
       .map { response =>
-        validateResponse(response)
+        validateResponse(response, managerId)
         decode[ServiceUpdateResponse](response.contentString).getOrThrow
       }
   }
@@ -173,18 +176,29 @@ class CustomPackageManagerRouter(adminRouter: AdminRouter, packageCollection: Pa
       }
   }
 
-  private def validateResponse(response: Response): Unit = {
+  private def checkCustomManagerInstalled(managerId: AppId)(implicit session: RequestSession): Unit = {
+    try {
+      adminRouter.getApp(managerId)
+      ()
+    } catch  {
+      case _ : Throwable => throw CustomPackageManagerNotFound(managerId).exception
+    }
+  }
+
+  private def validateResponse(response: Response, managerId: String): Unit = {
     response.status match {
       case Status.Conflict =>
         throw ServiceAlreadyStarted().exception
       case status if (400 until 500).contains(status.code) =>
         logger.warn(s"Custom manager returned [${status.code}]: " +
           s"${trimContentForPrinting(response.contentString)}")
+        throw CustomPackageManagerError(managerId, status.code, response.contentString).exception
       case status if (500 until 600).contains(status.code) =>
         logger.warn(s"Custom manager is unavailable [${status.code}]: " +
           s"${trimContentForPrinting(response.contentString)}")
+        throw CustomPackageManagerError(managerId, status.code, response.contentString).exception
       case status =>
-        logger.warn(s"Custom manager responded with [${status.code}]: " +
+        logger.info(s"Custom manager responded with [${status.code}]: " +
           s"${trimContentForPrinting(response.contentString)}")
     }
   }
