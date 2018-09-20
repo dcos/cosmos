@@ -50,57 +50,57 @@ private[cosmos] final class UninstallHandler(
     implicit session: RequestSession
   ): Future[rpc.v1.model.UninstallResponse] = {
     getMarathonApps(req.packageName, req.appId)
-        .flatMap { apps =>
-          customPackageManagerRouter.getCustomPackageManagerId(
-            req.managerId,
-            Option(req.packageName),
-            apps.head.packageVersion,
-            Option(req.appId.getOrElse(apps.head.id))
-          ).flatMap {
-            case Some((Some(managerId), Some(pkgName), Some(pkgVersion))) if !managerId.isEmpty =>
-              logger.debug(s"Request [$req] requires a custom manager: [$managerId]")
-              customPackageManagerRouter.callCustomPackageUninstall(
-                req, managerId, pkgName, pkgVersion, req.appId.getOrElse(apps.head.id))
-            case _ => {
-              val uninstallOps = createUninstallOperations(req.packageName, apps)
-              val all = req.all.contains(true)
-              if (!(all || uninstallOps.size <= 1)) {
-                throw AmbiguousAppId(req.packageName, uninstallOps.map(_._2.appId)).exception
-              }
+      .flatMap { apps =>
+        customPackageManagerRouter.getCustomPackageManagerId(
+          req.managerId,
+          Option(req.packageName),
+          apps.head.packageVersion,
+          Option(req.appId.getOrElse(apps.head.id))
+        ).flatMap {
+          case Some((Some(managerId), Some(pkgName), Some(pkgVersion))) if !managerId.isEmpty =>
+            logger.debug(s"Request [$req] requires a custom manager: [$managerId]")
+            customPackageManagerRouter.callCustomPackageUninstall(
+              req, managerId, pkgName, pkgVersion, req.appId.getOrElse(apps.head.id))
+          case _ => {
+            val uninstallOps = createUninstallOperations(req.packageName, apps)
+            val all = req.all.contains(true)
+            if (!(all || uninstallOps.size <= 1)) {
+              throw AmbiguousAppId(req.packageName, uninstallOps.map(_._2.appId)).exception
+            }
+            Future.collect(
+              uninstallOps
+                .map { case (app, uninstallOp) => (app, runUninstall(uninstallOp)) }
+                .map { case (app, f) => f.map(app -> _) }
+            )
+            .flatMap { uninstallDetails =>
               Future.collect(
-                uninstallOps
-                  .map { case (app, uninstallOp) => (app, runUninstall(uninstallOp)) }
-                  .map { case (app, f) => f.map(app -> _) }
-              )
-              .flatMap { uninstallDetails =>
-                Future.collect(
-                  uninstallDetails.map { case (app, detail) =>
-                    getPackageWithSource(packageCollection, app).map { res =>
-                      (
-                        detail,
-                        res match {
-                          case Some((pkg, _)) => pkg.postUninstallNotes
-                          case None => None
-                        }
-                      )
-                    }
+                uninstallDetails.map { case (app, detail) =>
+                  getPackageWithSource(packageCollection, app).map { res =>
+                    (
+                      detail,
+                      res match {
+                        case Some((pkg, _)) => pkg.postUninstallNotes
+                        case None => None
+                      }
+                    )
                   }
+                }
+              )
+            }
+            .map { detailsAndNotes =>
+              val results = detailsAndNotes.map { case (detail, postUninstallNotes) =>
+                rpc.v1.model.UninstallResult(
+                  detail.packageName,
+                  detail.appId,
+                  detail.packageVersion,
+                  postUninstallNotes
                 )
               }
-              .map { detailsAndNotes =>
-                val results = detailsAndNotes.map { case (detail, postUninstallNotes) =>
-                  rpc.v1.model.UninstallResult(
-                    detail.packageName,
-                    detail.appId,
-                    detail.packageVersion,
-                    postUninstallNotes
-                  )
-                }
-                rpc.v1.model.UninstallResponse(results.toList)
-              }
+              rpc.v1.model.UninstallResponse(results.toList)
             }
           }
         }
+      }
   }
   // scalastyle:on method.length
   // scalastyle:on cyclomatic.complexity
