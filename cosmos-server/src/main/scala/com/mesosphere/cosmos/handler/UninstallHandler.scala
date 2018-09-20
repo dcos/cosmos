@@ -76,14 +76,14 @@ private[cosmos] final class UninstallHandler(
                     pkgVersion,
                     req.appId.getOrElse(app.id)
                   )
-                case _ => opToUninstallResponse(op, app)
+                case _ => runUninstall(op, app)
               }
           }
         }.map(_.map(_.results).toList.flatten).map(rpc.v1.model.UninstallResponse(_))
       }
   }
 
-  private def opToUninstallResponse(
+  private def runUninstall(
     uninstallOp: UninstallOperation,
     app: MarathonApp
   )(
@@ -91,7 +91,10 @@ private[cosmos] final class UninstallHandler(
   ): Future[rpc.v1.model.UninstallResponse] = {
     Future
       .join(
-        runUninstall(uninstallOp),
+        uninstallOp.uninstallType match {
+          case MarathonUninstall => runMarathonUninstall(uninstallOp)
+          case SdkUninstall => runSdkUninstall(uninstallOp)
+        },
         getPackageWithSource(packageCollection, app).map(_.flatMap(_._1.postUninstallNotes))
       )
       .map { case (details, postUninstallNotes) =>
@@ -106,17 +109,6 @@ private[cosmos] final class UninstallHandler(
           )
         )
       }
-  }
-
-  private def runUninstall(
-    uninstallOp: UninstallOperation
-  )(
-    implicit session: RequestSession
-  ): Future[UninstallDetails] = {
-    uninstallOp.uninstallType match {
-      case MarathonUninstall => runMarathonUninstall(uninstallOp)
-      case SdkUninstall => runSdkUninstall(uninstallOp)
-    }
   }
 
   private[this] def runMarathonUninstall(
