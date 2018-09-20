@@ -10,4 +10,11 @@ trait CustomEndpointHandler[A, B] extends EndpointHandler[A, B] {
   )(
     implicit session: RequestSession
   ) : Future[Option[B]]
+
+  def orElseGet(b : Future[Option[B]])(alternative: => Future[B]): Future[B] = {
+    b.flatMap {
+      case None => alternative
+      case Some(x) => Future(x)
+    }
+  }
 }

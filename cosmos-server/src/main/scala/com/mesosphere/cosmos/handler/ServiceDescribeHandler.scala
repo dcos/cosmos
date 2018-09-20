@@ -26,24 +26,22 @@ private[cosmos] final class ServiceDescribeHandler(
   )(
     implicit session: RequestSession
   ): Future[rpc.v1.model.ServiceDescribeResponse] = {
-    tryCustomPackageManager(request).flatMap {
-      case Some(customResponse) => Future(customResponse)
-      case None =>
-        for {
-          marathonAppResponse <- adminRouter.getApp(request.appId)
-          packageDefinition <- getPackageDefinition(marathonAppResponse.app)
-          upgradesTo <- packageCollection.upgradesTo(packageDefinition.name, packageDefinition.version)
-          downgradesTo <- packageCollection.downgradesTo(packageDefinition)
-        } yield {
-          val userProvidedOptions = marathonAppResponse.app.serviceOptions
-          rpc.v1.model.ServiceDescribeResponse(
-            `package` = packageDefinition,
-            upgradesTo = upgradesTo,
-            downgradesTo = downgradesTo,
-            resolvedOptions = getResolvedOptions(packageDefinition, userProvidedOptions),
-            userProvidedOptions = userProvidedOptions
-          )
-        }
+    orElseGet(tryCustomPackageManager(request)) {
+      for {
+        marathonAppResponse <- adminRouter.getApp(request.appId)
+        packageDefinition <- getPackageDefinition(marathonAppResponse.app)
+        upgradesTo <- packageCollection.upgradesTo(packageDefinition.name, packageDefinition.version)
+        downgradesTo <- packageCollection.downgradesTo(packageDefinition)
+      } yield {
+        val userProvidedOptions = marathonAppResponse.app.serviceOptions
+        rpc.v1.model.ServiceDescribeResponse(
+          `package` = packageDefinition,
+          upgradesTo = upgradesTo,
+          downgradesTo = downgradesTo,
+          resolvedOptions = getResolvedOptions(packageDefinition, userProvidedOptions),
+          userProvidedOptions = userProvidedOptions
+        )
+      }
     }
   }
 

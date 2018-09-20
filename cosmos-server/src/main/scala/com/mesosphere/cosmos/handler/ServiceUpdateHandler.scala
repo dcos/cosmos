@@ -34,30 +34,28 @@ final class ServiceUpdateHandler(
   )(
     implicit session: RequestSession
   ): Future[rpc.v1.model.ServiceUpdateResponse] = {
-    tryCustomPackageManager(request).flatMap {
-      case Some(customResponse) => Future(customResponse)
-      case None =>
-        adminRouter.getApp(request.appId).flatMap { marathonAppResponse =>
-          getPackageWithSourceOrThrow(packageCollection, marathonAppResponse.app).flatMap {
-            case (packageDefinition, packageSource) =>
-              if (request.packageVersion.exists(_ != packageDefinition.version)) {
-                Future.exception(
-                  VersionUpgradeNotSupportedInOpen(
-                    request.packageVersion,
-                    packageDefinition.version
-                  ).exception
-                )
-              } else {
-                update(
-                  serviceUpdater,
-                  marathonAppResponse,
-                  request,
-                  packageDefinition,
-                  packageSource
-                )
-              }
-          }
+    orElseGet(tryCustomPackageManager(request)) {
+      adminRouter.getApp(request.appId).flatMap { marathonAppResponse =>
+        getPackageWithSourceOrThrow(packageCollection, marathonAppResponse.app).flatMap {
+          case (packageDefinition, packageSource) =>
+            if (request.packageVersion.exists(_ != packageDefinition.version)) {
+              Future.exception(
+                VersionUpgradeNotSupportedInOpen(
+                  request.packageVersion,
+                  packageDefinition.version
+                ).exception
+              )
+            } else {
+              update(
+                serviceUpdater,
+                marathonAppResponse,
+                request,
+                packageDefinition,
+                packageSource
+              )
+            }
         }
+      }
     }
   }
 

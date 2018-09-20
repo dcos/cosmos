@@ -28,48 +28,46 @@ private[cosmos] final class PackageInstallHandler(
   )(
     implicit session: RequestSession
   ): Future[rpc.v2.model.InstallResponse] = {
-    tryCustomPackageManager(request).flatMap {
-      case Some(customResponse) => Future(customResponse)
-      case None =>
-        packageCollection
-          .getPackageByPackageVersion(
-            request.packageName,
-            request.packageVersion.as[Option[universe.v3.model.Version]]
-          )
-          .flatMap { case (pkg, sourceUri) =>
-            PackageDefinitionRenderer.renderMarathonV2App(
-              sourceUri,
-              pkg,
-              request.options,
-              request.appId
-            ) match {
-              case Some(renderedMarathonJson) =>
-                packageRunner.launch(renderedMarathonJson)
-                  .map { runnerResponse =>
-                    rpc.v2.model.InstallResponse(
-                      packageName = pkg.name,
-                      packageVersion = pkg.version,
-                      appId = Some(runnerResponse.id),
-                      postInstallNotes = pkg.postInstallNotes,
-                      cli = pkg.rewrite(rewriteUrlWithProxyInfo(session.originInfo), identity).cli
-                    )
-                  }
-                  .handle {
-                    case CosmosException(ServiceAlreadyStarted(_), _, _) =>
-                      throw PackageAlreadyInstalled().exception
-                  }
-              case None =>
-                Future {
+    orElseGet(tryCustomPackageManager(request)) {
+      packageCollection
+        .getPackageByPackageVersion(
+          request.packageName,
+          request.packageVersion.as[Option[universe.v3.model.Version]]
+        )
+        .flatMap { case (pkg, sourceUri) =>
+          PackageDefinitionRenderer.renderMarathonV2App(
+            sourceUri,
+            pkg,
+            request.options,
+            request.appId
+          ) match {
+            case Some(renderedMarathonJson) =>
+              packageRunner.launch(renderedMarathonJson)
+                .map { runnerResponse =>
                   rpc.v2.model.InstallResponse(
                     packageName = pkg.name,
                     packageVersion = pkg.version,
-                    appId = None,
+                    appId = Some(runnerResponse.id),
                     postInstallNotes = pkg.postInstallNotes,
                     cli = pkg.rewrite(rewriteUrlWithProxyInfo(session.originInfo), identity).cli
                   )
                 }
-            }
+                .handle {
+                  case CosmosException(ServiceAlreadyStarted(_), _, _) =>
+                    throw PackageAlreadyInstalled().exception
+                }
+            case None =>
+              Future {
+                rpc.v2.model.InstallResponse(
+                  packageName = pkg.name,
+                  packageVersion = pkg.version,
+                  appId = None,
+                  postInstallNotes = pkg.postInstallNotes,
+                  cli = pkg.rewrite(rewriteUrlWithProxyInfo(session.originInfo), identity).cli
+                )
+              }
           }
+        }
     }
   }
 
