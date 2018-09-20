@@ -66,7 +66,6 @@ class CustomPackageManagerRouter(adminRouter: AdminRouter, packageCollection: Pa
     request: rpc.v1.model.InstallRequest,
     managerId: String
   )(implicit session: RequestSession): Future[InstallResponse] = {
-    checkCustomManagerInstalled((AppId(managerId)))
     adminRouter
       .postCustomPackageInstall(
         AppId(managerId),
@@ -91,7 +90,6 @@ class CustomPackageManagerRouter(adminRouter: AdminRouter, packageCollection: Pa
     packageVersion: universe.v3.model.Version,
     appId: AppId
   )(implicit session: RequestSession): Future[UninstallResponse] = {
-    checkCustomManagerInstalled((AppId(managerId)))
     adminRouter
       .postCustomPackageUninstall(
         AppId(managerId),
@@ -117,7 +115,6 @@ class CustomPackageManagerRouter(adminRouter: AdminRouter, packageCollection: Pa
   )(
     implicit session: RequestSession
   ): Future[ServiceDescribeResponse] = {
-    checkCustomManagerInstalled((AppId(managerId)))
     adminRouter
       .postCustomServiceDescribe(
         AppId(managerId),
@@ -142,7 +139,6 @@ class CustomPackageManagerRouter(adminRouter: AdminRouter, packageCollection: Pa
   )(
     implicit session: RequestSession
   ): Future[ServiceUpdateResponse] = {
-    checkCustomManagerInstalled((AppId(managerId)))
     adminRouter
       .postCustomServiceUpdate(
         AppId(managerId),
@@ -176,19 +172,12 @@ class CustomPackageManagerRouter(adminRouter: AdminRouter, packageCollection: Pa
       }
   }
 
-  private def checkCustomManagerInstalled(managerId: AppId)(implicit session: RequestSession): Unit = {
-    try {
-      adminRouter.getApp(managerId)
-      ()
-    } catch  {
-      case _ : Throwable => throw CustomPackageManagerNotFound(managerId).exception
-    }
-  }
-
   private def validateResponse(response: Response, managerId: String): Unit = {
     response.status match {
       case Status.Conflict =>
         throw ServiceAlreadyStarted().exception
+      case Status.NotFound =>
+        throw CustomPackageManagerNotFound(AppId(managerId)).exception
       case status if (400 until 500).contains(status.code) =>
         logger.warn(s"Custom manager returned [${status.code}]: " +
           s"${trimContentForPrinting(response.contentString)}")
