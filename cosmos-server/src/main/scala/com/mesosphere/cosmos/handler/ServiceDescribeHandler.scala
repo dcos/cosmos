@@ -94,4 +94,3 @@ private[cosmos] final class ServiceDescribeHandler(
     }
   }
 }
-

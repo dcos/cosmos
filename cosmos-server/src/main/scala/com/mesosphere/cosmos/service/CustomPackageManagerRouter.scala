@@ -24,7 +24,6 @@ import com.twitter.util.Future
 class CustomPackageManagerRouter(adminRouter: AdminRouter, packageCollection: PackageCollection) {
 
   private[this] lazy val logger = org.slf4j.LoggerFactory.getLogger(getClass)
-  // scalastyle:off cyclomatic.complexity
 
   def getCustomPackageManagerId(
     managerId: Option[String],
@@ -35,32 +34,24 @@ class CustomPackageManagerRouter(adminRouter: AdminRouter, packageCollection: Pa
     implicit session: RequestSession
   ): Future[Option[(Option[String], Option[String], Option[universe.v3.model.Version])]] = {
     managerId match {
-      case Some(_) => Future(Some((managerId,None , None)))
+      case Some(_) => Future(Some((managerId, None, None)))
       case None =>
         (packageName, packageVersion, appId) match {
           case (Some(pkgName), Some(pkgVersion), _) =>
-            getPackageManagerWithNameAndVersion(pkgName, pkgVersion).flatMap {
-              case Some(manager) =>
-                Future(Option((Option(manager.packageName), Option(pkgName), Option(pkgVersion))))
-              case _ => Future(Some((None, None, None)))
-            }
+            getPackageManagerWithNameAndVersion(pkgName, pkgVersion)
+              .map(_.map(manager => (Some(manager.packageName), Some(pkgName), Some(pkgVersion))))
           case (_, _, Some(id)) =>
             getPackageNameAndVersionFromMarathonApp(id)
               .flatMap {
                 case (Some(pkgName), Some(pkgVersion)) =>
-                  getPackageManagerWithNameAndVersion(pkgName, pkgVersion).flatMap {
-                    case Some(manager) =>
-                      Future(Option((Option(manager.packageName), Option(pkgName), Option(pkgVersion))))
-                    case _ => Future(Some((None, None, None)))
-                  }
-                case _ => Future(Some((None, None, None)))
+                  getPackageManagerWithNameAndVersion(pkgName, pkgVersion)
+                    .map(_.map(manager => (Some(manager.packageName), Some(pkgName), Some(pkgVersion))))
+                case _ => Future(None)
               }
-          case _ => Future(Some((None, None, None)))
+          case _ => Future(None)
         }
     }
   }
-  // scalastyle:on cyclomatic.complexity
-
 
   def callCustomPackageInstall(
     request: rpc.v1.model.InstallRequest,
