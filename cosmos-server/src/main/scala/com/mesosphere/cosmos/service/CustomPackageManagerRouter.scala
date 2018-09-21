@@ -39,7 +39,7 @@ class CustomPackageManagerRouter(adminRouter: AdminRouter, packageCollection: Pa
         (packageName, packageVersion, appId) match {
           case (Some(pkgName), Some(pkgVersion), _) =>
             getPackageManagerWithNameAndVersion(pkgName, pkgVersion)
-                .map(_.map(manager => (Some(manager.packageName), Some(pkgName), Some(pkgVersion))))
+              .map(_.map(manager => (Some(manager.packageName), Some(pkgName), Some(pkgVersion))))
           case (_, _, Some(id)) =>
             getPackageNameAndVersionFromMarathonApp(id)
               .flatMap {
