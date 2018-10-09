@@ -7,7 +7,7 @@ import io.circe.generic.semiauto.deriveEncoder
 
 final case class CustomPackageManagerNotFound(managerId: AppId) extends CosmosError {
   override def data: Option[JsonObject] = CosmosError.deriveData(this)
-  override def message: String = s"the custom manager: '$managerId', is not installed for this package'"
+  override def message: String = s"the custom manager: '$managerId', is not installed for this package"
 }
 
 object CustomPackageManagerNotFound {
