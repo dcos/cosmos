@@ -48,6 +48,7 @@ import java.nio.file.Paths
 import java.util.zip.ZipInputStream
 import org.jboss.netty.handler.codec.http.HttpMethod
 import scala.collection.JavaConverters._
+import scala.io.Codec
 import scala.io.Source
 import scala.util.Failure
 import scala.util.Left
@@ -156,7 +157,7 @@ final class DefaultUniverseClient(
       scope.counter("count").incr()
       Stat.time(scope.stat("histogram")) {
         decode[universe.v4.model.Repository](
-          Source.fromInputStream(bodyInputStream).mkString
+          Source.fromInputStream(bodyInputStream, Codec.UTF8.toString).mkString
         ).getOrThrow
       }
     }
@@ -201,11 +202,11 @@ final class DefaultUniverseClient(
     sourceUri: Uri,
     inputStream: InputStream
   ): universe.v4.model.Repository = {
-    val bundle = new ZipInputStream(inputStream)
+    val bundle = new ZipInputStream(inputStream, Codec.UTF8.charSet)
     // getNextEntry() returns null when there are no more entries
     val universeRepository: V2ZipState = Iterator.continually {
       // Note: this closure is not technically pure. The variable bundle is mutated here.
-      Option(bundle.getNextEntry())
+      Option(bundle.getNextEntry)
     }.takeWhile(_.isDefined)
       .flatten
       .filter(!_.isDirectory)
@@ -213,7 +214,7 @@ final class DefaultUniverseClient(
       .filter(entryPath => entryPath.getNameCount > 2)
       .foldLeft(V2ZipState(None, Map.empty)) { (state, entryPath) =>
         // Note: this closure is not technically pure. The variable bundle is muted here.
-        val buffer = StreamIO.buffer(bundle).toByteArray()
+        val buffer = StreamIO.buffer(bundle).toByteArray
         processZipEntry(state, entryPath, buffer)
       }
 
