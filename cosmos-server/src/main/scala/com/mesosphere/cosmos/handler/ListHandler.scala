@@ -1,7 +1,6 @@
 package com.mesosphere.cosmos.handler
 
 import com.mesosphere.cosmos.AdminRouter
-import com.mesosphere.cosmos.converter.Label._
 import com.mesosphere.cosmos.converter.Response._
 import com.mesosphere.cosmos.finch.EndpointHandler
 import com.mesosphere.cosmos.http.RequestSession
@@ -66,8 +65,6 @@ private[cosmos] final class ListHandler(
       .map(
         _.rewrite(rewriteUrlWithProxyInfo(session.originInfo), identity)
          .as[rpc.v1.model.InstalledPackageInformation]
-      ).orElse(
-        app.packageMetadata.as[Option[rpc.v1.model.InstalledPackageInformation]]
       )
   }
 

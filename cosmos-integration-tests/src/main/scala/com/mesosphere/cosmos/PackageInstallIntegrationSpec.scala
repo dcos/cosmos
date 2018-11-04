@@ -1,7 +1,6 @@
 package com.mesosphere.cosmos
 
 import com.mesosphere.cosmos.ItOps._
-import com.mesosphere.cosmos.bijection.CosmosConversions._
 import com.mesosphere.cosmos.error.PackageAlreadyInstalled
 import com.mesosphere.cosmos.error.PackageNotFound
 import com.mesosphere.cosmos.error.ServiceMarathonTemplateNotFound
@@ -27,7 +26,6 @@ final class PackageInstallIntegrationSpec extends FeatureSpec with Matchers {
         val app = Requests.getMarathonApp(ir.appId)
         app.id shouldBe ir.appId
         app.packageDefinition shouldBe Some(pkg)
-        app.packageMetadata shouldBe Some(pkg.as[label.v1.model.PackageMetadata])
         app.packageName shouldBe Some(name)
         app.packageVersion.get.toString shouldBe version
         app.packageRepository.map(_.uri) shouldBe repo.map(_.uri)
