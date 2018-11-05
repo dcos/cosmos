@@ -25,7 +25,6 @@ case class MarathonApp(
 
 object MarathonApp {
   val frameworkNameLabel = "DCOS_PACKAGE_FRAMEWORK_NAME"
-  val metadataLabel = "DCOS_PACKAGE_METADATA"
   val nameLabel = "DCOS_PACKAGE_NAME"
   val repositoryLabel = "DCOS_PACKAGE_SOURCE"
   val versionLabel = "DCOS_PACKAGE_VERSION"

@@ -236,7 +236,7 @@ object ItObjects {
       parse(helloWorldPackageDefinition4).toOption.get -> V4TestUniverseConverterURI.asJson
     )
 
-  val metadataFields: Set[String] = {
+  val detailsFields: Set[String] = {
     Set(
       "packagingVersion",
       "name",
@@ -251,25 +251,8 @@ object ItObjects {
       "preInstallNotes",
       "postInstallNotes",
       "postUninstallNotes",
-      "licenses",
-      "images"
+      "licenses"
     )
-  }
-
-  val detailsFields: Set[String] = {
-    metadataFields - "images"
-  }
-
-  def helloWorldPackageMetadata(
-    packageDefinition: Json
-  ): Json = {
-    packageDefinition
-      .asObject
-      .get
-      .filterKeys(metadataFields)
-      .add("selected", false.asJson)
-      .add("framework", false.asJson)
-      .asJson
   }
 
   def helloWorldPackageDetails(
@@ -330,7 +313,6 @@ object ItObjects {
     val pkg = packageDefinition.asObject.get
     Map(
       "DCOS_PACKAGE_SOURCE" -> packageSource,
-      "DCOS_PACKAGE_METADATA" -> helloWorldPackageMetadata(packageDefinition),
       "DCOS_PACKAGE_DEFINITION" -> helloWorldPackageDefinitionEnvelope(packageDefinition),
       "DCOS_PACKAGE_OPTIONS" -> options,
       "DCOS_PACKAGE_VERSION" -> pkg("version").asJson,
@@ -350,7 +332,6 @@ object ItObjects {
 
   def decodeEncodedPartsOfRenderResponse(renderResponse: Json): Json = {
     decodePackageDefinition _ andThen
-      decodePackageMetadata _ andThen
       decodeOptions _ apply
       renderResponse
   }
@@ -372,16 +353,6 @@ object ItObjects {
 
   def dropNullKeys(json: Json): Json = {
     parse(JsonUtil.dropNullKeysPrinter.pretty(json)).toOption.get
-  }
-
-  private[this] def decodePackageMetadata(renderResponse: Json): Json = {
-    renderResponse
-      .hcursor
-      .downField("marathonJson")
-      .downField("labels")
-      .downField("DCOS_PACKAGE_METADATA")
-      .withFocus(base64Decode)
-      .top.get
   }
 
   private[this] def decodePackageDefinition(renderResponse: Json): Json = {
