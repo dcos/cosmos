@@ -2,7 +2,6 @@ package com.mesosphere.cosmos.thirdparty.marathon.model
 
 import com.mesosphere.cosmos.circe.Decoders.decode64
 import com.mesosphere.cosmos.circe.Decoders.parse64
-import com.mesosphere.cosmos.label
 import com.mesosphere.cosmos.model.PackageOrigin
 import com.mesosphere.cosmos.model.StorageEnvelope
 import com.mesosphere.error.ResultOps
@@ -26,7 +25,6 @@ case class MarathonApp(
 
 object MarathonApp {
   val frameworkNameLabel = "DCOS_PACKAGE_FRAMEWORK_NAME"
-  val metadataLabel = "DCOS_PACKAGE_METADATA"
   val nameLabel = "DCOS_PACKAGE_NAME"
   val repositoryLabel = "DCOS_PACKAGE_SOURCE"
   val versionLabel = "DCOS_PACKAGE_VERSION"
@@ -47,12 +45,6 @@ object MarathonApp {
       repoValue <- app.labels.get(MarathonApp.repositoryLabel)
       originUri <- Try(Uri.parse(repoValue)).toOption
     } yield PackageOrigin(originUri)
-
-    def packageMetadata: Option[label.v1.model.PackageMetadata] = {
-      app.labels.get(MarathonApp.metadataLabel).map { string =>
-        decode64[label.v1.model.PackageMetadata](string)
-      }
-    }
 
     def packageDefinition: Option[universe.v4.model.PackageDefinition] = {
       app.labels.get(MarathonApp.packageLabel).map { string =>

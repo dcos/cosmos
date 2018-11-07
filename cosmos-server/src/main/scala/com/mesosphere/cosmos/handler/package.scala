@@ -68,15 +68,10 @@ package object handler {
   private def getPackageCoordinate(
       marathonApp: MarathonApp
   ): Option[(String, universe.v3.model.Version)] = {
-    val fromMetadata = marathonApp.packageMetadata.map { metadata =>
-      val version = universe.v3.model.Version(metadata.version.toString)
-      (metadata.name, version)
-    }
     (
       marathonApp.packageName,
       marathonApp.packageVersion
     ).tupled
-      .orElse(fromMetadata)
   }
 
   private def orElse[A](

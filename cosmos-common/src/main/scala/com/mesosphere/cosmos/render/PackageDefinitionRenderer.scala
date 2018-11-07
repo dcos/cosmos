@@ -2,14 +2,12 @@ package com.mesosphere.cosmos.render
 
 import com.github.fge.jsonschema.main.JsonSchemaFactory
 import com.github.mustachejava.DefaultMustacheFactory
-import com.mesosphere.cosmos.bijection.CosmosConversions._
 import com.mesosphere.cosmos.circe.Decoders.convertToCosmosError
 import com.mesosphere.cosmos.circe.Decoders.parse
 import com.mesosphere.cosmos.error.JsonSchemaMismatch
 import com.mesosphere.cosmos.error.MarathonTemplateMustBeJsonObject
 import com.mesosphere.cosmos.error.OptionsNotAllowed
 import com.mesosphere.cosmos.jsonschema.JsonSchema
-import com.mesosphere.cosmos.label
 import com.mesosphere.cosmos.model.StorageEnvelope
 import com.mesosphere.cosmos.thirdparty.marathon.model.AppId
 import com.mesosphere.cosmos.thirdparty.marathon.model.MarathonApp
@@ -19,7 +17,6 @@ import com.mesosphere.universe.common.ByteBuffers
 import com.mesosphere.universe.common.JsonUtil
 import com.mesosphere.universe.v4.model.PackageDefinition
 import com.netaporter.uri.Uri
-import com.twitter.bijection.Conversion.asMethod
 import io.circe.Json
 import io.circe.JsonObject
 import io.circe.syntax._
@@ -116,7 +113,6 @@ object PackageDefinitionRenderer {
   ): Json = {
     Json.fromFields(
       Map(
-        (MarathonApp.metadataLabel, encodeForLabel(pkg.as[label.v1.model.PackageMetadata].asJson)),
         (MarathonApp.nameLabel, pkg.name),
         (MarathonApp.versionLabel, pkg.version.toString),
         (MarathonApp.repositoryLabel, sourceUri.toString),
@@ -159,9 +155,8 @@ object PackageDefinitionRenderer {
       case (None, false) =>
       case (Some(_), false) =>
       // Failure scenarios
-      case (None, true) => {
+      case (None, true) =>
         throw OptionsNotAllowed().exception
-      }
       case (Some(schema), true) =>
         JsonSchema.jsonObjectMatchesSchema(options, schema) match {
           case Left(validationErrors) => throw JsonSchemaMismatch(validationErrors).exception
