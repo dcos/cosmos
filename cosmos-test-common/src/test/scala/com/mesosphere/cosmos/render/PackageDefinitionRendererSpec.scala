@@ -439,6 +439,7 @@ class PackageDefinitionRendererSpec extends FreeSpec with Matchers with TableDri
           |  "htmlString": "{{htmlStringExample}}",
           |  "int": {{intExample}},
           |  "double": {{doubleExample}},
+          |  "long": {{longExample}},
           |  "boolean": {{booleanExample}}
           |}
           |""".stripMargin
@@ -450,6 +451,7 @@ class PackageDefinitionRendererSpec extends FreeSpec with Matchers with TableDri
           ("htmlStringExample", "<a>Foo&Bar Inc.</a>".asJson),
           ("intExample", 42.asJson),
           ("doubleExample", 42.1.asJson),
+          ("longExample", 4200000000000000000L.asJson),
           ("booleanExample", Json.False)
         )
       )
@@ -464,6 +466,7 @@ class PackageDefinitionRendererSpec extends FreeSpec with Matchers with TableDri
           ("htmlString", "<a>Foo&Bar Inc.</a>".asJson),
           ("int", 42.asJson),
           ("double", 42.1.asJson),
+          ("long", 4200000000000000000L.asJson),
           ("boolean", Json.False)
         )
       )
@@ -473,6 +476,7 @@ class PackageDefinitionRendererSpec extends FreeSpec with Matchers with TableDri
       """
         |{
         |  "a-numeric-value" : 1,
+        |  "a-long-value" : 4200000000000000000,
         |  "another-numeric-value" : 2.2,
         |  "a-boolean-key" : true,
         |  "a-simple-string" : "foobar",
@@ -495,6 +499,7 @@ class PackageDefinitionRendererSpec extends FreeSpec with Matchers with TableDri
       """
         |{
         |  "a-numeric-value" : {{service.a-numeric-value}},
+        |  "a-long-value" : {{service.a-long-value}},
         |  "another-numeric-value" : {{service.another-numeric-value}},
         |  "a-boolean-key" : {{service.a-boolean-key}},
         |  "a-simple-string" : "{{service.a-simple-string}}",

@@ -170,7 +170,7 @@ object PackageDefinitionRenderer {
     json.fold(
       jsonNull = null,  // scalastyle:ignore null
       jsonBoolean = identity,
-      jsonNumber = n => n.toInt.getOrElse(n.toDouble),
+      jsonNumber = n => n.toBigInt.getOrElse(n.toDouble),
       jsonString = value => {
         /* Encode the string using a JSON string encoding and remove the beginning and ending " unless the strings are
          * keys of a JSON Array. The slicing operation always succeeds because the small JSON string is "".
