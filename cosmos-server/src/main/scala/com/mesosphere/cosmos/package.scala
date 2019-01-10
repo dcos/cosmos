@@ -132,9 +132,9 @@ package cosmos {
     "Maximum size for the proxy endpoint service while fetching a resource"
   )
 
-  object maxPayloadPrintLimit extends GlobalFlag[StorageUnit](
-    1.kilobytes,
-    "Maximum size of the payload that can be printed in the logs"
+  object maxRetryCount extends GlobalFlag[Int](
+    3,
+    "Maximum number of retries on HTTP upstreams (repositories & /resource endpoints)"
   )
   // scalastyle:on object.name
 }

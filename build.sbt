@@ -31,10 +31,7 @@ val server = project.in(file("cosmos-server"))
     name := baseDirectory.value.name,
     libraryDependencies ++=
       Deps.bijectionUtil ++
-      Deps.curator ++
       Deps.logback ++
-      Deps.mustache ++
-      Deps.scalaUri ++
       Deps.slf4j ++
       Deps.twitterCommons ++
       Deps.twitterServer
@@ -48,7 +45,6 @@ val testCommon = project.in(file("cosmos-test-common"))
   .settings(
     name := baseDirectory.value.name,
     libraryDependencies ++=
-      Deps.curator ++
       Deps.mockito ++
       Deps.scalaCheckShapeless
   )

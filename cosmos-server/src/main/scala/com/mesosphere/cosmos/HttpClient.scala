@@ -26,6 +26,7 @@ import scala.util.Success
 
 object HttpClient {
 
+  lazy val DEFAULT_RETRIES = maxRetryCount()
   val logger: Logger = org.slf4j.LoggerFactory.getLogger(getClass)
 
   def fetch[A](
@@ -36,7 +37,7 @@ object HttpClient {
   )(
     implicit statsReceiver: StatsReceiver
   ): Future[A] = {
-    fetchResponse(uri, headers: _*)
+    fetchResponse(uri, DEFAULT_RETRIES, headers: _*)
       .flatMap { case (responseData, conn) =>
         Future(processResponse(responseData))
           .ensure(responseData.contentStream.close())
@@ -55,7 +56,7 @@ object HttpClient {
   )(
     implicit statsReceiver: StatsReceiver
   ): Future[A] = {
-    fetchResponse(uri, headers: _*)
+    fetchResponse(uri, DEFAULT_RETRIES, headers: _*)
       .map { case (responseData, conn) => processResponse(responseData, conn) }
       .handle { case e: IOException =>
         throw CosmosException(EndpointUriConnection(uri, e.getMessage), e)
@@ -64,6 +65,7 @@ object HttpClient {
 
   private[this] def fetchResponse(
     uri: Uri,
+    retryCount : Int,
     headers: (String, String)*
   )(
     implicit statsReceiver: StatsReceiver
@@ -72,6 +74,11 @@ object HttpClient {
       .handle {
         case t @ (_: IllegalArgumentException | _: MalformedURLException | _: URISyntaxException) =>
           throw CosmosException(EndpointUriSyntax(uri, t.getMessage), t)
+        case error: IOException =>
+          if (retryCount > 0) {
+            logger.info(s"Retry [remaining - $retryCount] : ${error.getMessage}", error)
+            fetchResponse(uri, retryCount - 1, headers: _*)
+          } else throw error
       }
       .map { case conn: HttpURLConnection =>
         conn.setRequestProperty(Fields.UserAgent, s"cosmos/${BuildProperties().cosmosVersion}")

@@ -28,7 +28,7 @@ import java.util.Base64
 
 object PackageDefinitionRenderer {
 
-  private[this] final val MustacheFactory = new DefaultMustacheFactory {
+  final val MustacheFactory = new DefaultMustacheFactory {
     /* The encode method for DefaultMustacheFactory does HTML based encoding.
      * We are not generating HTML. This disables it and just passes the raw value along.
      */
