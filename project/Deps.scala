@@ -134,6 +134,9 @@ object Deps {
     "commons-codec" % "commons-codec" % "1.11"
   )
 
+  val asyncAwait = Seq(
+    "org.scala-lang.modules" %% "scala-async" % V.asyncAwait
+  )
 }
 
 object V {
@@ -156,4 +159,5 @@ object V {
   val scalaUri = "0.4.16"
   val slf4j = "1.7.25"
   val twitterUtil = "18.3.0"
+  val asyncAwait = "0.9.7"
 }
