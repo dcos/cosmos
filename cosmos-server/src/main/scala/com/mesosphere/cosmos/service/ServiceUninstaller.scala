@@ -1,18 +1,13 @@
 package com.mesosphere.cosmos.service
 
 import com.mesosphere.cosmos.AdminRouter
-import com.mesosphere.cosmos.error.CosmosException
-import com.mesosphere.cosmos.error.MarathonAppNotFound
-import com.mesosphere.cosmos.error.SdkUninstallVarNotFound
+import com.mesosphere.cosmos.error.{CosmosException, MarathonAppNotFound, UninstallFailed}
 import com.mesosphere.cosmos.handler.UninstallHandler
 import com.mesosphere.cosmos.http.RequestSession
-import com.mesosphere.cosmos.thirdparty.marathon.model.AppId
+import com.mesosphere.cosmos.thirdparty.marathon.model.{AppId, MarathonAppResponse}
 import com.twitter.conversions.time._
 import com.twitter.finagle.http.Status
-import com.twitter.util.Try.PredicateDoesNotObtain
-import com.twitter.util.Duration
-import com.twitter.util.Future
-import com.twitter.util.Timer
+import com.twitter.util.{Duration, Future, Timer}
 
 final class ServiceUninstaller(
   adminRouter: AdminRouter
@@ -32,62 +27,86 @@ final class ServiceUninstaller(
   )(
     implicit session: RequestSession
   ): Future[Unit] = {
-    val work = for {
-      deployed <- checkDeploymentCompleted(deploymentId) if deployed
-      marathonResponse <- adminRouter.getApp(appId)
-      _ <- checkSdkUninstallEnvVar(appId)
-      uninstalled <- checkSdkUninstallCompleted(
-        marathonResponse.app.id,
-        frameworkIds,
-        apiVersion = marathonResponse.app.labels.getOrElse(UninstallHandler.SdkVersionLabel, "v1")
-      ) if uninstalled
-      deleted <- delete(appId) if deleted
-    } yield ()
-
-    work.rescue {
-      case ex: CosmosException if ex.error.isInstanceOf[MarathonAppNotFound] =>
-        // The app is already gone; stop now to avoid uninstalling a restarted app
-        Future.Done
-      case ex:CosmosException if ex.error.isInstanceOf[SdkUninstallVarNotFound] =>
-        // The app is already being uninstalled / already uninstalled by some other thread.
-        // This is a fresh re-install and should be ignored
-        Future.Done
-      case ex if retries > 0  =>
-        if (!ex.isInstanceOf[PredicateDoesNotObtain]) {
-          logger.info(s"Uninstall attempt for $appId didn't finish. $retries retries left." +
-            s" Type name: ${ex.getClass.getSimpleName}; Message: ${ex.getMessage}")
+    checkDeploymentStep(deploymentId)
+      .next(_ => checkSdkUninstallStatusStep(appId, frameworkIds))
+      .next(_ => deleteSchedulerStep(appId))
+      .flatMap {
+      case Success | Finish =>
+        // is success or should be finished
+        Future(())
+      case Retry =>
+        if (retries > 0) {
+          logger.info(s"Retrying uninstall of $appId. Remaining number of retries: ${retries - 1}")
+          Future.sleep(RetryInterval)
+            .before(uninstall(appId, frameworkIds, deploymentId, retries - 1))
+        } else {
+          logger.error(s"Run out of retries when uninstalling $appId. Uninstall failed.")
+          Future.exception(CosmosException(UninstallFailed(appId)))
         }
-
-        Future.sleep(RetryInterval)
-          .before(uninstall(appId, frameworkIds, deploymentId, retries - 1))
     }
   }
   // scalastyle:on cyclomatic.complexity
 
-  private def checkDeploymentCompleted(
+  private def checkDeploymentStep(
     deploymentId: String
   )(
     implicit session: RequestSession
-  ): Future[Boolean] = {
+  ): Future[StepResult] = {
     for {
       deployments <- adminRouter.listDeployments()
     } yield {
       val completed = !deployments.exists(_.id == deploymentId)
       val status = if (completed) "complete" else "still in progress"
-      logger.info(s"Deployment $status. Id: $deploymentId")
-      completed
+      logger.info(s"Verifying marathon deployment $deploymentId during uninstall. Status: $status.")
+
+      if (completed) {
+        Success
+      } else {
+        Retry
+      }
     }
+  }.rescue {
+    case ex =>
+      logger.warn(s"Unexpected exception when checking marathon deployment $deploymentId. Exception: $ex")
+      Future(Retry)
   }
 
-  def checkSdkUninstallEnvVar(appId: AppId)(
+  private def checkSdkUninstallStatusStep(appId: AppId, frameworkIds: Set[String])(
     implicit session: RequestSession
-  ): Future[Unit] = {
-    adminRouter.getAppRawJson(appId).map { json =>
-      json.contains(UninstallHandler.envJsonField) &&
-        json(UninstallHandler.envJsonField).toString.toBoolean match {
-        case true => throw SdkUninstallVarNotFound(appId).exception
-        case false => ()
-      }
+  ): Future[StepResult] = {
+    getApp(appId).flatMap {
+      case Some(schedulerApp) =>
+        val schedulerVersion = schedulerApp.app.labels.getOrElse(UninstallHandler.SdkVersionLabel, "v1")
+        val sdkUninstallLabelPresent = schedulerApp.app.labels.getOrElse(UninstallHandler.SdkUninstallEnvvar, "false").toBoolean
+        if (sdkUninstallLabelPresent) {
+          checkSdkUninstallCompleted(
+            appId,
+            frameworkIds,
+            apiVersion = schedulerVersion
+          ).map {
+            case true => Success
+            case _ => Retry
+          }
+        } else {
+          Future(Retry)
+        }
+      case None =>
+        // The scheduler is already removed from marathon; stop now to avoid uninstalling a restarted app
+        logger.warn("Marking uninstall as done because scheduler does not exist anymore in Marathon - nothing to uninstall.")
+        Future(Finish)
+    }
+  }.rescue {
+    case ex =>
+      logger.warn(s"Unexpected exception when checking scheduler $appId finished. Exception: $ex")
+      Future(Retry)
+  }
+
+  private def getApp(appId: AppId)(
+    implicit session: RequestSession
+  ): Future[Option[MarathonAppResponse]] = {
+    adminRouter.getApp(appId).map(Some(_)).rescue {
+      case ex: CosmosException if ex.error.isInstanceOf[MarathonAppNotFound] =>
+        Future(None)
     }
   }
 
@@ -112,22 +131,22 @@ final class ServiceUninstaller(
     deployed.joinWith(sameFrameworkIds)(_ && _)
   }
 
-  private def delete(
+  private def deleteSchedulerStep(
     appId: AppId
   )(
     implicit session: RequestSession
-  ): Future[Boolean] = {
+  ): Future[StepResult] = {
     adminRouter.deleteApp(appId).map { response =>
       if (response.status.code >= 400 && response.status.code < 500) {
         logger.error(
           s"Encountered Marathon error : ${response.status} when deleting $appId. Giving up."
         )
-        true
+        Finish
       } else if (response.status == Status.Ok) {
         logger.info(s"Deleted app: $appId")
-        true
+        Finish
       } else {
-        false
+        Retry
       }
     }
   }
@@ -145,4 +164,18 @@ object ServiceUninstaller {
   val RetryInterval: Duration = 10.seconds
 
   private val DefaultRetries: Int = 10000
+
+  sealed trait StepResult
+  case object Success extends StepResult
+  case object Retry extends StepResult
+  case object Finish extends StepResult
+
+  implicit class RichFuture(val currentStep: Future[StepResult]) extends AnyVal {
+    def next(stepFunction: Unit => Future[StepResult]): Future[StepResult] = {
+      currentStep.flatMap {
+        case Success => stepFunction(())
+        case other => Future(other)
+      }
+    }
+  }
 }
