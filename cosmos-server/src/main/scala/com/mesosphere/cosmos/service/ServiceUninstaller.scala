@@ -88,6 +88,7 @@ final class ServiceUninstaller(
             case _ => Retry
           }
         } else {
+          logger.warn(s"No SDK_UNINSTALL label present on app $appId: $schedulerApp")
           Future(Retry)
         }
       case None =>
