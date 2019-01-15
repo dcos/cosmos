@@ -93,16 +93,6 @@ class MarathonClient(
     }
   }
 
-  def getAppRawJson(appId: AppId)(implicit session: RequestSession): Future[JsonObject] = {
-    getAppResponse(appId).map {
-      _ match {
-        // No need to return an option as Some json should always be present.
-        case Some(response) => decodeJsonTo[JsonObject](response)
-        case None => throw MarathonAppNotFound(appId).exception // Should not happen
-      }
-    }
-  }
-
   def getApp(appId: AppId)(implicit session: RequestSession): Future[MarathonAppResponse] = {
     getAppOption(appId).map { appOption =>
       appOption.getOrElse(throw MarathonAppNotFound(appId).exception)

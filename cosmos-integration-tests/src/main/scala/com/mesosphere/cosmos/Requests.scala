@@ -208,6 +208,13 @@ object Requests {
     }
   }
 
+  def waitForMarathonAppToDisappear(appId: AppId): Unit = {
+    eventually(timeout(5.minutes), interval(5.seconds)) {
+      assertResult(false)(isMarathonAppInstalled(appId))
+    }
+    ()
+  }
+
   def waitForDeployments(): Unit = {
     eventually(timeout(5.minutes), interval(5.seconds)) {
       listDeployments() shouldBe empty

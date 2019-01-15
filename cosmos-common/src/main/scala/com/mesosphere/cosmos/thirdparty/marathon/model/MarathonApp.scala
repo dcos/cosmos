@@ -20,7 +20,8 @@ import scala.util.Try
  */
 case class MarathonApp(
   id: AppId,
-  labels: Map[String, String]
+  env: Option[Map[String, String]],
+  labels: Option[Map[String, String]]
 )
 
 object MarathonApp {
@@ -35,19 +36,23 @@ object MarathonApp {
 
   implicit final class Ops(val app: MarathonApp) extends AnyVal {
 
-    def packageName: Option[String] = app.labels.get(MarathonApp.nameLabel)
+    def getLabel(key: String):Option[String] = app.labels.flatMap(_.get(key))
+
+    def getEnv(key: String):Option[String] = app.env.flatMap(_.get(key))
+
+    def packageName: Option[String] = getLabel(MarathonApp.nameLabel)
 
     def packageVersion: Option[universe.v3.model.Version] = {
-      app.labels.get(MarathonApp.versionLabel).map(universe.v3.model.Version(_))
+      getLabel(MarathonApp.versionLabel).map(universe.v3.model.Version(_))
     }
 
     def packageRepository: Option[PackageOrigin] = for {
-      repoValue <- app.labels.get(MarathonApp.repositoryLabel)
+      repoValue <- getLabel(MarathonApp.repositoryLabel)
       originUri <- Try(Uri.parse(repoValue)).toOption
     } yield PackageOrigin(originUri)
 
     def packageDefinition: Option[universe.v4.model.PackageDefinition] = {
-      app.labels.get(MarathonApp.packageLabel).map { string =>
+      getLabel(MarathonApp.packageLabel).map { string =>
         decode64[StorageEnvelope](
           string
         ).decodeData[universe.v4.model.PackageDefinition].getOrThrow
@@ -55,7 +60,7 @@ object MarathonApp {
     }
 
     def serviceOptions: Option[JsonObject] = {
-      app.labels.get(MarathonApp.optionsLabel).flatMap { string =>
+      getLabel(MarathonApp.optionsLabel).flatMap { string =>
         parse64(string).asObject
       }
     }
