@@ -76,8 +76,8 @@ final class ServiceUninstaller(
   ): Future[StepResult] = {
     getApp(appId).flatMap {
       case Some(schedulerApp) =>
-        val schedulerVersion = schedulerApp.app.labels.getOrElse(UninstallHandler.SdkVersionLabel, "v1")
-        val sdkUninstallLabelPresent = schedulerApp.app.labels.getOrElse(UninstallHandler.SdkUninstallEnvvar, "false").toBoolean
+        val schedulerVersion = schedulerApp.app.getLabel(UninstallHandler.SdkVersionLabel).getOrElse("v1")
+        val sdkUninstallLabelPresent = schedulerApp.app.getEnv(UninstallHandler.SdkUninstallEnvvar).exists(_.toBoolean)
         if (sdkUninstallLabelPresent) {
           checkSdkUninstallCompleted(
             appId,
