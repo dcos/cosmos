@@ -28,11 +28,13 @@ final class ServiceUninstaller(
     implicit session: RequestSession
   ): Future[Unit] = {
     checkDeploymentStep(deploymentId)
-      .next(_ => checkSdkUninstallStatusStep(appId, frameworkIds))
-      .next(_ => deleteSchedulerStep(appId))
+      .onStepSuccess(_ => checkSdkUninstallStatusStep(appId, frameworkIds))
+      .onStepSuccess(_ => deleteSchedulerStep(appId))
+      .onStepSuccess(_ => Future(UninstallDone)) // all steps done -> uninstall is done
       .flatMap {
-      case Success | Finish =>
-        // is success or should be finished
+      case StepSuccess | UninstallDone =>
+        // last step was success or one of the steps finished marking the Uninstall as done
+        // StepSuccess should actually never happen in this phase but including it to prevent non-exhaustive match
         Future(())
       case Retry =>
         if (retries > 0) {
@@ -47,6 +49,10 @@ final class ServiceUninstaller(
   }
   // scalastyle:on cyclomatic.complexity
 
+  /**
+    * Verifies that the deployment adjusting scheduler app to contain SDK_UNINSTALL label is finished
+    * @param deploymentId id of marathon deployment
+    */
   private def checkDeploymentStep(
     deploymentId: String
   )(
@@ -60,7 +66,7 @@ final class ServiceUninstaller(
       logger.info(s"Verifying marathon deployment $deploymentId during uninstall. Status: $status.")
 
       if (completed) {
-        Success
+        StepSuccess
       } else {
         Retry
       }
@@ -71,6 +77,10 @@ final class ServiceUninstaller(
       Future(Retry)
   }
 
+  /**
+    * Verifies that the scheduler is running with SDK_UNINSTALL label and that the uninstall plan on scheduler is finished
+    * @param appId id of the scheduler inside marathon
+    */
   private def checkSdkUninstallStatusStep(appId: AppId, frameworkIds: Set[String])(
     implicit session: RequestSession
   ): Future[StepResult] = {
@@ -84,7 +94,7 @@ final class ServiceUninstaller(
             frameworkIds,
             apiVersion = schedulerVersion
           ).map {
-            case true => Success
+            case true => StepSuccess
             case _ => Retry
           }
         } else {
@@ -94,7 +104,7 @@ final class ServiceUninstaller(
       case None =>
         // The scheduler is already removed from marathon; stop now to avoid uninstalling a restarted app
         logger.warn("Marking uninstall as done because scheduler does not exist anymore in Marathon - nothing to uninstall.")
-        Future(Finish)
+        Future(UninstallDone)
     }
   }.rescue {
     case ex =>
@@ -142,10 +152,10 @@ final class ServiceUninstaller(
         logger.error(
           s"Encountered Marathon error : ${response.status} when deleting $appId. Giving up."
         )
-        Finish
+        UninstallDone
       } else if (response.status == Status.Ok) {
         logger.info(s"Deleted app: $appId")
-        Finish
+        UninstallDone
       } else {
         Retry
       }
@@ -167,14 +177,14 @@ object ServiceUninstaller {
   private val DefaultRetries: Int = 10000
 
   sealed trait StepResult
-  case object Success extends StepResult
+  case object StepSuccess extends StepResult
   case object Retry extends StepResult
-  case object Finish extends StepResult
+  case object UninstallDone extends StepResult
 
   implicit class RichFuture(val currentStep: Future[StepResult]) extends AnyVal {
-    def next(stepFunction: Unit => Future[StepResult]): Future[StepResult] = {
+    def onStepSuccess(stepFunction: Unit => Future[StepResult]): Future[StepResult] = {
       currentStep.flatMap {
-        case Success => stepFunction(())
+        case StepSuccess => stepFunction(())
         case other => Future(other)
       }
     }
