@@ -27,6 +27,9 @@ import scala.util.Success
 object HttpClient {
 
   lazy val DEFAULT_RETRIES = maxRetryCount()
+
+  lazy val RETRY_INTERVAL = retryDuration()
+
   val logger: Logger = org.slf4j.LoggerFactory.getLogger(getClass)
 
   def fetch[A](
@@ -77,7 +80,7 @@ object HttpClient {
         case error: IOException =>
           if (retryCount > 0) {
             logger.info(s"Retry [remaining - $retryCount] : ${error.getMessage}", error)
-            fetchResponse(uri, retryCount - 1, headers: _*)
+            Future.sleep(RETRY_INTERVAL).before(fetchResponse(uri, retryCount - 1, headers: _*))
           } else throw error
       }
       .map { case conn: HttpURLConnection =>

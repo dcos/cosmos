@@ -6,6 +6,7 @@ import com.mesosphere.error.ResultOps
 import com.netaporter.uri.Uri
 import com.twitter.app.GlobalFlag
 import com.twitter.conversions.storage._
+import com.twitter.conversions.time._
 import com.twitter.finagle.http.Fields
 import com.twitter.finagle.http.Request
 import com.twitter.finagle.http.Response
@@ -130,6 +131,11 @@ package cosmos {
   object proxyContentLimit extends GlobalFlag[StorageUnit](
     100.megabytes,
     "Maximum size for the proxy endpoint service while fetching a resource"
+  )
+
+  object retryDuration extends GlobalFlag[Duration](
+    5.seconds,
+    "Duration for retrying a failed upstream (HTTP) request"
   )
 
   object maxRetryCount extends GlobalFlag[Int](
