@@ -4,6 +4,7 @@ import _root_.io.circe.Json
 import _root_.io.circe.JsonObject
 import _root_.io.circe.jawn._
 import _root_.io.circe.syntax._
+import com.mesosphere.cosmos.IntegrationBeforeAndAfterAll
 import com.mesosphere.cosmos.ItObjects
 import com.mesosphere.cosmos.http.CosmosRequests
 import com.mesosphere.cosmos.rpc.MediaTypes
@@ -19,7 +20,7 @@ import org.scalatest.Matchers
 import org.scalatest.prop.TableDrivenPropertyChecks
 import scala.util.Right
 
-class PackageRenderHandlerSpec extends FreeSpec with Matchers with TableDrivenPropertyChecks {
+class PackageRenderHandlerSpec extends FreeSpec with Matchers with TableDrivenPropertyChecks with IntegrationBeforeAndAfterAll {
 
   import PackageRenderHandlerSpec._
 

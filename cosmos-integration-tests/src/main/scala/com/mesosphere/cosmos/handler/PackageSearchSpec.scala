@@ -1,6 +1,7 @@
-package com.mesosphere.cosmos
+package com.mesosphere.cosmos.handler
 
 import _root_.io.circe.parser.decode
+import com.mesosphere.cosmos.IntegrationBeforeAndAfterAll
 import com.mesosphere.cosmos.http.CosmosRequests
 import com.mesosphere.cosmos.http.TestContext
 import com.mesosphere.cosmos.repository.rewriteUrlWithProxyInfo
@@ -15,7 +16,7 @@ import org.scalatest.Assertion
 import org.scalatest.FreeSpec
 import org.scalatest.prop.TableDrivenPropertyChecks
 
-final class PackageSearchSpec extends FreeSpec {
+final class PackageSearchSpec extends FreeSpec with IntegrationBeforeAndAfterAll{
 
   import PackageSearchSpec._
 

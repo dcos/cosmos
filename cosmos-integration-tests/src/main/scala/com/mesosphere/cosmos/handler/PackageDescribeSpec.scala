@@ -1,9 +1,12 @@
-package com.mesosphere.cosmos
+package com.mesosphere.cosmos.handler
 
 import _root_.io.circe.Json
+import com.mesosphere.cosmos.IntegrationBeforeAndAfterAll
+import com.mesosphere.cosmos.ItObjects
 import com.mesosphere.cosmos.circe.Decoders.decode
 import com.mesosphere.cosmos.circe.Decoders.parse
 import com.mesosphere.cosmos.http.CosmosRequests
+import com.mesosphere.cosmos.rpc
 import com.mesosphere.cosmos.test.CosmosIntegrationTestClient.CosmosClient
 import com.mesosphere.error.ResultOps
 import com.mesosphere.universe
@@ -16,7 +19,7 @@ import org.scalatest.Matchers
 import org.scalatest.prop.TableDrivenPropertyChecks
 
 final class PackageDescribeSpec
-  extends FreeSpec with TableDrivenPropertyChecks with Matchers {
+  extends FreeSpec with TableDrivenPropertyChecks with Matchers with IntegrationBeforeAndAfterAll{
 
   import PackageDescribeSpec._
 

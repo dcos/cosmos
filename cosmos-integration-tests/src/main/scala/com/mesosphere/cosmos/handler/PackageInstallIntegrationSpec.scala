@@ -1,18 +1,23 @@
-package com.mesosphere.cosmos
+package com.mesosphere.cosmos.handler
 
+import com.mesosphere.cosmos.HttpErrorResponse
+import com.mesosphere.cosmos.IntegrationBeforeAndAfterAll
 import com.mesosphere.cosmos.ItOps._
+import com.mesosphere.cosmos.Requests
+import com.mesosphere.cosmos.RoundTrips
 import com.mesosphere.cosmos.error.PackageAlreadyInstalled
 import com.mesosphere.cosmos.error.PackageNotFound
 import com.mesosphere.cosmos.error.ServiceMarathonTemplateNotFound
 import com.mesosphere.cosmos.error.VersionNotFound
 import com.mesosphere.cosmos.rpc.v1.model.ErrorResponse
+import com.mesosphere.cosmos.thirdparty
 import com.mesosphere.universe
 import com.twitter.bijection.Conversion.asMethod
 import com.twitter.finagle.http._
 import org.scalatest.FeatureSpec
 import org.scalatest.Matchers
 
-final class PackageInstallIntegrationSpec extends FeatureSpec with Matchers {
+final class PackageInstallIntegrationSpec extends FeatureSpec with Matchers with IntegrationBeforeAndAfterAll{
 
   feature("The package/install endpoint") {
     scenario("should store the correct labels") {

@@ -1,6 +1,7 @@
 package com.mesosphere.cosmos.handler
 
 import com.mesosphere.cosmos.HttpErrorResponse
+import com.mesosphere.cosmos.IntegrationBeforeAndAfterAll
 import com.mesosphere.cosmos.ItObjects
 import com.mesosphere.cosmos.ItUtil
 import com.mesosphere.cosmos.Requests
@@ -25,7 +26,7 @@ import java.util.UUID
 import org.scalatest.FeatureSpec
 import org.scalatest.Matchers
 
-class ServiceUpdateSpec extends FeatureSpec with Matchers {
+class ServiceUpdateSpec extends FeatureSpec with Matchers with IntegrationBeforeAndAfterAll {
   private[this] implicit val testContext = TestContext.fromSystemProperties()
 
   import ServiceUpdateSpec._

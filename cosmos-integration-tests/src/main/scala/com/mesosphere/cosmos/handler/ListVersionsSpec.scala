@@ -1,14 +1,16 @@
-package com.mesosphere.cosmos
+package com.mesosphere.cosmos.handler
 
 import _root_.io.circe.jawn.parse
 import _root_.io.circe.syntax._
+import com.mesosphere.cosmos.IntegrationBeforeAndAfterAll
 import com.mesosphere.cosmos.http.CosmosRequests
+import com.mesosphere.cosmos.rpc
 import com.mesosphere.cosmos.test.CosmosIntegrationTestClient.CosmosClient
 import com.twitter.finagle.http.Status
 import org.scalatest.FreeSpec
 import org.scalatest.Matchers
 
-final class ListVersionsSpec extends FreeSpec with Matchers {
+final class ListVersionsSpec extends FreeSpec with Matchers with IntegrationBeforeAndAfterAll{
 
   "ListVersionHandler should" - {
     "list only helloworld versions found in the first repo with helloworld packages" in {

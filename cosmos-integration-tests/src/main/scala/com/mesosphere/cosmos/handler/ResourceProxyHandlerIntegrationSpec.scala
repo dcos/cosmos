@@ -2,6 +2,7 @@ package com.mesosphere.cosmos.handler
 
 import com.google.common.io.ByteStreams
 import com.mesosphere.cosmos.HttpClient
+import com.mesosphere.cosmos.IntegrationBeforeAndAfterAll
 import com.mesosphere.cosmos.error.CosmosException
 import com.mesosphere.cosmos.http.CosmosRequests
 import com.mesosphere.cosmos.http.TestContext
@@ -22,7 +23,8 @@ import org.scalatest.prop.TableFor1
 
 final class ResourceProxyHandlerIntegrationSpec extends FreeSpec
   with TableDrivenPropertyChecks
-  with Matchers {
+  with Matchers
+  with IntegrationBeforeAndAfterAll {
   import ResourceProxyHandlerIntegrationSpec._
 
   "The ResourceProxyHandler should" - {
