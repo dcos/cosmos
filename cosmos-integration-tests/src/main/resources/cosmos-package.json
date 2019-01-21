@@ -8,7 +8,7 @@
   "id": "/cosmos-package",
   "backoffFactor": 1.15,
   "backoffSeconds": 1,
-  "cmd": "export JAVA_HOME=$(ls -d $MESOS_SANDBOX/jdk*/jre/); export JAVA_HOME=${JAVA_HOME/}; export PATH=$(ls -d $JAVA_HOME/bin):$PATH\n\njava -classpath cosmos-server-0.6.1-SNAPSHOT-349-master-6cc11107fc-one-jar.jar  com.simontuffs.onejar.Boot -admin.port=127.0.0.1:9990 -com.mesosphere.cosmos.httpInterface=0.0.0.0:7070  -com.mesosphere.cosmos.zookeeperUri=zk://leader.mesos:2181/cosmos-package",
+  "cmd": "export JAVA_HOME=$(ls -d $MESOS_SANDBOX/jdk*/jre/); export JAVA_HOME=${JAVA_HOME/}; export PATH=$(ls -d $JAVA_HOME/bin):$PATH\n\njava -classpath cosmos-server.jar  com.simontuffs.onejar.Boot -admin.port=127.0.0.1:9990 -com.mesosphere.cosmos.httpInterface=0.0.0.0:7070  -com.mesosphere.cosmos.zookeeperUri=zk://leader.mesos:2181/cosmos-package",
   "container": {
     "portMappings": [{
       "containerPort": 7070,
@@ -25,15 +25,19 @@
     "uri": "https://downloads.mesosphere.com/java/server-jre-8u162-linux-x64.tar.gz",
     "extract": true,
     "executable": false,
-    "cache": false
+    "cache": true
   },
     {
-      "uri": "https://downloads.dcos.io/cosmos/0.6.1-SNAPSHOT-349-master-6cc11107fc/cosmos-server-0.6.1-SNAPSHOT-349-master-6cc11107fc-one-jar.jar",
+      "uri": "https://downloads.dcos.io/cosmos/0.6.2-SNAPSHOT-363-master-5e36dc4622/cosmos-server-0.6.2-SNAPSHOT-363-master-5e36dc4622-one-jar.jar",
       "extract": true,
       "executable": false,
-      "cache": false
+      "cache": true,
+      "destPath": "cosmos-server.jar"
     }
   ],
+  "env": {
+    "DCOS_COSMOS_LOG_LEVEL": "DEBUG"
+  },
   "instances": 1,
   "maxLaunchDelaySeconds": 3600,
   "mem": 4000,
@@ -51,6 +55,13 @@
     "inactiveAfterSeconds": 0,
     "expungeAfterSeconds": 0
   },
-  "healthChecks": [],
+  "healthChecks": [
+    {
+      "path": "/admin",
+      "port": 9990,
+      "protocol": "MESOS_HTTP",
+      "maxConsecutiveFailures": 10
+    }
+  ],
   "constraints": []
 }
