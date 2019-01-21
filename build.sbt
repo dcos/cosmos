@@ -67,7 +67,16 @@ val integrationTests = project.in(file("cosmos-integration-tests"))
       // No additional properties needed for these tests
       additionalProperties = Nil,
       streamsValue = (streams in runMain).value
-    )
+    ),
+    // Uses (compile in Compile) in addition to (compile in IntegrationTest), the default
+    definedTests in IntegrationTest := {
+      val frameworkMap = (loadedTestFrameworks in IntegrationTest).value
+      val compileAnalysis = (compile in Compile).value
+      val itAnalysis = (compile in IntegrationTest).value
+      val s = (streams in IntegrationTest).value
+      Tests.discover(frameworkMap.values.toList, compileAnalysis, s.log)._1 ++
+        Tests.discover(frameworkMap.values.toList, itAnalysis, s.log)._1
+    }
   )
   .dependsOn(
     testCommon
