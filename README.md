@@ -3,10 +3,8 @@
 Provides an API for the [orderly, harmonious, and complete](http://www.thefreedictionary.com/cosmos)
 management of DC/OS service packages.
 
-| Build | Status |
-|---|---|
-|Unit Tests | [![Build Status](https://teamcity.mesosphere.io/guestAuth/app/rest/builds/buildType:(id:DcosIo_Cosmos_Ci)/statusIcon)](https://teamcity.mesosphere.io/viewType.html?buildTypeId=DcosIo_Cosmos_Ci&guest=1)|
-|Integration Tests | [![Build Status](https://teamcity.mesosphere.io/guestAuth/app/rest/builds/buildType:(id:DcosIo_Cosmos_FullClusterIntegrationTests)/statusIcon)](https://teamcity.mesosphere.io/viewType.html?buildTypeId=DcosIo_Cosmos_FullClusterIntegrationTests&guest=1)|
+
+Teamcity CI : [Build & Compile](https://teamcity.mesosphere.io/viewType.html?buildTypeId=DcosIo_Cosmos_Ci&guest=1) and [Integration Tests](https://teamcity.mesosphere.io/viewType.html?buildTypeId=DcosIo_Cosmos_FullClusterIntegrationTests&guest=1)
 
 #### Table of Contents
 - [Running tests](#running-tests)
@@ -119,6 +117,14 @@ sbt -Dcom.mesosphere.cosmos.dcosUri=<dcos-host-url> \
     -Dcom.mesosphere.cosmos.boot=false \
     -Dcom.mesosphere.cosmos.test.CosmosIntegrationTestClient.CosmosClient.uri=http://localhost:7070 \
     clean it:test
+```
+
+To run a single test, something like the following can be used in the sbt console:
+```bash
+# to run a single test suite
+it:testOnly *ServiceUpdateSpec
+# To run a single test from a single suite
+it:testOnly *ServiceUpdateSpec -- -z "user should be able to update a service via custom manager"
 ```
 
 ## Running Cosmos
