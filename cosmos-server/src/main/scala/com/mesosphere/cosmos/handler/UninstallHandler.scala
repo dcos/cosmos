@@ -146,7 +146,7 @@ private[cosmos] final class UninstallHandler(
   ): Future[UninstallDetails] = {
     adminRouter.getApp(op.appId)
       .flatMap { response =>
-        val sdkApiVersion = response.app.labels(SdkVersionLabel)
+        val sdkApiVersion = response.app.getLabel(SdkVersionLabel).getOrElse("v1")
         adminRouter.getSdkServiceFrameworkIds(op.appId, sdkApiVersion)
       }
       .handle { case _ => Nil }
@@ -244,8 +244,7 @@ private[cosmos] final class UninstallHandler(
   ): List[(MarathonApp, UninstallOperation)] = {
     val uninstallOperations = for {
       app <- apps
-      labels = app.labels
-      packageName <- labels.get(MarathonApp.nameLabel)
+      packageName <- app.getLabel(MarathonApp.nameLabel)
       if packageName == requestedPackageName
     } yield {
       (
@@ -253,9 +252,9 @@ private[cosmos] final class UninstallHandler(
         UninstallOperation(
           appId = app.id,
           packageName = packageName,
-          frameworkName = labels.get(MarathonApp.frameworkNameLabel),
+          frameworkName = app.getLabel(MarathonApp.frameworkNameLabel),
           packageVersion = app.packageVersion.as[Option[universe.v2.model.PackageDetailsVersion]],
-          uninstallType = if (labels.contains(SdkServiceLabel)) SdkUninstall else MarathonUninstall
+          uninstallType = if (app.getLabel(SdkServiceLabel).isDefined) SdkUninstall else MarathonUninstall
         )
       )
     }

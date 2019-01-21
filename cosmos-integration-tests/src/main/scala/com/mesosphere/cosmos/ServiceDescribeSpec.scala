@@ -66,6 +66,7 @@ final class ServiceDescribeSpec extends FeatureSpec with Matchers {
       assertResult(Status.Ok)(serviceDescribeResponse.status)
 
       Requests.uninstall("cassandra", managerId = Some(ItObjects.customManagerAppName))
+      Requests.waitForMarathonAppToDisappear(appId)
     }
   }
 
