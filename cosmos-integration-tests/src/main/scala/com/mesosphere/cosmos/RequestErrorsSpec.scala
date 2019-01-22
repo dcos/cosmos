@@ -1,4 +1,4 @@
-package com.mesosphere.cosmos.handler
+package com.mesosphere.cosmos
 
 import com.mesosphere.cosmos.http.HttpRequest
 import com.mesosphere.cosmos.http.PackageRpcPath

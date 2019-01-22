@@ -1,6 +1,7 @@
 package com.mesosphere.cosmos.handler
 
 import com.mesosphere.cosmos.HttpErrorResponse
+import com.mesosphere.cosmos.IntegrationBeforeAndAfterAll
 import com.mesosphere.cosmos.ItObjects
 import com.mesosphere.cosmos.ItOps._
 import com.mesosphere.cosmos.RoundTrips
@@ -14,12 +15,11 @@ import java.util.UUID
 import org.scalatest.FeatureSpec
 import org.scalatest.Matchers
 
-class NonSharedServiceUpdateSpec extends FeatureSpec with Matchers {
+class NonSharedServiceUpdateSpec extends FeatureSpec with Matchers with IntegrationBeforeAndAfterAll {
   private[this] implicit val testContext = TestContext.fromSystemProperties()
 
   import ServiceUpdateSpec._
 
-  // scalastyle:off multiple.string.literals
   val helloworld = "helloworld"
 
   feature("The service/update endpoint") {
@@ -49,5 +49,4 @@ class NonSharedServiceUpdateSpec extends FeatureSpec with Matchers {
       }
     }
   }
-  // scalastyle:on multiple.string.literals
 }

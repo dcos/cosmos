@@ -1,7 +1,10 @@
-package com.mesosphere.cosmos
+package com.mesosphere.cosmos.handler
 
 import cats.data.Ior
+import com.mesosphere.cosmos.HttpErrorResponse
 import com.mesosphere.cosmos.ItOps._
+import com.mesosphere.cosmos.Requests
+import com.mesosphere.cosmos.RoundTrips
 import com.mesosphere.cosmos.error.IndexNotFound
 import com.mesosphere.cosmos.error.RepoNameOrUriMissing
 import com.mesosphere.cosmos.error.RepositoryAddIndexOutOfBounds
@@ -12,6 +15,7 @@ import com.mesosphere.cosmos.error.UniverseClientHttpError
 import com.mesosphere.cosmos.error.UnsupportedContentType
 import com.mesosphere.cosmos.error.UnsupportedRepositoryUri
 import com.mesosphere.cosmos.error.UnsupportedRepositoryVersion
+import com.mesosphere.cosmos.rpc
 import com.mesosphere.cosmos.rpc.v1.model.ErrorResponse
 import com.mesosphere.cosmos.rpc.v1.model.PackageRepository
 import com.mesosphere.universe.MediaTypes
@@ -112,7 +116,6 @@ class PackageRepositorySpec extends FeatureSpec with Matchers {
       val error = intercept[HttpErrorResponse] {
         RoundTrips.withRepository(repo.name, repo.uri).run()
       }
-      print("^^^^^^^^^^^^^" + error.errorResponse)
       error.status shouldBe Status.BadRequest
       error.errorResponse shouldBe expectedError
     }

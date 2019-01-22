@@ -1,14 +1,15 @@
 package com.mesosphere.cosmos.handler
 
 import com.mesosphere.cosmos.ItObjects
+import com.mesosphere.cosmos.IntegrationBeforeAndAfterAll
+import com.mesosphere.cosmos.Requests
 import com.mesosphere.cosmos.error.CosmosException
 import com.mesosphere.cosmos.error.MarathonAppNotFound
 import com.mesosphere.cosmos.http.CosmosRequests
 import com.mesosphere.cosmos.rpc.MediaTypes
+import com.mesosphere.cosmos.rpc
 import com.mesosphere.cosmos.rpc.v1.model.ErrorResponse
-import com.mesosphere.cosmos.rpc.v1.model.InstallRequest
 import com.mesosphere.cosmos.rpc.v1.model.UninstallRequest
-import com.mesosphere.cosmos.rpc.v1.model.UninstallResponse
 import com.mesosphere.cosmos.service.ServiceUninstaller
 import com.mesosphere.cosmos.test.CosmosIntegrationTestClient
 import com.mesosphere.cosmos.test.CosmosIntegrationTestClient.CosmosClient
@@ -29,60 +30,42 @@ import org.scalatest.concurrent.Eventually
 import org.scalatest.time.SpanSugar
 import scala.util.Right
 
-final class UninstallHandlerSpec extends FreeSpec with Eventually with SpanSugar {
+final class UninstallHandlerSpec extends FreeSpec with Eventually with SpanSugar with IntegrationBeforeAndAfterAll{
 
   import CosmosIntegrationTestClient._
   import UninstallHandlerSpec._
 
   "The uninstall handler should" - {
+    val testPackageName = "nginx"
     "be able to uninstall a service" in {
-      val appId = AppId("cassandra" / "uninstall-test")
-      val installRequest = InstallRequest("cassandra", None, None, Some(appId), None)
-      val installResponse = submitInstallRequest(installRequest)
-      assertResult(Status.Ok)(installResponse.status)
-
+      val appId = AppId(testPackageName / "sanity-uninstall-test")
+      val _ = Requests.installV1(testPackageName, appId = Some(appId))
       val marathonApp = Await.result(adminRouter.getApp(appId))
       assertResult(appId)(marathonApp.app.id)
-
-      //TODO: Assert framework starts up
-
-      val uninstallRequest = UninstallRequest("cassandra", None, None, None, None)
-      val uninstallResponse = submitUninstallRequest(uninstallRequest)
-      val uninstallResponseBody = uninstallResponse.contentString
-      assertResult(Status.Ok)(uninstallResponse.status)
-      assertResult(MediaTypes.UninstallResponse.show)(uninstallResponse.headerMap(Fields.ContentType))
-      val Right(body) = decode[UninstallResponse](uninstallResponseBody)
-      assert(body.results.flatMap(_.postUninstallNotes).nonEmpty)
+      val uninstallResponse =  Requests.uninstall(testPackageName, None, None, None)
+      assert(uninstallResponse.results.flatMap(_.postUninstallNotes).nonEmpty)
+      Requests.waitForMarathonAppToDisappear(appId)
     }
 
     "be able to install and uninstall a service with a custom manager" in {
-      val appId = AppId("cassandra" / "uninstall-test")
-      //custom install tested here
-      val installRequest = InstallRequest("cassandra", None, None, Some(appId), Some(ItObjects.customManagerAppName))
-      val installResponse = submitInstallRequest(installRequest)
-      assertResult(Status.Ok)(installResponse.status)
-
+      val appId = AppId(testPackageName / "custom-manager-uninstall-test")
+      val _ = Requests.installV2(testPackageName, appId = Some(appId), managerId=Some(ItObjects.customManagerAppName))
       val marathonApp = Await.result(adminRouter.getApp(appId))
       assertResult(appId)(marathonApp.app.id)
-
-      val uninstallRequest = UninstallRequest("cassandra", None, None, Some(ItObjects.customManagerAppName), None)
-      val uninstallResponse = submitUninstallRequest(uninstallRequest)
-      val uninstallResponseBody = uninstallResponse.contentString
-      assertResult(Status.Ok)(uninstallResponse.status)
-      assertResult(MediaTypes.UninstallResponse.show)(uninstallResponse.headerMap(Fields.ContentType))
-      val Right(body) = decode[UninstallResponse](uninstallResponseBody)
-      assert(body.results.flatMap(_.postUninstallNotes).nonEmpty)
+      val uninstallResponse = Requests.uninstall(testPackageName, Some(appId), None, Some(ItObjects.customManagerAppName))
+      assert(uninstallResponse.results.flatMap(_.postUninstallNotes).nonEmpty)
+      Requests.waitForMarathonAppToDisappear(appId)
     }
 
     "be able to uninstall multiple packages when 'all' is specified" in {
       // install 'helloworld' twice
       val appId1 = AppId(UUID.randomUUID().toString)
-      val installRequest1 = InstallRequest("helloworld", None, None, Some(appId1), None)
+      val installRequest1 = rpc.v1.model.InstallRequest("helloworld", None, None, Some(appId1), None)
       val installResponse1 = submitInstallRequest(installRequest1)
       assertResult(Status.Ok, s"install failed: $installRequest1")(installResponse1.status)
 
       val appId2 = AppId(UUID.randomUUID().toString)
-      val installRequest2 = InstallRequest(
+      val installRequest2 = rpc.v1.model.InstallRequest(
         "helloworld",
         Some(PackageDetailsVersion("0.4.1")),
         None,
@@ -92,21 +75,20 @@ final class UninstallHandlerSpec extends FreeSpec with Eventually with SpanSugar
       val installResponse2 = submitInstallRequest(installRequest2)
       assertResult(Status.Ok, s"install failed: $installRequest2")(installResponse2.status)
 
-      val uninstallRequest = UninstallRequest("helloworld", appId = None, all = Some(true), None, None)
-      val uninstallResponse = submitUninstallRequest(uninstallRequest)
-      assertResult(Status.Ok)(uninstallResponse.status)
-      assertResult(MediaTypes.UninstallResponse.show)(uninstallResponse.headerMap(Fields.ContentType))
+      Requests.uninstall("helloworld", appId = None, all = Some(true), None)
+      Requests.waitForMarathonAppToDisappear(appId1)
+      Requests.waitForMarathonAppToDisappear(appId2)
     }
 
     "error when multiple packages are installed and no appId is specified and all isn't set" in {
       // install 'helloworld' twice
       val appId1 = AppId(UUID.randomUUID().toString)
-      val installRequest1 = InstallRequest("helloworld", None, None, Some(appId1), None)
+      val installRequest1 = rpc.v1.model.InstallRequest("helloworld", None, None, Some(appId1), None)
       val installResponse1 = submitInstallRequest(installRequest1)
       assertResult(Status.Ok, s"install failed: $installRequest1")(installResponse1.status)
 
       val appId2 = AppId(UUID.randomUUID().toString)
-      val installRequest2 = InstallRequest("helloworld", None, None, Some(appId2), None)
+      val installRequest2 = rpc.v1.model.InstallRequest("helloworld", None, None, Some(appId2), None)
       val installResponse2 = submitInstallRequest(installRequest2)
       assertResult(Status.Ok, s"install failed: $installRequest2")(installResponse2.status)
 
@@ -243,12 +225,12 @@ object UninstallHandlerSpec {
 
   def installHelloWorld(): Response = {
     // Always use the custom options to avoid a stuck install
-    val request = InstallRequest(HelloWorldPackageName, None, Some(HelloWorldOptions), None, None)
+    val request = rpc.v1.model.InstallRequest(HelloWorldPackageName, None, Some(HelloWorldOptions), None, None)
     submitInstallRequest(request)
   }
 
   def submitInstallRequest(
-    installRequest: InstallRequest
+    installRequest: rpc.v1.model.InstallRequest
   ): Response = {
     CosmosClient.submit(CosmosRequests.packageInstallV1(installRequest))
   }

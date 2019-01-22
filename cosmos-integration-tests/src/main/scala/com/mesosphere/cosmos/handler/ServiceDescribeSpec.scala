@@ -1,6 +1,11 @@
-package com.mesosphere.cosmos
+package com.mesosphere.cosmos.handler
 
+import com.mesosphere.cosmos.HttpErrorResponse
+import com.mesosphere.cosmos.IntegrationBeforeAndAfterAll
+import com.mesosphere.cosmos.ItObjects
 import com.mesosphere.cosmos.ItOps._
+import com.mesosphere.cosmos.Requests
+import com.mesosphere.cosmos.RoundTrips
 import com.mesosphere.cosmos.error.MarathonAppNotFound
 import com.mesosphere.cosmos.http.CosmosRequests
 import com.mesosphere.cosmos.http.TestContext
@@ -14,7 +19,7 @@ import com.twitter.finagle.http.Status
 import org.scalatest.FeatureSpec
 import org.scalatest.Matchers
 
-final class ServiceDescribeSpec extends FeatureSpec with Matchers {
+final class ServiceDescribeSpec extends FeatureSpec with Matchers with IntegrationBeforeAndAfterAll{
   private[this] implicit val testContext = TestContext.fromSystemProperties()
 
   private[this] val name = "helloworld"

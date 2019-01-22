@@ -17,6 +17,8 @@ import scala.concurrent.duration._
 
 trait IntegrationBeforeAndAfterAll extends BeforeAndAfterAll with Eventually { this: Suite =>
 
+  private[this] lazy val logger = org.slf4j.LoggerFactory.getLogger(getClass)
+
   private[this] val universeUri = "https://downloads.mesosphere.com/universe/02493e40f8564a39446d06c002f8dcc8e7f6d61f/repo-up-to-1.8.json"
   private[this] val universeConverterUri = "https://universe-converter.mesosphere.com/transform?url=" + universeUri
 
@@ -25,6 +27,7 @@ trait IntegrationBeforeAndAfterAll extends BeforeAndAfterAll with Eventually { t
 
     val customPkgMgrResource = s"/${ItObjects.customManagerAppName}.json"
 
+    logger.info(s"Creating marathon app from $customPkgMgrResource")
     Requests
       .postMarathonApp(
         parse(
@@ -37,9 +40,6 @@ trait IntegrationBeforeAndAfterAll extends BeforeAndAfterAll with Eventually { t
         ).toOption.get.asObject.get
       )
     Requests.waitForDeployments()
-
-    // TODO: add a healthcheck to test marathon app and remove this
-    Thread.sleep(10000) //scalastyle:ignore magic.number
 
     Requests.addRepository(
       "Universe",
@@ -67,7 +67,9 @@ trait IntegrationBeforeAndAfterAll extends BeforeAndAfterAll with Eventually { t
   override def afterAll(): Unit = {
     Requests.deleteRepository(Some("V4TestUniverse"))
     Requests.deleteRepository(Some("V5Testpackage"))
-    Requests.deleteMarathonApp(AppId(ItObjects.customManagerAppName))
+    val customMgrAppId = AppId(ItObjects.customManagerAppName)
+    Requests.deleteMarathonApp(customMgrAppId)
+    Requests.waitForMarathonAppToDisappear(customMgrAppId)
     Requests.deleteRepository(None, Some(universeConverterUri))
     val _ = Requests.addRepository("Universe", "https://universe.mesosphere.com/repo")
   }
