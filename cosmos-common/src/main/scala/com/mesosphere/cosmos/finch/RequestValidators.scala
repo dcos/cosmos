@@ -8,7 +8,7 @@ import com.mesosphere.http.MediaType
 import com.mesosphere.http.OriginHostScheme
 import com.mesosphere.util.ForwardedProtoHeader
 import com.mesosphere.util.UrlSchemeHeader
-import com.netaporter.uri.Uri
+import io.lemonlabs.uri.Uri
 import com.twitter.finagle.http.Fields
 import io.finch._
 import shapeless.::

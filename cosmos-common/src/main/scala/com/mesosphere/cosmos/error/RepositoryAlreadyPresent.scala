@@ -2,7 +2,7 @@ package com.mesosphere.cosmos.error
 
 import cats.data.Ior
 import com.mesosphere.cosmos.circe.Encoders._
-import com.netaporter.uri.Uri
+import io.lemonlabs.uri.Uri
 import io.circe.JsonObject
 import io.circe.syntax._
 

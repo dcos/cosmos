@@ -1,7 +1,7 @@
 package com.mesosphere.universe.bijection
 
 import com.mesosphere.universe
-import com.netaporter.uri.Uri
+import io.lemonlabs.uri.Uri
 import com.twitter.bijection.Bijection
 import com.twitter.bijection.Conversion
 import com.twitter.bijection.Conversion.asMethod

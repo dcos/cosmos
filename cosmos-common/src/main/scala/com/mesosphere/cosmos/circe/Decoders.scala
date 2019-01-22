@@ -7,7 +7,7 @@ import com.mesosphere.cosmos.finch.MediaTypedDecoder
 import com.mesosphere.error.Result
 import com.mesosphere.error.ResultOps
 import com.mesosphere.http.MediaType
-import com.netaporter.uri.Uri
+import io.lemonlabs.uri.Uri
 import io.circe.Decoder
 import io.circe.DecodingFailure
 import io.circe.Error

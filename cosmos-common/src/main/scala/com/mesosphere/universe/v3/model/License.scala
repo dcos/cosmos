@@ -2,7 +2,7 @@ package com.mesosphere.universe.v3.model
 
 import com.mesosphere.cosmos.circe.Decoders._
 import com.mesosphere.cosmos.circe.Encoders._
-import com.netaporter.uri.Uri
+import io.lemonlabs.uri.Uri
 import io.circe.Decoder
 import io.circe.Encoder
 import io.circe.generic.semiauto.deriveDecoder

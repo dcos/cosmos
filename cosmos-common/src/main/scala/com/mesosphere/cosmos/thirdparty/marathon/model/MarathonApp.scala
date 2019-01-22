@@ -6,7 +6,7 @@ import com.mesosphere.cosmos.model.PackageOrigin
 import com.mesosphere.cosmos.model.StorageEnvelope
 import com.mesosphere.error.ResultOps
 import com.mesosphere.universe
-import com.netaporter.uri.Uri
+import io.lemonlabs.uri.Uri
 import io.circe.Decoder
 import io.circe.JsonObject
 import io.circe.generic.semiauto._

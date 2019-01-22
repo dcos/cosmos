@@ -1,6 +1,6 @@
 package com.mesosphere.cosmos.model
 
-import com.netaporter.uri.Uri
+import io.lemonlabs.uri.Uri
 
 sealed trait PackageOrigin {
   val uri: Uri

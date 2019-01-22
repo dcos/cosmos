@@ -16,7 +16,7 @@ import com.mesosphere.universe
 import com.mesosphere.universe.common.ByteBuffers
 import com.mesosphere.universe.common.JsonUtil
 import com.mesosphere.universe.v4.model.PackageDefinition
-import com.netaporter.uri.Uri
+import io.lemonlabs.uri.Uri
 import io.circe.Json
 import io.circe.JsonObject
 import io.circe.syntax._

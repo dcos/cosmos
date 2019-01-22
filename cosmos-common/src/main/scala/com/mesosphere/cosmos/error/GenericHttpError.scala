@@ -1,7 +1,7 @@
 package com.mesosphere.cosmos.error
 
 import com.mesosphere.cosmos.circe.Encoders._
-import com.netaporter.uri.Uri
+import io.lemonlabs.uri.Uri
 import io.netty.handler.codec.http.HttpResponseStatus
 import io.circe.Encoder
 import io.circe.JsonObject

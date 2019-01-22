@@ -1,6 +1,6 @@
 package com.mesosphere.universe.v2.model
 
-import com.netaporter.uri.Uri
+import io.lemonlabs.uri.Uri
 import io.circe.Decoder
 import io.circe.Encoder
 import io.circe.JsonObject
