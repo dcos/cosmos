@@ -2,7 +2,7 @@ package com.mesosphere.cosmos.repository
 
 import com.mesosphere.cosmos.repository.DefaultRepositories._
 import com.mesosphere.cosmos.rpc.v1.model.PackageRepository
-import com.netaporter.uri.dsl._
+import io.lemonlabs.uri.dsl._
 import com.twitter.util.Return
 import io.circe.ParsingFailure
 import org.scalatest.FreeSpec

@@ -5,7 +5,7 @@ import com.mesosphere.cosmos.http.Authorization
 import com.mesosphere.cosmos.http.RequestSession
 import com.mesosphere.cosmos.test.TestUtil
 import com.mesosphere.http.OriginHostScheme
-import com.netaporter.uri.Uri
+import io.lemonlabs.uri.Uri
 import com.twitter.finagle.http.Request
 import org.scalatest.FreeSpec
 import org.scalatest.Inside

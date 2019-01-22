@@ -1,7 +1,7 @@
 package com.mesosphere.cosmos.http
 
 import com.mesosphere.http.OriginHostScheme
-import com.netaporter.uri.Uri
+import io.lemonlabs.uri.Uri
 import org.slf4j.LoggerFactory
 
 final case class TestContext(
@@ -30,7 +30,7 @@ object TestContext {
       token,
       OriginHostScheme(
         extractHostFromUri(url),
-        OriginHostScheme.Scheme(url.scheme.get).get
+        OriginHostScheme.Scheme(url.schemeOption.get).get
       )
     )
   }
@@ -41,12 +41,10 @@ object TestContext {
       .getOrElse(throw new AssertionError(s"Missing system property '$property' "))
   }
 
-  def extractHostFromUri(uri: Uri): String = {
-    s"${uri.host.get}${
-      uri.port match {
-        case Some(x) => s":$x"
-        case None => ""
-      }
-    }"
-  }
+  def extractHostFromUri(uri: Uri): String = s"${uri.toUrl.hostOption.get}${
+    uri.toUrl.port match {
+      case Some(x) => s":$x"
+      case None => ""
+    }
+  }"
 }

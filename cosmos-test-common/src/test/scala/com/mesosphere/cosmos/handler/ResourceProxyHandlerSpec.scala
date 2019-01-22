@@ -4,7 +4,7 @@ import com.mesosphere.Generators.Implicits._
 import com.mesosphere.cosmos.error.CosmosException
 import com.mesosphere.cosmos.error.GenericHttpError
 import com.mesosphere.cosmos.error.ResourceTooLarge
-import com.netaporter.uri.Uri
+import io.lemonlabs.uri.Uri
 import com.twitter.conversions.storage._
 import com.twitter.finagle.http.Response
 import com.twitter.util.Await

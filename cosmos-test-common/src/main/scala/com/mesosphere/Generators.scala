@@ -1,7 +1,7 @@
 package com.mesosphere
 
 import com.mesosphere.http.MediaType
-import com.netaporter.uri.Uri
+import io.lemonlabs.uri.Uri
 import io.circe.testing.instances._
 import java.nio.ByteBuffer
 import java.util.UUID

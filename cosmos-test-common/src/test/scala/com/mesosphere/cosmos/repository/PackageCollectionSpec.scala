@@ -7,7 +7,7 @@ import com.mesosphere.cosmos.repository.PackageCollection
 import com.mesosphere.http.OriginHostScheme
 import com.mesosphere.universe
 import com.mesosphere.universe.test.TestingPackages
-import com.netaporter.uri.Uri
+import io.lemonlabs.uri.Uri
 import com.twitter.util.Return
 import com.twitter.util.Throw
 import com.twitter.util.Try
