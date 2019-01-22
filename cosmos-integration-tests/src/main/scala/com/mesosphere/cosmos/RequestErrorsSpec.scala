@@ -6,7 +6,7 @@ import com.mesosphere.cosmos.rpc.MediaTypes
 import com.mesosphere.cosmos.rpc.v1.model.PackageRepositoryAddRequest
 import com.mesosphere.cosmos.test.CosmosIntegrationTestClient._
 import com.mesosphere.http.CompoundMediaTypeParser
-import com.netaporter.uri.dsl._
+import io.lemonlabs.uri.dsl._
 import com.twitter.finagle.http.Fields
 import com.twitter.finagle.http.Status
 import io.circe.Json

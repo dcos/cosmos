@@ -1,6 +1,6 @@
 package com.mesosphere.cosmos
 
-import com.netaporter.uri.dsl._
+import io.lemonlabs.uri.dsl._
 import com.twitter.conversions.storage._
 import com.twitter.finagle.http.RequestBuilder
 import com.twitter.finagle.http.Status

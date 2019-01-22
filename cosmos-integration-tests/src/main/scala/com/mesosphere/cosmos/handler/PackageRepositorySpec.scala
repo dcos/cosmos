@@ -20,8 +20,8 @@ import com.mesosphere.cosmos.rpc.v1.model.ErrorResponse
 import com.mesosphere.cosmos.rpc.v1.model.PackageRepository
 import com.mesosphere.universe.MediaTypes
 import com.mesosphere.universe.v2.model.UniverseVersion
-import com.netaporter.uri.Uri
-import com.netaporter.uri.dsl._
+import io.lemonlabs.uri.Uri
+import io.lemonlabs.uri.dsl._
 import com.twitter.bijection.Conversion.asMethod
 import com.twitter.finagle.http.Status
 import io.netty.handler.codec.http.HttpResponseStatus

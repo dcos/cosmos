@@ -58,10 +58,10 @@ final class PackageSearchSpec extends FreeSpec with IntegrationBeforeAndAfterAll
 
 private object PackageSearchSpec extends TableDrivenPropertyChecks {
 
-  val uri = TestContext.fromSystemProperties().uri
+  val uri = TestContext.fromSystemProperties().uri.toUrl
   val originInfo = OriginHostScheme(
-    s"${uri.host.get}:${uri.port.get}",
-    OriginHostScheme.Scheme(uri.scheme.get).get
+    s"${uri.hostOption.get}:${uri.port.get}",
+    OriginHostScheme.Scheme(uri.schemeOption.get).get
   )
 
   val ArangodbSearchResult = SearchResult(

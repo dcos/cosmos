@@ -15,7 +15,7 @@ import com.mesosphere.cosmos.test.CosmosIntegrationTestClient
 import com.mesosphere.cosmos.test.CosmosIntegrationTestClient.CosmosClient
 import com.mesosphere.cosmos.thirdparty.marathon.model.AppId
 import com.mesosphere.universe.v2.model.PackageDetailsVersion
-import com.netaporter.uri.dsl._
+import io.lemonlabs.uri.dsl._
 import com.twitter.finagle.http.Fields
 import com.twitter.finagle.http.Response
 import com.twitter.finagle.http.Status

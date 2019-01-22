@@ -8,7 +8,7 @@ import com.mesosphere.cosmos.http.CosmosRequests
 import com.mesosphere.cosmos.http.TestContext
 import com.mesosphere.cosmos.rpc
 import com.mesosphere.cosmos.test.CosmosIntegrationTestClient.CosmosClient
-import com.netaporter.uri.Uri
+import io.lemonlabs.uri.Uri
 import com.twitter.finagle.http.Fields
 import com.twitter.finagle.stats.NullStatsReceiver
 import com.twitter.finagle.stats.StatsReceiver
@@ -77,7 +77,7 @@ final class ResourceProxyHandlerIntegrationSpec extends FreeSpec
     }
     val numberOfBytesRead = Await.result(future)
     numberOfBytesRead should be > 0
-    val rawUrl = parsedUrl
+    val rawUrl = parsedUrl.toUrl
       .query
       .params
       .find(x => x._1.equals("url"))
