@@ -106,7 +106,7 @@ object Deps {
 
   // APLv2.0
   val scalaUri = Seq(
-    "com.netaporter" %% "scala-uri" % V.scalaUri
+    "io.lemonlabs" %% "scala-uri" % V.scalaUri
   )
 
   // APLv2.0
@@ -153,7 +153,7 @@ object V {
   val scalaCheck = "1.13.5"
   val scalaCheckShapeless = "1.1.8"
   val scalaTest = "3.0.5"
-  val scalaUri = "0.4.16"
+  val scalaUri = "1.4.0"
   val slf4j = "1.7.25"
   val twitterUtil = "18.3.0"
 }
