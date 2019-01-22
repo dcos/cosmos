@@ -12,7 +12,7 @@ import com.mesosphere.cosmos.model.ZooKeeperUri
 import com.mesosphere.cosmos.repository.DefaultRepositories._
 import com.mesosphere.cosmos.rpc.v1.model.PackageRepository
 import com.mesosphere.error.ResultOps
-import com.netaporter.uri.Uri
+import io.lemonlabs.uri.Uri
 import com.twitter.finagle.stats.Stat
 import com.twitter.finagle.stats.StatsReceiver
 import com.twitter.util.Timer

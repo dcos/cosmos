@@ -6,7 +6,7 @@ import com.mesosphere.cosmos.http.RequestSession
 import com.mesosphere.cosmos.repository.PackageCollection
 import com.mesosphere.cosmos.thirdparty.marathon.model.MarathonApp
 import com.mesosphere.universe
-import com.netaporter.uri.Uri
+import io.lemonlabs.uri.Uri
 import com.twitter.util.Future
 
 package object handler {

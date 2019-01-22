@@ -5,8 +5,8 @@ import com.mesosphere.cosmos.rpc.MediaTypes
 import com.mesosphere.cosmos.thirdparty.adminrouter.model.DcosVersion
 import com.mesosphere.cosmos.thirdparty.marathon.model.AppId
 import com.mesosphere.util
-import com.netaporter.uri.Uri
-import com.netaporter.uri.dsl._
+import io.lemonlabs.uri.Uri
+import io.lemonlabs.uri.dsl._
 import com.twitter.finagle.Service
 import com.twitter.finagle.http._
 import com.twitter.util.Await

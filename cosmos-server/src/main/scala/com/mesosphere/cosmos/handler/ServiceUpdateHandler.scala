@@ -14,7 +14,7 @@ import com.mesosphere.cosmos.thirdparty.marathon.model.AppId
 import com.mesosphere.cosmos.thirdparty.marathon.model.MarathonAppResponse
 import com.mesosphere.universe
 import com.mesosphere.universe.common.JsonUtil
-import com.netaporter.uri.Uri
+import io.lemonlabs.uri.Uri
 import com.twitter.util.Future
 import io.circe.JsonObject
 

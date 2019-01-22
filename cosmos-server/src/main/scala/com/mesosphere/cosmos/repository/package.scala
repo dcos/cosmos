@@ -1,7 +1,7 @@
 package com.mesosphere.cosmos
 
 import com.mesosphere.http.OriginHostScheme
-import com.netaporter.uri.Uri
+import io.lemonlabs.uri.Uri
 import scala.util.Failure
 import scala.util.Success
 import scala.util.Try

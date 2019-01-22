@@ -7,7 +7,7 @@ import com.mesosphere.cosmos.error.InvalidContentLengthLimit
 import com.mesosphere.cosmos.error.ResourceTooLarge
 import com.mesosphere.cosmos.http.RequestSession
 import com.mesosphere.cosmos.repository.PackageCollection
-import com.netaporter.uri.Uri
+import io.lemonlabs.uri.Uri
 import com.twitter.finagle.http.Fields
 import com.twitter.finagle.http.Response
 import com.twitter.finagle.http.Status
@@ -85,9 +85,9 @@ object ResourceProxyHandler {
   }
 
   def getFileNameFromUrl(url: Uri): Option[String] = {
-    url.pathParts match {
-      case _ :+ last if !last.part.isEmpty => Some(last.part)
-      case _ :+ secondLast :+ last if last.part.isEmpty => Some(secondLast.part)
+    url.path.parts match {
+      case _ :+ last if !last.isEmpty => Some(last)
+      case _ :+ secondLast :+ last if last.isEmpty => Some(secondLast)
       case _ => None
     }
   }

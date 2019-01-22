@@ -9,7 +9,7 @@ import com.mesosphere.cosmos.http.MediaTypes
 import com.mesosphere.cosmos.http.RequestSession
 import com.mesosphere.error.ResultOps
 import com.mesosphere.http.MediaType
-import com.netaporter.uri.Uri
+import io.lemonlabs.uri.Uri
 import com.twitter.finagle.http.Fields
 import com.twitter.finagle.http.Request
 import com.twitter.finagle.http.RequestBuilder

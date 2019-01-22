@@ -11,11 +11,13 @@ import com.mesosphere.cosmos.thirdparty.marathon.model.Deployment
 import com.mesosphere.cosmos.thirdparty.marathon.model.MarathonAppResponse
 import com.mesosphere.cosmos.thirdparty.marathon.model.MarathonAppsResponse
 import com.mesosphere.error.ResultOps
-import com.netaporter.uri.Uri
-import com.netaporter.uri.dsl._
+import io.lemonlabs.uri.Uri
+import io.lemonlabs.uri.dsl._
 import com.twitter.finagle.Service
 import com.twitter.finagle.http._
 import com.twitter.util.Future
+import io.lemonlabs.uri.QueryString
+import io.lemonlabs.uri.Url
 import io.netty.handler.codec.http.HttpResponseStatus
 import org.jboss.netty.handler.codec.http.HttpMethod
 
@@ -62,7 +64,7 @@ class MarathonClient(
   ): Future[Response] = {
     client(
       put(
-        "v2" / "apps" / appId.toUri ? ("force" -> "true"),
+        Url(path = "v2" / "apps" / appId.toUri,  query = QueryString.fromPairs("force" -> "true")),
         Json.fromJsonObject(appJson)
       )
     )
@@ -74,10 +76,8 @@ class MarathonClient(
     implicit session: RequestSession
   ): Future[Option[MarathonAppResponse]] = {
     getAppResponse(appId).map {
-      _ match {
-        case Some(response) => Some(decodeJsonTo[MarathonAppResponse](response))
-        case None => None
-      }
+      case Some(response) => Some(decodeJsonTo[MarathonAppResponse](response))
+      case None => None
     }
   }
 

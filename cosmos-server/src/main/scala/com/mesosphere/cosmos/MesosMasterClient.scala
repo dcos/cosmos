@@ -1,12 +1,13 @@
 package com.mesosphere.cosmos
 
 import com.mesosphere.cosmos.http.RequestSession
-import com.netaporter.uri.Uri
-import com.netaporter.uri.dsl._
+import io.lemonlabs.uri.Uri
+import io.lemonlabs.uri.dsl._
 import com.twitter.finagle.Service
 import com.twitter.finagle.http.Request
 import com.twitter.finagle.http.Response
 import com.twitter.util.Future
+import io.lemonlabs.uri.QueryString
 import org.jboss.netty.handler.codec.http.HttpMethod
 
 class MesosMasterClient(
@@ -19,7 +20,7 @@ class MesosMasterClient(
   )(
     implicit session: RequestSession
   ): Future[thirdparty.mesos.master.model.MesosFrameworkTearDownResponse] = {
-    val formData = Uri.empty.addParam("frameworkId", frameworkId)
+    val formData = QueryString.fromPairs("frameworkId" -> frameworkId).toString()
     /* scala-uri makes it convenient to encode the actual framework id, but it will think its for
      * a Uri so we strip the leading '?' that signifies the start of a query string
      */

@@ -1,6 +1,6 @@
 package com.mesosphere.cosmos
 
-import com.netaporter.uri.Uri
+import io.lemonlabs.uri.Uri
 import com.twitter.util.Try
 
 object Uris {
@@ -9,11 +9,11 @@ object Uris {
   private[this] val httpPort = 80
 
   def extractHostAndPort(uri: Uri): Try[ConnectionDetails] = Try {
-
-    (uri.scheme, uri.host, uri.port) match {
-      case (Some("https"), Some(h), p) => ConnectionDetails(h, p.getOrElse(httpsPort), tls = true)
-      case (Some("http"), Some(h), p) => ConnectionDetails(h, p.getOrElse(httpPort), tls = false)
-      case (_, _, _) => throw err(uri.toString)
+    val url = uri.toUrl
+    (url.schemeOption, url.hostOption, url.port) match {
+      case (Some("https"), Some(h), p) => ConnectionDetails(h.toString, p.getOrElse(httpsPort), tls = true)
+      case (Some("http"), Some(h), p) => ConnectionDetails(h.toString, p.getOrElse(httpPort))
+      case (_, _, _) => throw err(url.toString)
     }
   }
 

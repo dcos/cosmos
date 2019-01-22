@@ -2,7 +2,7 @@ package com.mesosphere.cosmos
 
 import com.mesosphere.cosmos.model.ZooKeeperUri
 import com.mesosphere.error.ResultOps
-import com.netaporter.uri.Uri
+import io.lemonlabs.uri.Uri
 import com.twitter.app.Flaggable
 import com.twitter.conversions.storage._
 import com.twitter.util.StorageUnit
