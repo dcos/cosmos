@@ -10,6 +10,7 @@ import com.mesosphere.cosmos.http.RequestSession
 import com.mesosphere.error.ResultOps
 import com.mesosphere.http.MediaType
 import io.lemonlabs.uri.Uri
+import io.lemonlabs.uri.dsl._
 import com.twitter.finagle.http.Fields
 import com.twitter.finagle.http.Request
 import com.twitter.finagle.http.RequestBuilder
@@ -105,7 +106,7 @@ abstract class ServiceClient(baseUri: Uri) {
     implicit session: RequestSession
   ): RequestBuilder[RequestBuilder.Valid, Nothing] = {
     RequestBuilder()
-      .url(s"$cleanedBaseUri${uri.toString}")
+      .url((cleanedBaseUri / uri).toStringRaw)
       .addHeader(Fields.UserAgent, s"cosmos/$cosmosVersion")
       .addHeaders(
         session

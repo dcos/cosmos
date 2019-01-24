@@ -112,9 +112,10 @@ class MarathonClient(
   ): Future[Response] = {
     val uriPath = "v2" / "apps" / appId.toUri
 
-    force match {
-      case true => client(delete(uriPath ? ("force" -> "true")))
-      case false => client(delete(uriPath))
+    if (force) {
+      client(delete(uriPath ? ("force" -> "true")))
+    } else {
+      client(delete(uriPath))
     }
   }
 
