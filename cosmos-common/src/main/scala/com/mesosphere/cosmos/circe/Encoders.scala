@@ -4,7 +4,7 @@ import cats.data.Ior
 import com.mesosphere.cosmos.error.CosmosException
 import com.mesosphere.cosmos.rpc
 import com.mesosphere.universe.common.ByteBuffers
-import com.netaporter.uri.Uri
+import io.lemonlabs.uri.Uri
 import com.twitter.finagle.http.Status
 import com.twitter.util.Duration
 import com.twitter.util.StorageUnit

@@ -8,7 +8,7 @@ import com.mesosphere.cosmos.error.UnsupportedContentEncoding
 import com.mesosphere.cosmos.error.UnsupportedRedirect
 import com.mesosphere.http.MediaType
 import com.mesosphere.http.MediaTypeParser
-import com.netaporter.uri.Uri
+import io.lemonlabs.uri.Uri
 import com.twitter.finagle.http.Fields
 import com.twitter.finagle.http.filter.LogFormatter
 import com.twitter.finagle.stats.StatsReceiver
@@ -73,7 +73,7 @@ object HttpClient {
   )(
     implicit statsReceiver: StatsReceiver
   ): Future[(ResponseData, HttpURLConnection)] = {
-    Future(uri.toURI.toURL.openConnection())
+    Future(uri.toJavaURI.toURL.openConnection())
       .handle {
         case t @ (_: IllegalArgumentException | _: MalformedURLException | _: URISyntaxException) =>
           throw CosmosException(EndpointUriSyntax(uri, t.getMessage), t)
@@ -133,8 +133,9 @@ object HttpClient {
       case status if RedirectStatuses(status) =>
         sr.scope("status").counter(status.toString).incr()
         // Different forms of redirect, HttpURLConnection won't follow a redirect across schemes
-        val loc = Option(conn.getHeaderField("Location")).map(Uri.parse).flatMap(_.scheme)
-        throw UnsupportedRedirect(List(uri.scheme.get), loc).exception
+
+        val loc = Option(conn.getHeaderField("Location")).map(Uri.parse).flatMap(_.schemeOption)
+        throw UnsupportedRedirect(List(uri.schemeOption.get), loc).exception
       case status =>
         sr.scope("status").counter(status.toString).incr()
         throw GenericHttpError(uri = uri, clientStatus = HttpResponseStatus.valueOf(status)).exception

@@ -1,6 +1,6 @@
 package com.mesosphere.cosmos
 
-import com.netaporter.uri.dsl._
+import io.lemonlabs.uri.dsl._
 import com.twitter.util.{Return, Throw}
 import org.scalatest.FreeSpec
 
@@ -37,12 +37,12 @@ class UrisSpec extends FreeSpec {
     "fail for" - {
       "domain" in {
         val Throw(err) = Uris.extractHostAndPort("domain")
-        val expectedMessage = "Unsupported or invalid URI. Expected format 'http[s]://example.com[:port][/base-path]' actual '/domain'"
+        val expectedMessage = "Unsupported or invalid URI. Expected format 'http[s]://example.com[:port][/base-path]' actual 'domain'"
         assertResult(expectedMessage)(err.getMessage)
       }
       "domain:8080" in {
         val Throw(err) = Uris.extractHostAndPort("domain:8080")
-        val expectedMessage = "Unsupported or invalid URI. Expected format 'http[s]://example.com[:port][/base-path]' actual '/domain:8080'"
+        val expectedMessage = "Unsupported or invalid URI. Expected format 'http[s]://example.com[:port][/base-path]' actual 'domain:8080'"
         assertResult(expectedMessage)(err.getMessage)
       }
       "ftp://domain" in {

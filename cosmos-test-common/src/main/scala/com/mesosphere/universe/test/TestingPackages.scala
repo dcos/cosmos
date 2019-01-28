@@ -1,7 +1,7 @@
 package com.mesosphere.universe.test
 
 import com.mesosphere.universe
-import com.netaporter.uri.Uri
+import io.lemonlabs.uri.Uri
 import io.circe.Json
 import io.circe.JsonObject
 import io.circe.syntax._

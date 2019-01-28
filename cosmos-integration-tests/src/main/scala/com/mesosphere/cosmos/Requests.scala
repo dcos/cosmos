@@ -11,7 +11,7 @@ import com.mesosphere.cosmos.thirdparty.marathon.model.AppId
 import com.mesosphere.cosmos.thirdparty.marathon.model.Deployment
 import com.mesosphere.cosmos.thirdparty.marathon.model.MarathonApp
 import com.mesosphere.universe
-import com.netaporter.uri.Uri
+import io.lemonlabs.uri.Uri
 import com.twitter.finagle.http.Response
 import com.twitter.util.Await
 import io.circe.Decoder

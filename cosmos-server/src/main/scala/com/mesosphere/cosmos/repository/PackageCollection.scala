@@ -8,7 +8,7 @@ import com.mesosphere.cosmos.http.RequestSession
 import com.mesosphere.cosmos.rpc
 import com.mesosphere.http.OriginHostScheme
 import com.mesosphere.universe
-import com.netaporter.uri.Uri
+import io.lemonlabs.uri.Uri
 import com.twitter.util.Future
 import com.twitter.util.Throw
 import java.util.concurrent.TimeUnit

@@ -7,8 +7,8 @@ import com.mesosphere.cosmos.error.UniverseClientHttpError
 import com.mesosphere.cosmos.rpc.v1.model.PackageRepository
 import com.mesosphere.cosmos.test.CosmosIntegrationTestClient
 import com.mesosphere.universe
-import com.netaporter.uri.Uri
-import com.netaporter.uri.dsl._
+import io.lemonlabs.uri.Uri
+import io.lemonlabs.uri.dsl._
 import com.twitter.util.Await
 import com.twitter.util.Throw
 import io.netty.handler.codec.http.HttpResponseStatus
@@ -31,7 +31,7 @@ final class UniverseClientSpec extends FreeSpec with Matchers {
       )
     }
 
-    val baseRepoUri: Uri = "https://downloads.mesosphere.com/universe/dce867e9af73b85172d5a36bf8114c69b3be024e"
+    val baseRepoUri = "https://downloads.mesosphere.com/universe/dce867e9af73b85172d5a36bf8114c69b3be024e"
 
     def repository(repoFilename: String): PackageRepository = {
       PackageRepository("repo", baseRepoUri / repoFilename)

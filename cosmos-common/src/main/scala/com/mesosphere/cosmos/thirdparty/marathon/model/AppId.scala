@@ -1,6 +1,6 @@
 package com.mesosphere.cosmos.thirdparty.marathon.model
 
-import com.netaporter.uri.Uri
+import io.lemonlabs.uri.Uri
 import io.circe.Decoder
 import io.circe.Encoder
 import io.circe.syntax._

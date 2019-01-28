@@ -3,7 +3,7 @@ package com.mesosphere.cosmos
 import com.mesosphere.cosmos.thirdparty.marathon.model.AppId
 import com.mesosphere.universe
 import com.mesosphere.util.RoundTrip
-import com.netaporter.uri.Uri
+import io.lemonlabs.uri.Uri
 import io.circe.JsonObject
 
 object RoundTrips {

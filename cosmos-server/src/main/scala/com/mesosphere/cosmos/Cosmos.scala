@@ -37,7 +37,7 @@ import com.mesosphere.cosmos.service.CustomPackageManagerRouter
 import com.mesosphere.cosmos.service.ServiceUninstaller
 import com.mesosphere.universe
 import com.mesosphere.util.UrlSchemeHeader
-import com.netaporter.uri.Uri
+import io.lemonlabs.uri.Uri
 import com.twitter.app.App
 import com.twitter.finagle.Http
 import com.twitter.finagle.ListeningServer
@@ -190,7 +190,7 @@ trait CosmosApp
   }
 
   private[this] def configureDcosClients(): Try[AdminRouter] = {
-    import com.netaporter.uri.dsl._
+    import io.lemonlabs.uri.dsl._
 
     Try(dcosUri())
       .map { dh =>

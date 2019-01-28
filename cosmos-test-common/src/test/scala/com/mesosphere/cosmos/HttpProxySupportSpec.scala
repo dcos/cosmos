@@ -2,7 +2,7 @@ package com.mesosphere.cosmos
 
 import com.mesosphere.cosmos.HttpProxySupport.CosmosHttpProxyPasswordAuthenticator
 import com.mesosphere.cosmos.HttpProxySupport.ProxyEnvVariables
-import com.netaporter.uri.dsl._
+import io.lemonlabs.uri.dsl._
 import java.net.Authenticator
 import java.net.Authenticator.RequestorType
 import java.net.URI

@@ -3,8 +3,8 @@ package com.mesosphere.cosmos
 import com.mesosphere.cosmos.error.CosmosException
 import com.mesosphere.cosmos.error.EndpointUriSyntax
 import com.mesosphere.universe
-import com.netaporter.uri.Uri
-import com.netaporter.uri.dsl._
+import io.lemonlabs.uri.Uri
+import io.lemonlabs.uri.dsl._
 import com.twitter.finagle.stats.NullStatsReceiver
 import com.twitter.finagle.stats.StatsReceiver
 import com.twitter.util.Await

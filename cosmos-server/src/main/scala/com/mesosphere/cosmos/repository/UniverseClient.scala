@@ -25,7 +25,7 @@ import com.mesosphere.http.MediaType
 import com.mesosphere.universe
 import com.mesosphere.universe.MediaTypes
 import com.mesosphere.universe.bijection.UniverseConversions._
-import com.netaporter.uri.Uri
+import io.lemonlabs.uri.Uri
 import com.twitter.bijection.Conversion.asMethod
 import com.twitter.finagle.http.Fields
 import com.twitter.finagle.stats.NullStatsReceiver

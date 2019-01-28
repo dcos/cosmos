@@ -24,7 +24,7 @@ private[cosmos] final class PackageRepositoryAddHandler(
     implicit session: RequestSession
   ): Future[rpc.v1.model.PackageRepositoryAddResponse] = {
     val repository = rpc.v1.model.PackageRepository(request.name, request.uri)
-    request.uri.scheme match {
+    request.uri.schemeOption match {
       case Some("http") | Some("https") =>
         checkThatRepoWorks(repository)
           .flatMap { _ =>

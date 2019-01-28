@@ -3,7 +3,7 @@ package com.mesosphere
 import com.mesosphere.cosmos.Flaggables._
 import com.mesosphere.cosmos.model.ZooKeeperUri
 import com.mesosphere.error.ResultOps
-import com.netaporter.uri.Uri
+import io.lemonlabs.uri.Uri
 import com.twitter.app.GlobalFlag
 import com.twitter.conversions.storage._
 import com.twitter.conversions.time._

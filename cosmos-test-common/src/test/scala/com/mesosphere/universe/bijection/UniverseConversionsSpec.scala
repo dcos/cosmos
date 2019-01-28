@@ -4,7 +4,7 @@ import com.mesosphere.universe
 import com.mesosphere.universe.bijection.TestUniverseConversions._
 import com.mesosphere.universe.bijection.UniverseConversions._
 import com.mesosphere.universe.test.TestingPackages._
-import com.netaporter.uri.Uri
+import io.lemonlabs.uri.Uri
 import com.twitter.bijection.Conversion.asMethod
 import com.twitter.bijection.Injection
 import org.scalatest.FreeSpec

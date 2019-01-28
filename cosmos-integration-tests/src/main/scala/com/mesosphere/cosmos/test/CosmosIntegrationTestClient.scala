@@ -11,8 +11,8 @@ import com.mesosphere.cosmos.dcosUri
 import com.mesosphere.cosmos.http.HttpRequest
 import com.mesosphere.cosmos.http.RequestSession
 import com.mesosphere.cosmos.http.TestContext
-import com.netaporter.uri.Uri
-import com.netaporter.uri.dsl._
+import io.lemonlabs.uri.Uri
+import io.lemonlabs.uri.dsl._
 import com.twitter.conversions.storage._
 import com.twitter.finagle.Service
 import com.twitter.finagle.SimpleFilter

@@ -2,7 +2,7 @@ package com.mesosphere.cosmos.repository
 
 import cats.data.Ior
 import com.mesosphere.cosmos.rpc.v1.model.PackageRepository
-import com.netaporter.uri.Uri
+import io.lemonlabs.uri.Uri
 import com.twitter.util.Future
 
 private[cosmos] trait PackageSourcesStorage {

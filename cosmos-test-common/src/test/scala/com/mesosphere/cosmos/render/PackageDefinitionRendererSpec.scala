@@ -15,7 +15,7 @@ import com.mesosphere.error.ResultOps
 import com.mesosphere.universe
 import com.mesosphere.universe.test.TestingPackages
 import com.mesosphere.universe.v3.model._
-import com.netaporter.uri.dsl._
+import io.lemonlabs.uri.dsl._
 import io.circe.Json
 import io.circe.JsonObject
 import io.circe.syntax._

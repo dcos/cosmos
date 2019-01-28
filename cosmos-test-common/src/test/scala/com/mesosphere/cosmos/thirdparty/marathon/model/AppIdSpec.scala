@@ -1,6 +1,6 @@
 package com.mesosphere.cosmos.thirdparty.marathon.model
 
-import com.netaporter.uri.dsl._
+import io.lemonlabs.uri.dsl._
 import org.scalatest.FreeSpec
 
 final class AppIdSpec extends FreeSpec {
@@ -32,10 +32,10 @@ final class AppIdSpec extends FreeSpec {
 
     "generate uri" - {
       "absolute" in {
-        assertResult("cassandra" / "dcos")(AppId(absolute).toUri)
+        assertResult("/cassandra" / "dcos")(AppId(absolute).toUri)
       }
       "relative" in {
-        assertResult("cassandra" / "dcos")(AppId(relative).toUri)
+        assertResult("/cassandra" / "dcos")(AppId(relative).toUri)
       }
     }
   }

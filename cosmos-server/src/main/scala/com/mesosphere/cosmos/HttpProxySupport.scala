@@ -1,6 +1,6 @@
 package com.mesosphere.cosmos
 
-import com.netaporter.uri.Uri
+import io.lemonlabs.uri.Uri
 import java.net.Authenticator.RequestorType
 import java.net.Authenticator
 import java.net.PasswordAuthentication
@@ -172,8 +172,8 @@ private[cosmos] object HttpProxySupport {
           case _ => None
         }
 
-        val passAuth = uriOpt.flatMap {
-          case Uri(_, Some(user), Some(pass), _, _, _, _, _) =>
+        val passAuth = uriOpt.map(_.toUrl).map(url => (url.user, url.password)).flatMap {
+          case (Some(user), Some(pass)) =>
             Some(new PasswordAuthentication(user, pass.toCharArray))
           case _ => None
         }

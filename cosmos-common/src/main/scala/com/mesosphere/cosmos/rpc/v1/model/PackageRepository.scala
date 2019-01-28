@@ -5,7 +5,7 @@ import com.mesosphere.cosmos.finch.MediaTypedEncoder
 import com.mesosphere.cosmos.http.MediaTypes
 import com.mesosphere.cosmos.circe.Decoders._
 import com.mesosphere.cosmos.circe.Encoders._
-import com.netaporter.uri.Uri
+import io.lemonlabs.uri.Uri
 import io.circe.Decoder
 import io.circe.Encoder
 import io.circe.generic.semiauto._

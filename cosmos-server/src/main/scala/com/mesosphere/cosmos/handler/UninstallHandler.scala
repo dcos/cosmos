@@ -116,7 +116,7 @@ private[cosmos] final class UninstallHandler(
   )(
     implicit session: RequestSession
   ): Future[UninstallDetails] = {
-    destroyMarathonApp(op.appId)(session = session) flatMap { _ =>
+    destroyMarathonApp(op.appId) flatMap { _ =>
       op.frameworkName match {
         case Some(fwName) =>
           lookupFrameworkIds(fwName).flatMap {
@@ -216,7 +216,10 @@ private[cosmos] final class UninstallHandler(
     adminRouter.deleteApp(appId, force = true).map { resp =>
       resp.status match {
         case Status.Ok => MarathonAppDeleteSuccess()
-        case _ => throw MarathonAppDeleteError(appId).exception
+        case _ => {
+          logger.info(s"Marathon responded with error : [${resp.status}], ${resp.contentString}")
+          throw MarathonAppDeleteError(appId).exception
+        }
       }
     }
   }
