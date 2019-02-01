@@ -11,6 +11,8 @@ import com.mesosphere.util.UrlSchemeHeader
 import io.lemonlabs.uri.Uri
 import com.twitter.finagle.http.Fields
 import io.finch._
+import io.lemonlabs.uri.config.UriConfig
+import io.lemonlabs.uri.decoding.NoopDecoder
 import shapeless.::
 import shapeless.HNil
 
@@ -87,6 +89,9 @@ object RequestValidators {
   }
 
   val proxyValidator: Endpoint[(Uri, RequestSession)] = {
+    // Use NoopDecoder to ensure we do not unintentionally decode characters in the URL.
+    // This always works because the string is expected to be a valid URL.
+    implicit val uriConfig: UriConfig = UriConfig(decoder = NoopDecoder)
     val validators = param[String]("url").map(Uri.parse) ::
       headerOption[String](Fields.Authorization).map(_.map(Authorization)) ::
       header[String](Fields.Host) ::
