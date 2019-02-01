@@ -51,7 +51,7 @@ final class ResourceProxyHandlerIntegrationSpec extends FreeSpec
           images.iconMedium.map(assertURLDownload)
           images.iconLarge.map(assertURLDownload)
           val screens = images.screenshots
-          if(screens.isDefined && !screens.isEmpty) {
+          if(screens.isDefined) {
             assertURLDownload(screens.get.head)
           }
         }
