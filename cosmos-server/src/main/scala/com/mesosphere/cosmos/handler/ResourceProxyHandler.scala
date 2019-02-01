@@ -69,7 +69,7 @@ final class ResourceProxyHandler private(
 object ResourceProxyHandler {
 
   def apply(
-    packageCollection: PackageCollection,
+    packageCollection: PackageCollection
   )(implicit statsReceiver: StatsReceiver): ResourceProxyHandler = {
     implicit val handlerScope = statsReceiver.scope("resourceProxyHandler")
     new ResourceProxyHandler(packageCollection)(handlerScope)
