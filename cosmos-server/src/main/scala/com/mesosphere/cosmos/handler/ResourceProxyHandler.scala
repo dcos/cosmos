@@ -3,8 +3,6 @@ package com.mesosphere.cosmos.handler
 import com.mesosphere.cosmos.HttpClient
 import com.mesosphere.cosmos.error.Forbidden
 import com.mesosphere.cosmos.error.GenericHttpError
-import com.mesosphere.cosmos.error.InvalidContentLengthLimit
-import com.mesosphere.cosmos.error.ResourceTooLarge
 import com.mesosphere.cosmos.http.RequestSession
 import com.mesosphere.cosmos.repository.PackageCollection
 import io.lemonlabs.uri.Uri
@@ -14,15 +12,13 @@ import com.twitter.finagle.http.Status
 import com.twitter.finagle.stats.StatsReceiver
 import com.twitter.io.Reader
 import com.twitter.util.Future
-import com.twitter.util.StorageUnit
 import io.finch.Output
 import io.netty.handler.codec.http.HttpResponseStatus
 import java.io.InputStream
 import java.net.HttpURLConnection
 
 final class ResourceProxyHandler private(
-  packageCollection: PackageCollection,
-  contentLengthLimit: StorageUnit
+  packageCollection: PackageCollection
 )(implicit statsReceiver: StatsReceiver) {
 
   import ResourceProxyHandler._
@@ -52,7 +48,7 @@ final class ResourceProxyHandler private(
         .fetchStream(
           uri
         ) { (responseData, conn) =>
-          validateContentLength(uri, responseData.contentLength, contentLengthLimit)
+          validateContentLength(uri, responseData.contentLength)
           val response = Response(
             com.twitter.finagle.http.Version.Http11,
             Status.Ok,
@@ -73,15 +69,10 @@ final class ResourceProxyHandler private(
 object ResourceProxyHandler {
 
   def apply(
-    packageCollection: PackageCollection,
-    contentLengthLimit: StorageUnit
+    packageCollection: PackageCollection
   )(implicit statsReceiver: StatsReceiver): ResourceProxyHandler = {
-    if (contentLengthLimit.bytes <= 0) {
-      throw InvalidContentLengthLimit(contentLengthLimit).exception
-    }
-
     implicit val handlerScope = statsReceiver.scope("resourceProxyHandler")
-    new ResourceProxyHandler(packageCollection, contentLengthLimit)(handlerScope)
+    new ResourceProxyHandler(packageCollection)(handlerScope)
   }
 
   def getFileNameFromUrl(url: Uri): Option[String] = {
@@ -94,14 +85,11 @@ object ResourceProxyHandler {
 
   def validateContentLength(
     uri: Uri,
-    contentLength: Option[Long],
-    contentLengthLimit: StorageUnit
+    contentLength: Option[Long]
   ): Unit = {
     contentLength match {
       case Some(length) =>
         length match {
-          case l if l >= contentLengthLimit.bytes =>
-            throw ResourceTooLarge(contentLength, contentLengthLimit.bytes).exception
           case l if l <= 0 =>
             throw GenericHttpError(uri = uri, clientStatus = HttpResponseStatus.BAD_GATEWAY).exception
           case _ => ()

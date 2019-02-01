@@ -3,66 +3,38 @@ package com.mesosphere.cosmos.handler
 import com.mesosphere.Generators.Implicits._
 import com.mesosphere.cosmos.error.CosmosException
 import com.mesosphere.cosmos.error.GenericHttpError
-import com.mesosphere.cosmos.error.ResourceTooLarge
 import io.lemonlabs.uri.Uri
-import com.twitter.conversions.storage._
-import com.twitter.finagle.http.Response
-import com.twitter.util.Await
-import com.twitter.util.Future
-import com.twitter.util.StorageUnit
-import io.finch.Output
-import io.netty.handler.codec.http.HttpResponseStatus
 import org.scalacheck.Arbitrary.arbitrary
 import org.scalacheck.Gen
-import org.scalatest.Assertion
 import org.scalatest.FreeSpec
 import org.scalatest.Matchers
 import org.scalatest.prop.PropertyChecks
 
 final class ResourceProxyHandlerSpec extends FreeSpec with PropertyChecks with Matchers {
 
-  type TestData = (StorageUnit, Long, Uri)
+  type TestData = (Long, Uri)
 
   "When Content-Length is provided by the upstream server" - {
 
     "When Content-Length matches the actual content stream length" - {
-
-      val maxLengthLimit = 100
+      // scalastyle:off magic.number
       val genTestData: Gen[TestData] = for {
-        lengthLimit <- Gen.chooseNum(2, maxLengthLimit)
-        actualLength <- Gen.chooseNum(1, lengthLimit - 1)
+        actualLength <- Gen.chooseNum(2, 10)
         uri <- arbitrary[Uri]
       } yield {
-        (lengthLimit.bytes, actualLength.toLong, uri)
+        (actualLength.toLong, uri)
       }
 
       "Succeeds if Content-Length is below the limit" in {
-        forAll(genTestData) { case (lengthLimit, actualLength, uri) =>
-          ResourceProxyHandler.validateContentLength(uri, Some(actualLength), lengthLimit)
+        forAll(genTestData) { case (actualLength, uri) =>
+          ResourceProxyHandler.validateContentLength(uri, Some(actualLength))
         }
       }
 
-      "Fails if Content-Length is" - {
-
-        "at the limit" in {
-          forAll (genTestData) { case (lengthLimit, _, uri) =>
-            val exception = intercept[CosmosException](ResourceProxyHandler.validateContentLength(uri, Some(lengthLimit.bytes), lengthLimit))
-            assert(exception.error.isInstanceOf[ResourceTooLarge])
-          }
-        }
-
-        "is above the limit" in {
-          forAll (genTestData) { case (lengthLimit, _, uri) =>
-            val exception = intercept[CosmosException](ResourceProxyHandler.validateContentLength(uri, Some(lengthLimit.bytes + 1), lengthLimit))
-            assert(exception.error.isInstanceOf[ResourceTooLarge])
-          }
-        }
-
-        "is zero" in {
-          forAll (genTestData) { case (lengthLimit, _, uri) =>
-            val exception = intercept[CosmosException](ResourceProxyHandler.validateContentLength(uri, Some(0), lengthLimit))
-            assert(exception.error.isInstanceOf[GenericHttpError])
-          }
+      "Fails if Content-Length is zero" in {
+        forAll (genTestData) { case (_, uri) =>
+          val exception = intercept[CosmosException](ResourceProxyHandler.validateContentLength(uri, Some(0)))
+          assert(exception.error.isInstanceOf[GenericHttpError])
         }
       }
     }
@@ -70,7 +42,7 @@ final class ResourceProxyHandlerSpec extends FreeSpec with PropertyChecks with M
   }
 
   "Fails when Content-Length is not provided by the upstream server" in {
-    val exception = intercept[CosmosException](ResourceProxyHandler.validateContentLength(Uri.parse("/random"), None, 1.bytes))
+    val exception = intercept[CosmosException](ResourceProxyHandler.validateContentLength(Uri.parse("/random"), None))
     assert(exception.error.isInstanceOf[GenericHttpError])
   }
 
@@ -102,11 +74,5 @@ final class ResourceProxyHandlerSpec extends FreeSpec with PropertyChecks with M
       Uri.parse("https://doesntreallymatter.com")
     ) shouldEqual None
 
-  }
-
-  def assertFailure(output: Future[Output[Response]]): Assertion = {
-    val exception = intercept[CosmosException](Await.result(output))
-    assertResult(HttpResponseStatus.FORBIDDEN)(exception.error.status)
-    assert(exception.error.isInstanceOf[ResourceTooLarge])
   }
 }

@@ -119,7 +119,7 @@ trait CosmosApp
       packageRepositoryAdd = new PackageRepositoryAddHandler(sourcesStorage, universeClient, repositories),
       packageRepositoryDelete = new PackageRepositoryDeleteHandler(sourcesStorage, repositories),
       packageRepositoryList = new PackageRepositoryListHandler(sourcesStorage),
-      packageResource = ResourceProxyHandler(repositories, proxyContentLimit()),
+      packageResource = ResourceProxyHandler(repositories),
       packageSearch = new PackageSearchHandler(repositories),
       packageUninstall = new UninstallHandler(adminRouter, repositories, marathonSdkJanitor, customPackageManagerRouter),
       serviceDescribe = new ServiceDescribeHandler(adminRouter, repositories, customPackageManagerRouter),

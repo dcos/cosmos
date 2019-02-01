@@ -128,11 +128,6 @@ package cosmos {
     "Maximum size for the response for requests initiated by Cosmos in Megabytes"
   )
 
-  object proxyContentLimit extends GlobalFlag[StorageUnit](
-    100.megabytes,
-    "Maximum size for the proxy endpoint service while fetching a resource"
-  )
-
   object retryDuration extends GlobalFlag[Duration](
     5.seconds,
     "Duration for retrying a failed upstream (HTTP) request"
