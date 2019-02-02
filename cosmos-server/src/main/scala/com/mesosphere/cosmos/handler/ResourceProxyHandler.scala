@@ -40,7 +40,18 @@ final class ResourceProxyHandler private(
     implicit val session = data._2
 
     packageCollection.allUrls().map { urls =>
-      if (!urls.contains(uri.toString)) {
+      /*
+       * [DCOS-45428] We verify with both toString and toStringRaw method because:
+       * 1. toString matches cases where the url was received with some URL encoded parameters (e.g.: %2B)
+       *    and we need to use those characters as-is without performing any URL decoding.
+       *    e.g.: https://<>/master%2Bdcos-ui-v2.37.0.tar.gz is Valid but
+       *          https://<>/master+dcos-ui-v2.37.0.tar.gz is not a valid URL (Enforced by S3).
+       *          So we need to retain that + is used as `%2B` and SHOULD NOT be decoded as `+`.
+       * 2. toStringRaw matches the case where we need to perform proper URL decoding.
+       *    e.g.: http://<>/sha256%3A5d591076/somefile.txt is valid URL that can be decoded as
+       *          http://<>/sha256:5d591076/somefile.txt.
+       */
+      if (!urls.contains(uri.toString) && !urls.contains(uri.toStringRaw)) {
         throw Forbidden(ResourceProxyHandler.getClass.getSimpleName, Some(uri.toString)).exception
       }
     }.flatMap { _ =>
