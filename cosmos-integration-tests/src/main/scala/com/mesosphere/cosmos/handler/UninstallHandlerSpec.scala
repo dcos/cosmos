@@ -48,6 +48,11 @@ final class UninstallHandlerSpec extends FreeSpec with Eventually with SpanSugar
     }
 
     "be able to install and uninstall a service with a custom manager" in {
+      Requests.waitForDeployments()
+      assume(
+        Requests.isMarathonAppInstalled(AppId(ItObjects.customManagerAppName)),
+        s"Custom manager ${ItObjects.customManagerAppName} is not installed."
+      )
       val appId = AppId(testPackageName / "custom-manager-uninstall-test")
       val _ = Requests.installV2(testPackageName, appId = Some(appId), managerId=Some(ItObjects.customManagerAppName))
       val marathonApp = Await.result(adminRouter.getApp(appId))
