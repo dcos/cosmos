@@ -8,6 +8,7 @@ import com.mesosphere.error.ResultOps
 import com.mesosphere.universe
 import io.lemonlabs.uri.Uri
 import io.circe.Decoder
+import io.circe.Json
 import io.circe.JsonObject
 import io.circe.generic.semiauto._
 import scala.util.Try
@@ -20,7 +21,7 @@ import scala.util.Try
  */
 case class MarathonApp(
   id: AppId,
-  env: Option[Map[String, String]],
+  env: Option[Map[String, Json]],
   labels: Option[Map[String, String]]
 )
 
@@ -38,7 +39,7 @@ object MarathonApp {
 
     def getLabel(key: String):Option[String] = app.labels.flatMap(_.get(key))
 
-    def getEnv(key: String):Option[String] = app.env.flatMap(_.get(key))
+    def getEnv(key: String):Option[String] = app.env.flatMap(_.get(key)).flatMap(_.asString)
 
     def packageName: Option[String] = getLabel(MarathonApp.nameLabel)
 
