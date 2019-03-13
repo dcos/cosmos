@@ -1,5 +1,6 @@
 package com.mesosphere.cosmos.repository
 
+import com.mesosphere.cosmos.HttpClient
 import com.mesosphere.cosmos.error.CosmosException
 import com.mesosphere.cosmos.error.RepositoryUriConnection
 import com.mesosphere.cosmos.error.RepositoryUriSyntax
@@ -14,6 +15,7 @@ import com.twitter.util.Throw
 import io.netty.handler.codec.http.HttpResponseStatus
 import java.io.IOException
 import java.net.MalformedURLException
+import java.net.UnknownHostException
 import org.scalatest.FreeSpec
 import org.scalatest.Matchers
 
@@ -127,6 +129,26 @@ final class UniverseClientSpec extends FreeSpec with Matchers {
       assertResult(expectedPkgRepo)(actualPkgRepo)
       assertResult(HttpResponseStatus.FORBIDDEN)(clientStatus)
       assertResult(HttpResponseStatus.INTERNAL_SERVER_ERROR)(status)
+    }
+
+    "should retry before failing to fetch a bad host" in {
+      val version = universe.v3.model.DcosReleaseVersionParser.parseUnsafe("0.0")
+      val repoUri = "https://something-that-is-never.valid" / "doesnotexist.json"
+      val expectedPkgRepo = PackageRepository("badRepo", repoUri)
+      val result = universeClient(expectedPkgRepo, version).liftToTry
+      assertThrows[com.twitter.util.TimeoutException](
+        Await.result(
+          result,
+          // We verify the future is retrying by ensuring it is not complete before retry duration
+          HttpClient.RETRY_INTERVAL * (HttpClient.DEFAULT_RETRIES - 1).toLong
+        )
+      )
+      val Throw(ex) = Await.result(result)
+      assert(ex.isInstanceOf[CosmosException])
+      val cosmosException = ex.asInstanceOf[CosmosException]
+      assert(cosmosException.error.isInstanceOf[RepositoryUriConnection])
+      cosmosException.causedBy shouldBe defined
+      assert(cosmosException.causedBy.get.isInstanceOf[UnknownHostException])
     }
 
   }
