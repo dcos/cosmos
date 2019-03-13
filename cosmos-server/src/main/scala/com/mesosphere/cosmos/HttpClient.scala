@@ -15,7 +15,6 @@ import com.twitter.finagle.stats.StatsReceiver
 import com.twitter.util.Future
 import io.netty.handler.codec.http.HttpResponseStatus
 import java.io.IOException
-import java.io.IOException
 import java.io.InputStream
 import java.net.HttpURLConnection
 import java.net.MalformedURLException
