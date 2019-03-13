@@ -5,6 +5,11 @@ import sbt._
 object Deps {
 
   // APLv2.0
+  val apacheCommons = Seq(
+    "commons-codec" % "commons-codec" % "1.11"
+  )
+
+  // APLv2.0
   val bijection = Seq(
     "com.twitter" %% "bijection-core" % V.bijection
   )
@@ -37,6 +42,16 @@ object Deps {
     ExclusionRule("javax.jms", "jms"),
     ExclusionRule("jline", "jline")
   ))
+
+  // APLv2.0
+  val metrics = Seq(
+    "io.dropwizard.metrics" % "metrics-core" % V.metrics
+  )
+
+  // APLv2.0
+  val metricsStatsD = Seq(
+    "com.readytalk" % "metrics3-statsd" % V.metricsStatsD
+  )
 
   // MIT
   val fastparse = Seq(
@@ -129,11 +144,6 @@ object Deps {
     "com.twitter.common" % "quantity" % "0.0.100"
   )
 
-  // APLv2.0
-  val apacheCommons = Seq(
-    "commons-codec" % "commons-codec" % "1.11"
-  )
-
 }
 
 object V {
@@ -148,6 +158,8 @@ object V {
   val guava = "24.1-jre"
   val jsonSchema = "2.2.6"
   val logback = "1.2.3"
+  val metrics = "4.0.5"
+  val metricsStatsD = "4.2.0"
   val mockito = "2.16.0"
   val mustache = "0.9.5"
   val scalaCheck = "1.13.5"
