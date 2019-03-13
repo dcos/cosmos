@@ -1,6 +1,9 @@
+import sbt.Resolver
+
 resolvers ++= Seq(
   Resolver.sbtPluginRepo("releases"),
-  Resolver.sonatypeRepo("snapshots")
+  Resolver.sonatypeRepo("snapshots"),
+  Resolver.bintrayRepo("readytalk", "maven")
 )
 
 addSbtPlugin("net.virtual-void" % "sbt-dependency-graph" % "0.8.1")
