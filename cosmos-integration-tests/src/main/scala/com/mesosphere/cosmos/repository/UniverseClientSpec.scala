@@ -100,19 +100,6 @@ final class UniverseClientSpec extends FreeSpec with Matchers {
         val repo = Await.result(universeClient(repository("repo-empty-v3.json"), version))
         assert(repo.packages.isEmpty)
       }
-
-      "1.6.1 zip" in {
-        val version = universe.v3.model.DcosReleaseVersionParser.parseUnsafe("1.6.1")
-        val repo = Await.result(universeClient(repository("repo-up-to-1.6.1.zip"), version))
-        assert(repo.packages.nonEmpty)
-      }
-
-      "1.7 zip" in {
-        val version = universe.v3.model.DcosReleaseVersionParser.parseUnsafe("1.7")
-        val repo = Await.result(universeClient(repository("repo-up-to-1.7.zip"), version))
-        assert(repo.packages.nonEmpty)
-      }
-
     }
 
     "should fail to fetch a nonexistent repo file" in {
