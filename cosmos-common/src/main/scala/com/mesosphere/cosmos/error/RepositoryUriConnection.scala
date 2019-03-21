@@ -11,7 +11,7 @@ final case class RepositoryUriConnection(
 ) extends CosmosError {
   override def data: Option[JsonObject] = CosmosError.deriveData(this)
   override def message: String = {
-    s"Could not access data at URI for repository [${repository.name}]: ${repository.uri}"
+    s"Could not access data at URI for repository [${repository.name}]: ${repository.uri}. Error: $cause"
   }
 }
 
