@@ -22,17 +22,6 @@ object JsonUtil {
    *       field and value from `fragment`.
    */
   def merge(target: JsonObject, fragment: JsonObject): JsonObject = {
-    fragment.toList.foldLeft(target) { (updatedTarget, fragmentEntry) =>
-      val (fragmentKey, fragmentValue) = fragmentEntry
-      val targetValueOpt = updatedTarget(fragmentKey)
-
-      val mergedValue = (targetValueOpt.flatMap(_.asObject), fragmentValue.asObject) match {
-        case (Some(targetObject), Some(fragmentObject)) =>
-          Json.fromJsonObject(merge(targetObject, fragmentObject))
-        case _ => fragmentValue
-      }
-
-      updatedTarget.add(fragmentKey, mergedValue)
-    }
+    Json.fromJsonObject(target).deepMerge(Json.fromJsonObject(fragment)).asObject.get
   }
 }
