@@ -186,7 +186,7 @@ final class UninstallHandlerSpec extends FreeSpec with Eventually with SpanSugar
   }
 
   def waitUntilDeployed(appId: AppId, clue: Any): Assertion = {
-    eventually(timeout(2.minutes), interval(10.seconds)) {
+    eventually(timeout(5.minutes), interval(10.seconds)) {
       // TODO Get the CommonsVersionLabel ("v1") from the Marathon app, instead of hardcoding
       val version = Await.result(adminRouter.getApp(appId).map(_.app.getLabel(UninstallHandler.SdkVersionLabel).getOrElse("v1")))
       val statusFuture = adminRouter.getSdkServicePlanStatus(appId, version, "deploy")
@@ -206,7 +206,7 @@ final class UninstallHandlerSpec extends FreeSpec with Eventually with SpanSugar
   }
 
   def waitUntilDeleted(appId: AppId, clue: Any): Assertion = {
-    eventually(timeout(2.minutes), interval(10.seconds)) {
+    eventually(timeout(5.minutes), interval(10.seconds)) {
       val exception = intercept[CosmosException](Await.result(adminRouter.getApp(appId)))
 
       assert(exception.error.isInstanceOf[MarathonAppNotFound], clue)
