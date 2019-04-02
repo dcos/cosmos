@@ -64,7 +64,7 @@ class MarathonClient(
   ): Future[Response] = {
     client(
       put(
-        Url(path = "v2" / "apps" / appId.toUri,  query = QueryString.fromPairs("force" -> "true")),
+        Url(path = "v2" / "apps" / appId.toUri,  query = QueryString.fromPairs("force" -> "true", "partialUpdate" -> "false")),
         Json.fromJsonObject(appJson)
       )
     )
