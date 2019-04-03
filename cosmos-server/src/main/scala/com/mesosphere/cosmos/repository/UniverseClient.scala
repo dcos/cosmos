@@ -26,7 +26,6 @@ import com.twitter.finagle.stats.StatsReceiver
 import com.twitter.util.Future
 import com.twitter.util.Return
 import com.twitter.util.Throw
-import io.lemonlabs.uri.Uri
 import io.netty.handler.codec.http.HttpResponseStatus
 import java.io.InputStream
 import org.jboss.netty.handler.codec.http.HttpMethod
@@ -96,8 +95,7 @@ final class DefaultUniverseClient(
         ) { responseData =>
           decodeAndSortUniverse(
             responseData.contentType,
-            responseData.contentStream,
-            repository.uri
+            responseData.contentStream
           )
         }(fetchScope)
         .handle { case cosmosException: CosmosException =>
@@ -125,8 +123,7 @@ final class DefaultUniverseClient(
 
   private[this] def decodeAndSortUniverse(
     contentType: MediaType,
-    bodyInputStream: InputStream,
-    repositoryUri: Uri
+    bodyInputStream: InputStream
   ): universe.v4.model.Repository = {
 
     def processAsV4Repository(version : String) : universe.v4.model.Repository = {

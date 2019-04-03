@@ -5,7 +5,6 @@ import com.mesosphere.cosmos.HttpErrorResponse
 import com.mesosphere.cosmos.ItOps._
 import com.mesosphere.cosmos.Requests
 import com.mesosphere.cosmos.RoundTrips
-import com.mesosphere.cosmos.error.IndexNotFound
 import com.mesosphere.cosmos.error.RepoNameOrUriMissing
 import com.mesosphere.cosmos.error.RepositoryAddIndexOutOfBounds
 import com.mesosphere.cosmos.error.RepositoryAlreadyPresent
@@ -115,18 +114,6 @@ class PackageRepositorySpec extends FeatureSpec with Matchers {
       ).as[ErrorResponse]
       val error = intercept[HttpErrorResponse] {
         RoundTrips.withRepository(repo.name, repo.uri).run()
-      }
-      error.status shouldBe Status.BadRequest
-      error.errorResponse shouldBe expectedError
-    }
-    scenario("Issue #219: the user should receive an error when trying to add a repository " +
-      "with a bad file layout") {
-      // TODO: Use a more reliable URI
-      val name = "invalid"
-      val uri: Uri = "https://github.com/mesosphere/dcos-cli/archive/master.zip"
-      val expectedError = IndexNotFound(uri).as[ErrorResponse]
-      val error = intercept[HttpErrorResponse] {
-        RoundTrips.withRepository(name, uri).run()
       }
       error.status shouldBe Status.BadRequest
       error.errorResponse shouldBe expectedError
