@@ -28,77 +28,66 @@ import org.scalatest.Matchers
 
 class PackageRepositorySpec extends FeatureSpec with Matchers {
 
+  val repoName = "cassandra-113"
+  val mutableUrl: Uri = "http://downloads.mesosphere.com/universe/repo/1.13/package/cassandra.json"
+
   feature("The package/repository/list endpoint") {
     scenario("The user should be able to list added repositories") {
-      val name = "cassandra-113"
-      val uri: Uri = "http://downloads.mesosphere.com/universe/repo/1.13/package/cassandra.json"
-      RoundTrips.withRepository(name, uri).runWith { _ =>
+      RoundTrips.withRepository(repoName, mutableUrl).runWith { _ =>
         Requests.listRepositories() should contain(
-          rpc.v1.model.PackageRepository(name, uri)
+          rpc.v1.model.PackageRepository(repoName, mutableUrl)
         )
       }
     }
     scenario("The user should not see removed repositories") {
-      val name = "cassandra-113"
-      val uri: Uri = "http://downloads.mesosphere.com/universe/repo/1.13/package/cassandra.json"
-      (RoundTrips.withRepository(name, uri) &:
-        RoundTrips.withDeletedRepository(Some(name), Some(uri))).runWith { _ =>
+      (RoundTrips.withRepository(repoName, mutableUrl) &:
+        RoundTrips.withDeletedRepository(Some(repoName), Some(mutableUrl))).runWith { _ =>
         Requests.listRepositories() should not contain
-          rpc.v1.model.PackageRepository(name, uri)
+          rpc.v1.model.PackageRepository(repoName, mutableUrl)
       }
     }
   }
 
   feature("The package/repository/add endpoint") {
     scenario("the user would like to add a repository at the default priority (lowest priority)") {
-      val name = "cassandra-113"
-      val uri: Uri = "http://downloads.mesosphere.com/universe/repo/1.13/package/cassandra.json"
-      RoundTrips.withRepository(name, uri).runWith { response =>
+      RoundTrips.withRepository(repoName, mutableUrl).runWith { response =>
         val last = response.repositories.last
-        last.name shouldBe name
-        last.uri shouldBe uri
+        last.name shouldBe repoName
+        last.uri shouldBe mutableUrl
       }
     }
     scenario("the user would like to add a repository at a specific priority") {
-      val name = "cassandra-113"
-      val uri: Uri = "http://downloads.mesosphere.com/universe/repo/1.13/package/cassandra.json"
       val index = 0
-      RoundTrips.withRepository(name, uri, Some(index)).runWith { response =>
+      RoundTrips.withRepository(repoName, mutableUrl, Some(index)).runWith { response =>
         val actual = response.repositories(index)
-        actual.name shouldBe name
-        actual.uri shouldBe uri
+        actual.name shouldBe repoName
+        actual.uri shouldBe mutableUrl
       }
     }
     scenario("the user should be able to add a repository at the end of the list using an index") {
-      val name = "bounds"
-      val uri: Uri = "http://downloads.mesosphere.com/universe/repo/1.13/package/cassandra.json"
       val index = Requests.listRepositories().size
-      RoundTrips.withRepository(name, uri, Some(index)).runWith { response =>
+      RoundTrips.withRepository(repoName, mutableUrl, Some(index)).runWith { response =>
         val last = response.repositories.last
-        last.name shouldBe name
-        last.uri shouldBe uri
+        last.name shouldBe repoName
+        last.uri shouldBe mutableUrl
       }
     }
     scenario("the user should receive an error when trying to add a duplicated repository") {
-      val name = "cassandra-113"
-      val uri: Uri = "http://downloads.mesosphere.com/universe/repo/1.13/package/cassandra.json"
-      val expectedError = RepositoryAlreadyPresent(Ior.Both(name, uri)).as[ErrorResponse]
-      RoundTrips.withRepository(name, uri).runWith { _ =>
+      val expectedError = RepositoryAlreadyPresent(Ior.Both(repoName, mutableUrl)).as[ErrorResponse]
+      RoundTrips.withRepository(repoName, mutableUrl).runWith { _ =>
         val error = intercept[HttpErrorResponse] {
-          RoundTrips.withRepository(name, uri).run()
+          RoundTrips.withRepository(repoName, mutableUrl).run()
         }
         error.status shouldBe Status.BadRequest
         error.errorResponse shouldBe expectedError
       }
     }
     scenario("the user should receive an error when trying to add a repository out of bounds") {
-      val name = "bounds"
-      val uri: Uri = "http://downloads.mesosphere.com/universe/repo/1.13/package/cassandra.json"
       val index = Int.MaxValue
       val max = Requests.listRepositories().size
       val expectedError = RepositoryAddIndexOutOfBounds(index, max).as[ErrorResponse]
       val error = intercept[HttpErrorResponse] {
-        RoundTrips.withRepository(name, uri, Some(index)).run()
+        RoundTrips.withRepository(repoName, mutableUrl, Some(index)).run()
       }
       error.status shouldBe Status.BadRequest
       error.errorResponse shouldBe expectedError
