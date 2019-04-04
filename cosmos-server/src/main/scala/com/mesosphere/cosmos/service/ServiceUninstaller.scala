@@ -1,6 +1,7 @@
 package com.mesosphere.cosmos.service
 
 import com.mesosphere.cosmos.AdminRouter
+import com.mesosphere.cosmos.error.Unauthorized
 import com.mesosphere.cosmos.error.{CosmosException, MarathonAppNotFound, UninstallFailed}
 import com.mesosphere.cosmos.handler.UninstallHandler
 import com.mesosphere.cosmos.http.RequestSession
@@ -18,7 +19,6 @@ final class ServiceUninstaller(
   import ServiceUninstaller._
   private[this] val logger: org.slf4j.Logger = org.slf4j.LoggerFactory.getLogger(getClass)
 
-  // scalastyle:off cyclomatic.complexity
   def uninstall(
     appId: AppId,
     frameworkIds: Set[String],
@@ -47,7 +47,6 @@ final class ServiceUninstaller(
         }
     }
   }
-  // scalastyle:on cyclomatic.complexity
 
   /**
     * Verifies that the deployment adjusting scheduler app to contain SDK_UNINSTALL label is finished
@@ -72,6 +71,11 @@ final class ServiceUninstaller(
       }
     }
   }.rescue {
+    case ce: CosmosException if ce.error.isInstanceOf[Unauthorized] =>
+      logger.error(
+        s"Request Unauthorized: ${ce.error.message} when checking marathon deployment $deploymentId. Giving up."
+      )
+      Future(UninstallDone)
     case ex =>
       logger.warn(s"Unexpected exception when checking marathon deployment $deploymentId. Exception: $ex")
       Future(Retry)
@@ -150,7 +154,7 @@ final class ServiceUninstaller(
     adminRouter.deleteApp(appId).map { response =>
       if (response.status.code == 401) {
         logger.error(
-          s"Authorization token expired/invalid: ${response.status} when deleting $appId. Giving up."
+          s"Request Unauthorized: ${response.status} when deleting $appId. Giving up."
         )
         UninstallDone
       } else if (response.status.code >= 400 && response.status.code < 500) {
