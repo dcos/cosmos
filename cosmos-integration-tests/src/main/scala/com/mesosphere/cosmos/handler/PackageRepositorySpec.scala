@@ -32,8 +32,8 @@ class PackageRepositorySpec extends FeatureSpec with Matchers {
 
   feature("The package/repository/list endpoint") {
     scenario("The user should be able to list added repositories") {
-      val name = "cli-test-4"
-      val uri: Uri = "https://github.com/mesosphere/universe/archive/cli-test-4.zip"
+      val name = "cassandra-113"
+      val uri: Uri = "http://downloads.mesosphere.com/universe/repo/1.13/package/cassandra.json"
       RoundTrips.withRepository(name, uri).runWith { _ =>
         Requests.listRepositories() should contain(
           rpc.v1.model.PackageRepository(name, uri)
@@ -41,8 +41,8 @@ class PackageRepositorySpec extends FeatureSpec with Matchers {
       }
     }
     scenario("The user should not see removed repositories") {
-      val name = "cli-test-4"
-      val uri: Uri = "https://github.com/mesosphere/universe/archive/cli-test-4.zip"
+      val name = "cassandra-113"
+      val uri: Uri = "http://downloads.mesosphere.com/universe/repo/1.13/package/cassandra.json"
       (RoundTrips.withRepository(name, uri) &:
         RoundTrips.withDeletedRepository(Some(name), Some(uri))).runWith { _ =>
         Requests.listRepositories() should not contain
@@ -53,8 +53,8 @@ class PackageRepositorySpec extends FeatureSpec with Matchers {
 
   feature("The package/repository/add endpoint") {
     scenario("the user would like to add a repository at the default priority (lowest priority)") {
-      val name = "cli-test-4"
-      val uri: Uri = "https://github.com/mesosphere/universe/archive/cli-test-4.zip"
+      val name = "cassandra-113"
+      val uri: Uri = "http://downloads.mesosphere.com/universe/repo/1.13/package/cassandra.json"
       RoundTrips.withRepository(name, uri).runWith { response =>
         val last = response.repositories.last
         last.name shouldBe name
@@ -62,8 +62,8 @@ class PackageRepositorySpec extends FeatureSpec with Matchers {
       }
     }
     scenario("the user would like to add a repository at a specific priority") {
-      val name = "cli-test-4"
-      val uri: Uri = "https://github.com/mesosphere/universe/archive/cli-test-4.zip"
+      val name = "cassandra-113"
+      val uri: Uri = "http://downloads.mesosphere.com/universe/repo/1.13/package/cassandra.json"
       val index = 0
       RoundTrips.withRepository(name, uri, Some(index)).runWith { response =>
         val actual = response.repositories(index)
@@ -73,7 +73,7 @@ class PackageRepositorySpec extends FeatureSpec with Matchers {
     }
     scenario("the user should be able to add a repository at the end of the list using an index") {
       val name = "bounds"
-      val uri: Uri = "https://github.com/mesosphere/universe/archive/cli-test-4.zip"
+      val uri: Uri = "http://downloads.mesosphere.com/universe/repo/1.13/package/cassandra.json"
       val index = Requests.listRepositories().size
       RoundTrips.withRepository(name, uri, Some(index)).runWith { response =>
         val last = response.repositories.last
@@ -82,8 +82,8 @@ class PackageRepositorySpec extends FeatureSpec with Matchers {
       }
     }
     scenario("the user should receive an error when trying to add a duplicated repository") {
-      val name = "cli-test-4"
-      val uri: Uri = "https://github.com/mesosphere/universe/archive/cli-test-4.zip"
+      val name = "cassandra-113"
+      val uri: Uri = "http://downloads.mesosphere.com/universe/repo/1.13/package/cassandra.json"
       val expectedError = RepositoryAlreadyPresent(Ior.Both(name, uri)).as[ErrorResponse]
       RoundTrips.withRepository(name, uri).runWith { _ =>
         val error = intercept[HttpErrorResponse] {
@@ -95,7 +95,7 @@ class PackageRepositorySpec extends FeatureSpec with Matchers {
     }
     scenario("the user should receive an error when trying to add a repository out of bounds") {
       val name = "bounds"
-      val uri: Uri = "https://github.com/mesosphere/universe/archive/cli-test-4.zip"
+      val uri: Uri = "http://downloads.mesosphere.com/universe/repo/1.13/package/cassandra.json"
       val index = Int.MaxValue
       val max = Requests.listRepositories().size
       val expectedError = RepositoryAddIndexOutOfBounds(index, max).as[ErrorResponse]
@@ -119,7 +119,7 @@ class PackageRepositorySpec extends FeatureSpec with Matchers {
       error.errorResponse shouldBe expectedError
     }
     scenario("Issue #219: the user should receive an error when trying to add a repository " +
-      "that is a non-zip-encoded repository bundle") {
+      "of unknown media type") {
       // TODO: Use a more reliable URI
       val name = "invalid"
       val uri: Uri = "https://www.google.com/"
@@ -146,18 +146,6 @@ class PackageRepositorySpec extends FeatureSpec with Matchers {
           HttpResponseStatus.BAD_REQUEST
         )
       )
-      val error = intercept[HttpErrorResponse] {
-        RoundTrips.withRepository(name, uri).run()
-      }
-      error.status shouldBe Status.BadRequest
-      error.errorResponse shouldBe expectedError
-    }
-    scenario("Issue #209: the user must receive an error " +
-      "when adding an unsupported repository version") {
-      val name = "old-versioned-repository"
-      val uri: Uri = "https://github.com/mesosphere/universe/archive/version-1.x.zip"
-      val version = UniverseVersion("1.0.0-rc1")
-      val expectedError = UnsupportedRepositoryVersion(version).as[ErrorResponse]
       val error = intercept[HttpErrorResponse] {
         RoundTrips.withRepository(name, uri).run()
       }
