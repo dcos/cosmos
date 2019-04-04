@@ -244,8 +244,7 @@ trait CosmosApp
 
     val api = endpoints.handle {
       case ce: CosmosException =>
-        if (logger.isDebugEnabled) logger.debug(s"Cosmos Exception : ${ce.getMessage}", ce)
-        else logger.info(s"Cosmos Exception : ${ce.getMessage}")
+        logger.info(s"Cosmos Exception : ${ce.getMessage}", ce)
         stats.counter(s"definedError/${sanitizeClassName(ce.error.getClass)}").incr()
         val output = Output.failure(
           ce,

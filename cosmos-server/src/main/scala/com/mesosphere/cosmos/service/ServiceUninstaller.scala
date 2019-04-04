@@ -148,7 +148,12 @@ final class ServiceUninstaller(
     implicit session: RequestSession
   ): Future[StepResult] = {
     adminRouter.deleteApp(appId).map { response =>
-      if (response.status.code >= 400 && response.status.code < 500) {
+      if (response.status.code == 401) {
+        logger.error(
+          s"Authorization token expired/invalid: ${response.status} when deleting $appId. Giving up."
+        )
+        UninstallDone
+      } else if (response.status.code >= 400 && response.status.code < 500) {
         logger.error(
           s"Encountered Marathon error : ${response.status} when deleting $appId. Giving up."
         )
