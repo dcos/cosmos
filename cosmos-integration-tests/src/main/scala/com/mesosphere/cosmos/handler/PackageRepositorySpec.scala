@@ -13,12 +13,10 @@ import com.mesosphere.cosmos.error.RepositoryUriConnection
 import com.mesosphere.cosmos.error.UniverseClientHttpError
 import com.mesosphere.cosmos.error.UnsupportedContentType
 import com.mesosphere.cosmos.error.UnsupportedRepositoryUri
-import com.mesosphere.cosmos.error.UnsupportedRepositoryVersion
 import com.mesosphere.cosmos.rpc
 import com.mesosphere.cosmos.rpc.v1.model.ErrorResponse
 import com.mesosphere.cosmos.rpc.v1.model.PackageRepository
 import com.mesosphere.universe.MediaTypes
-import com.mesosphere.universe.v2.model.UniverseVersion
 import io.lemonlabs.uri.Uri
 import io.lemonlabs.uri.dsl._
 import com.twitter.bijection.Conversion.asMethod
