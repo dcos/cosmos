@@ -88,7 +88,7 @@ final class PackageInstallIntegrationSpec extends FeatureSpec with Matchers with
         error.errorResponse shouldBe expectedError
       }
     }
-    scenario("The user should recieve an error if trying to install a version that does not exist") {
+    scenario("The user should receive an error if trying to install a version that does not exist") {
       val name = "helloworld"
       val version = "0.1.0-does-not-exist"
       val expectedError = VersionNotFound(name, version.version).as[ErrorResponse]
