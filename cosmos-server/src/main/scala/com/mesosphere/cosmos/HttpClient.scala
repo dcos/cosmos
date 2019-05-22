@@ -45,7 +45,10 @@ object HttpClient {
       .flatMap { case (responseData, conn) =>
         Future(processResponse(responseData))
           // IOException when closing stream should not fail the whole request, that's why we're ignoring exceptions with Try
-          .ensure(Try(responseData.contentStream.close()))
+          .ensure({
+          Try(responseData.contentStream.close())
+          ()
+        })
           .ensure(conn.disconnect())
       }
       .handle { case e: IOException =>
