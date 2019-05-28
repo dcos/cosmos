@@ -20,9 +20,10 @@ import java.net.HttpURLConnection
 import java.net.MalformedURLException
 import java.net.URISyntaxException
 import java.util.zip.GZIPInputStream
+
 import org.slf4j.Logger
-import scala.util.Failure
-import scala.util.Success
+
+import scala.util.{Failure, Success, Try}
 
 object HttpClient {
 
@@ -43,7 +44,11 @@ object HttpClient {
     fetchResponse(uri, DEFAULT_RETRIES, headers: _*)
       .flatMap { case (responseData, conn) =>
         Future(processResponse(responseData))
-          .ensure(responseData.contentStream.close())
+          // IOException when closing stream should not fail the whole request, that's why we're ignoring exceptions with Try
+          .ensure({
+          Try(responseData.contentStream.close())
+          ()
+        })
           .ensure(conn.disconnect())
       }
       .handle { case e: IOException =>
