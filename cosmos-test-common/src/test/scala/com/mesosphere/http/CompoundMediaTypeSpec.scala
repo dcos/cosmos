@@ -74,7 +74,7 @@ class CompoundMediaTypeSpec extends FreeSpec {
       ))
 
       val accepted = Set(
-        MediaTypes.applicationZip
+        MediaTypes.universeV2Package
       )
 
       val actual = CompoundMediaType.calculateIntersectionAndOrder(cmt, accepted)
@@ -134,7 +134,7 @@ class CompoundMediaTypeSpec extends FreeSpec {
       ))
 
       val accepted = Set(
-        MediaTypes.applicationZip
+        MediaTypes.universeV2Package
       )
 
       val actual = cmt.getMostAppropriateMediaType(accepted)

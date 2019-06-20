@@ -158,8 +158,7 @@ object DefaultUniverseClient {
   val TemporaryRedirect: Int = 307
   val PermanentRedirect: Int = 308
 
-  val SupportedMediaTypes: List[MediaType] =
-    List(MediaTypes.UniverseV4Repository, MediaTypes.UniverseV3Repository, MediaTypes.UniverseV2Repository)
+  val SupportedMediaTypes: List[MediaType] = List(MediaTypes.UniverseV4Repository, MediaTypes.UniverseV3Repository)
 }
 
 object UniverseClient {
