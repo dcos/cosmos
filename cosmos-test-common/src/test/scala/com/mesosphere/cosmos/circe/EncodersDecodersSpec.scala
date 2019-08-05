@@ -79,7 +79,7 @@ extends FreeSpec with PropertyChecks with Matchers with TableDrivenPropertyCheck
         val Right(reason) = c.downField("data").downField("reason").as[String]
         assertResult("json_error")(typ)
         assertResult("parse")(dataType)
-        assertResult("expected \" got ] (line 1, column 2)")(reason)
+        assertResult("expected \" got ']\n' (line 1, column 2)")(reason)
       }
     }
   }

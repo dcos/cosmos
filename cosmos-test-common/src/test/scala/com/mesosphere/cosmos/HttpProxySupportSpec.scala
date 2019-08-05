@@ -221,7 +221,7 @@ final class HttpProxySupportSpec extends FreeSpec with BeforeAndAfter with Prope
 
         "can be set from http_proxy, https_proxy and no_proxy" in {
           var authenticatorSet = false
-          val setAuthenticator = (a: Authenticator) => { authenticatorSet = true }
+          val setAuthenticator = (_: Authenticator) => { authenticatorSet = true }
 
           HttpProxySupport.initProxyConfig(vars, setAuthenticator)
 

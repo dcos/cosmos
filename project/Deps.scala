@@ -137,23 +137,23 @@ object Deps {
 }
 
 object V {
-  val projectScalaVersion = "2.12.6"
+  val projectScalaVersion = "2.12.9"
   val projectVersion = "0.6.2-SNAPSHOT"
 
   val bijection = "0.9.6"
-  val circe = "0.9.2"
+  val circe = "0.11.1"
   val curator = "2.12.0"
   val fastparse = "1.0.0"
-  val finch = "0.18.0"
-  val guava = "24.1-jre"
+  val finch = "0.22.0"
+  val guava = "28.0-jre"
   val jsonSchema = "2.2.6"
   val logback = "1.2.3"
   val mockito = "2.16.0"
-  val mustache = "0.9.5"
-  val scalaCheck = "1.13.5"
+  val mustache = "0.9.6"
+  val scalaCheck = "1.14.0"
   val scalaCheckShapeless = "1.1.8"
-  val scalaTest = "3.0.5"
-  val scalaUri = "1.4.0"
+  val scalaTest = "3.0.8"
+  val scalaUri = "1.4.10"
   val slf4j = "1.7.25"
   val twitterUtil = "18.3.0"
 }

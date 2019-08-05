@@ -29,7 +29,7 @@ object Decoders {
 
   implicit val decodeByteBuffer: Decoder[ByteBuffer] = Decoder.instance { c =>
     c.as[String].bimap(
-      { e => DecodingFailure("Base64 string value expected", c.history) },
+      { _ => DecodingFailure("Base64 string value expected", c.history) },
       { s => ByteBuffer.wrap(Base64.getDecoder.decode(s)) }
     )
   }
