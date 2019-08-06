@@ -95,6 +95,14 @@ class DcosReleaseVersionSpec extends FreeSpec {
         "10.20.30.40 >= 1.50.60.70" in {
           assert(o.gteq("10.20.30.40", "1.50.60.70"))
         }
+
+        "1.0.0-alpha.1 > 1.0.0-alpha" in {
+          assert(o.gteq("1.0.0-alpha", "1.0.0-alpha.1"))
+        }
+
+        "1.0.0-alpha.beta == 1.0.0-beta" in {
+          assert(o.equiv("1.0.0-alpha.beta", "1.0.0-beta"))
+        }
       }
 
       "fail for" - {
@@ -118,6 +126,10 @@ class DcosReleaseVersionSpec extends FreeSpec {
 
         "1.6.1 >= 1.8-dev" in {
           assert(!o.gteq("1.6.1", "1.8-dev"))
+        }
+
+        "1.0.0-rc.1 > 1.0.0" in {
+          assert(!o.lt("1.0.0-rc.1", "1.0.0"))
         }
       }
     }
@@ -182,20 +194,21 @@ class DcosReleaseVersionSpec extends FreeSpec {
           "BETA" in {
             assertResult("BETA")(DcosReleaseVersion.Suffix("BETA").value)
           }
+          "alpha.1" in {
+            assertResult("alpha.1")(DcosReleaseVersion.Suffix("alpha.1").value)
+          }
+          "beta-dev.11.12.2020" in {
+            assertResult("beta-dev.11.12.2020")(DcosReleaseVersion.Suffix("beta-dev.11.12.2020").value)
+          }
         }
         "fail for" - {
           "!" in {
-            assertAssertionError("assertion failed: Value '!' does not conform to expected format ^[A-Za-z0-9]+$") {
+            assertAssertionError(s"assertion failed: Value '!' does not conform to expected format ${DcosReleaseVersionParser.suffixPattern.toString}") {
               DcosReleaseVersion.Suffix("!")
             }
           }
-          "-" in {
-            assertAssertionError("assertion failed: Value '-' does not conform to expected format ^[A-Za-z0-9]+$") {
-              DcosReleaseVersion.Suffix("-")
-            }
-          }
           "." in {
-            assertAssertionError("assertion failed: Value '.' does not conform to expected format ^[A-Za-z0-9]+$") {
+            assertAssertionError(s"assertion failed: Value '.' does not conform to expected format ${DcosReleaseVersionParser.suffixPattern.toString}") {
               DcosReleaseVersion.Suffix(".")
             }
           }
