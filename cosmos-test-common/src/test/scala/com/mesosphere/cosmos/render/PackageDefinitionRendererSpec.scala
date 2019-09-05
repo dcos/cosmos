@@ -692,10 +692,10 @@ class PackageDefinitionRendererSpec extends FreeSpec with Matchers with TableDri
   private[this] def buildConfig(defaultsJson: Json): JsonObject = {
     defaultsJson.fold(
       jsonNull = JsonObject.fromMap(Map("type" -> "null".asJson, "default" -> defaultsJson)),
-      jsonBoolean = boolean => JsonObject.fromMap(Map("type" -> "boolean".asJson, "default" -> defaultsJson)),
-      jsonNumber = number => JsonObject.fromMap(Map("type" -> "number".asJson, "default" -> defaultsJson)),
-      jsonString = string => JsonObject.fromMap(Map("type" -> "string".asJson, "default" -> defaultsJson)),
-      jsonArray = array => JsonObject.fromMap(Map("type" -> "array".asJson, "default" -> defaultsJson)),
+      jsonBoolean = _ => JsonObject.fromMap(Map("type" -> "boolean".asJson, "default" -> defaultsJson)),
+      jsonNumber = _ => JsonObject.fromMap(Map("type" -> "number".asJson, "default" -> defaultsJson)),
+      jsonString = _ => JsonObject.fromMap(Map("type" -> "string".asJson, "default" -> defaultsJson)),
+      jsonArray = _ => JsonObject.fromMap(Map("type" -> "array".asJson, "default" -> defaultsJson)),
       jsonObject = { obj =>
         JsonObject.fromMap(Map(
           "type" -> "object".asJson,
