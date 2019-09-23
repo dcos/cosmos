@@ -9,6 +9,7 @@ import java.nio.ByteBuffer
 import java.nio.charset.StandardCharsets
 import org.scalatest.prop.TableFor1
 import org.scalatest.prop.TableFor2
+import scala.util.Random
 
 object TestingPackages {
   val PackagingVersion = universe.v3.model.V3PackagingVersion
@@ -36,6 +37,8 @@ object TestingPackages {
     universe.v3.model.License(name = "XYZ", url = Uri.parse("http://foobar/x/y/z"))
   ))
   val MinDcosReleaseVersion = Some(universe.v3.model.DcosReleaseVersionParser.parseUnsafe("1.9.99"))
+  val lastUpdated = Some(System.currentTimeMillis())
+  val knownIssues = Some(Random.nextBoolean())
 
   private val iconSmall = Some("small.png")
   private val iconMedium = Some("medium.png")
@@ -118,7 +121,9 @@ object TestingPackages {
     Config,
     command = Some(universe.v3.model.Command(
       pip = List("flask", "jinja", "jsonschema")
-    ))
+    )),
+    lastUpdated=lastUpdated,
+    knownIssues=knownIssues
   )
 
   val MinimalV3ModelV3PackageDefinition: universe.v3.model.V3Package = universe.v3.model.V3Package(
@@ -327,7 +332,9 @@ object TestingPackages {
     Resource,
     Config,
     upgradesFrom = Some(List(universe.v3.model.ExactVersion(universe.v3.model.Version("8.0")))),
-    downgradesTo = Some(List(universe.v3.model.ExactVersion(universe.v3.model.Version("8.0"))))
+    downgradesTo = Some(List(universe.v3.model.ExactVersion(universe.v3.model.Version("8.0")))),
+    lastUpdated=lastUpdated,
+    knownIssues=knownIssues
   )
 
   val MinimalV4ModelMetadata = universe.v4.model.V4Metadata(
@@ -384,7 +391,9 @@ object TestingPackages {
     Resource,
     Config,
     upgradesFrom = Some(List(universe.v3.model.ExactVersion(universe.v3.model.Version("8.0")))),
-    downgradesTo = Some(List(universe.v3.model.ExactVersion(universe.v3.model.Version("8.0"))))
+    downgradesTo = Some(List(universe.v3.model.ExactVersion(universe.v3.model.Version("8.0")))),
+    lastUpdated=lastUpdated,
+    knownIssues=knownIssues
   )
 
   val MaximalV4ModelPackageDefinitionV4: universe.v4.model.PackageDefinition = MaximalV4ModelV4PackageDefinition

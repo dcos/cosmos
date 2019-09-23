@@ -138,7 +138,9 @@ object UniverseConversions {
       marathon=metadata.marathon,
       resource=metadata.resource,
       config=metadata.config,
-      command=None // Command are not supported in Package.dcos. Setting to the default value.
+      command=None, // Command are not supported in Package.dcos. Setting to the default value.
+      lastUpdated=metadata.lastUpdated,
+      knownIssues=metadata.knownIssues
     )
   }
 
@@ -166,7 +168,9 @@ object UniverseConversions {
       resource=metadata.resource,
       config=metadata.config,
       upgradesFrom=metadata.upgradesFrom,
-      downgradesTo=metadata.downgradesTo
+      downgradesTo=metadata.downgradesTo,
+      lastUpdated=metadata.lastUpdated,
+      knownIssues=metadata.knownIssues
     )
   }
 
@@ -195,7 +199,9 @@ object UniverseConversions {
       config=metadata.config,
       upgradesFrom=metadata.upgradesFrom,
       downgradesTo=metadata.downgradesTo,
-      manager=metadata.manager
+      manager=metadata.manager,
+      lastUpdated=metadata.lastUpdated,
+      knownIssues=metadata.knownIssues
     )
   }
 

@@ -155,5 +155,5 @@ object V {
   val scalaTest = "3.0.8"
   val scalaUri = "1.4.10"
   val slf4j = "1.7.25"
-  val twitterUtil = "18.3.0"
+  val twitterUtil = "18.6.0"
 }

@@ -34,7 +34,7 @@ object ReleaseVersion {
 
   implicit val decodePackageDefinitionReleaseVersion: Decoder[ReleaseVersion] =
     Decoder.instance[ReleaseVersion] { (c: HCursor) =>
-      c.as[Long].map(validate(_)).flatMap {
+      c.as[Long].map(validate).flatMap {
         case Return(v) => Right(v)
         case Throw(e) => Left(DecodingFailure(e.getMessage, c.history))
       }

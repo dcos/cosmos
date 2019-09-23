@@ -27,7 +27,9 @@ object TestUniverseConversions {
         minDcosReleaseVersion = v3Package.minDcosReleaseVersion,
         marathon = v3Package.marathon,
         resource = v3Package.resource,
-        config = v3Package.config
+        config = v3Package.config,
+        lastUpdated = v3Package.lastUpdated,
+        knownIssues = v3Package.knownIssues
       )
 
       (metadata, v3Package.releaseVersion)
@@ -57,7 +59,9 @@ object TestUniverseConversions {
         resource = v4Package.resource,
         config = v4Package.config,
         upgradesFrom = v4Package.upgradesFrom,
-        downgradesTo = v4Package.downgradesTo
+        downgradesTo = v4Package.downgradesTo,
+        lastUpdated = v4Package.lastUpdated,
+        knownIssues = v4Package.knownIssues
       )
 
       (metadata, v4Package.releaseVersion)
@@ -88,7 +92,9 @@ object TestUniverseConversions {
         config = v5Package.config,
         upgradesFrom = v5Package.upgradesFrom,
         downgradesTo = v5Package.downgradesTo,
-        manager =  v5Package.manager
+        manager =  v5Package.manager,
+        lastUpdated = v5Package.lastUpdated,
+        knownIssues = v5Package.knownIssues
       )
 
       (metadata, v5Package.releaseVersion)

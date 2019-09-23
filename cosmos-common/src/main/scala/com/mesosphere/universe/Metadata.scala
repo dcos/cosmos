@@ -30,7 +30,9 @@ package v3.model {
     minDcosReleaseVersion: Option[DcosReleaseVersion] = None,
     marathon: Option[Marathon] = None,
     resource: Option[V3Resource] = None,
-    config: Option[JsonObject] = None
+    config: Option[JsonObject] = None,
+    lastUpdated: Option[Long] = None,
+    knownIssues: Option[Boolean] = None
   ) extends universe.v4.model.Metadata
 
   object V3Metadata {
@@ -84,7 +86,9 @@ package v4.model {
     resource: Option[universe.v3.model.V3Resource] = None,
     config: Option[JsonObject] = None,
     upgradesFrom: Option[List[universe.v3.model.VersionSpecification]] = None,
-    downgradesTo: Option[List[universe.v3.model.VersionSpecification]] = None
+    downgradesTo: Option[List[universe.v3.model.VersionSpecification]] = None,
+    lastUpdated: Option[Long] = None,
+    knownIssues: Option[Boolean] = None
   ) extends universe.v4.model.Metadata
 
   object V4Metadata {
@@ -115,7 +119,9 @@ package v5.model {
      config: Option[JsonObject] = None,
      upgradesFrom: Option[List[universe.v3.model.VersionSpecification]] = None,
      downgradesTo: Option[List[universe.v3.model.VersionSpecification]] = None,
-     manager: Option[universe.v5.model.Manager]
+     manager: Option[universe.v5.model.Manager],
+     lastUpdated: Option[Long] = None,
+     knownIssues: Option[Boolean] = None
    ) extends universe.v4.model.Metadata
 
   object V5Metadata {
