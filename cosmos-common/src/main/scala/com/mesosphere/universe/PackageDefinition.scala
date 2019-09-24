@@ -84,7 +84,7 @@ package v3.model {
     config: Option[JsonObject] = None,
     command: Option[Command] = None,
     lastUpdated: Option[Long] = None,
-    knownIssues: Option[Boolean] = None
+    hasKnownIssues: Option[Boolean] = None
   ) extends universe.v4.model.SupportedPackageDefinition with Ordered[V3Package] {
     override def compare(that: V3Package): Int = {
       universe.v4.model.PackageDefinition.compare(
@@ -352,11 +352,11 @@ package v4.model {
         case v5: universe.v5.model.V5Package => v5.lastUpdated
       }
 
-      def knownIssues: Option[Boolean] = pkgDef match {
+      def hasKnownIssues: Option[Boolean] = pkgDef match {
         case _: universe.v3.model.V2Package => None
-        case v3: universe.v3.model.V3Package => v3.knownIssues
-        case v4: universe.v4.model.V4Package => v4.knownIssues
-        case v5: universe.v5.model.V5Package => v5.knownIssues
+        case v3: universe.v3.model.V3Package => v3.hasKnownIssues
+        case v4: universe.v4.model.V4Package => v4.hasKnownIssues
+        case v5: universe.v5.model.V5Package => v5.hasKnownIssues
       }
 
       def upgradesFrom: List[universe.v3.model.VersionSpecification] = pkgDef match {
@@ -536,7 +536,7 @@ package v4.model {
     resource: Option[universe.v3.model.V3Resource] = None,
     config: Option[JsonObject] = None,
     lastUpdated: Option[Long] = None,
-    knownIssues: Option[Boolean] = None,
+    hasKnownIssues: Option[Boolean] = None,
     upgradesFrom: Option[List[universe.v3.model.VersionSpecification]] = None,
     downgradesTo: Option[List[universe.v3.model.VersionSpecification]] = None
   ) extends universe.v4.model.SupportedPackageDefinition
@@ -581,7 +581,7 @@ package v5.model {
       downgradesTo: Option[List[universe.v3.model.VersionSpecification]] = None,
       manager: Option[universe.v5.model.Manager] = None,
       lastUpdated: Option[Long] = None,
-      knownIssues: Option[Boolean] = None
+      hasKnownIssues: Option[Boolean] = None
     ) extends universe.v4.model.SupportedPackageDefinition
 
   object V5Package {

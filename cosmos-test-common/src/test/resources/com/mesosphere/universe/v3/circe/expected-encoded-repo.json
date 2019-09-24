@@ -52,7 +52,7 @@
       "resource" : null,
       "config" : null,
       "command" : null,
-      "knownIssues": null,
+      "hasKnownIssues": null,
       "lastUpdated": null
     }
   ]

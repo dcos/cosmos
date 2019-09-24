@@ -32,7 +32,7 @@ package v3.model {
     resource: Option[V3Resource] = None,
     config: Option[JsonObject] = None,
     lastUpdated: Option[Long] = None,
-    knownIssues: Option[Boolean] = None
+    hasKnownIssues: Option[Boolean] = None
   ) extends universe.v4.model.Metadata
 
   object V3Metadata {
@@ -88,7 +88,7 @@ package v4.model {
     upgradesFrom: Option[List[universe.v3.model.VersionSpecification]] = None,
     downgradesTo: Option[List[universe.v3.model.VersionSpecification]] = None,
     lastUpdated: Option[Long] = None,
-    knownIssues: Option[Boolean] = None
+    hasKnownIssues: Option[Boolean] = None
   ) extends universe.v4.model.Metadata
 
   object V4Metadata {
@@ -121,7 +121,7 @@ package v5.model {
      downgradesTo: Option[List[universe.v3.model.VersionSpecification]] = None,
      manager: Option[universe.v5.model.Manager],
      lastUpdated: Option[Long] = None,
-     knownIssues: Option[Boolean] = None
+     hasKnownIssues: Option[Boolean] = None
    ) extends universe.v4.model.Metadata
 
   object V5Metadata {

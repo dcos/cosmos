@@ -140,7 +140,7 @@ object UniverseConversions {
       config=metadata.config,
       command=None, // Command are not supported in Package.dcos. Setting to the default value.
       lastUpdated=metadata.lastUpdated,
-      knownIssues=metadata.knownIssues
+      hasKnownIssues=metadata.hasKnownIssues
     )
   }
 
@@ -170,7 +170,7 @@ object UniverseConversions {
       upgradesFrom=metadata.upgradesFrom,
       downgradesTo=metadata.downgradesTo,
       lastUpdated=metadata.lastUpdated,
-      knownIssues=metadata.knownIssues
+      hasKnownIssues=metadata.hasKnownIssues
     )
   }
 
@@ -201,7 +201,7 @@ object UniverseConversions {
       downgradesTo=metadata.downgradesTo,
       manager=metadata.manager,
       lastUpdated=metadata.lastUpdated,
-      knownIssues=metadata.knownIssues
+      hasKnownIssues=metadata.hasKnownIssues
     )
   }
 

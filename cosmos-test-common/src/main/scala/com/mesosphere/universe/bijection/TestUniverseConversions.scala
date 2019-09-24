@@ -29,7 +29,7 @@ object TestUniverseConversions {
         resource = v3Package.resource,
         config = v3Package.config,
         lastUpdated = v3Package.lastUpdated,
-        knownIssues = v3Package.knownIssues
+        hasKnownIssues = v3Package.hasKnownIssues
       )
 
       (metadata, v3Package.releaseVersion)
@@ -61,7 +61,7 @@ object TestUniverseConversions {
         upgradesFrom = v4Package.upgradesFrom,
         downgradesTo = v4Package.downgradesTo,
         lastUpdated = v4Package.lastUpdated,
-        knownIssues = v4Package.knownIssues
+        hasKnownIssues = v4Package.hasKnownIssues
       )
 
       (metadata, v4Package.releaseVersion)
@@ -94,7 +94,7 @@ object TestUniverseConversions {
         downgradesTo = v5Package.downgradesTo,
         manager =  v5Package.manager,
         lastUpdated = v5Package.lastUpdated,
-        knownIssues = v5Package.knownIssues
+        hasKnownIssues = v5Package.hasKnownIssues
       )
 
       (metadata, v5Package.releaseVersion)

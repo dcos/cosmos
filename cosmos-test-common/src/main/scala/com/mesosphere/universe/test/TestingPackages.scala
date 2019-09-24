@@ -38,7 +38,7 @@ object TestingPackages {
   ))
   val MinDcosReleaseVersion = Some(universe.v3.model.DcosReleaseVersionParser.parseUnsafe("1.9.99"))
   val lastUpdated = Some(System.currentTimeMillis())
-  val knownIssues = Some(Random.nextBoolean())
+  val hasKnownIssues = Some(Random.nextBoolean())
 
   private val iconSmall = Some("small.png")
   private val iconMedium = Some("medium.png")
@@ -123,7 +123,7 @@ object TestingPackages {
       pip = List("flask", "jinja", "jsonschema")
     )),
     lastUpdated=lastUpdated,
-    knownIssues=knownIssues
+    hasKnownIssues=hasKnownIssues
   )
 
   val MinimalV3ModelV3PackageDefinition: universe.v3.model.V3Package = universe.v3.model.V3Package(
@@ -334,7 +334,7 @@ object TestingPackages {
     upgradesFrom = Some(List(universe.v3.model.ExactVersion(universe.v3.model.Version("8.0")))),
     downgradesTo = Some(List(universe.v3.model.ExactVersion(universe.v3.model.Version("8.0")))),
     lastUpdated=lastUpdated,
-    knownIssues=knownIssues
+    hasKnownIssues=hasKnownIssues
   )
 
   val MinimalV4ModelMetadata = universe.v4.model.V4Metadata(
@@ -393,7 +393,7 @@ object TestingPackages {
     upgradesFrom = Some(List(universe.v3.model.ExactVersion(universe.v3.model.Version("8.0")))),
     downgradesTo = Some(List(universe.v3.model.ExactVersion(universe.v3.model.Version("8.0")))),
     lastUpdated=lastUpdated,
-    knownIssues=knownIssues
+    hasKnownIssues=hasKnownIssues
   )
 
   val MaximalV4ModelPackageDefinitionV4: universe.v4.model.PackageDefinition = MaximalV4ModelV4PackageDefinition

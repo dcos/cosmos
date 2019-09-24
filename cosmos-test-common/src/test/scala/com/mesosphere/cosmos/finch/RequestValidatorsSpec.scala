@@ -15,7 +15,6 @@ import com.mesosphere.http.CompoundMediaTypeParser
 import com.mesosphere.http.MediaType
 import com.mesosphere.util.UrlSchemeHeader
 import com.twitter.finagle.http.Fields
-import com.twitter.finagle.http.Fields
 import com.twitter.io.Buf
 import com.twitter.util.Return
 import com.twitter.util.Throw
@@ -29,6 +28,7 @@ import io.finch.Error.NotPresent
 import io.finch.Error.NotValid
 import io.finch.Output
 import io.finch.items.HeaderItem
+import io.finch.items.ParamItem
 import org.scalacheck.Arbitrary.arbitrary
 import org.scalacheck.Gen
 import org.scalatest.Assertion
@@ -168,7 +168,7 @@ final class RequestValidatorsSpec extends FreeSpec with Matchers with PropertyCh
     whenever (MediaType.parse(request.headers(Fields.ContentType)).isFailure) {
       // Work around for DCOS_OSS-2289
       validateOutput(validator, request) should matchPattern {
-        case Throw(NotParsed(HeaderItem(Fields.ContentType), _, _)) =>
+        case Throw(NotParsed(ParamItem(Fields.ContentType), _, _)) =>
         case Throw(NotValid(HeaderItem(Fields.ContentType), _)) =>
       }
     }
