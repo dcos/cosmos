@@ -82,7 +82,9 @@ package v3.model {
     marathon: Option[Marathon] = None,
     resource: Option[V3Resource] = None,
     config: Option[JsonObject] = None,
-    command: Option[Command] = None
+    command: Option[Command] = None,
+    lastUpdated: Option[Long] = None,
+    hasKnownIssues: Option[Boolean] = None
   ) extends universe.v4.model.SupportedPackageDefinition with Ordered[V3Package] {
     override def compare(that: V3Package): Int = {
       universe.v4.model.PackageDefinition.compare(
@@ -343,6 +345,20 @@ package v4.model {
         case _ => None
       }
 
+      def lastUpdated: Option[Long] = pkgDef match {
+        case _: universe.v3.model.V2Package => None
+        case v3: universe.v3.model.V3Package => v3.lastUpdated
+        case v4: universe.v4.model.V4Package => v4.lastUpdated
+        case v5: universe.v5.model.V5Package => v5.lastUpdated
+      }
+
+      def hasKnownIssues: Option[Boolean] = pkgDef match {
+        case _: universe.v3.model.V2Package => None
+        case v3: universe.v3.model.V3Package => v3.hasKnownIssues
+        case v4: universe.v4.model.V4Package => v4.hasKnownIssues
+        case v5: universe.v5.model.V5Package => v5.hasKnownIssues
+      }
+
       def upgradesFrom: List[universe.v3.model.VersionSpecification] = pkgDef match {
         case v4: universe.v4.model.V4Package => v4.upgradesFrom.getOrElse(Nil)
         case v5: universe.v5.model.V5Package => v5.upgradesFrom.getOrElse(Nil)
@@ -519,6 +535,8 @@ package v4.model {
     marathon: Option[universe.v3.model.Marathon] = None,
     resource: Option[universe.v3.model.V3Resource] = None,
     config: Option[JsonObject] = None,
+    lastUpdated: Option[Long] = None,
+    hasKnownIssues: Option[Boolean] = None,
     upgradesFrom: Option[List[universe.v3.model.VersionSpecification]] = None,
     downgradesTo: Option[List[universe.v3.model.VersionSpecification]] = None
   ) extends universe.v4.model.SupportedPackageDefinition
@@ -561,7 +579,9 @@ package v5.model {
       config: Option[JsonObject] = None,
       upgradesFrom: Option[List[universe.v3.model.VersionSpecification]] = None,
       downgradesTo: Option[List[universe.v3.model.VersionSpecification]] = None,
-      manager: Option[universe.v5.model.Manager] = None
+      manager: Option[universe.v5.model.Manager] = None,
+      lastUpdated: Option[Long] = None,
+      hasKnownIssues: Option[Boolean] = None
     ) extends universe.v4.model.SupportedPackageDefinition
 
   object V5Package {

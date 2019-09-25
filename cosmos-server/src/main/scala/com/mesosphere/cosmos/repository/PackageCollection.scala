@@ -255,8 +255,7 @@ object PackageCollection {
       .map(_.min(packageOrdering))
       .toList
       .sorted(packageOrdering)
-      .unzip
-      ._1
+      .map(_._1)
   }
 
   def createRegex(query: String): Regex = {

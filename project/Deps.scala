@@ -144,7 +144,7 @@ object V {
   val circe = "0.11.1"
   val curator = "2.12.0"
   val fastparse = "1.0.0"
-  val finch = "0.22.0"
+  val finch = "0.18.0"
   val guava = "28.0-jre"
   val jsonSchema = "2.2.6"
   val logback = "1.2.3"
@@ -155,5 +155,5 @@ object V {
   val scalaTest = "3.0.8"
   val scalaUri = "1.4.10"
   val slf4j = "1.7.25"
-  val twitterUtil = "18.3.0"
+  val twitterUtil = "18.7.0"
 }
