@@ -1,7 +1,7 @@
 package com.mesosphere.cosmos.render
 
 import com.github.fge.jsonschema.main.JsonSchemaFactory
-import com.github.mustachejava.DefaultMustacheFactory
+import com.github.mustachejava.{DefaultMustacheFactory, TemplateFunction}
 import com.mesosphere.cosmos.circe.Decoders.convertToCosmosError
 import com.mesosphere.cosmos.circe.Decoders.parse
 import com.mesosphere.cosmos.error.JsonSchemaMismatch
@@ -25,6 +25,7 @@ import java.io.StringWriter
 import java.io.Writer
 import java.nio.charset.StandardCharsets
 import java.util.Base64
+import collection.JavaConverters._
 
 object PackageDefinitionRenderer {
 
@@ -83,14 +84,40 @@ object PackageDefinitionRenderer {
       .foldLeft(JsonObject.empty)(JsonUtil.merge)
   }
 
+  private def jsonTemplateFnForContext(context: JsonObject) = new TemplateFunction {
+    override def apply(t: String): String = {
+      context(t) match  {
+        case None => "null"
+        case Some(jsonValue) => {
+          parse(jsonValue.toString()).getOrThrow.asString match {
+            case None => "null"
+            case Some(jsonString) => jsonString
+          }
+        }
+      }
+    }
+  }
+
   def renderTemplate(
     template: String,
     context: JsonObject
   ): JsonObject = {
     val renderedJsonString = {
       val mustache = MustacheFactory.compile(new StringReader(template), ".marathon.v2AppMustacheTemplate")
-      val params = jsonToJava(Json.fromJsonObject(context), isParentArray = false)
+      var params = jsonToJava(Json.fromJsonObject(context), isParentArray = false)
       val output = new StringWriter()
+
+      // Implement the interface to {{#asJson}}varName{{/asJson}}
+      // Note that the contents of the function must be the *NAME* to the variable
+      // to render as raw JSON.
+      params match {
+        case mapParams:java.util.Map[_, _] => {
+          val castedMap = mapParams.asScala.asInstanceOf[scala.collection.mutable.Map[String, Any]]
+          params = (castedMap + ("asJson" -> jsonTemplateFnForContext(context))).asJava
+        }
+        case _ => Unit
+      }
+
       mustache.execute(output, params).flush()
       output.toString
     }
