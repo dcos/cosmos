@@ -14,6 +14,12 @@ object Deps {
     "com.twitter" %% "bijection-util" % V.bijection
   )
 
+  val akka = Seq(
+    "com.typesafe.akka" %% "akka-http" % "10.1.12",
+    "com.lightbend.akka" %% "akka-stream-alpakka-json-streaming" % "2.0.1",
+    "com.typesafe.akka" %% "akka-stream" % V.akka
+  )
+
   // APLv2.0
   val circe = Seq(
     "io.circe" %% "circe-core" % V.circe,
@@ -140,6 +146,7 @@ object V {
   val projectScalaVersion = "2.12.9"
   val projectVersion = "0.6.2-SNAPSHOT"
 
+  val akka = "2.5.31"
   val bijection = "0.9.6"
   val circe = "0.11.1"
   val curator = "2.12.0"

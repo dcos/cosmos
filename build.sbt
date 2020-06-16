@@ -30,6 +30,7 @@ val server = project.in(file("cosmos-server"))
   .settings(
     name := baseDirectory.value.name,
     libraryDependencies ++=
+      Deps.akka ++
       Deps.bijectionUtil ++
       Deps.logback ++
       Deps.slf4j ++

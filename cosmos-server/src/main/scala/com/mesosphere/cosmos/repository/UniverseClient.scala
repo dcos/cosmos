@@ -28,9 +28,18 @@ import com.twitter.util.Return
 import com.twitter.util.Throw
 import io.netty.handler.codec.http.HttpResponseStatus
 import java.io.InputStream
+import java.nio.charset.StandardCharsets
+
+import akka.http.scaladsl.model.HttpResponse
+import akka.stream.Materializer
+import akka.stream.alpakka.json.scaladsl.JsonReader
+import akka.stream.scaladsl.Sink
 import org.jboss.netty.handler.codec.http.HttpMethod
-import scala.io.Codec
-import scala.io.Source
+
+import scala.concurrent.{Await, ExecutionContext}
+import scala.io.{Codec, Source}
+//import scala.io.Source
+import akka.stream.scaladsl.StreamConverters
 
 trait UniverseClient {
   def apply(
@@ -81,22 +90,19 @@ final class DefaultUniverseClient(
     fetchScope.counter("requestCount").incr()
     Stat.timeFuture(fetchScope.stat("histogram")) {
       val acceptedMediaTypes = CompoundMediaType(
-        MediaTypes.UniverseV5Repository,
+        MediaTypes.UniverseV5Repositor ConfigRenderOptions,
         MediaTypes.UniverseV4Repository,
         MediaTypes.UniverseV3Repository
       )
 
       HttpClient
-        .fetch(
+        .fetchAkka(
           repository.uri,
           Fields.Accept -> acceptedMediaTypes.show,
           Fields.AcceptEncoding -> "gzip",
           Fields.UserAgent -> s"cosmos/$cosmosVersion dcos/${dcosReleaseVersion.show}"
-        ) { responseData =>
-          decodeAndSortUniverse(
-            responseData.contentType,
-            responseData.contentStream
-          )
+        ) { response=>
+          decodeAndSortUniverseAkka(reponse)
         }(fetchScope)
         .handle { case cosmosException: CosmosException =>
           cosmosException.error match {
@@ -121,10 +127,22 @@ final class DefaultUniverseClient(
     }
   }
 
+  private[this] def decodeAndSortUniverseAkka(response: HttpResponse)(
+    implicit ex: ExecutionContext, mat: Materializer): Future[universe.v4.model.Repository] = {
+    response.entity.dataBytes
+      .via(JsonReader.select("$.packages[*]"))
+      .map { chunk =>
+        decode[universe.v4.model.PackageDefinition](chunk.decodeString(StandardCharsets.UTF_8))
+          .getOrThrow
+      }
+      .runWith(Sink.seq)
+      .map(packages => universe.v4.model.Repository(packages.toList))
+  }
+
   private[this] def decodeAndSortUniverse(
     contentType: MediaType,
     bodyInputStream: InputStream
-  ): universe.v4.model.Repository = {
+  )(implicit ex: ExecutionContext, mat: Materializer): universe.v4.model.Repository = {
 
     def processAsV4Repository(version : String) : universe.v4.model.Repository = {
       val scope = fetchScope.scope("decode").scope(version)

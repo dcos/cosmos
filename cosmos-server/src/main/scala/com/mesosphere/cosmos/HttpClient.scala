@@ -21,8 +21,13 @@ import java.net.MalformedURLException
 import java.net.URISyntaxException
 import java.util.zip.GZIPInputStream
 
+import akka.actor.ActorSystem
+import akka.http.scaladsl.Http
+import akka.http.scaladsl.model.{HttpHeader, HttpRequest, HttpResponse, Uri => AkkaUri}
+import akka.stream.Materializer
 import org.slf4j.Logger
 
+import scala.concurrent.ExecutionContext
 import scala.util.{Failure, Success, Try}
 
 object HttpClient {
@@ -54,6 +59,23 @@ object HttpClient {
       .handle { case e: IOException =>
         throw CosmosException(EndpointUriConnection(uri, e.getMessage), e)
       }
+  }
+
+  def fetchAkka[A](
+    uri: Uri,
+    headers: (String, String)*
+  )(
+    processResponse: HttpResponse => Future[A]
+  )(implicit ex: ExecutionContext, system: ActorSystem, mat: Materializer): Future[A] = {
+    // TODO: pass Akka headers
+    val convertedHeaders = headers.map { case (key, value) =>
+      HttpHeader.parse(key, value)
+    }.collect {
+      case HttpHeader.ParsingResult.Ok(result, _) => result
+    }.toVector
+    val request = HttpRequest(uri = AkkaUri(uri.toString()), headers = convertedHeaders)
+    // TODO: deflate gzip compressed response
+    Http().singleRequest(request).flatMap(processResponse)
   }
 
   def fetchStream[A](
