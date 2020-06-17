@@ -14,9 +14,15 @@ object Deps {
     "com.twitter" %% "bijection-util" % V.bijection
   )
 
+  // APLv2.0
+  val asyncAwait = Seq(
+    "org.scala-lang.modules" %% "scala-async" % V.asyncAwait
+  )
+
+  // APLv2.0
   val akka = Seq(
-    "com.typesafe.akka" %% "akka-http" % "10.1.12",
-    "com.lightbend.akka" %% "akka-stream-alpakka-json-streaming" % "2.0.1",
+    "com.typesafe.akka" %% "akka-http" % V.akkaHttp,
+    "com.lightbend.akka" %% "akka-stream-alpakka-json-streaming" % V.alpakka,
     "com.typesafe.akka" %% "akka-stream" % V.akka
   )
 
@@ -146,7 +152,10 @@ object V {
   val projectScalaVersion = "2.12.9"
   val projectVersion = "0.6.2-SNAPSHOT"
 
+  val alpakka = "2.0.1"
   val akka = "2.5.31"
+  val akkaHttp = "10.1.12"
+  val asyncAwait = "0.10.0"
   val bijection = "0.9.6"
   val circe = "0.11.1"
   val curator = "2.12.0"

@@ -5,6 +5,7 @@ import _root_.io.finch.ToResponse
 import _root_.io.finch._
 import _root_.io.finch.circe.dropNullValues._
 import _root_.io.finch.syntax._
+import akka.actor.ActorSystem
 import com.mesosphere.cosmos.app.Logging
 import com.mesosphere.cosmos.circe.Encoders._
 import com.mesosphere.cosmos.error.CosmosException
@@ -76,6 +77,8 @@ trait CosmosApp
 
   protected final def buildComponents(): Components = {
     implicit val sr = statsReceiver
+
+    implicit val actorSystem = ActorSystem("cosmos")
 
     val adminRouter = configureDcosClients().get
 

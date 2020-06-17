@@ -17,6 +17,8 @@ import io.netty.handler.codec.http.HttpResponseStatus
 import java.io.InputStream
 import java.net.HttpURLConnection
 
+import scala.concurrent.ExecutionContext.Implicits.global
+
 final class ResourceProxyHandler private(
   packageCollection: PackageCollection
 )(implicit statsReceiver: StatsReceiver) {

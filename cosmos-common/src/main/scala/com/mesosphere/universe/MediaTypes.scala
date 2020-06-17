@@ -1,24 +1,23 @@
 package com.mesosphere.universe
 
-import com.mesosphere.http.MediaType
-import com.mesosphere.http.MediaTypeSubType
+import akka.http.scaladsl.model.{HttpCharsets, MediaType}
 
 object MediaTypes {
 
   private[this] def universeRepository(version: String): MediaType = {
-    MediaType(
-      "application",
-      MediaTypeSubType("vnd.dcos.universe.repo", Some("json")),
-      Map("charset" -> "utf-8", "version" -> version)
-    )
+    MediaType.applicationWithFixedCharset(
+      "vnd.dcos.universe.repo",
+      HttpCharsets.`UTF-8`,
+      "json")
+      .withParams(Map("version" -> version))
   }
 
   private[this] def universePackage(version: String): MediaType = {
-    MediaType(
-      "application",
-      MediaTypeSubType("vnd.dcos.universe.package", Some("json")),
-      Map("charset" -> "utf-8", "version" -> version)
-    )
+    MediaType.applicationWithFixedCharset(
+      "vnd.dcos.universe.package",
+      HttpCharsets.`UTF-8`,
+      "json")
+      .withParams(Map("version" -> version))
   }
 
   val universeV2Package: MediaType = universePackage("v2")

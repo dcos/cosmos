@@ -8,18 +8,22 @@ import com.mesosphere.cosmos.http.RequestSession
 import com.mesosphere.cosmos.rpc
 import com.mesosphere.http.OriginHostScheme
 import com.mesosphere.universe
+import com.mesosphere.universe.bijection.FutureConversions._
 import io.lemonlabs.uri.Uri
 import com.twitter.util.Future
-import com.twitter.util.Throw
 import java.util.concurrent.TimeUnit
 import java.util.regex.Pattern
+
 import scala.math.Ordering.Implicits.infixOrderingOps
+import scala.util.Failure
 import scala.util.matching.Regex
 
 final class PackageCollection(
   packageRepositoryStorage: PackageSourcesStorage,
   universeClient: UniverseClient
 ) {
+
+  implicit val executionContext = scala.concurrent.ExecutionContext.global
 
   private[this] lazy val repositoryCache: LoadingCache[RequestSession, Future[List[(universe.v4.model.Repository, Uri)]]] = {
     Caffeine
@@ -30,14 +34,13 @@ final class PackageCollection(
           .readCache()
           .flatMap { packageRepositories =>
             Future.traverseSequentially(packageRepositories){ packageRepository =>
-              universeClient(packageRepository)(session)
-                .map((_, packageRepository.uri))
-                .respond {
-                  case Throw(_) =>
+              val action = universeClient(packageRepository)(session, executionContext).map((_, packageRepository.uri))
+                action.onComplete {
+                  case Failure(_) =>
                     repositoryCache.invalidate(session)
-                    ()
                   case _ => ()
                 }
+              action.asTwitter
             }.map(_.toList)
           }
       }
