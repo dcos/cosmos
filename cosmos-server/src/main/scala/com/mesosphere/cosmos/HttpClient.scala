@@ -3,14 +3,14 @@ package com.mesosphere.cosmos
 import com.mesosphere.cosmos.error.CosmosException
 import com.mesosphere.cosmos.error.GenericHttpError
 import com.mesosphere.cosmos.error.UnsupportedContentEncoding
-import com.mesosphere.cosmos.error.UnsupportedRedirect
+//import com.mesosphere.cosmos.error.UnsupportedRedirect
 import com.mesosphere.http.MediaType
-import com.mesosphere.http.MediaTypeParser
+//import com.mesosphere.http.MediaTypeParser
 import io.lemonlabs.uri.Uri
 import com.twitter.finagle.http.Fields
 import com.twitter.finagle.http.filter.LogFormatter
 import com.twitter.finagle.stats.StatsReceiver
-import io.netty.handler.codec.http.HttpResponseStatus
+//import io.netty.handler.codec.http.HttpResponseStatus
 import java.io.IOException
 import java.io.InputStream
 import java.net.HttpURLConnection
@@ -25,7 +25,7 @@ import org.slf4j.Logger
 import scala.async.Async.{async, await}
 import scala.concurrent.duration.{FiniteDuration, MILLISECONDS}
 import scala.concurrent.{ExecutionContext, Future}
-import scala.util.{Failure, Success}
+//import scala.util.{Failure, Success}
 
 object HttpClient {
 
@@ -56,18 +56,6 @@ object HttpClient {
     await(processResponse(response))
   }
 
-  def fetchStream[A](
-    uri: Uri,
-    headers: (String, String)*
-  )(
-    processResponse: (ResponseData, HttpURLConnection) => A
-  )(
-    implicit statsReceiver: StatsReceiver,
-    ec: ExecutionContext
-  ): Future[A] = {
-    ???
-  }
-
   private[this] def retry[A](f: => Future[A])(
     implicit ec: ExecutionContext,
     system: ActorSystem
@@ -86,7 +74,8 @@ object HttpClient {
       retryOn = isRetryApplicable)(f)
   }
 
-  private def parseContentHeaders( // scalastyle:ignore
+  /*
+  private def parseContentHeaders( // linter:ignore
     uri: Uri,
     conn: HttpURLConnection
   )(implicit
@@ -117,6 +106,7 @@ object HttpClient {
         throw GenericHttpError(uri = uri, clientStatus = HttpResponseStatus.valueOf(status)).exception
     }
   }
+  */
 
   private def decodeResponse(response: HttpResponse)(implicit sr: StatsReceiver): HttpResponse = {
     val decoder = response.encoding match {

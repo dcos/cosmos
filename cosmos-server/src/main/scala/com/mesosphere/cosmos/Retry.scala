@@ -42,7 +42,7 @@ object Retry {
   type RetryOnFn = Throwable => Boolean
   val defaultRetry: RetryOnFn = NonFatal(_)
 
-  private[util] def randomBetween(min: Long, max: Long): Long = {
+  def randomBetween(min: Long, max: Long): Long = {
     require(min <= max)
     math.min(math.abs(Random.nextLong() % (max - min + 1)) + min, max)
   }

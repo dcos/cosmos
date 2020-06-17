@@ -19,7 +19,7 @@ private[cosmos] final class PackageRepositoryAddHandler(
   sourcesStorage: PackageSourcesStorage,
   universeClient: UniverseClient,
   repositories: PackageCollection
-)extends EndpointHandler[rpc.v1.model.PackageRepositoryAddRequest, rpc.v1.model.PackageRepositoryAddResponse] {
+) extends EndpointHandler[rpc.v1.model.PackageRepositoryAddRequest, rpc.v1.model.PackageRepositoryAddResponse] {
 
   override def apply(
     request: rpc.v1.model.PackageRepositoryAddRequest
