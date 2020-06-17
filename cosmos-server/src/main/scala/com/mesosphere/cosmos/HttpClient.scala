@@ -33,10 +33,8 @@ object HttpClient {
 
   val logger: Logger = org.slf4j.LoggerFactory.getLogger(getClass)
 
-  def fetch[A](
-    uri: Uri,
-    headers: (String, String)*
-  )(
+  def fetch[A](uri: Uri, headers: (String, String)*)(
+
     processResponse: ResponseData => A
   )(
     implicit statsReceiver: StatsReceiver

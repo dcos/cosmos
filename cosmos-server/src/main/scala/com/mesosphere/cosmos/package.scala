@@ -1,6 +1,5 @@
 package com.mesosphere
 
-import com.mesosphere.cosmos.Flaggables._
 import com.mesosphere.cosmos.model.ZooKeeperUri
 import com.mesosphere.error.ResultOps
 import io.lemonlabs.uri.Uri
