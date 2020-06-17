@@ -10,16 +10,26 @@ import com.mesosphere.cosmos.test.CosmosIntegrationTestClient
 import com.mesosphere.universe
 import io.lemonlabs.uri.Uri
 import io.lemonlabs.uri.dsl._
-import com.twitter.util.Await
-import com.twitter.util.Throw
+import com.twitter.util.{Await, Throw, Try}
 import io.netty.handler.codec.http.HttpResponseStatus
 import java.io.IOException
 import java.net.MalformedURLException
 import java.net.UnknownHostException
+
+import akka.actor.ActorSystem
+import akka.stream.{ActorMaterializer, Materializer}
 import org.scalatest.FreeSpec
 import org.scalatest.Matchers
+import org.scalatest.concurrent.PatienceConfiguration.Timeout
+import org.scalatest.concurrent.ScalaFutures
 
-final class UniverseClientSpec extends FreeSpec with Matchers {
+import scala.concurrent.ExecutionContextExecutor
+
+final class UniverseClientSpec extends FreeSpec with Matchers with ScalaFutures {
+
+  implicit val system: ActorSystem = ActorSystem("universe-client-test")
+  implicit val mat: Materializer = ActorMaterializer()
+  implicit lazy val ctx: ExecutionContextExecutor = system.dispatcher
 
   "UniverseClient" - {
 
@@ -49,7 +59,7 @@ final class UniverseClientSpec extends FreeSpec with Matchers {
         "relative URI" in {
           val expectedRepo = PackageRepository(name = "FooBar", uri = Uri.parse("foo/bar"))
           val Throw(CosmosException(RepositoryUriSyntax(actualRepo, _), _, Some(causedBy))) =
-            Await.result(universeClient(expectedRepo, version1Dot8).liftToTry)
+            Try(universeClient(expectedRepo, version1Dot8).futureValue)
           assertResult(expectedRepo)(actualRepo)
           assert(causedBy.isInstanceOf[IllegalArgumentException])
         }
@@ -57,7 +67,7 @@ final class UniverseClientSpec extends FreeSpec with Matchers {
         "unknown protocol" in {
           val expectedRepo = PackageRepository(name = "FooBar", uri = Uri.parse("foo://bar.com"))
           val Throw(CosmosException(RepositoryUriSyntax(actualRepo, _), _, Some(causedBy))) =
-            Await.result(universeClient(expectedRepo, version1Dot8).liftToTry)
+            Try(universeClient(expectedRepo, version1Dot8).futureValue)
           assertResult(expectedRepo)(actualRepo)
           assert(causedBy.isInstanceOf[MalformedURLException])
         }
@@ -66,7 +76,7 @@ final class UniverseClientSpec extends FreeSpec with Matchers {
       "Connection failure" in {
         val expectedRepo = PackageRepository(name = "BadRepo", uri = Uri.parse("http://foobar"))
         val Throw(CosmosException(RepositoryUriConnection(actualRepo, _), _, Some(causedBy))) =
-          Await.result(universeClient(expectedRepo, version1Dot8).liftToTry)
+          Try(universeClient(expectedRepo, version1Dot8).futureValue)
         assertResult(expectedRepo)(actualRepo)
         assert(causedBy.isInstanceOf[IOException])
       }
@@ -79,14 +89,14 @@ final class UniverseClientSpec extends FreeSpec with Matchers {
         val version = universe.v3.model.DcosReleaseVersionParser.parseUnsafe("1.10")
         val repoFilename = "repo-up-to-1.10.json"
         val repository = v4Repository(repoFilename)
-        val repo = Await.result(universeClient(repository, version))
+        val repo = universeClient(repository, version).futureValue
         getVersions(repo, "helloworld") shouldBe
           List(universe.v3.model.Version("0.4.0"), universe.v3.model.Version("0.4.1"))
       }
 
       "1.8 json" in {
         val version = universe.v3.model.DcosReleaseVersionParser.parseUnsafe("1.8-dev")
-        val repo = Await.result(universeClient(repository("repo-up-to-1.8.json"), version))
+        val repo = universeClient(repository("repo-up-to-1.8.json"), version).futureValue
         assertResult(List(
           universe.v3.model.Version("0.2.0-1"),
           universe.v3.model.Version("0.2.0-2")
@@ -97,7 +107,7 @@ final class UniverseClientSpec extends FreeSpec with Matchers {
 
       "1.7 json" in {
         val version = universe.v3.model.DcosReleaseVersionParser.parseUnsafe("1.7")
-        val repo = Await.result(universeClient(repository("repo-empty-v3.json"), version))
+        val repo = universeClient(repository("repo-empty-v3.json"), version).futureValue
         assert(repo.packages.isEmpty)
       }
     }
@@ -109,9 +119,7 @@ final class UniverseClientSpec extends FreeSpec with Matchers {
       val result = universeClient(expectedPkgRepo, version)
       val Throw(
         CosmosException(UniverseClientHttpError(actualPkgRepo, method, clientStatus, status), _, _)
-      ) = Await.result(
-        result.liftToTry
-      )
+      ) = Try(result.futureValue)
       assertResult("GET")(method.getName)
       assertResult(expectedPkgRepo)(actualPkgRepo)
       assertResult(HttpResponseStatus.FORBIDDEN)(clientStatus)
@@ -122,15 +130,14 @@ final class UniverseClientSpec extends FreeSpec with Matchers {
       val version = universe.v3.model.DcosReleaseVersionParser.parseUnsafe("0.0")
       val repoUri = "https://something-that-is-never.valid" / "doesnotexist.json"
       val expectedPkgRepo = PackageRepository("badRepo", repoUri)
-      val result = universeClient(expectedPkgRepo, version).liftToTry
-      assertThrows[com.twitter.util.TimeoutException](
-        Await.result(
-          result,
+      val result = universeClient(expectedPkgRepo, version)
+//      assertThrows[com.twitter.util.TimeoutException](
           // We verify the future is retrying by ensuring it is not complete before retry duration
-          HttpClient.RETRY_INTERVAL * (HttpClient.DEFAULT_RETRIES - 1).toLong
-        )
-      )
-      val Throw(ex) = Await.result(result)
+//          HttpClient.RETRY_INTERVAL * (HttpClient.DEFAULT_RETRIES - 1).toLong
+//        )
+//      )
+      fail("assert retries")
+      val Throw(ex) = Try(result.futureValue)
       assert(ex.isInstanceOf[CosmosException])
       val cosmosException = ex.asInstanceOf[CosmosException]
       assert(cosmosException.error.isInstanceOf[RepositoryUriConnection])
