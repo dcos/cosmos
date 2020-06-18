@@ -5,6 +5,7 @@ import com.mesosphere.cosmos.error.Forbidden
 import com.mesosphere.cosmos.error.GenericHttpError
 import com.mesosphere.cosmos.http.RequestSession
 import com.mesosphere.cosmos.repository.PackageCollection
+import com.mesosphere.http.MediaType.AkkaMediaTypeOps
 import com.mesosphere.universe.bijection.FutureConversions._
 import io.lemonlabs.uri.Uri
 import com.twitter.finagle.http.Fields
@@ -82,7 +83,7 @@ final class ResourceProxyHandler private(
               Status.Ok,
               Reader.fromStream(inputStream)
             )
-            response.contentType = originalResponse.entity.contentType.mediaType.toString() // TODO: this is probably a bug
+            response.contentType = originalResponse.entity.contentType.mediaType.show
             response.headerMap.add(Fields.TransferEncoding, "chunked")
             for (filename <- getFileNameFromUrl(uri)) {
               response.headerMap.add(Fields.ContentDisposition,

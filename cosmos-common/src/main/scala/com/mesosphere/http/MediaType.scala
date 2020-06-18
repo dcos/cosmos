@@ -1,5 +1,6 @@
 package com.mesosphere.http
 
+import akka.http.scaladsl.model.{MediaType => AkkaMediaType}
 import io.circe.Encoder
 import scala.util.Try
 
@@ -83,6 +84,22 @@ object MediaType {
      */
     def qValue: QualityValue = {
       MediaType.qValue(mediaType)
+    }
+  }
+
+  implicit final class AkkaMediaTypeOps(val mediaType: AkkaMediaType) extends AnyVal {
+    def show: String = {
+      val t = mediaType.fileExtensions match {
+        case head :: _ =>
+          s"${mediaType.mainType}/${mediaType.subType}+$head"
+        case Nil =>
+          s"${mediaType.mainType}/${mediaType.subType}"
+      }
+      val p = mediaType.params.toVector
+        .map { case (key, value) => s";$key=$value" }
+        .mkString
+
+      t + p
     }
   }
 

@@ -5,6 +5,7 @@ import _root_.io.circe.jawn._
 import _root_.io.circe.syntax._
 import com.mesosphere.cosmos.model.StorageEnvelope
 import com.mesosphere.error.ResultOps
+import com.mesosphere.http.MediaType.AkkaMediaTypeOps
 import com.mesosphere.universe
 import com.mesosphere.universe.MediaTypes
 import com.mesosphere.universe.common.JsonUtil

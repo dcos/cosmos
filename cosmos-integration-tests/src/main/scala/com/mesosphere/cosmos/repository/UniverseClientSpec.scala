@@ -1,6 +1,6 @@
 package com.mesosphere.cosmos.repository
 
-import com.mesosphere.cosmos.HttpClient
+//import com.mesosphere.cosmos.HttpClient
 import com.mesosphere.cosmos.error.CosmosException
 import com.mesosphere.cosmos.error.RepositoryUriConnection
 import com.mesosphere.cosmos.error.RepositoryUriSyntax
@@ -10,17 +10,15 @@ import com.mesosphere.cosmos.test.CosmosIntegrationTestClient
 import com.mesosphere.universe
 import io.lemonlabs.uri.Uri
 import io.lemonlabs.uri.dsl._
-import com.twitter.util.{Await, Throw, Try}
+import com.twitter.util.{Throw, Try}
 import io.netty.handler.codec.http.HttpResponseStatus
 import java.io.IOException
 import java.net.MalformedURLException
-import java.net.UnknownHostException
 
 import akka.actor.ActorSystem
 import akka.stream.{ActorMaterializer, Materializer}
 import org.scalatest.FreeSpec
 import org.scalatest.Matchers
-import org.scalatest.concurrent.PatienceConfiguration.Timeout
 import org.scalatest.concurrent.ScalaFutures
 
 import scala.concurrent.ExecutionContextExecutor
@@ -130,19 +128,19 @@ final class UniverseClientSpec extends FreeSpec with Matchers with ScalaFutures 
       val version = universe.v3.model.DcosReleaseVersionParser.parseUnsafe("0.0")
       val repoUri = "https://something-that-is-never.valid" / "doesnotexist.json"
       val expectedPkgRepo = PackageRepository("badRepo", repoUri)
-      val result = universeClient(expectedPkgRepo, version)
+//      val result = universeClient(expectedPkgRepo, version)
 //      assertThrows[com.twitter.util.TimeoutException](
           // We verify the future is retrying by ensuring it is not complete before retry duration
 //          HttpClient.RETRY_INTERVAL * (HttpClient.DEFAULT_RETRIES - 1).toLong
 //        )
 //      )
       fail("assert retries")
-      val Throw(ex) = Try(result.futureValue)
-      assert(ex.isInstanceOf[CosmosException])
-      val cosmosException = ex.asInstanceOf[CosmosException]
-      assert(cosmosException.error.isInstanceOf[RepositoryUriConnection])
-      cosmosException.causedBy shouldBe defined
-      assert(cosmosException.causedBy.get.isInstanceOf[UnknownHostException])
+//      val Throw(ex) = Try(result.futureValue)
+//      assert(ex.isInstanceOf[CosmosException])
+//      val cosmosException = ex.asInstanceOf[CosmosException]
+//      assert(cosmosException.error.isInstanceOf[RepositoryUriConnection])
+//      cosmosException.causedBy shouldBe defined
+//      assert(cosmosException.causedBy.get.isInstanceOf[UnknownHostException])
     }
 
   }
@@ -155,6 +153,7 @@ final class UniverseClientSpec extends FreeSpec with Matchers with ScalaFutures 
       .filter(_.name == name)
       .sorted
       .map(_.version)
+      .toList
   }
 
 }
