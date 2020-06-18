@@ -6,17 +6,15 @@ object MediaTypes {
 
   private[this] def universeRepository(version: String): MediaType = {
     MediaType.applicationWithFixedCharset(
-      "vnd.dcos.universe.repo",
-      HttpCharsets.`UTF-8`,
-      "json")
+      "vnd.dcos.universe.repo+json",
+      HttpCharsets.`UTF-8`)
       .withParams(Map("version" -> version))
   }
 
   private[this] def universePackage(version: String): MediaType = {
     MediaType.applicationWithFixedCharset(
-      "vnd.dcos.universe.package",
-      HttpCharsets.`UTF-8`,
-      "json")
+      "vnd.dcos.universe.package+json",
+      HttpCharsets.`UTF-8`)
       .withParams(Map("version" -> version))
   }
 

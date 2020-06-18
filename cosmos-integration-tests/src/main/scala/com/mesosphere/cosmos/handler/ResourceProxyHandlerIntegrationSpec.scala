@@ -12,7 +12,6 @@ import com.mesosphere.cosmos.http.TestContext
 import com.mesosphere.cosmos.rpc
 import com.mesosphere.cosmos.test.CosmosIntegrationTestClient.CosmosClient
 import io.lemonlabs.uri.Uri
-import com.twitter.finagle.http.Fields
 import com.twitter.finagle.stats.NullStatsReceiver
 import com.twitter.finagle.stats.StatsReceiver
 import io.circe.jawn.decode

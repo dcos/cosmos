@@ -6,6 +6,7 @@ import akka.http.scaladsl.unmarshalling.Unmarshal
 import akka.stream.{ActorMaterializer, Materializer}
 import com.mesosphere.cosmos.error.CosmosException
 import com.mesosphere.cosmos.error.EndpointUriSyntax
+import com.mesosphere.universe.bijection.MediaTypeConversions._
 import com.mesosphere.universe
 import io.lemonlabs.uri.Uri
 import io.lemonlabs.uri.dsl._
@@ -15,7 +16,8 @@ import io.circe.jawn.parse
 import org.scalatest.FreeSpec
 import org.scalatest.concurrent.ScalaFutures
 
-import scala.concurrent.{ExecutionContextExecutor, Future}
+import scala.concurrent.{Await, ExecutionContextExecutor, Future}
+import scala.concurrent.duration._
 
 final class HttpClientSpec extends FreeSpec with ScalaFutures {
 
@@ -27,34 +29,36 @@ final class HttpClientSpec extends FreeSpec with ScalaFutures {
 
   "HttpClient.fetch() retrieves the given URL" in {
     val future = HttpClient.fetch(JsonContentUrl) { responseData =>
-      assertResult(universe.MediaTypes.UniverseV4Repository)(responseData.entity.contentType)
+      assertResult(universe.MediaTypes.UniverseV4Repository.asCosmos)(responseData.entity.contentType.mediaType.asCosmos)
 
-      val contentString = Unmarshal(responseData.entity).to[String].futureValue
+      assert(responseData.status.isSuccess())
+
+      val contentString = Await.result(Unmarshal(responseData.entity).to[String], 10.seconds)
       assert(parse(contentString).isRight)
       Future.successful(Done)
     }
-    future.futureValue
+    Await.result(future, 15.seconds)
   }
 
   "HttpClient.fetch() reports URL syntax problems" - {
 
     "relative URI" in {
       val cosmosException = intercept[CosmosException](
-        HttpClient.fetch("foo/bar")(_ => Future.successful(Done)).futureValue
+        throw HttpClient.fetch("foo/bar")(_ => Future.successful(Done)).failed.futureValue
       )
       assert(cosmosException.error.isInstanceOf[EndpointUriSyntax])
     }
 
     "unknown protocol" in {
       val cosmosException = intercept[CosmosException](
-        HttpClient.fetch("foo://bar.com")(_ => Future.successful(Done)).futureValue
+        throw HttpClient.fetch("foo://bar.com")(_ => Future.successful(Done)).failed.futureValue
       )
       assert(cosmosException.error.isInstanceOf[EndpointUriSyntax])
     }
 
     "URISyntaxException" in {
       val cosmosException = intercept[CosmosException](
-        HttpClient.fetch("/\\")(_ => Future.successful(Done)).futureValue
+        throw HttpClient.fetch("/\\")(_ => Future.successful(Done)).failed.futureValue
       )
       assert(cosmosException.error.isInstanceOf[EndpointUriSyntax])
     }

@@ -1,8 +1,9 @@
 package com.mesosphere.cosmos
 
-import com.mesosphere.cosmos.error.CosmosException
-import com.mesosphere.cosmos.error.GenericHttpError
-import com.mesosphere.cosmos.error.UnsupportedContentEncoding
+import java.net.{MalformedURLException, URISyntaxException}
+
+import com.mesosphere.cosmos.error.{CosmosException, EndpointUriSyntax, GenericHttpError, UnsupportedContentEncoding}
+
 //import com.mesosphere.cosmos.error.UnsupportedRedirect
 import com.mesosphere.http.MediaType
 //import com.mesosphere.http.MediaTypeParser
@@ -47,6 +48,12 @@ object HttpClient {
     ec: ExecutionContext,
     system: ActorSystem
   ): Future[A] = async {
+    // Validate URI
+    try { uri.toJavaURI.toURL }
+    catch {
+        case t @ (_: IllegalArgumentException | _: MalformedURLException | _: URISyntaxException) =>
+          throw CosmosException(EndpointUriSyntax(uri, t.getMessage), t)
+    }
     val userAgent = `User-Agent`(PRODUCT_VERSION)
     val request = HttpRequest(uri = AkkaUri(uri.toString()), headers = headers.toVector :+ userAgent)
     val futureResponse = retry { Http().singleRequest(request) }
