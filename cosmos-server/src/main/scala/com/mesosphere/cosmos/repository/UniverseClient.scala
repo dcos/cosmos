@@ -27,7 +27,7 @@ import java.nio.charset.StandardCharsets
 
 import akka.actor.ActorSystem
 import akka.http.scaladsl.model.{HttpResponse, MediaRange}
-import akka.http.scaladsl.model.headers.{Accept, HttpEncodings, ProductVersion, `Accept-Encoding`, `Content-Type`, `User-Agent`}
+import akka.http.scaladsl.model.headers.{Accept, HttpEncodings, ProductVersion, `Accept-Encoding`, `User-Agent`}
 import akka.stream.Materializer
 import akka.stream.alpakka.json.scaladsl.JsonReader
 import akka.stream.scaladsl.Sink
@@ -153,19 +153,16 @@ final class DefaultUniverseClient(
     }
 
     // Decode the packages
-    val repo = response.header[`Content-Type`].map(header => header.contentType.mediaType.asCosmos) match {
-      case Some(mediaType) =>
-        if (mediaType.isCompatibleWith(MediaTypes.UniverseV5Repository.asCosmos)) {
-          await(processAsV4Repository("v5"))
-        } else if (mediaType.isCompatibleWith(MediaTypes.UniverseV4Repository.asCosmos)) {
-          await(processAsV4Repository("v4"))
-        } else if (mediaType.isCompatibleWith(MediaTypes.UniverseV3Repository.asCosmos)) {
-          await(processAsV4Repository("v3"))
-        } else {
-          throw UnsupportedContentType.forMediaType(SupportedMediaTypes, Some(mediaType)).exception
-        }
-      case None =>
-        throw UnsupportedContentType.forMediaType(SupportedMediaTypes, None).exception
+    logger.info(s"# Headers: ${response.headers.mkString(", ")}")
+    val mediaType = response.entity.contentType.mediaType.asCosmos
+    val repo =if (mediaType.isCompatibleWith(MediaTypes.UniverseV5Repository.asCosmos)) {
+      await(processAsV4Repository("v5"))
+    } else if (mediaType.isCompatibleWith(MediaTypes.UniverseV4Repository.asCosmos)) {
+      await(processAsV4Repository("v4"))
+    } else if (mediaType.isCompatibleWith(MediaTypes.UniverseV3Repository.asCosmos)) {
+      await(processAsV4Repository("v3"))
+    } else {
+      throw UnsupportedContentType.forMediaType(SupportedMediaTypes, Some(mediaType)).exception
     }
 
     // Sort the packages

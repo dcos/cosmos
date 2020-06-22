@@ -2,6 +2,7 @@ package com.mesosphere.cosmos
 
 import java.net.{MalformedURLException, URISyntaxException}
 
+import akka.http.scaladsl.model.headers
 import com.mesosphere.cosmos.error.{CosmosException, EndpointUriSyntax, GenericHttpError, UnsupportedContentEncoding}
 
 //import com.mesosphere.cosmos.error.UnsupportedRedirect
@@ -56,9 +57,14 @@ object HttpClient {
     }
     val userAgent = `User-Agent`(PRODUCT_VERSION)
     val request = HttpRequest(uri = AkkaUri(uri.toString()), headers = headers.toVector :+ userAgent)
-    val futureResponse = retry { Http().singleRequest(request) }
+
+    logger.info(s"# Make request. request$request")
+
+    val futureResponse = retry { performRequest(request) }
     val response = decodeResponse(await(futureResponse))
-    // TODO: Handle status such as redirect
+    // TODO: Handle status such as redirect and follow redirect
+
+    logger.info(s"# Received response: status=${response.status}, headers=[${response.headers.mkString(", ")}]")
 
     await(processResponse(response))
   }
@@ -81,6 +87,19 @@ object HttpClient {
       retryOn = isRetryApplicable)(f)
   }
 
+  private[this] def performRequest(request: HttpRequest)(implicit ec: ExecutionContext, system: ActorSystem): Future[HttpResponse] = async {
+    val response = await(Http().singleRequest(request))
+    if(response.status.isRedirection()) {
+      val locationHeader = response.header[headers.Location].get
+      val redirectUri = locationHeader.uri.resolvedAgainst(request.uri)
+      val updatedRequest = request.withUri(redirectUri)
+      logger.info(s"# Follow redirect to $redirectUri")
+      // TODO: count redirections
+      await(performRequest(updatedRequest))
+    } else {
+      response
+    }
+  }
   /*
   private def parseContentHeaders( // linter:ignore
     uri: Uri,

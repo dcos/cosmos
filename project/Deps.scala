@@ -124,7 +124,9 @@ object Deps {
   // APLv2.0
   val twitterUtil = Seq(
     "com.twitter" %% "util-core" % V.twitterUtil,
-    "com.twitter" %% "finagle-stats" % V.twitterUtil
+    "com.twitter" %% "finagle-stats" % V.twitterUtil,
+    // Override Jackson dependency
+    "com.fasterxml.jackson.module" %% "jackson-module-scala" % V.jackson
   )
 
   // MIT
@@ -162,6 +164,7 @@ object V {
   val fastparse = "1.0.0"
   val finch = "0.18.0"
   val guava = "28.0-jre"
+  val jackson = "2.10.4"
   val jsonSchema = "2.2.6"
   val logback = "1.2.3"
   val mockito = "2.16.0"
