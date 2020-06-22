@@ -58,13 +58,9 @@ object HttpClient {
     val userAgent = `User-Agent`(PRODUCT_VERSION)
     val request = HttpRequest(uri = AkkaUri(uri.toString()), headers = headers.toVector :+ userAgent)
 
-    logger.info(s"# Make request. request$request")
-
     val futureResponse = retry { performRequest(request) }
     val response = decodeResponse(await(futureResponse))
-    // TODO: Handle status such as redirect and follow redirect
-
-    logger.info(s"# Received response: status=${response.status}, headers=[${response.headers.mkString(", ")}]")
+    // TODO: Handle status such
 
     await(processResponse(response))
   }
@@ -90,10 +86,11 @@ object HttpClient {
   private[this] def performRequest(request: HttpRequest)(implicit ec: ExecutionContext, system: ActorSystem): Future[HttpResponse] = async {
     val response = await(Http().singleRequest(request))
     if(response.status.isRedirection()) {
+      response.entity.discardBytes()
+
       val locationHeader = response.header[headers.Location].get
       val redirectUri = locationHeader.uri.resolvedAgainst(request.uri)
       val updatedRequest = request.withUri(redirectUri)
-      logger.info(s"# Follow redirect to $redirectUri")
       // TODO: count redirections
       await(performRequest(updatedRequest))
     } else {

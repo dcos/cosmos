@@ -9,6 +9,8 @@ import io.circe.Json
 import io.circe.JsonObject
 import io.circe.jawn.parse
 import io.circe.syntax._
+import org.slf4j.Logger
+
 import scala.collection.JavaConverters._
 import scala.util.Left
 import scala.util.Right
@@ -16,6 +18,8 @@ import scala.util.Right
 object JsonSchema {
 
   import Jackson._
+
+  val logger: Logger = org.slf4j.LoggerFactory.getLogger(getClass)
 
   type ValidationErrors = Iterable[Json]
 
@@ -147,7 +151,7 @@ object JsonSchema {
         },
         jsonObject = { obj =>
           val objectNode = JsonNodeFactory.instance.objectNode()
-          objectNode.setAll(obj.toMap.mapValues(circeJsonToJsonNode).asJava)
+          objectNode.setAll[JsonNode](obj.toMap.mapValues(circeJsonToJsonNode).asJava)
         }
       )
     }
