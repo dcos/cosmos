@@ -23,6 +23,8 @@ final class PackageCollection(
   universeClient: UniverseClient
 ) {
 
+  private[this] val logger = org.slf4j.LoggerFactory.getLogger(getClass)
+
   implicit val executionContext = scala.concurrent.ExecutionContext.global
 
   private[this] lazy val repositoryCache: LoadingCache[RequestSession, Future[List[(universe.v4.model.Repository, Uri)]]] = {
@@ -34,9 +36,11 @@ final class PackageCollection(
           .readCache()
           .flatMap { packageRepositories =>
             Future.traverseSequentially(packageRepositories){ packageRepository =>
+              logger.info(s"# Loading ${packageRepository.name}")
               val action = universeClient(packageRepository)(session, executionContext).map((_, packageRepository.uri))
                 action.onComplete {
                   case Failure(_) =>
+                    logger.info(s"# Invalidate cache for ${packageRepository.name}")
                     repositoryCache.invalidate(session)
                   case _ => ()
                 }
@@ -108,11 +112,17 @@ final class PackageCollection(
     all().map(PackageCollection.allUrls)
   }
 
-  def invalidateAll() : Unit = repositoryCache.invalidateAll()
+  def invalidateAll() : Unit = {
+    logger.info("# Invalidate all packages")
+    repositoryCache.invalidateAll()
+  }
 
   private[this] def all()(
     implicit session: RequestSession
-  ): Future[List[(universe.v4.model.Repository, Uri)]] = repositoryCache.get(session)
+  ): Future[List[(universe.v4.model.Repository, Uri)]] = {
+    logger.info(s"# Get repos for $session")
+    repositoryCache.get(session)
+  }
 }
 
 object PackageCollection {
