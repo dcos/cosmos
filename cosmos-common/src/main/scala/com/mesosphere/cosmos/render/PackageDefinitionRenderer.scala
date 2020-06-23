@@ -25,6 +25,9 @@ import java.io.StringWriter
 import java.io.Writer
 import java.nio.charset.StandardCharsets
 import java.util.Base64
+
+import com.github.fge.jsonschema.cfg.ValidationConfiguration
+
 import collection.JavaConverters._
 
 object PackageDefinitionRenderer {
@@ -38,7 +41,11 @@ object PackageDefinitionRenderer {
     }
   }
 
-  private[this] implicit val jsf: JsonSchemaFactory = JsonSchemaFactory.byDefault()
+  private[this] implicit val jsf: JsonSchemaFactory = {
+    val validationConfiguration = ValidationConfiguration.newBuilder().setCacheSize(10).freeze()
+    JsonSchemaFactory.newBuilder()
+      .setValidationConfiguration(validationConfiguration).freeze()
+  }
 
   def renderMarathonV2App(
     sourceUri: Uri,
