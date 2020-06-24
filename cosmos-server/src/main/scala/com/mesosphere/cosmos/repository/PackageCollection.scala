@@ -256,6 +256,7 @@ object PackageCollection {
       ((pkgDef.name, index), pkgDef.releaseVersion)
     }
 
+    // TODO: this is a big bottleneck.
     repositories
       .zipWithIndex
       .flatMap { case ((repository, uri), index) =>

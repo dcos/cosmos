@@ -105,6 +105,7 @@ object PackageDefinitionRenderer {
     }
   }
 
+  // TODO: Biggest bottle neck.
   def renderTemplate(
     template: String,
     context: JsonObject
