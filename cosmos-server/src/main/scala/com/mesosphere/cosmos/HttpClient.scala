@@ -5,14 +5,11 @@ import java.net.{MalformedURLException, URISyntaxException}
 import akka.http.scaladsl.model.headers
 import com.mesosphere.cosmos.error.{CosmosException, EndpointUriSyntax, GenericHttpError, UnsupportedContentEncoding}
 
-//import com.mesosphere.cosmos.error.UnsupportedRedirect
 import com.mesosphere.http.MediaType
-//import com.mesosphere.http.MediaTypeParser
 import io.lemonlabs.uri.Uri
 import com.twitter.finagle.http.Fields
 import com.twitter.finagle.http.filter.LogFormatter
 import com.twitter.finagle.stats.StatsReceiver
-//import io.netty.handler.codec.http.HttpResponseStatus
 import java.io.IOException
 import java.io.InputStream
 import java.net.HttpURLConnection
@@ -27,7 +24,6 @@ import org.slf4j.Logger
 import scala.async.Async.{async, await}
 import scala.concurrent.duration.{FiniteDuration, MILLISECONDS}
 import scala.concurrent.{ExecutionContext, Future}
-//import scala.util.{Failure, Success}
 
 object HttpClient {
 
@@ -97,39 +93,6 @@ object HttpClient {
       response
     }
   }
-  /*
-  private def parseContentHeaders( // linter:ignore
-    uri: Uri,
-    conn: HttpURLConnection
-  )(implicit
-    sr: StatsReceiver
-  ): (MediaType, Option[String]) = {
-    conn.getResponseCode match {
-      case HttpURLConnection.HTTP_OK =>
-        sr.scope("status").counter("200").incr()
-        val contentEncoding = Option(conn.getHeaderField(Fields.ContentEncoding))
-        MediaTypeParser.parse(conn.getHeaderField(Fields.ContentType)) match {
-          case Success(contentType) => (contentType, contentEncoding)
-          case Failure(error) => {
-            logger.error(s"Error while parsing the Content-Type " +
-              s"${conn.getHeaderField(Fields.ContentType)} from URI $uri",
-              error
-            )
-            throw error
-          }
-        }
-      case status if RedirectStatuses(status) =>
-        sr.scope("status").counter(status.toString).incr()
-        // Different forms of redirect, HttpURLConnection won't follow a redirect across schemes
-
-        val loc = Option(conn.getHeaderField("Location")).map(Uri.parse).flatMap(_.schemeOption)
-        throw UnsupportedRedirect(List(uri.schemeOption.get), loc).exception
-      case status =>
-        sr.scope("status").counter(status.toString).incr()
-        throw GenericHttpError(uri = uri, clientStatus = HttpResponseStatus.valueOf(status)).exception
-    }
-  }
-  */
 
   private def decodeResponse(response: HttpResponse)(implicit sr: StatsReceiver): HttpResponse = {
     val decoder = response.encoding match {
