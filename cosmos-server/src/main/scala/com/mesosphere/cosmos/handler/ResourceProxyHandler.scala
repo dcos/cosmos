@@ -24,7 +24,6 @@ import akka.stream.Materializer
 import akka.stream.scaladsl.StreamConverters
 
 import scala.async.Async.async
-import scala.concurrent.ExecutionContext.Implicits.global
 
 final class ResourceProxyHandler private(
   packageCollection: PackageCollection
@@ -33,6 +32,9 @@ final class ResourceProxyHandler private(
 ) {
 
   import ResourceProxyHandler._
+
+  // Run blocking IO on fixed size thread pool.
+  import com.mesosphere.usi.async.ThreadPoolContext.ioContext
 
   class ConnectionClosingInputStream(
     connection: HttpURLConnection,
@@ -73,7 +75,6 @@ final class ResourceProxyHandler private(
         .fetch(
           uri
         ) { originalResponse =>
-          // TODO: So far we run this future on the global thread pool. We should use a fixed size pool instead.
           async {
             validateContentLength(uri, originalResponse.entity.contentLengthOption)
             // TODO: This is blocking. We should evaluate async streams from Finch.
