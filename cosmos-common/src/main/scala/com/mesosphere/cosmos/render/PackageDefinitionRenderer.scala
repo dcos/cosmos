@@ -42,7 +42,8 @@ object PackageDefinitionRenderer {
   }
 
   private[this] implicit val jsf: JsonSchemaFactory = {
-    val validationConfiguration = ValidationConfiguration.newBuilder().setCacheSize(10).freeze()
+    // Disable cache
+    val validationConfiguration = ValidationConfiguration.newBuilder().setCacheSize(0).freeze()
     JsonSchemaFactory.newBuilder()
       .setValidationConfiguration(validationConfiguration).freeze()
   }
