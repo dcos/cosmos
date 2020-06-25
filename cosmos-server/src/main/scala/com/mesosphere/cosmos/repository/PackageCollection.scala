@@ -9,6 +9,7 @@ import com.mesosphere.cosmos.rpc
 import com.mesosphere.http.OriginHostScheme
 import com.mesosphere.universe
 import com.mesosphere.universe.bijection.FutureConversions._
+import com.mesosphere.usi.async.NamedExecutionContext
 import io.lemonlabs.uri.Uri
 import com.twitter.util.Future
 import java.util.concurrent.TimeUnit
@@ -25,7 +26,8 @@ final class PackageCollection(
 
   private[this] val logger = org.slf4j.LoggerFactory.getLogger(getClass)
 
-  implicit val executionContext = scala.concurrent.ExecutionContext.global
+  implicit val executionContext = NamedExecutionContext.fixedThreadPoolExecutionContext(
+    Runtime.getRuntime().availableProcessors(), "package-collection")
 
   private[this] lazy val repositoryCache: LoadingCache[RequestSession, Future[List[(universe.v4.model.Repository, Uri)]]] = {
     Caffeine

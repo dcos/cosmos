@@ -19,7 +19,8 @@ object CosmosBuild {
     exportJars := true,
 
     resolvers ++= Seq(
-      "Twitter Maven" at "https://maven.twttr.com"  // For some Twitter dependencies
+      "Twitter Maven" at "https://maven.twttr.com",  // For some Twitter dependencies
+      "Mesosphere Public Repo" at "https://downloads.mesosphere.io/maven" //For USI
     ),
 
     test in (This, Global, This) := (test in Test).value,

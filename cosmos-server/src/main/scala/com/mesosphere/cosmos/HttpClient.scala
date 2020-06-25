@@ -4,7 +4,6 @@ import java.net.{MalformedURLException, URISyntaxException}
 
 import akka.http.scaladsl.model.headers
 import com.mesosphere.cosmos.error.{CosmosException, EndpointUriSyntax, GenericHttpError, UnsupportedContentEncoding}
-
 import com.mesosphere.http.MediaType
 import io.lemonlabs.uri.Uri
 import com.twitter.finagle.http.Fields
@@ -19,6 +18,7 @@ import akka.http.scaladsl.Http
 import akka.http.scaladsl.coding.{Gzip, NoCoding}
 import akka.http.scaladsl.model.headers.{HttpEncodings, ProductVersion, `User-Agent`}
 import akka.http.scaladsl.model.{HttpHeader, HttpRequest, HttpResponse, Uri => AkkaUri}
+import com.mesosphere.usi.async.Retry
 import org.slf4j.Logger
 
 import scala.async.Async.{async, await}

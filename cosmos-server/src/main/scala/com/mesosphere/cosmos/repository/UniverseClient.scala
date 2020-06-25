@@ -19,6 +19,7 @@ import com.mesosphere.universe
 import com.mesosphere.universe.MediaTypes
 import com.mesosphere.universe.bijection.FutureConversions._
 import com.mesosphere.universe.bijection.MediaTypeConversions._
+import com.mesosphere.usi.async.ExecutionContexts
 import com.twitter.finagle.stats.NullStatsReceiver
 import com.twitter.finagle.stats.Stat
 import com.twitter.finagle.stats.StatsReceiver
@@ -146,8 +147,7 @@ final class DefaultUniverseClient(
               .getOrThrow
           }
           .runWith(Sink.seq)
-          // TODO: use same thread execution context from USI
-          .map(packages => universe.v4.model.Repository(packages.toVector))(scala.concurrent.ExecutionContext.global)
+          .map(packages => universe.v4.model.Repository(packages.toVector))(ExecutionContexts.callerThread)
           .asTwitter
       }.asScala
     }

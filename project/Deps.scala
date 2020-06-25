@@ -150,6 +150,11 @@ object Deps {
     "commons-codec" % "commons-codec" % "1.11"
   )
 
+  // APLv2.0
+  val usi = Seq(
+    "com.mesosphere.usi" %% "commons" % V.usi
+  )
+
 }
 
 object V {
@@ -177,4 +182,5 @@ object V {
   val scalaUri = "1.4.10"
   val slf4j = "1.7.25"
   val twitterUtil = "18.7.0"
+  val usi = "0.1.53"
 }
