@@ -42,7 +42,8 @@ object PackageDefinitionRenderer {
   }
 
   private[this] implicit val jsf: JsonSchemaFactory = {
-    // Disable cache
+    // Disable cache because it uses the URI as a key. Since we are not using the URI the key is different on each 
+    // call and thus has not performance advantage.
     val validationConfiguration = ValidationConfiguration.newBuilder().setCacheSize(0).freeze()
     JsonSchemaFactory.newBuilder()
       .setValidationConfiguration(validationConfiguration).freeze()
