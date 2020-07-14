@@ -1,26 +1,13 @@
 package com.mesosphere.cosmos.test
 
-import com.mesosphere.cosmos.AdminRouter
-import com.mesosphere.cosmos.AdminRouterClient
-import com.mesosphere.cosmos.MarathonClient
-import com.mesosphere.cosmos.MesosMasterClient
-import com.mesosphere.cosmos.Services
-import com.mesosphere.cosmos.Trys
-import com.mesosphere.cosmos.Uris
-import com.mesosphere.cosmos.dcosUri
-import com.mesosphere.cosmos.http.HttpRequest
-import com.mesosphere.cosmos.http.RequestSession
-import com.mesosphere.cosmos.http.TestContext
-import io.lemonlabs.uri.Uri
-import io.lemonlabs.uri.dsl._
-import com.twitter.conversions.storage._
-import com.twitter.finagle.Service
-import com.twitter.finagle.SimpleFilter
-import com.twitter.finagle.http._
-import com.twitter.util.Await
-import com.twitter.util.Future
-import com.twitter.util.Try
 import java.util.concurrent.atomic.AtomicInteger
+import com.mesosphere.cosmos.http.{HttpRequest, RequestSession, TestContext}
+import com.mesosphere.cosmos.{AdminRouter, AdminRouterClient, MarathonClient, MesosMasterClient, Services, Uris}
+import com.twitter.conversions.storage._
+import com.twitter.finagle.http._
+import com.twitter.finagle.{Service, SimpleFilter}
+import com.twitter.util.{Await, Future}
+import io.lemonlabs.uri.dsl._
 import org.scalatest.Matchers
 import org.slf4j.LoggerFactory
 
@@ -32,34 +19,15 @@ object CosmosIntegrationTestClient extends Matchers {
   implicit val Session = RequestSession(testContext.token, testContext.originInfo)
 
   val adminRouter: AdminRouter = {
-    val property = dcosUri.name
-    val ar = Try {
-      Option(System.getProperty(property))
-        .getOrElse(throw new AssertionError(s"Missing system property '$property'"))
-    }
-      .map { dh =>
-        val dcosHost: String = Uris.stripTrailingSlash(dh)
-        val ar: Uri = dcosHost
-        val mar: Uri = dcosHost / "marathon"
-        val mesos: Uri = dcosHost / "mesos"
-        (ar, mar, mesos)
-      }
-      .flatMap { case (adminRouterUri, marathonUri, mesosMasterUri) =>
-        Trys.join(
-          Services.adminRouterClient(adminRouterUri, 5.megabytes).map { adminRouterUri -> _},
-          Services.marathonClient(marathonUri, 5.megabytes).map { marathonUri -> _ },
-          Services.mesosClient(mesosMasterUri, 5.megabytes).map { mesosMasterUri -> _ }
-        )
-      }
-      .map { case (adminRouterClient, marathon, mesosMaster) =>
-        new AdminRouter(
-          new AdminRouterClient(adminRouterClient._1, adminRouterClient._2),
-          new MarathonClient(marathon._1, marathon._2),
-          new MesosMasterClient(mesosMaster._1, mesosMaster._2)
-        )
-      }
-
-    ar.get
+    val dcosHost: String = Uris.stripTrailingSlash(uri)
+    val adminRouterUri = dcosHost
+    val marathonUri = dcosHost / "marathon"
+    val mesosMasterUri = dcosHost / "mesos"
+    new AdminRouter(
+      new AdminRouterClient(adminRouterUri, Services.adminRouterClient(adminRouterUri, 5.megabytes).get()),
+      new MarathonClient(marathonUri, Services.marathonClient(marathonUri, 5.megabytes).get()),
+      new MesosMasterClient(mesosMasterUri, Services.mesosClient(mesosMasterUri, 5.megabytes).get())
+    )
   }
 
   object CosmosClient {
