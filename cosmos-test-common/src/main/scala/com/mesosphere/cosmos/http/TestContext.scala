@@ -1,8 +1,8 @@
 package com.mesosphere.cosmos.http
 
 import com.mesosphere.http.OriginHostScheme
-import io.lemonlabs.uri.Uri
-import org.slf4j.LoggerFactory
+import io.lemonlabs.uri.{Uri, Url}
+import scala.sys.process._
 
 final case class TestContext(
   uri: Uri,
@@ -10,17 +10,9 @@ final case class TestContext(
   originInfo: OriginHostScheme)
 
 object TestContext {
-
-  private[this] lazy val logger = LoggerFactory.getLogger(getClass)
-
   def fromSystemProperties(): TestContext = {
-    val url = Uri.parse(getClientProperty("CosmosClient", "uri"))
-    val token = sys.env.get("COSMOS_AUTHORIZATION_HEADER").map { token =>
-      val maxDisplayWidth = 10
-      val tokenDisplay = token.stripPrefix("token=").take(maxDisplayWidth)
-      logger.info(s"Loaded authorization token '$tokenDisplay...' from environment")
-      Authorization(token)
-    }
+    val url = Url.parse(System.getProperty("com.mesosphere.cosmos.dcosUri"))
+    val token = Some(Authorization(Seq("bash", "-c", s"CLUSTER_URL=${url} ./ci/auth_token.sh").!!.stripLineEnd))
 
     TestContext(
       url,
@@ -30,12 +22,6 @@ object TestContext {
         OriginHostScheme.Scheme(url.schemeOption.get).get
       )
     )
-  }
-
-  private def getClientProperty(clientName: String, key: String): String = {
-    val property = s"com.mesosphere.cosmos.test.CosmosIntegrationTestClient.$clientName.$key"
-    Option(System.getProperty(property))
-      .getOrElse(throw new AssertionError(s"Missing system property '$property' "))
   }
 
   def extractHostFromUri(uri: Uri): String = s"${uri.toUrl.hostOption.get}${
