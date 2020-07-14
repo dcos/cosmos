@@ -1,4 +1,3 @@
-
 {
   "labels": {
     "DCOS_SERVICE_NAME": "cosmos-package",
@@ -8,7 +7,7 @@
   "id": "/cosmos-package",
   "backoffFactor": 1.15,
   "backoffSeconds": 1,
-  "cmd": "export JAVA_HOME=$(ls -d $MESOS_SANDBOX/jdk*/jre/); export JAVA_HOME=${JAVA_HOME/}; export PATH=$(ls -d $JAVA_HOME/bin):$PATH\n\njava -classpath cosmos-server.jar  com.simontuffs.onejar.Boot -admin.port=127.0.0.1:9990 -com.mesosphere.cosmos.httpInterface=0.0.0.0:7070  -com.mesosphere.cosmos.zookeeperUri=zk://leader.mesos:2181/cosmos-package",
+  "cmd": "export JAVA_HOME=$(ls -d $MESOS_SANDBOX/jdk*/jre/); export PATH=$(ls -d $JAVA_HOME/bin):$PATH\n\njava -classpath cosmos-server.jar  com.simontuffs.onejar.Boot -admin.port=127.0.0.1:9990 -com.mesosphere.cosmos.httpInterface=0.0.0.0:7070  -com.mesosphere.cosmos.zookeeperUri=zk://leader.mesos:2181/cosmos-package",
   "container": {
     "portMappings": [{
       "containerPort": 7070,
@@ -63,5 +62,6 @@
       "maxConsecutiveFailures": 10
     }
   ],
+  "acceptedResourceRoles": ["*"],
   "constraints": []
 }
