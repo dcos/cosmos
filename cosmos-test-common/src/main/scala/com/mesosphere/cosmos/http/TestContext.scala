@@ -5,7 +5,6 @@ import io.lemonlabs.uri.Uri
 import org.slf4j.LoggerFactory
 
 final case class TestContext(
-  direct: Boolean,
   uri: Uri,
   token: Option[Authorization],
   originInfo: OriginHostScheme)
@@ -15,7 +14,6 @@ object TestContext {
   private[this] lazy val logger = LoggerFactory.getLogger(getClass)
 
   def fromSystemProperties(): TestContext = {
-    val directProperty = "com.mesosphere.cosmos.test.CosmosIntegrationTestClient.CosmosClient.direct"
     val url = Uri.parse(getClientProperty("CosmosClient", "uri"))
     val token = sys.env.get("COSMOS_AUTHORIZATION_HEADER").map { token =>
       val maxDisplayWidth = 10
@@ -25,7 +23,6 @@ object TestContext {
     }
 
     TestContext(
-      Option(System.getProperty(directProperty)).map(_.toBoolean).get,
       url,
       token,
       OriginHostScheme(
