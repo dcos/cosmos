@@ -29,7 +29,7 @@ object CosmosIntegrationTestClient extends Matchers {
   val testContext = TestContext.fromSystemProperties()
   val uri = testContext.uri
 
-  implicit val Session = RequestSession(testContext.token, testContext.originInfo)
+  implicit val Session = RequestSession(Some(testContext.token), testContext.originInfo)
 
   val adminRouter: AdminRouter = {
     val property = dcosUri.name

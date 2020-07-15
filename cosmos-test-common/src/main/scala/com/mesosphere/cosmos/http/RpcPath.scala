@@ -11,6 +11,7 @@ final case class ServiceRpcPath(
 ) extends RpcPath {
   override def path: String = {
     if (testContext.direct) s"/service/$action" else s"/cosmos/service/$action"
+    s"/cosmos/service/$action"
   }
 }
 

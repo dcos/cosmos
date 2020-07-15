@@ -23,7 +23,11 @@ trait IntegrationBeforeAndAfterAll extends BeforeAndAfterAll with Eventually { t
   private[this] val universeConverterUri = "https://universe-converter.mesosphere.com/transform?url=" + universeUri
 
   override def beforeAll(): Unit = {
-    Requests.deleteRepository(Some("Universe"))
+    try {
+      Requests.deleteRepository(Some("Universe"))
+    } catch {
+      case _: Throwable => logger.info("Could not delete Universe. Most likely the previous test has not added it back.")
+    }
 
     val customPkgMgrResource = s"/${ItObjects.customManagerAppName}.json"
 

@@ -71,7 +71,7 @@ final class ServiceDescribeSpec extends FeatureSpec with Matchers with Integrati
       assertResult(Status.Ok)(serviceDescribeResponse.status)
 
       Requests.uninstall("cassandra", managerId = Some(ItObjects.customManagerAppName))
-      Requests.waitForMarathonAppToDisappear(appId)
+      // Requests.waitForMarathonAppToDisappear(appId)
     }
   }
 

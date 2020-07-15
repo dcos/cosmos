@@ -67,7 +67,7 @@ final class ResourceProxyHandlerIntegrationSpec extends FreeSpec
     val parsedUrl = Uri.parse(url)
     val future = HttpClient.fetch(
       parsedUrl,
-      Fields.Authorization -> testContext.token.get.headerValue
+      Fields.Authorization -> testContext.token.headerValue
     ) { responseData =>
       val contentLength = responseData.contentLength
       // Resource Proxy endpoint response is chunked.

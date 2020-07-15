@@ -90,8 +90,7 @@ cluster. This configuration can be enabled by setting the `com.mesosphere.cosmos
 system property.
 
 ```bash
-sbt -Dcom.mesosphere.cosmos.dcosUri=<dcos-host-url> \
-    clean it:test
+sbt -Dcom.mesosphere.cosmos.dcosUri=<dcos-host-url> clean it:test
 ```
 
 2. Run the integration tests against the Cosmos running in a DC/OS cluster. This configuration can

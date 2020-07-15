@@ -1,23 +1,25 @@
 package com.mesosphere.cosmos.http
 
 import com.mesosphere.http.OriginHostScheme
-import io.lemonlabs.uri.{Uri}
-import scala.sys.process._
+import io.lemonlabs.uri.Uri
+import sys.process._
 
 final case class TestContext(
   direct: Boolean,
   uri: Uri,
-  token: Option[Authorization],
+  token: Authorization,
   originInfo: OriginHostScheme)
 
 object TestContext {
   def fromSystemProperties(): TestContext = {
     val url = Uri.parse(System.getProperty("com.mesosphere.cosmos.dcosUri")).toUrl
-    val token = Some(Authorization(Seq("bash", "-c", s"CLUSTER_URL=${url} ./ci/auth_token.sh").!!.stripLineEnd))
-    val directProperty = "com.mesosphere.cosmos.test.CosmosIntegrationTestClient.CosmosClient.direct"
+    val token = Authorization(sys.env.getOrElse(
+      "COSMOS_AUTHORIZATION_HEADER",
+      Seq("bash", "-c", s"CLUSTER_URL=${url} ./ci/auth_token.sh").!!.stripLineEnd)
+    )
 
     TestContext(
-      Option(System.getProperty(directProperty)).map(_.toBoolean).getOrElse(false),
+      false,
       url,
       token,
       OriginHostScheme(
