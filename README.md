@@ -90,7 +90,6 @@ cluster. This configuration can be enabled by setting the `com.mesosphere.cosmos
 system property.
 
 ```bash
-export COSMOS_AUTHORIZATION_HEADER="token=$(http --ignore-stdin <dcos-host-url>/acs/api/v1/auth/login uid=<dcos-user> password=<user-password> | jq -r ".token")"
 sbt -Dcom.mesosphere.cosmos.dcosUri=<dcos-host-url> \
     clean it:test
 ```
@@ -100,7 +99,6 @@ be enabled by setting the `com.mesosphere.cosmos.dcosUri` and `com.mesosphere.co
 system properties.
 
 ```bash
-export COSMOS_AUTHORIZATION_HEADER="token=$(http --ignore-stdin <dcos-host-url>/acs/api/v1/auth/login uid=<dcos-user> password=<user-password> | jq -r ".token")"
 sbt -Dcom.mesosphere.cosmos.dcosUri=<dcos-host-url> \
     -Dcom.mesosphere.cosmos.boot=false \
     clean it:test
@@ -112,7 +110,6 @@ configuration can be enabled by setting the `com.mesosphere.cosmos.dcosUri`,
 `com.mesosphere.cosmos.test.CosmosIntegrationTestClient.CosmosClient.uri` system properties.
 
 ```bash
-export COSMOS_AUTHORIZATION_HEADER="token=$(http --ignore-stdin <dcos-host-url>/acs/api/v1/auth/login uid=<dcos-user> password=<user-password> | jq -r ".token")"
 sbt -Dcom.mesosphere.cosmos.dcosUri=<dcos-host-url> \
     -Dcom.mesosphere.cosmos.boot=false \
     -Dcom.mesosphere.cosmos.test.CosmosIntegrationTestClient.CosmosClient.uri=http://localhost:7070 \
