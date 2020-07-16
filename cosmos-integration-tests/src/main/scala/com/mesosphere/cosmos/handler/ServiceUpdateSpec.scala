@@ -2,21 +2,17 @@ package com.mesosphere.cosmos.handler
 
 import com.mesosphere.cosmos.HttpErrorResponse
 import com.mesosphere.cosmos.IntegrationBeforeAndAfterAll
-import com.mesosphere.cosmos.ItObjects
 import com.mesosphere.cosmos.ItUtil
 import com.mesosphere.cosmos.Requests
 import com.mesosphere.cosmos.RoundTrips
 import com.mesosphere.cosmos.rpc
 import com.mesosphere.cosmos.ItOps._
-import com.mesosphere.cosmos.http.CosmosRequests
 import com.mesosphere.cosmos.http.HttpRequest
 import com.mesosphere.cosmos.http.ServiceRpcPath
 import com.mesosphere.cosmos.http.TestContext
 import com.mesosphere.cosmos.rpc.MediaTypes
 import com.mesosphere.cosmos.test.CosmosIntegrationTestClient
 import com.mesosphere.cosmos.thirdparty.marathon.model.AppId
-import com.mesosphere.cosmos.rpc.v1
-import com.mesosphere.cosmos.test.CosmosIntegrationTestClient.CosmosClient
 import com.mesosphere.universe
 import com.twitter.finagle.http.Status
 import io.circe.Json
@@ -138,26 +134,27 @@ class ServiceUpdateSpec extends FeatureSpec with Matchers with IntegrationBefore
       }
     }
 
-    scenario("user should be able to update a service via custom manager") {
-      val appId = AppId("cassandra")
-      Requests.installV2("cassandra", appId = Some(appId), managerId = Some(ItObjects.customManagerAppName))
+    // scenario("user should be able to update a service via custom manager") {
+    //   val appId = AppId("cassandra")
+    //   Requests.installV2("cassandra", appId = Some(appId), managerId = Some(ItObjects.customManagerAppName))
 
-      val serviceUpdateRequest = v1.model.ServiceUpdateRequest(
-        appId,
-        None,
-        None,
-        replace = true,
-        managerId = Some(ItObjects.customManagerAppName),
-        Some("cassandra"),
-        None
-      )
+    //   val serviceUpdateRequest = v1.model.ServiceUpdateRequest(
+    //     appId,
+    //     None,
+    //     None,
+    //     replace = true,
+    //     managerId = Some(ItObjects.customManagerAppName),
+    //     Some("cassandra"),
+    //     None
+    //   )
 
-      val serviceUpdateResponse = CosmosClient.submit(CosmosRequests.serviceUpdate(serviceUpdateRequest))
-      assertResult(Status.Ok)(serviceUpdateResponse.status)
+    //   val serviceUpdateResponse = CosmosClient.submit(CosmosRequests.serviceUpdate(serviceUpdateRequest))
+    //   assertResult(Status.Ok)(serviceUpdateResponse.status)
 
-      Requests.uninstall("cassandra", managerId = Some(ItObjects.customManagerAppName))
-      Requests.waitForMarathonAppToDisappear(appId)
-    }
+    //   Requests.uninstall("cassandra", managerId = Some(ItObjects.customManagerAppName))
+    //   Requests.waitForMarathonAppToDisappear(appId)
+    // }
+
   }
 
   // scalastyle:on multiple.string.literals
