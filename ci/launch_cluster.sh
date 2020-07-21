@@ -3,15 +3,15 @@
 set -e -o pipefail
 
 # http://downloads.dcos.io/dcos-launch/bin/linux/dcos-launch
-curl -OL %DCOS_LAUNCH_DOWNLOAD_URL%
+curl -OL "$DCOS_LAUNCH_DOWNLOAD_URL"
 chmod +x dcos-launch
 
-export CLUSTER_NAME = 'cosmosit'
+export CLUSTER_NAME='cosmosit'
 
 cat <<EOF > config.yaml
 launch_config_version: 1
 installer_url: https://downloads.mesosphere.com/dcos-enterprise/stable/2.0.5/dcos_generate_config.ee.sh
-deployment_name: %CLUSTER_NAME%
+deployment_name: $CLUSTER_NAME
 provider: onprem
 platform: aws
 aws_region: us-west-2
@@ -35,7 +35,7 @@ dcos_config:
   master_discovery: static
   exhibitor_storage_backend: static
   customer_key: 123456-78901-234567-89012345-6789012
-  license_key_contents: %DCOS_LICENSE%
+  license_key_contents: $DCOS_LICENSE
 EOF
 
 ./dcos-launch create
