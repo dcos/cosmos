@@ -43,17 +43,24 @@ pipeline {
 
     stage('Integration Test') {
       agent {
-        node {
+        docker {
+          image 'mesosphere/scala-sbt:marathon'
           label 'medium'
         }
       }
+      environment {
+        DCOS_LAUNCH_DOWNLOAD_URL = 'http://downloads.dcos.io/dcos-launch/bin/linux/dcos-launch'
+        DCOS_LICENSE = credentials('ca159ad3-7323-4564-818c-46a8f03e1389')
+      }
       steps {
         ansiColor('xterm') {
+          sh './ci/launch_cluster.sh'
           sh 'sbt it:test'
         }
       }
       post {
         always {
+          sh './ci/destroy_cluster.sh'
           junit '**/test-reports/*.xml'
         }
       }
