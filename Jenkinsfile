@@ -39,6 +39,9 @@ pipeline {
         }
       }
       post {
+	failure {
+	  sh 'cat /root/.sbt/boot/update.log'
+	}
         always {
           junit '**/test-reports/*.xml'
         }
