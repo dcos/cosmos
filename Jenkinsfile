@@ -35,7 +35,7 @@ pipeline {
       steps {
         ansiColor('xterm') {
           sh 'mkdir -p ~/.m2 && ln -fs ${DOT_M2_SETTINGS} ~/.m2/settings.xml'
-          sh 'sbt test oneJar'
+          sh 'sbt -Dsbt.repository.config=ci/repositories test oneJar'
         }
       }
       post {
