@@ -1,2 +1,3 @@
 [repositories]
   proxy: https://nexus.mesosphere.com/repository/maven-proxy/
+  typesafe: https://repo.typesafe.com/typesafe/maven-releases/
