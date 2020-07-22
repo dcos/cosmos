@@ -29,9 +29,14 @@ pipeline {
           label 'large'
         }
       }
+      environment {
+        DOT_M2_SETTINGS = credentials('DOT_M2_SETTINGS')
+      }
       steps {
         ansiColor('xterm') {
-          sh 'sbt test oneJar'
+          sh 'echo ${DOT_M2_SETTINGS}'
+          sh 'mkdir -p ~/.m2 && ln -fs ${DOT_M2_SETTINGS} ~/.m2/settings.xml'
+          sh 'sbt -Dsbt.repository.config=ci/repositories test oneJar'
         }
       }
       post {
