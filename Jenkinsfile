@@ -31,17 +31,24 @@ pipeline {
       }
       environment {
         DOT_M2_SETTINGS = credentials('DOT_M2_SETTINGS')
+        NEXUS_MAVEN_USERNAME = credentials('NEXUS_MAVEN_USERNAME')
+        NEXUS_MAVEN_PASSWORD = credentials('NEXUS_MAVEN_PASSWORD')
       }
       steps {
         ansiColor('xterm') {
           sh 'mkdir -p ~/.m2 && ln -fs ${DOT_M2_SETTINGS} ~/.m2/settings.xml'
-          sh 'sbt -Dsbt.repository.config=ci/repositories test oneJar'
+          sh """cat <<EOF > .credentials
+realm=D2iQ Proxy
+host=nexus.mesosphere.com
+user=$NEXUS_MAVE_USERNAME
+password=$NEXUS_MAVEN_PASSWORD"""
+          sh 'sbt -Dsbt.boot.credentials=.credentials -Dsbt.repository.config=ci/repositories test oneJar'
         }
       }
       post {
-	failure {
-	  sh 'cat /root/.sbt/boot/update.log'
-	}
+	    failure {
+	      sh 'cat /root/.sbt/boot/update.log'
+	    }
         always {
           junit '**/test-reports/*.xml'
         }
