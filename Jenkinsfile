@@ -41,7 +41,8 @@ pipeline {
 realm=D2iQ Proxy
 host=nexus.mesosphere.com
 user=$NEXUS_MAVE_USERNAME
-password=$NEXUS_MAVEN_PASSWORD"""
+password=$NEXUS_MAVEN_PASSWORD
+EOF"""
           sh 'cat .credentials'
           sh 'sbt -Dsbt.boot.credentials=.credentials -Dsbt.repository.config=ci/repositories test oneJar'
         }
