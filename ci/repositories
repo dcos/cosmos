@@ -1,4 +1,4 @@
 [repositories]
   proxy: https://nexus.mesosphere.com/repository/maven-proxy/
   maven-typesafe: https://repo.typesafe.com/typesafe/maven-releases/
-  ivy-https://repo.typesafe.com/typesafe/ivy-releases/
+  ivy-typesafe: https://repo.typesafe.com/typesafe/ivy-releases/
