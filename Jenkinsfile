@@ -40,7 +40,7 @@ pipeline {
           sh """cat <<EOF > .credentials
 realm=D2iQ Proxy
 host=nexus.mesosphere.com
-user=$NEXUS_MAVE_USERNAME
+user=$NEXUS_MAVEN_USERNAME
 password=$NEXUS_MAVEN_PASSWORD
 EOF"""
           sh 'cat .credentials'
