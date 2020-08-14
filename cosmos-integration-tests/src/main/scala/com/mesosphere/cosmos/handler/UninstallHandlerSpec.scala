@@ -206,7 +206,7 @@ final class UninstallHandlerSpec extends FreeSpec with Eventually with SpanSugar
   }
 
   def waitUntilDeleted(appId: AppId, clue: Any): Assertion = {
-    eventually(timeout(2.minutes), interval(10.seconds)) {
+    eventually(timeout(5.minutes), interval(10.seconds)) {
       val exception = intercept[CosmosException](Await.result(adminRouter.getApp(appId)))
 
       assert(exception.error.isInstanceOf[MarathonAppNotFound], clue)
