@@ -51,7 +51,7 @@ val testCommon = project.in(file("cosmos-test-common"))
   .dependsOn(
     server
   )
-
+// DELETEME@kjoshi remove this comment.
 /**
  * Integration test code. Sources are located in the "main" subdirectory so the JAR can be
  * published to Maven repositories with a standard POM.
