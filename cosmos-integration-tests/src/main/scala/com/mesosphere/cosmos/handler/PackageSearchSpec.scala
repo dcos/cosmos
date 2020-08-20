@@ -58,14 +58,10 @@ final class PackageSearchSpec extends FreeSpec with IntegrationBeforeAndAfterAll
 
 private object PackageSearchSpec extends TableDrivenPropertyChecks {
 
-  // Cosmos CI tests run on DC/OS Open which doesn't run with HTTPS
-  // Port 80 then should be acceptable.
-  val httpPort = 80
   val uri = TestContext.fromSystemProperties().uri.toUrl
-  val host = uri.hostOption.get
-  val port = uri.port.getOrElse(httpPort)
+  val hostAndPort =  if(uri.port.isDefined) s"${uri.hostOption.get}:${uri.port}" else s"${uri.hostOption.get}"
   val originInfo = OriginHostScheme(
-    s"${host}:${port}",
+    hostAndPort,
     OriginHostScheme.Scheme(uri.schemeOption.get).get
   )
 
