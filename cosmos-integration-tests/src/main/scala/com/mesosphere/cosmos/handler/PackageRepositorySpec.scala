@@ -111,7 +111,7 @@ class PackageRepositorySpec extends FeatureSpec with Matchers {
       val name = "invalid"
       val uri: Uri = "https://www.google.com/"
       val expectedError = UnsupportedContentType(
-        List(MediaTypes.UniverseV4Repository, MediaTypes.UniverseV3Repository),
+        List(MediaTypes.UniverseV4Repository, MediaTypes.UniverseV3Repository, MediaTypes.applicationZip),
         Some("text/html;charset=iso-8859-1")
       ).as[ErrorResponse]
       val error = intercept[HttpErrorResponse] {
