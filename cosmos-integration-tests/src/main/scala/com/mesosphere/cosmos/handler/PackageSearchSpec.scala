@@ -59,7 +59,7 @@ final class PackageSearchSpec extends FreeSpec with IntegrationBeforeAndAfterAll
 private object PackageSearchSpec extends TableDrivenPropertyChecks {
 
   val uri = TestContext.fromSystemProperties().uri.toUrl
-  val hostAndPort =  if(uri.port.isDefined) s"${uri.hostOption.get}:${uri.port}" else s"${uri.hostOption.get}"
+  val hostAndPort =  if(uri.port.isDefined) s"${uri.hostOption.get}:${uri.port.get}" else s"${uri.hostOption.get}"
   val originInfo = OriginHostScheme(
     hostAndPort,
     OriginHostScheme.Scheme(uri.schemeOption.get).get
