@@ -21,9 +21,6 @@ object MediaTypes {
     )
   }
 
-  val applicationZip = MediaType("application", MediaTypeSubType("zip"))
-
-  val UniverseV2Repository: MediaType = applicationZip
   val universeV2Package: MediaType = universePackage("v2")
 
   val UniverseV3Repository: MediaType = universeRepository("v3")
@@ -35,10 +32,5 @@ object MediaTypes {
   val UniverseV5Repository: MediaType = universeRepository("v5")
   val universeV5Package: MediaType = universePackage("v5")
 
-  val PackageZip: MediaType = MediaType(
-    "application",
-    MediaTypeSubType("vnd.dcos.universe.package", Some("zip")),
-    Map("version" -> "v1")
-  )
-
+  val applicationZip: MediaType = MediaType("application", "zip")
 }

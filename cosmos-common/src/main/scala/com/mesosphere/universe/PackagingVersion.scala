@@ -51,13 +51,11 @@ package v3.model {
     }
 
     implicit val encodePackagingVersion: Encoder[PackagingVersion] = {
-      Encoder.instance { packagingVersion: PackagingVersion =>
-        packagingVersion match {
-          case universe.v3.model.V2PackagingVersion =>
-            universe.v3.model.V2PackagingVersion.asJson
-          case universe.v3.model.V3PackagingVersion =>
-            universe.v3.model.V3PackagingVersion.asJson
-        }
+      Encoder.instance {
+        case universe.v3.model.V2PackagingVersion =>
+          universe.v3.model.V2PackagingVersion.asJson
+        case universe.v3.model.V3PackagingVersion =>
+          universe.v3.model.V3PackagingVersion.asJson
       }
     }
 
@@ -167,17 +165,15 @@ package v4.model {
     }
 
     implicit val encodePackagingVersion: Encoder[PackagingVersion] = {
-      Encoder.instance { packagingVersion: PackagingVersion =>
-        packagingVersion match {
-          case universe.v3.model.V2PackagingVersion =>
-            universe.v3.model.V2PackagingVersion.asJson
-          case universe.v3.model.V3PackagingVersion =>
-            universe.v3.model.V3PackagingVersion.asJson
-          case universe.v4.model.V4PackagingVersion =>
-            universe.v4.model.V4PackagingVersion.asJson
-          case universe.v5.model.V5PackagingVersion =>
-            universe.v5.model.V5PackagingVersion.asJson
-        }
+      Encoder.instance {
+        case universe.v3.model.V2PackagingVersion =>
+          universe.v3.model.V2PackagingVersion.asJson
+        case universe.v3.model.V3PackagingVersion =>
+          universe.v3.model.V3PackagingVersion.asJson
+        case universe.v4.model.V4PackagingVersion =>
+          universe.v4.model.V4PackagingVersion.asJson
+        case universe.v5.model.V5PackagingVersion =>
+          universe.v5.model.V5PackagingVersion.asJson
       }
     }
   }

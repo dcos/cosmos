@@ -2,9 +2,12 @@ package com.mesosphere.cosmos.service
 
 import com.mesosphere.cosmos.AdminRouter
 import com.mesosphere.cosmos.circe.Decoders.decode
+import com.mesosphere.cosmos.error.CosmosException
 import com.mesosphere.cosmos.error.CustomPackageManagerNotFound
 import com.mesosphere.cosmos.error.CustomPackageManagerError
+import com.mesosphere.cosmos.error.PackageNotFound
 import com.mesosphere.cosmos.error.ServiceAlreadyStarted
+import com.mesosphere.cosmos.error.VersionNotFound
 import com.mesosphere.cosmos.http.RequestSession
 import com.mesosphere.cosmos.repository.PackageCollection
 import com.mesosphere.cosmos.rpc
@@ -37,14 +40,14 @@ class CustomPackageManagerRouter(adminRouter: AdminRouter, packageCollection: Pa
       case Some(_) => Future(Some((managerId, None, None)))
       case None =>
         (packageName, packageVersion, appId) match {
-          case (Some(pkgName), Some(pkgVersion), _) =>
-            getPackageManagerWithNameAndVersion(pkgName, pkgVersion)
+          case (Some(pkgName), Some(pkgVersion), mayBeAppId) =>
+            getPackageManagerWithNameAndVersion(pkgName, pkgVersion, mayBeAppId)
               .map(_.map(manager => (Some(manager.packageName), Some(pkgName), Some(pkgVersion))))
           case (_, _, Some(id)) =>
             getPackageNameAndVersionFromMarathonApp(id)
               .flatMap {
                 case (Some(pkgName), Some(pkgVersion)) =>
-                  getPackageManagerWithNameAndVersion(pkgName, pkgVersion)
+                  getPackageManagerWithNameAndVersion(pkgName, pkgVersion, Some(id))
                     .map(_.map(manager => (Some(manager.packageName), Some(pkgName), Some(pkgVersion))))
                 case _ => Future(None)
               }
@@ -185,12 +188,17 @@ class CustomPackageManagerRouter(adminRouter: AdminRouter, packageCollection: Pa
 
   private def getPackageManagerWithNameAndVersion(
     packageName: String,
-    packageVersion: com.mesosphere.universe.v3.model.Version
+    packageVersion: com.mesosphere.universe.v3.model.Version,
+    appId: Option[AppId]
   )(
     implicit session: RequestSession
   ): Future[Option[Manager]] = {
     packageCollection
       .getPackageByPackageVersion(packageName, Option(packageVersion))
       .map { case (pkg, _) => pkg.pkgDef.manager }
+      .rescue {
+        case CosmosException(PackageNotFound(_),_, _) | CosmosException(VersionNotFound(_, _),_, _) if appId.nonEmpty =>
+          adminRouter.getApp(appId.get).map(_.app.packageDefinition.flatMap(_.manager))
+      }
   }
 }

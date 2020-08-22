@@ -20,9 +20,10 @@ import java.net.HttpURLConnection
 import java.net.MalformedURLException
 import java.net.URISyntaxException
 import java.util.zip.GZIPInputStream
+
 import org.slf4j.Logger
-import scala.util.Failure
-import scala.util.Success
+
+import scala.util.{Failure, Success, Try}
 
 object HttpClient {
 
@@ -43,7 +44,11 @@ object HttpClient {
     fetchResponse(uri, DEFAULT_RETRIES, headers: _*)
       .flatMap { case (responseData, conn) =>
         Future(processResponse(responseData))
-          .ensure(responseData.contentStream.close())
+          // IOException when closing stream should not fail the whole request, that's why we're ignoring exceptions with Try
+          .ensure({
+          Try(responseData.contentStream.close())
+          ()
+        })
           .ensure(conn.disconnect())
       }
       .handle { case e: IOException =>
@@ -73,15 +78,15 @@ object HttpClient {
   )(
     implicit statsReceiver: StatsReceiver
   ): Future[(ResponseData, HttpURLConnection)] = {
+    val isRetryApplicable = (ex: Exception) => ex match {
+      case ce: CosmosException => ce.error.isInstanceOf[GenericHttpError] &&
+        ce.error.asInstanceOf[GenericHttpError].clientStatus.code() >= 500
+      case _: IOException => true
+    }
     Future(uri.toJavaURI.toURL.openConnection())
       .handle {
         case t @ (_: IllegalArgumentException | _: MalformedURLException | _: URISyntaxException) =>
           throw CosmosException(EndpointUriSyntax(uri, t.getMessage), t)
-        case error: IOException =>
-          if (retryCount > 0) {
-            logger.info(s"Retry [remaining - $retryCount] : ${error.getMessage}", error)
-            Future.sleep(RETRY_INTERVAL).before(fetchResponse(uri, retryCount - 1, headers: _*))
-          } else throw error
       }
       .map { case conn: HttpURLConnection =>
         conn.setRequestProperty(Fields.UserAgent, s"cosmos/${BuildProperties().cosmosVersion}")
@@ -90,6 +95,16 @@ object HttpClient {
         logger.info(format(conn))
         val responseData = extractResponseData(uri, conn)
         (responseData, conn)
+      }
+      .rescue {
+        case ex: Exception if isRetryApplicable(ex) =>
+          if (retryCount > 0) {
+            logger.info(s"Retry [remaining - $retryCount] : ${ex.getMessage}")
+            Future.sleep(RETRY_INTERVAL).before(fetchResponse(uri, retryCount - 1, headers: _*))
+          } else {
+            logger.warn(s"Retries exhausted, giving up due to ${ex.getMessage}", ex)
+            throw ex
+          }
       }
   }
 

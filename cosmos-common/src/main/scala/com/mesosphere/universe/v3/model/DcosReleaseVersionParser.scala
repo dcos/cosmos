@@ -8,11 +8,12 @@ object DcosReleaseVersionParser {
 
   private[this] val versionFragment = "(?:0|[1-9][0-9]*)"
   private[this] val subVersionFragment = "\\." + versionFragment
-  private[this] val suffixFragment = "[A-Za-z0-9]+"
+  private[this] val suffixFragment =
+    "((?:0|[1-9]\\d*|\\d*[a-zA-Z-][0-9a-zA-Z-]*)(?:\\.(?:0|[1-9]\\d*|\\d*[a-zA-Z-][0-9a-zA-Z-]*))*)"
 
   private[v3] val versionRegex = s"^$versionFragment$$"
   private[v3] val suffixRegex = s"^$suffixFragment$$"
-  private[v3] val fullRegex = s"^$versionFragment(?:$subVersionFragment)*(?:-$suffixFragment)?$$"
+  private[v3] val fullRegex = s"^$versionFragment(?:$subVersionFragment)*(?<suffix>-$suffixFragment)?$$"
 
   private[v3] val versionPattern = Pattern.compile(versionRegex)
   private[v3] val suffixPattern = Pattern.compile(suffixRegex)
@@ -28,10 +29,10 @@ object DcosReleaseVersionParser {
       s
     } flatMap { validatedString =>
       validatedString.split('-').toList match {
-        case version :: suffix :: Nil=>
-          Return(version -> Some(suffix))
-        case version :: Nil =>
+        case Seq(version) =>
           Return(version -> None)
+        case Seq(version, tail @ _*) =>
+          Return(version -> Some(tail.mkString("-")))
         case _ =>
           Throw(new AssertionError(errMsg))
       }

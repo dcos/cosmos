@@ -7,7 +7,7 @@ import org.scalatest.Assertion
 import org.scalatest.FreeSpec
 
 class DcosReleaseVersionParserSpec extends FreeSpec {
-  private[this] val regex = "^(?:0|[1-9][0-9]*)(?:\\.(?:0|[1-9][0-9]*))*(?:-[A-Za-z0-9]+)?$"
+  private[this] val regex = DcosReleaseVersionParser.fullRegex.toString
 
   "DcosReleaseVersionParser should" - {
     "succeed for" - {
@@ -37,6 +37,26 @@ class DcosReleaseVersionParserSpec extends FreeSpec {
         )
         assertResult(expected)(parse)
       }
+
+      "1.2.3-alpha.7" in {
+        val Return(parse) = DcosReleaseVersionParser.parse("1.2.3-alpha.7")
+        val expected = DcosReleaseVersion(
+          DcosReleaseVersion.Version(1),
+          List(DcosReleaseVersion.Version(2), DcosReleaseVersion.Version(3)),
+          Some(DcosReleaseVersion.Suffix("alpha.7"))
+        )
+        assertResult(expected)(parse)
+      }
+
+      "1.2.3-abc123-aA.123-pP.99-ts" in {
+        val Return(parse) = DcosReleaseVersionParser.parse("1.2.3-abc123-aA.123-pP.99-ts")
+        val expected = DcosReleaseVersion(
+          DcosReleaseVersion.Version(1),
+          List(DcosReleaseVersion.Version(2), DcosReleaseVersion.Version(3)),
+          Some(DcosReleaseVersion.Suffix("abc123-aA.123-pP.99-ts"))
+        )
+        assertResult(expected)(parse)
+      }
     }
 
     "fail for" - {
@@ -59,9 +79,9 @@ class DcosReleaseVersionParserSpec extends FreeSpec {
         }
       }
 
-      "1--" in {
-        assertAssertionError(s"assertion failed: Value '1--' does not conform to expected format $regex") {
-          DcosReleaseVersionParser.parse("1--")
+      "1.2.3-" in {
+        assertAssertionError(s"assertion failed: Value '1.2.3-' does not conform to expected format $regex") {
+          DcosReleaseVersionParser.parse("1.2.3-")
         }
       }
 

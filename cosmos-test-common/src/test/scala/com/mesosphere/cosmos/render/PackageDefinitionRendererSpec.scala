@@ -430,11 +430,44 @@ class PackageDefinitionRendererSpec extends FreeSpec with Matchers with TableDri
   }
 
   "renderTemplate" - {
+
+    "should correctly render 'asJson' lambda" in {
+      val template =
+        """
+          |{
+          |  "existingKey": {{#asJson}}existingKey{{/asJson}},
+          |  "missingKey": {{#asJson}}missingKey{{/asJson}},
+          |  "nonJsonStringKey": {{#asJson}}nonJsonStringKey{{/asJson}}
+          |}
+        """.stripMargin
+
+      val context = JsonObject.fromMap(
+        Map(
+          ("existingKey", "{\"foo\": [\"bar\", \"baz\"]}".asJson),
+          ("nonJsonStringKey", 1234.asJson)
+        )
+      )
+
+      PackageDefinitionRenderer.renderTemplate(
+        template,
+        context
+      ) shouldBe JsonObject.fromMap(
+        Map(
+          ("existingKey", Json.obj(
+            "foo" -> Json.arr("bar".asJson, "baz".asJson)
+          )),
+          ("missingKey", Json.Null),
+          ("nonJsonStringKey", Json.Null)
+        )
+      )
+    }
+
     "should not use html encoding for special characters" in {
       val template =
         """
           |{
           |  "string": "{{stringExample}}",
+          |  "stringJson": {{#asJson}}stringJsonExample{{/asJson}},
           |  "simpleString": "{{simpleStringExample}}",
           |  "htmlString": "{{htmlStringExample}}",
           |  "int": {{intExample}},
@@ -447,6 +480,7 @@ class PackageDefinitionRendererSpec extends FreeSpec with Matchers with TableDri
       val context = JsonObject.fromMap(
         Map(
           ("stringExample", "\n\'\"\\\r\t\b\f".asJson),
+          ("stringJsonExample", """["a"]""".asJson ),
           ("simpleStringExample", "foo\"bar".asJson),
           ("htmlStringExample", "<a>Foo&Bar Inc.</a>".asJson),
           ("intExample", 42.asJson),
@@ -462,6 +496,7 @@ class PackageDefinitionRendererSpec extends FreeSpec with Matchers with TableDri
       ) shouldBe JsonObject.fromMap(
         Map(
           ("string", "\n\'\"\\\r\t\b\f".asJson),
+          ("stringJson", Json.arr("a".asJson)),
           ("simpleString", "foo\"bar".asJson),
           ("htmlString", "<a>Foo&Bar Inc.</a>".asJson),
           ("int", 42.asJson),
@@ -692,10 +727,10 @@ class PackageDefinitionRendererSpec extends FreeSpec with Matchers with TableDri
   private[this] def buildConfig(defaultsJson: Json): JsonObject = {
     defaultsJson.fold(
       jsonNull = JsonObject.fromMap(Map("type" -> "null".asJson, "default" -> defaultsJson)),
-      jsonBoolean = boolean => JsonObject.fromMap(Map("type" -> "boolean".asJson, "default" -> defaultsJson)),
-      jsonNumber = number => JsonObject.fromMap(Map("type" -> "number".asJson, "default" -> defaultsJson)),
-      jsonString = string => JsonObject.fromMap(Map("type" -> "string".asJson, "default" -> defaultsJson)),
-      jsonArray = array => JsonObject.fromMap(Map("type" -> "array".asJson, "default" -> defaultsJson)),
+      jsonBoolean = _ => JsonObject.fromMap(Map("type" -> "boolean".asJson, "default" -> defaultsJson)),
+      jsonNumber = _ => JsonObject.fromMap(Map("type" -> "number".asJson, "default" -> defaultsJson)),
+      jsonString = _ => JsonObject.fromMap(Map("type" -> "string".asJson, "default" -> defaultsJson)),
+      jsonArray = _ => JsonObject.fromMap(Map("type" -> "array".asJson, "default" -> defaultsJson)),
       jsonObject = { obj =>
         JsonObject.fromMap(Map(
           "type" -> "object".asJson,

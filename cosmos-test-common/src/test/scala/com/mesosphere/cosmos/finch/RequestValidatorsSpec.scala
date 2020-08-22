@@ -15,7 +15,6 @@ import com.mesosphere.http.CompoundMediaTypeParser
 import com.mesosphere.http.MediaType
 import com.mesosphere.util.UrlSchemeHeader
 import com.twitter.finagle.http.Fields
-import com.twitter.finagle.http.Fields
 import com.twitter.io.Buf
 import com.twitter.util.Return
 import com.twitter.util.Throw
@@ -170,7 +169,7 @@ final class RequestValidatorsSpec extends FreeSpec with Matchers with PropertyCh
       // Work around for DCOS_OSS-2289
       validateOutput(validator, request) should matchPattern {
         case Throw(NotParsed(ParamItem(Fields.ContentType), _, _)) =>
-        case Throw(NotValid(ParamItem(Fields.ContentType), _)) =>
+        case Throw(NotValid(HeaderItem(Fields.ContentType), _)) =>
       }
     }
   }
