@@ -59,7 +59,7 @@ object JsonSchema {
     val Right(documentNode) = document.as[JsonNode]
     val Right(schemaNode) = schema.as[JsonNode]
 
-    val validationErrors = jsf.getValidator.validate(schemaNode, documentNode)
+    val validationErrors = jsf.getJsonSchema(schemaNode).validate(documentNode)
     if (validationErrors.isSuccess) {
       Right[ValidationErrors, Unit](())
     } else {
@@ -147,7 +147,7 @@ object JsonSchema {
         },
         jsonObject = { obj =>
           val objectNode = JsonNodeFactory.instance.objectNode()
-          objectNode.setAll(obj.toMap.mapValues(circeJsonToJsonNode).asJava)
+          objectNode.setAll[JsonNode](obj.toMap.mapValues(circeJsonToJsonNode).asJava)
         }
       )
     }

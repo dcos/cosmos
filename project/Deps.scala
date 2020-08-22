@@ -66,7 +66,9 @@ object Deps {
 
   // APLv2.0 / LGPLv3.0
   val jsonSchema = Seq(
-    "com.github.fge" % "json-schema-validator" % V.jsonSchema
+    "com.github.java-json-tools" % "json-schema-validator" % V.jsonSchema,
+    // Override Jackson dependency
+    "com.fasterxml.jackson.module" %% "jackson-module-scala" % V.jackson
   )
 
   // EPLv1.0 / LGPLv2.1
@@ -146,7 +148,8 @@ object V {
   val fastparse = "1.0.0"
   val finch = "0.18.0"
   val guava = "28.0-jre"
-  val jsonSchema = "2.2.6"
+  val jackson = "2.11.0"
+  val jsonSchema = "2.2.14"
   val logback = "1.2.3"
   val mockito = "2.16.0"
   val mustache = "0.9.6"
