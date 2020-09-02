@@ -50,8 +50,8 @@ function deploy {(
 
   local url="${S3_DEPLOY_BUCKET}/${ONE_JAR}"
   info "Uploading artifact to: ${url}"
-  aws s3 cp ${TARGET_DIR}/${ONE_JAR} ${S3_DEPLOY_BUCKET}/${ONE_JAR}
-  aws s3 cp ${TARGET_DIR}/${SHA1_FILE} ${S3_DEPLOY_BUCKET}/${SHA1_FILE}
+  aws s3 cp ${TARGET_DIR}/${ONE_JAR} ${S3_DEPLOY_BUCKET}/${ONE_JAR} --acl bucket-owner-full-control
+  aws s3 cp ${TARGET_DIR}/${SHA1_FILE} ${S3_DEPLOY_BUCKET}/${SHA1_FILE} --acl bucket-owner-full-control
 
   info "Generating buildinfo.json"
   cat ${DCOS_IMAGE_DIR}/buildinfo.json | \
