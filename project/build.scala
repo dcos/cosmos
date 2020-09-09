@@ -55,7 +55,4 @@ object CosmosBuild {
           </developer>
         </developers>
   )
-  
-  //Allow overwriting only the *locally* created artifacts to help with CI flakes. See https://github.com/sbt/sbt/issues/4275
-  publishLocalConfiguration := publishLocalConfiguration.value.withOverwrite(true),
 }
