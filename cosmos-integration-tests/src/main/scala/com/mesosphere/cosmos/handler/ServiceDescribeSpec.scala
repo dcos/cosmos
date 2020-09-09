@@ -63,8 +63,10 @@ final class ServiceDescribeSpec extends FeatureSpec with Matchers with Integrati
       }
     }
     scenario("The user would like to describe a service via a custom manager") {
+      // Set to use cassandra 2.0.0-3.0.1 which is the most recent version to allow only a single node to run.
+      val cassandraOptions = s"""{ "nodes": { "count": 1 }}""".json.asObject
       val appId = AppId("cassandra")
-      Requests.installV2("cassandra", appId = Some(appId), managerId = Some(ItObjects.customManagerAppName))
+      Requests.installV2("cassandra", version = Some("2.0.0-3.0.1".detailsVersion), options = cassandraOptions, appId = Some(appId), managerId = Some(ItObjects.customManagerAppName))
 
       val serviceDescribeRequest = ServiceDescribeRequest(appId, Some(ItObjects.customManagerAppName), None, None)
       val serviceDescribeResponse = submitServiceDescribeRequest(serviceDescribeRequest)
