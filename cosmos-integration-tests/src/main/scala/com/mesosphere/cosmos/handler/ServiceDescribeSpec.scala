@@ -67,7 +67,7 @@ final class ServiceDescribeSpec extends FeatureSpec with Matchers with Integrati
       val cassandraOptions = s"""{ "nodes": { "count": 1 }}""".json.asObject
       val appId = AppId("cassandra")
       Requests.installV2("cassandra",
-        version = Some("2.0.0-3.0.1".detailsVersion),
+        version = Some("2.0.0-3.0.14".detailsVersion),
         options = cassandraOptions,
         appId = Some(appId),
         managerId = Some(ItObjects.customManagerAppName))
