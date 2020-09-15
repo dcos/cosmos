@@ -55,5 +55,4 @@ object CosmosBuild {
           </developer>
         </developers>
   )
-
 }

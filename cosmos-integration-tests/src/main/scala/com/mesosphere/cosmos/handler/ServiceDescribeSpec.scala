@@ -64,7 +64,9 @@ final class ServiceDescribeSpec extends FeatureSpec with Matchers with Integrati
     }
     scenario("The user would like to describe a service via a custom manager") {
       val appId = AppId("cassandra")
-      Requests.installV2("cassandra", appId = Some(appId), managerId = Some(ItObjects.customManagerAppName))
+      Requests.installV2("cassandra",
+        appId = Some(appId),
+        managerId = Some(ItObjects.customManagerAppName))
 
       val serviceDescribeRequest = ServiceDescribeRequest(appId, Some(ItObjects.customManagerAppName), None, None)
       val serviceDescribeResponse = submitServiceDescribeRequest(serviceDescribeRequest)
