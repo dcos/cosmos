@@ -1,5 +1,6 @@
 package com.mesosphere.cosmos
 
+import ohnosequences.sbt._
 import com.mesosphere.sbt.BuildPlugin
 import com.mesosphere.sbt.Scalastyle
 import sbt.Keys._
@@ -26,6 +27,21 @@ object CosmosBuild {
 
     // Parallel changes to a shared cluster cause some tests to fail
     parallelExecution in IntegrationTest := false,
+
+    publishMavenStyle := true,
+
+    //Mesosphere users, ensure MAWS credentials are set to [default] in ~/.aws/config
+    /*
+     *publishTo := {
+     *  //val repo = "downloads.mesosphere.io"
+     *  //TODO@kjoshi switch this to production before release!
+     *  val repo = "kjoshi-dev.s3.us-east-1.amazonaws.com"
+     *  if (version.value.endsWith("-SNAPSHOT"))
+     *      Some(s3resolver.value("Mesosphere Public Snapshot Repo (S3)", s3(s"${repo}/maven-snapshots")))
+     *  else
+     *      Some(s3resolver.value("Mesosphere Public Snapshot Repo (S3)", s3(s"${repo}/maven")))
+     *},
+     */
 
     pomExtra :=
         <url>https://dcos.io</url>
