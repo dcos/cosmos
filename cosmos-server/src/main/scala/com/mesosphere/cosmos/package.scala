@@ -137,5 +137,17 @@ package cosmos {
     3,
     "Maximum number of retries on HTTP upstreams (repositories & /resource endpoints)"
   )
+
+  object statsDHost extends GlobalFlag[Option[String]](
+    "The StatsD host that can be used to publish StatsD metrics"
+  )
+
+  object statsDPort extends GlobalFlag[Option[Int]](
+    "The StatsD port that can be used to publish StatsD metrics"
+  )
+
+  object statsDInterval extends GlobalFlag[Option[Duration]](
+    "Interval to emit StatsD Metrics"
+  )
   // scalastyle:on object.name
 }

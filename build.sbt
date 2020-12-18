@@ -32,6 +32,8 @@ val server = project.in(file("cosmos-server"))
     libraryDependencies ++=
       Deps.bijectionUtil ++
       Deps.logback ++
+      Deps.metrics ++
+      Deps.metricsStatsD ++
       Deps.slf4j ++
       Deps.twitterCommons ++
       Deps.twitterServer

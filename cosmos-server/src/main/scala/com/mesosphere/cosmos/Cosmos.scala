@@ -27,6 +27,7 @@ import com.mesosphere.cosmos.handler.ResourceProxyHandler
 import com.mesosphere.cosmos.handler.ServiceDescribeHandler
 import com.mesosphere.cosmos.handler.ServiceUpdateHandler
 import com.mesosphere.cosmos.handler.UninstallHandler
+import com.mesosphere.cosmos.metrics.MetricsWrapper
 import com.mesosphere.cosmos.repository.PackageCollection
 import com.mesosphere.cosmos.repository.PackageSourcesStorage
 import com.mesosphere.cosmos.repository.UniverseClient
@@ -37,6 +38,7 @@ import com.mesosphere.cosmos.service.CustomPackageManagerRouter
 import com.mesosphere.cosmos.service.ServiceUninstaller
 import com.mesosphere.universe
 import com.mesosphere.util.UrlSchemeHeader
+import com.readytalk.metrics.StatsDReporter
 import io.lemonlabs.uri.Uri
 import com.twitter.app.App
 import com.twitter.finagle.Http
@@ -54,6 +56,7 @@ import com.twitter.server.Lifecycle
 import com.twitter.server.Stats
 import com.twitter.util.Await
 import com.twitter.util.Try
+import java.util.concurrent.TimeUnit
 import org.apache.curator.framework.CuratorFramework
 import shapeless.:+:
 import shapeless.CNil
@@ -74,8 +77,11 @@ trait CosmosApp
 
   private[this] lazy val logger = org.slf4j.LoggerFactory.getLogger(getClass)
 
+  implicit final val sr: StatsReceiver = new MetricsWrapper()
+
+  override def statsReceiver: StatsReceiver = sr
+
   protected final def buildComponents(): Components = {
-    implicit val sr = statsReceiver
 
     val adminRouter = configureDcosClients().get
 
@@ -90,6 +96,21 @@ trait CosmosApp
 
     val universeClient = UniverseClient(adminRouter)
     val packageCollection = new PackageCollection(sourcesStorage, universeClient)
+
+    // Start the STATSD Reporter.
+    (statsDHost(), statsDPort(), statsDInterval()) match {
+      case (Some(statsDHostValue), Some(statsDPortValue), Some(statsDIntervalValue)) =>
+        StatsDReporter
+          .forRegistry(MetricsWrapper.metrics)
+          .convertRatesTo(TimeUnit.SECONDS)
+          .convertDurationsTo(TimeUnit.MILLISECONDS)
+          .build(statsDHostValue, statsDPortValue)
+          .start(statsDIntervalValue.inSeconds.toLong, TimeUnit.SECONDS)
+      case (None, None, None) => logger.warn("Disabling StatsD reporting")
+      case (host, port, interval) => throw new IllegalArgumentException(s"Illegal StatsD config : " +
+        s"Host [$host] Port [$port] Interval [$interval]")
+    }
+
     new Components(
       adminRouter,
       zkClient,
@@ -105,8 +126,6 @@ trait CosmosApp
 
   final def buildHandlers(components: Components): Handlers = {
     import components._
-
-    implicit val sr = statsReceiver
 
     new Handlers(
       // Keep alphabetized
@@ -156,7 +175,6 @@ trait CosmosApp
     tr: ToResponse.Aux[A, Application.Json]
   ): Unit = {
     HttpProxySupport.configureProxySupport()
-    implicit val sr = statsReceiver
 
     val service = CustomLoggingFilter.andThen(buildService(allEndpoints))
     val maybeHttpServer = startServer(service.map { request: Request =>
