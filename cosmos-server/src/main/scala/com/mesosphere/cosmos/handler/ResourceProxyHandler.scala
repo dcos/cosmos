@@ -5,6 +5,8 @@ import com.mesosphere.cosmos.error.Forbidden
 import com.mesosphere.cosmos.error.GenericHttpError
 import com.mesosphere.cosmos.http.RequestSession
 import com.mesosphere.cosmos.repository.PackageCollection
+import com.mesosphere.http.MediaType.AkkaMediaTypeOps
+import com.mesosphere.universe.bijection.FutureConversions._
 import io.lemonlabs.uri.Uri
 import com.twitter.finagle.http.Fields
 import com.twitter.finagle.http.Response
@@ -17,11 +19,22 @@ import io.netty.handler.codec.http.HttpResponseStatus
 import java.io.InputStream
 import java.net.HttpURLConnection
 
+import akka.actor.ActorSystem
+import akka.stream.Materializer
+import akka.stream.scaladsl.StreamConverters
+
+import scala.async.Async.async
+
 final class ResourceProxyHandler private(
   packageCollection: PackageCollection
-)(implicit statsReceiver: StatsReceiver) {
+)(
+  implicit statsReceiver: StatsReceiver
+) {
 
   import ResourceProxyHandler._
+
+  // Run blocking IO on fixed size thread pool.
+  import com.mesosphere.usi.async.ThreadPoolContext.ioContext
 
   class ConnectionClosingInputStream(
     connection: HttpURLConnection,
@@ -35,7 +48,10 @@ final class ResourceProxyHandler private(
     }
   }
 
-  def apply(data: (Uri, RequestSession)): Future[Output[Response]] = {
+  def apply(data: (Uri, RequestSession))(
+    implicit system: ActorSystem,
+    mat: Materializer
+  ): Future[Output[Response]] = {
     val uri = data._1
     implicit val session = data._2
 
@@ -56,23 +72,27 @@ final class ResourceProxyHandler private(
       }
     }.flatMap { _ =>
       HttpClient
-        .fetchStream(
+        .fetch(
           uri
-        ) { (responseData, conn) =>
-          validateContentLength(uri, responseData.contentLength)
-          val response = Response(
-            com.twitter.finagle.http.Version.Http11,
-            Status.Ok,
-            Reader.fromStream(new ConnectionClosingInputStream(conn, responseData.contentStream))
-          )
-          response.contentType = responseData.contentType.show
-          response.headerMap.add(Fields.TransferEncoding, "chunked")
-          for (filename <- getFileNameFromUrl(uri)) {
-            response.headerMap.add(Fields.ContentDisposition,
-              s"""attachment; filename="$filename"""")
+        ) { originalResponse =>
+          async {
+            validateContentLength(uri, originalResponse.entity.contentLengthOption)
+            // TODO: This is blocking. We should evaluate async streams from Finch.
+            val inputStream = originalResponse.entity.dataBytes.runWith(StreamConverters.asInputStream())
+            val response = Response(
+              com.twitter.finagle.http.Version.Http11,
+              Status.Ok,
+              Reader.fromStream(inputStream)
+            )
+            response.contentType = originalResponse.entity.contentType.mediaType.show
+            response.headerMap.add(Fields.TransferEncoding, "chunked")
+            for (filename <- getFileNameFromUrl(uri)) {
+              response.headerMap.add(Fields.ContentDisposition,
+                s"""attachment; filename="$filename"""")
+            }
+            Output.payload(response)
           }
-          Output.payload(response)
-        }
+        }.asTwitter
     }
   }
 }

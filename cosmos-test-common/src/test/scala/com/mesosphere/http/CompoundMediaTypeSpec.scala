@@ -1,6 +1,7 @@
 package com.mesosphere.http
 
 import com.mesosphere.universe.MediaTypes
+import com.mesosphere.universe.bijection.MediaTypeConversions._
 import org.scalatest.FreeSpec
 import scala.util.Success
 
@@ -74,7 +75,7 @@ class CompoundMediaTypeSpec extends FreeSpec {
       ))
 
       val accepted = Set(
-        MediaTypes.universeV2Package
+        MediaTypes.universeV2Package.asCosmos
       )
 
       val actual = CompoundMediaType.calculateIntersectionAndOrder(cmt, accepted)
@@ -134,7 +135,7 @@ class CompoundMediaTypeSpec extends FreeSpec {
       ))
 
       val accepted = Set(
-        MediaTypes.universeV2Package
+        MediaTypes.universeV2Package.asCosmos
       )
 
       val actual = cmt.getMostAppropriateMediaType(accepted)

@@ -6,6 +6,7 @@ import com.mesosphere.cosmos.finch.MediaTypedDecoder
 import com.mesosphere.cosmos.finch.MediaTypedEncoder
 import com.mesosphere.http.MediaType
 import com.mesosphere.universe
+import com.mesosphere.universe.bijection.MediaTypeConversions._
 import io.circe.Decoder
 import io.circe.DecodingFailure
 import io.circe.Encoder
@@ -55,7 +56,7 @@ package v3.model {
     implicit val encoder: Encoder[V2Package] = deriveEncoder[V2Package]
 
     implicit val mediaTypedEncoder: MediaTypedEncoder[V2Package] = MediaTypedEncoder(
-      MediaTypes.universeV2Package
+      MediaTypes.universeV2Package.asCosmos
     )
   }
 
@@ -99,7 +100,7 @@ package v3.model {
     implicit val encoder: Encoder[V3Package] = deriveEncoder[V3Package]
 
     implicit val mediaTypedEncoder: MediaTypedEncoder[V3Package] = MediaTypedEncoder(
-      MediaTypes.universeV3Package
+      MediaTypes.universeV3Package.asCosmos
     )
   }
 
@@ -550,7 +551,7 @@ package v4.model {
     }
 
     implicit val mediaTypedEncoder: MediaTypedEncoder[V4Package] = MediaTypedEncoder(
-      MediaTypes.universeV4Package
+      MediaTypes.universeV4Package.asCosmos
     )
   }
 }
@@ -593,7 +594,7 @@ package v5.model {
     }
 
     implicit val mediaTypedEncoder: MediaTypedEncoder[V5Package] = MediaTypedEncoder(
-      MediaTypes.universeV5Package
+      MediaTypes.universeV5Package.asCosmos
     )
   }
 }

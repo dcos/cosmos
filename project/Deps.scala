@@ -15,6 +15,18 @@ object Deps {
   )
 
   // APLv2.0
+  val asyncAwait = Seq(
+    "org.scala-lang.modules" %% "scala-async" % V.asyncAwait
+  )
+
+  // APLv2.0
+  val akka = Seq(
+    "com.typesafe.akka" %% "akka-http" % V.akkaHttp,
+    "com.lightbend.akka" %% "akka-stream-alpakka-json-streaming" % V.alpakka,
+    "com.typesafe.akka" %% "akka-stream" % V.akka
+  )
+
+  // APLv2.0
   val circe = Seq(
     "io.circe" %% "circe-core" % V.circe,
     "io.circe" %% "circe-testing" % V.circe,
@@ -114,7 +126,9 @@ object Deps {
   // APLv2.0
   val twitterUtil = Seq(
     "com.twitter" %% "util-core" % V.twitterUtil,
-    "com.twitter" %% "finagle-stats" % V.twitterUtil
+    "com.twitter" %% "finagle-stats" % V.twitterUtil,
+    // Override Jackson dependency
+    "com.fasterxml.jackson.module" %% "jackson-module-scala" % V.jackson
   )
 
   // MIT
@@ -136,12 +150,21 @@ object Deps {
     "commons-codec" % "commons-codec" % "1.11"
   )
 
+  // APLv2.0
+  val usi = Seq(
+    "com.mesosphere.usi" %% "commons" % V.usi
+  )
+
 }
 
 object V {
   val projectScalaVersion = "2.12.9"
   val projectVersion = "0.6.3"
 
+  val alpakka = "2.0.1"
+  val akka = "2.5.31"
+  val akkaHttp = "10.1.12"
+  val asyncAwait = "0.10.0"
   val bijection = "0.9.6"
   val circe = "0.11.1"
   val curator = "2.12.0"
@@ -159,4 +182,5 @@ object V {
   val scalaUri = "1.4.10"
   val slf4j = "1.7.25"
   val twitterUtil = "18.7.0"
+  val usi = "0.1.53"
 }

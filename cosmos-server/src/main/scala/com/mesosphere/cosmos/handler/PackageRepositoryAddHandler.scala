@@ -9,8 +9,11 @@ import com.mesosphere.cosmos.repository.PackageCollection
 import com.mesosphere.cosmos.repository.PackageSourcesStorage
 import com.mesosphere.cosmos.repository.UniverseClient
 import com.mesosphere.cosmos.rpc
+import com.mesosphere.universe.bijection.FutureConversions._
 import com.twitter.util.Future
 import io.netty.handler.codec.http.HttpResponseStatus
+
+import scala.concurrent.ExecutionContext.Implicits.global
 
 private[cosmos] final class PackageRepositoryAddHandler(
   sourcesStorage: PackageSourcesStorage,
@@ -40,12 +43,12 @@ private[cosmos] final class PackageRepositoryAddHandler(
   private[this] def checkThatRepoWorks(
     repository: rpc.v1.model.PackageRepository
   )(
-    implicit session: RequestSession
+    implicit session: RequestSession,
   ): Future[Unit] = {
     /* We get the repo to see if the operation succeeds
      * We don't need the actual response
      */
-    universeClient(repository).unit.handle {
+    universeClient(repository).asTwitter.unit.handle {
       case ce: CosmosException =>
         ce.error match {
           case uce : UniverseClientHttpError =>

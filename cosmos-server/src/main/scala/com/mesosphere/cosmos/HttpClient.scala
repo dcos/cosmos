@@ -1,29 +1,29 @@
 package com.mesosphere.cosmos
 
-import com.mesosphere.cosmos.error.CosmosException
-import com.mesosphere.cosmos.error.EndpointUriConnection
-import com.mesosphere.cosmos.error.EndpointUriSyntax
-import com.mesosphere.cosmos.error.GenericHttpError
-import com.mesosphere.cosmos.error.UnsupportedContentEncoding
-import com.mesosphere.cosmos.error.UnsupportedRedirect
+import java.net.{MalformedURLException, URISyntaxException}
+
+import akka.http.scaladsl.model.headers
+import com.mesosphere.cosmos.error.{CosmosException, EndpointUriSyntax, GenericHttpError, UnsupportedContentEncoding}
 import com.mesosphere.http.MediaType
-import com.mesosphere.http.MediaTypeParser
 import io.lemonlabs.uri.Uri
 import com.twitter.finagle.http.Fields
 import com.twitter.finagle.http.filter.LogFormatter
 import com.twitter.finagle.stats.StatsReceiver
-import com.twitter.util.Future
-import io.netty.handler.codec.http.HttpResponseStatus
 import java.io.IOException
 import java.io.InputStream
 import java.net.HttpURLConnection
-import java.net.MalformedURLException
-import java.net.URISyntaxException
-import java.util.zip.GZIPInputStream
 
+import akka.actor.ActorSystem
+import akka.http.scaladsl.Http
+import akka.http.scaladsl.coding.{Gzip, NoCoding}
+import akka.http.scaladsl.model.headers.{HttpEncodings, ProductVersion, `User-Agent`}
+import akka.http.scaladsl.model.{HttpHeader, HttpRequest, HttpResponse, Uri => AkkaUri}
+import com.mesosphere.usi.async.Retry
 import org.slf4j.Logger
 
-import scala.util.{Failure, Success, Try}
+import scala.async.Async.{async, await}
+import scala.concurrent.duration.{FiniteDuration, MILLISECONDS}
+import scala.concurrent.{ExecutionContext, Future}
 
 object HttpClient {
 
@@ -31,148 +31,82 @@ object HttpClient {
 
   lazy val RETRY_INTERVAL = retryDuration()
 
+  lazy val PRODUCT_VERSION = ProductVersion("cosmos", BuildProperties().cosmosVersion)
+
   val logger: Logger = org.slf4j.LoggerFactory.getLogger(getClass)
 
   def fetch[A](
     uri: Uri,
-    headers: (String, String)*
+    headers: HttpHeader*
   )(
-    processResponse: ResponseData => A
+    processResponse: HttpResponse => Future[A]
   )(
-    implicit statsReceiver: StatsReceiver
-  ): Future[A] = {
-    fetchResponse(uri, DEFAULT_RETRIES, headers: _*)
-      .flatMap { case (responseData, conn) =>
-        Future(processResponse(responseData))
-          // IOException when closing stream should not fail the whole request, that's why we're ignoring exceptions with Try
-          .ensure({
-          Try(responseData.contentStream.close())
-          ()
-        })
-          .ensure(conn.disconnect())
-      }
-      .handle { case e: IOException =>
-        throw CosmosException(EndpointUriConnection(uri, e.getMessage), e)
-      }
+    implicit statsReceiver: StatsReceiver,
+    ec: ExecutionContext,
+    system: ActorSystem
+  ): Future[A] = async {
+    // Validate URI
+    try { uri.toJavaURI.toURL }
+    catch {
+        case t @ (_: IllegalArgumentException | _: MalformedURLException | _: URISyntaxException) =>
+          throw CosmosException(EndpointUriSyntax(uri, t.getMessage), t)
+    }
+    val userAgent = `User-Agent`(PRODUCT_VERSION)
+    val request = HttpRequest(uri = AkkaUri(uri.toString()), headers = headers.toVector :+ userAgent)
+
+    val futureResponse = retry { performRequest(request) }
+    val response = decodeResponse(await(futureResponse))
+    // TODO: Handle status such
+
+    await(processResponse(response))
   }
 
-  def fetchStream[A](
-    uri: Uri,
-    headers: (String, String)*
-  )(
-    processResponse: (ResponseData, HttpURLConnection) => A
-  )(
-    implicit statsReceiver: StatsReceiver
+  private[this] def retry[A](f: => Future[A])(
+    implicit ec: ExecutionContext,
+    system: ActorSystem
   ): Future[A] = {
-    fetchResponse(uri, DEFAULT_RETRIES, headers: _*)
-      .map { case (responseData, conn) => processResponse(responseData, conn) }
-      .handle { case e: IOException =>
-        throw CosmosException(EndpointUriConnection(uri, e.getMessage), e)
-      }
-  }
 
-  private[this] def fetchResponse(
-    uri: Uri,
-    retryCount : Int,
-    headers: (String, String)*
-  )(
-    implicit statsReceiver: StatsReceiver
-  ): Future[(ResponseData, HttpURLConnection)] = {
-    val isRetryApplicable = (ex: Exception) => ex match {
+    val isRetryApplicable = (ex: Throwable) => ex match {
       case ce: CosmosException => ce.error.isInstanceOf[GenericHttpError] &&
         ce.error.asInstanceOf[GenericHttpError].clientStatus.code() >= 500
       case _: IOException => true
     }
-    Future(uri.toJavaURI.toURL.openConnection())
-      .handle {
-        case t @ (_: IllegalArgumentException | _: MalformedURLException | _: URISyntaxException) =>
-          throw CosmosException(EndpointUriSyntax(uri, t.getMessage), t)
-      }
-      .map { case conn: HttpURLConnection =>
-        conn.setRequestProperty(Fields.UserAgent, s"cosmos/${BuildProperties().cosmosVersion}")
-        // UserAgent set above can be overridden below.
-        headers.foreach { case (name, value) => conn.setRequestProperty(name, value) }
-        logger.info(format(conn))
-        val responseData = extractResponseData(uri, conn)
-        (responseData, conn)
-      }
-      .rescue {
-        case ex: Exception if isRetryApplicable(ex) =>
-          if (retryCount > 0) {
-            logger.info(s"Retry [remaining - $retryCount] : ${ex.getMessage}")
-            Future.sleep(RETRY_INTERVAL).before(fetchResponse(uri, retryCount - 1, headers: _*))
-          } else {
-            logger.warn(s"Retries exhausted, giving up due to ${ex.getMessage}", ex)
-            throw ex
-          }
-      }
+
+    Retry("request",
+      maxAttempts = DEFAULT_RETRIES,
+      minDelay = FiniteDuration(RETRY_INTERVAL.inMillis, MILLISECONDS),
+      maxDelay = FiniteDuration(RETRY_INTERVAL.inMillis, MILLISECONDS),
+      retryOn = isRetryApplicable)(f)
   }
 
-  private[this] def extractResponseData(
-    uri: Uri,
-    conn: HttpURLConnection
-  )(implicit
-    sr: StatsReceiver
-  ): ResponseData = {
-    val (contentType, contentEncoding) = parseContentHeaders(uri, conn)
+  private[this] def performRequest(request: HttpRequest)(implicit ec: ExecutionContext, system: ActorSystem): Future[HttpResponse] = async {
+    val response = await(Http().singleRequest(request))
+    if(response.status.isRedirection()) {
+      response.entity.discardBytes()
 
-    val contentLength = conn.getContentLengthLong match {
-      case len if len < 0 => None
-      case len => Some(len)
-    }
-
-    val contentStream = prepareContentStream(conn, contentEncoding)
-    ResponseData(contentType, contentLength, contentStream)
-  }
-
-  private def parseContentHeaders(
-    uri: Uri,
-    conn: HttpURLConnection
-  )(implicit
-    sr: StatsReceiver
-  ): (MediaType, Option[String]) = {
-    conn.getResponseCode match {
-      case HttpURLConnection.HTTP_OK =>
-        sr.scope("status").counter("200").incr()
-        val contentEncoding = Option(conn.getHeaderField(Fields.ContentEncoding))
-        MediaTypeParser.parse(conn.getHeaderField(Fields.ContentType)) match {
-          case Success(contentType) => (contentType, contentEncoding)
-          case Failure(error) => {
-            logger.error(s"Error while parsing the Content-Type " +
-              s"${conn.getHeaderField(Fields.ContentType)} from URI $uri",
-              error
-            )
-            throw error
-          }
-        }
-      case status if RedirectStatuses(status) =>
-        sr.scope("status").counter(status.toString).incr()
-        // Different forms of redirect, HttpURLConnection won't follow a redirect across schemes
-
-        val loc = Option(conn.getHeaderField("Location")).map(Uri.parse).flatMap(_.schemeOption)
-        throw UnsupportedRedirect(List(uri.schemeOption.get), loc).exception
-      case status =>
-        sr.scope("status").counter(status.toString).incr()
-        throw GenericHttpError(uri = uri, clientStatus = HttpResponseStatus.valueOf(status)).exception
+      val locationHeader = response.header[headers.Location].get
+      val redirectUri = locationHeader.uri.resolvedAgainst(request.uri)
+      val updatedRequest = request.withUri(redirectUri)
+      // TODO: count redirections
+      await(performRequest(updatedRequest))
+    } else {
+      response
     }
   }
 
-  private def prepareContentStream(
-    conn: HttpURLConnection,
-    contentEncoding: Option[String]
-  )(implicit
-    sr: StatsReceiver
-  ): InputStream = {
-    contentEncoding match {
-      case Some("gzip") =>
+  private def decodeResponse(response: HttpResponse)(implicit sr: StatsReceiver): HttpResponse = {
+    val decoder = response.encoding match {
+      case HttpEncodings.gzip =>
         sr.scope("contentEncoding").counter("gzip").incr()
-        new GZIPInputStream(conn.getInputStream)
-      case ce @ Some(_) =>
-        throw UnsupportedContentEncoding(List("gzip"), ce).exception
-      case _ =>
+        Gzip
+      case HttpEncodings.identity =>
         sr.scope("contentEncoding").counter("plain").incr()
-        conn.getInputStream
+        NoCoding
+      case unsupported =>
+        throw UnsupportedContentEncoding(List("gzip"), Some(unsupported.value)).exception
     }
+
+    decoder.decodeMessage(response)
   }
 
   def format(conn: HttpURLConnection): String = {
@@ -212,5 +146,4 @@ object HttpClient {
       PermanentRedirect
     )
   }
-
 }

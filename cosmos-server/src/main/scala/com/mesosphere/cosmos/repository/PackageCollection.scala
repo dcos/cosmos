@@ -8,18 +8,26 @@ import com.mesosphere.cosmos.http.RequestSession
 import com.mesosphere.cosmos.rpc
 import com.mesosphere.http.OriginHostScheme
 import com.mesosphere.universe
+import com.mesosphere.universe.bijection.FutureConversions._
+import com.mesosphere.usi.async.NamedExecutionContext
 import io.lemonlabs.uri.Uri
 import com.twitter.util.Future
-import com.twitter.util.Throw
 import java.util.concurrent.TimeUnit
 import java.util.regex.Pattern
+
 import scala.math.Ordering.Implicits.infixOrderingOps
+import scala.util.Failure
 import scala.util.matching.Regex
 
 final class PackageCollection(
   packageRepositoryStorage: PackageSourcesStorage,
   universeClient: UniverseClient
 ) {
+
+  private[this] val logger = org.slf4j.LoggerFactory.getLogger(getClass)
+
+  implicit val executionContext = NamedExecutionContext.fixedThreadPoolExecutionContext(
+    Runtime.getRuntime().availableProcessors(), "package-collection")
 
   private[this] lazy val repositoryCache: LoadingCache[RequestSession, Future[List[(universe.v4.model.Repository, Uri)]]] = {
     Caffeine
@@ -30,14 +38,15 @@ final class PackageCollection(
           .readCache()
           .flatMap { packageRepositories =>
             Future.traverseSequentially(packageRepositories){ packageRepository =>
-              universeClient(packageRepository)(session)
-                .map((_, packageRepository.uri))
-                .respond {
-                  case Throw(_) =>
+              logger.info(s"# Loading ${packageRepository.name}")
+              val action = universeClient(packageRepository)(session, executionContext).map((_, packageRepository.uri))
+                action.onComplete {
+                  case Failure(_) =>
+                    logger.info(s"# Invalidate cache for ${packageRepository.name}")
                     repositoryCache.invalidate(session)
-                    ()
                   case _ => ()
                 }
+              action.asTwitter
             }.map(_.toList)
           }
       }
@@ -105,11 +114,17 @@ final class PackageCollection(
     all().map(PackageCollection.allUrls)
   }
 
-  def invalidateAll() : Unit = repositoryCache.invalidateAll()
+  def invalidateAll() : Unit = {
+    logger.info("# Invalidate all packages")
+    repositoryCache.invalidateAll()
+  }
 
   private[this] def all()(
     implicit session: RequestSession
-  ): Future[List[(universe.v4.model.Repository, Uri)]] = repositoryCache.get(session)
+  ): Future[List[(universe.v4.model.Repository, Uri)]] = {
+    logger.info(s"# Get repos for $session")
+    repositoryCache.get(session)
+  }
 }
 
 object PackageCollection {
@@ -243,6 +258,7 @@ object PackageCollection {
       ((pkgDef.name, index), pkgDef.releaseVersion)
     }
 
+    // TODO: this is a big bottleneck.
     repositories
       .zipWithIndex
       .flatMap { case ((repository, uri), index) =>

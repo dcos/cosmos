@@ -5,6 +5,8 @@ import _root_.io.finch.ToResponse
 import _root_.io.finch._
 import _root_.io.finch.circe.dropNullValues._
 import _root_.io.finch.syntax._
+import akka.actor.ActorSystem
+import akka.stream.{ActorMaterializer, Materializer}
 import com.mesosphere.cosmos.app.Logging
 import com.mesosphere.cosmos.circe.Encoders._
 import com.mesosphere.cosmos.error.CosmosException
@@ -74,7 +76,7 @@ trait CosmosApp
 
   private[this] lazy val logger = org.slf4j.LoggerFactory.getLogger(getClass)
 
-  protected final def buildComponents(): Components = {
+  protected final def buildComponents()(implicit system: ActorSystem): Components = {
     implicit val sr = statsReceiver
 
     val adminRouter = configureDcosClients().get
@@ -127,11 +129,13 @@ trait CosmosApp
     )
   }
 
-  final def buildEndpoints(handlers: Handlers): Endpoints = {
+  final def buildEndpoints(handlers: Handlers)(implicit system: ActorSystem): Endpoints = {
     import handlers._
 
     val pkg = "package"
     val repo = "repository"
+
+    implicit lazy val mat: Materializer = ActorMaterializer()
 
     Endpoints(
       // Keep alphabetized
@@ -413,6 +417,8 @@ object CosmosApp {
 object Cosmos extends CosmosApp {
 
   override def main(): Unit = {
+    implicit val actorSystem: ActorSystem = ActorSystem("cosmos")
+
     val components = buildComponents()
     val handlers = buildHandlers(components)
     val endpoints = buildEndpoints(handlers)

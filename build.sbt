@@ -6,6 +6,7 @@ val common = project.in(file("cosmos-common"))
   .settings(
     name := baseDirectory.value.name,
     libraryDependencies ++=
+      Deps.akka ++
       Deps.apacheCommons ++
       Deps.bijection ++
       Deps.circe ++
@@ -30,11 +31,14 @@ val server = project.in(file("cosmos-server"))
   .settings(
     name := baseDirectory.value.name,
     libraryDependencies ++=
+      Deps.akka ++
+      Deps.asyncAwait ++
       Deps.bijectionUtil ++
       Deps.logback ++
       Deps.slf4j ++
       Deps.twitterCommons ++
-      Deps.twitterServer
+      Deps.twitterServer ++
+      Deps.usi
   )
   .dependsOn(
     common

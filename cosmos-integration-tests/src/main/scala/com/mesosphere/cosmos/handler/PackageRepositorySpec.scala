@@ -17,6 +17,7 @@ import com.mesosphere.cosmos.rpc
 import com.mesosphere.cosmos.rpc.v1.model.ErrorResponse
 import com.mesosphere.cosmos.rpc.v1.model.PackageRepository
 import com.mesosphere.universe.MediaTypes
+import com.mesosphere.universe.bijection.MediaTypeConversions._
 import io.lemonlabs.uri.Uri
 import io.lemonlabs.uri.dsl._
 import com.twitter.bijection.Conversion.asMethod
@@ -111,7 +112,7 @@ class PackageRepositorySpec extends FeatureSpec with Matchers {
       val name = "invalid"
       val uri: Uri = "https://www.google.com/"
       val expectedError = UnsupportedContentType(
-        List(MediaTypes.UniverseV4Repository, MediaTypes.UniverseV3Repository),
+        List(MediaTypes.UniverseV4Repository.asCosmos, MediaTypes.UniverseV3Repository.asCosmos),
         Some("text/html;charset=iso-8859-1")
       ).as[ErrorResponse]
       val error = intercept[HttpErrorResponse] {

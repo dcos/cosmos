@@ -1,6 +1,9 @@
 package com.mesosphere.cosmos.handler
 
-import com.google.common.io.ByteStreams
+import akka.actor.ActorSystem
+import akka.http.scaladsl.model.headers.{Authorization, GenericHttpCredentials}
+import akka.http.scaladsl.unmarshalling.Unmarshal
+import akka.stream.{ActorMaterializer, Materializer}
 import com.mesosphere.cosmos.HttpClient
 import com.mesosphere.cosmos.IntegrationBeforeAndAfterAll
 import com.mesosphere.cosmos.error.CosmosException
@@ -9,23 +12,28 @@ import com.mesosphere.cosmos.http.TestContext
 import com.mesosphere.cosmos.rpc
 import com.mesosphere.cosmos.test.CosmosIntegrationTestClient.CosmosClient
 import io.lemonlabs.uri.Uri
-import com.twitter.finagle.http.Fields
 import com.twitter.finagle.stats.NullStatsReceiver
 import com.twitter.finagle.stats.StatsReceiver
-import com.twitter.util.Await
 import io.circe.jawn.decode
 import io.netty.handler.codec.http.HttpResponseStatus
-import org.scalatest.Matchers
-import org.scalatest.Assertion
-import org.scalatest.FreeSpec
+import org.scalatest.{Assertion, FreeSpec, Matchers, OptionValues}
+import org.scalatest.concurrent.ScalaFutures
 import org.scalatest.prop.TableDrivenPropertyChecks
 import org.scalatest.prop.TableFor1
+
+import scala.concurrent.{ExecutionContextExecutor, Future}
 
 final class ResourceProxyHandlerIntegrationSpec extends FreeSpec
   with TableDrivenPropertyChecks
   with Matchers
+  with OptionValues
+  with ScalaFutures
   with IntegrationBeforeAndAfterAll {
   import ResourceProxyHandlerIntegrationSpec._
+
+  implicit val system: ActorSystem = ActorSystem("resource-proxy-integration-test")
+  implicit val mat: Materializer = ActorMaterializer()
+  implicit lazy val ctx: ExecutionContextExecutor = system.dispatcher
 
   "The ResourceProxyHandler should" - {
 
@@ -67,15 +75,14 @@ final class ResourceProxyHandlerIntegrationSpec extends FreeSpec
     val parsedUrl = Uri.parse(url)
     val future = HttpClient.fetch(
       parsedUrl,
-      Fields.Authorization -> testContext.token.get.headerValue
+      Authorization(new GenericHttpCredentials(testContext.token.value.headerValue, "", Map.empty))
     ) { responseData =>
-      val contentLength = responseData.contentLength
+      val contentLength = responseData.entity.contentLengthOption
       // Resource Proxy endpoint response is chunked.
       contentLength shouldBe empty
-      val contentBytes = ByteStreams.toByteArray(responseData.contentStream)
-      contentBytes.length
+      Unmarshal(responseData.entity).to[Array[Byte]].map(_.length)
     }
-    val numberOfBytesRead = Await.result(future)
+    val numberOfBytesRead = future.futureValue
     numberOfBytesRead should be > 0
     val rawUrl = parsedUrl.toUrl
       .query
@@ -84,11 +91,10 @@ final class ResourceProxyHandlerIntegrationSpec extends FreeSpec
       .flatMap(_._2)
     rawUrl shouldBe defined
     val rawContentBytesLength = rawUrl.flatMap { rawUrl =>
-      Await.result { HttpClient.fetch(Uri.parse(rawUrl))(_.contentLength) }
+      HttpClient.fetch(Uri.parse(rawUrl))(r => Future.successful(r.entity.contentLengthOption)).futureValue
     }
     // All the resource urls in the universe repo should define a Content-Length header.
-    rawContentBytesLength shouldBe defined
-    rawContentBytesLength.get.toInt shouldEqual numberOfBytesRead
+    rawContentBytesLength.value should be(numberOfBytesRead.toLong)
   }
 }
 
